@@ -1,0 +1,14 @@
+
+
+python 2.7
+
+lib
+netiface
+sleekxmpp
+
+
+si dans le client est dans le meme repertoire du master ou d'un agent juste le programme suffit.
+
+il utilisera les memes lib que l'agent ou le master.
+et partagera le fichier de conf.
+

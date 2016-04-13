@@ -1,0 +1,18 @@
+ 
+sur linux install les packet 
+install python2.7
+install netifaces
+install sleekxmpp
+
+
+debian 
+#apt-get install python2.7 python-netifaces python-sleekxmpp 
+
+
+sur windows
+c:\python27\script\pip.exe install sleepxmpp.
+
+
+
+ 
+./agentmasterjson2.py

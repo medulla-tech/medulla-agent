@@ -1,0 +1,26 @@
+install master sur linux
+
+python 2.7
+
+lib
+netiface
+sleekxmpp
+
+
+dans lib/fichierdecomf.py
+
+mettre ou on installe le fichier de conf
+pour windows
+
+
+pour le fichier de log
+
+configurer dans le fichier de conf 
+section Global ou on met les logs.
+
+[Global]
+logfile = ./out.txt  
+
+
+
+
