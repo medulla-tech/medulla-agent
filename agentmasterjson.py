@@ -151,8 +151,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                             jidbarre[0],
                                                             self.presencedeploiement[t]['plateform'] )                   
         else:
-            #if self.config.showinfomaster:
-            print "AUCUNE MACHINE"
+            print "NO MACHINE"
 
     def deploiePlugin(self, msg, plugin):
         data =''
