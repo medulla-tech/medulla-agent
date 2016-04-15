@@ -180,8 +180,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def muc_message(self, msg):       
         """
-        fonction traitant tous messages venant d un channel        
-        attribut type pour selection
+	This function receive all the message coming from a channel
         """
         restartagent = False
         if msg['from'].bare == self.config.jidchannellog:
