@@ -207,7 +207,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         print
                         print "__________________________"
                         print "INFORMATION MACHINE"
-                        print "deploie name : %s"%data['deploiement']
+                        print "deploy name : %s"%data['deploiement']
                         print "from : %s"%data['who']
                         print "Jid from : %s"%data['from']
                         print "Machine : %s"%data['machine']
@@ -291,14 +291,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         print "___________________________"
                     restartagent = False
                     for k,v in self.plugindata.iteritems():
-                        deploie = False
+                        deploy = False
                         try:
                            if data['plugin'][k] != v:
                                print "update %s version %s to version %s"%(k,data['plugin'][k],v)
-                               deploie = True
+                               deploy = True
                         except:
-                            print "deploie %s version %s"%(k,v)
-                            deploie = True
+                            print "deploy %s version %s"%(k,v)
+                            deploy = True
                         if deploie:
                             restartagent = True
                             self.deploiePlugin(msg,k)
