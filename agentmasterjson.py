@@ -141,7 +141,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             depl[self.presencedeploiement[t]['deploiement']]=[self.presencedeploiement[t]['deploiement']]
         if len(l) != 0:
             for k in depl.keys():
-                print "Déploiement sur [%s]"%k
+                print "Deploiement on [%s]"%k
                 print '{0:30}|{1:35}|{2:50}'.format("Machine","jid","plateform")
                 for t in l:
                     if self.presencedeploiement[t]['deploiement']==k:
