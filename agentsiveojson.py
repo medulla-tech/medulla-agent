@@ -65,8 +65,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         self.md5reseau = hashlib.md5(obj['result']).hexdigest()
 
-        self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
-        self.schedule('surveille reseau', 180 , self.networkMonitor, repeat=True)
+        self.schedule('plugin update', 3600 , self.update_plugin, repeat=True)
+        self.schedule('monitor the network', 180 , self.networkMonitor, repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
