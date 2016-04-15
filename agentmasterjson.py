@@ -65,11 +65,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.idm = ""
         self.presencedeploiement={}
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::%s::presence" % conf.jidsalonmaster,
+        self.add_event_handler("muc::%s::presence" % conf.jidchannelmaster,
                                self.muc_presenceMaster)
-        self.add_event_handler("muc::%s::got_offline" % conf.jidsalonmaster,
+        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelmaster,
                                self.muc_offlineMaster)
-        self.add_event_handler("muc::%s::got_online" % conf.jidsalonmaster,
+        self.add_event_handler("muc::%s::got_online" % conf.jidchannelmaster,
                                self.muc_onlineMaster)
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
@@ -93,20 +93,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def loginformation(self,msgdata):
         self.send_message( mbody = msgdata,
-                           mto = self.config.jidsalonlog,
+                           mto = self.config.jidchannellog,
                            mtype ='groupchat')   
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        #join salon Master
-        self.plugin['xep_0045'].joinMUC(self.config.jidsalonmaster,
+        #join channel Master
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannelmaster,
                                         self.config.NickName,
                                         # If a room password is needed, use:
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
-        #join salon log
-        self.plugin['xep_0045'].joinMUC(self.config.jidsalonlog,
+        #join channel log
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannellog,
                                         self.config.NickName,
                                         # If a room password is needed, use:
                                         password=self.config.passwordconnexionmuc,
@@ -181,11 +181,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def muc_message(self, msg):       
         """
-        fonction traitant tous messages venant d un salon        
+        fonction traitant tous messages venant d un channel        
         attribut type pour selection
         """
         restartagent = False
-        if msg['from'].bare == self.config.jidsalonlog:
+        if msg['from'].bare == self.config.jidchannellog:
             return
 
         if msg['type'] == "groupchat":
@@ -199,7 +199,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     info=json.loads(base64.b64decode(data['completedatamachine']))
                     self.presencedeploiement[data['machine']]={
                         'machine':data['machine'],
-                        'fromsalon':data['who'],
+                        'fromchannel':data['who'],
                         'fromjid': data['from'],
                         'deploiement':data['deploiement'],
                         'plateform':data['plateform'],

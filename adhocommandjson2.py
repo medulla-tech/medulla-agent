@@ -72,7 +72,7 @@ class CommandUserBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("session_start", self.start, threaded=True)
         self.add_event_handler("message", self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
-        self.add_event_handler("muc::%s::presence" % self.config.jidsaloncommand,
+        self.add_event_handler("muc::%s::presence" % self.config.jidchannelcommand,
                                self.muc_presenceCommand)
         self.add_event_handler("register", self.register, threaded=True)
         
@@ -83,17 +83,17 @@ class CommandUserBot(sleekxmpp.ClientXMPP):
         self.get_roster()
         
         
-        self.plugin['xep_0045'].joinMUC(self.config.jidsaloncommand,
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannelcommand,
                                         self.config.NickName,
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
 
-        self.plugin['xep_0045'].joinMUC(self.config.jidsalonmaster,
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannelmaster,
                                         self.config.NickName,
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
-        #join salon log
-        self.plugin['xep_0045'].joinMUC(self.config.jidsalonlog,
+        #join channel log
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannellog,
                                         self.config.NickName,
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
@@ -103,7 +103,7 @@ class CommandUserBot(sleekxmpp.ClientXMPP):
         
     def loginformation(self, msgdata):
         self.send_message( mbody=msgdata,
-                          mto=self.config.jidsalonlog,
+                          mto=self.config.jidchannellog,
                           mtype='groupchat')
 
     def muc_presenceCommand(self, presence):
@@ -120,11 +120,11 @@ class CommandUserBot(sleekxmpp.ClientXMPP):
     def message(self, msg):
 
         print self.config.jidagent
-        if msg['from'].bare == self.config.jidsalonlog:
+        if msg['from'].bare == self.config.jidchannellog:
             return
 
         if msg['from'] == self.config.jidagent or \
-                msg['from'].bare == self.config.jidsaloncommand or \
+                msg['from'].bare == self.config.jidchannelcommand or \
                 msg['mucnick'] =='SIVEO':
             return
 

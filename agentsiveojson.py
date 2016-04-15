@@ -70,22 +70,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::%s::presence" % conf.jidsaloncommand,
+        self.add_event_handler("muc::%s::presence" % conf.jidchannelcommand,
                                self.muc_presenceCommand)
 
-        self.add_event_handler("muc::%s::got_offline" % conf.jidsaloncommand,
+        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelcommand,
                                self.muc_offlineCommand)
 
-        self.add_event_handler("muc::%s::got_online" % conf.jidsaloncommand,
+        self.add_event_handler("muc::%s::got_online" % conf.jidchannelcommand,
                                self.muc_onlineCommand)
 
-        self.add_event_handler("muc::%s::presence" % conf.jidsalonmaster,
+        self.add_event_handler("muc::%s::presence" % conf.jidchannelmaster,
                                self.muc_presenceMaster)
 
-        self.add_event_handler("muc::%s::got_offline" % conf.jidsalonmaster,
+        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelmaster,
                                self.muc_offlineMaster)
 
-        self.add_event_handler("muc::%s::got_online" % conf.jidsalonmaster,
+        self.add_event_handler("muc::%s::got_online" % conf.jidchannelmaster,
                                self.muc_onlineMaster)
 
         self.add_event_handler('message', self.message)
@@ -112,17 +112,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
 
         
-        self.plugin['xep_0045'].joinMUC(self.config.jidsaloncommand,
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannelcommand,
                                         self.config.NickName,
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
 
-        self.plugin['xep_0045'].joinMUC(self.config.jidsalonmaster,
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannelmaster,
                                         self.config.NickName,
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
         
-        self.plugin['xep_0045'].joinMUC(self.config.jidsalonlog,
+        self.plugin['xep_0045'].joinMUC(self.config.jidchannellog,
                                         self.config.NickName,
                                         password=self.config.passwordconnexionmuc,
                                         wait=True)
@@ -131,7 +131,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def loginformation(self,msgdata):
         self.send_message( mbody = msgdata,
-                           mto = self.config.jidsalonlog,
+                           mto = self.config.jidchannellog,
                            mtype ='groupchat')
 
     def register(self, iq):
@@ -273,8 +273,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'action' : 'infomachine',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidsaloncommand,
-            'who'    : "%s/%s"%(self.config.jidsaloncommand,self.config.NickName),
+            'deploiement' : self.config.jidchannelcommand,
+            'who'    : "%s/%s"%(self.config.jidchannelcommand,self.config.NickName),
             'machine': self.config.NickName,
             'plateforme' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
