@@ -1,24 +1,3 @@
-/**
- * (c) 2016 Siveo, http://http://www.siveo.net
- *
- * $Id$
- *
- * This file is part of Pulse .
- *
- * Pulse is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Pulse is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Pulse.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys,os
@@ -32,6 +11,7 @@ import base64
 import json
 import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp import jid
 import hashlib
 import shutil
 import errno
@@ -40,17 +20,25 @@ from lib.configuration import  parametreconf
 from lib.utils import *
 import plugins
 from optparse import OptionParser
+from lib.managesession import sessiondatainfo, session
 
 #addition chemin pour library and plugins
-pathbase = os.path.abspath(os.curdir)
-pathplugins = os.path.join(pathbase, "plugins")
-pathlib     = os.path.join(pathbase, "lib")
-sys.path.append(pathplugins)
-sys.path.append(pathlib)
+#os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
+#pathbase = os.path.abspath(os.curdir)
+#pathplugins = os.path.join(pathbase, "plugins")
+#pathlib     = os.path.join(pathbase, "lib")
+#sys.path.append(pathplugins)
+#sys.path.append(pathlib)
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "plugins"))
+
 logger = logging.getLogger()
 global restart
-global DEBUGPULSE
-DEBUGPULSE = 25
+#global DEBUGPULSE
+#DEBUGPULSE = 25
+
+
 if sys.version_info < (3, 0):
     reload(sys)
     sys.setdefaultencoding('utf8')
@@ -58,38 +46,49 @@ else:
     raw_input = input
 
 class MUCBot(sleekxmpp.ClientXMPP):
-    def __init__(self,conf):
+    def __init__(self,conf):#jid, password, room, nick):
+        logging.log(DEBUGPULSE,"start machine  %s Type %s" %( conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.passwordconnection)
         self.config = conf
-
+        self.agentcommande = jid.JID(self.config.agentcommande)
+        self.agentsiveo    = jid.JID(self.config.jidagentsiveo)
+        self.session = session()
+        self.ippublic = searchippublic()
+        if self.ippublic == "":
+            self.ippublic == None
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         self.md5reseau = hashlib.md5(obj['result']).hexdigest()
-
-        self.schedule('plugin update', 3600 , self.update_plugin, repeat=True)
-        self.schedule('monitor the network', 180 , self.networkMonitor, repeat=True)
+        # demande mise à jour toutes les heures.
+        self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
+        self.schedule('surveille reseau', 180 , self.networkMonitor, repeat=True)
+        # reload plugins list all 15 minutes
+        self.schedule('manage session', 60 , self.handlemanagesession, repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::%s::presence" % conf.jidchannelcommand,
+        self.add_event_handler("muc::%s::presence" % conf.jidsaloncommand,
                                self.muc_presenceCommand)
-
-        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelcommand,
+        """ sortie presense dans salon Command """
+        self.add_event_handler("muc::%s::got_offline" % conf.jidsaloncommand,
                                self.muc_offlineCommand)
-
-        self.add_event_handler("muc::%s::got_online" % conf.jidchannelcommand,
+        """ nouvelle presense dans salon Command """    
+        self.add_event_handler("muc::%s::got_online" % conf.jidsaloncommand,
                                self.muc_onlineCommand)
-
-        self.add_event_handler("muc::%s::presence" % conf.jidchannelmaster,
+        """ nouvelle presense dans salon Master """
+        self.add_event_handler("muc::%s::presence" % conf.jidsalonmaster,
                                self.muc_presenceMaster)
-
-        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelmaster,
+        """ desincription presense dans salon Master """
+        self.add_event_handler("muc::%s::got_offline" % conf.jidsalonmaster,
                                self.muc_offlineMaster)
-
-        self.add_event_handler("muc::%s::got_online" % conf.jidchannelmaster,
+        """ inscription presense dans salon Master """
+        self.add_event_handler("muc::%s::got_online" % conf.jidsalonmaster,
                                self.muc_onlineMaster)
-
+        #fonction appeler pour tous message
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
+
+    def handlemanagesession(self):
+        self.session.decrementesessiondatainfo()
 
     def networkMonitor(self):
         logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
@@ -110,38 +109,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
 
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
-
-        
-        self.plugin['xep_0045'].joinMUC(self.config.jidchannelcommand,
-                                        self.config.NickName,
-                                        password=self.config.passwordconnexionmuc,
-                                        wait=True)
-
-        self.plugin['xep_0045'].joinMUC(self.config.jidchannelmaster,
-                                        self.config.NickName,
-                                        password=self.config.passwordconnexionmuc,
-                                        wait=True)
-        
-        self.plugin['xep_0045'].joinMUC(self.config.jidchannellog,
-                                        self.config.NickName,
-                                        password=self.config.passwordconnexionmuc,
-                                        wait=True)
+        salon=[self.config.jidsaloncommand,self.config.jidsalonmaster,self.config.jidsalonlog]
+        for x in salon:
+        #join salon command
+            self.plugin['xep_0045'].joinMUC(x,
+                                            self.config.NickName,
+                                            # If a room password is needed, use:
+                                            password=self.config.passwordconnexionmuc,
+                                            wait=True)
 
         self.loginformation("agent %s ready"%self.config.jidagent)
 
     def loginformation(self,msgdata):
         self.send_message( mbody = msgdata,
-                           mto = self.config.jidchannellog,
+                           mto = self.config.jidsalonlog,
                            mtype ='groupchat')
 
     def register(self, iq):
-        """ This function is called for automatique registration """ 
+        """ cette fonction est appelee pour la registration automatique""" 
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
         resp['register']['password'] = self.password
-        #print  self.boundjid.user
-        #print self.password
         try:
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
@@ -157,78 +146,81 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def muc_message(self, msg):
-        if msg['type'] == "groupchat":
-            if msg['from'].user == "log":
-                return
-
-            if self.boundjid.bare == msg['from'].bare:
-                return
-            dataerreur={
-                            "action": "resultmsginfoerror",
-                            "sessionid" : "",
-                            "ret" :   255,
-                            "base64"  : False,
-                            "data": {"msg" : ""}
-            }
-            if self.config.ordreallagent == False :
-                if not (self.config.jidagentsiveo == msg['from'].bare or  msg['from'].user == 'master'):
-                    logging.log(DEBUGPULSE,"agent %s : treatment only message Master or SIVEO [muc or chat from %s] " % (self.boundjid.user,msg['from'].user))
-                    dataerreur['data']['msg'] = "treatment only message Master or SIVEO"
-                    self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='groupchat')
+        #permet commande de jid agentcommande
+        if not (msg['from'].user == 'master' or  msg['from'].user == self.agentcommande.user or msg['from'].user == self.agentsiveo.user) and \
+            (msg['body'] == "This room is not anonymous" or msg['from'].user == "log"):
+            return
+            if msg['type'] == "groupchat":
+                if self.boundjid.bare == msg['from'].bare:
                     return
+                dataerreur={
+                                "action": "resultmsginfoerror",
+                                "sessionid" : "",
+                                "ret" :   255,
+                                "base64"  : False,
+                                "data": {"msg" : ""}
+                }
 
-            try :
-                dataobj = json.loads(msg['body'])
+                if self.config.ordreallagent == False :
+                    #print self.config.jidagentsiveo
+                    if not (self.config.jidagentsiveo == msg['from'].bare or  msg['from'].user == 'master'):
+                        logging.log(DEBUGPULSE,"agent %s : treatment only message Master or SIVEO [muc or chat from %s] " % (self.boundjid.user,msg['from'].user))
+                        dataerreur['data']['msg'] = "treatment only message Master or SIVEO"
+                        self.send_message(  mto=msg['from'],
+                                                mbody=json.dumps(dataerreur),
+                                                mtype='groupchat')
+                        return
 
-                if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
-                    if dataobj.has_key('base64') and \
-                        ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or 
-                        (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
+                try :
+                    dataobj = json.loads(msg['body'])
+                    #print dataobj['action']
+                    if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
+                        if dataobj.has_key('base64') and \
+                            ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or 
+                            (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
+                                #data en base 64
+                                mydata = json.loads(base64.b64decode(dataobj['data']))
+                        else:
+                            mydata = dataobj['data']
 
-                            mydata = json.loads(base64.b64decode(dataobj['data']))
+                        if not dataobj.has_key('sessionid'):
+                            dataobj['sessionid']="absente"
+                        try:
+                            msg['body'] = ''
+                            logging.log(DEBUGPULSE,"call plugin %s from %s" % (dataobj['action'],msg['from'].user))
+                            call_plugin(dataobj['action'],
+                                        self,
+                                        dataobj['action'],
+                                        dataobj['sessionid'],
+                                        mydata,
+                                        msg,
+                                        dataerreur
+                                        )
+                        except TypeError:
+                            logging.error("TypeError execution plugin %s " % sys.exc_info()[0])
+                            dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
+                            dataerreur['action'] = "result%s"%dataobj['action']
+                            self.send_message(  mto=msg['from'],
+                                                mbody=json.dumps(dataerreur),
+                                                mtype='groupchat')
+                        except Exception as e:
+                            logging.error("execution plugin %s " % str(e))
+                            dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
+                            dataerreur['action'] = "result%s"%dataobj['action']
+                            self.send_message(  mto=msg['from'],
+                                                mbody=json.dumps(dataerreur),
+                                                mtype='groupchat')
                     else:
-                        mydata = dataobj['data']
-
-                    if not dataobj.has_key('sessionid'):
-                        dataobj['sessionid']="absente"
-                    try:
-                        msg['body'] = ''
-                        logging.log(DEBUGPULSE,"call plugin %s from %s" % (dataobj['action'],msg['from'].user))
-                        call_plugin(dataobj['action'],
-                                    self,
-                                    dataobj['action'],
-                                    dataobj['sessionid'],
-                                    mydata,
-                                    msg,
-                                    dataerreur
-                                    )
-                    except TypeError:
-
-                        dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
-                        dataerreur['action'] = "result%s"%dataobj['action']
+                        dataerreur['data']['msg'] = "ERROR : Action ignored"
                         self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='groupchat')
-                    except :
-
-                        dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
-                        dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='groupchat')
-                else:
-                    dataerreur['data']['msg'] = "ERROR : Action ignored"
+                                                mbody=json.dumps(dataerreur),
+                                                mtype='groupchat')
+                except Exception as e:
+                    logging.error("structure Message %s   %s " %(msg,str(e)))
+                    dataerreur['data']['msg'] = "ERROR : Message structure"
                     self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='groupchat')
-            except:
-
-                dataerreur['data']['msg'] = "ERROR : Message structure"
-                self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='groupchat')
+                                                mbody=json.dumps(dataerreur),
+                                                mtype='groupchat')
 
     def muc_offlineCommand(self, presence):
         pass
@@ -246,9 +238,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def update_plugin(self):
-
+        #envoi information plugin et machine vers Master
         dataobj=self.seachInfoMachine()
-
+        #loggin.info("update plugin for hostname %s"%dataobj['machine'][:-3])
         self.send_message(mto = "master@%s"%self.config.chatserver,
                             mbody = json.dumps(dataobj),
                             mtype = 'groupchat')
@@ -259,13 +251,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         for t in er.messagejson['listipinfo']:
             if t['ipaddress'] == self.config.ipxmpp:
                 xmppmask = t['mask']
-                xmppbroadcast = t['broadcast']
+                try:
+                    xmppbroadcast = t['broadcast']
+                except :
+                    xmppbroadcast = ""
                 xmppdhcp = t['dhcp']
                 xmppdhcpserver = t['dhcpserver']
                 xmppgateway = t['gateway']
                 xmppmacaddress = t['macaddress']
                 xmppmacnonreduite = t['macnonreduite']
+                ipconnection = self.config.Server
+                portconnection =self.config.Port
                 break;
+
 
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
 
@@ -273,8 +271,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'action' : 'infomachine',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidchannelcommand,
-            'who'    : "%s/%s"%(self.config.jidchannelcommand,self.config.NickName),
+            'deploiement' : self.config.jidsaloncommand,
+            'who'    : "%s/%s"%(self.config.jidsaloncommand,self.config.NickName),
             'machine': self.config.NickName,
             'plateforme' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
@@ -291,7 +289,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppdhcpserver' : xmppdhcpserver,
             'xmppgateway' : xmppgateway,
             'xmppmacaddress' : xmppmacaddress,
-            'xmppmacnonreduite' : xmppmacnonreduite
+            'xmppmacnonreduite' : xmppmacnonreduite,
+            'ipconnection':ipconnection,
+            'portconnection':portconnection,
+            'classutil' : self.config.classutil,
+            'ippublic' : self.ippublic
         }
         for element in os.listdir('plugins'):
             if element.endswith('.py') and element.startswith('plugin_'):
@@ -360,16 +362,26 @@ def doTask():
 
 if __name__ == '__main__':
     tg = parametreconf()
-    print tg.debug
+    #if sys.platform.startswith('linux') and  os.getuid() != 0:
+        #print "agent doit etre en root"
+        #sys.exit(0)  
+    #elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
+        #print "agent windows doit etre en admin"
+        #sys.exit(0)
+    #elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
+        #print "agent mac doit etre en admin"
+        #sys.exit(0)
     if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
-        tg.debug = DEBUGPULSE
+        tg.debug = 25
+        DEBUGPULSE = 25
     optp = OptionParser()
     optp.add_option("-d", "--deamon",action="store_true", 
                  dest="deamon", default=False,
                   help="deamonize process")
     opts, args = optp.parse_args()
-    if not opts.deamon :
-
+    if not opts.deamon :#tg.debug,
+        #logging.basicConfig(level=tg.debug,
+                        #format='[AGENT] %(levelname)-8s %(message)s')
         logging.basicConfig(level=tg.debug,
             format='[%(name)s.%(funcName)s:%(lineno)d] %(message)s')
         doTask()

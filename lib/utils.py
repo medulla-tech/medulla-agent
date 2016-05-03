@@ -1,24 +1,3 @@
-/**
- * (c) 2016 Siveo, http://http://www.siveo.net
- *
- * $Id$
- *
- * This file is part of Pulse .
- *
- * Pulse is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Pulse is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Pulse.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import netifaces
@@ -34,6 +13,14 @@ from pprint import pprint
 import hashlib
 from functools import wraps
 import base64
+from configuration import  parametreconf
+import urllib
+#config = parametreconf()
+#print config.debug
+#if config.debug == "LOG" or config.debug == "DEBUGPULSE":
+    #config.debug = DEBUGPULSE
+DEBUGPULSE=25
+
 
 if sys.platform.startswith('win'):
     import wmi
@@ -85,9 +72,11 @@ def get_connection_name_from_guid(iface_guids):
     return iface_names
 
 
+#x = netifaces.interfaces()
+#pprint(get_connection_name_from_guid(x))
 
 def CreateWinUser(login,Password,Groups=['Users']):
-    # Test if the user exists
+    # Controle si l'utilisateur existe
     try:
         d = win32net.NetUserGetInfo(None,login, 1)
         return
@@ -99,7 +88,11 @@ def CreateWinUser(login,Password,Groups=['Users']):
     d['comment'] = ''
     d['flags'] = win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT | win32netcon.UF_PASSWD_CANT_CHANGE | win32netcon.UF_DONT_EXPIRE_PASSWD
     d['priv'] = win32netcon.USER_PRIV_USER
+    ##d['home_dir'] = str(objuser['Home'])
     win32net.NetUserAdd(None, 1, d)
+    #d = win32net.NetUserGetInfo(None, 'TestUser', 10)
+    #d['full_name'] = objuser['FullName']
+    #d = win32net.NetUserSetInfo(None, 'TestUser', 10, d)
     domain = win32api.GetDomainName()
 
     d = [{"domainandname" : domain+"\\"+login}]
@@ -156,15 +149,13 @@ def isWinUserAdmin():
 
 #mac OS
 def isMacOsUserAdmin():
-    obj=simplecommande("cat /etc/master.passwd")
-    #for linux "cat /etc/shadow")
+    obj=simplecommande("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
     if int(obj['code']) == 0:
         return True
     else:
         return False
-    
-    
 
+#listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(pathplugins) if fn.endswith(".py") and fn != "__init__.py"]
 def name_random(nb, pref=""):
     a="abcdefghijklnmopqrstuvwxyz0123456789"
     d=pref
@@ -187,7 +178,7 @@ def load_plugin(name):
 def call_plugin(name, *args, **kwargs):    
     pluginaction = load_plugin(name)
     pluginaction.action(*args, **kwargs)
-    
+
 
 def getIpListreduite():
     listmacadress={}
@@ -210,7 +201,6 @@ def name_jid():
     cc.sort()
     return dd[cc[0]]
 
-   
 def reduction_mac(mac):
     mac=mac.lower()
     mac = mac.replace(":","")
@@ -289,9 +279,7 @@ def is_valid_ipv6(ip):
     """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
     return pattern.match(ip) is not None
 
-
-
-#linux systemd or init
+#linux systemd ou init
 def typelinux():
     p = subprocess.Popen('cat /proc/1/comm',
                             shell=True,
@@ -312,7 +300,9 @@ def isprogramme(name):
     result = p.stdout.readlines()
     obj['code']=p.wait()
     obj['result']=result
-    
+    #print obj['code']
+    #print obj['result']
+    #print obj
     if obj['result'] != "":
         return True
     else:
@@ -340,9 +330,6 @@ def simplecommandestr(cmd):
     obj['result']="\n".join(result)
     return obj
 
-
-    
-    
 def servicelinuxinit(name,action):
     obj={}
     p = subprocess.Popen("/etc/init.d/%s %s"%(name,action),
@@ -396,9 +383,7 @@ def service(name, action): #start | stop | restart | reload
     elif sys.platform.startswith('darwin'):
         pass
     return obj
- 
-#listservice()
-#FusionInventory Agent
+
 def listservice():
     pythoncom.CoInitialize ()
     try:
@@ -422,8 +407,8 @@ def joint_compteAD():
                 print computer.SystemStartupOptions
                 computer.JoinDomainOrWorkGroup(domaine,password,login,group,3  )
     finally:
-        pythoncom.CoUninitialize ()        
-        
+        pythoncom.CoUninitialize ()
+
 def windowsservice(name, action):
     pythoncom.CoInitialize ()
     try:
@@ -445,9 +430,9 @@ def windowsservice(name, action):
             dev.StopService()
             dev.StartService()
         else:
-            pass        
-            
+            pass
 
+#windowsservice("FusionInventory-Agent", "Stop")
 
 def methodservice():
     import pythoncom
@@ -459,7 +444,7 @@ def methodservice():
             print method  
     finally:
         pythoncom.CoUninitialize ()
-        
+
 def file_get_content(path):
     inputFile = open(path, 'r')     #Open test.txt file in read mode
     content = inputFile.read()
@@ -471,7 +456,16 @@ def file_put_content(filename, contents,mode="w"):
     fh.write(contents)  
     fh.close()  
 
+##windows
+#def listusergroup():
+    #import wmi
+    #c = wmi.WMI()
+    #for group in c.Win32_Group():
+    #print group.Caption
+    #for user in group.associators("Win32_GroupUser"):
+        #print "  ", user.Caption
 
+#decorateur pour simplifier les plugins
 def pulginprocess(func):
     def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
         resultaction = "result%s"%action
@@ -486,6 +480,8 @@ def pulginprocess(func):
         dataerreur['sessionid'] = sessionid
         try:
             response = func( objetxmpp, action, sessionid, data, message, dataerreur, result)
+            #encode  result['data'] si besoin
+            #print result
             if result['base64'] == True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             objetxmpp.send_message( mto=message['from'],
@@ -499,13 +495,11 @@ def pulginprocess(func):
         return response
     return wrapper
 
-
-
+#determine adresse ip utiliser pour xmpp
 def getIpXmppInterface(ipadress,Port):
     resultip =  ''
     if sys.platform.startswith('linux'):
         obj = simplecommande("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
-
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i]=obj['result'][i].rstrip('\n')
@@ -524,6 +518,7 @@ def getIpXmppInterface(ipadress,Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     else:
+        logging.info("getIpXmppInterface not tester for darwin")
         obj = simplecommande("netstat -a | grep %s | grep ESTABLISHED"%Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -551,3 +546,13 @@ def subnetnetwork(adressmachine, mask):
     adressmachine = adressmachine.split(":")[0]
     reseaumachine = ipV4toDecimal(adressmachine) &  ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
+
+def searchippublic(site = 1):
+    if site == 1:
+        page = urllib.urlopen("http://ifconfig.co/json").read()
+        objip = json.loads(page)
+        return objip['ip']
+    else:
+        page = urllib.urlopen("http://www.monip.org/").read()
+        ip = page.split("IP : ")[1].split("<br>")[0]
+        return ip

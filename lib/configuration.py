@@ -1,23 +1,3 @@
-/**
- * (c) 2016 Siveo, http://http://www.siveo.net
- *
- * $Id$
- *
- * This file is part of Pulse .
- *
- * Pulse is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Pulse is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Pulse.  If not, see <http://www.gnu.org/licenses/>.
- */
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import netifaces
@@ -31,7 +11,29 @@ import logging
 import ConfigParser
 import utils
 from  fichierdecomf import fileconf
+from sleekxmpp import jid
 
+def changeconnection(port, ipserver, jid, urlguacamole):
+    Config = ConfigParser.ConfigParser()
+    Config.read(fileconf)
+    Config.set('connection', 'port'  , str(port) )
+    Config.set('connection', 'server', str(ipserver))
+    Config.set('global', 'agentcommande', str(jid))
+    Config.set('type', 'baseurlguacamole', str(urlguacamole))
+    with open(fileconf, 'wb') as configfile:
+        Config.write(configfile)
+
+# Singleton/SingletonDecorator.py
+class SingletonDecorator:
+    def __init__(self,klass):
+        self.klass = klass
+        self.instance = None
+    def __call__(self,*args,**kwds):
+        if self.instance == None:
+            self.instance = self.klass(*args,**kwds)
+        return self.instance
+
+@SingletonDecorator
 class parametreconf:
     def __init__(self,typeconf='agent'):
         Config = ConfigParser.ConfigParser()
@@ -39,20 +41,52 @@ class parametreconf:
         self.Port= Config.get('connection', 'port')
         self.Server= Config.get('connection', 'server')
         self.passwordconnection=Config.get('connection', 'password')
-        self.jidchannelmaster="master@%s"%Config.get('channel', 'server')
-        self.jidchannellog="log@%s"%Config.get('channel', 'server')
-        self.jidchannelcommand="command@%s"%Config.get('channel', 'server')
-        self.passwordconnexionmuc=Config.get('channel', 'password')
-        self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
-        self.chatserver=Config.get('chat', 'server')
-        self.jidagent="%s@%s/%s"%(utils.name_jid(),Config.get('chat', 'server'),platform.node())
-        platform.node()
-        self.logfile = Config.get('global', 'logfile')
-        
         try:
             self.agenttype = Config.get('type', 'agenttype')
         except:
             self.agenttype = "machine"
+        try:
+            self.agentcommande = Config.get('global', 'agentcommande')
+        except:
+            self.agentcommande=""
+        #########salon############
+        self.jidsalonmaster="master@%s"%Config.get('salon', 'server')
+        self.jidsalonlog="log@%s"%Config.get('salon', 'server')
+        #salon de deploiement
+        self.passwordconnexionmuc=Config.get('salon', 'password')
+        self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
+        ########chat#############
+        # le jidagent doit être la plus petite valeur de la liste des macs.
+        self.chatserver=Config.get('chat', 'server')
+        # plus petite mac adress
+        nameuser = utils.name_jid()
+        self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'server'),platform.node())
+        # jid hostname
+        #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
+        platform.node()
+        self.logfile = Config.get('global', 'logfile')
+
+        #information configuration dynamique
+        self.confserver = Config.get('configurationserver', 'confserver')
+        self.confport   = Config.get('configurationserver', 'confport')
+        self.confpassword = Config.get('configurationserver', 'confpassword')
+        self.confjidsalon ="%s@%s"%(Config.get('configurationserver', 'confnamesalon'),Config.get('configurationserver', 'confdomainemuc'))
+        self.confpasswordmuc = Config.get('configurationserver', 'confpasswordmuc')
+
+        #print self.jidagent
+        #if Config.get('global', 'debug') == "INFO":
+            #self.debug = logging.INFO
+        #elif Config.get('global', 'debug') == "DEBUG":
+            #self.debug = logging.DEBUG
+        #elif Config.get('global', 'debug') == "ERROR":    
+            #self.debug = logging.ERROR
+        #elif Config.get('global', 'debug') == "NOTSET":
+            #self.debug = logging.NOTSET
+        #elif Config.get('global', 'debug') == "CRITICAL":
+            #self.debug = logging.CRITICAL 
+        #else:
+            #self.debug = 0
+        
         try:
             self.baseurlguacamole = Config.get('type', 'baseurlguacamole')
         except:
@@ -64,19 +98,30 @@ class parametreconf:
             self.debug = Config.get('global', 'debug')
         except:
             self.debug = logging.NOTSET 
+
+
+        try:
+            self.classutil = Config.get('global', 'classutil')
+        except:
+            self.classutil = "both"
+
         self.jidagentsiveo = "%s@%s"%(Config.get('global', 'ordre'),Config.get('chat', 'server'))
         self.ordreallagent = Config.getboolean('global', 'inter_agent')
         self.showinfomaster = Config.getboolean('master', 'showinfo')
         self.showplugins = Config.getboolean('master', 'showplugins')
+
+        if self.agenttype == "relaisserver":
+            self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
+        else:
+            jidserver = jid.JID(self.agentcommande)
+            self.jidsaloncommand="muc%s@%s"%(jidserver.user,Config.get('salon', 'server'))
         try:
-            self.host = Config.get('mysql', 'host')
-            self.user = Config.get('mysql', 'user')
-            self.password = Config.get('mysql', 'password')
-            self.database = Config.get('mysql', 'database')
-            self.sgbd = True
-            self.inventory = Config.get('inventorypulse', 'inventory')
+            jidtest=Config.get('test', 'jidtest')
+            self.jidagent = jidtest
         except:
-            self.sgbd = False
+            pass
+        #self.jidsaloncommand="command@%s"%Config.get('salon', 'server')
+
         self.information={}
         self.PlateformSystem=platform.platform()
         self.information['plateform']=self.PlateformSystem
@@ -96,8 +141,7 @@ class parametreconf:
         self.information['processor']=self.ProcessorIdentifier
         self.Architecture=platform.architecture()
         self.information['archi']=self.Architecture
-  
-  
+
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
@@ -147,7 +191,7 @@ class parametreconf:
         return lst
 
     def __str__(self):
-        return str(self.re)
+        return str(self.__dict__)
 
     def jsonobj(self):
         return json.dumps(self.re)
@@ -175,7 +219,7 @@ def listMacAdressWinOs():
         if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :            
             if "phy" not in ligne.lower():
                 ll=ligne.split(' ')[0].strip()+"%d"%i
-            else :           
+            else :
                 lst[ll]=ligne.split(':')[1].strip()
                 i=i+1
     return lst
@@ -188,3 +232,5 @@ def listMacAdressLinuxOs():
             t = ligne.strip().split(' ')
             lst[t[0]]=t[-1]
     return lst
+
+
