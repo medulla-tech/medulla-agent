@@ -22,7 +22,7 @@ import plugins
 from optparse import OptionParser
 from lib.managesession import sessiondatainfo, session
 
-#addition chemin pour library and plugins
+#additional path for library and plugins
 #os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 #pathbase = os.path.abspath(os.curdir)
 #pathplugins = os.path.join(pathbase, "plugins")
@@ -58,7 +58,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.ippublic == None
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         self.md5reseau = hashlib.md5(obj['result']).hexdigest()
-        # demande mise à jour toutes les heures.
+        # update every hour
         self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
         self.schedule('surveille reseau', 180 , self.networkMonitor, repeat=True)
         # reload plugins list all 15 minutes
@@ -66,24 +66,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::%s::presence" % conf.jidsaloncommand,
+        self.add_event_handler("muc::%s::presence" % conf.jidchannelcommand,
                                self.muc_presenceCommand)
-        """ sortie presense dans salon Command """
-        self.add_event_handler("muc::%s::got_offline" % conf.jidsaloncommand,
+        """ sortie presense dans channel Command """
+        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelcommand,
                                self.muc_offlineCommand)
-        """ nouvelle presense dans salon Command """    
-        self.add_event_handler("muc::%s::got_online" % conf.jidsaloncommand,
+        """ nouvelle presense dans channel Command """    
+        self.add_event_handler("muc::%s::got_online" % conf.jidchannelcommand,
                                self.muc_onlineCommand)
-        """ nouvelle presense dans salon Master """
-        self.add_event_handler("muc::%s::presence" % conf.jidsalonmaster,
+        """ nouvelle presense dans channel Master """
+        self.add_event_handler("muc::%s::presence" % conf.jidchannelmaster,
                                self.muc_presenceMaster)
-        """ desincription presense dans salon Master """
-        self.add_event_handler("muc::%s::got_offline" % conf.jidsalonmaster,
+        """ desincription presense dans channel Master """
+        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelmaster,
                                self.muc_offlineMaster)
-        """ inscription presense dans salon Master """
-        self.add_event_handler("muc::%s::got_online" % conf.jidsalonmaster,
+        """ inscription presense dans channel Master """
+        self.add_event_handler("muc::%s::got_online" % conf.jidchannelmaster,
                                self.muc_onlineMaster)
-        #fonction appeler pour tous message
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
 
@@ -109,9 +108,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
 
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
-        salon=[self.config.jidsaloncommand,self.config.jidsalonmaster,self.config.jidsalonlog]
-        for x in salon:
-        #join salon command
+        channel=[self.config.jidchannelcommand,self.config.jidchannelmaster,self.config.jidchannellog]
+        for x in channel:
             self.plugin['xep_0045'].joinMUC(x,
                                             self.config.NickName,
                                             # If a room password is needed, use:
@@ -122,7 +120,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def loginformation(self,msgdata):
         self.send_message( mbody = msgdata,
-                           mto = self.config.jidsalonlog,
+                           mto = self.config.jidchannellog,
                            mtype ='groupchat')
 
     def register(self, iq):
@@ -137,7 +135,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except IqError as e:
             logging.error("Could not register account: %s" %\
                     e.iq['error']['text'])
-            #self.disconnect()
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
@@ -162,7 +159,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 }
 
                 if self.config.ordreallagent == False :
-                    #print self.config.jidagentsiveo
                     if not (self.config.jidagentsiveo == msg['from'].bare or  msg['from'].user == 'master'):
                         logging.log(DEBUGPULSE,"agent %s : treatment only message Master or SIVEO [muc or chat from %s] " % (self.boundjid.user,msg['from'].user))
                         dataerreur['data']['msg'] = "treatment only message Master or SIVEO"
@@ -173,7 +169,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
                 try :
                     dataobj = json.loads(msg['body'])
-                    #print dataobj['action']
                     if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                         if dataobj.has_key('base64') and \
                             ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or 
@@ -238,9 +233,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def update_plugin(self):
-        #envoi information plugin et machine vers Master
+        # Send plugin and machine informations to Master
         dataobj=self.seachInfoMachine()
-        #loggin.info("update plugin for hostname %s"%dataobj['machine'][:-3])
         self.send_message(mto = "master@%s"%self.config.chatserver,
                             mbody = json.dumps(dataobj),
                             mtype = 'groupchat')
@@ -271,10 +265,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'action' : 'infomachine',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidsaloncommand,
-            'who'    : "%s/%s"%(self.config.jidsaloncommand,self.config.NickName),
+            'deploiement' : self.config.jidchannelcommand,
+            'who'    : "%s/%s"%(self.config.jidchannelcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'plateforme' : platform.platform(),
+            'plateform' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
             'portxmpp' : self.config.Port,
