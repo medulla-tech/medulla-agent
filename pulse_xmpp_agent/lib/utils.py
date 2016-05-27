@@ -518,7 +518,7 @@ def getIpXmppInterface(ipadress,Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     else:
-        logging.info("getIpXmppInterface not tester for darwin")
+        logging.info("getIpXmppInterface not tested for darwin")
         obj = simplecommande("netstat -a | grep %s | grep ESTABLISHED"%Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
