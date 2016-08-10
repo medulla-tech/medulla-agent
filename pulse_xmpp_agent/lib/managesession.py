@@ -36,6 +36,9 @@ class sessiondatainfo:
         self.datasession = datasession
         self.functionend = functionend
 
+    def getdatasession(self):
+        return self.datasession
+
     def decrementation(self):
         self.timevalid = self.timevalid - 1
         if self.timevalid == 0:

@@ -15,10 +15,7 @@ from functools import wraps
 import base64
 from configuration import  parametreconf
 import urllib
-#config = parametreconf()
-#print config.debug
-#if config.debug == "LOG" or config.debug == "DEBUGPULSE":
-    #config.debug = DEBUGPULSE
+
 DEBUGPULSE=25
 
 
@@ -72,9 +69,6 @@ def get_connection_name_from_guid(iface_guids):
     return iface_names
 
 
-#x = netifaces.interfaces()
-#pprint(get_connection_name_from_guid(x))
-
 def CreateWinUser(login,Password,Groups=['Users']):
     # Controle si l'utilisateur existe
     try:
@@ -88,13 +82,8 @@ def CreateWinUser(login,Password,Groups=['Users']):
     d['comment'] = ''
     d['flags'] = win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT | win32netcon.UF_PASSWD_CANT_CHANGE | win32netcon.UF_DONT_EXPIRE_PASSWD
     d['priv'] = win32netcon.USER_PRIV_USER
-    ##d['home_dir'] = str(objuser['Home'])
     win32net.NetUserAdd(None, 1, d)
-    #d = win32net.NetUserGetInfo(None, 'TestUser', 10)
-    #d['full_name'] = objuser['FullName']
-    #d = win32net.NetUserSetInfo(None, 'TestUser', 10, d)
     domain = win32api.GetDomainName()
-
     d = [{"domainandname" : domain+"\\"+login}]
     for gr in Groups:
         win32net.NetLocalGroupAddMembers(None, gr, 3, d)
@@ -154,6 +143,8 @@ def isMacOsUserAdmin():
         return True
     else:
         return False
+    
+    
 
 #listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(pathplugins) if fn.endswith(".py") and fn != "__init__.py"]
 def name_random(nb, pref=""):
@@ -178,7 +169,7 @@ def load_plugin(name):
 def call_plugin(name, *args, **kwargs):    
     pluginaction = load_plugin(name)
     pluginaction.action(*args, **kwargs)
-
+    
 
 def getIpListreduite():
     listmacadress={}
@@ -201,6 +192,7 @@ def name_jid():
     cc.sort()
     return dd[cc[0]]
 
+   
 def reduction_mac(mac):
     mac=mac.lower()
     mac = mac.replace(":","")
@@ -279,6 +271,8 @@ def is_valid_ipv6(ip):
     """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
     return pattern.match(ip) is not None
 
+
+
 #linux systemd ou init
 def typelinux():
     p = subprocess.Popen('cat /proc/1/comm',
@@ -330,6 +324,9 @@ def simplecommandestr(cmd):
     obj['result']="\n".join(result)
     return obj
 
+
+    
+    
 def servicelinuxinit(name,action):
     obj={}
     p = subprocess.Popen("/etc/init.d/%s %s"%(name,action),
@@ -383,6 +380,7 @@ def service(name, action): #start | stop | restart | reload
     elif sys.platform.startswith('darwin'):
         pass
     return obj
+ 
 
 def listservice():
     pythoncom.CoInitialize ()
@@ -407,8 +405,8 @@ def joint_compteAD():
                 print computer.SystemStartupOptions
                 computer.JoinDomainOrWorkGroup(domaine,password,login,group,3  )
     finally:
-        pythoncom.CoUninitialize ()
-
+        pythoncom.CoUninitialize ()        
+        
 def windowsservice(name, action):
     pythoncom.CoInitialize ()
     try:
@@ -430,9 +428,8 @@ def windowsservice(name, action):
             dev.StopService()
             dev.StartService()
         else:
-            pass
-
-#windowsservice("FusionInventory-Agent", "Stop")
+            pass        
+ 
 
 def methodservice():
     import pythoncom
@@ -444,7 +441,7 @@ def methodservice():
             print method  
     finally:
         pythoncom.CoUninitialize ()
-
+        
 def file_get_content(path):
     inputFile = open(path, 'r')     #Open test.txt file in read mode
     content = inputFile.read()
@@ -495,11 +492,16 @@ def pulginprocess(func):
         return response
     return wrapper
 
+
+
 #determine adresse ip utiliser pour xmpp
 def getIpXmppInterface(ipadress,Port):
     resultip =  ''
     if sys.platform.startswith('linux'):
+        logging.log(DEBUGPULSE,"recherche adresse ip serveur XMPP")
+        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress)
         obj = simplecommande("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
+        logging.log(DEBUGPULSE,"netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i]=obj['result'][i].rstrip('\n')
@@ -518,7 +520,6 @@ def getIpXmppInterface(ipadress,Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     else:
-        logging.info("getIpXmppInterface not tested for darwin")
         obj = simplecommande("netstat -a | grep %s | grep ESTABLISHED"%Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -547,12 +548,58 @@ def subnetnetwork(adressmachine, mask):
     reseaumachine = ipV4toDecimal(adressmachine) &  ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
 
+
+
 def searchippublic(site = 1):
     if site == 1:
-        page = urllib.urlopen("http://ifconfig.co/json").read()
-        objip = json.loads(page)
-        return objip['ip']
+        try:
+            page = urllib.urlopen("http://ifconfig.co/json").read()
+            objip = json.loads(page)
+            return objip['ip']
+        except:
+            return searchippublic(2)
     else:
         page = urllib.urlopen("http://www.monip.org/").read()
         ip = page.split("IP : ")[1].split("<br>")[0]
         return ip
+
+
+# decorateur pour simplifier les plugins
+# verifie session existe.
+# pas de session end 
+def pulginmaster(func):
+    def wrapper( objetxmpp, action, sessionid, data, message, ret ):
+        if action.startswith("result"):
+            action = action[:6]
+        if objetxmpp.session.isexist(sessionid):
+            objsessiondata = objetxmpp.session.sessionfromsessiondata(sessionid)
+        else:
+            objsessiondata = None
+        response = func( objetxmpp, action, sessionid, data, message, ret, objsessiondata)
+        return response
+    return wrapper
+
+
+
+def pulginmastersessionaction( sessionaction, timeminute = 10 ):
+    def decorateur(func):
+        def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
+            #avant
+            if action.startswith("result"):
+                action = action[6:]
+            if objetxmpp.session.isexist(sessionid):
+                if sessionaction == "actualise":
+                    objetxmpp.session.reactualisesession(sessionid, 10)
+                objsessiondata = objetxmpp.session.sessionfromsessiondata(sessionid)
+            else:
+                objsessiondata = None
+            response = func( objetxmpp, action, sessionid, data, message, ret, dataobj, objsessiondata)
+            if sessionaction == "clear" and objsessiondata != None:
+                objetxmpp.session.clear(sessionid)
+            elif sessionaction == "actualise":
+                objetxmpp.session.reactualisesession(sessionid, 10)
+            return response
+        return wrapper
+    return decorateur
+
+

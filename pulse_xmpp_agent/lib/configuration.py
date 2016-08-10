@@ -13,13 +13,12 @@ import utils
 from  fichierdecomf import fileconf
 from sleekxmpp import jid
 
-def changeconnection(port, ipserver, jid, urlguacamole):
+def changeconnection(port,ipserver,jid):
     Config = ConfigParser.ConfigParser()
     Config.read(fileconf)
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'agentcommande', str(jid))
-    Config.set('type', 'baseurlguacamole', str(urlguacamole))
     with open(fileconf, 'wb') as configfile:
         Config.write(configfile)
 
@@ -41,18 +40,27 @@ class parametreconf:
         self.Port= Config.get('connection', 'port')
         self.Server= Config.get('connection', 'server')
         self.passwordconnection=Config.get('connection', 'password')
+
+
+
         try:
             self.agenttype = Config.get('type', 'agenttype')
         except:
             self.agenttype = "machine"
+            
         try:
             self.agentcommande = Config.get('global', 'agentcommande')
         except:
             self.agentcommande=""
         #########salon############
+        #jidsalonmaster
+        #jidsalonlog
+        #jidsaloncommand
         self.jidsalonmaster="master@%s"%Config.get('salon', 'server')
         self.jidsalonlog="log@%s"%Config.get('salon', 'server')
         #salon de deploiement
+
+        
         self.passwordconnexionmuc=Config.get('salon', 'password')
         self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
         ########chat#############
@@ -73,20 +81,6 @@ class parametreconf:
         self.confjidsalon ="%s@%s"%(Config.get('configurationserver', 'confnamesalon'),Config.get('configurationserver', 'confdomainemuc'))
         self.confpasswordmuc = Config.get('configurationserver', 'confpasswordmuc')
 
-        #print self.jidagent
-        #if Config.get('global', 'debug') == "INFO":
-            #self.debug = logging.INFO
-        #elif Config.get('global', 'debug') == "DEBUG":
-            #self.debug = logging.DEBUG
-        #elif Config.get('global', 'debug') == "ERROR":    
-            #self.debug = logging.ERROR
-        #elif Config.get('global', 'debug') == "NOTSET":
-            #self.debug = logging.NOTSET
-        #elif Config.get('global', 'debug') == "CRITICAL":
-            #self.debug = logging.CRITICAL 
-        #else:
-            #self.debug = 0
-        
         try:
             self.baseurlguacamole = Config.get('type', 'baseurlguacamole')
         except:
@@ -110,17 +104,13 @@ class parametreconf:
         self.showinfomaster = Config.getboolean('master', 'showinfo')
         self.showplugins = Config.getboolean('master', 'showplugins')
 
+            
         if self.agenttype == "relaisserver":
             self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
         else:
             jidserver = jid.JID(self.agentcommande)
             self.jidsaloncommand="muc%s@%s"%(jidserver.user,Config.get('salon', 'server'))
-        try:
-            jidtest=Config.get('test', 'jidtest')
-            self.jidagent = jidtest
-        except:
-            pass
-        #self.jidsaloncommand="command@%s"%Config.get('salon', 'server')
+
 
         self.information={}
         self.PlateformSystem=platform.platform()
@@ -141,7 +131,8 @@ class parametreconf:
         self.information['processor']=self.ProcessorIdentifier
         self.Architecture=platform.architecture()
         self.information['archi']=self.Architecture
-
+  
+  
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
@@ -219,7 +210,7 @@ def listMacAdressWinOs():
         if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :            
             if "phy" not in ligne.lower():
                 ll=ligne.split(' ')[0].strip()+"%d"%i
-            else :
+            else :           
                 lst[ll]=ligne.split(':')[1].strip()
                 i=i+1
     return lst

@@ -22,21 +22,12 @@ import plugins
 from optparse import OptionParser
 from lib.managesession import sessiondatainfo, session
 
-#additional path for library and plugins
-#os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
-#pathbase = os.path.abspath(os.curdir)
-#pathplugins = os.path.join(pathbase, "plugins")
-#pathlib     = os.path.join(pathbase, "lib")
-#sys.path.append(pathplugins)
-#sys.path.append(pathlib)
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "plugins"))
 
 logger = logging.getLogger()
 global restart
-#global DEBUGPULSE
-#DEBUGPULSE = 25
 
 
 if sys.version_info < (3, 0):
@@ -47,7 +38,7 @@ else:
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
-        logging.log(DEBUGPULSE,"start machine  %s Type %s" %( conf.jidagent, conf.agenttype))
+        logging.log(DEBUGPULSE,"start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.passwordconnection)
         self.config = conf
         self.agentcommande = jid.JID(self.config.agentcommande)
@@ -66,25 +57,31 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::%s::presence" % conf.jidchannelcommand,
+        self.add_event_handler("muc::%s::presence" % conf.jidsaloncommand,
                                self.muc_presenceCommand)
-        """ sortie presense dans channel Command """
-        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelcommand,
+        """ sortie presense dans salon Command """
+        self.add_event_handler("muc::%s::got_offline" % conf.jidsaloncommand,
                                self.muc_offlineCommand)
-        """ nouvelle presense dans channel Command """    
-        self.add_event_handler("muc::%s::got_online" % conf.jidchannelcommand,
+        """ nouvelle presense dans salon Command """    
+        self.add_event_handler("muc::%s::got_online" % conf.jidsaloncommand,
                                self.muc_onlineCommand)
-        """ nouvelle presense dans channel Master """
-        self.add_event_handler("muc::%s::presence" % conf.jidchannelmaster,
+        """ nouvelle presense dans salon Master """
+        self.add_event_handler("muc::%s::presence" % conf.jidsalonmaster,
                                self.muc_presenceMaster)
-        """ desincription presense dans channel Master """
-        self.add_event_handler("muc::%s::got_offline" % conf.jidchannelmaster,
+        """ desincription presense dans salon Master """
+        self.add_event_handler("muc::%s::got_offline" % conf.jidsalonmaster,
                                self.muc_offlineMaster)
-        """ inscription presense dans channel Master """
-        self.add_event_handler("muc::%s::got_online" % conf.jidchannelmaster,
+        """ inscription presense dans salon Master """
+        self.add_event_handler("muc::%s::got_online" % conf.jidsalonmaster,
                                self.muc_onlineMaster)
+        #fonction appeler pour tous message
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
+
+        self.add_event_handler("pluginaction", self.pluginaction)
+
+    def pluginaction(self,result):
+        print result
 
     def handlemanagesession(self):
         self.session.decrementesessiondatainfo()
@@ -108,8 +105,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
 
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
-        channel=[self.config.jidchannelcommand,self.config.jidchannelmaster,self.config.jidchannellog]
-        for x in channel:
+        salon=[self.config.jidsaloncommand,self.config.jidsalonmaster,self.config.jidsalonlog]
+        for x in salon:
+        #join salon command
             self.plugin['xep_0045'].joinMUC(x,
                                             self.config.NickName,
                                             # If a room password is needed, use:
@@ -120,7 +118,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def loginformation(self,msgdata):
         self.send_message( mbody = msgdata,
-                           mto = self.config.jidchannellog,
+                           mto = self.config.jidsalonlog,
                            mtype ='groupchat')
 
     def register(self, iq):
@@ -135,87 +133,97 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except IqError as e:
             logging.error("Could not register account: %s" %\
                     e.iq['error']['text'])
+            #self.disconnect()
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
 
-    def message(self, msg):
+    def muc_message(self, msg):
         pass
 
-    def muc_message(self, msg):
+    def message(self, msg):
         #permet commande de jid agentcommande
-        if not (msg['from'].user == 'master' or  msg['from'].user == self.agentcommande.user or msg['from'].user == self.agentsiveo.user) and \
-            (msg['body'] == "This room is not anonymous" or msg['from'].user == "log"):
-            return
-            if msg['type'] == "groupchat":
-                if self.boundjid.bare == msg['from'].bare:
-                    return
-                dataerreur={
-                                "action": "resultmsginfoerror",
-                                "sessionid" : "",
-                                "ret" :   255,
-                                "base64"  : False,
-                                "data": {"msg" : ""}
-                }
+        if msg['type'] == "chat":
+            if not (msg['from'].user == 'master' or  msg['from'].user == self.agentcommande.user or msg['from'].user == self.agentsiveo.user) and \
+                (msg['body'] == "This room is not anonymous" or msg['from'].user == "log"):
+                return
+            print msg
+            if self.boundjid.bare == msg['from'].bare:
+                return
+            dataerreur={
+                            "action": "resultmsginfoerror",
+                            "sessionid" : "",
+                            "ret" :   255,
+                            "base64"  : False,
+                            "data": {"msg" : ""}
+            }
 
-                if self.config.ordreallagent == False :
-                    if not (self.config.jidagentsiveo == msg['from'].bare or  msg['from'].user == 'master'):
-                        logging.log(DEBUGPULSE,"agent %s : treatment only message Master or SIVEO [muc or chat from %s] " % (self.boundjid.user,msg['from'].user))
-                        dataerreur['data']['msg'] = "treatment only message Master or SIVEO"
-                        self.send_message(  mto=msg['from'],
-                                                mbody=json.dumps(dataerreur),
-                                                mtype='groupchat')
-                        return
-
-                try :
-                    dataobj = json.loads(msg['body'])
-                    if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
-                        if dataobj.has_key('base64') and \
-                            ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or 
-                            (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
-                                #data en base 64
-                                mydata = json.loads(base64.b64decode(dataobj['data']))
-                        else:
-                            mydata = dataobj['data']
-
-                        if not dataobj.has_key('sessionid'):
-                            dataobj['sessionid']="absente"
-                        try:
-                            msg['body'] = ''
-                            logging.log(DEBUGPULSE,"call plugin %s from %s" % (dataobj['action'],msg['from'].user))
-                            call_plugin(dataobj['action'],
-                                        self,
-                                        dataobj['action'],
-                                        dataobj['sessionid'],
-                                        mydata,
-                                        msg,
-                                        dataerreur
-                                        )
-                        except TypeError:
-                            logging.error("TypeError execution plugin %s " % sys.exc_info()[0])
-                            dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
-                            dataerreur['action'] = "result%s"%dataobj['action']
-                            self.send_message(  mto=msg['from'],
-                                                mbody=json.dumps(dataerreur),
-                                                mtype='groupchat')
-                        except Exception as e:
-                            logging.error("execution plugin %s " % str(e))
-                            dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
-                            dataerreur['action'] = "result%s"%dataobj['action']
-                            self.send_message(  mto=msg['from'],
-                                                mbody=json.dumps(dataerreur),
-                                                mtype='groupchat')
-                    else:
-                        dataerreur['data']['msg'] = "ERROR : Action ignored"
-                        self.send_message(  mto=msg['from'],
-                                                mbody=json.dumps(dataerreur),
-                                                mtype='groupchat')
-                except Exception as e:
-                    logging.error("structure Message %s   %s " %(msg,str(e)))
-                    dataerreur['data']['msg'] = "ERROR : Message structure"
+            if self.config.ordreallagent == False :
+                #print self.config.jidagentsiveo
+                print
+                print msg['from']
+                print
+                if not (self.config.jidagentsiveo == msg['from'].bare or  msg['from'].user == 'master'):
+                    logging.log(DEBUGPULSE,"agent %s : treatment only message Master or SIVEO [muc or chat from %s] " % (self.boundjid.user,msg['from'].user))
+                    dataerreur['data']['msg'] = "treatment only message Master or SIVEO"
                     self.send_message(  mto=msg['from'],
-                                                mbody=json.dumps(dataerreur),
-                                                mtype='groupchat')
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
+                    return
+
+            try :
+                dataobj = json.loads(msg['body'])
+                #print dataobj['action']
+                if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
+                    if dataobj.has_key('base64') and \
+                        ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or 
+                        (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
+                            #data en base 64
+                            mydata = json.loads(base64.b64decode(dataobj['data']))
+                    else:
+                        mydata = dataobj['data']
+
+                    if not dataobj.has_key('sessionid'):
+                        dataobj['sessionid']= name_random(6, "xmpp")
+
+                    del dataobj['data']
+                    try:
+                        msg['body']= dataobj
+                        logging.log(DEBUGPULSE,"call plugin %s from %s" % (dataobj['action'],msg['from'].user))
+                        
+                        call_plugin(dataobj['action'],
+                                    self,
+                                    dataobj['action'],
+                                    dataobj['sessionid'],
+                                    mydata,
+                                    msg,
+                                    dataerreur
+                                    )
+                    except TypeError:
+                        logging.error("TypeError execution plugin %s " % sys.exc_info()[0])
+                        dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
+                        dataerreur['action'] = "result%s"%dataobj['action']
+                        self.send_message(  mto=msg['from'],
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
+                    except Exception as e:
+                        logging.error("execution plugin %s " % str(e))
+                        dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
+                        dataerreur['action'] = "result%s"%dataobj['action']
+                        self.send_message(  mto=msg['from'],
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
+                else:
+                    dataerreur['data']['msg'] = "ERROR : Action ignored"
+                    self.send_message(  mto=msg['from'],
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
+            except Exception as e:
+                logging.error("structure Message %s   %s " %(msg,str(e)))
+                dataerreur['data']['msg'] = "ERROR : Message structure"
+                self.send_message(  mto=msg['from'],
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
 
     def muc_offlineCommand(self, presence):
         pass
@@ -235,9 +243,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def update_plugin(self):
         # Send plugin and machine informations to Master
         dataobj=self.seachInfoMachine()
+        #print "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+        #print "OBJET = %s"%dataobj
+        #print "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+        #loggin.info("update plugin for hostname %s"%dataobj['machine'][:-3])
         self.send_message(mto = "master@%s"%self.config.chatserver,
                             mbody = json.dumps(dataobj),
-                            mtype = 'groupchat')
+                            mtype = 'chat')
 
     def seachInfoMachine(self):
         er = networkagentinfo("master","infomachine")
@@ -258,17 +270,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 portconnection =self.config.Port
                 break;
 
-
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
 
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidchannelcommand,
-            'who'    : "%s/%s"%(self.config.jidchannelcommand,self.config.NickName),
+            'deploiement' : self.config.jidsaloncommand,
+            'who'    : "%s/%s"%(self.config.jidsaloncommand,self.config.NickName),
             'machine': self.config.NickName,
-            'plateform' : platform.platform(),
+            'plateforme' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
             'portxmpp' : self.config.Port,
@@ -356,15 +367,16 @@ def doTask():
 
 if __name__ == '__main__':
     tg = parametreconf()
-    #if sys.platform.startswith('linux') and  os.getuid() != 0:
-        #print "agent doit etre en root"
-        #sys.exit(0)  
-    #elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
-        #print "agent windows doit etre en admin"
-        #sys.exit(0)
-    #elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        #print "agent mac doit etre en admin"
-        #sys.exit(0)
+    print tg
+    if sys.platform.startswith('linux') and  os.getuid() != 0:
+        print "agent doit etre en root"
+        sys.exit(0)
+    elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
+        print "agent windows doit etre en admin"
+        sys.exit(0)
+    elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
+        print "agent mac doit etre en admin"
+        sys.exit(0)
     if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
         tg.debug = 25
         DEBUGPULSE = 25
