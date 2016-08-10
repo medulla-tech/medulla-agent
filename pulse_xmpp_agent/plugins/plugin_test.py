@@ -19,8 +19,7 @@
 # along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
 #
 #"""
-#This module is dedicated to analyse inventories sent by a Pulse 2 Client.
-#The original inventory is sent using one line per kind of
+#This plugin return unsimple text for test
 #"""
 
 from  lib.utils import pulginprocess
