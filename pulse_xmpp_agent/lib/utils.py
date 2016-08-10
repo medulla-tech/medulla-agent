@@ -550,6 +550,9 @@ def subnetnetwork(adressmachine, mask):
 
 
 
+
+
+
 def searchippublic(site = 1):
     if site == 1:
         try:
