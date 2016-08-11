@@ -105,7 +105,7 @@ class parametreconf:
         self.showplugins = Config.getboolean('master', 'showplugins')
 
             
-        if self.agenttype == "relaisserver":
+        if self.agenttype == "relayserver":
             self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
         else:
             jidserver = jid.JID(self.agentcommande)

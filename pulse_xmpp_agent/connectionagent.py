@@ -160,7 +160,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         print "session %s %s"%(msg['from'].resource, "MASTER")
         
         if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER":
-            print "Start1 agent server relais"
+            print "Start1 agent server relay"
             print "%s"%data['data']
             changeconnection(data['data'][1],data['data'][0],data['data'][2],data['data'][3])
             self.disconnect(wait=5)
@@ -254,7 +254,7 @@ def doTask():
 
     while True:
         restart = False
-        if tg.agenttype != "relaisserver":
+        if tg.agenttype != "relayserver":
             xmpp = MUCBot(tg)
             xmpp.register_plugin('xep_0030') # Service Discovery
             xmpp.register_plugin('xep_0045') # Multi-User Chat
