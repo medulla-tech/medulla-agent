@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-#from pulse_xmpp_agent import __version__
 
 setup(
     classifiers=[
