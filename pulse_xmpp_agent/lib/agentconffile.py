@@ -3,7 +3,7 @@
 
 import sys,os,platform
 
-conffilename = agentconf.ini
+conffilename = "agentconf.ini"
 
 if sys.platform.startswith('linux'):
     fileconf = os.path.join("/", "var", "lib" ,"pulse2", "clients" ,"config", conffilename)
