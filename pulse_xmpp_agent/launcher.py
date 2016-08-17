@@ -8,8 +8,7 @@ import os
 
 if __name__ == '__main__':
     tg = parametreconf()
-    print tg.agenttype
-    if tg.agenttype in ["relaisserver","relayserver"]:
+    if not tg.agenttype in ["relaisserver","relayserver"]:
         os.system('./connectionagent.py')
         os.system('./agentxmpp.py')
     else:
