@@ -10,7 +10,7 @@ import sys,os
 import logging
 import ConfigParser
 import utils
-from  fichierdecomf import fileconf
+from  agent-conffile import fileconf
 from sleekxmpp import jid
 
 def changeconnection(port,ipserver,jid):
