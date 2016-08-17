@@ -6,7 +6,7 @@ import sys,os,platform
 conffilename = "agentconf.ini"
 
 if sys.platform.startswith('linux'):
-    fileconf = os.path.join("/", "var", "lib" ,"pulse2", "clients" ,"config", conffilename)
+    fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent", conffilename)
 elif sys.platform.startswith('win'):
     fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", conffilename)
 elif sys.platform.startswith('darwin'):

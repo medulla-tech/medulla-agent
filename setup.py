@@ -20,7 +20,7 @@ setup(
     test_suite='',
     package_data={},
     entry_points={},
-    data_files=[('/var/lib/pulse2/clients/config', ['pulse_xmpp_agent/config/agentconf.ini']),('/var/lib/pulse2/clients/config', ['pulse_xmpp_agent/config/agent.ini']),],
+    data_files=[('/etc/pulse-xmpp-agent', ['pulse_xmpp_agent/config/agentconf.ini']),('/etc/pulse-xmpp-agent', ['pulse_xmpp_agent/config/agent.ini']),],
     extras_require={},
     install_requires=[],
     )
