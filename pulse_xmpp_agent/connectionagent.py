@@ -155,7 +155,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         print "session %s %s"%(msg['from'].resource, "MASTER")
 
         if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
-            logging.info("Start agent server relay configuration %s"%data['data'])
+            logging.info("Start relay server agent configuration %s"%data['data'])
             print data['data']
             logging.log(DEBUGPULSE,"write new config")
             changeconnection(data['data'][1],data['data'][0],data['data'][2],data['data'][3])
@@ -287,13 +287,13 @@ if __name__ == '__main__':
     #pp.pprint(tg.__dict__)
     #sys.exit(0)
     if sys.platform.startswith('linux') and  os.getuid() != 0:
-        print "agent doit etre en root"
+        print "Agent must be running as root"
         sys.exit(0)  
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
-        print "agent windows doit etre en admin"
+        print "Pulse agent must be running as Administrator"
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "agent mac doit etre en admin"
+        print "Pulse agent must be running as root"
         sys.exit(0)
     if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
         tg.debug = 25
