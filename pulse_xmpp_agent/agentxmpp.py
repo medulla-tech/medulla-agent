@@ -367,16 +367,16 @@ def doTask():
 
 if __name__ == '__main__':
     tg = parametreconf()
-    print tg
     if sys.platform.startswith('linux') and  os.getuid() != 0:
-        print "agent doit etre en root"
-        sys.exit(0)
+        print "Agent must be running as root"
+        sys.exit(0)  
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
-        print "agent windows doit etre en admin"
+        print "Pulse agent must be running as Administrator"
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "agent mac doit etre en admin"
+        print "Pulse agent must be running as root"
         sys.exit(0)
+
     if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
         tg.debug = 25
         DEBUGPULSE = 25
