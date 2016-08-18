@@ -41,17 +41,16 @@ else:
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
-        #newjidconf = conf.jidagent.split("@")
-        #newjidconf[0] = name_random(10,"conf")
-        #conf.jidagent = "@".join(newjidconf)
-
-        #a modifier uand connection regle
+        #attribution jid 
         newjidconf = conf.jidagent.split("@")
-        newjidconf[0] = "confdede"
-        conf.jidagent = "@".join(newjidconf)
+        resourcejid=newjidconf[1].split("/")
+        newjidconf[0] = name_random(10,"conf")
+        conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+name_random(10,"conf")
+
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
         #print conf.passwordconnection
+        
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
         self.ippublic = searchippublic()
@@ -60,8 +59,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.mastersalon="%s/MASTER"%self.config.confjidsalon
 
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(self.config.__dict__)
+        #pp = pprint.PrettyPrinter(indent=4)
+        #pp.pprint(self.config.__dict__)
 
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         #self.md5reseau = hashlib.md5(obj['result']).hexdigest()
@@ -74,6 +73,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
         # recupere presence dans salonconf
+        
         self.add_event_handler("muc::%s::presence" % conf.confjidsalon,
                                self.muc_presenceConf)
         """ sortie presense dans salon Command """
@@ -93,10 +93,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.ipxmpp = getIpXmppInterface(self.config.confserver, self.config.confport)
 
-        #join salon command
+        #join salon configuration
         self.plugin['xep_0045'].joinMUC(self.config.confjidsalon,
                                         self.config.NickName,
-                                        # If a room password is needed, use:
                                         password=self.config.confpasswordmuc,
                                         wait=True)
 
@@ -106,8 +105,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
         resp['register']['password'] = self.password
-        #print  self.boundjid.user
-        #print self.password
         try:
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
@@ -144,11 +141,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.infos_machine()
 
     def message(self, msg):
-        pass
-
-    def muc_message(self, msg):
-        if msg['body']=="This room is not anonymous":
+        if msg['body']=="This room is not anonymous" or msg['subject']=="Welcome!":
             return
+        print msg
         try : 
             data = json.loads(msg['body'])
         except:
@@ -158,12 +153,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
         print "session %s %s"%(msg['from'].user, "master" )
         print "session %s resultconnectionconf"%(data['action'])
         print "session %s %s"%(msg['from'].resource, "MASTER")
-        
-        if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER":
-            print "Start1 agent server relay"
-            print "%s"%data['data']
+
+        if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
+            logging.info("Start agent server relay configuration %s"%data['data'])
+            print data['data']
+            logging.log(DEBUGPULSE,"write new config")
             changeconnection(data['data'][1],data['data'][0],data['data'][2],data['data'][3])
-            self.disconnect(wait=5)
+        elif data['ret'] == 0:
+            logging.error("configuration dynamic error")
+        else:
+            return
+        self.disconnect(wait=5)
+
+    def muc_message(self, msg):
+        pass
 
     def infos_machine(self):
         #envoi information
@@ -174,7 +177,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataobj['base64'] = False
         self.send_message(mto = "master@%s"%self.config.chatserver,
                             mbody = json.dumps(dataobj),
-                            mtype = 'groupchat')
+                            mtype = 'chat')
 
 
     def seachInfoMachine(self):
@@ -283,17 +286,15 @@ if __name__ == '__main__':
     #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(tg.__dict__)
     #sys.exit(0)
-
-
-    #if sys.platform.startswith('linux') and  os.getuid() != 0:
-        #print "agent doit etre en root"
-        #sys.exit(0)  
-    #elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
-        #print "agent windows doit etre en admin"
-        #sys.exit(0)
-    #elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        #print "agent mac doit etre en admin"
-        #sys.exit(0)
+    if sys.platform.startswith('linux') and  os.getuid() != 0:
+        print "agent doit etre en root"
+        sys.exit(0)  
+    elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
+        print "agent windows doit etre en admin"
+        sys.exit(0)
+    elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
+        print "agent mac doit etre en admin"
+        sys.exit(0)
     if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
         tg.debug = 25
         DEBUGPULSE = 25

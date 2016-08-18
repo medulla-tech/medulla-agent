@@ -13,12 +13,14 @@ import utils
 from  agentconffile import fileconf
 from sleekxmpp import jid
 
-def changeconnection(port,ipserver,jid):
+
+def changeconnection(port,ipserver,jid,baseurlguacamole):
     Config = ConfigParser.ConfigParser()
     Config.read(fileconf)
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'agentcommande', str(jid))
+    Config.set('type', 'baseurlguacamole', str(baseurlguacamole))
     with open(fileconf, 'wb') as configfile:
         Config.write(configfile)
 
@@ -40,8 +42,6 @@ class parametreconf:
         self.Port= Config.get('connection', 'port')
         self.Server= Config.get('connection', 'server')
         self.passwordconnection=Config.get('connection', 'password')
-
-
 
         try:
             self.agenttype = Config.get('type', 'agenttype')
@@ -104,7 +104,6 @@ class parametreconf:
         self.showinfomaster = Config.getboolean('master', 'showinfo')
         self.showplugins = Config.getboolean('master', 'showplugins')
 
-            
         if self.agenttype == "relayserver":
             self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
         else:
@@ -131,8 +130,7 @@ class parametreconf:
         self.information['processor']=self.ProcessorIdentifier
         self.Architecture=platform.architecture()
         self.information['archi']=self.Architecture
-  
-  
+
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
