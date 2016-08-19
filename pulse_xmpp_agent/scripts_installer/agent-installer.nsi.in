@@ -1,0 +1,206 @@
+; Define a few variables
+!define PRODUCT_NAME "Pulse Agent"
+!define PRODUCT_PUBLISHER "SIVEO"
+!define PRODUCT_WEB_SITE "http://www.siveo.net"
+!define PRODUCT_VERSION "@@PRODUCT_VERSION@@"
+!define PRODUCT_DIR_REGKEY "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_ROOT_KEY "HKLM"
+
+; Variables replaced by the script calling the nsi
+!define DOWNLOADS_DIR "@@DOWNLOADS_DIR@@"
+!define PYTHON_MSI "@@PYTHON_MSI@@"
+!define PY_VCPYTHON27 "@@PY_VCPYTHON27@@"
+!define PY_WIN32 "@@PY_WIN32@@"
+!define PY_NETIFACES "@@PY_NETIFACES@@"
+!define PY_COMTYPES "@@PY_COMTYPES@@"
+!define PY_CONFIGPARSER "@@PY_CONFIGPARSER@@"
+!define PY_UTILS "@@PY_UTILS@@"
+!define PY_SLEEKXMPP "@@PY_SLEEKXMPP@@"
+!define PY_WMI "@@PY_WMI@@"
+!define PULSE_AGENT "@@PULSE_AGENT@@"
+!define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
+
+SetCompressor lzma
+
+; Modern UI installer stuff
+!include "MUI2.nsh"
+!define MUI_ABORTWARNING
+!define MUI_ICON "artwork/install.ico"
+!define MUI_WELCOMEPAGE_TITLE_3LINES
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_RIGHT
+!define MUI_HEADERIMAGE_BITMAP "artwork/header.bmp"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "artwork/wizard.bmp"
+
+; UI pages
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_COMPONENTS
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_LANGUAGE "English"
+
+
+Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}.exe"
+InstallDir "$PROGRAMFILES\Pulse"
+InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
+ShowInstDetails show
+
+; Define a few settings
+Section -SETTINGS
+  SetOutPath "$INSTDIR"
+  SetOverwrite ifnewer
+SectionEnd
+
+; Python installation
+Section "Python" sec_py
+  SetOutPath "$INSTDIR\tmp"
+  File "${DOWNLOADS_DIR}/${PYTHON_MSI}"
+  File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"
+  DetailPrint "Python Installation...."
+  DetailPrint "------------------------------------------------------"
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_MSI}" /quiet /norestart ALLUSERS=1`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27}" /quiet /norestart ALLUSERS=1`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  Delete $INSTDIR\tmp\${PYTHON_MSI}
+  Delete $INSTDIR\tmp\${PY_VCPYTHON27}
+SectionEnd
+
+; Installation of Python modules needed by Pulse Agent
+Section "Python Modules" sec_pymod
+  SetOutPath "$INSTDIR\tmp"
+  File "${DOWNLOADS_DIR}/${PY_WIN32}"
+  File "${DOWNLOADS_DIR}/${PY_NETIFACES}"
+  File "${DOWNLOADS_DIR}/${PY_COMTYPES}"
+  File "${DOWNLOADS_DIR}/${PY_CONFIGPARSER}"
+  File "${DOWNLOADS_DIR}/${PY_UTILS}"
+  File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"
+  File "${DOWNLOADS_DIR}/${PY_WMI}"
+  DetailPrint "Python modules Installation...."
+  DetailPrint "------------------------------------------------------"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" netifaces`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" comtypes`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" configparser`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" utils`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" sleekxmpp`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" wmi`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  Delete $INSTDIR\tmp\${PY_WIN32}
+  Delete $INSTDIR\tmp\${PY_NETIFACES}
+  Delete $INSTDIR\tmp\${PY_COMTYPES}
+  Delete $INSTDIR\tmp\${PY_CONFIGPARSER}
+  Delete $INSTDIR\tmp\${PY_UTILS}
+  Delete $INSTDIR\tmp\${PY_SLEEKXMPP}
+  Delete $INSTDIR\tmp\${PY_WMI}
+SectionEnd
+
+; Installation of Pulse Agent
+Section "!${PRODUCT_NAME}" sec_app
+  SetOutPath "$INSTDIR\tmp"
+  File "${PULSE_AGENT}"
+  DetailPrint "Pulse Agent Installation...."
+  DetailPrint "------------------------------------------------------"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT}`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_AGENT_CONFFILE}"
+  StrCpy $0 `SCHTASKS /Create /SC ONSTART /TN "Pulse Agent" /TR "C:\Python27\python C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py"`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  SectionIn RO
+  WriteUninstaller $INSTDIR\uninstall.exe
+  ; Add ourselves to Add/remove programs
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+  WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
+  WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+  ; Write the version installed in registry
+  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${PRODUCT_VERSION}"
+  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+  Delete $INSTDIR\tmp\${PULSE_AGENT}
+  Sleep 30000
+SectionEnd
+
+; What needs to be done for uninstalling
+Section "Uninstall"
+  Delete $INSTDIR\uninstall.exe
+  StrCpy $0 `SCHTASKS /Delete /TN "Pulse Agent"`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip uninstall ${PULSE_AGENT_MODULE} -y`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  Delete $INSTDIR\etc\${PULSE_AGENT_CONFFILE}
+  RMDir /r $INSTDIR
+  DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+SectionEnd
+
+; Functions
+
+Function .onMouseOverSection
+    ; Find which section the mouse is over, and set the corresponding description.
+    FindWindow $R0 "#32770" "" $HWNDPARENT
+    GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+
+    StrCmp $0 ${sec_py} 0 +2
+      SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+            This is required for ${PRODUCT_NAME} to run."
+
+    StrCmp $0 ${sec_pymod} 0 +2
+      SendMessage $R0 ${WM_SETTEXT} 0 "STR:Python modules required by ${PRODUCT_NAME}."
+
+    StrCmp $0 ${sec_app} "" +2
+      SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+FunctionEnd
