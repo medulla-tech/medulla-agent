@@ -40,6 +40,6 @@ server = localhost
 showinfo = True
 showplugins = True
 
-[test]
-jidtest = dede1@localhost/pulse01a
+[jid_01]
+jidname = dede1@localhost/pulse01a
 
