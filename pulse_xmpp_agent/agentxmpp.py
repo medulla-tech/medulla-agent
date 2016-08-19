@@ -40,21 +40,24 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
         logging.log(DEBUGPULSE,"start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.passwordconnection)
+        # reload plugins list all 15 minutes
+        laps_time_update_plugin = 3600
+        laps_time_networkMonitor = 180
+        laps_time_handlemanagesession = 60
         self.config = conf
         self.agentcommande = jid.JID(self.config.agentcommande)
         self.agentsiveo    = jid.JID(self.config.jidagentsiveo)
         self.session = session()
+        self.nicknameagentrelayserverrefdeploy = 'deploy' #nickname used in salon deploy for relay server
         self.ippublic = searchippublic()
         if self.ippublic == "":
             self.ippublic == None
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         self.md5reseau = hashlib.md5(obj['result']).hexdigest()
         # update every hour
-        self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
-        self.schedule('surveille reseau', 180 , self.networkMonitor, repeat=True)
-        # reload plugins list all 15 minutes
-        self.schedule('manage session', 60 , self.handlemanagesession, repeat=True)
-
+        self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
+        self.schedule('surveille reseau', laps_time_networkMonitor , self.networkMonitor, repeat=True)
+        self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("muc::%s::presence" % conf.jidsaloncommand,
@@ -77,7 +80,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #fonction appeler pour tous message
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
-
         self.add_event_handler("pluginaction", self.pluginaction)
 
     def pluginaction(self,result):
@@ -103,17 +105,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         self.get_roster()
         self.send_presence()
-
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
-        salon=[self.config.jidsaloncommand,self.config.jidsalonmaster,self.config.jidsalonlog]
+        salon = [self.config.jidsaloncommand,self.config.jidsalonmaster,self.config.jidsalonlog]
+        self.agentrelayserverrefdeploy = self.config.jidsaloncommand.split('@')[0][3:]
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        salon=[self.config.jidsaloncommand, self.config.jidsalonmaster, self.config.jidsalonlog]
         for x in salon:
         #join salon command
-            self.plugin['xep_0045'].joinMUC(x,
+            if x == self.config.jidsaloncommand and self.config.agenttype in ['relayserver','serverrelais']:
+                self.plugin['xep_0045'].joinMUC(x,
+                                            self.nicknameagentrelayserverrefdeploy,
+                                            # If a room password is needed, use:
+                                            password=self.config.passwordconnexionmuc,
+                                            wait=True)
+            else:
+                self.plugin['xep_0045'].joinMUC(x,
                                             self.config.NickName,
                                             # If a room password is needed, use:
                                             password=self.config.passwordconnexionmuc,
                                             wait=True)
-
         self.loginformation("agent %s ready"%self.config.jidagent)
 
     def loginformation(self,msgdata):
@@ -190,7 +200,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     try:
                         msg['body']= dataobj
                         logging.log(DEBUGPULSE,"call plugin %s from %s" % (dataobj['action'],msg['from'].user))
-                        
+
                         call_plugin(dataobj['action'],
                                     self,
                                     dataobj['action'],
@@ -232,7 +242,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def muc_onlineCommand(self, presence):
-        pass
+        #only relay server
+        nickname=self.config.NickName
+        if self.config.agenttype in ['relayserver','serveurrelais']: nickname = self.nicknameagentrelayserverrefdeploy
+        if presence['from'] == self.config.jidsaloncommand + '/'+ nickname:
+            if self.plugin['xep_0045'].rooms[self.config.jidsaloncommand][nickname]['role']=="":
+                print "join ", presence
+                self.plugin['xep_0045'].joinMUC(self.config.jidsaloncommand,
+                    nickname,
+                    password=self.config.passwordconnexionmuc,
+                    wait=True)
 
     def muc_offlineMaster(self, presence):
         pass
@@ -369,7 +388,7 @@ if __name__ == '__main__':
     tg = parametreconf()
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"
-        sys.exit(0)  
+        sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
         print "Pulse agent must be running as Administrator"
         sys.exit(0)
