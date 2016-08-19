@@ -106,10 +106,13 @@ class parametreconf:
 
         if self.agenttype == "relayserver":
             self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
+            self.relayserverdeploy = ""
         else:
-            jidserver = jid.JID(self.agentcommande)
-            self.jidsaloncommand="muc%s@%s"%(jidserver.user,Config.get('salon', 'server'))
+            self.relayserverdeploy = jid.JID(self.agentcommande)
+            self.jidsaloncommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('salon', 'server'))
 
+        if  Config.has_option("jid_01", "jidname"):
+            self.jidagent = Config.get('jid_01', 'jidname')
 
         self.information={}
         self.PlateformSystem=platform.platform()
