@@ -1,5 +1,16 @@
 from setuptools import setup, find_packages
 
+import os
+import sys
+
+if sys.platform.startswith('linux'):
+    fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent")
+elif sys.platform.startswith('win'):
+    fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
+elif sys.platform.startswith('darwin'):
+    fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc")
+
+
 setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -20,7 +31,6 @@ setup(
     test_suite='',
     package_data={},
     entry_points={},
-    data_files=[('/etc/pulse-xmpp-agent', ['pulse_xmpp_agent/config/agentconf.ini']),('/etc/pulse-xmpp-agent', ['pulse_xmpp_agent/config/agent.ini']),],
     extras_require={},
     install_requires=[],
     )
