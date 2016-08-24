@@ -27,7 +27,7 @@ setup(
     version='0.1',
     description = 'XMPP Agent for pulse',
     url='https://www.siveo.net/',
-    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.plugins'],
+    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay'],
     test_suite='',
     package_data={},
     entry_points={},
