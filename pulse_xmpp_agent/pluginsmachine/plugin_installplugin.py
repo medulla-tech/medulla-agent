@@ -19,7 +19,7 @@ def action( objetxmpp, action, sessionid, data, message, dataerreur ):
                 pass
             else:
                 pass
-            namefile =  os.path.join('plugins',data['pluginname'])
+            namefile =  os.path.join(objetxmpp.config.pathplugins,data['pluginname'])
             try:
                 fileplugin = open(namefile, "w")
                 fileplugin.write(str(data['datafile']))
