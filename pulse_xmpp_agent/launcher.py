@@ -3,13 +3,20 @@
 
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  parametreconf
-
-import os
+from optparse import OptionParser
+import os, sys
 
 if __name__ == '__main__':
-    tg = parametreconf()
-    if not tg.agenttype in ["relaisserver","relayserver"]:
-        os.system('./connectionagent.py')
-        os.system('./agentxmpp.py')
-    else:
-        os.system('./agentxmpp.py')
+    optp = OptionParser()
+    optp.add_option("-t", "--type",
+                dest="typemachine", default=False,
+                help="Type machine : machine or relayserver")
+    opts, args = optp.parse_args()
+    if not opts.typemachine.lower() in ["machine",'relayserver']:
+        print "erreur parametre"
+        sys.exit(1)
+    if opts.typemachine.lower() in ["machine"]:
+        print "lance", './connectionagent.py -t %s'%opts.typemachine
+        os.system('./connectionagent.py -t %s'%opts.typemachine)
+    print "lance", './agentxmpp.py -t %s'%opts.typemachine 
+    os.system('./agentxmpp.py -t %s'%opts.typemachine)

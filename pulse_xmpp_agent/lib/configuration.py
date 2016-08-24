@@ -10,18 +10,18 @@ import sys,os
 import logging
 import ConfigParser
 import utils
-from  agentconffile import fileconf
+from  agentconffile import conffilename
 from sleekxmpp import jid
 
 
-def changeconnection(port,ipserver,jid,baseurlguacamole):
+def changeconnection(conffile, port,ipserver,jid,baseurlguacamole):
     Config = ConfigParser.ConfigParser()
-    Config.read(fileconf)
+    Config.read(conffile)
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'agentcommande', str(jid))
     Config.set('type', 'baseurlguacamole', str(baseurlguacamole))
-    with open(fileconf, 'wb') as configfile:
+    with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
 # Singleton/SingletonDecorator.py
@@ -36,9 +36,9 @@ class SingletonDecorator:
 
 @SingletonDecorator
 class parametreconf:
-    def __init__(self,typeconf='agent'):
+    def __init__(self,typeconf='machine'):
         Config = ConfigParser.ConfigParser()
-        Config.read(fileconf)
+        Config.read(conffilename(typeconf))
         self.Port= Config.get('connection', 'port')
         self.Server= Config.get('connection', 'server')
         self.passwordconnection=Config.get('connection', 'password')
@@ -68,6 +68,11 @@ class parametreconf:
         self.chatserver=Config.get('chat', 'server')
         # plus petite mac adress
         nameuser = utils.name_jid()
+
+        if  Config.has_option("jid_01", "jidname"):
+            self.jidagent = Config.get('jid_01', 'jidname')
+            nameuser = jid.JID(self.jidagent).user
+
         self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'server'),platform.node())
         # jid hostname
         #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
@@ -104,6 +109,7 @@ class parametreconf:
         self.showinfomaster = Config.getboolean('master', 'showinfo')
         self.showplugins = Config.getboolean('master', 'showplugins')
 
+
         if self.agenttype == "relayserver":
             self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
             self.relayserverdeploy = ""
@@ -111,8 +117,7 @@ class parametreconf:
             self.relayserverdeploy = jid.JID(self.agentcommande)
             self.jidsaloncommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('salon', 'server'))
 
-        if  Config.has_option("jid_01", "jidname"):
-            self.jidagent = Config.get('jid_01', 'jidname')
+
 
         self.information={}
         self.PlateformSystem=platform.platform()

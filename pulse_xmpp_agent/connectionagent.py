@@ -16,8 +16,10 @@ import shutil
 import errno
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  parametreconf, changeconnection
+from lib.agentconffile import conffilename
 from lib.utils import *
-import plugins
+import pluginsmachine
+import pluginsrelay
 from optparse import OptionParser
 import pprint
 import os 
@@ -158,7 +160,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.info("Start relay server agent configuration %s"%data['data'])
             print data['data']
             logging.log(DEBUGPULSE,"write new config")
-            changeconnection(data['data'][1],data['data'][0],data['data'][2],data['data'][3])
+            changeconnection(conffilename(opts.typemachine),data['data'][1],data['data'][0],data['data'][2],data['data'][3])
         elif data['ret'] == 0:
             logging.error("configuration dynamic error")
         else:
@@ -279,13 +281,7 @@ def doTask():
         else:
             break
 
-
 if __name__ == '__main__':
-    tg = parametreconf()
-
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint(tg.__dict__)
-    #sys.exit(0)
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"
         sys.exit(0)  
@@ -295,14 +291,21 @@ if __name__ == '__main__':
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
         print "Pulse agent must be running as root"
         sys.exit(0)
-    if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
-        tg.debug = 25
-        DEBUGPULSE = 25
     optp = OptionParser()
     optp.add_option("-d", "--deamon",action="store_true", 
                  dest="deamon", default=False,
                   help="deamonize process")
+    optp.add_option("-t", "--type",
+                dest="typemachine", default=False,
+                help="Type machine : machine or relayserver")
     opts, args = optp.parse_args()
+    tg = parametreconf(opts.typemachine)
+    #pp = pprint.PrettyPrinter(indent=4)
+    #pp.pprint(tg.__dict__)
+    #sys.exit(0)
+    if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
+        tg.debug = 25
+        DEBUGPULSE = 25
     if not opts.deamon :#tg.debug,
         #logging.basicConfig(level=tg.debug,
                         #format='[AGENT] %(levelname)-8s %(message)s')

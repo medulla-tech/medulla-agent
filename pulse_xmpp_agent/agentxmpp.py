@@ -24,7 +24,7 @@ from lib.managesession import sessiondatainfo, session
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "plugins"))
+
 
 logger = logging.getLogger()
 global restart
@@ -106,10 +106,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.get_roster()
         self.send_presence()
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+
         salon = [self.config.jidsaloncommand,self.config.jidsalonmaster,self.config.jidsalonlog]
         self.agentrelayserverrefdeploy = self.config.jidsaloncommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        salon=[self.config.jidsaloncommand, self.config.jidsalonmaster, self.config.jidsalonlog]
         for x in salon:
         #join salon command
             if x == self.config.jidsaloncommand and self.config.agenttype in ['relayserver','serverrelais']:
@@ -319,7 +319,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic
         }
-        for element in os.listdir('plugins'):
+        for element in os.listdir(self.config.pathplugins):
             if element.endswith('.py') and element.startswith('plugin_'):
                 mod = __import__(element[:-3])
                 reload(mod)
@@ -383,9 +383,7 @@ def doTask():
             restart = False
         if not restart: break
 
-
 if __name__ == '__main__':
-    tg = parametreconf()
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"
         sys.exit(0)
@@ -396,14 +394,26 @@ if __name__ == '__main__':
         print "Pulse agent must be running as root"
         sys.exit(0)
 
-    if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
-        tg.debug = 25
-        DEBUGPULSE = 25
+    
     optp = OptionParser()
     optp.add_option("-d", "--deamon",action="store_true", 
                  dest="deamon", default=False,
                   help="deamonize process")
+    optp.add_option("-t", "--type",
+                dest="typemachine", default=False,
+                help="Type machine : machine or relayserver")
     opts, args = optp.parse_args()
+    tg = parametreconf(opts.typemachine)
+    if opts.typemachine.lower() in ["machine"]:
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
+        tg.pathplugins="pluginsmachine"
+    else:
+        tg.pathplugins="pluginsrelay"
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
+    print tg
+    if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
+        tg.debug = 25
+        DEBUGPULSE = 25
     if not opts.deamon :#tg.debug,
         #logging.basicConfig(level=tg.debug,
                         #format='[AGENT] %(levelname)-8s %(message)s')
