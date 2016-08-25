@@ -30,17 +30,55 @@
 cd "`dirname $0`"
 
 # Display usage
-while getopts "h:" opt; do
-  case "${opt}" in
-    h)
-      echo
-      echo "Usage: ${0} "
-      echo
-      echo "  -h: display this help"
-      exit 1
-      ;;
-  esac
-done
+display_usage() {
+	echo -e "\nUsage:\n$0 [--conf-xmppserver=<XMPP configuration server>] \n"
+  echo -e "\t [--conf-xmppport=<XMPP configuration server port>] \n"
+	echo -e "\t --conf-xmpppasswd=<XMPP configuration server password> \n"
+  echo -e "\t [--conf-xmppmuchost=<XMPP configuration server MUC host>] \n"
+  echo -e "\t --conf-xmppmucpasswd=<XMPP configuration server MUC password> \n"
+  echo -e "\t --xmpp-passwd=<XMPP server password> \n"
+  echo -e "\t --xmpp-mucpasswd=<XMPP server MUC password>\n"
+}
+
+check_arguments() {
+	for i in "$@"; do
+		case $i in
+			--conf-xmppserver=*)
+				PUBLIC_XMPP_SERVER_ADDRESS="${i#*=}"
+				shift
+				;;
+			--conf-xmppport=*)
+				PUBLIC_XMPP_SERVER_PORT="${i#*=}"
+				shift
+				;;
+      --conf-xmpppasswd=*)
+        PUBLIC_XMPP_SERVER_PASSWORD="${i#*=}"
+        shift
+        ;;
+      --conf-xmppmuchost=*)
+        PUBLIC_XMPP_SERVER_MUCHOST="${i#*=}"
+        shift
+        ;;
+      --conf-xmppmucpasswd=*)
+        PUBLIC_XMPP_SERVER_MUCPASSWORD="${i#*=}"
+        shift
+        ;;
+      --xmpp-passwd=*)
+        XMPP_SERVER_PASSWORD="${i#*=}"
+        shift
+        ;;
+      --xmpp-mucpasswd=*)
+        XMPP_SERVER_MUCPASSWORD="${i#*=}"
+        shift
+        ;;
+			*)
+        # unknown option
+        display_usage
+        exit 0
+    		;;
+		esac
+	done
+}
 
 colored_echo() {
     local color=$1;
@@ -61,6 +99,52 @@ colored_echo() {
     tput sgr0;
 }
 
-# Generate Pulse Agent for Windows
-colored_echo blue "Generating Pulse Agent for Windows"
-./win32/generate-pulse-agent-win.sh
+compute_settings() {
+  # Compute settings for generating agent
+  colored_echo blue "Generating with the following settings:"
+  if [ -z "${PUBLIC_XMPP_SERVER_ADDRESS}" ]; then
+    PUBLIC_XMPP_SERVER_ADDRESS=`grep public_ip /etc/mmc/pulse2/package-server/package-server.ini.local | awk '{print $3}'`
+  fi
+  colored_echo blue " - XMPP configuration server: '${PUBLIC_XMPP_SERVER_ADDRESS}'"
+  if [ -z "${PUBLIC_XMPP_SERVER_PORT}" ]; then
+    PUBLIC_XMPP_SERVER_PORT="5222"
+  fi
+  colored_echo blue " - XMPP configuration server port: '${PUBLIC_XMPP_SERVER_PORT}'"
+  colored_echo blue " - XMPP configuration server password: '${PUBLIC_XMPP_SERVER_PASSWORD}'"
+  if [ -z "${PUBLIC_XMPP_SERVER_MUCHOST}" ]; then
+    PUBLIC_XMPP_SERVER_MUCHOST="conference.localhost"
+  fi
+  colored_echo blue " - XMPP configuration server MUC host: '${PUBLIC_XMPP_SERVER_MUCHOST}'"
+  colored_echo blue " - XMPP configuration server MUC password: '${PUBLIC_XMPP_SERVER_MUCPASSWORD}'"
+  colored_echo blue " - XMPP server password: '${XMPP_SERVER_PASSWORD}'"
+  colored_echo blue " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
+}
+
+update_config_file() {
+  # Update the config file for the agent
+  cp config/agentconf.ini.in config/agentconf.ini
+  sed -i "s/@@AGENT_CONF_XMPP_SERVER@@/${PUBLIC_XMPP_SERVER_ADDRESS}/" config/agentconf.ini
+  sed -i "s/@@AGENT_CONF_XMPP_PORT@@/${PUBLIC_XMPP_SERVER_PORT}/" config/agentconf.ini
+  sed -i "s/@@AGENT_CONF_XMPP_PASSWORD@@/${PUBLIC_XMPP_SERVER_PASSWORD}/" config/agentconf.ini
+  sed -i "s/@@AGENT_CONF_XMPP_MUC_DOMAIN@@/${PUBLIC_XMPP_SERVER_MUCHOST}/" config/agentconf.ini
+  sed -i "s/@@AGENT_CONF_XMPP_MUC_PASSWORD@@/${PUBLIC_XMPP_SERVER_MUCPASSWORD}/" config/agentconf.ini
+  sed -i "s/@@XMPP_PASSWORD@@/${XMPP_SERVER_PASSWORD}/" config/agentconf.ini
+  sed -i "s/@@CHATROOM_PASSWORD@@/${XMPP_SERVER_MUCPASSWORD}/" config/agentconf.ini
+}
+
+generate_agent() {
+  # Generate Pulse Agent for Windows
+  colored_echo blue "Generating Pulse Agent for Windows..."
+  ./win32/generate-pulse-agent-win.sh
+}
+
+# And finally we run the functions
+if [ $# -lt 4 ]; then
+	display_usage
+	exit 0
+else
+	check_arguments "$@"
+fi
+compute_settings
+update_config_file
+generate_agent
