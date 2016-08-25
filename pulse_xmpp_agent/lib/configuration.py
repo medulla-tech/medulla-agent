@@ -14,13 +14,13 @@ from  agentconffile import conffilename
 from sleekxmpp import jid
 
 
-def changeconnection(conffile, port,ipserver,jid,baseurlguacamole):
+def changeconnection(conffile, port,ipserver,jid,guacamole_baseurl):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
-    Config.set('global', 'agentcommande', str(jid))
-    Config.set('type', 'baseurlguacamole', str(baseurlguacamole))
+    Config.set('global', 'relayserver_agent', str(jid))
+    Config.set('type', 'guacamole_baseurl', str(guacamole_baseurl))
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
@@ -44,28 +44,26 @@ class parametreconf:
         self.passwordconnection=Config.get('connection', 'password')
 
         try:
-            self.agenttype = Config.get('type', 'agenttype')
+            self.agent_type = Config.get('type', 'agent_type')
         except:
-            self.agenttype = "machine"
-            
-        try:
-            self.agentcommande = Config.get('global', 'agentcommande')
-        except:
-            self.agentcommande=""
-        #########salon############
-        #jidsalonmaster
-        #jidsalonlog
-        #jidsaloncommand
-        self.jidsalonmaster="master@%s"%Config.get('salon', 'server')
-        self.jidsalonlog="log@%s"%Config.get('salon', 'server')
-        #salon de deploiement
+            self.agent_type = "machine"
 
-        
-        self.passwordconnexionmuc=Config.get('salon', 'password')
+        try:
+            self.relayserver_agent = Config.get('global', 'relayserver_agent')
+        except:
+            self.relayserver_agent=""
+        #########chatroom############
+        #jidchatroommaster
+        #jidchatroomlog
+        #jidchatroomcommand
+        self.jidchatroommaster="master@%s"%Config.get('chatroom', 'server')
+        self.jidchatroomlog="log@%s"%Config.get('chatroom', 'server')
+        #chatroom de deploiement
+        self.passwordconnexionmuc=Config.get('chatroom', 'password')
         self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
         ########chat#############
         # le jidagent doit être la plus petite valeur de la liste des macs.
-        self.chatserver=Config.get('chat', 'server')
+        self.chatdomain=Config.get('chat', 'domain')
         # plus petite mac adress
         nameuser = utils.name_jid()
 
@@ -73,49 +71,49 @@ class parametreconf:
             self.jidagent = Config.get('jid_01', 'jidname')
             nameuser = jid.JID(self.jidagent).user
 
-        self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'server'),platform.node())
+        self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'domain'),platform.node())
         # jid hostname
         #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
         platform.node()
         self.logfile = Config.get('global', 'logfile')
 
         #information configuration dynamique
-        self.confserver = Config.get('configurationserver', 'confserver')
-        self.confport   = Config.get('configurationserver', 'confport')
-        self.confpassword = Config.get('configurationserver', 'confpassword')
-        self.confjidsalon ="%s@%s"%(Config.get('configurationserver', 'confnamesalon'),Config.get('configurationserver', 'confdomainemuc'))
-        self.confpasswordmuc = Config.get('configurationserver', 'confpasswordmuc')
+        self.confserver = Config.get('configuration_server', 'confserver')
+        self.confport   = Config.get('configuration_server', 'confport')
+        self.confpassword = Config.get('configuration_server', 'confpassword')
+        self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
+        self.confmuc_password = Config.get('configuration_server', 'confmuc_password')
 
         try:
-            self.baseurlguacamole = Config.get('type', 'baseurlguacamole')
+            self.guacamole_baseurl = Config.get('type', 'guacamole_baseurl')
         except:
-            self.baseurlguacamole = ""
+            self.guacamole_baseurl = ""
 
         self.version_agent = Config.get('version', 'version_agent')
 
         try:
-            self.debug = Config.get('global', 'debug')
+            self.log_level = Config.get('global', 'log_level')
         except:
-            self.debug = logging.NOTSET 
+            self.log_level = logging.NOTSET
 
 
         try:
-            self.classutil = Config.get('global', 'classutil')
+            self.agent_space = Config.get('global', 'agent_space')
         except:
-            self.classutil = "both"
+            self.agent_space = "both"
 
-        self.jidagentsiveo = "%s@%s"%(Config.get('global', 'ordre'),Config.get('chat', 'server'))
+        self.jidagentsiveo = "%s@%s"%(Config.get('global', 'allow_order'),Config.get('chat', 'domain'))
         self.ordreallagent = Config.getboolean('global', 'inter_agent')
         self.showinfomaster = Config.getboolean('master', 'showinfo')
         self.showplugins = Config.getboolean('master', 'showplugins')
 
 
-        if self.agenttype == "relayserver":
-            self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
+        if self.agent_type == "relayserver":
+            self.jidchatroomcommand="muc%s@%s"%(nameuser,Config.get('chatroom', 'server'))
             self.relayserverdeploy = ""
         else:
-            self.relayserverdeploy = jid.JID(self.agentcommande)
-            self.jidsaloncommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('salon', 'server'))
+            self.relayserverdeploy = jid.JID(self.relayserver_agent)
+            self.jidchatroomcommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('chatroom', 'server'))
 
 
 
@@ -213,10 +211,10 @@ def listMacAdressWinOs():
     for ligne in ifconfig:
         if ligne.strip()=="":
             continue
-        if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :            
+        if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :
             if "phy" not in ligne.lower():
                 ll=ligne.split(' ')[0].strip()+"%d"%i
-            else :           
+            else :
                 lst[ll]=ligne.split(':')[1].strip()
                 i=i+1
     return lst
@@ -229,5 +227,3 @@ def listMacAdressLinuxOs():
             t = ligne.strip().split(' ')
             lst[t[0]]=t[-1]
     return lst
-
-

@@ -35,23 +35,23 @@ class configuration:
         self.forceregistration=Config.getboolean('domain', 'registrationauto')
         self.deploiement = Config.get('global', 'deploiement')
         self.commandinteragent = Config.getboolean('global', 'inter_agent')
-        
-        if Config.get('global', 'debug') == "INFO":
-            self.debug = logging.INFO
-        elif Config.get('global', 'debug') == "DEBUG":
-            self.debug = logging.DEBUG
-        elif Config.get('global', 'debug') == "ERROR":    
-            self.debug = logging.ERROR
+
+        if Config.get('global', 'log_level') == "INFO":
+            self.log_level = logging.INFO
+        elif Config.get('global', 'log_level') == "DEBUG":
+            self.log_level = logging.DEBUG
+        elif Config.get('global', 'log_level') == "ERROR":
+            self.log_level = logging.ERROR
         else:
-            self.debug = 5
+            self.log_level = 5
         """ channel connexion information """
         self.NickName= "LOG"
-        self.SalonServer=Config.get('Salon', 'server')
-        self.SalonCommand="%s_%s@%s"%(self.deploiement,Config.get('Salon', 'command'),self.SalonServer)
-        self.SalonMaster="%s@%s"%(Config.get('Salon', 'master'),self.SalonServer)
-        self.SalonLog="%s@%s"%(Config.get('Salon', 'log'),self.SalonServer)
-        self.SalonPassword=Config.get('Salon', 'password')
-        
+        self.ChatroomServer=Config.get('Chatroom', 'server')
+        self.ChatroomCommand="%s_%s@%s"%(self.deploiement,Config.get('Chatroom', 'command'),self.ChatroomServer)
+        self.ChatroomMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.ChatroomServer)
+        self.ChatroomLog="%s@%s"%(Config.get('Chatroom', 'log'),self.ChatroomServer)
+        self.ChatroomPassword=Config.get('Chatroom', 'password')
+
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
@@ -80,7 +80,7 @@ class configuration:
                     if addr != '127.0.0.1':
                         ip_addresses.append(addr)
         return ip_addresses
-    
+
     def __str__(self):
         return str(self.re)
 
@@ -120,18 +120,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
-   
-    def start(self, event):       
+
+    def start(self, event):
         self.get_roster()
         self.send_presence()
-        self.plugin['xep_0045'].joinMUC(self.config.SalonLog,
+        self.plugin['xep_0045'].joinMUC(self.config.ChatroomLog,
                                         self.config.NickName,
                                         # If a room password is needed, use:
-                                        password=self.config.SalonPassword,
+                                        password=self.config.ChatroomPassword,
                                         wait=True)
 
     def register(self, iq):
-        """ cette fonction est appelee pour la registration automatique""" 
+        """ cette fonction est appelee pour la registration automatique"""
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
@@ -155,13 +155,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if msg['type'] == "groupchat":
             print msg['body']
 
-    
+
 
 if __name__ == '__main__':
     # Setup the command line arguments.
     conf=configuration()
-    
-    logging.basicConfig(level=conf.debug,
+
+    logging.basicConfig(level=conf.log_level,
                         format='%(levelname)-8s %(message)s')
     xmpp = MUCBot(conf)
     xmpp.register_plugin('xep_0030') # Service Discovery
@@ -170,9 +170,9 @@ if __name__ == '__main__':
     xmpp.register_plugin('xep_0050') # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
     xmpp.register_plugin('xep_0077') # In-band Registration
-    
+
     xmpp['xep_0077'].force_registration = conf.forceregistration
-    
+
     # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
     if xmpp.connect(address=(conf.Server,conf.Port)):
         # If you do not have the dnspython library installed, you will need

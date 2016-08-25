@@ -1,45 +1,65 @@
 [global]
-debug = DEBUG
+# Define the log level wanted (DEBUG, INFO, WARN, ERROR, FATAL, NOSET)
+log_level = INFO
+# Allow inter-agent messages
 inter_agent = False
-ordre = agentsiveo
-logfile = ./out.txt
-classutil = public
-agentcommande = 080027aa358f@localhost/pulse01
+# Allow direct orders from specified jid
+# allow_order = agentsiveo
+# Log file if used with -d (deamonize)
+# logfile = ./out.txt
+# Area of use of the agent: public (nomad), private (fixed)
+agent_space = public
+# Relay agent jid associated to this client. Defined automatically at startup
+relayserver_agent =
 
 [version]
+# Agent version
 version_agent = 1.0
 
 [type]
-agenttype = machine
-baseurlguacamole = "http://192.168.56.2/guacamole/"
+# The agent type: machine or relayserver
+agent_type = machine
+# The location of the guacamole server. Defined automatically at startup
+guacamole_baseurl =
 
-[configurationserver]
-confserver = 192.168.56.2
-confport = 5222
-confpassword = omF48red5F
-confdomainemuc = conference.localhost
-confpasswordmuc = omF48red5F
-confnamesalon = configmaster
+[configuration_server]
+# Parameters used for dynamic agent configuration
+# XMPP server
+confserver = @@AGENT_CONF_XMPP_SERVER@@
+# XMPP port
+confport = @@AGENT_CONF_XMPP_PORT@@
+# XMPP password
+confpassword = @@AGENT_CONF_XMPP_PASSWORD@@
+# XMPP MUC domain. eg. conference.localhost
+confmuc_domain = @@AGENT_CONF_XMPP_MUC_DOMAIN@@
+# XMPP MUC password
+confmuc_password = @@AGENT_CONF_XMPP_MUC_PASSWORD@@
+# XMPP MUC chatroom
+confmuc_chatroom = configmaster
 
 [plugin]
-taillebloctransfert = 10240
+# Section used by the plugins
+transfer_blocsize = 10240
 
 [connection]
-port = 5222
+# The server and port below are defined automatically at startup
+# They are the parameters that allow the agent to connect to the XMPP server
+# XMPP server
 server = 192.168.56.2
-password = omF48red5F
+# XMPP port
+port = 5222
+# XMPP password
+password = @@XMPP_PASSWORD@@
 
-[salon]
+[chatroom]
+# Parameters to connect to the chatrooms
 server = conference.localhost
-password = omF48red5F
+password = @@CHATROOM_PASSWORD@@
 
 [chat]
-server = localhost
+# Domain used for chat messages
+domain = localhost
 
-[master]
-showinfo = True
-showplugins = True
-
-[jid_01]
-jidname = dede1@localhost/pulse01a
-
+# Define a specific jid for the agent. Optional
+# [jid_01]
+# jidname = machine1@localhost/pulse01a

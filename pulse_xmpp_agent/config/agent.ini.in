@@ -1,17 +1,17 @@
 [global]
 #ERROR or DEBUG or INFO
-debug = ERROR
+log_level = ERROR
 deploiement=deploichezjfk
-inter_agent=False
-taillebloctransfert=10240
+inter_agent = False
+transfer_blocsize = 10240
 [domaine]
-port=5222
+port = 5222
 server=jabbertest1.la-marmotte.net
 chatadress = la-marmotte.net
 password = secret
 registrationauto=False
 #jid=jfk@la-marmotte.net/agent
-[Salon]
+[Chatroom]
 log=log
 server = conference.la-marmotte.net
 command=command
