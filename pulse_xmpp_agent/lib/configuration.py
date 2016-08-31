@@ -92,7 +92,7 @@ class parametreconf:
         try:
             self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
         except:
-            self.confjidchatroom ="%s@%s"%("configmaster"",Config.get('configuration_server', 'confmuc_domain'))
+            self.confjidchatroom ="%s@%s"%("configmaster",Config.get('configuration_server', 'confmuc_domain'))
         self.confmuc_password = Config.get('configuration_server', 'confmuc_password')
 
         try:
