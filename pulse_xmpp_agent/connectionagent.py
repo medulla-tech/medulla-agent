@@ -55,9 +55,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
-        self.ippublic = searchippublic()
-        if self.ippublic == "":
-            self.ippublic == None
+        try:
+            self.ippublic = searchippublic()
+        except:
+            self.ippublic = None
 
         self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 

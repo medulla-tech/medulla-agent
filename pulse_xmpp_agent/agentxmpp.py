@@ -18,7 +18,8 @@ import errno
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  parametreconf
 from lib.utils import *
-import plugins
+import pluginsmachine
+import pluginsrelay
 from optparse import OptionParser
 from lib.managesession import sessiondatainfo, session
 
@@ -49,9 +50,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentsiveo    = jid.JID(self.config.jidagentsiveo)
         self.session = session()
         self.nicknameagentrelayserverrefdeploy = 'deploy' #nickname used in chatroom deploy for relay server
-        self.ippublic = searchippublic()
-        if self.ippublic == "":
-            self.ippublic == None
+        try:
+            self.ippublic = searchippublic()
+        except:
+            self.ippublic = None
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         self.md5reseau = hashlib.md5(obj['result']).hexdigest()
         # update every hour

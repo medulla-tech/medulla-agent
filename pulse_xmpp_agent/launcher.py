@@ -15,6 +15,7 @@ if __name__ == '__main__':
     if not opts.typemachine.lower() in ["machine",'relayserver']:
         print "Parameter error"
         sys.exit(1)
+    os.chdir(os.path.dirname(sys.argv[0]))
     if opts.typemachine.lower() in ["machine"]:
         if sys.platform.startswith('win'):
             print "Running", 'connectionagent.py -t %s'%opts.typemachine

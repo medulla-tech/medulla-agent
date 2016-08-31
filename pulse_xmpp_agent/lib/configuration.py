@@ -122,8 +122,10 @@ class parametreconf:
         except:
             self.ordreallagent = False
 
-        self.showinfomaster = Config.getboolean('master', 'showinfo')
-        self.showplugins = Config.getboolean('master', 'showplugins')
+        if Config.has_option("master", "showinfo"):
+            self.showinfomaster = Config.getboolean('master', 'showinfo')
+        if Config.has_option("master", "showplugins"):
+            self.showplugins = Config.getboolean('master', 'showplugins')
 
 
         if self.agent_type == "relayserver":

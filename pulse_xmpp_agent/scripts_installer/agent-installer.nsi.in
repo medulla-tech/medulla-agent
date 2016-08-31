@@ -151,6 +151,7 @@ Section "!${PRODUCT_NAME}" sec_app
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
   SectionIn RO
+  CreateDirectory $INSTDIR\var\log
   WriteUninstaller $INSTDIR\uninstall.exe
   ; Add ourselves to Add/remove programs
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
