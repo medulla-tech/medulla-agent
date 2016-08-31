@@ -1,14 +1,14 @@
 [global]
-# Define the log level wanted (DEBUG, INFO, WARN, ERROR, FATAL, NOSET)
+# Define the log level wanted (DEBUG, INFO, WARN, ERROR, FATAL, NOTSET)
 log_level = INFO
 # Allow inter-agent messages
-inter_agent = False
+# inter_agent = False
 # Allow direct orders from specified jid
 # allow_order = agentsiveo
 # Log file if used with -d (deamonize)
-# logfile = ./out.txt
-# Area of use of the agent: public (nomad), private (fixed)
-agent_space = public
+# logfile = /var/log/pulse/xmpp-agent.log
+# Area of use of the agent: public (nomad), private (fixed), both
+# agent_space = both
 # Relay agent jid associated to this client. Defined automatically at startup
 relayserver_agent =
 
@@ -35,7 +35,7 @@ confmuc_domain = @@AGENT_CONF_XMPP_MUC_DOMAIN@@
 # XMPP MUC password
 confmuc_password = @@AGENT_CONF_XMPP_MUC_PASSWORD@@
 # XMPP MUC chatroom
-confmuc_chatroom = configmaster
+# confmuc_chatroom = configmaster
 
 [plugin]
 # Section used by the plugins

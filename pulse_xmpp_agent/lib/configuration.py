@@ -39,9 +39,9 @@ class parametreconf:
     def __init__(self,typeconf='machine'):
         Config = ConfigParser.ConfigParser()
         Config.read(conffilename(typeconf))
-        self.Port= Config.get('connection', 'port')
-        self.Server= Config.get('connection', 'server')
-        self.passwordconnection=Config.get('connection', 'password')
+        self.Port = Config.get('connection', 'port')
+        self.Server = Config.get('connection', 'server')
+        self.passwordconnection = Config.get('connection', 'password')
 
         try:
             self.agent_type = Config.get('type', 'agent_type')
@@ -75,13 +75,24 @@ class parametreconf:
         # jid hostname
         #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
         platform.node()
-        self.logfile = Config.get('global', 'logfile')
+        try:
+            self.logfile = Config.get('global', 'logfile')
+        except:
+            if sys.platform.startswith('win'):
+                self.logfile = os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "log", "xmpp-agent.log")
+            elif sys.platform.startswith('darwin'):
+                self.logfile = os.path.join("/", "Library", "Application Support", "Pulse", "var", "log", "xmpp-agent.log")
+            else:
+                self.logfile = os.path.join("/", "var", "log" , "pulse", "xmpp-agent.log")
 
         #information configuration dynamique
         self.confserver = Config.get('configuration_server', 'confserver')
         self.confport   = Config.get('configuration_server', 'confport')
         self.confpassword = Config.get('configuration_server', 'confpassword')
-        self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
+        try:
+            self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
+        except:
+            self.confjidchatroom ="%s@%s"%("configmaster"",Config.get('configuration_server', 'confmuc_domain'))
         self.confmuc_password = Config.get('configuration_server', 'confmuc_password')
 
         try:
@@ -96,14 +107,21 @@ class parametreconf:
         except:
             self.log_level = logging.NOTSET
 
-
         try:
             self.agent_space = Config.get('global', 'agent_space')
         except:
             self.agent_space = "both"
 
-        self.jidagentsiveo = "%s@%s"%(Config.get('global', 'allow_order'),Config.get('chat', 'domain'))
-        self.ordreallagent = Config.getboolean('global', 'inter_agent')
+        try:
+            self.jidagentsiveo = "%s@%s"%(Config.get('global', 'allow_order'),Config.get('chat', 'domain'))
+        except:
+            self.jidagentsiveo = "%s@%s"%("agentsiveo",Config.get('chat', 'domain'))
+
+        try:
+            self.ordreallagent = Config.getboolean('global', 'inter_agent')
+        except:
+            self.ordreallagent = False
+
         self.showinfomaster = Config.getboolean('master', 'showinfo')
         self.showplugins = Config.getboolean('master', 'showplugins')
 

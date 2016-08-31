@@ -29,10 +29,10 @@ SetCompressor lzma
 !define MUI_ABORTWARNING
 !define MUI_ICON "artwork/install.ico"
 !define MUI_WELCOMEPAGE_TITLE_3LINES
-!define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_RIGHT
-!define MUI_HEADERIMAGE_BITMAP "artwork/header.bmp"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "artwork/wizard.bmp"
+#!define MUI_HEADERIMAGE
+#!define MUI_HEADERIMAGE_RIGHT
+#!define MUI_HEADERIMAGE_BITMAP "artwork/header.bmp"
+#!define MUI_WELCOMEFINISHPAGE_BITMAP "artwork/wizard.bmp"
 
 ; UI pages
 !insertmacro MUI_PAGE_WELCOME
@@ -145,7 +145,7 @@ Section "!${PRODUCT_NAME}" sec_app
   DetailPrint "Return code was: $1"
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_AGENT_CONFFILE}"
-  StrCpy $0 `SCHTASKS /Create /SC ONSTART /TN "Pulse Agent" /TR "C:\Python27\python C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py"`
+  StrCpy $0 `SCHTASKS /Create /SC ONSTART /TN "Pulse Agent" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -165,7 +165,7 @@ Section "!${PRODUCT_NAME}" sec_app
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${PRODUCT_VERSION}"
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
   Delete $INSTDIR\tmp\${PULSE_AGENT}
-  Sleep 30000
+  Sleep 5000
 SectionEnd
 
 ; What needs to be done for uninstalling
