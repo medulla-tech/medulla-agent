@@ -1,0 +1,44 @@
+[global]
+# Define the log level wanted (DEBUG, INFO, WARN, ERROR, FATAL, NOTSET)
+log_level = INFO
+# Allow inter-agent messages
+# inter_agent = False
+# Allow direct orders from specified jid
+# allow_order = agentsiveo
+# Log file if used with -d (deamonize)
+# logfile = /var/log/pulse/xmpp-agent.log
+
+[version]
+# Agent version
+version_agent = 1.0
+
+[type]
+# The agent type: machine or relayserver
+agent_type = relayserver
+# The location of the guacamole server.
+guacamole_baseurl =
+
+[plugin]
+# Section used by the plugins
+
+[connection]
+# The server and port below allow the agent to connect to the XMPP server
+# XMPP server
+server = @@XMPP_SERVER@@
+# XMPP port
+port = 5222
+# XMPP password
+password = @@XMPP_PASSWORD@@
+
+[chatroom]
+# Parameters to connect to the chatrooms
+server = conference.localhost
+password = @@CHATROOM_PASSWORD@@
+
+[chat]
+# Domain used for chat messages
+domain = localhost
+
+# Define a specific jid for the agent. Optional
+# [jid_01]
+# jidname = machine1@localhost/pulse01a

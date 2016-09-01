@@ -39,7 +39,6 @@ confmuc_password = @@AGENT_CONF_XMPP_MUC_PASSWORD@@
 
 [plugin]
 # Section used by the plugins
-transfer_blocsize = 10240
 
 [connection]
 # The server and port below are defined automatically at startup

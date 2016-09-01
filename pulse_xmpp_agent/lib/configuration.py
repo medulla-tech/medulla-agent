@@ -86,14 +86,19 @@ class parametreconf:
                 self.logfile = os.path.join("/", "var", "log" , "pulse", "xmpp-agent.log")
 
         #information configuration dynamique
-        self.confserver = Config.get('configuration_server', 'confserver')
-        self.confport   = Config.get('configuration_server', 'confport')
-        self.confpassword = Config.get('configuration_server', 'confpassword')
-        try:
-            self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
-        except:
-            self.confjidchatroom ="%s@%s"%("configmaster",Config.get('configuration_server', 'confmuc_domain'))
-        self.confmuc_password = Config.get('configuration_server', 'confmuc_password')
+        if  Config.has_option("configuration_server", "confserver"):
+            self.confserver = Config.get('configuration_server', 'confserver')
+        if  Config.has_option("configuration_server", "confport"):
+            self.confport   = Config.get('configuration_server', 'confport')
+        if  Config.has_option("configuration_server", "confpassword"):
+            self.confpassword = Config.get('configuration_server', 'confpassword')
+        if  Config.has_option("configuration_server", "confmuc_domain"):
+            try:
+                self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
+            except:
+                self.confjidchatroom ="%s@%s"%("configmaster",Config.get('configuration_server', 'confmuc_domain'))
+        if  Config.has_option("configuration_server", "confmuc_password"):
+            self.confmuc_password = Config.get('configuration_server', 'confmuc_password')
 
         try:
             self.guacamole_baseurl = Config.get('type', 'guacamole_baseurl')
