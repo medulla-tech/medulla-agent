@@ -305,8 +305,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'plugin' : {},
             'portxmpp' : self.config.Port,
             'serverxmpp' : self.config.Server,
-            'agent_type' : self.config.agent_type,
-            'guacamole_baseurl': self.config.guacamole_baseurl,
+            'agenttype' : self.config.agent_type,
+            'baseurlguacamole': self.config.guacamole_baseurl,
             'subnetxmpp':subnetreseauxmpp,
             'xmppip' : self.config.ipxmpp,
             'xmppmask': xmppmask,
@@ -318,7 +318,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppmacnonreduite' : xmppmacnonreduite,
             'ipconnection':ipconnection,
             'portconnection':portconnection,
-            'agent_space' : self.config.agent_space,
+            'classutil' : self.config.agent_space,
             'ippublic' : self.ippublic
         }
         for element in os.listdir(self.config.pathplugins):
