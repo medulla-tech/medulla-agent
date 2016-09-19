@@ -23,6 +23,7 @@ from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess
 import traceback
 import pluginsmachine
+import pluginsrelay
 from optparse import OptionParser
 
 import pprint

@@ -37,20 +37,20 @@ class configuration:
         self.commandinteragent = Config.getboolean('global', 'inter_agent')
 
         if Config.get('global', 'log_level') == "INFO":
-            self.log_level = logging.INFO
+            self.debug = logging.INFO
         elif Config.get('global', 'log_level') == "DEBUG":
-            self.log_level = logging.DEBUG
+            self.debug = logging.DEBUG
         elif Config.get('global', 'log_level') == "ERROR":
-            self.log_level = logging.ERROR
+            self.debug = logging.ERROR
         else:
-            self.log_level = 5
+            self.debug = 5
         """ channel connexion information """
         self.NickName= "LOG"
-        self.ChatroomServer=Config.get('Chatroom', 'server')
-        self.ChatroomCommand="%s_%s@%s"%(self.deploiement,Config.get('Chatroom', 'command'),self.ChatroomServer)
-        self.ChatroomMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.ChatroomServer)
-        self.ChatroomLog="%s@%s"%(Config.get('Chatroom', 'log'),self.ChatroomServer)
-        self.ChatroomPassword=Config.get('Chatroom', 'password')
+        self.SalonServer=Config.get('Chatroom', 'server')
+        self.SalonCommand="%s_%s@%s"%(self.deploiement,Config.get('Chatroom', 'command'),self.SalonServer)
+        self.SalonMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.SalonServer)
+        self.SalonLog="%s@%s"%(Config.get('Chatroom', 'log'),self.SalonServer)
+        self.SalonPassword=Config.get('Chatroom', 'password')
 
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
@@ -124,10 +124,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        self.plugin['xep_0045'].joinMUC(self.config.ChatroomLog,
+        self.plugin['xep_0045'].joinMUC(self.config.SalonLog,
                                         self.config.NickName,
                                         # If a room password is needed, use:
-                                        password=self.config.ChatroomPassword,
+                                        password=self.config.SalonPassword,
                                         wait=True)
 
     def register(self, iq):
@@ -161,7 +161,7 @@ if __name__ == '__main__':
     # Setup the command line arguments.
     conf=configuration()
 
-    logging.basicConfig(level=conf.log_level,
+    logging.basicConfig(level=conf.debug,
                         format='%(levelname)-8s %(message)s')
     xmpp = MUCBot(conf)
     xmpp.register_plugin('xep_0030') # Service Discovery
