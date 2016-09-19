@@ -33,7 +33,7 @@ def pathbase():
 def pathscript():
     return os.path.abspath(os.path.join(pathbase(),"script"))
 
-def pathlib():
+def pathplugins():
     return os.path.abspath(os.path.join(pathbase(),"plugins"))
 
 def pathlib():
@@ -41,6 +41,12 @@ def pathlib():
 
 def pathscriptperl(name):
     return os.path.abspath(os.path.join(pathbase(),"script","perl",name))
+
+
+
+def affichedatajson(jsondata):
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(jsondata)
 
 class StreamToLogger(object):
     """
@@ -166,10 +172,9 @@ def load_plugin(name):
     return mod
 
 
-def call_plugin(name, *args, **kwargs):    
+def call_plugin(name, *args, **kwargs):
     pluginaction = load_plugin(name)
     pluginaction.action(*args, **kwargs)
-    
 
 def getIpListreduite():
     listmacadress={}
@@ -481,10 +486,12 @@ def pulginprocess(func):
             #print result
             if result['base64'] == True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
-            objetxmpp.send_message( mto=message['from'],
-                                    mbody=json.dumps(result),
-                                    mtype='chat')
+            print "envoi message \n%s"%result
+            objetxmpp.send_message( mto = message['from'],
+                                    mbody = json.dumps(result),
+                                    mtype = 'chat')
         except:
+            print "envoi message erreur\n%s"%dataerreur
             objetxmpp.send_message( mto=message['from'],
                                     mbody=json.dumps(dataerreur),
                                     mtype='chat')
@@ -493,6 +500,86 @@ def pulginprocess(func):
     return wrapper
 
 
+#decorateur pour simplifier les plugins
+def pulgindeploy(func):
+    def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
+        resultaction = action
+        result={}
+        result['action'] = resultaction
+        result['ret'] = 0
+        result['sessionid'] = sessionid
+        result['base64'] = False
+        result['data'] = {}
+        dataerreur['action']=resultaction
+        dataerreur['data']['msg'] = "ERROR : %s"%action
+        dataerreur['sessionid'] = sessionid
+        try:
+            response = func( objetxmpp, action, sessionid, data, message, dataerreur, result)
+            if result['data'] != "end":
+                if result['base64'] == True:
+                    result['data'] = base64.b64encode(json.dumps(result['data']))
+                objetxmpp.send_message( mto = message['from'],
+                                        mbody = json.dumps(result),
+                                        mtype = 'chat')
+        except:
+            if result['data'] != "end":
+                objetxmpp.send_message( mto=message['from'],
+                                        mbody=json.dumps(dataerreur),
+                                        mtype='chat')
+            return
+        return response
+    return wrapper
+
+#decorateur pour simplifier les plugins
+def pulgindeploy1(func):
+    def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
+        result={}
+        result['action'] = action
+        result['ret'] = 0
+        result['sessionid'] = sessionid
+        result['base64'] = False
+        result['data'] = {}
+        dataerreur['action']=action
+        dataerreur['data']['msg'] = "ERROR : %s"%action
+        dataerreur['sessionid'] = sessionid
+        try:
+            response = func( objetxmpp, action, sessionid, data, message, dataerreur, result)
+
+            if not 'end' in result['data']:
+               result['data']['end'] = False
+
+            print "----------------------------------------------------------------"
+            print "sent message to %s "%message['from']
+            if "Devent" in data:
+                print "Devent : %s"%data["Devent"]
+            if "Dtypequery" in data:
+                print "Dtypequery : %s"%data["Dtypequery"]
+            if "Deventindex" in data:
+                print "Deventindex : %s"%data["Deventindex"]
+            
+            if not result['data']['end']:
+                print "Envoi Message"
+                print "result",result
+                if result['base64'] == True:
+                    result['data'] = base64.b64encode(json.dumps(result['data']))
+                objetxmpp.send_message( mto = message['from'],
+                                        mbody = json.dumps(result),
+                                        mtype = 'chat')
+            else:
+                print "envoi pas de message"
+        except:
+            if not result['data']['end']:
+                print "Envoi Message erreur"
+                print "result",dataerreur
+                objetxmpp.send_message( mto=message['from'],
+                                        mbody=json.dumps(dataerreur),
+                                        mtype='chat')
+            else:
+                print "Envoi pas de Message erreur"
+            return
+        print "---------------------------------------------------------------" 
+        return response
+    return wrapper
 
 #determine adresse ip utiliser pour xmpp
 def getIpXmppInterface(ipadress,Port):
@@ -548,23 +635,21 @@ def subnetnetwork(adressmachine, mask):
     reseaumachine = ipV4toDecimal(adressmachine) &  ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
 
-
-
-
-
-
 def searchippublic(site = 1):
-    if site == 1:
-        try:
-            page = urllib.urlopen("http://ifconfig.co/json").read()
-            objip = json.loads(page)
-            return objip['ip']
-        except:
-            return searchippublic(2)
-    else:
-        page = urllib.urlopen("http://www.monip.org/").read()
-        ip = page.split("IP : ")[1].split("<br>")[0]
-        return ip
+    try:
+        if site == 1:
+            try:
+                page = urllib.urlopen("http://ifconfig.co/json").read()
+                objip = json.loads(page)
+                return objip['ip']
+            except:
+                return searchippublic(2)
+        else:
+            page = urllib.urlopen("http://www.monip.org/").read()
+            ip = page.split("IP : ")[1].split("<br>")[0]
+            return ip
+    except:
+        return "192.168.56.2"
 
 
 # decorateur pour simplifier les plugins
@@ -606,3 +691,8 @@ def pulginmastersessionaction( sessionaction, timeminute = 10 ):
     return decorateur
 
 
+def merge_dicts(*dict_args):
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
