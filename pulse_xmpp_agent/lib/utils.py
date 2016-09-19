@@ -483,11 +483,11 @@ def pulginprocess(func):
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             objetxmpp.send_message( mto=message['from'],
                                     mbody=json.dumps(result),
-                                    mtype='groupchat')
+                                    mtype='chat')
         except:
             objetxmpp.send_message( mto=message['from'],
                                     mbody=json.dumps(dataerreur),
-                                    mtype='groupchat')
+                                    mtype='chat')
             return
         return response
     return wrapper
