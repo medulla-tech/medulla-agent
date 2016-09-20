@@ -167,6 +167,7 @@ Section "!${PRODUCT_NAME}" sec_app
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
   Delete $INSTDIR\tmp\${PULSE_AGENT}
   Sleep 5000
+  SetRebootFlag true
 SectionEnd
 
 ; What needs to be done for uninstalling
