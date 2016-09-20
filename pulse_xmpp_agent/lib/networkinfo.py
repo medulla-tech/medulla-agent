@@ -51,6 +51,7 @@ class  networkagentinfo:
             #return utilisateur windows
             obj={}
             obj['result']="inconue"
+            pythoncom.CoInitialize()
             c = wmi.WMI().Win32_ComputerSystem
             computer = c()[0]
             for propertyName in sorted( list( c.properties ) ):
