@@ -186,7 +186,6 @@ generate_agent_installer() {
 }
 
 # Run the script
-cd "`dirname $0`"
 compute_parameters
 prepare_system
 download_agent_dependencies
