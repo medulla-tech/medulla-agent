@@ -44,13 +44,16 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if not 'Devent' in data : data['Devent'] = ""
         if not "Dtypequery" in data : data['Dtypequery'] = "missing"
         if not 'Daction' in data : data['Daction'] = ""
-        if not "rsetape" in data : data['rsetape'] = -1
+        if not "rsetape" in data : 
+            dede = -1 
+        else: 
+            dede = data['rsetape']
         logging.info('------------------------------------------------------------------')
-        logging.info('{0:12}|{1:25}|{2:20}'.format("MachineType","plugin","sessionid"))
+        logging.info('{0:12}|{1:25}|{2:20}'.format("MachineType", "plugin", "sessionid"))
         logging.info('{0:12}|{1:25}|{2:20}'.format(objectxmpp.config.agenttype, action, sessionid))
         logging.info('------------------------------------------------------------------')
-        logging.info('{0:3}|{1:10}|{2:25}|{3:25}'.format("etape", "querytype","event", "action"))
-        logging.info('{0:3}|{1:10}|{2:25}|{3:25}'.format(data['rsetape'],data['Dtypequery'],data['Devent'],data['Daction']))
+        logging.info('{0:3}|{1:10}|{2:25}|{3:25}'.format("etape", "querytype", "event", "action"))
+        logging.info('{0:3}|{1:10}|{2:25}|{3:25}'.format(dede, data['Dtypequery'], data['Devent'], data['Daction']))
         logging.info('------------------------------------------------------------------')
 
         objectsession =  objectxmpp.session.sessionfromsessiondata(sessionid)
@@ -92,14 +95,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             return
 
 
-        #check possible start deploy depuis master
+        #seul master peut demander un deploiement
         if not (objectxmpp.session.isexist(sessionid)) and objectxmpp.config.agenttype == "relayserver" :
             #start deploy if Master command
             if not (message['from'].user == 'master' and data['Devent']=="STARDEPLOY" and data['Dtypequery'] ==  "TQ" ):
                 return
+ 
+
         ret = 0
         msg = ""
-        
+
+
         if  data['Dtypequery'] == 'TQ':
             msglog['data']['msg'] = "**DEPLOY  %s : %s %s %s %s %s %s %s %s %s"\
                 %(data['name'],sessionid, sys.platform, objectxmpp.boundjid.bare, data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
@@ -111,6 +117,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 %(data['name'],sessionid,sys.platform,objectxmpp.boundjid.bare,  data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
         logging.debug(msglog['data']['msg'])
         objectxmpp.event("loginfotomaster", msglog)
+
 
         #controle affichage erreur suivant ret
         if 'ret' in message['body']: 
@@ -185,7 +192,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             logging.debug(msglog['data']['msg'])
                             #les package ne sont enregistre dans different repertoire suivant os 
                             #envoi message a l'agent machine demande os et path des pacquages sur machine
-
+                            print "**********************************************"
+                            print "envoi query machine pour renseignement OS et chemin d'install du package"
+                            print "**********************************************"
                             objectxmpp.send_message( mto=data['jidmachine'],
                                             mbody=json.dumps(msgdata),
                                             mtype='chat')
@@ -232,10 +241,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     #termine session
                                     objectxmpp.session.clear(sessionid, objectxmpp)
                                     return
-                                
+                                print "**********************************************"
+                                print "the package %s is installable on the OS %s"%(data['name'],data['osmachine'])
+                                print "**********************************************"
                                 data['srcdest'] = data['result']['srcdest']
                                 data['srcdestmachine'] = os.path.join(data['result']['srcdest'],data['srcpackageuuid'])
-                                
+
                                 #sauve session data
                                 msgdata['ret']  = 0
                                 msglog['data']['msg']  =  "DEPLOYACTION %s %s : syncho package %s on machine"\
@@ -248,8 +259,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 return
 
                             if objectxmpp.session.sessionfromsessiondata(sessionid).datasession['rsetape'] == 2 and  data['Dtypequery'] == "TR":
+
                                 #print "FILE TRANSFERT %s  %s"%(data['Devent'],objectxmpp.session.sessionfromsessiondata(sessionid).datasession['RSfinishevent'])
                                 if data['Devent'] == objectxmpp.session.sessionfromsessiondata(sessionid).datasession['RSfinishevent']:
+                                    
                                     logging.debug("FILE TRANSFERT MASTER TO RS TERMINER")
                                     objectxmpp.eventmanage.delmessage_loop( data['RSfinishevent'])
                                     #############################################################################
@@ -277,6 +290,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
                                     #command =  "rsync --delete -av %s %s:%s"%(data['path'], data['iprelais'], data['path'])
                                     if data['ipmachine'] != data['iprelais']:
+                                        print "**********************************************"
+                                        print "FICHIER  source et destination son sur 2 serveurs differents"
+                                        print "**********************************************"
                                         cmd = "rsync -av %s/ %s:%s/"%(data['srcpackage'], data['ipmachine'],os.path.join(data['srcdest'],data['srcpackageuuid']))
                                         msglog['data']['msg']  =  "DEPLOYACTION : %s command %s"%(sessionid, cmd)
                                         objectxmpp.event("loginfotomaster", msglog)
@@ -288,11 +304,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                         # copy fichier vers machines envoi message TEVENT vers machine
                                         objectxmpp.mannageprocess.add_processcommand( cmd , sessionid, False, datacontinue, False )
                                     else:
-                                        # envoyer 1 TEVENT fichier transferé sur machine terminer
                                         msglog['data']['msg']  =  "WARNINGDEPLOY %s  : relay server machine and even machine to sync [task not performed]"%(sessionid)
                                         objectxmpp.event("loginfotomaster", msglog)
                                         logging.debug(msglog['data']['msg'])
+                                        #inject message datacontinue dans loop rs pour passer etape suivante
                                         objectxmpp.eventmanage.addevent(datacontinue)
+                                        # enregistre evenement transfert file ternime
                                     return
                             elif data['Devent'] == objectxmpp.session.sessionfromsessiondata(sessionid).datasession['RSerrorevent']:
                                     #on ne peut pas deploye
@@ -308,6 +325,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             if objectxmpp.session.sessionfromsessiondata(sessionid).datasession['rsetape'] == 3 and  data['Dtypequery'] == "TR":
                                 if data['Devent'] == objectxmpp.session.sessionfromsessiondata(sessionid).datasession['Mfinishevent']:
                                     logging.debug("FILE TRANSFERT RS TO MACHINE FINISH")
+                                    print "FILE TRANSFERT RS TO MACHINE FINISH"
                                     objectxmpp.eventmanage.delmessage_loop( data['Mfinishevent'])
                                     data['rsetape'] = data['rsetape'] + 1
                                     objectxmpp.session.sessionsetdata(sessionid, data)
@@ -326,6 +344,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     return
                                 elif data['Devent'] == objectxmpp.session.sessionfromsessiondata(sessionid).datasession['Merrorevent']:
                                     #on ne peut pas deploye
+                                    print "NOT FILE TRANSFERT RS TO MACHINE FINISH"
                                     data['Dtypequery'] = "TE"
                                     msglog['data']['msg']  =  "ERREURDEPLOY %s %s : can not transfert package files to machine.%s"%(data['name'], sessionid, jidmachine )
                                     # message erreur a master 
@@ -335,9 +354,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     return
 
                             if objectxmpp.session.sessionfromsessiondata(sessionid).datasession['rsetape'] == 4 and  data['Dtypequery'] == 'TREPRISEPhase4':
-                                #############################################################################
-                                #Le deploiement commence ici
-                                #############################################################################
+                                print "**********************************************"
+                                print "packages %s available on Machine %s"%(data['name'], data['jidmachine'])
+                                print "START DEPLOY"
+                                print "**********************************************"
+
                                 logging.debug("Start grapcet deploy")
                                 objectxmpp.eventmanage.delmessage_loop_Dtypequery('TREPRISEPhase4')
                                 data['Dtypequery'] ='TR'
@@ -357,14 +378,14 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     msgdata['ret']  = 127
                                     #termine session
                                     objectxmpp.session.clear(sessionid, objectxmpp)
-                                
+
                                 objectxmpp.send_message( mto=data['jidmachine'],
                                             mbody=json.dumps(msgdata),
                                             mtype='chat')
                                 return
 
                             if objectxmpp.session.sessionfromsessiondata(sessionid).datasession['rsetape'] >= 5:
-                                
+
                                 objectxmpp.session.reactualisesession(sessionid)
 
                                 # call class dedeploiement pour envoyé reponse:
@@ -419,7 +440,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             mbody=json.dumps(msgdata),
                                             mtype='chat')
                         return
-                    except Exception as e:                    
+                    except Exception as e:
                         msglog['data']['msg']  =  "ERREURDEPLOY %s  creation session on machine [%s]"%(sessionid,str(e))
                         objectxmpp.event("loginfotomaster", msglog)
                         logging.debug(msglog['data']['msg'])
@@ -441,7 +462,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         msgdata['data'] = evolution.getdata()
                         msgdata['ret']  = evolution.geterrorcode()
 
-                        # traitement si message est signler                    
+                        # traitement si message est signler
                         if 'signal' in msgdata:
                             logging.debug("session %s signal action"%sessionid)
                             #controle si on doit envoyé message ou non
