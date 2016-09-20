@@ -261,7 +261,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                         mtype='chat')
                                 return
                 if dataobj['action'] == "resultmsginfoerror":
-                    logging.warning("filtre message from %s for action " % (msg['from'].bare,dataobj['action']))
+                    logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
                     return
                 if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                     if dataobj.has_key('base64') and \
