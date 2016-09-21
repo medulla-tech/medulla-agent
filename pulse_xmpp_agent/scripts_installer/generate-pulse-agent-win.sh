@@ -46,6 +46,7 @@ PY_SLEEKXMPP_VERSION="1.3.1"
 PY_WMI_MODULE="wmi"
 PY_WMI_VERSION="1.4.9"
 PULSE_AGENT_NAME="pulse-xmpp-agent"
+PULSE_AGENT_MODULE="pulse_xmpp_agent"
 
 DOWNLOAD_FOLDER="py_downloads"
 
@@ -169,7 +170,7 @@ update_nsi_script() {
 		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
-		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_NAME}/" \
+		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 	colored_echo green "### INFO Updating NSIS script.. Done"
