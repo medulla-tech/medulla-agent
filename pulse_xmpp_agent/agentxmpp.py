@@ -549,12 +549,23 @@ if __name__ == '__main__':
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, tg.levellog)
         sys.stdout = sl
+        stderr_logger = logging.getLogger('STDERR')
+        sl = StreamToLogger(stderr_logger, tg.levellog)
+        sys.stderr = sl
         logging.basicConfig(level = tg.levellog,
                     format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                     filename = tg.logfile,
                     filemode = 'a')
         doTask()
     else:
+        stdout_logger = logging.getLogger('STDOUT')
+        sl = StreamToLogger(stdout_logger, tg.levellog)
+        sys.stdout = sl
+        stderr_logger = logging.getLogger('STDERR')
+        sl = StreamToLogger(stderr_logger, tg.levellog)
+        sys.stderr = sl
         logging.basicConfig(level = tg.levellog,
-            format='[%(name)s.%(funcName)s:%(lineno)d] %(message)s')
+                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                    filename = tg.logfile,
+                    filemode = 'a')
         createDaemon()
