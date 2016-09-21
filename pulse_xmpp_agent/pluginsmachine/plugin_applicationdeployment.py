@@ -45,7 +45,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if not "Dtypequery" in data : data['Dtypequery'] = "missing"
         if not 'Daction' in data : data['Daction'] = ""
         if not "rsetape" in data : 
-            dede = -1 
+            dede = -1
         else: 
             dede = data['rsetape']
         logging.info('------------------------------------------------------------------')
@@ -79,22 +79,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         if not ('Devent' in data and "Dtypequery" in data ):
             return
-        #gestion evennement
-        if  data['Dtypequery'] == 'TEVENT':
-            if objectxmpp.session.isexist(sessionid):
-                data['Dtypequery'] = 'TR'
-                datacontinue = {
-                        'to' : objectxmpp.boundjid.bare,
-                        'action': action,
-                        'sessionid': sessionid,
-                        'data' : dict(objectxmpp.session.sessionfromsessiondata(sessionid).datasession.items() + data.items()),
-                        'ret' : 0,
-                        'base64' : False
-                }
-                objectxmpp.eventmanage.addevent(datacontinue)
-            return
-
-
+ 
         #seul master peut demander un deploiement
         if not (objectxmpp.session.isexist(sessionid)) and objectxmpp.config.agenttype == "relayserver" :
             #start deploy if Master command
@@ -105,19 +90,20 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         ret = 0
         msg = ""
 
-
-        if  data['Dtypequery'] == 'TQ':
-            msglog['data']['msg'] = "**DEPLOY  %s : %s %s %s %s %s %s %s %s %s"\
-                %(data['name'],sessionid, sys.platform, objectxmpp.boundjid.bare, data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
-        elif data['Dtypequery'] == 'TR':
-            msglog['data']['msg'] = "**ACQUIT %s : %s %s %s %s %s %s %s %s %s "\
-                %(data['name'], sessionid, sys.platform,objectxmpp.boundjid.bare, data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
-        else:
-            msglog['data']['msg'] = "**STATUS %s : %s %s %s %s %s %s %s %s %s "\
-                %(data['name'],sessionid,sys.platform,objectxmpp.boundjid.bare,  data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
-        logging.debug(msglog['data']['msg'])
-        objectxmpp.event("loginfotomaster", msglog)
-
+        try:
+            if  data['Dtypequery'] == 'TQ':
+                msglog['data']['msg'] = "**DEPLOY  %s : %s %s %s %s %s %s %s %s %s"\
+                    %(data['name'],sessionid, sys.platform, objectxmpp.boundjid.bare, data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
+            elif data['Dtypequery'] == 'TR':
+                msglog['data']['msg'] = "**ACQUIT %s : %s %s %s %s %s %s %s %s %s "\
+                    %(data['name'], sessionid, sys.platform,objectxmpp.boundjid.bare, data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
+            else:
+                msglog['data']['msg'] = "**STATUS %s : %s %s %s %s %s %s %s %s %s "\
+                    %(data['name'],sessionid,sys.platform,objectxmpp.boundjid.bare,  data['Dtypequery'], action, data['Daction'], data['Devent'], objectxmpp.config.agenttype, message['from'])
+            logging.debug(msglog['data']['msg'])
+            objectxmpp.event("loginfotomaster", msglog)
+        except:
+            pass
 
         #controle affichage erreur suivant ret
         if 'ret' in message['body']: 
@@ -198,9 +184,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             objectxmpp.send_message( mto=data['jidmachine'],
                                             mbody=json.dumps(msgdata),
                                             mtype='chat')
-                            #print "--------------------------------------------------------------"
-                            #print "Ne pas envoyer de reponse a master pour le momment"
-                            objectxmpp.send_message( mto=message['from'],
+                            
+                            # "envoyer reponse a master"
+                            objectxmpp.send_message( mto = message['from'],
                                             mbody=json.dumps(msgdata),
                                             mtype='chat')
 
@@ -461,16 +447,15 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         evolution = sequentialevolutionquery(objectxmpp, msglog, datasignal, data)
                         msgdata['data'] = evolution.getdata()
                         msgdata['ret']  = evolution.geterrorcode()
-
                         # traitement si message est signler
-                        if 'signal' in msgdata:
+                        if 'signal' in msgdata['data']:
                             logging.debug("session %s signal action"%sessionid)
                             #controle si on doit envoyé message ou non
                             #break sort sans envoye message
                             #message sera envoye a reprise session
-                            if msgdata['signal']['continue'] == 'break':
+                            if msgdata['data']['signal']['continue'] == 'break':
+                                del msgdata['data']['signal']
                                 return
-                        # si erreur TE est leve cote grapcet
                         objectxmpp.send_message( mto=message['from'],
                                 mbody = json.dumps(msgdata),
                                 mtype='chat')

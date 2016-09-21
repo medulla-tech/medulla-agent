@@ -39,33 +39,33 @@ class parametreconf:
     def __init__(self,typeconf='machine'):
         Config = ConfigParser.ConfigParser()
         Config.read(conffilename(typeconf))
-        self.Port = Config.get('connection', 'port')
-        self.Server = Config.get('connection', 'server')
-        self.passwordconnection = Config.get('connection', 'password')
+        self.Port= Config.get('connection', 'port')
+        self.Server= Config.get('connection', 'server')
+        self.passwordconnection=Config.get('connection', 'password')
 
         try:
-            self.agenttype = Config.get('type', 'agent_type')
+            self.agenttype = Config.get('type', 'agenttype')
         except:
             self.agenttype = "machine"
 
         try:
-            self.agentcommande = Config.get('global', 'relayserver_agent')
+            self.agentcommande = Config.get('global', 'agentcommande')
         except:
             self.agentcommande=""
-        #########chatroom############
+        #########salon############
         #jidsalonmaster
         #jidsalonlog
         #jidsaloncommand
-        self.jidsalonmaster="master@%s"%Config.get('chatroom', 'server')
-        self.jidsalonlog="log@%s"%Config.get('chatroom', 'server')
+        self.jidsalonmaster="master@%s"%Config.get('salon', 'server')
+        self.jidsalonlog="log@%s"%Config.get('salon', 'server')
         #salon de deploiement
 
-
-        self.passwordconnexionmuc=Config.get('chatroom', 'password')
+        
+        self.passwordconnexionmuc=Config.get('salon', 'password')
         self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
         ########chat#############
         # le jidagent doit être la plus petite valeur de la liste des macs.
-        self.chatserver=Config.get('chat', 'domain')
+        self.chatserver=Config.get('chat', 'server')
         # plus petite mac adress
         nameuser = utils.name_jid()
 
@@ -73,45 +73,28 @@ class parametreconf:
             self.jidagent = Config.get('jid_01', 'jidname')
             nameuser = jid.JID(self.jidagent).user
 
-        self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'domain'),platform.node())
+        self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'server'),platform.node())
         # jid hostname
         #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
         platform.node()
-        try:
-            self.logfile = Config.get('global', 'logfile')
-        except:
-            if sys.platform.startswith('win'):
-                self.logfile = os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "log", "xmpp-agent.log")
-            elif sys.platform.startswith('darwin'):
-                self.logfile = os.path.join("/", "Library", "Application Support", "Pulse", "var", "log", "xmpp-agent.log")
-            else:
-                self.logfile = os.path.join("/", "var", "log" , "pulse", "xmpp-agent.log")
-
+        self.logfile = Config.get('global', 'logfile')
 
         #information configuration dynamique
-        if Config.has_option("configuration_server", "confserver"):
-            self.confserver = Config.get('configuration_server', 'confserver')
-        if Config.has_option("configuration_server", "confport"):
-            self.confport   = Config.get('configuration_server', 'confport')
-        if Config.has_option("configuration_server", "confpassword"):
-            self.confpassword = Config.get('configuration_server', 'confpassword')
-        if  Config.has_option("configuration_server", "confmuc_domain"):
-            try:
-                self.confjidsalon ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
-            except:
-                self.confjidsalon ="%s@%s"%("configmaster",Config.get('configuration_server', 'confmuc_domain'))
-        if  Config.has_option("configuration_server", "confmuc_password"):
-            self.confpasswordmuc = Config.get('configuration_server', 'confmuc_password')
+        self.confserver = Config.get('configurationserver', 'confserver')
+        self.confport   = Config.get('configurationserver', 'confport')
+        self.confpassword = Config.get('configurationserver', 'confpassword')
+        self.confjidsalon ="%s@%s"%(Config.get('configurationserver', 'confnamesalon'),Config.get('configurationserver', 'confdomainemuc'))
+        self.confpasswordmuc = Config.get('configurationserver', 'confpasswordmuc')
 
         try:
-            self.baseurlguacamole = Config.get('type', 'guacamole_baseurl')
+            self.baseurlguacamole = Config.get('type', 'baseurlguacamole')
         except:
             self.baseurlguacamole = ""
 
         self.version_agent = Config.get('version', 'version_agent')
 
         try:
-            self.debug = Config.get('global', 'log_level')
+            self.debug = Config.get('global', 'debug')
         except:
             self.debug = 'NOTSET'
         self.debug = self.debug.upper()
@@ -134,32 +117,22 @@ class parametreconf:
             self.levellog= 02
 
         try:
-            self.classutil = Config.get('global', 'agent_space')
+            self.classutil = Config.get('global', 'classutil')
         except:
             self.classutil = "both"
 
-        try:
-            self.jidagentsiveo = "%s@%s"%(Config.get('global', 'allow_order'),Config.get('chat', 'domain'))
-        except:
-            self.jidagentsiveo = "%s@%s"%("agentsiveo",Config.get('chat', 'domain'))
-
-        try:
-            self.ordreallagent = Config.getboolean('global', 'inter_agent')
-        except:
-            self.ordreallagent = False
-
-        if Config.has_option("master", "showinfo"):
-            self.showinfomaster = Config.getboolean('master', 'showinfo')
-        if Config.has_option("master", "showplugins"):
-            self.showplugins = Config.getboolean('master', 'showplugins')
+        self.jidagentsiveo = "%s@%s"%(Config.get('global', 'ordre'),Config.get('chat', 'server'))
+        self.ordreallagent = Config.getboolean('global', 'inter_agent')
+        self.showinfomaster = Config.getboolean('master', 'showinfo')
+        self.showplugins = Config.getboolean('master', 'showplugins')
 
 
         if self.agenttype == "relayserver":
-            self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('chatroom', 'server'))
+            self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('salon', 'server'))
             self.relayserverdeploy = ""
         else:
             self.relayserverdeploy = jid.JID(self.agentcommande)
-            self.jidsaloncommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('chatroom', 'server'))
+            self.jidsaloncommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('salon', 'server'))
 
 
 
@@ -257,10 +230,10 @@ def listMacAdressWinOs():
     for ligne in ifconfig:
         if ligne.strip()=="":
             continue
-        if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :
+        if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :            
             if "phy" not in ligne.lower():
                 ll=ligne.split(' ')[0].strip()+"%d"%i
-            else :
+            else :           
                 lst[ll]=ligne.split(':')[1].strip()
                 i=i+1
     return lst
@@ -273,3 +246,5 @@ def listMacAdressLinuxOs():
             t = ligne.strip().split(' ')
             lst[t[0]]=t[-1]
     return lst
+
+

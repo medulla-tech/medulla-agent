@@ -8,6 +8,10 @@ from multiprocessing import Process, Queue, TimeoutError
 import threading
 from utils import name_random, call_plugin
 from  sleekxmpp import jid
+import traceback
+import logging
+
+logger = logging.getLogger()
 
 class manage_event:
     def __init__(self, queue_in, objectxmpp):
@@ -15,9 +19,9 @@ class manage_event:
         self.queue_in = queue_in
         self.namethread =  name_random(5, "threadevent")
         self.objectxmpp = objectxmpp
-        print "****************************manage_event"
         self.threadevent = threading.Thread( name = self.namethread, target = self.manage_event_command)
         self.threadevent.start()
+        logging.info('manage event start')
 
     def show_eventloop(self):
         print "boucle evenement"
@@ -42,6 +46,39 @@ class manage_event:
                         '_eventype' : 'TEVENT'
                     }
 
+    @staticmethod
+    def create_EVENT( to, action, sessionid, Dtypequery, Devent,ret=0,base64 =False):
+            return  {
+                        'to' : to,
+                        'action': action ,
+                        'sessionid': sessionid,
+                        'data' : {'Dtypequery' : 'TR' ,'Devent' : devent },
+                        'ret' : ret,
+                        'base64' : base64
+                    }
+
+    @staticmethod
+    def create_EVENT_TR(to, action, sessionid, devent):
+            return  {
+                        'to' : to,
+                        'action': action ,
+                        'sessionid': sessionid,
+                        'data' : {'Dtypequery' : 'TR' ,'Devent' : devent },
+                        'ret' : 0,
+                        'base64' : False
+                    }
+
+    @staticmethod
+    def create_EVENT_ERR(to, action, sessionid, devent):
+            return  {
+                        'to' : to,
+                        'action': action ,
+                        'sessionid': sessionid,
+                        'data' : {'Dtypequery' : 'TE' ,'Devent' : devent },
+                        'ret' : 125,
+                        'base64' : False
+                    }
+
     def manage_event_loop(self):
         #traitement message interne
         for i in self.event:
@@ -59,16 +96,14 @@ class manage_event:
                     }
                 if self.objectxmpp.session.isexist(i['sessionid']) and jidto == self.objectxmpp.boundjid.bare:
                     ##call plugin i['sessionid'] == msg['from'].bare
-                    print '********APPELLE PLUGIN ****************'
                     call_plugin( i['action'],
                                 self.objectxmpp,
-                                        i['action'],
-                                        i['sessionid'],
-                                        i['data'],
-                                        msg,
-                                        {}
-                                        )
-                    #print '******************************'
+                                i['action'],
+                                i['sessionid'],
+                                i['data'],
+                                msg,
+                                {}
+                                )
 
     def delmessage_loop(self, devent):
         #supprime message loop devent
@@ -89,64 +124,16 @@ class manage_event:
     def clear(self, sessionid):
         self.event = [x for x in self.event if x['sessionid'] != sessionid]
 
-    #def manage_event_command(self):
-        #try:
-            #while True:
-                #try:
-                    ##lit event
-                    #print "attente event"
-                    #event = self.queue_in.get(5)
-                    #print "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
-                    #print "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
-                    #print "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
-                    #print 
-                    #if event=="quit":
-                        #break
-                    #self.show_eventloop()
-                    #print "event recu *********************"%event
-                    #if 'sessionid' in event and 'event' in event:
-                        #for i in self.event:
-                            #if i['sessionid'] == event['sessionid'] and event['event'] == i['data']['Devent']:
-                                #i['ret'] = event['result']['codeerror']
-                                #i['data']['result'] = event['result']['resultcommand']
-                                #i['data']['command'] = event['result']['cmddata']
-                                #print "kkkkkeeeeeeeeeeeeekkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
-                                #print "kkkkkeeeeeeeeeeeeekkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
-                                #print "kkkkkeeeeeeeeeeeeekkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
-                                #self.objectxmpp.send_message( mto=i['to'],
-                                            #mbody=json.dumps(i),
-                                            #mtype='chat')
-                                #self.event.remove(i)
-                                ##self.show_eventloop()
-                                #break
-                    #else:
-                        #self.addevent(event)
-                        #print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-                        #print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-                        #print "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
-
-                #except TimeoutError:
-                    #print "*******************TimeoutError"
- 
-        #except KeyboardInterrupt:
-            #pass
-        #finally:
-            #print "****************************manage_event end"
-            #pass
-
-
     def manage_event_command(self):
+        logging.info('loop event wait start')
         try:
             while True:
                 try:
                     #lit event
-                    print "attente event"
                     event = self.queue_in.get(5)
-                    print "MESSAGE QUEUE %s"%event
                     if event=="quit":
                         break
                     self.show_eventloop()
-                    print "event recu *********************"%event
                     if 'sessionid' in event and '_eventype' in event:
                         if 'result' in event['data'] and \
                             'cmddata' in event['data']['result'] and \
@@ -177,24 +164,17 @@ class manage_event:
                                         'Devent': event['data']['Devent']
                                     }
                             }
-                        print "*******SEND MESSAGE************"
-                        print "*******SEND MESSAGE************"
-                        print "*******SEND MESSAGE************"
-                        print "SEND MESSAGE %s"%msg
                         self.objectxmpp.send_message( mto = event['to'],
                                             mbody=json.dumps(msg),
                                             mtype='chat')
                     else:
-                        print "*******REGISTER MESSAGE************"
-                        print "*******REGISTER MESSAGE************"
-                        print "*******REGISTER MESSAGE************"
+                        if 'sessionid' in event :
+                            event['data'] = dict(self.objectxmpp.session.sessionfromsessiondata(event['sessionid']).datasession.items() + event['data'].items())
                         self.addevent(event)
-
                 except TimeoutError:
-                    print "*******************TimeoutError"
+                    print "TimeoutError"
  
         except KeyboardInterrupt:
             pass
         finally:
-            print "****************************manage_event end"
-            pass
+            logging.info('loop event wait stop')

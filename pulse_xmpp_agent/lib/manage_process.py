@@ -7,12 +7,18 @@ import json
 from multiprocessing import Process, Queue, TimeoutError
 import threading
 from lib.utils import simplecommandestr
+import traceback
+import logging
+
+logger = logging.getLogger()
 
 class mannageprocess:
 
     def __init__(self, queue_out_session) :
         self.processtable = []
         self.queue_out_session = queue_out_session
+        logging.info('manage process start')
+
 
     def add_processcommand(self, cmddata , sessionid, eventstart = False, eventfinish = False, eventerror = False):
         createprocesscommand = Process(target=self.processcommand, args=(cmddata , self.queue_out_session, sessionid, eventstart, eventfinish , eventerror ))
@@ -20,8 +26,8 @@ class mannageprocess:
         createprocesscommand.start()
 
     def processcommand( self,  cmddata , queue_out_session, sessionid, eventstart, eventfinish, eventerror):
-        #il y a 2 type de messages event ceux de la boucle interne et ceux envoyé en TEVENT
-        try: 
+        #il y a 2 types de messages event ceux de la boucle interne et ceux envoyé en TEVENT
+        try:
             #structure message for msgout
             msgout = {
                         'event': "",
@@ -57,6 +63,11 @@ class mannageprocess:
                     queue_out_session.put(ev)
 
         except TimeoutError:
-            pass
+            logging.error("TimeoutError process  %s sessionid : %s"%(cmddata,sessionid))
         except KeyboardInterrupt:
+            logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(cmddata,sessionid))
+            sys.exit(0)
+        except :
+            traceback.print_exc(file=sys.stdout)
+            logging.error("error execution process %s sessionid : %s"%(cmddata,sessionid))
             sys.exit(0)
