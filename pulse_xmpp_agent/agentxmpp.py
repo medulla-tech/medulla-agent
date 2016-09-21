@@ -47,8 +47,6 @@ else:
     raw_input = input
 
 
-
-
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
         logging.log(DEBUGPULSE,"start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
@@ -116,14 +114,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
 
 
-    def loginfotomaster(self, msglog):
+    def loginfotomaster(self, msgdata):
         # ne sont traite par master seulement action loginfos
         try:
-            self.send_message(  mbody = json.dumps(msglog),
-                                mto = self.agentmaster ,
+            self.send_message(  mbody = json.dumps(msgdata),
+                                mto = 'master@localhost/MASTER',
                                 mtype ='chat')
         except Exception as e:
-            logging.error("send loginfotomaster to %s!" % self.agentmaster)
+            logging.error("message log to 'master@localhost/MASTER' : %s " %(str(e)))
             traceback.print_exc(file=sys.stdout)
             return
 
@@ -133,6 +131,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.eventmanage.manage_event_loop()
 
 
+    
     def signalsessioneventrestart(self,result):
         pass
 
@@ -206,12 +205,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except IqError as e:
             logging.error("Could not register account: %s" %\
                     e.iq['error']['text'])
-            traceback.print_exc(file=sys.stdout)
-            #self.disconnect()
         except IqTimeout:
             logging.error("No response from server.")
             traceback.print_exc(file=sys.stdout)
             self.disconnect()
+
 
     def muc_message(self, msg):
         if self.config.agenttype in ['relayserver','serveurrelais'] and \
@@ -277,6 +275,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],dataobj['sessionid']))
 
                     del dataobj['data']
+                    # traitement TEVENT
+                    # TEVENT event sended by remote machine ou RS
+                    # message adresse au gestionnaire evenement
+                    if 'Dtypequery' in mydata and mydata['Dtypequery'] == 'TEVENT' and self.session.isexist(dataobj['sessionid']):
+                        mydata['Dtypequery'] = 'TR'
+                        datacontinue = {
+                                'to' : self.boundjid.bare,
+                                'action': dataobj['action'],
+                                'sessionid': dataobj['sessionid'],
+                                'data' : dict(self.session.sessionfromsessiondata(dataobj['sessionid']).datasession.items() + mydata.items()),
+                                'ret' : 0,
+                                'base64' : False
+                        }
+                        #add Tevent gestion event
+                        self.eventmanage.addevent(datacontinue)
+                        return
                     try:
                         msg['body']= dataobj
                         logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
@@ -297,7 +311,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 mtype='chat')
                         logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
                         traceback.print_exc(file=sys.stdout)
-
 
                     except Exception as e:
                         logging.error("execution plugin [%s]  : %s " % (dataobj['action'],str(e)))
@@ -335,6 +348,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             #executer seulement par machine
             for i in self.session.sessiondata:
                 if 'signal' in i.datasession :
+                    print "###################################################"
+                    print "REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT"
+                    print "###################################################"
                     logging.info("to start again  %s " %(i.datasession['signal']['action']))
                     msgdata = {
                             'action': i.datasession['signal']['action'],
@@ -368,16 +384,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         password=self.config.passwordconnexionmuc,
                         wait=True)
 
-    def loginfotomaster(self, msgdata):
-        # ne sont traite par master seulement action loginfos
-        try:
-            self.send_message(  mbody = json.dumps(msgdata),
-                                mto = 'master@localhost/MASTER',
-                                mtype ='chat')
-        except Exception as e:
-            logging.error("message log to 'master@localhost/MASTER' : %s " %(str(e)))
-            traceback.print_exc(file=sys.stdout)
-            return
 
     def muc_offlineMaster(self, presence):
         pass
@@ -506,8 +512,6 @@ def doTask():
             logging.log(DEBUGPULSE,"Unable to connect.")
             restart = False
         if not restart: break
-
-
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
