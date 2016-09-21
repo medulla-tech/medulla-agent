@@ -33,6 +33,8 @@ cd "`dirname $0`"
 AGENT_VERSION="0.1"
 PYTHON_VERSION="2.7.9"
 PY_WIN32_VERSION="219"
+PY_PIP_MODULE="pip"
+PY_PIP_VERSION="8.1.2"
 PY_NETIFACES_MODULE="netifaces"
 PY_NETIFACES_VERSION="0.10.5"
 PY_COMTYPES_MODULE="comtypes"
@@ -60,6 +62,7 @@ compute_parameters() {
 	#PY_WIN32_URL="http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20${PY_WIN32_VERSION}/${PY_WIN32_FILENAME}"
 	PY_WIN32_FILENAME="pypiwin32-${PY_WIN32_VERSION}-cp27-none-win32.whl"
 	PY_WIN32_URL="https://pypi.python.org/packages/cd/59/7cc2407b15bcd13d43933a5ae163de89b6f366dda8b2b7403453e61c3a05/${PY_WIN32_FILENAME}"
+	PY_PIP_FILENAME="${PY_PIP_MODULE}-${PY_PIP_VERSION}.tar.gz"
 	PY_NETIFACES_FILENAME="${PY_NETIFACES_MODULE}-${PY_NETIFACES_VERSION}.tar.gz"
 	PY_COMTYPES_FILENAME="${PY_COMTYPES_MODULE}-${PY_COMTYPES_VERSION}.zip"
 	PY_CONFIGPARSER_FILENAME="${PY_CONFIGPARSER_MODULE}-${PY_CONFIGPARSER_VERSION}.tar.gz"
@@ -145,6 +148,7 @@ download_agent_dependencies() {
 	colored_echo blue "### INFO Downloading python and dependencies..."
 	download_wget ${PYTHON_URL} ${PYTHON_FILENAME}
 	download_wget ${PY_VCPYTHON27_URL} ${PY_VCPYTHON27_FILENAME}
+	download_pip ${PY_PIP_MODULE} ${PY_PIP_FILENAME}
 	download_pip ${PY_NETIFACES_MODULE} ${PY_NETIFACES_FILENAME}
 	download_pip ${PY_COMTYPES_MODULE} ${PY_COMTYPES_FILENAME}
 	download_pip ${PY_CONFIGPARSER_MODULE} ${PY_CONFIGPARSER_FILENAME}
@@ -162,6 +166,7 @@ update_nsi_script() {
 		-e "s/@@PYTHON_MSI@@/${PYTHON_FILENAME}/" \
 		-e "s/@@PY_VCPYTHON27@@/${PY_VCPYTHON27_FILENAME}/" \
 		-e "s/@@PY_WIN32@@/${PY_WIN32_FILENAME}/" \
+		-e "s/@@PY_PIP@@/${PY_PIP_FILENAME}/" \
 		-e "s/@@PY_NETIFACES@@/${PY_NETIFACES_FILENAME}/" \
 		-e "s/@@PY_COMTYPES@@/${PY_COMTYPES_FILENAME}/" \
 		-e "s/@@PY_CONFIGPARSER@@/${PY_CONFIGPARSER_FILENAME}/" \

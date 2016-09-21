@@ -12,6 +12,7 @@
 !define PYTHON_MSI "@@PYTHON_MSI@@"
 !define PY_VCPYTHON27 "@@PY_VCPYTHON27@@"
 !define PY_WIN32 "@@PY_WIN32@@"
+!define PY_PIP "@@PY_PIP@@"
 !define PY_NETIFACES "@@PY_NETIFACES@@"
 !define PY_COMTYPES "@@PY_COMTYPES@@"
 !define PY_CONFIGPARSER "@@PY_CONFIGPARSER@@"
@@ -80,6 +81,7 @@ SectionEnd
 Section "Python Modules" sec_pymod
   SetOutPath "$INSTDIR\tmp"
   File "${DOWNLOADS_DIR}/${PY_WIN32}"
+  File "${DOWNLOADS_DIR}/${PY_PIP}"
   File "${DOWNLOADS_DIR}/${PY_NETIFACES}"
   File "${DOWNLOADS_DIR}/${PY_COMTYPES}"
   File "${DOWNLOADS_DIR}/${PY_CONFIGPARSER}"
@@ -89,6 +91,11 @@ Section "Python Modules" sec_pymod
   DetailPrint "Python modules Installation...."
   DetailPrint "------------------------------------------------------"
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" pip`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -124,6 +131,7 @@ Section "Python Modules" sec_pymod
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
   Delete $INSTDIR\tmp\${PY_WIN32}
+  Delete $INSTDIR\tmp\${PY_PIP}
   Delete $INSTDIR\tmp\${PY_NETIFACES}
   Delete $INSTDIR\tmp\${PY_COMTYPES}
   Delete $INSTDIR\tmp\${PY_CONFIGPARSER}
