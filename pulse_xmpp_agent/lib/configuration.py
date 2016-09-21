@@ -14,13 +14,13 @@ from  agentconffile import conffilename
 from sleekxmpp import jid
 
 
-def changeconnection(conffile, port,ipserver,jid,baseurlguacamole):
+def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'relayserver_agent', str(jid))
-    Config.set('type', 'baseurlguacamole', str(baseurlguacamole))
+    Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
@@ -147,8 +147,13 @@ class parametreconf:
 
         if Config.has_option("master", "showinfo"):
             self.showinfomaster = Config.getboolean('master', 'showinfo')
+        else:
+            self.showinfomaster = False
+
         if Config.has_option("master", "showplugins"):
             self.showplugins = Config.getboolean('master', 'showplugins')
+        else:
+            self.showplugins = False
 
 
 
