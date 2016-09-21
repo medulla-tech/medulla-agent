@@ -22,13 +22,19 @@ import pluginsmachine
 import pluginsrelay
 from optparse import OptionParser
 import pprint
-import os
+import os 
+
+from lib.logcolor import  add_coloring_to_emit_ansi
+
+
 #addition chemin pour library and plugins
 pathbase = os.path.abspath(os.curdir)
-pathplugins = os.path.join(pathbase, "plugins")
-pathlib     = os.path.join(pathbase, "lib")
+pathplugins = os.path.join(pathbase, "pluginsmachine")
+pathplugins_relay = os.path.join(pathbase, "pluginsrelay")
 sys.path.append(pathplugins)
-sys.path.append(pathlib)
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+
 logger = logging.getLogger()
 global restart
 #global DEBUGPULSE
@@ -43,7 +49,7 @@ else:
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
-        #attribution jid
+        #attribution jid 
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
         newjidconf[0] = name_random(10,"conf")
@@ -52,13 +58,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
         #print conf.passwordconnection
-
+        
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
-        try:
-            self.ippublic = searchippublic()
-        except:
-            self.ippublic = None
+        self.ippublic = searchippublic()
+        if self.ippublic == "":
+            self.ippublic == None
 
         self.config.mastersalon="%s/MASTER"%self.config.confjidsalon
 
@@ -75,14 +80,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("session_start", self.start)
 
 
-        # recupere presence dans chatroomconf
-
+        # recupere presence dans salonconf
+        
         self.add_event_handler("muc::%s::presence" % conf.confjidsalon,
                                self.muc_presenceConf)
-        """ sortie presense dans chatroom Command """
+        """ sortie presense dans salon Command """
         self.add_event_handler("muc::%s::got_offline" % conf.confjidsalon,
                                self.muc_offlineConf)
-        """ nouvelle presense dans chatroom Command """
+        """ nouvelle presense dans salon Command """    
         self.add_event_handler("muc::%s::got_online" % conf.confjidsalon,
                                self.muc_onlineConf)
 
@@ -96,14 +101,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.ipxmpp = getIpXmppInterface(self.config.confserver, self.config.confport)
 
-        #join chatroom configuration
+        #join salon configuration
         self.plugin['xep_0045'].joinMUC(self.config.confjidsalon,
                                         self.config.NickName,
                                         password=self.config.confpasswordmuc,
                                         wait=True)
 
     def register(self, iq):
-        """ cette fonction est appelee pour la registration automatique"""
+        """ cette fonction est appelee pour la registration automatique""" 
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
@@ -122,7 +127,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def muc_presenceConf(self, presence):
         """
-        traitement seulement si MASTER du chatroom configmaster
+        traitement seulement si MASTER du salon configmaster
         """
         if presence['from'] == self.config.mastersalon:
             print presence['from']
@@ -147,7 +152,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if msg['body']=="This room is not anonymous" or msg['subject']=="Welcome!":
             return
         print msg
-        try :
+        try : 
             data = json.loads(msg['body'])
         except:
             return
@@ -161,7 +166,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.info("Start relay server agent configuration %s"%data['data'])
             print data['data']
             logging.log(DEBUGPULSE,"write new config")
-            changeconnection(conffilename(opts.typemachine),data['data'][1],data['data'][0],data['data'][2],data['data'][3])
+            changeconnection(conffilename(opts.typemachine), data['data'][1],data['data'][0],data['data'][2],data['data'][3])
         elif data['ret'] == 0:
             logging.error("configuration dynamic error")
         else:
@@ -181,7 +186,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_message(mto = "master@%s"%self.config.chatserver,
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
-
 
     def seachInfoMachine(self):
         er = networkagentinfo("config","inforegle")
@@ -233,7 +237,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 def createDaemon():
     """
         This function create a service/Daemon that will execute a det. task
-    """
+    """  
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
@@ -282,10 +286,11 @@ def doTask():
         else:
             break
 
+
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"
-        sys.exit(0)
+        sys.exit(0)  
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
         print "Pulse agent must be running as Administrator"
         sys.exit(0)
@@ -293,7 +298,7 @@ if __name__ == '__main__':
         print "Pulse agent must be running as root"
         sys.exit(0)
     optp = OptionParser()
-    optp.add_option("-d", "--deamon",action="store_true",
+    optp.add_option("-d", "--deamon",action="store_true", 
                  dest="deamon", default=False,
                   help="deamonize process")
     optp.add_option("-t", "--type",
@@ -301,28 +306,46 @@ if __name__ == '__main__':
                 help="Type machine : machine or relayserver")
     opts, args = optp.parse_args()
     tg = parametreconf(opts.typemachine)
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint(tg.__dict__)
-    #sys.exit(0)
-    if tg.debug == "LOG" or tg.debug == "DEBUGPULSE":
-        tg.debug = 25
-        DEBUGPULSE = 25
-    if not opts.deamon :#tg.debug,
-        #logging.basicConfig(level=tg.debug
-                        #format='[AGENT] %(levelname)-8s %(message)s')
-        logging.basicConfig(level=tg.debug,
-            format='[%(name)s.%(funcName)s:%(lineno)d] %(message)s')
-        doTask()
-    else:
-        logging.basicConfig(level=tg.debug,
-                            format='[AGENT] %(asctime)s :: %(levelname)-8s [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                            filename = tg.logfile,
-                            filemode='a')
-        stdout_logger = logging.getLogger('STDOUT')
-        sl = StreamToLogger(stdout_logger, logging.INFO)
-        sys.stdout = sl
 
+    if opts.typemachine.lower() in ["machine"]:
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
+        tg.pathplugins="pluginsmachine"
+    else:
+        tg.pathplugins="pluginsrelay"
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
+
+    if platform.system()=='Windows':
+        # Windows does not support ANSI escapes and we are using API calls to set the console color
+        logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
+    else:
+        # all non-Windows platforms are supporting ANSI escapes so we use them
+        logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+
+    if not opts.deamon :
+        stdout_logger = logging.getLogger('STDOUT')
+        sl = StreamToLogger(stdout_logger, tg.levellog)
+        sys.stdout = sl
         stderr_logger = logging.getLogger('STDERR')
         sl = StreamToLogger(stderr_logger, logging.ERROR)
         sys.stderr = sl
+        logging.basicConfig(level = tg.levellog,
+                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                    filename = tg.logfile,
+                    filemode = 'a')
+        doTask()
+    else:
+        stdout_logger = logging.getLogger('STDOUT')
+        sl = StreamToLogger(stdout_logger, tg.levellog)
+        sys.stdout = sl
+        stderr_logger = logging.getLogger('STDERR')
+        sl = StreamToLogger(stderr_logger, logging.ERROR)
+        sys.stderr = sl
+        logging.basicConfig(level = tg.levellog,
+                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                    filename = tg.logfile,
+                    filemode = 'a')
         createDaemon()
+
+    ##pp = pprint.PrettyPrinter(indent=4)
+    ##pp.pprint(tg.__dict__)
+    ##sys.exit(0)
