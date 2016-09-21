@@ -145,19 +145,6 @@ class parametreconf:
         except:
             self.ordreallagent = False
 
-        if Config.has_option("master", "showinfo"):
-            self.showinfomaster = Config.getboolean('master', 'showinfo')
-        else:
-            self.showinfomaster = False
-
-        if Config.has_option("master", "showplugins"):
-            self.showplugins = Config.getboolean('master', 'showplugins')
-        else:
-            self.showplugins = False
-
-
-
-
         if self.agenttype == "relayserver":
             self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('chatroom', 'server'))
             self.relayserverdeploy = ""
