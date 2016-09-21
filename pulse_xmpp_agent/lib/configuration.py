@@ -19,7 +19,7 @@ def changeconnection(conffile, port,ipserver,jid,baseurlguacamole):
     Config.read(conffile)
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
-    Config.set('global', 'agentcommande', str(jid))
+    Config.set('global', 'relayserver_agent', str(jid))
     Config.set('type', 'baseurlguacamole', str(baseurlguacamole))
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
