@@ -44,7 +44,7 @@ class parametreconf:
         self.passwordconnection = Config.get('connection', 'password')
 
         try:
-            self.agenttype = Config.get('type', 'agenttype')
+            self.agenttype = Config.get('type', 'agent_type')
         except:
             self.agenttype = "machine"
 
