@@ -31,7 +31,8 @@ from time import mktime
 from datetime import datetime
 from multiprocessing import Process, Queue, TimeoutError
 import threading
-from lib.logcolor import  add_coloring_to_emit_ansi
+
+from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
