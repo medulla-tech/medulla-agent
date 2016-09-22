@@ -24,8 +24,8 @@ from optparse import OptionParser
 import pprint
 import os 
 
-from lib.logcolor import  add_coloring_to_emit_ansi
 
+from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 #addition chemin pour library and plugins
 pathbase = os.path.abspath(os.curdir)
