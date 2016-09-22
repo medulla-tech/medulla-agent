@@ -73,7 +73,6 @@ class parametreconf:
         self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'domain'),platform.node())
         # jid hostname
         #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
-        platform.node()
         try:
             self.logfile = Config.get('global', 'logfile')
         except:
@@ -264,5 +263,3 @@ def listMacAdressLinuxOs():
             t = ligne.strip().split(' ')
             lst[t[0]]=t[-1]
     return lst
-
-
