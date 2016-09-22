@@ -16,7 +16,7 @@ version_agent = 1.0
 # The agent type: machine or relayserver
 agent_type = relayserver
 # The location of the guacamole server.
-guacamole_baseurl = @@GUACAMOLE_BASEURL@@
+guacamole_baseurl = "@@GUACAMOLE_BASEURL@@"
 
 [plugin]
 # Section used by the plugins
