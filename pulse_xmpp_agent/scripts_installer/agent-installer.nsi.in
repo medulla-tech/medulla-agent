@@ -1,3 +1,6 @@
+; Make sure the installer runs as admin
+RequestExecutionLevel admin
+
 ; Define a few variables
 !define PRODUCT_NAME "Pulse Agent"
 !define PRODUCT_PUBLISHER "SIVEO"
