@@ -234,14 +234,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         }
         return dataobj
 
-def createDaemon():
+def createDaemon(tg):
     """
         This function create a service/Daemon that will execute a det. task
     """  
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
-            p = multiprocessing.Process(target=doTask)
+            p = multiprocessing.Process(target=doTask, arg=tg)
             p.daemon = True
             p.start()
             p.join()
@@ -252,13 +252,13 @@ def createDaemon():
             if pid > 0:
                 print 'PID: %d' % pid
                 os._exit(0)
-            doTask()
+            doTask(tg)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         os._exit(1)
 
 
-def doTask():
+def doTask(tg):
     # Setup the command line arguments.
     global restart
 
@@ -332,7 +332,7 @@ if __name__ == '__main__':
                     format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                     filename = tg.logfile,
                     filemode = 'a')
-        doTask()
+        doTask(tg)
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, tg.levellog)
@@ -344,7 +344,7 @@ if __name__ == '__main__':
                     format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                     filename = tg.logfile,
                     filemode = 'a')
-        createDaemon()
+        createDaemon(tg)
 
     ##pp = pprint.PrettyPrinter(indent=4)
     ##pp.pprint(tg.__dict__)
