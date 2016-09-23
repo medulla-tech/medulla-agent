@@ -25,7 +25,7 @@ import traceback
 import pluginsmachine
 import pluginsrelay
 from optparse import OptionParser
-
+import time
 import pprint
 from time import mktime
 from datetime import datetime
@@ -508,6 +508,8 @@ def doTask( tg ):
         if xmpp.connect(address=(tg.Server,tg.Port)):
             xmpp.process(block=True)
             xmpp.queue_read_event_from_command.put("quit")
+            logging.error("wait 2s end thread event loop")
+            time.sleep(2)
             xmpp.scheduler.quit()
             logging.log(DEBUGPULSE,"bye bye Agent")
         else:
