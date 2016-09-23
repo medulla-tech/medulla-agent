@@ -468,14 +468,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic
         }
+        sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
             if element.endswith('.py') and element.startswith('plugin_'):
                 mod = __import__(element[:-3])
                 reload(mod)
                 module = __import__(element[:-3]).plugin
                 dataobj['plugin'][module['NAME']] = module['VERSION']
-        return dataobj
-
+            return dataobj
 
     def muc_onlineMaster(self, presence):
         if presence['muc']['nick'] == self.config.NickName:
@@ -560,11 +560,12 @@ if __name__ == '__main__':
 
     opts, args = optp.parse_args()
     tg = parametreconf(opts.typemachine)
+
     if opts.typemachine.lower() in ["machine"]:
+        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
-        tg.pathplugins="pluginsmachine"
     else:
-        tg.pathplugins="pluginsrelay"
+        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
 
     if platform.system()=='Windows':
