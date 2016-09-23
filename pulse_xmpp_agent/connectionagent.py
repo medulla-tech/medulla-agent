@@ -304,6 +304,11 @@ if __name__ == '__main__':
     optp.add_option("-t", "--type",
                 dest="typemachine", default=False,
                 help="Type machine : machine or relayserver")
+
+    optp.add_option("-c", "--consoledebug",action="store_true", 
+                dest="consoledebug", default = False,
+                  help="console debug")
+
     opts, args = optp.parse_args()
     tg = parametreconf(opts.typemachine)
 
@@ -322,17 +327,21 @@ if __name__ == '__main__':
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
 
     if not opts.deamon :
-        stdout_logger = logging.getLogger('STDOUT')
-        sl = StreamToLogger(stdout_logger, tg.levellog)
-        sys.stdout = sl
-        stderr_logger = logging.getLogger('STDERR')
-        sl = StreamToLogger(stderr_logger, logging.ERROR)
-        sys.stderr = sl
-        logging.basicConfig(level = tg.levellog,
-                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                    filename = tg.logfile,
-                    filemode = 'a')
-        doTask(tg)
+        if opts.consoledebug:
+            logging.basicConfig(level = logging.DEBUG, format = '%(asctime)s - %(levelname)s - %(message)s')
+            doTask(tg)
+        else:
+            stdout_logger = logging.getLogger('STDOUT')
+            sl = StreamToLogger(stdout_logger, tg.levellog)
+            sys.stdout = sl
+            stderr_logger = logging.getLogger('STDERR')
+            sl = StreamToLogger(stderr_logger, logging.ERROR)
+            sys.stderr = sl
+            logging.basicConfig(level = tg.levellog,
+                        format = '[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                        filename = tg.logfile,
+                        filemode = 'a')
+            doTask(tg)
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, tg.levellog)

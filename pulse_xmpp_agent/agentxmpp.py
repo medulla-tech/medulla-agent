@@ -534,6 +534,10 @@ if __name__ == '__main__':
     optp.add_option("-t", "--type",
                 dest="typemachine", default=False,
                 help="Type machine : machine or relayserver")
+    optp.add_option("-c", "--consoledebug",action="store_true", 
+                dest="consoledebug", default = False,
+                  help="console debug")
+
     opts, args = optp.parse_args()
     tg = parametreconf(opts.typemachine)
     if opts.typemachine.lower() in ["machine"]:
@@ -549,17 +553,12 @@ if __name__ == '__main__':
     else:
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+
     if not opts.deamon :
-        stdout_logger = logging.getLogger('STDOUT')
-        sl = StreamToLogger(stdout_logger, tg.levellog)
-        sys.stdout = sl
-        stderr_logger = logging.getLogger('STDERR')
-        sl = StreamToLogger(stderr_logger, tg.levellog)
-        sys.stderr = sl
-        logging.basicConfig(level = tg.levellog,
-                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                    filename = tg.logfile,
-                    filemode = 'a')
+        if opts.consoledebug :
+            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        else:
+            logging.basicConfig(level = tg.levellog, format='%(asctime)s - %(levelname)s - %(message)s')
         doTask(tg)
     else:
         stdout_logger = logging.getLogger('STDOUT')
