@@ -21,7 +21,7 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'relayserver_agent', str(jid))
     Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
-    with open(conffile, 'wb') as configfile:
+    with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
 # Singleton/SingletonDecorator.py
