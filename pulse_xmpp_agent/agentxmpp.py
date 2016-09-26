@@ -475,7 +475,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 reload(mod)
                 module = __import__(element[:-3]).plugin
                 dataobj['plugin'][module['NAME']] = module['VERSION']
-            return dataobj
+        return dataobj
 
     def muc_onlineMaster(self, presence):
         if presence['muc']['nick'] == self.config.NickName:
