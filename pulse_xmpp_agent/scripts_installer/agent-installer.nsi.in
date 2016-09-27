@@ -22,10 +22,8 @@ RequestExecutionLevel admin
 !define PY_UTILS "@@PY_UTILS@@"
 !define PY_SLEEKXMPP "@@PY_SLEEKXMPP@@"
 !define PY_WMI "@@PY_WMI@@"
-!define PY_LXML "@@PY_LXML@@"
 !define PULSE_AGENT "@@PULSE_AGENT@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
-!define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 
 SetCompressor lzma
@@ -93,7 +91,6 @@ Section "Python Modules" sec_pymod
   File "${DOWNLOADS_DIR}/${PY_UTILS}"
   File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"
   File "${DOWNLOADS_DIR}/${PY_WMI}"
-  File "${DOWNLOADS_DIR}/${PY_LXML}"
   DetailPrint "Python modules Installation...."
   DetailPrint "------------------------------------------------------"
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
@@ -136,11 +133,6 @@ Section "Python Modules" sec_pymod
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" lxml`
-  DetailPrint "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
   Delete $INSTDIR\tmp\${PY_WIN32}
   Delete $INSTDIR\tmp\${PY_PIP}
   Delete $INSTDIR\tmp\${PY_NETIFACES}
@@ -149,7 +141,6 @@ Section "Python Modules" sec_pymod
   Delete $INSTDIR\tmp\${PY_UTILS}
   Delete $INSTDIR\tmp\${PY_SLEEKXMPP}
   Delete $INSTDIR\tmp\${PY_WMI}
-  Delete $INSTDIR\tmp\${PY_LXML}
 SectionEnd
 
 ; Installation of Pulse Agent
@@ -165,8 +156,7 @@ Section "!${PRODUCT_NAME}" sec_app
   DetailPrint "Return code was: $1"
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_AGENT_CONFFILE}"
-  ;StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "Pulse Agent" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
-  StrCpy $0 `sc create ${PULSE_AGENT_NAME} binpath= "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine" start= auto DisplayName= "${PRODUCT_NAME}"
+  StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "Pulse Agent" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout

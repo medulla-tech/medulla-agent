@@ -47,8 +47,6 @@ PY_SLEEKXMPP_MODULE="sleekxmpp"
 PY_SLEEKXMPP_VERSION="1.3.1"
 PY_WMI_MODULE="wmi"
 PY_WMI_VERSION="1.4.9"
-PY_LXML_MODULE="lxml"
-PY_LXML_VERSION="3.6.4"
 PULSE_AGENT_NAME="pulse-xmpp-agent"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 
@@ -71,7 +69,6 @@ compute_parameters() {
 	PY_UTILS_FILENAME="${PY_UTILS_MODULE}-${PY_UTILS_VERSION}.tar.gz"
 	PY_SLEEKXMPP_FILENAME="${PY_SLEEKXMPP_MODULE}-${PY_SLEEKXMPP_VERSION}.tar.gz"
 	PY_WMI_FILENAME="WMI-${PY_WMI_VERSION}.zip"
-	PY_LXML_FILENAME="${PY_LXML_MODULE}-${PY_LXML_VERSION}.tar.gz"
 	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.bz2"
 	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 }
@@ -158,7 +155,6 @@ download_agent_dependencies() {
 	download_pip ${PY_UTILS_MODULE} ${PY_UTILS_FILENAME}
 	download_pip ${PY_SLEEKXMPP_MODULE} ${PY_SLEEKXMPP_FILENAME}
 	download_pip ${PY_WMI_MODULE} ${PY_WMI_FILENAME}
-	download_pip ${PY_LXML_MODULE} ${PY_LXML_FILENAME}
 	download_wget ${PY_WIN32_URL} ${PY_WIN32_FILENAME}
 	colored_echo green "### INFO Downloading python and dependencies.. Done"
 }
@@ -177,10 +173,8 @@ update_nsi_script() {
 		-e "s/@@PY_UTILS@@/${PY_UTILS_FILENAME}/" \
 		-e "s/@@PY_SLEEKXMPP@@/${PY_SLEEKXMPP_FILENAME}/" \
 		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
-		-e "s/@@PY_LXML@@/${PY_LXML_FILENAME}/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
-		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
