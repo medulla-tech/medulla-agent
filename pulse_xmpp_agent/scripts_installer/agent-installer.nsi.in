@@ -1,3 +1,24 @@
+;
+; (c) 2016 siveo, http://www.siveo.net
+;
+; This file is part of Pulse 2, http://www.siveo.net
+;
+; Pulse 2 is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 2 of the License, or
+; (at your option) any later version.
+;
+; Pulse 2 is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with Pulse 2; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+; MA 02110-1301, USA.
+
+
 ; Make sure the installer runs as admin
 RequestExecutionLevel admin
 
@@ -24,6 +45,7 @@ RequestExecutionLevel admin
 !define PY_WMI "@@PY_WMI@@"
 !define PULSE_AGENT "@@PULSE_AGENT@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 
 SetCompressor lzma
@@ -46,6 +68,8 @@ SetCompressor lzma
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_LANGUAGE "English"
 
+; Other useful modules
+!include "WinVer.nsh"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}.exe"
@@ -66,16 +90,23 @@ Section "Python" sec_py
   File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"
   DetailPrint "Python Installation...."
   DetailPrint "------------------------------------------------------"
+
+  ; Install of Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_MSI}" /quiet /norestart ALLUSERS=1`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Visual C++ Compiler for Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27}" /quiet /norestart ALLUSERS=1`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
   Delete $INSTDIR\tmp\${PYTHON_MSI}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27}
 SectionEnd
@@ -93,46 +124,71 @@ Section "Python Modules" sec_pymod
   File "${DOWNLOADS_DIR}/${PY_WMI}"
   DetailPrint "Python modules Installation...."
   DetailPrint "------------------------------------------------------"
+
+  ; Install of Python module for Windows Extensions (pywin32)
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python pip module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" pip`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python netifaces module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" netifaces`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python comtypes module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" comtypes`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python configparser module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" configparser`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python utils module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" utils`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python sleekxmpp module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" sleekxmpp`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Install of Python wmi module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" wmi`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
   Delete $INSTDIR\tmp\${PY_WIN32}
   Delete $INSTDIR\tmp\${PY_PIP}
   Delete $INSTDIR\tmp\${PY_NETIFACES}
@@ -149,20 +205,31 @@ Section "!${PRODUCT_NAME}" sec_app
   File "${PULSE_AGENT}"
   DetailPrint "Pulse Agent Installation...."
   DetailPrint "------------------------------------------------------"
+
+  ; Install of Pulse agent
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT}`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Copy of agent config file
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_AGENT_CONFFILE}"
+
+  ; Creation of the service
   StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "Pulse Agent" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
   DetailPrint "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   DetailPrint "Return code was: $1"
-  SectionIn RO
+  DetailPrint "-------------------"
+
+  ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
+
+  SectionIn RO
   WriteUninstaller $INSTDIR\uninstall.exe
   ; Add ourselves to Add/remove programs
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
@@ -173,12 +240,56 @@ Section "!${PRODUCT_NAME}" sec_app
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
   WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+
   ; Write the version installed in registry
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${PRODUCT_VERSION}"
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+
   Delete $INSTDIR\tmp\${PULSE_AGENT}
   Sleep 5000
   SetRebootFlag true
+SectionEnd
+
+; Setup of RDP & Firewall
+Section "RDP Setup" sec_rdp
+  DetailPrint "RDP setup for remote control of machine via Pulse...."
+  DetailPrint "------------------------------------------------------"
+
+  ; Setup of rdp
+  StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f`
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+  ${If} ${AtLeastWin7}
+    StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f`
+  ${EndIf}
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+  ${If} ${AtLeastWin7}
+    StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v SecurityLayer /t REG_DWORD /d 0 /f`
+  ${EndIf}
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
+
+  ; Setup of Windows firewall to allow rdp
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall set service type = remotedesktop mode = enable`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall set rule group="remote desktop" new enable=Yes`
+  ${EndIf}
+  DetailPrint "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  DetailPrint "Return code was: $1"
+  DetailPrint "-------------------"
 SectionEnd
 
 ; What needs to be done for uninstalling
@@ -202,18 +313,29 @@ SectionEnd
 
 ; Functions
 
+Function .onInit
+  ; XP or later
+  ${IfNot} ${AtLeastWinXP}
+    MessageBox MB_OK|MB_ICONEXCLAMATION "XP and above required for running ${PRODUCT_NAME}"
+    Quit
+  ${EndIf}
+FunctionEnd
+
 Function .onMouseOverSection
-    ; Find which section the mouse is over, and set the corresponding description.
-    FindWindow $R0 "#32770" "" $HWNDPARENT
-    GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+  ; Find which section the mouse is over, and set the corresponding description.
+  FindWindow $R0 "#32770" "" $HWNDPARENT
+  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
 
-    StrCmp $0 ${sec_py} 0 +2
-      SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
-            This is required for ${PRODUCT_NAME} to run."
+  StrCmp $0 ${sec_py} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+          This is required for ${PRODUCT_NAME} to run."
 
-    StrCmp $0 ${sec_pymod} 0 +2
-      SendMessage $R0 ${WM_SETTEXT} 0 "STR:Python modules required by ${PRODUCT_NAME}."
+  StrCmp $0 ${sec_pymod} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Python modules required by ${PRODUCT_NAME}."
 
-    StrCmp $0 ${sec_app} "" +2
-      SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+
+  StrCmp $0 ${sec_rdp} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
 FunctionEnd

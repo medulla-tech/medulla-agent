@@ -175,6 +175,7 @@ update_nsi_script() {
 		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
+		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
