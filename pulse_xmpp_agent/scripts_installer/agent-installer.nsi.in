@@ -70,6 +70,21 @@ SetCompressor lzma
 
 ; Other useful modules
 !include "WinVer.nsh"
+!include "FileFunc.nsh"
+
+; Logs macros
+var hFileLog
+!macro Log_Init logfile
+FileOpen $hFileLog "${logfile}" w
+!macroend
+!macro Log_String msg
+DetailPrint "${msg}"
+FileWrite $hFileLog "${msg}$\r$\n"
+!macroend
+!macro Log_Close
+FileWrite $hFileLog 'Done.'
+FileClose $hFileLog
+!macroend
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}.exe"
@@ -88,24 +103,24 @@ Section "Python" sec_py
   SetOutPath "$INSTDIR\tmp"
   File "${DOWNLOADS_DIR}/${PYTHON_MSI}"
   File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"
-  DetailPrint "Python Installation...."
-  DetailPrint "------------------------------------------------------"
+  !insertmacro Log_String "Python Installation...."
+  !insertmacro Log_String "------------------------------------------------------"
 
   ; Install of Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_MSI}" /quiet /norestart ALLUSERS=1`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Visual C++ Compiler for Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27}" /quiet /norestart ALLUSERS=1`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   Delete $INSTDIR\tmp\${PYTHON_MSI}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27}
@@ -122,72 +137,72 @@ Section "Python Modules" sec_pymod
   File "${DOWNLOADS_DIR}/${PY_UTILS}"
   File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"
   File "${DOWNLOADS_DIR}/${PY_WMI}"
-  DetailPrint "Python modules Installation...."
-  DetailPrint "------------------------------------------------------"
+  !insertmacro Log_String "Python modules Installation...."
+  !insertmacro Log_String "------------------------------------------------------"
 
   ; Install of Python module for Windows Extensions (pywin32)
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python pip module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" pip`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python netifaces module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" netifaces`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python comtypes module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" comtypes`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python configparser module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" configparser`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python utils module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" utils`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python sleekxmpp module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" sleekxmpp`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Install of Python wmi module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" wmi`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   Delete $INSTDIR\tmp\${PY_WIN32}
   Delete $INSTDIR\tmp\${PY_PIP}
@@ -203,31 +218,40 @@ SectionEnd
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
   File "${PULSE_AGENT}"
-  DetailPrint "Pulse Agent Installation...."
-  DetailPrint "------------------------------------------------------"
+  !insertmacro Log_String "Pulse Agent Installation...."
+  !insertmacro Log_String "------------------------------------------------------"
 
   ; Install of Pulse agent
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT}`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Copy of agent config file
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_AGENT_CONFFILE}"
 
-  ; Creation of the service
+  ; Creation of the task
   StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "Pulse Agent" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
+
+  ; Run the agent
+  !insertmacro Log_String "Running agent"
+  StrCpy $0 `"C:\Python27\python.exe" C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine`
+  !insertmacro Log_String "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   SectionIn RO
   WriteUninstaller $INSTDIR\uninstall.exe
@@ -246,38 +270,36 @@ Section "!${PRODUCT_NAME}" sec_app
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
 
   Delete $INSTDIR\tmp\${PULSE_AGENT}
-  Sleep 5000
-  SetRebootFlag true
 SectionEnd
 
 ; Setup of RDP & Firewall
 Section "RDP Setup" sec_rdp
-  DetailPrint "RDP setup for remote control of machine via Pulse...."
-  DetailPrint "------------------------------------------------------"
+  !insertmacro Log_String "RDP setup for remote control of machine via Pulse...."
+  !insertmacro Log_String "------------------------------------------------------"
 
   ; Setup of rdp
   StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
   ${If} ${AtLeastWin7}
     StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f`
   ${EndIf}
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
   ${If} ${AtLeastWin7}
     StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v SecurityLayer /t REG_DWORD /d 0 /f`
   ${EndIf}
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 
   ; Setup of Windows firewall to allow rdp
   ${If} ${IsWinXP}
@@ -285,26 +307,26 @@ Section "RDP Setup" sec_rdp
   ${Else}
     StrCpy $0 `netsh advfirewall firewall set rule group="remote desktop" new enable=Yes`
   ${EndIf}
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
-  DetailPrint "-------------------"
+  !insertmacro Log_String "Return code was: $1"
+  !insertmacro Log_String "-------------------"
 SectionEnd
 
 ; What needs to be done for uninstalling
 Section "Uninstall"
   Delete $INSTDIR\uninstall.exe
   StrCpy $0 `SCHTASKS /Delete /TN "Pulse Agent"`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
+  !insertmacro Log_String "Return code was: $1"
   StrCpy $0 `C:\Python27\Scripts\pip uninstall ${PULSE_AGENT_MODULE} -y`
-  DetailPrint "Running $0"
+  !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  DetailPrint "Return code was: $1"
+  !insertmacro Log_String "Return code was: $1"
   Delete $INSTDIR\etc\${PULSE_AGENT_CONFFILE}
   RMDir /r $INSTDIR
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
@@ -319,6 +341,19 @@ Function .onInit
     MessageBox MB_OK|MB_ICONEXCLAMATION "XP and above required for running ${PRODUCT_NAME}"
     Quit
   ${EndIf}
+
+  ; Install log initialization
+  CreateDirectory "$INSTDIR\tmp"
+  !insertmacro Log_Init "$INSTDIR\tmp\install.log"
+  !insertmacro Log_String "Starting install..."
+  !insertmacro GetTime
+  ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
+  !insertmacro Log_String "Start time: $3 $0/$1/$2 at $4:$5:$6"
+FunctionEnd
+
+Function .onGUIEnd
+  ; Write the log file
+  !insertmacro Log_Close
 FunctionEnd
 
 Function .onMouseOverSection
