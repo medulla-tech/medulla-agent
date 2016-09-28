@@ -579,7 +579,16 @@ if __name__ == '__main__':
         if opts.consoledebug :
             logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         else:
-            logging.basicConfig(level = tg.levellog, format='%(asctime)s - %(levelname)s - %(message)s')
+            stdout_logger = logging.getLogger('STDOUT')
+            sl = StreamToLogger(stdout_logger, tg.levellog)
+            sys.stdout = sl
+            stderr_logger = logging.getLogger('STDERR')
+            sl = StreamToLogger(stderr_logger, tg.levellog)
+            sys.stderr = sl
+            logging.basicConfig(level = tg.levellog,
+                        format = '[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                        filename = tg.logfile,
+                        filemode = 'a')
         doTask(tg)
     else:
         stdout_logger = logging.getLogger('STDOUT')
