@@ -71,6 +71,7 @@ compute_parameters() {
 	PY_WMI_FILENAME="WMI-${PY_WMI_VERSION}.zip"
 	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.bz2"
 	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
+	PULSE_AGENT_TASK_XML="pulse-agent-task.xml"
 }
 
 display_usage() {
@@ -177,6 +178,7 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
+		-e "s/@@PULSE_AGENT_TASK_XML@@/${PULSE_AGENT_TASK_XML}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 	colored_echo green "### INFO Updating NSIS script.. Done"

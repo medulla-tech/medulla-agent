@@ -47,6 +47,7 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
+!define PULSE_AGENT_TASK_XML "@@PULSE_AGENT_TASK_XML@@"
 
 SetCompressor lzma
 
@@ -234,7 +235,13 @@ Section "!${PRODUCT_NAME}" sec_app
   File "../config/${PULSE_AGENT_CONFFILE}"
 
   ; Creation of the task
-  StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "Pulse Agent" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
+  SetOutPath "$INSTDIR\tmp"
+  File "${PULSE_AGENT_TASK_XML}"
+  ${If} ${AtLeastWin7}
+    StrCpy $0 `SCHTASKS /Create /XML "$INSTDIR\tmp\${PULSE_AGENT_TASK_XML}" /TN "${PRODUCT_NAME}"`
+  ${Else}
+    StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "${PRODUCT_NAME}" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
+  ${EndIf}
   !insertmacro Log_String "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -270,6 +277,7 @@ Section "!${PRODUCT_NAME}" sec_app
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
 
   Delete $INSTDIR\tmp\${PULSE_AGENT}
+  Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML}
 SectionEnd
 
 ; Setup of RDP & Firewall
