@@ -20,6 +20,11 @@ guacamole_baseurl = "@@GUACAMOLE_BASEURL@@"
 
 [plugin]
 # Section used by the plugins
+guacamole_dbhost = @@PLUGIN_GUACAMOLE_DBHOST@@
+guacamole_dbport = @@PLUGIN_GUACAMOLE_DBPORT@@
+guacamole_dbname = @@PLUGIN_GUACAMOLE_DBNAME@@
+guacamole_dbuser = @@PLUGIN_GUACAMOLE_DBUSER@@
+guacamole_dbpasswd = @@PLUGIN_GUACAMOLE_DBUSER@@
 
 [connection]
 # The server and port below allow the agent to connect to the XMPP server
