@@ -136,7 +136,7 @@ class manage_event:
                     self.show_eventloop()
                     if 'sessionid' in event and '_eventype' in event:
                         if 'result' in event['data'] and \
-                            'cmddata' in event['data']['result'] and \
+                            'command' in event['data']['result'] and \
                             'codeerror' in event['data']['result'] and \
                             'Dtypequery'  in event['data']['result'] and \
                             'Devent'  in event['data']['result'] :
@@ -147,7 +147,7 @@ class manage_event:
                                     'action': event['action'],
                                     'data' : {
                                         'resultcommand'  :  event['data']['result']['resultcommand'],
-                                        'command' :  event['data']['result']['cmddata'],
+                                        'command' :  event['data']['result']['command'],
                                         'codeerror' : event['data']['result']['codeerror'],
                                         'Dtypequery' : event['data']['Dtypequery'],
                                         'Devent': event['data']['Devent']

@@ -65,3 +65,5 @@ class managepackage:
                 or ( 'name'  in jr['info'] and  jr['info']['name'] == packagename)):
                 return t
         return None
+
+        

@@ -152,7 +152,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.eventmanage.manage_event_loop()
 
 
-    
     def signalsessioneventrestart(self,result):
         pass
 
@@ -233,6 +232,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def muc_message(self, msg):
+        
         if self.config.agenttype in ['relayserver','serveurrelais'] and \
                         not msg['from'].resource in ["deploy","MASTER"] and \
                         not msg['from'].user in ['log']:
@@ -586,7 +586,7 @@ if __name__ == '__main__':
             sl = StreamToLogger(stderr_logger, tg.levellog)
             sys.stderr = sl
             logging.basicConfig(level = tg.levellog,
-                        format = '[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                        format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                         filename = tg.logfile,
                         filemode = 'a')
         doTask(tg)

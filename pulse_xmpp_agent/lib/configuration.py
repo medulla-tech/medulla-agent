@@ -48,6 +48,24 @@ class parametreconf:
         except:
             self.agenttype = "machine"
 
+        #par convention :
+                #la liste des plugins definie dans la section plugin avec la clef pluginlist
+                # donne les fichiers .ini a chargé.
+                #les fichiers ini des plugins doivent comporter une session parameters.
+                # les clef representeront aussi par convention le nom des variables utilisable dans le plugins.
+        if Config.has_option("plugin", "pluginlist"):
+            pluginlist = Config.get('plugin', 'pluginlist').split(",")
+            pluginlist = [x.strip() for x in pluginlist ]
+            for z in pluginlist:
+                namefile = "%s.ini"%os.path.join(nameplugindir,z)
+                if os.path.isfile(namefile):
+                    liststuple = self.loadparametersplugins(namefile)
+                    for keyparameter, valueparameter in liststuple:
+                        #locals()[keyparameter] = valueparameter
+                        setattr(self, keyparameter,valueparameter)
+                else:
+                    logging.getLogger().warning("parameter File pluging %s : missing"%nameplugindir)
+
         try:
             self.agentcommande = Config.get('global', 'relayserver_agent')
         except:
@@ -172,6 +190,11 @@ class parametreconf:
         self.information['processor']=self.ProcessorIdentifier
         self.Architecture=platform.architecture()
         self.information['archi']=self.Architecture
+
+    def loadparametersplugins(self,namefile):
+        Config = ConfigParser.ConfigParser()
+        Config.read(namefile)
+        return Config.items("parameters")
 
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"

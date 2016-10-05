@@ -43,7 +43,6 @@ def pathscriptperl(name):
     return os.path.abspath(os.path.join(pathbase(),"script","perl",name))
 
 
-
 def affichedatajson(jsondata):
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(jsondata)
@@ -190,6 +189,38 @@ def getIpListreduite():
             pass
     return listmacadress
 
+#jfk
+def getMacAdressList():
+    listmacadress = []
+    for interfacenet in netifaces.interfaces():
+        try:
+            macadress = netifaces.ifaddresses(interfacenet)[netifaces.AF_LINK][0]['addr']
+            if macadress != "00:00:00:00:00:00":
+                listmacadress.append(macadress)
+        except:
+            pass
+    return listmacadress
+
+def getIPAdressList():
+    ip_list = []
+    for interface in netifaces.interfaces():
+        for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+            if link['addr'] != '127.0.0.1':
+                ip_list.append(link['addr'])
+    return ip_list
+
+def MacAdressToIp(ip):
+    'Returns a MAC for interfaces that have given IP, returns None if not found'
+    for i in netifaces.interfaces():
+        addrs = netifaces.ifaddresses(i)
+        try:
+            if_mac = addrs[netifaces.AF_LINK][0]['addr']
+            if_ip = addrs[netifaces.AF_INET][0]['addr']
+        except:# IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+            if_mac = if_ip = None
+        if if_ip == ip:
+            return if_mac
+    return None
 
 def name_jid():
     dd = getIpListreduite()
@@ -197,7 +228,6 @@ def name_jid():
     cc.sort()
     return dd[cc[0]]
 
-   
 def reduction_mac(mac):
     mac=mac.lower()
     mac = mac.replace(":","")
