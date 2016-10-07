@@ -214,7 +214,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                            mtype ='groupchat')
 
     def register(self, iq):
-        """ cette fonction est appelee pour la registration automatique""" 
+        """ This function is called for automatic registation """
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
