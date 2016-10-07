@@ -77,7 +77,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
-        #print conf.passwordconnection
         
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
@@ -86,9 +85,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.ippublic == None
 
         self.config.mastersalon="%s/MASTER"%self.config.confjidsalon
-
-        #pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(self.config.__dict__)
 
         obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         #self.md5reseau = hashlib.md5(obj['result']).hexdigest()
@@ -139,7 +135,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except IqError as e:
             logging.error("Could not register account: %s" %\
                     e.iq['error']['text'])
-            #self.disconnect()
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
@@ -157,8 +152,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def muc_offlineConf(self, presence):
         if presence['from'] == self.config.mastersalon:
             print presence['from']
-        #print "muc_offlineConf"
-        #print presence
         pass
 
     def muc_onlineConf(self, presence):
@@ -199,7 +192,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def infos_machine(self):
         #envoi information
         dataobj=self.seachInfoMachine()
-        #loggin.info("update plugin for hostname %s"%dataobj['machine'][:-3])
         self.session = name_random(10,"session")
         dataobj['sessionid'] = self.session
         dataobj['base64'] = False
@@ -375,6 +367,3 @@ if __name__ == '__main__':
                     filemode = 'a')
         createDaemon(tg)
 
-    ##pp = pprint.PrettyPrinter(indent=4)
-    ##pp.pprint(tg.__dict__)
-    ##sys.exit(0)
