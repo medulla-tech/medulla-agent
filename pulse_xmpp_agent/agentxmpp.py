@@ -105,7 +105,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.md5reseau = hashlib.md5(obj['result']).hexdigest()
         # update every hour
         self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
-        self.schedule('surveille reseau', laps_time_networkMonitor , self.networkMonitor, repeat=True)
+        self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
         self.schedule('reprise_evenement', 10 , self.handlereprise_evenement, repeat=True)
         self.add_event_handler("register", self.register, threaded=True)
