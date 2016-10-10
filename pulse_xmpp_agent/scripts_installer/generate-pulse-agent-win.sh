@@ -49,8 +49,36 @@ PY_WMI_MODULE="wmi"
 PY_WMI_VERSION="1.4.9"
 PULSE_AGENT_NAME="pulse-xmpp-agent"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
-
+OPENSSH_NAME="OpenSSH-Win32"
+OPENSSH_VERSION="v0.0.0.9"
+LAUNCHER_SSH_KEY="\/root\/\.ssh\/id_rsa.pub"
+FUSION_INVENTORY_AGENT_NAME="fusioninventory-agent"
+FUSION_INVENTORY_AGENT_VERSION="2.3.18"
 DOWNLOAD_FOLDER="py_downloads"
+PULSE_AGENT_PLUGINS_NAME="pulse-agent-plugins"
+PULSE_AGENT_PLUGINS_VERSION="0.1"
+
+
+# Display usage
+display_usage() {
+	echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
+}
+
+check_arguments() {
+	for i in "$@"; do
+		case $i in
+      --inventory-tag=*)
+        INVENTORY_TAG="${i#*=}"
+        shift
+        ;;
+			*)
+        # unknown option
+        display_usage
+        exit 0
+    		;;
+		esac
+	done
+}
 
 compute_parameters() {
 	PYTHON_FILENAME="python-${PYTHON_VERSION}.msi"
@@ -72,6 +100,11 @@ compute_parameters() {
 	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.bz2"
 	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 	PULSE_AGENT_TASK_XML="pulse-agent-task.xml"
+	PULSE_AGENT_PLUGINS="${PULSE_AGENT_PLUGINS_NAME}-${PULSE_AGENT_PLUGINS_VERSION}.tar.bz2"
+	OPENSSH_FILENAME="${OPENSSH_NAME}.zip"
+	OPENSSH_URL="https://github.com/PowerShell/Win32-OpenSSH/releases/download/${OPENSSH_VERSION}/${OPENSSH_FILENAME}"
+	FUSION_INVENTORY_AGENT_FILENAME="${FUSION_INVENTORY_AGENT_NAME}_windows-x86_${FUSION_INVENTORY_AGENT_VERSION}.exe"
+	FUSION_INVENTORY_AGENT_URL="https://github.com/tabad/fusioninventory-agent-windows-installer/releases/download/${FUSION_INVENTORY_AGENT_VERSION}/${FUSION_INVENTORY_AGENT_FILENAME}"
 }
 
 display_usage() {
@@ -157,6 +190,8 @@ download_agent_dependencies() {
 	download_pip ${PY_SLEEKXMPP_MODULE} ${PY_SLEEKXMPP_FILENAME}
 	download_pip ${PY_WMI_MODULE} ${PY_WMI_FILENAME}
 	download_wget ${PY_WIN32_URL} ${PY_WIN32_FILENAME}
+	download_wget ${OPENSSH_URL} ${OPENSSH_FILENAME}
+	download_wget ${FUSION_INVENTORY_AGENT_URL} ${FUSION_INVENTORY_AGENT_FILENAME}
 	colored_echo green "### INFO Downloading python and dependencies.. Done"
 }
 
@@ -179,6 +214,12 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		-e "s/@@PULSE_AGENT_TASK_XML@@/${PULSE_AGENT_TASK_XML}/" \
+		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
+		-e "s/@@OPENSSH_FILENAME@@/${OPENSSH_FILENAME}/" \
+		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
+		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
+		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
+		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 	colored_echo green "### INFO Updating NSIS script.. Done"
@@ -195,6 +236,7 @@ generate_agent_installer() {
 }
 
 # Run the script
+check_arguments "$@"
 compute_parameters
 prepare_system
 download_agent_dependencies

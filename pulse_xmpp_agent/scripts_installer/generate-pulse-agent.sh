@@ -38,6 +38,7 @@ display_usage() {
   echo -e "\t --conf-xmppmucpasswd=<XMPP configuration server MUC password> \n"
   echo -e "\t --xmpp-passwd=<XMPP server password> \n"
   echo -e "\t --xmpp-mucpasswd=<XMPP server MUC password>\n"
+  echo -e "\t [--inventory-tag=<Tag added to the inventory>]\n"
 }
 
 check_arguments() {
@@ -69,6 +70,10 @@ check_arguments() {
         ;;
       --xmpp-mucpasswd=*)
         XMPP_SERVER_MUCPASSWORD="${i#*=}"
+        shift
+        ;;
+      --inventory-tag=*)
+        INVENTORY_TAG="${i#*=}"
         shift
         ;;
 			*)
@@ -118,6 +123,11 @@ compute_settings() {
   colored_echo blue " - XMPP configuration server MUC password: '${PUBLIC_XMPP_SERVER_MUCPASSWORD}'"
   colored_echo blue " - XMPP server password: '${XMPP_SERVER_PASSWORD}'"
   colored_echo blue " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
+	if [ -z "${INVENTORY_TAG}" ]; then
+    colored_echo blue " - Inventory TAG: None"
+	else
+		colored_echo blue " - Inventory TAG: '${INVENTORY_TAG}'"
+  fi
 }
 
 update_config_file() {
@@ -136,7 +146,13 @@ update_config_file() {
 generate_agent() {
   # Generate Pulse Agent for Windows
   colored_echo blue "Generating Pulse Agent for Windows..."
-  ./win32/generate-pulse-agent-win.sh
+	if [ -n "${INVENTORY_TAG}" ]; then
+		COMMAND="./win32/generate-pulse-agent-win.sh --inventory-tag=${INVENTORY_TAG}"
+	else
+		COMMAND="./win32/generate-pulse-agent-win.sh"
+	fi
+	echo "Running "${COMMAND}
+	${COMMAND}
 }
 
 # And finally we run the functions

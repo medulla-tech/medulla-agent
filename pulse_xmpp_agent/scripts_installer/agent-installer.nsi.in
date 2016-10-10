@@ -48,6 +48,12 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 !define PULSE_AGENT_TASK_XML "@@PULSE_AGENT_TASK_XML@@"
+!define OPENSSH_NAME "@@OPENSSH_NAME@@"
+!define OPENSSH_FILENAME "@@OPENSSH_FILENAME@@"
+!define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
+!define FUSION_INVENTORY_AGENT_FILENAME "@@FUSION_INVENTORY_AGENT_FILENAME@@"
+!define INVENTORY_TAG "@@INVENTORY_TAG@@"
+!define PULSE_AGENT_PLUGINS "@@PULSE_AGENT_PLUGINS@@"
 
 SetCompressor lzma
 
@@ -70,25 +76,22 @@ SetCompressor lzma
 !insertmacro MUI_LANGUAGE "English"
 
 ; Other useful modules
+!addincludedir libs
 !include "WinVer.nsh"
 !include "FileFunc.nsh"
+!include "zipdll.nsh"
+!include "LogicLib.nsh"
+!include "Trim.nsh"
+!Include "LogString.nsh"
+!Include "StrTok.nsh"
 
-; Logs macros
-var hFileLog
-!macro Log_Init logfile
-FileOpen $hFileLog "${logfile}" w
-!macroend
-!macro Log_String msg
-DetailPrint "${msg}"
-FileWrite $hFileLog "${msg}$\r$\n"
-!macroend
-!macro Log_Close
-FileWrite $hFileLog 'Done.'
-FileClose $hFileLog
-!macroend
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}.exe"
+!If "${INVENTORY_TAG}" == ''
+  OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}.exe"
+!Else
+  OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}-${INVENTORY_TAG}.exe"
+!EndIf
 InstallDir "$PROGRAMFILES\Pulse"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -104,24 +107,24 @@ Section "Python" sec_py
   SetOutPath "$INSTDIR\tmp"
   File "${DOWNLOADS_DIR}/${PYTHON_MSI}"
   File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"
-  !insertmacro Log_String "Python Installation...."
-  !insertmacro Log_String "------------------------------------------------------"
+  ${LogString} "Python Installation...."
+  ${LogString} "------------------------------------------------------"
 
   ; Install of Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_MSI}" /quiet /norestart ALLUSERS=1`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Visual C++ Compiler for Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27}" /quiet /norestart ALLUSERS=1`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   Delete $INSTDIR\tmp\${PYTHON_MSI}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27}
@@ -138,72 +141,72 @@ Section "Python Modules" sec_pymod
   File "${DOWNLOADS_DIR}/${PY_UTILS}"
   File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"
   File "${DOWNLOADS_DIR}/${PY_WMI}"
-  !insertmacro Log_String "Python modules Installation...."
-  !insertmacro Log_String "------------------------------------------------------"
+  ${LogString} "Python modules Installation...."
+  ${LogString} "------------------------------------------------------"
 
   ; Install of Python module for Windows Extensions (pywin32)
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python pip module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" pip`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python netifaces module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" netifaces`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python comtypes module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" comtypes`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python configparser module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" configparser`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python utils module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" utils`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python sleekxmpp module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" sleekxmpp`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Install of Python wmi module
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" wmi`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   Delete $INSTDIR\tmp\${PY_WIN32}
   Delete $INSTDIR\tmp\${PY_PIP}
@@ -215,20 +218,224 @@ Section "Python Modules" sec_pymod
   Delete $INSTDIR\tmp\${PY_WMI}
 SectionEnd
 
+; OpenSSH installation
+Section "OpenSSH" sec_ssh
+  SetOutPath "$INSTDIR\tmp"
+  File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"
+  SetOutPath "$INSTDIR\home\pulse\.ssh\"
+  File "${LAUNCHER_SSH_KEY}"
+  ${LogString} "OpenSSH Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Install of OpenSSH
+  ; Extract OpenSSH
+  ZipDLL::extractall "$INSTDIR\tmp\${OPENSSH_FILENAME}" "$PROGRAMFILES"
+  ; Create the services
+  StrCpy $0 `sc.exe create ssh-agent binpath= "$PROGRAMFILES\${OPENSSH_NAME}\ssh-agent.exe" displayname= "SSH Agent" type= share start= auto`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `sc.exe sdset ssh-agent D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)(A;;RP;;;AU)`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `sc.exe create sshd binpath= "$PROGRAMFILES\${OPENSSH_NAME}\sshd.exe" displayname= "SSH Deamon" type= share start= auto`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `sc.exe config sshd obj= "NT SERVICE\SSHD"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `"$PROGRAMFILES\${OPENSSH_NAME}\ntrights.exe" -u "NT SERVICE\SSHD" +r SeAssignPrimaryTokenPrivilege`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Generate SSH Keys
+  SetOutPath "$PROGRAMFILES\${OPENSSH_NAME}"
+  StrCpy $0 `"$PROGRAMFILES\${OPENSSH_NAME}\ssh-keygen.exe" -A`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Allow key-based authentication
+  ; Copy DLL to system32 folder
+  CopyFiles "$PROGRAMFILES\${OPENSSH_NAME}\ssh-lsa.dll" "$SYSDIR"
+  ; This requires a reboot
+  SetRebootFlag true
+  StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" /v "Authentication Packages" /t REG_MULTI_SZ /d msv1_0\0ssh-lsa.dll -f`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Create Pulse user and copy laucher public key
+  pwgen::GeneratePassword 12
+  Pop $0
+  ${GetParent} "$PROFILE" $R0
+  StrCpy $0 `net user "pulse" "$0" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR\home\pulse"`
+  StrCpy $1 `net user "pulse" "************" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR\home\pulse"`
+  ${LogString} "Running $1"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  SetOutPath "$INSTDIR\home\pulse\.ssh"
+  Rename id_rsa.pub authorized_keys
+  ${LogString} "Setting permissions on pulse user profile folder"
+  StrCpy $0 `wmic useraccount where name="pulse" get sid /VALUE`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  ${If} $0 = 0
+    Pop $1
+    ${Trim} $0 $1
+    ${StrTok} $0 "$0" "=" "L" "1"
+    ${LogString} "User SID: $0"
+    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$0" "ProfileImagePath" "$INSTDIR\home\pulse"
+  ${Else}
+    ${LogString} "Return code was: $0"
+  ${EndIf}
+  AccessControl::ClearOnFile /NOINHERIT "$R0\pulse" pulse FullAccess
+  Pop $R0
+  ${If} $R0 == error
+    Pop $R0
+    DetailPrint `AccessControl error: $R0`
+    ${LogString} "AccessControl error: $R0"
+  ${EndIf}
+  ${LogString} "-------------------"
+  ; Set pulse account password to not expire
+  StrCpy $0 `wmic useraccount where "Name='pulse'" set PasswordExpires=False`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ; Add pulse user to administrators group
+  StrCpy $0 `net localgroup administrators "pulse" /ADD`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ; Hide the account
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulse" 0
+
+  ; Start the service
+  StrCpy $0 `sc start sshd`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `sc start ssh-agent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Setup of Windows firewall to allow ssh
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall add portopening TCP 22 "SSH for Pulse`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=22`
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${OPENSSH_FILENAME}
+SectionEnd
+
+; Setup of RDP & Firewall
+Section "RDP Setup" sec_rdp
+  ${LogString} "RDP setup for remote control of machine via Pulse...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Setup of rdp
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fDenyTSConnections" 0
+  ${If} ${AtLeastWin7}
+    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "UserAuthentication" 0
+  ${EndIf}
+  ${If} ${AtLeastWin7}
+    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "SecurityLayer" 0
+  ${EndIf}
+
+  ; Setup of Windows firewall to allow rdp
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall set service type = remotedesktop mode = enable`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall set rule group="remote desktop" new enable=Yes`
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+SectionEnd
+
+; Setup of Fusion Inventory agent
+Section "Fusion Inventory agent" sec_fusinv
+  SetOutPath "$INSTDIR\tmp"
+  File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"
+  ${LogString} "Fusion Inventory agent setup...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Install of Fusion Inventory agent
+  !If "${INVENTORY_TAG}" == ''
+    StrCpy $0 `"$INSTDIR\tmp\${FUSION_INVENTORY_AGENT_FILENAME}" /S /acceptlicense /no-start-menu /execmode=Manual`
+  !Else
+    StrCpy $0 `"$INSTDIR\tmp\${FUSION_INVENTORY_AGENT_FILENAME}" /S /acceptlicense /no-start-menu /execmode=Manual /tag="${INVENTORY_TAG}"`
+  !EndIf
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT_FILENAME}
+SectionEnd
+
 ; Installation of Pulse Agent
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
   File "${PULSE_AGENT}"
-  !insertmacro Log_String "Pulse Agent Installation...."
-  !insertmacro Log_String "------------------------------------------------------"
+  File "${PULSE_AGENT_PLUGINS}"
+  ${LogString} "Pulse Agent Installation...."
+  ${LogString} "------------------------------------------------------"
 
   ; Install of Pulse agent
   StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT}`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Pulse agent plugins
+  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_PLUGINS}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Copy of agent config file
   SetOutPath "$INSTDIR\etc"
@@ -242,23 +449,23 @@ Section "!${PRODUCT_NAME}" sec_app
   ${Else}
     StrCpy $0 `SCHTASKS /Create /SC ONSTART /RU "System" /TN "${PRODUCT_NAME}" /TR "C:\Python27\python.exe C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine"`
   ${EndIf}
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
 
   ; Run the agent
-  !insertmacro Log_String "Running agent"
+  ${LogString} "Running agent"
   StrCpy $0 `"C:\Python27\python.exe" C:\Python27\Lib\site-packages\${PULSE_AGENT_MODULE}\launcher.py -t machine`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
   SectionIn RO
   WriteUninstaller $INSTDIR\uninstall.exe
@@ -278,63 +485,24 @@ Section "!${PRODUCT_NAME}" sec_app
 
   Delete $INSTDIR\tmp\${PULSE_AGENT}
   Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML}
-SectionEnd
+  Delete $INSTDIR\tmp\${PULSE_AGENT_PLUGINS}
 
-; Setup of RDP & Firewall
-Section "RDP Setup" sec_rdp
-  !insertmacro Log_String "RDP setup for remote control of machine via Pulse...."
-  !insertmacro Log_String "------------------------------------------------------"
-
-  ; Setup of rdp
-  StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f`
-  !insertmacro Log_String "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
-  ${If} ${AtLeastWin7}
-    StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f`
-  ${EndIf}
-  !insertmacro Log_String "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
-  ${If} ${AtLeastWin7}
-    StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v SecurityLayer /t REG_DWORD /d 0 /f`
-  ${EndIf}
-  !insertmacro Log_String "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
-
-  ; Setup of Windows firewall to allow rdp
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall set service type = remotedesktop mode = enable`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall set rule group="remote desktop" new enable=Yes`
-  ${EndIf}
-  !insertmacro Log_String "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
-  !insertmacro Log_String "-------------------"
+  Sleep 20000
 SectionEnd
 
 ; What needs to be done for uninstalling
 Section "Uninstall"
   Delete $INSTDIR\uninstall.exe
   StrCpy $0 `SCHTASKS /Delete /TN "Pulse Agent"`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
+  ${LogString} "Return code was: $1"
   StrCpy $0 `C:\Python27\Scripts\pip uninstall ${PULSE_AGENT_MODULE} -y`
-  !insertmacro Log_String "Running $0"
+  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  !insertmacro Log_String "Return code was: $1"
+  ${LogString} "Return code was: $1"
   Delete $INSTDIR\etc\${PULSE_AGENT_CONFFILE}
   RMDir /r $INSTDIR
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
@@ -350,13 +518,22 @@ Function .onInit
     Quit
   ${EndIf}
 
+  ; Make sure we are running as admin
+  UserInfo::GetAccountType
+  pop $0
+  ${If} $0 != "admin" ;Require admin rights on NT4+
+    MessageBox mb_iconstop "Administrator rights required!"
+    SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+    Quit
+  ${EndIf}
+
   ; Install log initialization
   CreateDirectory "$INSTDIR\tmp"
-  !insertmacro Log_Init "$INSTDIR\tmp\install.log"
-  !insertmacro Log_String "Starting install..."
+  ${LogInit} "$INSTDIR\tmp\install.log"
+  ${LogString} "Starting install..."
   !insertmacro GetTime
   ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
-  !insertmacro Log_String "Start time: $3 $0/$1/$2 at $4:$5:$6"
+  ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 FunctionEnd
 
 Function .onGUIEnd
@@ -376,9 +553,15 @@ Function .onMouseOverSection
   StrCmp $0 ${sec_pymod} 0 +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:Python modules required by ${PRODUCT_NAME}."
 
-  StrCmp $0 ${sec_app} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+  StrCmp $0 ${sec_ssh} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:OpenSSH required for deployment, backup, etc."
 
   StrCmp $0 ${sec_rdp} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
+
+  StrCmp $0 ${sec_fusinv} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Fusion inventory agent required for inventory"
+
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
 FunctionEnd
