@@ -127,7 +127,7 @@ class constantregisterwindows:
             elif key == 'HKEY_USERS':
                 return _winreg.HKEY_USERS
             elif key == 'HKEY_PERFORMANCE_DATA':
-                return _winreg.
+                return _winreg.HKEY_PERFORMANCE_DATA
             elif key == 'HKEY_CURRENT_CONFIG':
                 return _winreg.HKEY_CURRENT_CONFIG
             elif key == 'HKEY_DYN_DATA':
