@@ -23,7 +23,7 @@
 # MA 02110-1301, USA.
 #
 ### BEGIN INIT INFO
-# Provides:          pulse-xmpp-agent-machine
+# Provides:          pulse-xmpp-agent-relay
 # Required-Start:    $network
 # Required-Stop:     $network
 # Default-Start:     2 3 4 5
