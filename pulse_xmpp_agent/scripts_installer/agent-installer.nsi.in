@@ -54,6 +54,7 @@ RequestExecutionLevel admin
 !define FUSION_INVENTORY_AGENT_FILENAME "@@FUSION_INVENTORY_AGENT_FILENAME@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
 !define PULSE_AGENT_PLUGINS "@@PULSE_AGENT_PLUGINS@@"
+!define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
 
 SetCompressor lzma
 
@@ -218,11 +219,12 @@ Section "Python Modules" sec_pymod
   Delete $INSTDIR\tmp\${PY_WMI}
 SectionEnd
 
-; OpenSSH installation
-Section "OpenSSH" sec_ssh
+; rsync installation
+Section "rsync" sec_rsync
   SetOutPath "$INSTDIR\tmp"
   File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"
-  SetOutPath "$INSTDIR\home\pulse\.ssh\"
+  File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
+  SetOutPath "$INSTDIR\.ssh\"
   File "${LAUNCHER_SSH_KEY}"
   ${LogString} "OpenSSH Installation...."
   ${LogString} "------------------------------------------------------"
@@ -286,15 +288,15 @@ Section "OpenSSH" sec_ssh
   ; Create Pulse user and copy laucher public key
   pwgen::GeneratePassword 12
   Pop $0
-  ${GetParent} "$PROFILE" $R0
-  StrCpy $0 `net user "pulse" "$0" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR\home\pulse"`
-  StrCpy $1 `net user "pulse" "************" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR\home\pulse"`
-  ${LogString} "Running $1"
+  Var /GLOBAL Password
+  StrCpy $Password "$0"
+  StrCpy $0 `net user "pulse" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR"`
+  ${LogString} "Running net user pulse ************ /ADD /COMMENT:Pulse user with admin rights on the system /PROFILEPATH:$INSTDIR"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
-  SetOutPath "$INSTDIR\home\pulse\.ssh"
+  SetOutPath "$INSTDIR\.ssh"
   Rename id_rsa.pub authorized_keys
   ${LogString} "Setting permissions on pulse user profile folder"
   StrCpy $0 `wmic useraccount where name="pulse" get sid /VALUE`
@@ -305,16 +307,17 @@ Section "OpenSSH" sec_ssh
     Pop $1
     ${Trim} $0 $1
     ${StrTok} $0 "$0" "=" "L" "1"
-    ${LogString} "User SID: $0"
-    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$0" "ProfileImagePath" "$INSTDIR\home\pulse"
+    Var /GLOBAL SID
+    StrCpy $SID "$0"
+    ${LogString} "User SID: $SID"
+    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$SID" "ProfileImagePath" "$INSTDIR"
   ${Else}
     ${LogString} "Return code was: $0"
   ${EndIf}
-  AccessControl::ClearOnFile /NOINHERIT "$R0\pulse" pulse FullAccess
+  AccessControl::ClearOnFile /NOINHERIT "$INSTDIR" pulse FullAccess
   Pop $R0
   ${If} $R0 == error
     Pop $R0
-    DetailPrint `AccessControl error: $R0`
     ${LogString} "AccessControl error: $R0"
   ${EndIf}
   ${LogString} "-------------------"
@@ -351,7 +354,7 @@ Section "OpenSSH" sec_ssh
 
   ; Setup of Windows firewall to allow ssh
   ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 22 "SSH for Pulse`
+    StrCpy $0 `netsh firewall add portopening TCP 22 "SSH for Pulse"`
   ${Else}
     StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=22`
   ${EndIf}
@@ -361,7 +364,24 @@ Section "OpenSSH" sec_ssh
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
 
+  ; Install of rsync
+  ; Extract rsync
+  ZipDLL::extractall "$INSTDIR\tmp\${RSYNC_FILENAME}" "$INSTDIR\tmp\"
+  ; Copy DLL files to system32 folder
+  CopyFiles "$INSTDIR\tmp\rsync\*.dll" "$SYSDIR"
+  CreateDirectory "$INSTDIR\bin"
+  CopyFiles "$INSTDIR\tmp\rsync\rsync.exe" "$INSTDIR\bin"
+  ; Add to %PATH%
+  StrCpy $0 `SETX -m PATH "%PATH%;$INSTDIR\bin"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
   Delete $INSTDIR\tmp\${OPENSSH_FILENAME}
+  Delete $INSTDIR\tmp\${RSYNC_FILENAME}
+  Delete $INSTDIR\tmp\rsync
 SectionEnd
 
 ; Setup of RDP & Firewall
@@ -553,8 +573,8 @@ Function .onMouseOverSection
   StrCmp $0 ${sec_pymod} 0 +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:Python modules required by ${PRODUCT_NAME}."
 
-  StrCmp $0 ${sec_ssh} 0 +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:OpenSSH required for deployment, backup, etc."
+  StrCmp $0 ${sec_rsync} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:rsync required for deployment, backup, etc."
 
   StrCmp $0 ${sec_rdp} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
