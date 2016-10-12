@@ -485,34 +485,41 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
 
-def createDaemon(tg):
+def createDaemon(optstypemachine):
     """
         This function create a service/Daemon that will execute a det. task
     """
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
-            p = multiprocessing.Process(target=doTask, arg=tg)
+            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine,))
             p.daemon = True
+            logging.log(DEBUGPULSE,"Start Agent")
             p.start()
-            p.join()
-            logging.log(DEBUGPULSE,"Start Agent %s" % (self.boundjid.user))
+            p.join()            
         else:
             # Store the Fork PID
             pid = os.fork()
             if pid > 0:
                 print 'PID: %d' % pid
                 os._exit(0)
-            doTask(tg)
+            doTask(optstypemachine)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
 
 
-def doTask( tg ):
+def doTask(optstypemachine ):
     # Setup the command line arguments.
     global restart
+    tg = parametreconf(optstypemachine)
+    if optstypemachine.lower() in ["machine"]:
+        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
+    else:
+        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
     while True:
         restart = False
         xmpp = MUCBot(tg)
@@ -560,7 +567,6 @@ if __name__ == '__main__':
 
     opts, args = optp.parse_args()
     tg = parametreconf(opts.typemachine)
-
     if opts.typemachine.lower() in ["machine"]:
         tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
@@ -589,7 +595,7 @@ if __name__ == '__main__':
                         format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                         filename = tg.logfile,
                         filemode = 'a')
-        doTask(tg)
+        doTask(opts.typemachine)
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, tg.levellog)
@@ -601,4 +607,4 @@ if __name__ == '__main__':
                     format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                     filename = tg.logfile,
                     filemode = 'a')
-        createDaemon(tg)
+        createDaemon(opts.typemachine)
