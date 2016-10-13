@@ -483,44 +483,80 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if presence['muc']['nick'] == "MASTER":
             self.update_plugin()
 
-
-
-def createDaemon(optstypemachine):
+def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
         This function create a service/Daemon that will execute a det. task
     """
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
-            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine,))
+            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
             p.daemon = True
-            logging.log(DEBUGPULSE,"Start Agent")
             p.start()
-            p.join()            
+            p.join()
         else:
             # Store the Fork PID
             pid = os.fork()
             if pid > 0:
                 print 'PID: %d' % pid
                 os._exit(0)
-            doTask(optstypemachine)
+            doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
 
 
-def doTask(optstypemachine ):
-    # Setup the command line arguments.
+def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     global restart
-    tg = parametreconf(optstypemachine)
+
+    if platform.system()=='Windows':
+        # Windows does not support ANSI escapes and we are using API calls to set the console color
+        logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
+    else:
+        # all non-Windows platforms are supporting ANSI escapes so we use them
+        logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+
+    if not optsdeamon :
+        if optsconsoledebug :
+            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        else:
+            stdout_logger = logging.getLogger('STDOUT')
+            sl = StreamToLogger(stdout_logger, tglevellog)
+            sys.stdout = sl
+            stderr_logger = logging.getLogger('STDERR')
+            sl = StreamToLogger(stderr_logger, tglevellog)
+            sys.stderr = sl
+            logging.basicConfig(level = tglevellog,
+                        format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                        filename = tglogfile,
+                        filemode = 'a')
+    else:
+        stdout_logger = logging.getLogger('STDOUT')
+        sl = StreamToLogger(stdout_logger, tglevellog)
+        sys.stdout = sl
+        stderr_logger = logging.getLogger('STDERR')
+        sl = StreamToLogger(stderr_logger, tglevellog)
+        sys.stderr = sl
+        logging.basicConfig(level = tglevellog,
+                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                    filename = tglogfile,
+                    filemode = 'a')
+
     if optstypemachine.lower() in ["machine"]:
-        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
     else:
-        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
+
     while True:
+        # Setup the command line arguments.
+        tg = parametreconf(optstypemachine)
+
+        if optstypemachine.lower() in ["machine"]:
+            tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        else:
+            tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+
         restart = False
         xmpp = MUCBot(tg)
         xmpp.register_plugin('xep_0030') # Service Discovery
@@ -567,44 +603,7 @@ if __name__ == '__main__':
 
     opts, args = optp.parse_args()
     tg = parametreconf(opts.typemachine)
-    if opts.typemachine.lower() in ["machine"]:
-        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
-        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
-    else:
-        tg.pathplugins=os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
-        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
-
-    if platform.system()=='Windows':
-        # Windows does not support ANSI escapes and we are using API calls to set the console color
-        logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
-    else:
-        # all non-Windows platforms are supporting ANSI escapes so we use them
-        logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
-
     if not opts.deamon :
-        if opts.consoledebug :
-            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-        else:
-            stdout_logger = logging.getLogger('STDOUT')
-            sl = StreamToLogger(stdout_logger, tg.levellog)
-            sys.stdout = sl
-            stderr_logger = logging.getLogger('STDERR')
-            sl = StreamToLogger(stderr_logger, tg.levellog)
-            sys.stderr = sl
-            logging.basicConfig(level = tg.levellog,
-                        format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                        filename = tg.logfile,
-                        filemode = 'a')
-        doTask(opts.typemachine)
+        doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
     else:
-        stdout_logger = logging.getLogger('STDOUT')
-        sl = StreamToLogger(stdout_logger, tg.levellog)
-        sys.stdout = sl
-        stderr_logger = logging.getLogger('STDERR')
-        sl = StreamToLogger(stderr_logger, tg.levellog)
-        sys.stderr = sl
-        logging.basicConfig(level = tg.levellog,
-                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                    filename = tg.logfile,
-                    filemode = 'a')
-        createDaemon(opts.typemachine)
+        createDaemon(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
