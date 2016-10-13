@@ -33,12 +33,12 @@ cd "`dirname $0`"
 display_usage() {
 	echo -e "\nUsage:\n$0 [--conf-xmppserver=<XMPP configuration server>] \n"
   echo -e "\t [--conf-xmppport=<XMPP configuration server port>] \n"
-	echo -e "\t --conf-xmpppasswd=<XMPP configuration server password> \n"
+	echo -e "\t [--conf-xmpppasswd=<XMPP configuration server password>] \n"
   echo -e "\t [--conf-xmppmuchost=<XMPP configuration server MUC host>] \n"
-  echo -e "\t --conf-xmppmucpasswd=<XMPP configuration server MUC password> \n"
-  echo -e "\t --xmpp-passwd=<XMPP server password> \n"
-  echo -e "\t --xmpp-mucpasswd=<XMPP server MUC password>\n"
-  echo -e "\t [--inventory-tag=<Tag added to the inventory>]\n"
+  echo -e "\t [--conf-xmppmucpasswd=<XMPP configuration server MUC password>] \n"
+  echo -e "\t [--xmpp-passwd=<XMPP server password>] \n"
+  echo -e "\t [--xmpp-mucpasswd=<XMPP server MUC password>] \n"
+  echo -e "\t [--inventory-tag=<Tag added to the inventory>] \n"
 }
 
 check_arguments() {
@@ -111,18 +111,37 @@ compute_settings() {
     PUBLIC_XMPP_SERVER_ADDRESS=`grep public_ip /etc/mmc/pulse2/package-server/package-server.ini.local | awk '{print $3}'`
   fi
   colored_echo blue " - XMPP configuration server: '${PUBLIC_XMPP_SERVER_ADDRESS}'"
+
   if [ -z "${PUBLIC_XMPP_SERVER_PORT}" ]; then
     PUBLIC_XMPP_SERVER_PORT="5222"
   fi
   colored_echo blue " - XMPP configuration server port: '${PUBLIC_XMPP_SERVER_PORT}'"
+
+	if [ -z "${PUBLIC_XMPP_SERVER_PASSWORD}" ]; then
+		PUBLIC_XMPP_SERVER_PASSWORD=$(awk '/^\[connection\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
+	fi
   colored_echo blue " - XMPP configuration server password: '${PUBLIC_XMPP_SERVER_PASSWORD}'"
+
   if [ -z "${PUBLIC_XMPP_SERVER_MUCHOST}" ]; then
     PUBLIC_XMPP_SERVER_MUCHOST="conference.localhost"
   fi
   colored_echo blue " - XMPP configuration server MUC host: '${PUBLIC_XMPP_SERVER_MUCHOST}'"
+
+  if [ -z "${PUBLIC_XMPP_SERVER_MUCPASSWORD}" ]; then
+	  PUBLIC_XMPP_SERVER_MUCPASSWORD=$(awk '/^\[configurationserver\]/{f=1} f==1&&/^confpasswordmuc/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
+  fi
   colored_echo blue " - XMPP configuration server MUC password: '${PUBLIC_XMPP_SERVER_MUCPASSWORD}'"
+
+  if [ -z "${XMPP_SERVER_PASSWORD}" ]; then
+	  XMPP_SERVER_PASSWORD=$(awk '/^\[connection\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
+  fi
   colored_echo blue " - XMPP server password: '${XMPP_SERVER_PASSWORD}'"
+
+  if [ -z "${XMPP_SERVER_MUCPASSWORD}" ]; then
+	  XMPP_SERVER_MUCPASSWORD=$(awk '/^\[salon\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
+  fi
   colored_echo blue " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
+
 	if [ -z "${INVENTORY_TAG}" ]; then
     colored_echo blue " - Inventory TAG: None"
 	else
@@ -156,12 +175,7 @@ generate_agent() {
 }
 
 # And finally we run the functions
-if [ $# -lt 4 ]; then
-	display_usage
-	exit 0
-else
-	check_arguments "$@"
-fi
+check_arguments "$@"
 compute_settings
 update_config_file
 generate_agent

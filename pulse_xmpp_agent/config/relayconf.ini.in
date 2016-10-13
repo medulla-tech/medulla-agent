@@ -20,7 +20,7 @@ guacamole_baseurl = "@@GUACAMOLE_BASEURL@@"
 
 [plugin]
 # Plugins configs to be loaded
-listplugin =
+pluginlist =
 
 [connection]
 # The server and port below allow the agent to connect to the XMPP server
