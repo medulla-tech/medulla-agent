@@ -34,20 +34,21 @@ class SingletonDecorator:
             self.instance = self.klass(*args,**kwds)
         return self.instance
 
-@SingletonDecorator
 class parametreconf:
     def __init__(self,typeconf='machine'):
         Config = ConfigParser.ConfigParser()
-        Config.read(conffilename(typeconf))
+        namefileconfig = conffilename(typeconf)
+        Config.read(namefileconfig)
         self.Port = Config.get('connection', 'port')
         self.Server = Config.get('connection', 'server')
         self.passwordconnection = Config.get('connection', 'password')
-
+        self.nameplugindir = os.path.dirname(namefileconfig)
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except:
             self.agenttype = "machine"
-
+        
+        pluginlist = Config.get('plugin', 'pluginlist').split(",")
         #par convention :
                 #la liste des plugins definie dans la section plugin avec la clef pluginlist
                 # donne les fichiers .ini a chargé.
@@ -57,14 +58,14 @@ class parametreconf:
             pluginlist = Config.get('plugin', 'pluginlist').split(",")
             pluginlist = [x.strip() for x in pluginlist ]
             for z in pluginlist:
-                namefile = "%s.ini"%os.path.join(nameplugindir,z)
+                namefile = "%s.ini"%os.path.join(self.nameplugindir,z)
                 if os.path.isfile(namefile):
                     liststuple = self.loadparametersplugins(namefile)
                     for keyparameter, valueparameter in liststuple:
                         #locals()[keyparameter] = valueparameter
                         setattr(self, keyparameter,valueparameter)
                 else:
-                    logging.getLogger().warning("parameter File pluging %s : missing"%nameplugindir)
+                    logging.getLogger().warning("parameter File pluging %s : missing"%self.nameplugindir)
 
         try:
             self.agentcommande = Config.get('global', 'relayserver_agent')
