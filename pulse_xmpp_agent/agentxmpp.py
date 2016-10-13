@@ -179,31 +179,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
         salon = [jid.JID(self.config.jidsaloncommand), jid.JID(self.config.jidsalonmaster), jid.JID(self.config.jidsalonlog)]
         self.agentrelayserverrefdeploy = self.config.jidsaloncommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        #salon = [self.config.jidsaloncommand, self.config.jidsalonmaster, self.config.jidsalonlog]
         for x in salon:
-        #join salon command
+            #join salon command
             if x == self.config.jidsaloncommand and self.config.agenttype in ['relayserver','serverrelais']:
-                self.plugin['xep_0045'].joinMUC(x,
-                                            self.nicknameagentrelayserverrefdeploy,
-                                            # If a room password is needed, use:
-                                            password=self.config.passwordconnexionmuc,
-                                            wait=True)
+                pass
             else:
                 self.plugin['xep_0045'].joinMUC(x,
                                             self.config.NickName,
-                                            # If a room password is needed, use:
-                                            password=self.config.passwordconnexionmuc,
+                                            password=self.config.passwordconnexionmuc,# If a room password is needed, use:
                                             wait=True)
-        #if not self.config.agenttype in ['relayserver']:
-            #les machines se declarent aupres de relaisserver dans le salon de deploiement du relais server
-            # au demarage
-            #msgdata = {'signalpresencesalon' :{ self.config.NickName: { 
-                    #'jid' : self.config.jidagent, 
-                    #'uuid': '246bc7f2-702b-11e6-8d74-3c970e3e0e47'}}}
-            #self.send_message( mbody=json.dumps(msgdata),
-                            #mto = "%s"%(self.config.jidsaloncommand),
-                                #mtype ='groupchat')
-
         self.loginformation("agent %s ready"%self.config.jidagent)
 
 
@@ -232,7 +216,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def muc_message(self, msg):
-        
         if self.config.agenttype in ['relayserver','serveurrelais'] and \
                         not msg['from'].resource in ["deploy","MASTER"] and \
                         not msg['from'].user in ['log']:
@@ -279,6 +262,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                         mbody=json.dumps(dataerreur),
                                                         mtype='chat')
                                 return
+
+                # join salon deploy
+                if self.config.agenttype in ['relayserver'] and dataobj['action'] == "@@@@@deploysalonON@@@@@":
+                    print "affiliation salon %s  avec nickname %s"%(self.config.jidsaloncommand,self.nicknameagentrelayserverrefdeploy)
+                    self.plugin['xep_0045'].joinMUC(self.config.jidsaloncommand,
+                                            self.nicknameagentrelayserverrefdeploy,
+                                            # If a room password is needed, use:
+                                            password=self.config.passwordconnexionmuc,
+                                            wait=True)
+                    return
+
                 if dataobj['action'] == "resultmsginfoerror":
                     logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
                     return
@@ -395,16 +389,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def muc_onlineCommand(self, presence):
-        #si salon command est cree par master alors reinscrire agent relais dans salon command.
-        if self.config.agenttype in ['relayserver']: 
-            nickname = self.nicknameagentrelayserverrefdeploy
-            if presence['from'] == self.config.jidsaloncommand + '/'+ nickname:
-                if self.plugin['xep_0045'].rooms[self.config.jidsaloncommand][nickname]['role']=="":
-                    self.plugin['xep_0045'].joinMUC(self.config.jidsaloncommand,
-                        nickname,
-                        password=self.config.passwordconnexionmuc,
-                        wait=True)
-
+        pass
 
     def muc_offlineMaster(self, presence):
         pass
