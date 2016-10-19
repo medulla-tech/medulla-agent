@@ -373,7 +373,7 @@ Section "rsync" sec_rsync
 
   Delete $INSTDIR\tmp\${OPENSSH_FILENAME}
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
-  Delete $INSTDIR\tmp\rsync
+  RMDir -r $INSTDIR\tmp\rsync
 SectionEnd
 
 ; Setup of RDP & Firewall
