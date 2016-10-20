@@ -20,10 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from lib.networkinfo import networkagentinfo
-from lib.configuration import  parametreconf
 from optparse import OptionParser
-import os, sys, platform
+import os, sys
 
 if __name__ == '__main__':
     optp = OptionParser()
