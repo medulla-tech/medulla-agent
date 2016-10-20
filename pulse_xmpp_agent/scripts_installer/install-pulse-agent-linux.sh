@@ -26,7 +26,7 @@
 # TODO: Install freerdp
 #       Configure iptables
 
-PACKAGELIST="wget pulse-xmpp-agent pulse-xmppmaster-agentplugins pulseagent-plugins-machine freerdp openssh-server"
+PACKAGELIST="wget shorewall pulse-xmpp-agent pulse-xmppmaster-agentplugins pulseagent-plugins-machine freerdp openssh-server"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
@@ -62,7 +62,13 @@ configure_pulse() {
     popd
 }
 
+configure_iptables() {
+	echo "ACCEPT net fw tcp 22" >> /etc/shorewall/rules
+	service shorewall restart
+}
+
 check_root
 check_distro
 install_agent
 configure_pulse
+configure_iptables
