@@ -27,23 +27,23 @@ if sys.platform.startswith('win'):
     import win32netcon
     import socket
 
-def pathbase():
+def getCurrentWorkingDirectory():
     return os.path.abspath(os.getcwd())
 
-def pathscript():
-    return os.path.abspath(os.path.join(pathbase(),"script"))
+def getScriptPath():
+    return os.path.abspath(os.path.join(getCurrentWorkingDirectory(),"script"))
 
-def pathplugins():
-    return os.path.abspath(os.path.join(pathbase(),"plugins"))
+def getPluginsPath():
+    return os.path.abspath(os.path.join(getCurrentWorkingDirectory(),"plugins"))
 
-def pathlib():
-    return os.path.abspath(os.path.join(pathbase(),"lib"))
+def getLibPath():
+    return os.path.abspath(os.path.join(getCurrentWorkingDirectory(),"lib"))
 
-def pathscriptperl(name):
-    return os.path.abspath(os.path.join(pathbase(),"script","perl",name))
+def getPerlScriptPath(name):
+    return os.path.abspath(os.path.join(getCurrentWorkingDirectory(),"script","perl",name))
 
 
-def affichedatajson(jsondata):
+def showJSONData(jsondata):
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(jsondata)
 
@@ -151,7 +151,7 @@ def isMacOsUserAdmin():
     
     
 
-#listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(pathplugins) if fn.endswith(".py") and fn != "__init__.py"]
+#listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def name_random(nb, pref=""):
     a="abcdefghijklnmopqrstuvwxyz0123456789"
     d=pref
