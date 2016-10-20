@@ -20,7 +20,7 @@ class  networkagentinfo:
         self.networkobjet(self.sessionid, self.action)
         #print self.messagejson['listipinfo']
         for d in self.messagejson['listipinfo']: 
-            d['macnonreduite']=d['macaddress']
+            d['macnotshortened']=d['macaddress']
             d['macaddress'] = self.reduction_mac(d['macaddress'])
         #print self.messagejson['listipinfo'] 
         if len(param) != 0 and len(self.messagejson['listipinfo']) != 0:

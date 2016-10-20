@@ -196,7 +196,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppdhcpserver = t['dhcpserver']
                 xmppgateway = t['gateway']
                 xmppmacaddress = t['macaddress']
-                xmppmacnonreduite = t['macnonreduite']
+                xmppmacnotshortened = t['macnotshortened']
                 break;
 
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
@@ -223,7 +223,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppdhcpserver' : xmppdhcpserver,
             'xmppgateway' : xmppgateway,
             'xmppmacaddress' : xmppmacaddress,
-            'xmppmacnonreduite' : xmppmacnonreduite,
+            'xmppmacnotshortened' : xmppmacnotshortened,
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic
         }

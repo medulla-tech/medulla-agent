@@ -76,11 +76,11 @@ class sequentialevolutionquery:
         print "__________________________________"
         print "replaceTEMPLATE  %s"% cmd
         cmd = cmd.replace('@@@JID_MASTER@@@', self.data['jidmaster'])
-        cmd = cmd.replace('@@@JID_RELAYSERVER@@@', self.data['jidrelais'])
+        cmd = cmd.replace('@@@JID_RELAYSERVER@@@', self.data['jidrelay'])
         cmd = cmd.replace('@@@JID_MACHINE@@@', self.data['jidmachine'])
 
         cmd = cmd.replace('@@@IP_MACHINE@@@', self.data['ipmachine'])
-        cmd = cmd.replace('@@@IP_RELAYSERVER@@@', self.data['iprelais'])
+        cmd = cmd.replace('@@@IP_RELAYSERVER@@@', self.data['iprelay'])
         cmd = cmd.replace('@@@IP_MASTER@@@', self.data['ipmaster'])
 
         cmd = cmd.replace('@@@PACKAGE_NAME@@@', self.data['name'])

@@ -47,7 +47,7 @@ class parametreconf:
             self.agenttype = Config.get('type', 'agent_type')
         except:
             self.agenttype = "machine"
-        
+
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         #par convention :
                 #la liste des plugins definie dans la section plugin avec la clef pluginlist
@@ -102,7 +102,6 @@ class parametreconf:
             else:
                self.logfile = os.path.join("/", "var", "log" , "pulse", "xmpp-agent.log")
 
-
         #information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get('configuration_server', 'confserver')
@@ -126,7 +125,7 @@ class parametreconf:
         self.version_agent = Config.get('version', 'version_agent')
 
         try:
-            self.debug = Config.get('global', 'debug')
+            self.debug = Config.get('global', 'log_level')
         except:
             self.debug = 'NOTSET'
         self.debug = self.debug.upper()
