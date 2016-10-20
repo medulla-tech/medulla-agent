@@ -22,27 +22,16 @@
 
 import sys,os
 import logging
-import ConfigParser
 import sleekxmpp
 import platform
-import netifaces
-import random
 import base64
 import json
-import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
-import hashlib
-import shutil
-import errno
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  parametreconf, changeconnection
 from lib.agentconffile import conffilename
 from lib.utils import *
-import pluginsmachine
-import pluginsrelay
 from optparse import OptionParser
-import pprint
-import os 
 
 
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
