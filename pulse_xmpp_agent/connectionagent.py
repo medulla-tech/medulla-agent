@@ -36,7 +36,7 @@ from optparse import OptionParser
 
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
-#addition chemin pour library and plugins
+# Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
 pathplugins_relay = os.path.join(pathbase, "pluginsrelay")
@@ -46,8 +46,6 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 
 logger = logging.getLogger()
 global restart
-#global DEBUGPULSE
-#DEBUGPULSE = 25
 
 
 if sys.version_info < (3, 0):
@@ -58,7 +56,6 @@ else:
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
-        #attribution jid 
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
         newjidconf[0] = name_random(10,"conf")
@@ -83,9 +80,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-
-
-        # recupere presence dans salonconf
         
         self.add_event_handler("muc::%s::presence" % conf.confjidsalon,
                                self.muc_presenceConf)
