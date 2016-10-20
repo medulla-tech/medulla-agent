@@ -172,6 +172,10 @@ generate_agent() {
 	fi
 	echo "Running "${COMMAND}
 	${COMMAND}
+	if [ -e "install-pulse-agent-linux.sh" ]; then
+		XMPP_SERVER=`grep public_ip /etc/mmc/pulse2/package-server/package-server.ini.local | awk '{print $3}'`
+		sed -i "s/@@XMPP_SERVER@@/${XMPP_SERVER}/" install-pulse-agent-linux.sh
+	fi
 }
 
 # And finally we run the functions
