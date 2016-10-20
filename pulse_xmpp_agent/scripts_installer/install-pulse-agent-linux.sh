@@ -41,8 +41,6 @@ check_distro() {
     else
         DISTRO=`cat  /etc/lsb-release | grep DISTRIB_ID | cut -f2 -d'"'`
     fi
-    
-    echo $DISTRO
 }
 
 install_agent() {
