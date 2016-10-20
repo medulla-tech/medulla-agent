@@ -33,7 +33,7 @@ RequestExecutionLevel admin
 
 ; Variables replaced by the script calling the nsi
 !define DOWNLOADS_DIR "@@DOWNLOADS_DIR@@"
-!define PYTHON_MSI "@@PYTHON_MSI@@"
+!define PYTHON_FILENAME "@@PYTHON_FILENAME@@"
 !define PY_VCPYTHON27 "@@PY_VCPYTHON27@@"
 !define PY_WIN32 "@@PY_WIN32@@"
 !define PY_PIP "@@PY_PIP@@"
@@ -55,6 +55,7 @@ RequestExecutionLevel admin
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
 !define PULSE_AGENT_PLUGINS "@@PULSE_AGENT_PLUGINS@@"
 !define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
+!define GENERATED_SIZE "@@GENERATED_SIZE@@"
 
 SetCompressor lzma
 
@@ -89,9 +90,9 @@ SetCompressor lzma
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
-  OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}.exe"
+  OutFile "Pulse-Agent-win32-${GENERATED_SIZE}-${PRODUCT_VERSION}.exe"
 !Else
-  OutFile "Pulse-Agent-win32-${PRODUCT_VERSION}-${INVENTORY_TAG}.exe"
+  OutFile "Pulse-Agent-win32-${GENERATED_SIZE}-${PRODUCT_VERSION}-${INVENTORY_TAG}.exe"
 !EndIf
 InstallDir "$PROGRAMFILES\Pulse"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
@@ -103,16 +104,25 @@ Section -SETTINGS
   SetOverwrite ifnewer
 SectionEnd
 
+!define DownloadFile "!insertmacro DownloadFile"
+!macro DownloadFile url filename
+  NSISdl::download /TIMEOUT=30000 ${url} ${filename}
+  Pop $R0 ;Get the return value
+  StrCmp $R0 "success" +3
+    MessageBox MB_OK "Download of ${url} failed: $R0"
+    Quit
+!macroend
+
 ; Python installation
 Section "Python" sec_py
   SetOutPath "$INSTDIR\tmp"
-  File "${DOWNLOADS_DIR}/${PYTHON_MSI}"
-  File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"
+  @@FULL_OR_DL_PYTHON_FILENAME@@
+  @@FULL_OR_DL_PY_VCPYTHON27@@
   ${LogString} "Python Installation...."
   ${LogString} "------------------------------------------------------"
 
   ; Install of Python
-  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_MSI}" /quiet /norestart ALLUSERS=1`
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_FILENAME}" /quiet /norestart ALLUSERS=1`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -127,26 +137,26 @@ Section "Python" sec_py
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
 
-  Delete $INSTDIR\tmp\${PYTHON_MSI}
+  Delete $INSTDIR\tmp\${PYTHON_FILENAME}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27}
 SectionEnd
 
 ; Installation of Python modules needed by Pulse Agent
 Section "Python Modules" sec_pymod
   SetOutPath "$INSTDIR\tmp"
-  File "${DOWNLOADS_DIR}/${PY_WIN32}"
-  File "${DOWNLOADS_DIR}/${PY_PIP}"
-  File "${DOWNLOADS_DIR}/${PY_NETIFACES}"
-  File "${DOWNLOADS_DIR}/${PY_COMTYPES}"
-  File "${DOWNLOADS_DIR}/${PY_CONFIGPARSER}"
-  File "${DOWNLOADS_DIR}/${PY_UTILS}"
-  File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"
-  File "${DOWNLOADS_DIR}/${PY_WMI}"
+  @@FULL_OR_DL_PY_WIN32@@
+  @@FULL_OR_DL_PY_PIP@@
+  @@FULL_OR_DL_PY_NETIFACES@@
+  @@FULL_OR_DL_PY_COMTYPES@@
+  @@FULL_OR_DL_PY_CONFIGPARSER@@
+  @@FULL_OR_DL_PY_UTILS@@
+  @@FULL_OR_DL_PY_SLEEKXMPP@@
+  @@FULL_OR_DL_PY_WMI@@
   ${LogString} "Python modules Installation...."
   ${LogString} "------------------------------------------------------"
 
   ; Install of Python module for Windows Extensions (pywin32)
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`
+  @@INSTALL_FULL_OR_DL_PY_WIN32@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -154,7 +164,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python pip module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" pip`
+  @@INSTALL_FULL_OR_DL_PY_PIP@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -162,7 +172,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python netifaces module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" netifaces`
+  @@INSTALL_FULL_OR_DL_PY_NETIFACES@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -170,7 +180,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python comtypes module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" comtypes`
+  @@INSTALL_FULL_OR_DL_PY_COMTYPES@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -178,7 +188,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python configparser module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" configparser`
+  @@INSTALL_FULL_OR_DL_PY_CONFIGPARSER@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -186,7 +196,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python utils module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" utils`
+  @@INSTALL_FULL_OR_DL_PY_UTILS@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -194,7 +204,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python sleekxmpp module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" sleekxmpp`
+  @@INSTALL_FULL_OR_DL_PY_SLEEKXMPP@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -202,7 +212,7 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Install of Python wmi module
-  StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" wmi`
+  @@INSTALL_FULL_OR_DL_PY_WMI@@
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -222,7 +232,7 @@ SectionEnd
 ; rsync installation
 Section "rsync" sec_rsync
   SetOutPath "$INSTDIR\tmp"
-  File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"
+  @@FULL_OR_DL_OPENSSH@@
   File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
   SetOutPath "$INSTDIR\.ssh\"
   File "${LAUNCHER_SSH_KEY}"
@@ -373,7 +383,7 @@ Section "rsync" sec_rsync
 
   Delete $INSTDIR\tmp\${OPENSSH_FILENAME}
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
-  RMDir -r $INSTDIR\tmp\rsync
+  RMDir /r $INSTDIR\tmp\rsync
 SectionEnd
 
 ; Setup of RDP & Firewall
@@ -406,7 +416,7 @@ SectionEnd
 ; Setup of Fusion Inventory agent
 Section "Fusion Inventory agent" sec_fusinv
   SetOutPath "$INSTDIR\tmp"
-  File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"
+  @@FULL_OR_DL_FUSION_INVENTORY_AGENT@@
   ${LogString} "Fusion Inventory agent setup...."
   ${LogString} "------------------------------------------------------"
 

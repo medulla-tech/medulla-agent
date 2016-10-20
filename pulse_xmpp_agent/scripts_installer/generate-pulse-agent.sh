@@ -39,6 +39,7 @@ display_usage() {
   echo -e "\t [--xmpp-passwd=<XMPP server password>] \n"
   echo -e "\t [--xmpp-mucpasswd=<XMPP server MUC password>] \n"
   echo -e "\t [--inventory-tag=<Tag added to the inventory>] \n"
+  echo -e "\t [--minimal] \n"
 }
 
 check_arguments() {
@@ -74,6 +75,10 @@ check_arguments() {
         ;;
       --inventory-tag=*)
         INVENTORY_TAG="${i#*=}"
+        shift
+        ;;
+      --minimal*)
+        MINIMAL=1
         shift
         ;;
 			*)
@@ -147,6 +152,13 @@ compute_settings() {
 	else
 		colored_echo blue " - Inventory TAG: '${INVENTORY_TAG}'"
   fi
+
+	if [[ ${MINIMAL} -eq 1 ]]; then
+		GENERATED_SIZE="--minimal"
+    colored_echo blue " - Agent generated: minimal"
+	else
+		colored_echo blue " - Agent generated: full"
+  fi
 }
 
 update_config_file() {
@@ -166,9 +178,9 @@ generate_agent() {
   # Generate Pulse Agent for Windows
   colored_echo blue "Generating Pulse Agent for Windows..."
 	if [ -n "${INVENTORY_TAG}" ]; then
-		COMMAND="./win32/generate-pulse-agent-win.sh --inventory-tag=${INVENTORY_TAG}"
+		COMMAND="./win32/generate-pulse-agent-win.sh --inventory-tag=${INVENTORY_TAG} ${GENERATED_SIZE}"
 	else
-		COMMAND="./win32/generate-pulse-agent-win.sh"
+		COMMAND="./win32/generate-pulse-agent-win.sh ${GENERATED_SIZE}"
 	fi
 	echo "Running "${COMMAND}
 	${COMMAND}

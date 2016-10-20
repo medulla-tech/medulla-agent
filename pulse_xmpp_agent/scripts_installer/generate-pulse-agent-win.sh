@@ -63,6 +63,7 @@ RSYNC_FILENAME="rsync.zip"
 # Display usage
 display_usage() {
 	echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
+	echo -e "\t [--minimal]\n"
 }
 
 check_arguments() {
@@ -70,6 +71,10 @@ check_arguments() {
 		case $i in
       --inventory-tag=*)
         INVENTORY_TAG="${i#*=}"
+        shift
+        ;;
+      --minimal*)
+        MINIMAL=1
         shift
         ;;
 			*)
@@ -113,27 +118,31 @@ display_usage() {
 }
 
 colored_echo() {
-    local color=$1;
-    if ! [[ $color =~ '^[0-9]$' ]] ; then
-       case $(echo $color | tr '[:upper:]' '[:lower:]') in
-        black) color=0 ;;
-        red) color=1 ;;
-        green) color=2 ;;
-        yellow) color=3 ;;
-        blue) color=4 ;;
-        magenta) color=5 ;;
-        cyan) color=6 ;;
-        white|*) color=7 ;; # white or invalid color
-       esac
-    fi
-    tput setaf $color;
-    echo "${@:2}";
-    tput sgr0;
+  local color=$1;
+  if ! [[ $color =~ '^[0-9]$' ]] ; then
+		case $(echo $color | tr '[:upper:]' '[:lower:]') in
+			black) color=0 ;;
+			red) color=1 ;;
+			green) color=2 ;;
+			yellow) color=3 ;;
+			blue) color=4 ;;
+			magenta) color=5 ;;
+			cyan) color=6 ;;
+			white|*) color=7 ;; # white or invalid color
+		esac
+  fi
+  tput setaf $color;
+  echo "${@:2}";
+  tput sgr0;
 }
 
 exit_code() {
-    return=$?
-    if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
+  return=$?
+  if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
+}
+
+sed_escape() {
+	echo "$@" |sed -e 's/[\/&\$"]/\\&/g'
 }
 
 prepare_system() {
@@ -196,20 +205,61 @@ download_agent_dependencies() {
 	colored_echo green "### INFO Downloading python and dependencies.. Done"
 }
 
-update_nsi_script() {
+update_nsi_script_full() {
 	colored_echo blue "### INFO Updating NSIS script..."
+	FULL_PYTHON_FILENAME='File "${DOWNLOADS_DIR}/${PYTHON_FILENAME}"'
+	FULL_PY_VCPYTHON27='File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"'
+	FULL_PY_WIN32='File "${DOWNLOADS_DIR}/${PY_WIN32}"'
+	FULL_PY_PIP='File "${DOWNLOADS_DIR}/${PY_PIP}"'
+	FULL_PY_NETIFACES='File "${DOWNLOADS_DIR}/${PY_NETIFACES}"'
+	FULL_PY_COMTYPES='File "${DOWNLOADS_DIR}/${PY_COMTYPES}"'
+	FULL_PY_CONFIGPARSER='File "${DOWNLOADS_DIR}/${PY_CONFIGPARSER}"'
+	FULL_PY_UTILS='File "${DOWNLOADS_DIR}/${PY_UTILS}"'
+	FULL_PY_SLEEKXMPP='File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"'
+	FULL_PY_WMI='File "${DOWNLOADS_DIR}/${PY_WMI}"'
+	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
+	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
+	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
+	INSTALL_FULL_PY_PIP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_PIP}`'
+	INSTALL_FULL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_NETIFACES}`'
+	INSTALL_FULL_PY_COMTYPES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_COMTYPES}`'
+	INSTALL_FULL_PY_CONFIGPARSER='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" ${PY_CONFIGPARSER}`'
+	INSTALL_FULL_PY_UTILS='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_UTILS}`'
+	INSTALL_FULL_PY_SLEEKXMPP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_SLEEKXMPP}`'
+	INSTALL_FULL_PY_WMI='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WMI}`'
+
 	sed -e "s/@@PRODUCT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOAD_FOLDER}/" \
-		-e "s/@@PYTHON_MSI@@/${PYTHON_FILENAME}/" \
+		-e "s/@@PYTHON_FILENAME@@/${PYTHON_FILENAME}/" \
+		-e "s/@@PYTHON_URL@@/$(sed_escape ${PYTHON_URL})/" \
+		-e "s/@@FULL_OR_DL_PYTHON_FILENAME@@/$(sed_escape ${FULL_PYTHON_FILENAME})/" \
 		-e "s/@@PY_VCPYTHON27@@/${PY_VCPYTHON27_FILENAME}/" \
+		-e "s/@@PY_VCPYTHON27_URL@@/$(sed_escape ${PY_VCPYTHON27_URL})/" \
+		-e "s/@@FULL_OR_DL_PY_VCPYTHON27@@/$(sed_escape ${FULL_PY_VCPYTHON27})/" \
 		-e "s/@@PY_WIN32@@/${PY_WIN32_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_WIN32@@/$(sed_escape ${FULL_PY_WIN32})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_WIN32@@/$(sed_escape ${INSTALL_FULL_PY_WIN32})/" \
 		-e "s/@@PY_PIP@@/${PY_PIP_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_PIP@@/$(sed_escape ${FULL_PY_PIP})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_PIP@@/$(sed_escape ${INSTALL_FULL_PY_PIP})/" \
 		-e "s/@@PY_NETIFACES@@/${PY_NETIFACES_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_NETIFACES@@/$(sed_escape ${FULL_PY_NETIFACES})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_NETIFACES@@/$(sed_escape ${INSTALL_FULL_PY_NETIFACES})/" \
 		-e "s/@@PY_COMTYPES@@/${PY_COMTYPES_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_COMTYPES@@/$(sed_escape ${FULL_PY_COMTYPES})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_COMTYPES@@/$(sed_escape ${INSTALL_FULL_PY_COMTYPES})/" \
 		-e "s/@@PY_CONFIGPARSER@@/${PY_CONFIGPARSER_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CONFIGPARSER@@/$(sed_escape ${FULL_PY_CONFIGPARSER})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_CONFIGPARSER@@/$(sed_escape ${INSTALL_FULL_PY_CONFIGPARSER})/" \
 		-e "s/@@PY_UTILS@@/${PY_UTILS_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_UTILS@@/$(sed_escape ${FULL_PY_UTILS})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_UTILS@@/$(sed_escape ${INSTALL_FULL_PY_UTILS})/" \
 		-e "s/@@PY_SLEEKXMPP@@/${PY_SLEEKXMPP_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_SLEEKXMPP@@/$(sed_escape ${FULL_PY_SLEEKXMPP})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_SLEEKXMPP@@/$(sed_escape ${INSTALL_FULL_PY_SLEEKXMPP})/" \
 		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_WMI@@/$(sed_escape ${FULL_PY_WMI})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_WMI@@/$(sed_escape ${INSTALL_FULL_PY_WMI})/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
@@ -217,11 +267,82 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_TASK_XML@@/${PULSE_AGENT_TASK_XML}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
 		-e "s/@@OPENSSH_FILENAME@@/${OPENSSH_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_OPENSSH@@/$(sed_escape ${FULL_OPENSSH})/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${FULL_FUSION_INVENTORY_AGENT})/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
 		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
+		-e "s/@@GENERATED_SIZE@@/FULL/" \
+		agent-installer.nsi.in \
+		> agent-installer.nsi
+	colored_echo green "### INFO Updating NSIS script.. Done"
+}
+
+update_nsi_script_dl() {
+	colored_echo blue "### INFO Updating NSIS script..."
+	DL_PYTHON_FILENAME='${DownloadFile} '"${PYTHON_URL}"' ${PYTHON_FILENAME}'
+	DL_PY_VCPYTHON27='${DownloadFile} '"${PY_VCPYTHON27_URL}"' ${PY_VCPYTHON27}'
+	DL_PY_WIN32='${DownloadFile} '"${PY_WIN32_URL}"' ${PY_WIN32_FILENAME}'
+	DL_OPENSSH='${DownloadFile} '"${OPENSSH_URL}"' ${OPENSSH_FILENAME}'
+	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
+	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
+	INSTALL_DL_PY_PIP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_PIP}`'
+	INSTALL_DL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_NETIFACES}`'
+	INSTALL_DL_PY_COMTYPES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_COMTYPES}`'
+	INSTALL_DL_PY_CONFIGPARSER='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre ${PY_CONFIGPARSER}`'
+	INSTALL_DL_PY_UTILS='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_UTILS}`'
+	INSTALL_DL_PY_SLEEKXMPP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_SLEEKXMPP}`'
+	INSTALL_DL_PY_WMI='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_WMI}`'
+
+	sed -e "s/@@PRODUCT_VERSION@@/${AGENT_VERSION}/" \
+		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOAD_FOLDER}/" \
+		-e "s/@@PYTHON_FILENAME@@/${PYTHON_FILENAME}/" \
+		-e "s/@@PYTHON_URL@@/$(sed_escape ${PYTHON_URL})/" \
+		-e "s/@@FULL_OR_DL_PYTHON_FILENAME@@/$(sed_escape ${DL_PYTHON_FILENAME})/" \
+		-e "s/@@PY_VCPYTHON27@@/${PY_VCPYTHON27_FILENAME}/" \
+		-e "s/@@PY_VCPYTHON27_URL@@/$(sed_escape ${PY_VCPYTHON27_URL})/" \
+		-e "s/@@FULL_OR_DL_PY_VCPYTHON27@@/$(sed_escape ${DL_PY_VCPYTHON27})/" \
+		-e "s/@@PY_WIN32@@/${PY_WIN32_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_WIN32@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_WIN32@@/$(sed_escape ${INSTALL_DL_PY_WIN32})/" \
+		-e "s/@@PY_PIP@@/${PY_PIP_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_PIP@@/$(sed_escape ${INSTALL_DL_PY_PIP})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_PIP@@/$(sed_escape ${INSTALL_DL_PY_PIP})/" \
+		-e "s/@@PY_NETIFACES@@/${PY_NETIFACES_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_NETIFACES@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_NETIFACES@@/$(sed_escape ${INSTALL_DL_PY_NETIFACES})/" \
+		-e "s/@@PY_COMTYPES@@/${PY_COMTYPES_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_COMTYPES@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_COMTYPES@@/$(sed_escape ${INSTALL_DL_PY_COMTYPES})/" \
+		-e "s/@@PY_CONFIGPARSER@@/${PY_CONFIGPARSER_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CONFIGPARSER@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_CONFIGPARSER@@/$(sed_escape ${INSTALL_DL_PY_CONFIGPARSER})/" \
+		-e "s/@@PY_UTILS@@/${PY_UTILS_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_UTILS@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_UTILS@@/$(sed_escape ${INSTALL_DL_PY_UTILS})/" \
+		-e "s/@@PY_SLEEKXMPP@@/${PY_SLEEKXMPP_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_SLEEKXMPP@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_SLEEKXMPP@@/$(sed_escape ${INSTALL_DL_PY_SLEEKXMPP})/" \
+		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_WMI@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_WMI@@/$(sed_escape ${INSTALL_DL_PY_WMI})/" \
+		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
+		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
+		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
+		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
+		-e "s/@@PULSE_AGENT_TASK_XML@@/${PULSE_AGENT_TASK_XML}/" \
+		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
+		-e "s/@@OPENSSH_FILENAME@@/${OPENSSH_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_OPENSSH@@/$(sed_escape ${DL_OPENSSH})/" \
+		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
+		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${DL_FUSION_INVENTORY_AGENT})/" \
+		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
+		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
+		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
+		-e "s/@@GENERATED_SIZE@@/MINIMAL/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 	colored_echo green "### INFO Updating NSIS script.. Done"
@@ -241,6 +362,10 @@ generate_agent_installer() {
 check_arguments "$@"
 compute_parameters
 prepare_system
-download_agent_dependencies
-update_nsi_script
+if [[ ${MINIMAL} -eq 1 ]]; then
+	update_nsi_script_dl
+else
+	download_agent_dependencies
+	update_nsi_script_full
+fi
 generate_agent_installer
