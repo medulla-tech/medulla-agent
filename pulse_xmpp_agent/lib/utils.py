@@ -75,7 +75,9 @@ def get_connection_name_from_guid(iface_guids):
 
 
 def CreateWinUser(login,Password,Groups=['Users']):
-    # Controle si l'utilisateur existe
+    """ 
+    We check if the user exists
+    """
     try:
         d = win32net.NetUserGetInfo(None,login, 1)
         return
