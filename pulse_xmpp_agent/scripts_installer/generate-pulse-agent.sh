@@ -148,7 +148,7 @@ compute_settings() {
   colored_echo blue " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
 
 	if [ -z "${INVENTORY_TAG}" ]; then
-    colored_echo blue " - Inventory TAG: None"
+		colored_echo blue " - Inventory TAG: None"
 	else
 		colored_echo blue " - Inventory TAG: '${INVENTORY_TAG}'"
   fi
