@@ -6,7 +6,6 @@ import subprocess
 import sys
 import platform
 import os
-import sys,os
 import logging
 import ConfigParser
 import utils
