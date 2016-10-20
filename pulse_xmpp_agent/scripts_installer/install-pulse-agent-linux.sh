@@ -26,7 +26,7 @@
 # TODO: Install freerdp
 #       Configure iptables
 
-PACKAGELIST="wget pulse-xmpp-agent pulse-xmppmaster-agentplugins pulseagent-plugins-machine"
+PACKAGELIST="wget pulse-xmpp-agent pulse-xmppmaster-agentplugins pulseagent-plugins-machine freerdp openssh-server"
 
 check_root() {
     if [ "$(id -u)" != "0" ]; then
