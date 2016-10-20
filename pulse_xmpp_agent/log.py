@@ -102,8 +102,6 @@ else:
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
         sleekxmpp.ClientXMPP.__init__(self, conf.Jid, conf.Password)
-        #print conf.Jid
-        #print conf.Password
         self.config = conf
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
