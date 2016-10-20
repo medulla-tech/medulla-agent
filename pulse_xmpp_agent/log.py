@@ -1,25 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re
-import sys,os
+import sys
 import logging
-import getpass
-from optparse import OptionParser
 import ConfigParser
 import sleekxmpp
-import platform
 import netifaces
 import random
-import socket
-import netifaces
-import base64
-import pickle
-import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 import json
 import hashlib
-import shutil
-import errno
 
 class configuration:
     def __init__(self,typeconf='agent'):
