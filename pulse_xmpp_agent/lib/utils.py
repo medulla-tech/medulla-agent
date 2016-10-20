@@ -143,7 +143,7 @@ def isWinUserAdmin():
 
 #mac OS
 def isMacOsUserAdmin():
-    obj=simplecommande("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
+    obj=simplecommand("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
     if int(obj['code']) == 0:
         return True
     else:
@@ -337,7 +337,7 @@ def isprogramme(name):
     else:
         return False
 
-def simplecommande(cmd):
+def simplecommand(cmd):
     obj={}
     p = subprocess.Popen(cmd,
                             shell=True,
@@ -348,7 +348,7 @@ def simplecommande(cmd):
     obj['result']=result
     return obj
 
-def simplecommandestr(cmd):
+def simplecommandstr(cmd):
     obj={}
     p = subprocess.Popen(cmd,
                             shell=True,
@@ -617,7 +617,7 @@ def getIpXmppInterface(ipadress,Port):
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE,"recherche adresse ip serveur XMPP")
         print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress)
-        obj = simplecommande("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
+        obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
         logging.log(DEBUGPULSE,"netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -627,7 +627,7 @@ def getIpXmppInterface(ipadress,Port):
             if len(b) != 0:
                 resultip =  b[3].split(':')[0]
     elif sys.platform.startswith('win'):
-        obj = simplecommande("netstat -an | findstr %s | findstr ESTABLISHED"%Port)
+        obj = simplecommand("netstat -an | findstr %s | findstr ESTABLISHED"%Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i]=obj['result'][i].rstrip('\n')
@@ -637,7 +637,7 @@ def getIpXmppInterface(ipadress,Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     else:
-        obj = simplecommande("netstat -a | grep %s | grep ESTABLISHED"%Port)
+        obj = simplecommand("netstat -a | grep %s | grep ESTABLISHED"%Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i]=obj['result'][i].rstrip('\n')

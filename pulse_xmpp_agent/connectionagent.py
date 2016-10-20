@@ -70,9 +70,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
 
-        self.config.mastersalon="%s/MASTER"%self.config.confjidsalon
+        self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
-        obj = simplecommandestr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
+        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         #self.md5reseau = hashlib.md5(obj['result']).hexdigest()
         # demande mise à jour toutes les heures.
         #self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
@@ -81,13 +81,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         
-        self.add_event_handler("muc::%s::presence" % conf.confjidsalon,
+        self.add_event_handler("muc::%s::presence" % conf.confjidchatroom,
                                self.muc_presenceConf)
-        """ sortie presense dans salon Command """
-        self.add_event_handler("muc::%s::got_offline" % conf.confjidsalon,
+        """ sortie presense dans chatroom Command """
+        self.add_event_handler("muc::%s::got_offline" % conf.confjidchatroom,
                                self.muc_offlineConf)
-        """ nouvelle presense dans salon Command """    
-        self.add_event_handler("muc::%s::got_online" % conf.confjidsalon,
+        """ nouvelle presense dans chatroom Command """    
+        self.add_event_handler("muc::%s::got_online" % conf.confjidchatroom,
                                self.muc_onlineConf)
 
         #fonction appeler pour tous message
@@ -100,8 +100,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.ipxmpp = getIpXmppInterface(self.config.confserver, self.config.confport)
 
-        #join salon configuration
-        self.plugin['xep_0045'].joinMUC(self.config.confjidsalon,
+        #join chatroom configuration
+        self.plugin['xep_0045'].joinMUC(self.config.confjidchatroom,
                                         self.config.NickName,
                                         password=self.config.confpasswordmuc,
                                         wait=True)
@@ -125,15 +125,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def muc_presenceConf(self, presence):
         """
-        traitement seulement si MASTER du salon configmaster
+        traitement seulement si MASTER du chatroom configmaster
         """
-        if presence['from'] == self.config.mastersalon:
+        if presence['from'] == self.config.masterchatroom:
             print presence['from']
         #envoi information machine
         pass
 
     def muc_offlineConf(self, presence):
-        if presence['from'] == self.config.mastersalon:
+        if presence['from'] == self.config.masterchatroom:
             print presence['from']
         pass
 
@@ -205,8 +205,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'action' : 'connectionconf',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidsaloncommand,
-            'who'    : "%s/%s"%(self.config.jidsaloncommand,self.config.NickName),
+            'deploiement' : self.config.jidchatroomcommand,
+            'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
             'plateforme' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),

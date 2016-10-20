@@ -143,7 +143,7 @@ compute_settings() {
   colored_echo blue " - XMPP server password: '${XMPP_SERVER_PASSWORD}'"
 
   if [ -z "${XMPP_SERVER_MUCPASSWORD}" ]; then
-	  XMPP_SERVER_MUCPASSWORD=$(awk '/^\[salon\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
+	  XMPP_SERVER_MUCPASSWORD=$(awk '/^\[chatroom\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
   fi
   colored_echo blue " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
 

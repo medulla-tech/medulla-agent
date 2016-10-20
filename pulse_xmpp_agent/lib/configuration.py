@@ -68,15 +68,15 @@ class parametreconf:
                     logging.getLogger().warning("parameter File pluging %s : missing"%self.nameplugindir)
 
         try:
-            self.agentcommande = Config.get('global', 'relayserver_agent')
+            self.agentcommand = Config.get('global', 'relayserver_agent')
         except:
-            self.agentcommande=""
+            self.agentcommand=""
         #########chatroom############
-        #jidsalonmaster
-        #jidsalonlog
-        #jidsaloncommand
-        self.jidsalonmaster="master@%s"%Config.get('chatroom', 'server')
-        self.jidsalonlog="log@%s"%Config.get('chatroom', 'server')
+        #jidchatroommaster
+        #jidchatroomlog
+        #jidchatroomcommand
+        self.jidchatroommaster="master@%s"%Config.get('chatroom', 'server')
+        self.jidchatroomlog="log@%s"%Config.get('chatroom', 'server')
         #chatroom de deploiement
         self.passwordconnexionmuc=Config.get('chatroom', 'password')
         self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
@@ -111,9 +111,9 @@ class parametreconf:
             self.confpassword = Config.get('configuration_server', 'confpassword')
         if  Config.has_option("configuration_server", "confmuc_domain"):
             try:
-                self.confjidsalon ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
+                self.confjidchatroom ="%s@%s"%(Config.get('configuration_server', 'confmuc_chatroom'),Config.get('configuration_server', 'confmuc_domain'))
             except:
-                self.confjidsalon ="%s@%s"%("configmaster",Config.get('configuration_server', 'confmuc_domain'))
+                self.confjidchatroom ="%s@%s"%("configmaster",Config.get('configuration_server', 'confmuc_domain'))
         if  Config.has_option("configuration_server", "confmuc_password"):
             self.confpasswordmuc = Config.get('configuration_server', 'confmuc_password')
 
@@ -163,11 +163,11 @@ class parametreconf:
             self.ordreallagent = False
 
         if self.agenttype == "relayserver":
-            self.jidsaloncommand="muc%s@%s"%(nameuser,Config.get('chatroom', 'server'))
+            self.jidchatroomcommand="muc%s@%s"%(nameuser,Config.get('chatroom', 'server'))
             self.relayserverdeploy = ""
         else:
-            self.relayserverdeploy = jid.JID(self.agentcommande)
-            self.jidsaloncommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('chatroom', 'server'))
+            self.relayserverdeploy = jid.JID(self.agentcommand)
+            self.jidchatroomcommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('chatroom', 'server'))
 
 
 

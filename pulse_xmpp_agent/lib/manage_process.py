@@ -6,7 +6,7 @@ import os.path
 import json
 from multiprocessing import Process, Queue, TimeoutError
 import threading
-from lib.utils import simplecommandestr
+from lib.utils import simplecommandstr
 import traceback
 import logging
 import subprocess
@@ -58,7 +58,7 @@ class mannageprocess:
                 ev = False
 
             print "================================================"
-            print " execution commande in process"
+            print " execution command in process"
             print "================================================"
             print cmd.code_error
             print cmd.stdout
@@ -99,7 +99,7 @@ class mannageprocess:
                             ev['data']['result'][t] = os.linesep.join(tab)
                     queue_out_session.put(ev)
 
-            #cmd = simplecommandestr(command)
+            #cmd = simplecommandstr(command)
 
             #if cmd['code'] == 0 and eventfinish != False:
                 #ev = eventfinish
@@ -110,7 +110,7 @@ class mannageprocess:
                 
                 
             #print "================================================"
-            #print " execution commande in process"
+            #print " execution command in process"
             #print "================================================"
             #print cmd['code']
             #print cmd['result']

@@ -52,11 +52,11 @@ class configuration:
             self.debug = 5
         """ channel connexion information """
         self.NickName= "LOG"
-        self.SalonServer=Config.get('Chatroom', 'server')
-        self.SalonCommand="%s_%s@%s"%(self.deploiement,Config.get('Chatroom', 'command'),self.SalonServer)
-        self.SalonMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.SalonServer)
-        self.SalonLog="%s@%s"%(Config.get('Chatroom', 'log'),self.SalonServer)
-        self.SalonPassword=Config.get('Chatroom', 'password')
+        self.ChatroomServer=Config.get('Chatroom', 'server')
+        self.ChatroomCommand="%s_%s@%s"%(self.deploiement,Config.get('Chatroom', 'command'),self.ChatroomServer)
+        self.ChatroomMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.ChatroomServer)
+        self.ChatroomLog="%s@%s"%(Config.get('Chatroom', 'log'),self.ChatroomServer)
+        self.ChatroomPassword=Config.get('Chatroom', 'password')
 
     def name_random(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
@@ -128,10 +128,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        self.plugin['xep_0045'].joinMUC(self.config.SalonLog,
+        self.plugin['xep_0045'].joinMUC(self.config.ChatroomLog,
                                         self.config.NickName,
                                         # If a room password is needed, use:
-                                        password=self.config.SalonPassword,
+                                        password=self.config.ChatroomPassword,
                                         wait=True)
 
     def register(self, iq):

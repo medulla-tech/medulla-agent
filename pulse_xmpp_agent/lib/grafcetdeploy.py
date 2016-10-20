@@ -4,7 +4,7 @@
 import sys,os,platform
 import os.path
 import json
-from utils import simplecommandestr, getMacAdressList, getIPAdressList, MacAdressToIp
+from utils import simplecommandstr, getMacAdressList, getIPAdressList, MacAdressToIp
 import pprint
 import traceback
 import logging
@@ -259,12 +259,12 @@ class sequentialevolutionquery:
                 #todo si action deja faite return
                 #todo ajouter un timeout
                 
-                a = simplecommandestr(command)
+                a = simplecommandstr(command)
                 resulsequence = {}
                 result  = [x for x in a['result'].split(os.linesep) if x !='']
                 resultstr = os.linesep.join(result)
                 print "================================================"
-                print " execution commande in thread %s "%command
+                print " execution command in thread %s "%command
                 print "================================================"
                 print result
                 print "codeerror ", a['code']
