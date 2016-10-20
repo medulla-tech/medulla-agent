@@ -154,7 +154,7 @@ def isMacOsUserAdmin():
     
 
 #listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
-def name_random(nb, pref=""):
+def setRandomName(nb, pref=""):
     a="abcdefghijklnmopqrstuvwxyz0123456789"
     d=pref
     for t in range(nb):
