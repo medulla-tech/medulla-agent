@@ -72,7 +72,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
-        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
         #self.md5reseau = hashlib.md5(obj['result']).hexdigest()
         # demande mise à jour toutes les heures.
         #self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
