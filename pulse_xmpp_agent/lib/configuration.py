@@ -263,14 +263,14 @@ def listMacAdressMacOs():
     """
     lst={}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
-    for ligne in ifconfig:
-        if ligne.startswith(' ') or ligne.startswith("\t") and not "ether" in ligne:
+    for line in ifconfig:
+        if line.startswith(' ') or line.startswith("\t") and not "ether" in line:
             pass
         else:
-            if "ether" not in ligne:
-                ll=ligne.strip().split(':')[0]
+            if "ether" not in line:
+                ll=line.strip().split(':')[0]
             else :
-                lst[ll]=ligne.split('ether')[1].strip()
+                lst[ll]=line.split('ether')[1].strip()
     return lst
 
 def listMacAdressWinOs():
@@ -280,14 +280,14 @@ def listMacAdressWinOs():
     lst={}
     i=0
     ifconfig = os.popen('ipconfig /all').readlines()
-    for ligne in ifconfig:
-        if ligne.strip()=="":
+    for line in ifconfig:
+        if line.strip()=="":
             continue
-        if "phy"  in ligne.lower()  or not (ligne.startswith("\t") or ligne.startswith(' ')) :
-            if "phy" not in ligne.lower():
-                ll=ligne.split(' ')[0].strip()+"%d"%i
+        if "phy"  in line.lower()  or not (line.startswith("\t") or line.startswith(' ')) :
+            if "phy" not in line.lower():
+                ll=line.split(' ')[0].strip()+"%d"%i
             else :
-                lst[ll]=ligne.split(':')[1].strip()
+                lst[ll]=line.split(':')[1].strip()
                 i=i+1
     return lst
 
@@ -297,8 +297,8 @@ def listMacAdressLinuxOs():
     """
     lst={}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
-    for ligne in ifconfig:
-        if 'hwaddr' in ligne.lower():
-            t = ligne.strip().split(' ')
+    for line in ifconfig:
+        if 'hwaddr' in line.lower():
+            t = line.strip().split(' ')
             lst[t[0]]=t[-1]
     return lst
