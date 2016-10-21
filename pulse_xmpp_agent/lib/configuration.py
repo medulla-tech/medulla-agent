@@ -256,13 +256,6 @@ class parametreconf:
                 return if_mac
         return None
 
-    def listMacAdressOs(self):
-        lst = {}
-        a = self.get_local_ip_addresses()
-        for t in a:
-            lst[t] = self.mac_for_ip(t)
-        return lst
-
     def __str__(self):
         return str(self.__dict__)
 
