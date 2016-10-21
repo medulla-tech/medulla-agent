@@ -6,7 +6,7 @@ import os.path
 import json
 from multiprocessing import Process, Queue, TimeoutError
 import threading
-from utils import setRandomName, call_plugin
+from utils import getRandomName, call_plugin
 from  sleekxmpp import jid
 import traceback
 import logging
@@ -17,7 +17,7 @@ class manage_event:
     def __init__(self, queue_in, objectxmpp):
         self.event=[]
         self.queue_in = queue_in
-        self.namethread =  setRandomName(5, "threadevent")
+        self.namethread =  getRandomName(5, "threadevent")
         self.objectxmpp = objectxmpp
         self.threadevent = threading.Thread( name = self.namethread, target = self.manage_event_command)
         self.threadevent.start()

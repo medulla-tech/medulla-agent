@@ -58,14 +58,14 @@ class configuration:
         self.ChatroomLog="%s@%s"%(Config.get('Chatroom', 'log'),self.ChatroomServer)
         self.ChatroomPassword=Config.get('Chatroom', 'password')
 
-    def setRandomName(self, nb, pref=""):
+    def getRandomName(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
         for t in range(nb):
             d=d+a[random.randint(0,25)]
         return d
 
-    def setRandomNameID(self, nb, pref=""):
+    def getRandomNameID(self, nb, pref=""):
         a="0123456789"
         d=pref
         for t in range(nb):
@@ -93,7 +93,7 @@ class configuration:
     def jsonobj(self):
         return json.dumps(self.re)
 
-def setRandomName(nb, pref=""):
+def getRandomName(nb, pref=""):
     a="abcdefghijklnmopqrstuvwxyz0123456789"
     d=pref
     for t in range(nb):

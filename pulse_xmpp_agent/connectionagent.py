@@ -58,8 +58,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
-        newjidconf[0] = setRandomName(10,"conf")
-        conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+setRandomName(10,"conf")
+        newjidconf[0] = getRandomName(10,"conf")
+        conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+getRandomName(10,"conf")
 
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
@@ -175,7 +175,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def infos_machine(self):
         #envoi information
         dataobj=self.seachInfoMachine()
-        self.session = setRandomName(10,"session")
+        self.session = getRandomName(10,"session")
         dataobj['sessionid'] = self.session
         dataobj['base64'] = False
         self.send_message(mto = "master@%s"%self.config.chatserver,
