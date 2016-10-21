@@ -270,6 +270,9 @@ class parametreconf:
         return json.dumps(self.re)
 
 def listMacAdressMacOs():
+    """
+    This function return the mac address on MAC OS
+    """
     lst={}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
     for ligne in ifconfig:
@@ -283,6 +286,9 @@ def listMacAdressMacOs():
     return lst
 
 def listMacAdressWinOs():
+    """
+    This function return the mac address on MS Windows
+    """
     lst={}
     i=0
     ifconfig = os.popen('ipconfig /all').readlines()
@@ -298,6 +304,9 @@ def listMacAdressWinOs():
     return lst
 
 def listMacAdressLinuxOs():
+    """
+    This function return the mac address on GNU/Linux
+    """
     lst={}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
     for ligne in ifconfig:
