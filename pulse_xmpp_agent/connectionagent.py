@@ -106,7 +106,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         wait=True)
 
     def register(self, iq):
-        """ cette fonction est appelee pour la registration automatique""" 
+        """ This function is called for automatic registration"""
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
