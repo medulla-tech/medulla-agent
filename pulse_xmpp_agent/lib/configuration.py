@@ -22,13 +22,13 @@
 
 import netifaces
 import json
-import subprocess
 import sys
 import platform
 import os
 import logging
 import ConfigParser
 import utils
+import random
 from  agentconffile import conffilename
 from sleekxmpp import jid
 
