@@ -91,9 +91,6 @@ class parametreconf:
         except:
             self.agentcommand=""
         #########chatroom############
-        #jidchatroommaster
-        #jidchatroomlog
-        #jidchatroomcommand
         self.jidchatroommaster="master@%s"%Config.get('chatroom', 'server')
         self.jidchatroomlog="log@%s"%Config.get('chatroom', 'server')
         #chatroom de deploiement
@@ -109,8 +106,6 @@ class parametreconf:
             self.jidagent = Config.get('jid_01', 'jidname')
             nameuser = jid.JID(self.jidagent).user
         self.jidagent="%s@%s/%s"%(nameuser,Config.get('chat', 'domain'),platform.node())
-        # jid hostname
-        #self.jidagent="%s@%s/%s"%(platform.node(),Config.get('chat', 'server'),platform.node())
         try:
             self.logfile = Config.get('global', 'logfile')
         except:
