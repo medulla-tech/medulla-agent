@@ -286,7 +286,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         mydata = dataobj['data']
 
                     if not dataobj.has_key('sessionid'):
-                        dataobj['sessionid']= name_random(6, "xmpp")
+                        dataobj['sessionid']= setRandomName(6, "xmpp")
                         logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],dataobj['sessionid']))
 
                     del dataobj['data']

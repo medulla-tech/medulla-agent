@@ -78,7 +78,7 @@ class parametreconf:
         self.jidchatroomlog="log@%s"%Config.get('chatroom', 'server')
         #chatroom de deploiement
         self.passwordconnexionmuc=Config.get('chatroom', 'password')
-        self.NickName="%s_%s"%(platform.node(),utils.name_random(2))
+        self.NickName="%s_%s"%(platform.node(),utils.setRandomName(2))
         ########chat#############
         # le jidagent doit être la plus petite valeur de la liste des macs.
         self.chatserver=Config.get('chat', 'domain')
@@ -195,14 +195,14 @@ class parametreconf:
         Config.read(namefile)
         return Config.items("parameters")
 
-    def name_random(self, nb, pref=""):
+    def setRandomName(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
         d=pref
         for t in range(nb):
             d=d+a[random.randint(0,25)]
         return d
 
-    def name_randomID(self, nb, pref=""):
+    def setRandomNameID(self, nb, pref=""):
         a="0123456789"
         d=pref
         for t in range(nb):
