@@ -59,8 +59,6 @@ class sessiondatainfo:
         session = { 'sessionid' : self.sessionid, 'timevalid' : self.timevalid, 'datasession' : self.datasession }
         with open(namefilesession, 'w') as f:
             json.dump(session, f, indent = 4)
-        #pp = pprint.PrettyPrinter(indent=4)
-        #pp.pprint(self.datasession)
 
     def updatesessionfromfile(self):
         namefilesession = os.path.join( self.pathfile, self.sessionid )
@@ -103,7 +101,6 @@ class sessiondatainfo:
             self.eventend.set()
 
     def __repr__(self):
-        #return "<session {}, validate {}, data {}, eventend {}> ".format(self.sessionid, self.timevalid, self.datasession, self.eventend)
         return "<session %s, validate %s, data %s, eventend %s> "%(self.sessionid, self.timevalid, self.datasession, self.eventend)
 
 class session:
@@ -148,17 +145,14 @@ class session:
 
     def loadsessions(self):
         listfilesession = [x  for x in glob.glob(os.path.join(self.dirsavesession, "*" )) if (os.path.isfile(x) and os.path.basename(x).startswith( 'command'))]
-        #print listfilesession
         for filesession in listfilesession:
             if self.removefilesessionifnotsignal(filesession):
                 try:
-                    #lasession id est le nom du fichier
                     objsession = self.sessionfromsessiondata(os.path.basename(filesession))
                     if objsession== None: raise SessionkeyError
                     objsession.pathfile = self.dirsavesession
                     objsession.updatesessionfromfile()
                 except SessionkeyError:
-                    #session non exist
                     objsession = self.createsessiondatainfo(os.path.basename(filesession))
                     objsession.updatesessionfromfile()
 
@@ -185,7 +179,6 @@ class session:
     def __suppsessiondatainfo__(self):
         datasessioninfo = [x  for x in self.sessiondata if x.timevalid <= 0]
         self.sessiondata = [x  for x in self.sessiondata if x.timevalid > 0]
-        #effacefichier persistance session
         for i in datasessioninfo:
             i.removesessionfile()
 
@@ -203,7 +196,6 @@ class session:
             if i.sessionid == sessionid :
                 return i
         return None    
-        #raise SessionkeyError
 
     def reactualisesession(self, sessionid, timeminute = 10):
         for i in self.sessiondata:
@@ -224,7 +216,6 @@ class session:
     def clearnoevent(self, sessionid):
         for i in range(0, self.len()):
             if sessionid == self.sessiondata[i].sessionid:
-                #renovefile
                 self.sessiondata[i].removesessionfile()
                 self.sessiondata.remove(self.sessiondata[i])
                 break;
