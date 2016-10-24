@@ -485,7 +485,7 @@ def rewriteInterfaceTypeDebian(data,interface ):
 
 def typelinuxfamily():
     debiandist = ['astra', 'canaima', 'collax', 'cumulus', 'damn', 'debian', 'doudoulinux', 'euronode', 'finnix', 'grml', 'kanotix', 'knoppix', 'linex', 'linspire',   'advanced', 'lmde', 'mepis','ocera', 'ordissimo','parsix', 'pureos', 'rays', 'aptosid', 'ubuntu', 'univention', 'xandros']
-    redhadlist=['centos', 'rhel', 'redhat', 'fedora', 'mageia','mga', 'mandiva', 'suse', 'oracle', 'scientific', 'fermi']
+    redhadlist=['centos', 'rhel', 'redhat', 'fedora', 'mageia','mga', 'mandriva', 'suse', 'oracle', 'scientific', 'fermi']
     val = platform.platform().lower()
     for t in debiandist:
         if t in val:
