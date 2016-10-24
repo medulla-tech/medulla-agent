@@ -102,7 +102,7 @@ def CreateWinUser(login,Password,Groups=['Users']):
     except:
         pass
     d = {}
-    d['name'] = Login
+    d['name'] = login
     d['password'] = Password
     d['comment'] = ''
     d['flags'] = win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT | win32netcon.UF_PASSWD_CANT_CHANGE | win32netcon.UF_DONT_EXPIRE_PASSWD
