@@ -22,7 +22,6 @@
 import glob 
 import os
 import json
-import pprint
 
 class Session(Exception):
     pass
