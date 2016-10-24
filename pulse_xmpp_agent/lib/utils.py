@@ -209,7 +209,7 @@ def getIpListreduite():
             pass
     return listmacadress
 
-#jfk
+
 def getMacAdressList():
     listmacadress = []
     for interfacenet in netifaces.interfaces():
