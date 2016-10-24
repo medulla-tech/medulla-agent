@@ -95,7 +95,7 @@ def get_connection_name_from_guid(iface_guids):
 
 
 def CreateWinUser(login,Password,Groups=['Users']):
-    """ 
+    """
     We check if the user exists
     """
     try:
@@ -143,7 +143,7 @@ def create_Win_user(username, password, full_name=None, comment=None):
 
     win32net.NetLocalGroupAddMembers(None, 'Users', 3, [
             {'domainandname': r'{0}\{1}'.format(socket.gethostname(), username)}])
-  
+
     hide_user_account(username)
     return True
 
@@ -170,8 +170,8 @@ def isMacOsUserAdmin():
         return True
     else:
         return False
-    
-    
+
+
 
 #listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
@@ -317,7 +317,7 @@ def is_valid_ipv6(ip):
              |  (?<!:)              #
              |  (?<=:) (?<!::) :    #
              )                      # OR
-         |                          #   A v4 address with NO leading zeros 
+         |                          #   A v4 address with NO leading zeros
             (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
             (?: \.
                 (?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)
@@ -338,7 +338,7 @@ def typelinux():
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
     code_result= p.wait()
-    system=result[0].rstrip('\n')    
+    system=result[0].rstrip('\n')
     """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
@@ -382,8 +382,8 @@ def simplecommandstr(cmd):
     return obj
 
 
-    
-    
+
+
 def servicelinuxinit(name,action):
     obj={}
     p = subprocess.Popen("/etc/init.d/%s %s"%(name,action),
@@ -430,14 +430,14 @@ def service(name, action): #start | stop | restart | reload
             wmi_sql = "select * from Win32_Service Where Name ='%s'"%name
             wmi_out = wmi_obj.query( wmi_sql )
         finally:
-            pythoncom.CoUninitialize ()    
+            pythoncom.CoUninitialize ()
         for dev in wmi_out:
             print dev.Caption
         pass
     elif sys.platform.startswith('darwin'):
         pass
     return obj
- 
+
 
 def listservice():
     pythoncom.CoInitialize ()
@@ -460,10 +460,10 @@ def joint_compteAD():
             if computer.PartOfDomain:
                 print computer.Domain #DOMCD
                 print computer.SystemStartupOptions
-                computer.JoinDomainOrWorkGroup(domaine,password,login,group,3  )
+                computer.JoinDomainOrWorkGroup(domain,password,login,group,3  )
     finally:
-        pythoncom.CoUninitialize ()        
-        
+        pythoncom.CoUninitialize ()
+
 def windowsservice(name, action):
     pythoncom.CoInitialize ()
     try:
@@ -485,8 +485,8 @@ def windowsservice(name, action):
             dev.StopService()
             dev.StartService()
         else:
-            pass        
- 
+            pass
+
 
 def methodservice():
     import pythoncom
@@ -495,20 +495,20 @@ def methodservice():
     try:
         c = wmi.WMI ()
         for method in c.Win32_Service._methods:
-            print method  
+            print method
     finally:
         pythoncom.CoUninitialize ()
-        
+
 def file_get_content(path):
     inputFile = open(path, 'r')     #Open test.txt file in read mode
     content = inputFile.read()
-    inputFile.close()        
+    inputFile.close()
     return content
 
 def file_put_content(filename, contents,mode="w"):
     fh = open(filename, mode)
-    fh.write(contents)  
-    fh.close()  
+    fh.write(contents)
+    fh.close()
 
 ##windows
 #def listusergroup():
@@ -608,7 +608,7 @@ def pulgindeploy1(func):
                 print "Dtypequery : %s"%data["Dtypequery"]
             if "Deventindex" in data:
                 print "Deventindex : %s"%data["Deventindex"]
-            
+
             if not result['data']['end']:
                 print "Envoi Message"
                 print "result",result
@@ -629,7 +629,7 @@ def pulgindeploy1(func):
             else:
                 print "Envoi pas de Message erreur"
             return
-        print "---------------------------------------------------------------" 
+        print "---------------------------------------------------------------"
         return response
     return wrapper
 
@@ -706,7 +706,7 @@ def searchippublic(site = 1):
 
 # decorateur pour simplifier les plugins
 # verifie session existe.
-# pas de session end 
+# pas de session end
 def pulginmaster(func):
     def wrapper( objetxmpp, action, sessionid, data, message, ret ):
         if action.startswith("result"):
@@ -748,6 +748,3 @@ def merge_dicts(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
-
-
-

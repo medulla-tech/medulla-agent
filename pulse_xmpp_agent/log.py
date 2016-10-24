@@ -35,7 +35,7 @@ class configuration:
         self.Server= Config.get('domain', 'server')
         self.Chatadress= Config.get('domain', 'chatadress')
         self.Jid="log@%s/log"% self.Chatadress
-        self.Password=Config.get('domaine', 'password')
+        self.Password=Config.get('domain', 'password')
         self.master="master@%s/master"%self.Chatadress
         self.siveo="agentsiveo@%s/siveo"%self.Chatadress
         self.forceregistration=Config.getboolean('domain', 'registrationauto')

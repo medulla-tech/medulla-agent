@@ -207,7 +207,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'deployment' : self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'plateforme' : platform.platform(),
+            'platform' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
             'portxmpp' : self.config.Port,

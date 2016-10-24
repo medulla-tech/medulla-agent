@@ -186,8 +186,8 @@ class parametreconf:
 
 
         self.information={}
-        self.PlateformSystem=platform.platform()
-        self.information['plateform']=self.PlateformSystem
+        self.PlatformSystem=platform.platform()
+        self.information['platform']=self.PlatformSystem
         self.OperatingSystem=platform.system()
         self.information['os']=self.OperatingSystem
         self.UnameSystem = platform.uname()

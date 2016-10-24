@@ -1,10 +1,10 @@
 [global]
 #ERROR or DEBUG or INFO
 log_level = ERROR
-deployment=deploichezjfk
+deployment = deploymentname
 inter_agent = False
 transfer_blocsize = 10240
-[domaine]
+[domain]
 port = 5222
 server=jabbertest1.la-marmotte.net
 chatadress = la-marmotte.net
