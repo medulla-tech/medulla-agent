@@ -379,7 +379,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mtype='chat')
                     del i.datasession['signal']
 
-            #les machines se declarent aupres de relayserver dans le chatroom de deploiement du relais server
+            # The machines identify themselves in the chatroom deployment of the relay server
             msgdata = {'signalpresencechatroom' :{ self.config.jidagent: {
                     'nick' : self.config.NickName,
                     'uuid': '246bc7f2-702b-11e6-8d74-3c970e3e0e47'}}}
@@ -429,7 +429,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'action' : 'infomachine',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidchatroomcommand,
+            'deployment' : self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
             'plateforme' : platform.platform(),

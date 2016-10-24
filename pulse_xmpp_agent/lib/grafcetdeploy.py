@@ -74,7 +74,7 @@ class sequentialevolutionquery:
                     self.objetxmpp.event("loginfotomaster", self.msglog)
                     self.data['Dtypequery'] = "TE"
         else:
-            self.msglog['data']['msg']="ERRORGRAPHSET deploy : %s :%s[os ne peut pas deployer ce package : ]"%(self.data['name'], self.sessionid )
+            self.msglog['data']['msg']="ERRORGRAPHSET deploy : %s :%s[OS can not deploy this package : ]"%(self.data['name'], self.sessionid )
             self.data['msg']= self.msglog['data']['msg']
             self.msglog['ret'] = 254
             self.objetxmpp.event("loginfotomaster", self.msglog)
@@ -120,31 +120,31 @@ class sequentialevolutionquery:
 
         cmd = cmd.replace('@@@LIST_INTERFACE_NET@@@', " ".join(netifaces.interfaces()))
 
-        # replace template valeur de la base de registre windows (uniquement pour windows)
-        #@@@VRW@@@HKEY@@K@@Souskey@@K@@value@@@VRW@@@
+        # Replace windows registry value in template (only for windows)
+        #@@@VRW@@@HKEY@@K@@Subkey@@K@@value@@@VRW@@@
         for t in re.findall("@@@VRW@@@.*?@@@VRW@@@", cmd ):
             if not sys.platform.startswith('win'):
                 cmd = cmd.replace(t, "")
-                logging.warning("bad descriptor : Regiter only windows")
+                logging.warning("bad descriptor : Registry update only works on Windows")
             else:
                 import _winreg
                 keywindows = t.replace("@@@VRW@@@","").split("@@K@@")
                 key = _winreg.OpenKey(constantregisterwindows.getkey(keywindows[0]), keywindows[1], 0, _winreg.KEY_READ)
-                (valeur, typevaleur) = _winreg.QueryValueEx(key,keywindows[1]) 
+                (valeur, typevaleur) = _winreg.QueryValueEx(key,keywindows[1])
                 _winreg.CloseKey(key)
                 cmd = cmd.replace( t , str(valeur))
 
-        # replace template type de la valeur dans la base de registre windows
-        #@@@TRW@@@HKEY@@K@@Souskey@@K@@value@@@TRW@@@
+        # Replace windows registry value type in template (only for windows)
+        #@@@TRW@@@HKEY@@K@@Subkey@@K@@value@@@TRW@@@
         for t in re.findall("@@@TRW@@@.*?@@@TRW@@@", cmd ):
             if not sys.platform.startswith('win'):
                 cmd = cmd.replace(t, " ")
-                logging.warning("bad descriptor : Regiter only windows")
+                logging.warning("bad descriptor : Registry update only works on Windows")
             else:
                 import _winreg
                 keywindows = t.replace("@@@TRW@@@","").split("@@K@@")
                 key = _winreg.OpenKey(constantregisterwindows.getkey(keywindows[0]), keywindows[1], 0, _winreg.KEY_READ)
-                (valeur, typevaleur) = _winreg.QueryValueEx(key,keywindows[1]) 
+                (valeur, typevaleur) = _winreg.QueryValueEx(key,keywindows[1])
                 _winreg.CloseKey(key)
                 cmd = cmd.replace( t , typevaleur)
 
@@ -164,7 +164,7 @@ class sequentialevolutionquery:
             z = t.replace("@_@","")
             cmd = cmd.replace( t, os.environ[z])
         print "__________________________________"
-        print "replaceTEMPLATE ou %s"% cmd
+        print "replace TEMPLATE ou %s"% cmd
         print "__________________________________"
         return cmd
 
@@ -204,8 +204,8 @@ class sequentialevolutionquery:
 
     def initialstep(self):
         # initialstep currentaction=None
-        # cette etape assure synchro file in MAchines
-        # puis lance sequence 1er action
+        # This step synchs files on machines
+        # then runs 1st action sequence
         sequencedata = self.descriptor[self.sequenceos]['sequence'][0]
         # call function avec sequence data
         self.data['Dtypequery'] = "TQ"
@@ -235,8 +235,8 @@ class sequentialevolutionquery:
                 logging.debug("working directory: %s"%(os.getcwd()))
                 return
             else:
-                # on a recu une reponse
-                # traitement result si il y a
+                # A response has been received
+                # Process result if any
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
                 self.msglog['ret'] = 0
@@ -277,7 +277,7 @@ class sequentialevolutionquery:
                 logging.debug("actionshellscript cmd [%s] sessionid%s"%(command, self.sessionid))
                 #todo si action deja faite return
                 #todo ajouter un timeout
-                
+
                 a = simplecommandstr(command)
                 resulsequence = {}
                 result  = [x for x in a['result'].split(os.linesep) if x !='']
@@ -328,12 +328,12 @@ class sequentialevolutionquery:
                     self.objetxmpp.event("loginfotomaster", self.msglog)
                 return
             else:
-                # on a recu une reponse
-                # traitement result si il y a
+                # A response has been received
+                # Process result if any
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
                 self.msglog['ret'] = 0
-                self.msglog['data']['msg']="GRAPHSET deploy : %s : %s Transition %s -> etape %s"%(self.data['name'], 
+                self.msglog['data']['msg']="GRAPHSET deploy : %s : %s Transition %s -> etape %s"%(self.data['name'],
                                                                                                   self.sessionid,
                                                                                                   self.data['Devent'],
                                                                                                   self.data['Daction'])
@@ -346,7 +346,7 @@ class sequentialevolutionquery:
 
         except Exception as e:
             self.msglog['ret'] = 155
-            self.msglog['data']['msg']="ERRORGRAPHSET deploy : %s : %s [function actionshellscript] %s"%(self.data['name'], 
+            self.msglog['data']['msg']="ERRORGRAPHSET deploy : %s : %s [function actionshellscript] %s"%(self.data['name'],
                                                                                                          self.sessionid,
                                                                                                          str(e))
             self.objetxmpp.event("loginfotomaster", self.msglog)
@@ -372,16 +372,16 @@ class sequentialevolutionquery:
                     'ret' : 0,
                     'base64' : False
                 }
-                #on signal que le grapphcet s'arrete
+                # Notify that graphcet stops
                 self.data['signal'] = datasignal
-                # ne pas executer acquitement en sortie de action process script
-                #aquitemment par fin de process
+                # Cannot execute ack at exit of action process script
+                # ack by end of process
                 self.data['signal']['continue'] = 'break'
 
                 objsession = self.objetxmpp.session.sessionfromsessiondata(self.sessionid)
-                # utiliser setdatasession sauve session dans fichier
+                # Use setdatasession to save session in file
                 objsession.setdatasession(self.data)
-                #le graphcet reprendra depuis un TEVENT de process
+                # The graphcet will continue from a process TEVENT
                 try:
                     logging.debug("actionprocessscript cmd [%s] sessionid%s"%(command, self.sessionid))
                     print "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
@@ -397,13 +397,13 @@ class sequentialevolutionquery:
                     traceback.print_exc(file=sys.stdout)
                 return
             else:
-                # on a recu une reponse
-                # traitement result si il y a
+                # A response has been received
+                # Process result if any
                 logging.debug("actionprocessscript TR or TE")
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
                 self.msglog['ret'] = 0
-                self.msglog['data']['msg'] = "GRAPHSET deploy : %s : %s Transition %s -> etape %s"%(self.data['name'], 
+                self.msglog['data']['msg'] = "GRAPHSET deploy : %s : %s Transition %s -> etape %s"%(self.data['name'],
                                                                                                     self.sessionid,
                                                                                                     self.data['Devent'],
                                                                                                     self.data['Daction'])
@@ -428,22 +428,22 @@ class sequentialevolutionquery:
         try:
             if self.data['Dtypequery'] == "TQ":
                 self.data['Dtypequery'] = "TR"
-                #sauve session
-                #signal reprise apres redemarrage dans session
+                # Save session
+                # signal reprise apres redemarrage dans session
                 self.msglog['data']['msg']="GRAPHSET deploy : %s :%s etape %s [actionrestartmachine]"%(self.data['name'],
                                                                                                        self.sessionid,
                                                                                                        self.data['Daction'])
                 self.msglog['ret'] = 0
                 self.objetxmpp.event("loginfotomaster", self.msglog)
-                #signaler la session
+                # Notify the session
                 self.data['signal'] = self.datasignal
-                # ne pas executer acquitement en sortie de action restart
-                #aquitemment par reprise de sessions
+                # Do not execute ack on exit of restart action
+                # ack by continuing the session
                 self.data['signal']['continue'] = 'break'
                 objsession = self.objetxmpp.session.sessionfromsessiondata(self.sessionid)
-                # utiliser setdatasession sauve session dans fichier
+                # Use setdatasession to save session in file
                 objsession.setdatasession(self.data)
-                #redémaré machine suivant OS
+                # Restart machine based on OS
                 logging.debug("actionrestartmachine  RESTART MACHINE")
                 if sys.platform.startswith('linux'):
                     logging.debug("actionrestartmachine  shutdown machine linux")
@@ -456,7 +456,7 @@ class sequentialevolutionquery:
                     os.system("shutdown -r now")
                 return
             else:
-                # on a recu une reponse:
+                # A response has been received
                 logging.debug("actionrestartmachine TR or TE")
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
@@ -499,18 +499,18 @@ class sequentialevolutionquery:
                 self.msglog['ret'] = 0
                 self.objetxmpp.event("loginfotomaster", self.msglog)
                 self.data['signal'] = self.datasignal
-                # ne pas executer acquitement en sortie de action restart
-                #aquitemment par reprise de sessions
+                # Do not execute ack on exit of restart action
+                # ack on restart of session
                 self.data['signal']['continue'] = 'break'
                 objsession = self.objetxmpp.session.sessionfromsessiondata(self.sessionid)
-                # utiliser setdatasession sauve session dans fichier
+                # Use setdatasession to save session in file
                 objsession.setdatasession(self.data)
-                #appellse de la vrai function qui va redémaré machine suivant OS
+                # Call the real function that will restart the machine based on its OS
                 logging.debug("actionrestartbot  RESTART XMPPCLIENT")
                 self.objetxmpp.restartBot()
                 return
             else:
-                # on a recu une reponse:
+                # A response has been received
                 logging.debug("actionrestartbot TR or TE")
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
@@ -554,13 +554,13 @@ class sequentialevolutionquery:
                 logging.info(self.msglog['data']['msg'])
                 if "time_s" in sequencedata and (type(sequencedata['time_s']) == type(int()) or type(sequencedata['time_s']) == type(float())):
                     print "================================================"
-                    print " waitting %s seconde"%sequencedata['time_s']
+                    print " waiting %s seconds"%sequencedata['time_s']
                     print "================================================"
                     time.sleep(sequencedata['time_s'])
                     print "====================reprise====================="
                 return
             else:
-                # on a recu une reponse
+                # A response has been received
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
                 self.msglog['ret'] = 0
@@ -582,13 +582,13 @@ class sequentialevolutionquery:
             logging.error(self.msglog['data']['msg'])
 
     def actiondeploymentcomplete(self, sequencedata, indexeventinlistevent):
-        """ action qui ne fait rien
-                elle est utilise pour signaler la fin du deploiement"""
+        """ Action that does nothing
+                it is used to notify the end of the deployment"""
         self.data['Daction'] = 'actiondeploymentcomplete'
         try:
             if self.data['Dtypequery'] == "TQ":
                 self.data['Dtypequery'] = "TED"
-                logging.debug("actiondeploymentcomplete  signaler fin du deploiement")
+                logging.debug("actiondeploymentcomplete to notify end of deployment")
 
             else:
                 # on a recu une reponse
@@ -626,15 +626,15 @@ class sequentialevolutionquery:
                 logging.info(self.msglog['data']['msg'])
                 if not sys.platform.startswith('win'):
                     logging.warning("bad descriptor : actionsetwindowsregistry only windows")
-                    #ne fait encore rien
+                    # doesn't do anything yet
                     return
                 else:
-                    key = _winreg.OpenKey( constantregisterwindows.getkey(sequencedata['hkey']), sequencedata['souskey'],0, _winreg.KEY_SET_VALUE) 
+                    key = _winreg.OpenKey( constantregisterwindows.getkey(sequencedata['hkey']), sequencedata['souskey'],0, _winreg.KEY_SET_VALUE)
                     _winreg.SetValueEx(key, sequencedata['nanedata'], 0,constantregisterwindows.getType(sequencedata['typedataregister'],sequencedata['namevalue']))
                     _winreg.CloseKey(key)
                 return
             else:
-                # on a recu une reponse
+                # A response has been received
                 self.data['Devent'] = self.__nextaction__(indexeventinlistevent)
                 self.data['Daction'] = self.descriptor[self.sequenceos]['sequence'][indexeventinlistevent]['action']
                 self.msglog['ret'] = 0

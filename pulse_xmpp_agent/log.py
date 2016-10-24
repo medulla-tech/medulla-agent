@@ -39,7 +39,7 @@ class configuration:
         self.master="master@%s/master"%self.Chatadress
         self.siveo="agentsiveo@%s/siveo"%self.Chatadress
         self.forceregistration=Config.getboolean('domain', 'registrationauto')
-        self.deploiement = Config.get('global', 'deploiement')
+        self.deployment = Config.get('global', 'deployment')
         self.commandinteragent = Config.getboolean('global', 'inter_agent')
 
         if Config.get('global', 'log_level') == "INFO":
@@ -53,7 +53,7 @@ class configuration:
         """ channel connexion information """
         self.NickName= "LOG"
         self.ChatroomServer=Config.get('Chatroom', 'server')
-        self.ChatroomCommand="%s_%s@%s"%(self.deploiement,Config.get('Chatroom', 'command'),self.ChatroomServer)
+        self.ChatroomCommand="%s_%s@%s"%(self.deployment,Config.get('Chatroom', 'command'),self.ChatroomServer)
         self.ChatroomMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.ChatroomServer)
         self.ChatroomLog="%s@%s"%(Config.get('Chatroom', 'log'),self.ChatroomServer)
         self.ChatroomPassword=Config.get('Chatroom', 'password')

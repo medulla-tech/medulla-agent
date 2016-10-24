@@ -93,13 +93,13 @@ class parametreconf:
         #########chatroom############
         self.jidchatroommaster="master@%s"%Config.get('chatroom', 'server')
         self.jidchatroomlog="log@%s"%Config.get('chatroom', 'server')
-        #chatroom de deploiement
+        # Deployment chatroom
         self.passwordconnexionmuc=Config.get('chatroom', 'password')
         self.NickName="%s_%s"%(platform.node(),utils.getRandomName(2))
         ########chat#############
-        # le jidagent doit être la plus petite valeur de la liste des macs.
+        # The jidagent must be the smallest value in the list of mac addresses
         self.chatserver=Config.get('chat', 'domain')
-        # plus petite mac adress
+        # Smallest mac address
         nameuser = utils.name_jid()
 
         if  Config.has_option("jid_01", "jidname"):

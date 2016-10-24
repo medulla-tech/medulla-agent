@@ -1,7 +1,7 @@
 [global]
 #ERROR or DEBUG or INFO
 log_level = ERROR
-deploiement=deploichezjfk
+deployment=deploichezjfk
 inter_agent = False
 transfer_blocsize = 10240
 [domaine]

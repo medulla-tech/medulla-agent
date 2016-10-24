@@ -63,7 +63,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
-        
+
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
         self.ippublic = searchippublic()
@@ -79,13 +79,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        
+
         self.add_event_handler("muc::%s::presence" % conf.confjidchatroom,
                                self.muc_presenceConf)
         """ sortie presense dans chatroom Command """
         self.add_event_handler("muc::%s::got_offline" % conf.confjidchatroom,
                                self.muc_offlineConf)
-        """ nouvelle presense dans chatroom Command """    
+        """ nouvelle presense dans chatroom Command """
         self.add_event_handler("muc::%s::got_online" % conf.confjidchatroom,
                                self.muc_onlineConf)
 
@@ -147,7 +147,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if msg['body']=="This room is not anonymous" or msg['subject']=="Welcome!":
             return
         print msg
-        try : 
+        try :
             data = json.loads(msg['body'])
         except:
             return
@@ -204,7 +204,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'action' : 'connectionconf',
             'from' : self.config.jidagent,
             'compress' : False,
-            'deploiement' : self.config.jidchatroomcommand,
+            'deployment' : self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
             'plateforme' : platform.platform(),
@@ -231,7 +231,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 def createDaemon(tg):
     """
         This function create a service/Daemon that will execute a det. task
-    """  
+    """
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
@@ -284,7 +284,7 @@ def doTask(tg):
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"
-        sys.exit(0)  
+        sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
         print "Pulse agent must be running as Administrator"
         sys.exit(0)
@@ -292,14 +292,14 @@ if __name__ == '__main__':
         print "Pulse agent must be running as root"
         sys.exit(0)
     optp = OptionParser()
-    optp.add_option("-d", "--deamon",action="store_true", 
+    optp.add_option("-d", "--deamon",action="store_true",
                  dest="deamon", default=False,
                   help="deamonize process")
     optp.add_option("-t", "--type",
                 dest="typemachine", default=False,
                 help="Type machine : machine or relayserver")
 
-    optp.add_option("-c", "--consoledebug",action="store_true", 
+    optp.add_option("-c", "--consoledebug",action="store_true",
                 dest="consoledebug", default = False,
                   help="console debug")
 
@@ -348,4 +348,3 @@ if __name__ == '__main__':
                     filename = tg.logfile,
                     filemode = 'a')
         createDaemon(tg)
-
