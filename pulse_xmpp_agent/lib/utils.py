@@ -23,15 +23,13 @@
 import netifaces
 import json
 import subprocess
-import sys, os, platform
+import sys, os
 import logging
-import ConfigParser
 import random
 import re
-import traceback, types
+import traceback
 from pprint import pprint
 import hashlib
-from functools import wraps
 import base64
 from configuration import  confParameter
 import urllib
