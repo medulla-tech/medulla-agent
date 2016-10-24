@@ -260,6 +260,8 @@ class confParameter:
 def listMacAdressMacOs():
     """
     This function return the mac address on MAC OS
+    :returns: it returns the mac address of the MacOS machine
+    :rtype: dictionnary
     """
     lst={}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
@@ -276,6 +278,8 @@ def listMacAdressMacOs():
 def listMacAdressWinOs():
     """
     This function return the mac address on MS Windows
+    :returns: it returns the mac address of the windows machine
+    :rtype: dictionnary
     """
     lst={}
     i=0
@@ -294,6 +298,8 @@ def listMacAdressWinOs():
 def listMacAdressLinuxOs():
     """
     This function return the mac address on GNU/Linux
+    :returns: it returns the mac address of the linux machine
+    :rtype: dictionnary
     """
     lst={}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
