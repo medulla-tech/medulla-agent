@@ -81,7 +81,6 @@ class confParameter:
                 if os.path.isfile(namefile):
                     liststuple = self.loadparametersplugins(namefile)
                     for keyparameter, valueparameter in liststuple:
-                        #locals()[keyparameter] = valueparameter
                         setattr(self, keyparameter,valueparameter)
                 else:
                     logging.getLogger().warning("parameter File pluging %s : missing"%self.nameplugindir)
