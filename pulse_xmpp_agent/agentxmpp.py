@@ -36,7 +36,7 @@ import hashlib
 import shutil
 import errno
 from lib.networkinfo import networkagentinfo
-from lib.configuration import  parametreconf
+from lib.configuration import  confParameter
 from lib.managesession import sessiondatainfo, session
 from lib.utils import *
 from lib.manage_event import manage_event
@@ -535,7 +535,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
     while True:
         # Setup the command line arguments.
-        tg = parametreconf(optstypemachine)
+        tg = confParameter(optstypemachine)
 
         if optstypemachine.lower() in ["machine"]:
             tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
@@ -587,7 +587,7 @@ if __name__ == '__main__':
                   help="console debug")
 
     opts, args = optp.parse_args()
-    tg = parametreconf(opts.typemachine)
+    tg = confParameter(opts.typemachine)
     if not opts.deamon :
         doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
     else:

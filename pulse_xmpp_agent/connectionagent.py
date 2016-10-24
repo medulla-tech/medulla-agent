@@ -28,7 +28,7 @@ import base64
 import json
 from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo
-from lib.configuration import  parametreconf, changeconnection
+from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
 from lib.utils import *
 from optparse import OptionParser
@@ -304,7 +304,7 @@ if __name__ == '__main__':
                   help="console debug")
 
     opts, args = optp.parse_args()
-    tg = parametreconf(opts.typemachine)
+    tg = confParameter(opts.typemachine)
 
     if opts.typemachine.lower() in ["machine"]:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))

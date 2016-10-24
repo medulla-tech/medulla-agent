@@ -33,7 +33,7 @@ from pprint import pprint
 import hashlib
 from functools import wraps
 import base64
-from configuration import  parametreconf
+from configuration import  confParameter
 import urllib
 
 DEBUGPULSE=25

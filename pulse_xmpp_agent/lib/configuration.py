@@ -53,7 +53,7 @@ class SingletonDecorator:
             self.instance = self.klass(*args,**kwds)
         return self.instance
 
-class parametreconf:
+class confParameter:
     def __init__(self,typeconf='machine'):
         Config = ConfigParser.ConfigParser()
         namefileconfig = conffilename(typeconf)
