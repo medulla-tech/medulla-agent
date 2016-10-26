@@ -518,7 +518,7 @@ def file_put_content(filename, contents,mode="w"):
         #print "  ", user.Caption
 
 #decorateur pour simplifier les plugins
-def pulginprocess(func):
+def pluginprocess(func):
     def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
         resultaction = "result%s"%action
         result={}
