@@ -746,3 +746,71 @@ def merge_dicts(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
+
+def portline(result):
+    colonne = [x.strip() for x in result.split(' ') if x != ""]
+    return colonne[-2:-1][0].split(':')[1]
+
+
+def protoandport():
+    protport={}
+    if sys.platform.startswith('linux'):
+        vnc = simplecommand( 'lsof -n -P -i -sTCP:LISTEN | grep LISTEN | grep IPv4 | grep vnc' )
+        if len(vnc['result']) >0:
+            protport['vnc']=portline(vnc['result'][0])
+    elif sys.platform.startswith('darwin'):        
+        vnc = simplecommand( 'lsof -n -P -iTCP:rfb -sTCP:LISTEN' )
+        if len(vnc['result']) >=1:
+            protport['vnc']=portline(vnc['result'][1])
+
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+        ssh = simplecommand( 'lsof -n -P -iTCP:ssh -sTCP:LISTEN' )
+        if len(ssh['result']) >=1:
+            protport['ssh']=portline(ssh['result'][1])
+            print protport['ssh']
+    if sys.platform.startswith('linux'):
+        rdp = simplecommand( 'lsof -n -P -i -sTCP:LISTEN | grep LISTEN | grep IPv4 | grep rdp' )
+        if len(rdp['result']) > 0:
+            protport['rdp']=portline(rdp['result'][0])
+            print protport['rdp']
+    if sys.platform.startswith('win'):
+        pidvnc = None
+        pidssh = None
+        pidrdp = None
+        processwin=simplecommand( 'tasklist /svc' )
+        for line in processwin['result']:
+            if line.startswith(" "):
+                if "TermService" in line:
+                    pidrdp = pidrdptmp
+            else:
+                if line.startswith("sshd"):
+                    colonne = [x for x in line.split(' ') if x !=""]
+                    pidssh = colonne[1]
+                elif line.startswith("tvnserver"):
+                    colonne = [x for x in line.split(' ') if x !=""]
+                    if colonne[2] == 'tvnserver':
+                        pidvnc = colonne[1]
+                elif line.startswith("svchost"):
+                    colonne = [x for x in line.split(' ') if x !=""]
+                    pidrdptmp = colonne[1]
+
+        networkwin = simplecommand( 'netstat -a -n -o | findstr TCP | findstr 0.0.0.0' )
+        for line in networkwin['result']:
+            if pidvnc != None and pidvnc in line:
+                colonne = [x.strip() for x in line.split(' ') if x !=""]
+                vncporwin = colonne[1].split(':')[1]
+                if not 'vnc' in  protport: 
+                    protport['vnc']=vncporwin
+                else:
+                    if vncporwin > protport['vnc']:
+                        protport['vnc']=vncporwin
+            if not 'ssh' in  protport and pidssh != None and pidssh in line:
+                colonne = [x.strip() for x in line.split(' ') if x !=""]
+                if colonne[-1] ==  pidssh:
+                    protport['ssh']=colonne[1].split(':')[1]
+            if not 'rdp' in  protport and pidrdp  != None and pidrdp in line:
+                colonne = [x.strip() for x in line.split(' ') if x !=""]
+                if colonne[-1] ==  pidrdp:
+                    protport['rdp']=colonne[1].split(':')[1]
+    return protport
+    

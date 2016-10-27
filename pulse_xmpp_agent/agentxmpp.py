@@ -451,7 +451,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'ipconnection':ipconnection,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
-            'ippublic' : self.ippublic
+            'ippublic' : self.ippublic,
+            'removeservice' : protoandport()
         }
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
