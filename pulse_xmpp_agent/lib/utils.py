@@ -536,12 +536,12 @@ def pluginprocess(func):
             #print result
             if result['base64'] == True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
-            print "envoi message \n%s"%result
+            print "Send message \n%s"%result
             objetxmpp.send_message( mto = message['from'],
                                     mbody = json.dumps(result),
                                     mtype = 'chat')
         except:
-            print "envoi message erreur\n%s"%dataerreur
+            print "Send error message\n%s"%dataerreur
             objetxmpp.send_message( mto=message['from'],
                                     mbody=json.dumps(dataerreur),
                                     mtype='chat')
@@ -619,7 +619,7 @@ def pulgindeploy1(func):
                 print "envoi pas de message"
         except:
             if not result['data']['end']:
-                print "Envoi Message erreur"
+                print "Send error message"
                 print "result",dataerreur
                 objetxmpp.send_message( mto=message['from'],
                                         mbody=json.dumps(dataerreur),
@@ -758,7 +758,7 @@ def protoandport():
         vnc = simplecommand( 'lsof -n -P -i -sTCP:LISTEN | grep LISTEN | grep IPv4 | grep vnc' )
         if len(vnc['result']) >0:
             protport['vnc']=portline(vnc['result'][0])
-    elif sys.platform.startswith('darwin'):        
+    elif sys.platform.startswith('darwin'):
         vnc = simplecommand( 'lsof -n -P -iTCP:rfb -sTCP:LISTEN' )
         if len(vnc['result']) >=1:
             protport['vnc']=portline(vnc['result'][1])
@@ -799,7 +799,7 @@ def protoandport():
             if pidvnc != None and pidvnc in line:
                 colonne = [x.strip() for x in line.split(' ') if x !=""]
                 vncporwin = colonne[1].split(':')[1]
-                if not 'vnc' in  protport: 
+                if not 'vnc' in  protport:
                     protport['vnc']=vncporwin
                 else:
                     if vncporwin > protport['vnc']:
@@ -813,4 +813,3 @@ def protoandport():
                 if colonne[-1] ==  pidrdp:
                     protport['rdp']=colonne[1].split(':')[1]
     return protport
-    
