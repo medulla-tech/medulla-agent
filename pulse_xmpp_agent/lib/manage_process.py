@@ -30,7 +30,57 @@ import traceback
 import logging
 import subprocess
 from threading import Timer
-logger = logging.getLogger()
+#logger = logging.getLogger()
+
+import time
+class process_on_end_send_message_xmpp:
+
+    def __init__(self, queue_out_session) :
+        self.processtable = []
+        self.queue_out_session = queue_out_session
+        logging.info('manage process start')
+
+    def add_processcommand(self, command ,message ,tosucces=None, toerror=None, timeout = 50):
+        if tosucces is None and toerror is None:
+            return
+        message['data']['tosucces'] = tosucces
+        message['data']['toerror']  = toerror
+        createprocesscommand = Process(target=self.processcommand, args=(command ,
+                                                                         self.queue_out_session,
+                                                                         message,
+                                                                         timeout))
+        self.processtable.append(createprocesscommand)
+        createprocesscommand.start()
+
+    def processcommand( self,  command , queue_out_session, message, timeout):
+        try:
+            #structure message for msgout
+            msgoutsucces = {
+                        'eventMessageraw': message
+            }
+            logging.debug("================================================")
+            logging.debug(" execution command in process")
+            logging.debug("command : \n%s"%command)
+            logging.debug("================================================")
+            cmd = cmdx(command,timeout)
+            msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+            msgoutsucces['eventMessageraw']['data']['result'] = cmd.stdout
+            logging.debug("code error  %s"% cmd.code_error)
+            logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
+            queue_out_session.put(msgoutsucces)
+            #logging.debug("code error  %s"% cmd.code_error)
+            #logging.debug("result  %s"% cmd.stdout) 
+            logging.debug("================================================")
+
+        except TimeoutError:
+            logging.error("TimeoutError process  %s sessionid : %s"%(command,message['sessionid']))
+        except KeyboardInterrupt:
+            logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
+        except :
+            traceback.print_exc(file=sys.stdout)
+            logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
 
 class mannageprocess:
 

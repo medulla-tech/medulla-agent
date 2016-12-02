@@ -78,11 +78,15 @@ class managepackage:
     @staticmethod
     def getpathpackagename(packagename):
         for t in managepackage.listpackages():
-            jr = managepackage.loadjsonfile(os.path.join(t,"xmppdeploy.json"))
-            if 'info' in jr \
-                and (('software' in jr['info'] and jr['info']['software'] == packagename )\
-                or ( 'name'  in jr['info'] and  jr['info']['name'] == packagename)):
-                return t
+            try:
+                jr = managepackage.loadjsonfile(os.path.join(t,"xmppdeploy.json"))
+                if 'info' in jr \
+                    and (('software' in jr['info'] and jr['info']['software'] == packagename )\
+                    or ( 'name'  in jr['info'] and  jr['info']['name'] == packagename)):
+                    return t
+            except :
+                print "pas de package*****"
+                return None
         return None
 
-        
+

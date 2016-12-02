@@ -152,6 +152,22 @@ class manage_event:
                     event = self.queue_in.get(5)
                     if event=="quit":
                         break
+                    if 'eventMessageraw' in event:
+                        message= event['eventMessageraw']
+                        recipientsucces = message['data']['tosucces']
+                        recipienterror  = message['data']['toerror']
+                        del message['data']['tosucces']
+                        del message['data']['toerror']
+                        if recipienterror != None and  message['data']['codeerror']!=0:
+                            self.objectxmpp.send_message( mto = recipienterror,
+                                                            mbody=json.dumps(message),
+                                                            mtype='chat')
+                        elif recipientsucces != None:
+                            self.objectxmpp.send_message( mto = recipientsucces,
+                                                            mbody=json.dumps(message),
+                                                            mtype='chat')
+                        continue
+
                     self.show_eventloop()
                     if 'sessionid' in event and '_eventype' in event:
                         if 'result' in event['data'] and \

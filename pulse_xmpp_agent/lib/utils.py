@@ -22,7 +22,9 @@
 
 import netifaces
 import json
-import subprocess
+import subprocess, shlex
+import subprocess, threading
+from threading import Timer
 import sys, os
 import logging
 import random
@@ -378,6 +380,46 @@ def simplecommandstr(cmd):
     obj['code']=p.wait()
     obj['result']="\n".join(result)
     return obj
+
+
+
+class shellcommandtimeout(object):
+    def __init__(self, cmd, timeout=15):
+        self.process = None
+        self.obj = {}
+        self.obj['timeout'] = timeout
+        self.obj['cmd'] = cmd
+
+
+    def run(self):
+        def target():
+            #print 'Thread started'
+            self.process = subprocess.Popen(self.obj['cmd'], 
+                                            shell=True,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
+            self.obj['result'] = self.process.stdout.readlines()
+            self.process.communicate()
+            #print 'Thread finished'
+        thread = threading.Thread(target=target)
+        thread.start()
+
+        thread.join(self.obj['timeout'])
+        if thread.is_alive():
+            print 'Terminating process'
+            print "timeout %s"%self.obj['timeout']
+            #self.codereturn = -255
+            #self.result = "error tineour"
+            self.process.terminate()
+            thread.join()
+
+        #self.result = self.process.stdout.readlines()
+        self.obj['codereturn'] = self.process.returncode
+
+        if self.obj['codereturn']==-15:
+                self.result = "error tineout"
+
+        return self.obj
 
 
 

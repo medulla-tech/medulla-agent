@@ -22,14 +22,16 @@
 
 import sys,os,platform
 import os.path
+import os
 import json
-from utils import simplecommandstr, getMacAdressList, getIPAdressList, MacAdressToIp
+from utils import simplecommandstr, getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout
 import pprint
 import traceback
 import logging
 import netifaces
 import re
 import time
+from managepackage import managepackage
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
     import _winreg
@@ -37,6 +39,375 @@ if sys.platform.startswith('win'):
 
 logger = logging.getLogger()
 
+class grafcet:
+
+    def __init__(self, objectxmpp, datasend):
+        self.datasend = datasend
+        self.objectxmpp = objectxmpp
+        #logging.getLogger().debug("===========Class grafcet========= %s "%self.objectxmpp.boundjid.bare)
+        self.data = datasend['data']
+        self.sessionid = datasend['sessionid']
+        self.sequence = self.data['descriptor']['sequence']
+        try:
+            self.workingstep = self.sequence[self.data['stepcurrent']]
+            #logging.getLogger().debug("===========workingstep ========= %s "% json.dumps(self.workingstep, indent=4, sort_keys=True))
+            self.__execstep__()
+        except:
+            logging.getLogger().error("END DEPLOY ON ERROR")
+            # step no exist
+            # end deploy
+            # traitement
+            self.datasend['ret'] = 255
+        
+            logging.getLogger().debug("object datasend \n%s "% json.dumps(self.datasend, indent=4, sort_keys=True))
+        
+        
+            self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
+                                                    mbody=json.dumps(self.datasend),
+                                                    mtype='chat')
+            self.objectxmpp.session.clearnoevent(self.sessionid)
+
+            ######
+            #retourne master resultat de deploiement
+
+    def __execstep__(self):
+        # call function self.workingstep['action']
+        method =  getattr(self,self.workingstep['action'])
+        method()
+
+    def __Etape_Next__(self):
+        #next Step for xmpp message
+        self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+        self.sendnextstep()
+
+    def sendnextstep(self):#self.objectxmpp.boundjid.bare
+        #logging.getLogger().debug("===========sendnextstep ========= %s "% json.dumps(self.datasend, indent=4, sort_keys=True))
+        self.objectxmpp.send_message(    mto=self.objectxmpp.boundjid.bare,
+                                                    mbody=json.dumps(self.datasend),
+                                                    mtype='chat')
+
+    def __Etape_Next_in__(self):
+        self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+        self.workingstep = self.sequence[self.data['stepcurrent']]
+        self.__execstep__()
+
+
+ 
+    def __set_backtoworksession__(self):
+        self.datasend['data']['restart']= True
+        self.datasend['data']['sessionreload']=True
+
+    def __unset_backtoworksession(self):
+        self.datasend['data']['sessionreload']=False
+        self.datasend['data']['restart']= False
+
+    def __next_current_step__(self):
+        self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+
+    def __action_completed__(self, datajson):
+        try:
+            if 'completed' in datajson:
+                datajson['completed'] = datajson['completed']+1
+            else:
+                datajson['completed'] = 1
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+    def replaceTEMPLATE(self, cmd):
+        #print "__________________________________"
+        #print  "replaceTEMPLATE in %s"% cmd
+        #print "__________________________________"
+
+        cmd = cmd.replace('@@@JID_MASTER@@@', self.datasend['data']['jidmaster'])
+        cmd = cmd.replace('@@@JID_RELAYSERVER@@@', self.datasend['data']['jidrelay'])
+        cmd = cmd.replace('@@@JID_MACHINE@@@', self.datasend['data']['jidmachine'])
+
+        cmd = cmd.replace('@@@IP_MACHINE@@@', self.datasend['data']['ipmachine'])
+        cmd = cmd.replace('@@@IP_RELAYSERVER@@@', self.datasend['data']['iprelay'])
+        cmd = cmd.replace('@@@IP_MASTER@@@', self.datasend['data']['ipmaster'])
+
+        cmd = cmd.replace('@@@PACKAGE_NAME@@@', self.datasend['data']['name'])
+        cmd = cmd.replace('@@@SESSION_ID@@@', self.datasend['sessionid'])
+
+        cmd = cmd.replace('@@@HOSTNAME@@@', platform.node())
+
+        cmd = cmd.replace('@@@PYTHON_IMPLEMENTATION@@@', platform.python_implementation())
+
+        cmd = cmd.replace('@@@ARCHI_MACHINE@@@',platform.machine())
+        cmd = cmd.replace('@@@OS_FAMILY@@@', platform.system())
+
+        cmd = cmd.replace('@@@OS_COMPLET_NAME@@@', platform.platform())
+
+        ### cmd = cmd.replace('@@@UUID_PACKAGE@@@',self.data['srcpackageuuid'])
+
+        cmd = cmd.replace('@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@', self.datasend['data']['pathpackageonmachine'])
+
+        cmd = cmd.replace('@@@LIST_INTERFACE_NET@@@', " ".join(netifaces.interfaces()))
+
+        # Replace windows registry value in template (only for windows)
+        #@@@VRW@@@HKEY@@K@@Subkey@@K@@value@@@VRW@@@
+        for t in re.findall("@@@VRW@@@.*?@@@VRW@@@", cmd ):
+            if not sys.platform.startswith('win'):
+                cmd = cmd.replace(t, "")
+                logging.warning("bad descriptor : Registry update only works on Windows")
+            else:
+                import _winreg
+                keywindows = t.replace("@@@VRW@@@","").split("@@K@@")
+                key = _winreg.OpenKey(constantregisterwindows.getkey(keywindows[0]), keywindows[1], 0, _winreg.KEY_READ)
+                (valeur, typevaleur) = _winreg.QueryValueEx(key,keywindows[1])
+                _winreg.CloseKey(key)
+                cmd = cmd.replace( t , str(valeur))
+
+        # Replace windows registry value type in template (only for windows)
+        #@@@TRW@@@HKEY@@K@@Subkey@@K@@value@@@TRW@@@
+        for t in re.findall("@@@TRW@@@.*?@@@TRW@@@", cmd ):
+            if not sys.platform.startswith('win'):
+                cmd = cmd.replace(t, " ")
+                logging.warning("bad descriptor : Registry update only works on Windows")
+            else:
+                import _winreg
+                keywindows = t.replace("@@@TRW@@@","").split("@@K@@")
+                key = _winreg.OpenKey(constantregisterwindows.getkey(keywindows[0]), keywindows[1], 0, _winreg.KEY_READ)
+                (valeur, typevaleur) = _winreg.QueryValueEx(key,keywindows[1])
+                _winreg.CloseKey(key)
+                cmd = cmd.replace( t , typevaleur)
+
+
+        cmd = cmd.replace('@@@LIST_INTERFACE_NET_NO_LOOP@@@', " ".join([x for x in netifaces.interfaces() if x !='lo']))
+
+        cmd = cmd.replace('@@@LIST_MAC_ADRESS@@@', " ".join(getMacAdressList()))
+
+        cmd = cmd.replace('@@@LIST_IP_ADRESS@@@', " ".join(getIPAdressList()))
+
+        cmd = cmd.replace('@@@IP_MACHINE_XMPP@@@', self.data['ipmachine'])
+        cmd = cmd.replace('@@@MAC_ADRESS_MACHINE_XMPP@@@', MacAdressToIp(self.data['ipmachine']))
+
+        cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
+        #recherche variable environnement
+        for t in re.findall("@_@.*?@_@", cmd ):
+            z = t.replace("@_@","")
+            cmd = cmd.replace( t, os.environ[z])
+        #print "__________________________________"
+        #print "replace TEMPLATE ou %s"% cmd
+        #print "__________________________________"
+        return cmd
+
+    def tempdir(self):
+        if sys.platform.startswith('linux'):
+            return os.path.join("/","tmp")
+        elif sys.platform.startswith('win'):
+            return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
+        elif sys.platform.startswith('darwin'):
+            return os.path.join("/","tmp")
+
+    def __search_Next_step_int__( self, val ):
+        valstep = 0
+        if isinstance(val, int):
+            for i in self.sequence:
+                if int(i['step']) == val:
+                    self.data['stepcurrent'] = valstep
+                    self.workingstep = self.sequence[self.data['stepcurrent']]
+                    return 0
+                valstep=valstep+1
+            logging.getLogger().error("inconsistency in descriptor")
+            return 5
+        elif isinstance(val, str):
+            if val == 'next':
+                self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+                self.workingstep = self.sequence[self.data['stepcurrent']]
+                return 0
+            elif val == 'end':
+                for i in self.sequence:
+                    if self.sequence['action']=='actiondeploymentcomplete':
+                        self.data['stepcurrent'] = valstep
+                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                        return 0
+                    valstep = valstep+1
+                    logging.getLogger().error("inconsistency in descriptor")
+                return 5
+            elif val == 'error':
+                for i in self.sequence:
+                    if self.sequence['action']=='actionerrordeployment':
+                        self.data['stepcurrent'] = valstep
+                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                        return 0
+                    valstep = valstep+1
+                    logging.getLogger().error("inconsistency in descriptor")
+                return 5
+
+    def terminate(self,ret):
+        try:
+            self.__action_completed__(self.workingstep)
+            self.objectxmpp.session.clearnoevent(self.sessionid)
+            self.datasend['action'] = "result" + self.datasend['action']
+            try:
+                del self.datasend['data']['methodetransfert']
+                del self.datasend['data']['path']
+            except :
+                pass
+            try:
+                del self.datasend['data']['restart']
+            except KeyError:
+                pass
+            try:
+                del self.datasend['data']['sessionreload']
+            except KeyError:
+                pass
+            del self.datasend['data']['stepcurrent']
+            del self.datasend['data']['Devent']
+            del self.datasend['data']['Dtypequery']
+            try:
+                self.datasend['data']['environ'] = str(os.environ)
+            except:
+                pass
+            self.datasend['ret'] = ret
+            self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
+                                                        mbody=json.dumps(self.datasend),
+                                                        mtype='chat')
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+
+    def steplog(self):
+        logging.getLogger().debug("deploy %s on machine %s [%s] STEP %s\n %s "% (  self.data['descriptor']['info']['name'],
+                                                                                self.objectxmpp.boundjid.bare,
+                                                                                self.sessionid,
+                                                                                self.workingstep['step'],
+                                                                                json.dumps(self.workingstep, indent=4, sort_keys=True)))
+        pass
+
+    def action_pwd_package(self):
+        try:
+            self.__action_completed__(self.workingstep)
+            os.chdir( self.datasend['data']['pathpackageonmachine'])
+            self.workingstep['pwd']= os.getcwd()
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+    def action_command_natif_shell(self):
+        """ information 
+        "@resultcommand or nb@lastlines or nb@firstlines": "", 
+        "action": "action_command_natif_shell", 
+        "codereturn": "", 
+        "command": "ls", 
+        "error": "END", 
+        "step": "1", 
+        "succes": 3
+        timeout
+        """
+        self.workingstep['command'] = self.replaceTEMPLATE(self.workingstep['command'])
+        #todo si action deja faite return
+        if not  "timeout" in self.workingstep:
+            self.workingstep['timeout'] = 15
+            logging.getLogger().warn( "timeout missing : default value 15s")
+        try:
+            re = shellcommandtimeout(self.workingstep['command'],self.workingstep['timeout']).run()
+            self.__action_completed__(self.workingstep)
+            self.workingstep['codereturn'] = re['codereturn']
+            result  = [x.strip('\n') for x in re['result'] if x !='']
+            for t in self.workingstep:
+                if t == "@resultcommand":
+                    self.workingstep[t] = os.linesep.join(result)
+                elif t.endswith('lastlines'):
+                    nb = t.split("@")
+                    nb1 = -int(nb[0])
+                    logging.getLogger().debug( "=======lastlines============%s============================="%nb1)
+                    tab = result[nb1:]
+                    self.workingstep[t] = os.linesep.join(tab)
+                elif t.endswith('firstlines'):
+                    nb = t.split("@")
+                    nb1 = int(nb[0])
+                    logging.getLogger().debug( "=======firstlines============%s============================="%nb1)
+                    tab = result[:nb1]
+                    self.workingstep[t] = os.linesep.join(tab)
+            self.steplog()
+            if 'succes' in self.workingstep and  self.workingstep['codereturn'] == 0:
+                #goto succes
+                self.__search_Next_step_int__(self.workingstep['succes'])
+                self.__execstep__()
+            elif 'error' in self.workingstep and  self.workingstep['codereturn'] != 0:
+                self.__search_Next_step_int__(self.workingstep['error'])
+                self.__execstep__()
+            else:
+                self.__Etape_Next_in__()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+    def actionsuccescompletedend(self):
+        self.terminate(0)
+        self.steplog()
+
+    def actionerrorcompletedend(self):
+        self.terminate(-1)
+        self.steplog()
+
+    def actionprocessscript(self):
+        try:
+            self.__action_completed__(self.workingstep)
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+    def actionrestart(self):
+        try:
+            self.__next_current_step__() #prepare action suivante
+            self.__set_backtoworksession__()#session reprise after restart start
+            #rewrite session 
+            objsession =   self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
+            objsession.setdatasession(self.datasend)
+            # Restart machine based on OS
+            self.__action_completed__(self.workingstep)
+            self.steplog()
+            logging.debug("actionrestartmachine  RESTART MACHINE")
+            if sys.platform.startswith('linux'):
+                logging.debug("actionrestartmachine  shutdown machine linux")
+                os.system("shutdown -r now")
+            elif sys.platform.startswith('win'):
+                logging.debug("actionrestartmachine  shutdown machine windows")
+                os.system("shutdown /r")
+            elif sys.platform.startswith('darwin'):
+                logging.debug("actionrestartmachine  shutdown machine MacOS")
+                os.system("shutdown -r now")
+            #os.system("pkill -f agentxmpp")
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+    def actionrestartbot(self):
+        try:
+            logging.getLogger().debug("Action : actionrestartbot ========= %s "% json.dumps(self.workingstep, indent=4, sort_keys=True))
+            self.__action_completed__(self.workingstep)
+            self.__next_current_step__() #prepare action suivante
+            self.__set_backtoworksession__()#session reprise after restart start
+            #rewrite session 
+            objsession =   self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
+            objsession.setdatasession(self.datasend)
+            self.steplog()
+            self.objectxmpp.restartBot()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+
+    def actioncleaning(self):
+        try:
+            self.__action_completed__(self.workingstep)
+            #logging.getLogger().debug("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+            if  managepackage.packagedir() in self.datasend['data']['pathpackageonmachine']:
+                os.chdir( managepackage.packagedir())
+                os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
 
 class sequentialevolutionquery:
 

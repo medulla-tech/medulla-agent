@@ -22,6 +22,8 @@
 import glob 
 import os
 import json
+import logging
+
 
 class Session(Exception):
     pass
@@ -48,21 +50,22 @@ class sessiondatainfo:
         self.pathfile = pathfile
         if pathfile == None:
             raise Sessionpathsauvemissing
-        print "SESSION INFO CREATION"
+        logging.getLogger().debug("Creation manager session")
 
     def jsonsession(self):
         session = { 'sessionid' : self.sessionid,'timevalid':self.timevalid,'datasession':self.datasession}
         return json.dumps(session)
-    
+
     def sauvesession(self):
         namefilesession = os.path.join( self.pathfile, self.sessionid )
+        logging.getLogger().debug("save session in file %s"%namefilesession)
         session = { 'sessionid' : self.sessionid, 'timevalid' : self.timevalid, 'datasession' : self.datasession }
         with open(namefilesession, 'w') as f:
             json.dump(session, f, indent = 4)
 
     def updatesessionfromfile(self):
         namefilesession = os.path.join( self.pathfile, self.sessionid )
-        print "SESSION INFO UPDATE SESSION"
+        logging.getLogger().debug("UPDATE SESSION")
         with open(namefilesession, "r") as fichier:
             session = json.load(fichier)
         self.datasession = session['datasession']
@@ -82,7 +85,7 @@ class sessiondatainfo:
     def decrementation(self):
         self.timevalid = self.timevalid - 1
         if self.timevalid <= 0:
-            print "appelle callend"
+            logging.getLogger().debug("call function end session")
             self.callend()
         else:
             self.sauvesession()
@@ -94,7 +97,7 @@ class sessiondatainfo:
         return sessionid == self.sessionid
 
     def callend(self):
-        print "signaler session fin"
+        logging.getLogger().debug("function signal end")
         if self.handlefunc != None:
             self.handlefunc(self.datasession)
         if self.eventend != None:
@@ -106,18 +109,15 @@ class sessiondatainfo:
 class session:
     def __init__(self, typemachine = None):
         self.sessiondata = []
-
         if(typemachine == "relayserver"):
             self.dirsavesession = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".." ,"sessionsrelayserver")
         elif typemachine == "machine":
             self.dirsavesession = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".." ,"sessionsmachine")
         else :
             self.dirsavesession = os.path.join(os.path.dirname(os.path.realpath(__file__)), ".." ,"sessions")
-
         if not os.path.exists(self.dirsavesession):
             os.makedirs(self.dirsavesession, mode=0007)
-        print "SESSION %s "%self.dirsavesession
-        self.loadsessions()
+        logging.getLogger().debug("Manager Session : %s"%self.dirsavesession)
 
     def addsessiondatainfo(self, sessiondatainfo):
         if self.isexist(sessiondatainfo.sessionid):
@@ -127,7 +127,7 @@ class session:
             return sessiondatainfo
 
     def createsessiondatainfo(self, sessionid,  datasession = {},timevalid = 10, eventend = None):
-        print "SESSION CREATION UNE SESSION"
+        logging.getLogger().debug("Creation d'une Session : %s"%self.dirsavesession)
         obj = sessiondatainfo(sessionid, datasession, timevalid, eventend ,pathfile=self.dirsavesession)
         self.sessiondata.append(obj)
         if len(datasession) != 0:
@@ -137,9 +137,12 @@ class session:
     def removefilesessionifnotsignal(self, namefilesession):
         with open(namefilesession, "r") as fichier:
             session = json.load(fichier)
-        if 'datasession' in session and 'signal' in session['datasession']:
+        #print "===========removefilesessionifnotsignal ========= %s "% json.dumps(session['datasession'], indent=4, sort_keys=True)
+        if 'datasession' in session and 'data' in session['datasession'] and 'sessionreload' in session['datasession']['data'] and session['datasession']['data']['sessionreload']==True:
+            logging.getLogger().debug("Reload Session %s :  signaled reloadable"%self.dirsavesession)
             return True
         else:
+            logging.getLogger().debug("Remove Session %s :  No signaled reloadable"%self.dirsavesession)
             os.remove(namefilesession)
             return False
 
@@ -152,10 +155,13 @@ class session:
                     if objsession== None: raise SessionkeyError
                     objsession.pathfile = self.dirsavesession
                     objsession.updatesessionfromfile()
+                    logging.getLogger().debug("load session %s"% objsession)
                 except SessionkeyError:
                     objsession = self.createsessiondatainfo(os.path.basename(filesession))
                     objsession.updatesessionfromfile()
-
+                    logging.getLogger().debug("creation sesssion %s"% objsession)
+            else:
+                logging.getLogger().debug("do not load session %s"%filesession)
 
     def sauvesessions(self):
         for i in self.sessiondata:
@@ -195,7 +201,7 @@ class session:
         for i in self.sessiondata:
             if i.sessionid == sessionid :
                 return i
-        return None    
+        return None
 
     def reactualisesession(self, sessionid, timeminute = 10):
         for i in self.sessiondata:
@@ -236,7 +242,7 @@ class session:
         for i in range(0, self.len()):
             self.sessiondata[i].sauvesession()
         self.sessiondata = []
-            
+
     def sessionsetdata(self, sessionid, data):
         for i in self.sessiondata:
             if i.sessionid == sessionid :
