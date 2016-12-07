@@ -30,9 +30,8 @@ import traceback
 import logging
 import subprocess
 from threading import Timer
-#logger = logging.getLogger()
+logger = logging.getLogger()
 
-import time
 class process_on_end_send_message_xmpp:
 
     def __init__(self, queue_out_session) :
@@ -40,17 +39,95 @@ class process_on_end_send_message_xmpp:
         self.queue_out_session = queue_out_session
         logging.info('manage process start')
 
-    def add_processcommand(self, command ,message ,tosucces=None, toerror=None, timeout = 50):
+    def add_processcommand(self, command ,message ,tosucces=None, toerror=None, timeout = 50, step = None):
         if tosucces is None and toerror is None:
             return
+ 
         message['data']['tosucces'] = tosucces
         message['data']['toerror']  = toerror
-        createprocesscommand = Process(target=self.processcommand, args=(command ,
-                                                                         self.queue_out_session,
-                                                                         message,
-                                                                         timeout))
-        self.processtable.append(createprocesscommand)
-        createprocesscommand.start()
+        if step == None:
+            createprocesscommand = Process(target=self.processcommand, args=(command ,
+                                                                            self.queue_out_session,
+                                                                            message,
+                                                                            timeout))
+            self.processtable.append(createprocesscommand)
+            createprocesscommand.start()
+        elif isinstance( step, int ):
+            createprocessstepcommand = Process(target=self.processstepcommand, args=(command ,
+                                                                            self.queue_out_session,
+                                                                            message,
+                                                                            timeout,
+                                                                            step))
+            self.processtable.append(createprocessstepcommand)
+            createprocessstepcommand.start()
+
+    def processstepcommand ( self,  command , queue_out_session, message, timeout, step):
+        try:
+            workingstep = {}
+            #logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'], indent=4, sort_keys=True))
+            sequence = message['data']['descriptor']['sequence']
+            for i in sequence:
+                if i['step'] == step:
+                    workingstep = i
+                    break
+            if len (workingstep) != 0:
+                #logging.debug("dddd###################\n#######################\n#######################\n#################")
+                #logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
+                #logging.debug("dddd###################\n#######################\n#######################\n#################")
+                #structure message for msgout
+                logging.debug("================================================")
+                logging.debug(" execution command in process")
+                logging.debug("command : \n%s"%command)
+                logging.debug("================================================")
+                cmd = cmdx(command, timeout)
+                workingstep['codereturn'] = cmd.code_error
+                workingstep['completed'] = 1
+                result = cmd.stdout.split('\n')
+                result  = [x.strip() for x in result if x !='']
+                for t in workingstep:
+                    if t == "@resultcommand":
+                        workingstep[t] = os.linesep.join(result)
+                    elif t.endswith('lastlines'):
+                        nb = t.split("@")
+                        nb1 = -int(nb[0])
+                        logging.getLogger().debug( "=======lastlines============%s========"%nb1)
+                        tab = result[nb1:]
+                        workingstep[t] = os.linesep.join(tab)
+                    elif t.endswith('firstlines'):
+                        nb = t.split("@")
+                        nb1 = int(nb[0])
+                        logging.getLogger().debug( "=======firstlines============%s======="%nb1)
+                        tab = result[:nb1]
+                        workingstep[t] = os.linesep.join(tab)
+                if 'goto' in workingstep:
+                    message['data']['stepcurrent'] = workingstep['goto']
+                elif 'succes' in workingstep and  workingstep['codereturn'] == 0:
+                    message['data']['stepcurrent'] = workingstep['succes']
+                elif 'error' in workingstep and  workingstep['codereturn'] != 0:
+                    message['data']['stepcurrent'] = workingstep['error']
+                else :
+                    message['data']['stepcurrent'] = message['data']['stepcurrent'] + 1
+                    
+                logging.debug("Next Step : %s"%message['data']['stepcurrent'])
+                msgoutsucces = {
+                            'eventMessageraw': message
+                }
+
+                msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+                queue_out_session.put(msgoutsucces)
+            else:
+                logging.debug("######MESSAGE error#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
+
+        except TimeoutError:
+            logging.error("TimeoutError process  %s sessionid : %s"%(command,message['sessionid']))
+        except KeyboardInterrupt:
+            logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
+        except :
+            traceback.print_exc(file=sys.stdout)
+            logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
+
 
     def processcommand( self,  command , queue_out_session, message, timeout):
         try:
@@ -82,6 +159,10 @@ class process_on_end_send_message_xmpp:
             logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
 
+
+
+
+ 
 class mannageprocess:
 
     def __init__(self, queue_out_session) :
@@ -142,11 +223,11 @@ class mannageprocess:
                     msgout['result']['codeerror'] = cmd.code_error
                     queue_out_session.put(msgout)
                 else:
-                    
+
                     #"10@firstlines" : "",
                     #"10@lastlines": "",
                     #"@resultcommand":""
-                    
+
                     #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand' : cmd['result'],'command' : command  }
                     ev['data']['result'] = {'codeerror': cmd.code_error,'command' : command  }
                     for t in keysdescriptor:
@@ -176,15 +257,14 @@ class mannageprocess:
                 #ev = eventerror
             #else:
                 #ev = False
-                
-                
+
             #print "================================================"
             #print " execution command in process"
             #print "================================================"
             #print cmd['code']
             #print cmd['result']
             #print "================================================"
-            
+
             #if ev != False:
                 #if '_eventype' in ev and '_eventype' == 'TEVENT':
                     ##ecrit dans queue_out_session le TEVENT

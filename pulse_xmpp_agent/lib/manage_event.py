@@ -159,10 +159,12 @@ class manage_event:
                         del message['data']['tosucces']
                         del message['data']['toerror']
                         if recipienterror != None and  message['data']['codeerror']!=0:
+                            del message['data']['codeerror']
                             self.objectxmpp.send_message( mto = recipienterror,
                                                             mbody=json.dumps(message),
                                                             mtype='chat')
                         elif recipientsucces != None:
+                            del message['data']['codeerror']
                             self.objectxmpp.send_message( mto = recipientsucces,
                                                             mbody=json.dumps(message),
                                                             mtype='chat')

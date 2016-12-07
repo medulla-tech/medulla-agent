@@ -148,20 +148,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #if  not self.config.agenttype in ['relayserver']:
             #executer seulement par machine
         for i in self.session.sessiondata:
-            print "**************************************************************************"
-            print "**************************************************************************"
-            print "REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT"
+            logging.log(DEBUGPULSE,"REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT")
             #print "REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT\n %s"%json.dumps(i.datasession, indent=4, sort_keys=True)
-            print "**************************************************************************"
-            #send pluging from message xmpp
-            #self.send_message(    mto=self.boundjid.bare,
-                                                    #mbody=json.dumps(i.datasession),
-                                                    #mtype='chat')
-            #send call direct pluging
             msg={
                 'from' : self.boundjid.bare,
                 'to': self.boundjid.bare
                 }
+
+            
             call_plugin( i.datasession['action'],
                         self,
                         i.datasession['action'],
@@ -561,12 +555,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                         filename = tglogfile,
                         filemode = 'a')
     else:
-        #stdout_logger = logging.getLogger('STDOUT')
-        #sl = StreamToLogger(stdout_logger, tglevellog)
-        #sys.stdout = sl
-        #stderr_logger = logging.getLogger('STDERR')
-        #sl = StreamToLogger(stderr_logger, tglevellog)
-        #sys.stderr = sl
+        stdout_logger = logging.getLogger('STDOUT')
+        sl = StreamToLogger(stdout_logger, tglevellog)
+        sys.stdout = sl
+        stderr_logger = logging.getLogger('STDERR')
+        sl = StreamToLogger(stderr_logger, tglevellog)
+        sys.stderr = sl
         logging.basicConfig(level = tglevellog,
                     format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
                     filename = tglogfile,
