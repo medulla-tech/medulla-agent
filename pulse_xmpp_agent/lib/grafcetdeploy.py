@@ -199,6 +199,23 @@ class grafcet:
         elif sys.platform.startswith('darwin'):
             return os.path.join("/","tmp")
 
+    #encour
+    def linuxinstallfrommanagerpackages(self):
+        if os.path.isfile("/etc/redhat-release")
+            return 'yum'
+        elif os.path.isfile("/etc/arch-release")
+            return 'pacman'
+        elif os.path.isfile("/etc/gentoo-release")
+            return 'emerge'
+        elif os.path.isfile("/etc/SuSE-release")
+            return 'zypp'
+        elif os.path.isfile("/etc/debian_version")
+            return 'apt-get -q -y install '
+        else
+            return ""
+
+
+
     def __search_Next_step_int__( self, val ):
         valstep = 0
         if isinstance(val, int):
