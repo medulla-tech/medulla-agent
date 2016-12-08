@@ -199,8 +199,10 @@ class grafcet:
         elif sys.platform.startswith('darwin'):
             return os.path.join("/","tmp")
 
-    #encour
+    #WIP
     def linuxinstallfrommanagerpackages(self):
+        if os.path.isfile("/etc/mageia-release"):
+            return 'urpmi'
         if os.path.isfile("/etc/redhat-release"):
             return 'yum'
         elif os.path.isfile("/etc/arch-release"):
