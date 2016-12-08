@@ -213,7 +213,7 @@ class grafcet:
             return 'zypp'
         elif os.path.isfile("/etc/debian_version"):
             return 'apt-get -q -y install '
-        else
+        else:
             return ""
 
 
