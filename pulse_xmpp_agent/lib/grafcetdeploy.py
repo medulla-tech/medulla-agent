@@ -202,7 +202,7 @@ class grafcet:
     #WIP
     def linuxinstallfrommanagerpackages(self):
         if os.path.isfile("/etc/mageia-release"):
-            return 'urpmi'
+            return 'urpmi --auto'
         if os.path.isfile("/etc/redhat-release"):
             return 'yum'
         elif os.path.isfile("/etc/arch-release"):
