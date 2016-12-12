@@ -85,7 +85,11 @@ class  networkagentinfo:
         self.messagejson['dhcp']       = 'False'
         self.messagejson['dnshostname']= ''
         self.messagejson['msg']        = platform.system()
-        self.messagejson['users']=self.getuser()
+        try :
+            self.messagejson['users']=self.getuser()
+        except:
+            self.messagejson['users']=["system"]
+
         if sys.platform.startswith('linux'):
                 # Linux-specific code here...
                 p = subprocess.Popen("ps aux | grep dhclient | grep -v leases | grep -v grep | awk '{print $NF}'",
