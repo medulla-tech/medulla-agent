@@ -33,8 +33,6 @@ cd "`dirname $0`"
 AGENT_VERSION="0.1"
 PYTHON_VERSION="2.7.9"
 PY_WIN32_VERSION="219"
-PY_PIP_MODULE="pip"
-PY_PIP_VERSION="8.1.2"
 PY_NETIFACES_MODULE="netifaces"
 PY_NETIFACES_VERSION="0.10.5"
 PY_COMTYPES_MODULE="comtypes"
@@ -96,7 +94,6 @@ compute_parameters() {
 	#PY_WIN32_URL="http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20${PY_WIN32_VERSION}/${PY_WIN32_FILENAME}"
 	PY_WIN32_FILENAME="pypiwin32-${PY_WIN32_VERSION}-cp27-none-win32.whl"
 	PY_WIN32_URL="https://pypi.python.org/packages/cd/59/7cc2407b15bcd13d43933a5ae163de89b6f366dda8b2b7403453e61c3a05/${PY_WIN32_FILENAME}"
-	PY_PIP_FILENAME="${PY_PIP_MODULE}-${PY_PIP_VERSION}.tar.gz"
 	PY_NETIFACES_FILENAME="${PY_NETIFACES_MODULE}-${PY_NETIFACES_VERSION}.tar.gz"
 	PY_COMTYPES_FILENAME="${PY_COMTYPES_MODULE}-${PY_COMTYPES_VERSION}.zip"
 	PY_CONFIGPARSER_FILENAME="${PY_CONFIGPARSER_MODULE}-${PY_CONFIGPARSER_VERSION}.tar.gz"
@@ -192,7 +189,6 @@ download_agent_dependencies() {
 	colored_echo blue "### INFO Downloading python and dependencies..."
 	download_wget ${PYTHON_URL} ${PYTHON_FILENAME}
 	download_wget ${PY_VCPYTHON27_URL} ${PY_VCPYTHON27_FILENAME}
-	download_pip ${PY_PIP_MODULE} ${PY_PIP_FILENAME}
 	download_pip ${PY_NETIFACES_MODULE} ${PY_NETIFACES_FILENAME}
 	download_pip ${PY_COMTYPES_MODULE} ${PY_COMTYPES_FILENAME}
 	download_pip ${PY_CONFIGPARSER_MODULE} ${PY_CONFIGPARSER_FILENAME}
@@ -210,7 +206,6 @@ update_nsi_script_full() {
 	FULL_PYTHON_FILENAME='File "${DOWNLOADS_DIR}/${PYTHON_FILENAME}"'
 	FULL_PY_VCPYTHON27='File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"'
 	FULL_PY_WIN32='File "${DOWNLOADS_DIR}/${PY_WIN32}"'
-	FULL_PY_PIP='File "${DOWNLOADS_DIR}/${PY_PIP}"'
 	FULL_PY_NETIFACES='File "${DOWNLOADS_DIR}/${PY_NETIFACES}"'
 	FULL_PY_COMTYPES='File "${DOWNLOADS_DIR}/${PY_COMTYPES}"'
 	FULL_PY_CONFIGPARSER='File "${DOWNLOADS_DIR}/${PY_CONFIGPARSER}"'
@@ -220,7 +215,6 @@ update_nsi_script_full() {
 	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
-	INSTALL_FULL_PY_PIP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_PIP}`'
 	INSTALL_FULL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_NETIFACES}`'
 	INSTALL_FULL_PY_COMTYPES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_COMTYPES}`'
 	INSTALL_FULL_PY_CONFIGPARSER='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre --no-index --find-links="$INSTDIR\tmp" ${PY_CONFIGPARSER}`'
@@ -239,9 +233,6 @@ update_nsi_script_full() {
 		-e "s/@@PY_WIN32@@/${PY_WIN32_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_WIN32@@/$(sed_escape ${FULL_PY_WIN32})/" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_WIN32@@/$(sed_escape ${INSTALL_FULL_PY_WIN32})/" \
-		-e "s/@@PY_PIP@@/${PY_PIP_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PY_PIP@@/$(sed_escape ${FULL_PY_PIP})/" \
-		-e "s/@@INSTALL_FULL_OR_DL_PY_PIP@@/$(sed_escape ${INSTALL_FULL_PY_PIP})/" \
 		-e "s/@@PY_NETIFACES@@/${PY_NETIFACES_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_NETIFACES@@/$(sed_escape ${FULL_PY_NETIFACES})/" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_NETIFACES@@/$(sed_escape ${INSTALL_FULL_PY_NETIFACES})/" \
@@ -288,7 +279,6 @@ update_nsi_script_dl() {
 	DL_OPENSSH='${DownloadFile} '"${OPENSSH_URL}"' ${OPENSSH_FILENAME}'
 	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
 	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
-	INSTALL_DL_PY_PIP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_PIP}`'
 	INSTALL_DL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_NETIFACES}`'
 	INSTALL_DL_PY_COMTYPES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_COMTYPES}`'
 	INSTALL_DL_PY_CONFIGPARSER='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --pre ${PY_CONFIGPARSER}`'
@@ -307,9 +297,6 @@ update_nsi_script_dl() {
 		-e "s/@@PY_WIN32@@/${PY_WIN32_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_WIN32@@//" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_WIN32@@/$(sed_escape ${INSTALL_DL_PY_WIN32})/" \
-		-e "s/@@PY_PIP@@/${PY_PIP_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PY_PIP@@/$(sed_escape ${INSTALL_DL_PY_PIP})/" \
-		-e "s/@@INSTALL_FULL_OR_DL_PY_PIP@@/$(sed_escape ${INSTALL_DL_PY_PIP})/" \
 		-e "s/@@PY_NETIFACES@@/${PY_NETIFACES_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_NETIFACES@@//" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_NETIFACES@@/$(sed_escape ${INSTALL_DL_PY_NETIFACES})/" \
