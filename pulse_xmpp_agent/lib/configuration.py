@@ -176,11 +176,9 @@ class confParameter:
             self.ordreallagent = False
 
         if self.agenttype == "relayserver":
-            self.jidchatroomcommand="muc%s@%s"%(nameuser,Config.get('chatroom', 'server'))
-            self.relayserverdeploy = ""
+            self.jidchatroomcommand = str(self.agentcommand)
         else:
-            self.relayserverdeploy = jid.JID(self.agentcommand)
-            self.jidchatroomcommand = "muc%s@%s"%(self.relayserverdeploy.user,Config.get('chatroom', 'server'))
+            self.jidchatroomcommand = str(self.agentcommand)
 
 
 
