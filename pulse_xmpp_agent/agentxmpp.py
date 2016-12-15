@@ -272,16 +272,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def muc_message(self, msg):
         pass
-        #if self.config.agenttype in ['relayserver','serveurrelais'] and \
-                        #not msg['from'].resource in ["deploy","MASTER"] and \
-                        #not msg['from'].user in ['log']:
-            #try:
-                #result = json.loads(msg['body'])
-                #if "signalpresencechatroom" in result:
-                    #self.nicklistchatroomcommand.update(result['signalpresencechatroom'])
-            #except:
-                #pass
-
 
     def filtre_message(self, msg):
         pass
@@ -293,18 +283,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
         if not msg['type'] == "chat":
             return
-        if not msg['from'].user in possibleclient:
-            if  self.config.ordreallagent or not self.ischatroomdeploy(msg['from']):
-                logging.warning("filtre message from %s " % (msg['from'].bare))
-                return
-        dataerreur={
-                    "action": "resultmsginfoerror",
-                    "sessionid" : "",
-                    "ret" :   255,
-                    "base64"  : False,
-                    "data": {"msg" : ""}
-        }
-
         try :
             dataobj = json.loads(msg['body'])
         except Exception as e:
@@ -314,6 +292,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
             traceback.print_exc(file=sys.stdout)
+
+        if not msg['from'].user in possibleclient:
+            if not('sessionid' in  dataobj and self.session.isexist(dataobj['sessionid'])):
+                #les messages venant d'une machine sont filtré sauf si une session message existe dans le gestionnaire de session.
+                if  self.config.ordreallagent:
+                    logging.warning("filtre message from %s " % (msg['from'].bare))
+                    return
+
+        dataerreur={
+                    "action": "resultmsginfoerror",
+                    "sessionid" : "",
+                    "ret" :   255,
+                    "base64"  : False,
+                    "data": {"msg" : ""}
+        }
 
         if not 'action' in dataobj:
             logging.error("warning message action missing %s"%(msg))
