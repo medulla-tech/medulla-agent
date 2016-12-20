@@ -177,6 +177,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
 
 
+
+    def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = ''):
+        msgbody = {
+                    'text' : text,
+                    'type':type,
+                    'session':sessionname,
+                    'priority':priority,
+                    'who':who
+                    }
+        self.send_message(mto=jid.JID("log@localhost"),
+                                mbody=json.dumps(msgbody),
+                                mtype='chat')
+
+
+
     def update_plugin(self):
         # Send plugin and machine informations to Master
         dataobj=self.seachInfoMachine()
@@ -307,6 +322,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "base64"  : False,
                     "data": {"msg" : ""}
         }
+
 
         if not 'action' in dataobj:
             logging.error("warning message action missing %s"%(msg))

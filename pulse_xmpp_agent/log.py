@@ -26,22 +26,63 @@ import random
 from sleekxmpp.exceptions import IqError, IqTimeout
 import json
 import hashlib
+import datetime
+from sqlalchemy import create_engine
+
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime
+#from sqlalchemy.dialects.mysql import  TINYINT
+#from sqlalchemy.ext.declarative import declarative_base
+#from mmc.database.database_helper import DBObj
+#from sqlalchemy.orm import relationship
+#import datetime
+
+from sqlalchemy.orm import sessionmaker
+
+from sqlalchemy.ext.declarative import declarative_base
+
+
+Base = declarative_base()
+
+class Logs(Base):
+    # ====== Table name =========================
+    __tablename__ = 'logs'
+    # ====== Fields =============================
+    # Here we define columns for the table machines.
+    # Notice that each column is also a normal Python instance attribute.
+    id = Column(Integer, primary_key=True)
+    type = Column(String(6), nullable=False,default = "noset")
+    date = Column(DateTime, default=datetime.datetime.utcnow)
+    text = Column(String(255), nullable=False)
+    sessionname = Column(String(20), nullable=False, default = "")
+    priority = Column(Integer, default = 0)
+    who = Column(String(20), nullable=False, default = "")
 
 class configuration:
-    def __init__(self,typeconf='agent'):
+    def __init__(self):
         Config = ConfigParser.ConfigParser()
-        Config.read("./agent.ini")
-        self.Port= Config.get('domain', 'port')
-        self.Server= Config.get('domain', 'server')
-        self.Chatadress= Config.get('domain', 'chatadress')
-        self.Jid="log@%s/log"% self.Chatadress
-        self.Password=Config.get('domain', 'password')
-        self.master="master@%s/master"%self.Chatadress
-        self.siveo="agentsiveo@%s/siveo"%self.Chatadress
-        self.forceregistration=Config.getboolean('domain', 'registrationauto')
-        self.deployment = Config.get('global', 'deployment')
-        self.commandinteragent = Config.getboolean('global', 'inter_agent')
+        Config.read("/etc/mmc/plugins/xmppagentlog.ini")
 
+        self.Port= Config.get('domain', 'port')
+
+        self.Server= Config.get('domain', 'server')
+
+        self.Chatadress= Config.get('domain', 'chat')
+        
+        self.Jid="log@%s/log"% self.Chatadress
+        
+        self.Password=Config.get('domain', 'password')
+        
+        self.master=Config.get('domain', 'master')
+
+# database
+        self.dbport = Config.get('database', 'dbport')
+        self.dbdriver = Config.get('database', 'dbdriver')
+        self.dbhost = Config.get('database', 'dbhost')
+        self.dbname = Config.get('database', 'dbname')
+        self.dbuser = Config.get('database', 'dbuser')
+        self.dbpasswd = Config.get('database', 'dbpasswd')
+
+#global
         if Config.get('global', 'log_level') == "INFO":
             self.debug = logging.INFO
         elif Config.get('global', 'log_level') == "DEBUG":
@@ -50,13 +91,6 @@ class configuration:
             self.debug = logging.ERROR
         else:
             self.debug = 5
-        """ channel connexion information """
-        self.NickName= "LOG"
-        self.ChatroomServer=Config.get('Chatroom', 'server')
-        self.ChatroomCommand="%s_%s@%s"%(self.deployment,Config.get('Chatroom', 'command'),self.ChatroomServer)
-        self.ChatroomMaster="%s@%s"%(Config.get('Chatroom', 'master'),self.ChatroomServer)
-        self.ChatroomLog="%s@%s"%(Config.get('Chatroom', 'log'),self.ChatroomServer)
-        self.ChatroomPassword=Config.get('Chatroom', 'password')
 
     def getRandomName(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
@@ -72,7 +106,6 @@ class configuration:
             d=d+a[random.randint(0,9)]
         return d
 
-
     def get_local_ip_adresses(self):
         ip_addresses = list()
         interfaces = netifaces.interfaces()
@@ -87,8 +120,8 @@ class configuration:
                         ip_addresses.append(addr)
         return ip_addresses
 
-    def __str__(self):
-        return str(self.re)
+    #def __str__(self):
+        #return str(self.re)
 
     def jsonobj(self):
         return json.dumps(self.re)
@@ -123,17 +156,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message)
-        self.add_event_handler("groupchat_message", self.muc_message)
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        self.plugin['xep_0045'].joinMUC(self.config.ChatroomLog,
-                                        self.config.NickName,
-                                        # If a room password is needed, use:
-                                        password=self.config.ChatroomPassword,
-                                        wait=True)
-
+        
+        print self.boundjid
+        print self.boundjid
+        print self.boundjid
+        print self.boundjid
+        print self.boundjid
+        
     def register(self, iq):
         """ This function is called for automatic registration """
         resp = self.Iq()
@@ -152,13 +185,35 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.error("No response from server.")
             self.disconnect()
 
+
+    def registrelog(self,text, type='noset', sessionname='', priority = 0, who='' ):
+        #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
+        engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
+                                                                self.config.dbuser,
+                                                                self.config.dbpasswd,
+                                                                self.config.dbhost,
+                                                                self.config.dbname
+                                                                  ))
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        log = Logs(text = text, type = type, sessionname= sessionname,priority= priority,who=who)
+        session.add(log)
+        session.commit()
+        session.flush()
+
     def message(self, msg):
-        pass
-
-    def muc_message(self, msg):
-        if msg['type'] == "groupchat":
-            print msg['body']
-
+        #save log message
+        try :
+            dataobj = json.loads(msg['body'])
+            if 'text' in dataobj and 'type' in dataobj and 'session' in dataobj and  'priority' in dataobj and  'who' in dataobj:
+                self.registrelog(dataobj['text'], dataobj['type'], dataobj['session'], dataobj['priority'], dataobj['who'])
+        except Exception as e:
+            logging.error("bad struct Message %s %s " %(msg, str(e)))
+            dataerreur['data']['msg'] = "ERROR : Message structure"
+            self.send_message(  mto=msg['from'],
+                                        mbody=json.dumps(dataerreur),
+                                        mtype='chat')
+            traceback.print_exc(file=sys.stdout)
 
 
 if __name__ == '__main__':
@@ -170,12 +225,9 @@ if __name__ == '__main__':
     xmpp = MUCBot(conf)
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0045') # Multi-User Chat
-    xmpp.register_plugin('xep_0004') # Data Forms
-    xmpp.register_plugin('xep_0050') # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
     xmpp.register_plugin('xep_0077') # In-band Registration
-
-    xmpp['xep_0077'].force_registration = conf.forceregistration
+    xmpp['xep_0077'].force_registration = True
 
     # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
     if xmpp.connect(address=(conf.Server,conf.Port)):

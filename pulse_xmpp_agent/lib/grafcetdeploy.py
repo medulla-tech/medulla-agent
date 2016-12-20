@@ -48,6 +48,8 @@ class grafcet:
         self.data = datasend['data']
         self.sessionid = datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
+        if not 'stepcurrent' in self.data:
+            return
         try:
             self.workingstep = self.sequence[self.data['stepcurrent']]
             #logging.getLogger().debug("===========workingstep ========= %s "% json.dumps(self.workingstep, indent=4, sort_keys=True))
@@ -77,6 +79,8 @@ class grafcet:
 
     def __Etape_Next__(self):
         #next Step for xmpp message
+        if not 'stepcurrent' in self.data:
+            return
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
         self.sendnextstep()
 
@@ -87,6 +91,8 @@ class grafcet:
                                                     mtype='chat')
 
     def __Etape_Next_in__(self):
+        if not 'stepcurrent' in self.data:
+            return
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
         self.workingstep = self.sequence[self.data['stepcurrent']]
         self.__execstep__()
@@ -199,25 +205,6 @@ class grafcet:
         elif sys.platform.startswith('darwin'):
             return os.path.join("/","tmp")
 
-    #WIP
-    def linuxinstallfrommanagerpackages(self):
-        if os.path.isfile("/etc/mageia-release"):
-            return 'urpmi --auto'
-        if os.path.isfile("/etc/redhat-release"):
-            return 'yum'
-        elif os.path.isfile("/etc/arch-release"):
-            return 'pacman'
-        elif os.path.isfile("/etc/gentoo-release"):
-            return 'emerge'
-        elif os.path.isfile("/etc/SuSE-release"):
-            return 'zypp'
-        elif os.path.isfile("/etc/debian_version"):
-            return 'apt-get -q -y install '
-        else:
-            return ""
-
-
-
     def __search_Next_step_int__( self, val ):
         valstep = 0
         if isinstance(val, int):
@@ -313,6 +300,10 @@ class grafcet:
             self.__action_completed__(self.workingstep)
             os.chdir( self.datasend['data']['pathpackageonmachine'])
             self.workingstep['pwd']= os.getcwd()
+            self.objectxmpp.logtopulse('[%s]: current directory %s'%(self.workingstep['step'],self.workingstep['pwd']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
@@ -351,9 +342,12 @@ class grafcet:
         "succes": 3
         timeout
         """
+
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.workingstep['command'] = self.replaceTEMPLATE(self.workingstep['command'])
+
+            ##########self.objectxmpp.logtopulse("action_command_natif_shell")
             #todo si action deja faite return
             if not  "timeout" in self.workingstep:
                 self.workingstep['timeout'] = 15
@@ -384,6 +378,10 @@ class grafcet:
                     logging.getLogger().debug( "=======firstlines============%s============================="%nb1)
                     tab = result[:nb1]
                     self.workingstep[t] = os.linesep.join(tab)
+            self.objectxmpp.logtopulse('[%s]: errorcode %s for command : %s '%(self.workingstep['step'],self.workingstep['codereturn'],self.workingstep['command']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
             self.steplog()
             if 'succes' in self.workingstep and  self.workingstep['codereturn'] == 0:
                 #goto succes
@@ -407,6 +405,10 @@ class grafcet:
         }
 
         """
+        self.objectxmpp.logtopulse('[%s]: Terminate deploy SUCCESS'%(self.workingstep['step']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
         if self.__terminateifcompleted__(self.workingstep) : return
         self.terminate(0)
         self.steplog()
@@ -420,7 +422,10 @@ class grafcet:
         }
 
         """
-
+        self.objectxmpp.logtopulse('[%s]: Terminate deploy ERROR'%(self.workingstep['step']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
         if self.__terminateifcompleted__(self.workingstep) : return
         self.terminate(-1)
         self.steplog()
@@ -508,16 +513,19 @@ class grafcet:
                                         " -Q " + self.workingstep['query'] + \
                                         " -B " + ",".join(self.workingstep['boutontype'])
         #todo si action deja faite return
-        self.steplog()
+       
         # appelle boite de dialog 
-        # cette boite de dialog doit ecrire 'yes' ou 'no' dans stdout
+        
 
         re = shellcommandtimeout(command, 60).run()
         self.steplog()
         result  = [x.strip('\n') for x in re['result'] if x !='']
         logging.getLogger().debug( "result action actionconfirm:")
-        #if re['codereturn'] != 0:
-            #result[0] = "no"
+        self.objectxmpp.logtopulse('[%s]: Dialog : Reponse %s'%(self.workingstep['step'],result[-1]),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
+
         if 'goto' in self.workingstep :
             self.__search_Next_step_int__(self.workingstep['goto'])
             self.__execstep__()
@@ -573,9 +581,19 @@ class grafcet:
             #goto attendre pour Faire reboot
             self.__search_Next_step_int__(self.workingstep['gotoignore'])
             self.__execstep__()
+        elif re['codereturn'] != 0 and 'error' in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep['error'])
+            self.__execstep__()
+        elif re['codereturn'] == 0 and 'succes' in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep['succes'])
+            self.__execstep__()
         else:
             self.__Etape_Next_in__()
-
+            return
+        #self.objectxmpp.logtopulse('[%s]: Dialog : Reponse %s'%(self.workingstep['step'],result[0]),
+                                       #type='deploy',
+                                       #sessionname = self.sessionid ,
+                                       #priority =self.workingstep['step'] )
 
     def actionwaitandgoto(self):
         """
@@ -595,6 +613,10 @@ class grafcet:
             logging.getLogger().warn( "waiting missing : default value 180s")
         timewaiting = int(self.workingstep['waiting']) + 60
         logging.getLogger().warn( "timeout  waiting : %s"%timewaiting)
+        self.objectxmpp.logtopulse('[%s]: Waitting %s s for continue'%(self.workingstep['step'],timewaiting),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
         self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( "sleep "+ str(self.workingstep['waiting']) ,
                                                                             self.datasend,
                                                                             self.objectxmpp.boundjid.bare, 
@@ -620,6 +642,10 @@ class grafcet:
             # Restart machine based on OS
             self.__action_completed__(self.workingstep)
             self.steplog()
+            self.objectxmpp.logtopulse('[%s]: Restart machine'%(self.workingstep['step']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
             logging.debug("actionrestartmachine  RESTART MACHINE")
             if sys.platform.startswith('linux'):
                 logging.debug("actionrestartmachine  shutdown machine linux")
@@ -653,13 +679,18 @@ class grafcet:
             objsession =   self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
             objsession.setdatasession(self.datasend)
             self.steplog()
+            self.objectxmpp.logtopulse('[%s]: Restart agent machine'%(self.workingstep['step']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
             self.objectxmpp.restartBot()
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
 
     def actioncleaning(self):
-
+        ##logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = '')
+        objectxmpp.logtopulse('actiondeploymentcomplete', type='deploy', sessionname = self.sessionid)
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.__action_completed__(self.workingstep)
@@ -667,11 +698,33 @@ class grafcet:
             if  managepackage.packagedir() in self.datasend['data']['pathpackageonmachine']:
                 os.chdir( managepackage.packagedir())
                 os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+                self.objectxmpp.logtopulse('[%s]: clear file package on machine'%(self.workingstep['step']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'] )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
+
+  #WIP
+    def linuxinstallfrommanagerpackages(self):
+        if os.path.isfile("/etc/mageia-release"):
+            return 'urpmi --auto'
+        if os.path.isfile("/etc/redhat-release"):
+            return 'yum'
+        elif os.path.isfile("/etc/arch-release"):
+            return 'pacman'
+        elif os.path.isfile("/etc/gentoo-release"):
+            return 'emerge'
+        elif os.path.isfile("/etc/SuSE-release"):
+            return 'zypp'
+        elif os.path.isfile("/etc/debian_version"):
+            return 'apt-get -q -y install '
+        else:
+            return ""
+
 
 
 class sequentialevolutionquery:

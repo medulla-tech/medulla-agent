@@ -168,6 +168,20 @@ class manage_event:
                             self.objectxmpp.send_message( mto = recipientsucces,
                                                             mbody=json.dumps(message),
                                                             mtype='chat')
+
+                        if 'data' in event['eventMessageraw'] and 'descriptor' in event['eventMessageraw']['data'] and 'sequence' in event['eventMessageraw']['data']['descriptor']:
+                            #search workingstep for message log to log service  et log to syslog
+                            nb_currentworkingset = int(event['eventMessageraw']['data']['stepcurrent'])-1
+                            for i in event['eventMessageraw']['data']['descriptor']['sequence']:
+                                if int(i['step']) == nb_currentworkingset:
+                                    # log to systemem log machine
+                                    logging.debug('deploy [process command] %s\n step %s\ncommand%s\ncode error %s'%( event['eventMessageraw']['sessionid'],i['step'],i['command'],i['codereturn'] ))
+                                    ##log to agentlog xmpp
+                                    self.objectxmpp.logtopulse('[%s]: [process command] errorcode %s for command : %s '%(i['step'],i['codereturn'],i['command']),
+                                       type='deploy',
+                                       sessionname = event['eventMessageraw']['sessionid'] ,
+                                       priority = i['step'] )
+                                    break;
                         continue
 
                     self.show_eventloop()
