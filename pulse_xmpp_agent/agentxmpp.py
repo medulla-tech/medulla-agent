@@ -107,44 +107,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # update every hour
         self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
-
         self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
 
         if  not self.config.agenttype in ['relayserver']:
-        #executer seulement par machine
+            #executer seulement par machine
             self.schedule('session reload', 15 , self.reloadsesssion, repeat=False)
 
         self.schedule('reprise_evenement', 10 , self.handlereprise_evenement, repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("muc::%s::presence" % conf.jidchatroomcommand,
-                               self.muc_presenceCommand)
-        """ sortie presense dans chatroom Command """
-        self.add_event_handler("muc::%s::got_offline" % conf.jidchatroomcommand,
-                               self.muc_offlineCommand)
-        """ nouvelle presense dans chatroom Command """
-        self.add_event_handler("muc::%s::got_online" % conf.jidchatroomcommand,
-                               self.muc_onlineCommand)
-        #""" nouvelle presense dans chatroom Master """
-        #self.add_event_handler("muc::%s::presence" % conf.jidchatroommaster,
-                               #self.muc_presenceMaster)
-        """ desincription presense dans chatroom Master """
-        self.add_event_handler("muc::%s::got_offline" % conf.jidchatroommaster,
-                               self.muc_offlineMaster)
-        """ inscription presense dans chatroom Master """
-        self.add_event_handler("muc::%s::got_online" % conf.jidchatroommaster,
-                               self.muc_onlineMaster)
         #fonction appele pour tous message
         self.add_event_handler('message', self.message, threaded=True )
-        self.add_event_handler("groupchat_message", self.muc_message)
         #fonction appeller pour event
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler ( 'changed_status', self.changed_status)
 
     def changed_status(self,mmm):
-        print "iiiiiiiqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqiiiiiiiii %s %s"%(mmm['from'],mmm['type'])
+        print "%s %s"%(mmm['from'],mmm['type'])
         if mmm['from'].user == 'master' and mmm['type'] == 'available':
             self.update_plugin()
 
@@ -153,30 +134,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
-        #if self.config.agenttype in ['relayserver']:
-            ##chatroom = [jid.JID(self.config.jidchatroomcommand), jid.JID(self.config.jidchatroommaster), jid.JID(self.config.jidchatroomlog)]
-            #chatroom = [jid.JID(self.config.jidchatroomcommand), jid.JID(self.config.jidchatroommaster)]
-        #else:
-            #chatroom = [jid.JID(self.config.jidchatroomcommand)]
-
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        #for x in chatroom:
-            ##join chatroom command
-            #if x == self.config.jidchatroomcommand and self.config.agenttype in ['relayserver','serverrelais']:
-                #pass
-            #else:
-                #self.plugin['xep_0045'].joinMUC(x,
-                                            #self.config.NickName,
-                                            #password=self.config.passwordconnexionmuc,# If a room password is needed, use:
-                                            #wait=True)
         self.loginformation("agent %s ready"%self.config.jidagent)
         #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
-
-
 
     def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = ''):
         msgbody = {
@@ -189,8 +152,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_message(mto=jid.JID("log@localhost"),
                                 mbody=json.dumps(msgbody),
                                 mtype='chat')
-
-
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
@@ -284,15 +245,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             traceback.print_exc(file=sys.stdout)
             self.disconnect()
 
-
-    def muc_message(self, msg):
-        pass
-
     def filtre_message(self, msg):
         pass
 
-    def ischatroomdeploy(self, jidmessage ):
-        return jidmessage in self.nicklistchatroomcommand
+    #def ischatroomdeploy(self, jidmessage ):
+        #return jidmessage in self.nicklistchatroomcommand
 
     def message(self, msg):
         possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
@@ -332,16 +289,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
             return
         try :
-            # join chatroom deploy
-            if self.config.agenttype in ['relayserver'] and dataobj['action'] == "@@@@@deploychatroomON@@@@@":
-                print "###################affiliation chatroom %s  avec nickname %s"%(self.config.jidchatroomcommand,self.nicknameagentrelayserverrefdeploy)
-                self.plugin['xep_0045'].joinMUC(self.config.jidchatroomcommand,
-                                        self.nicknameagentrelayserverrefdeploy,
-                                        # If a room password is needed, use:
-                                        password=self.config.passwordconnexionmuc,
-                                        wait=True)
-                return
-
             if dataobj['action'] == "resultmsginfoerror":
                 logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
                 return
@@ -419,56 +366,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
             traceback.print_exc(file=sys.stdout)
-
-    def muc_offlineCommand(self, presence):
-        if  self.config.agenttype in ['relayserver']:
-            try:
-                del (self.nicklistchatroomcommand[presence['from'].resource])
-            except KeyError:
-                pass
-
-    def muc_presenceCommand(self, presence):
-
-        if  not self.config.agenttype in ['relayserver'] and  presence['from'].resource in ["deploy"]:
-            pass
-
-            #executer seulement par machine
-            #for i in self.session.sessiondata:
-                #if 'signal' in i.datasession :
-                    #print "##############################################"
-                    #print "REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT"
-                    #print "###################################################"
-                    #logging.info("to start again  %s " %(i.datasession['signal']['action']))
-                    #msgdata = {
-                            #'action': i.datasession['signal']['action'],
-                            #'sessionid': i.datasession['signal']['sessionid'],
-                            #'data' : i.datasession,
-                            #'ret' : 0,
-                            #'base64' : False
-                        #}
-                    #self.send_message( mto=i.datasession['signal']['retourmessage'],
-                                #mbody = json.dumps(msgdata),
-                                #mtype='chat')
-                    #del i.datasession['signal']
-
-            # The machines identify themselves in the chatroom deployment of the relay server
-            #msgdata = {'signalpresencechatroom' :{ self.config.jidagent: {
-                    #'nick' : self.config.NickName,
-                    #'uuid': '246bc7f2-702b-11e6-8d74-3c970e3e0e47'}}}
-            #self.send_message( mbody=json.dumps(msgdata),
-                            #mto = "%s"%(self.config.jidchatroomcommand),
-                                #mtype ='groupchat')
-
-    def muc_onlineCommand(self, presence):
-        pass
-
-
-    def muc_offlineMaster(self, presence):
-        pass
-
-
-    def muc_presenceMaster(self, presence):
-        pass
 
     def seachInfoMachine(self):
         er = networkagentinfo("master","infomachine")
