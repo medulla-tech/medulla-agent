@@ -168,7 +168,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             #executer seulement par machine
         for i in self.session.sessiondata:
             logging.log(DEBUGPULSE,"REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT")
-            #print "REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT\n %s"%json.dumps(i.datasession, indent=4, sort_keys=True)
             msg={
                 'from' : self.boundjid.bare,
                 'to': self.boundjid.bare
@@ -280,18 +279,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "data": {"msg" : ""}
         }
 
-
         if not 'action' in dataobj:
             logging.error("warning message action missing %s"%(msg))
             return
 
         if dataobj['action'] ==  "resultmsginfoerror":
-
+            logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
             return
         try :
-            if dataobj['action'] == "resultmsginfoerror":
-                logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
-                return
+            #if dataobj['action'] == "resultmsginfoerror":
+                #logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
+                #return
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
