@@ -137,11 +137,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        self.loginformation("agent %s ready"%self.config.jidagent)
+        #self.loginformation("agent %s ready"%self.config.jidagent)
         #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
 
-    def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = ''):
+    def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who =self.boundjid.bare):
         msgbody = {
                     'text' : text,
                     'type':type,
@@ -222,10 +222,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
 
-    def loginformation(self,msgdata):
-        self.send_message( mbody = msgdata,
-                           mto = self.config.jidchatroomlog,
-                           mtype ='groupchat')
+    #def loginformation(self,msgdata):
+        #self.send_message( mbody = msgdata,
+                           #mto = self.config.jidchatroomlog,
+                           #mtype ='groupchat')
 
     def register(self, iq):
         """ This function is called for automatic registation """
