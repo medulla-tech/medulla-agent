@@ -141,7 +141,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
 
-    def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who =self.boundjid.bare):
+    def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who =''):
         msgbody = {
                     'text' : text,
                     'type':type,
