@@ -175,7 +175,7 @@ class confParameter:
         except:
             self.ordreallagent = False
 
-         if self.agenttype == "relayserver":
+        if self.agenttype == "relayserver":
             self.jidchatroomcommand = self.jidagent
         else:
             self.relayserverdeploy = jid.JID(self.agentcommand)
