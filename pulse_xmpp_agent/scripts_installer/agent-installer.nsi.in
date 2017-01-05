@@ -468,6 +468,8 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
+  ; Create packages folder to hold packages to be deployed on client
+  CreateDirectory $INSTDIR\tmp\packages
 
   SectionIn RO
   WriteUninstaller $INSTDIR\uninstall.exe
