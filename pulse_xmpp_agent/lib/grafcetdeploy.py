@@ -271,7 +271,13 @@ class grafcet:
                 pass
             self.datasend['ret'] = ret
             os.chdir( managepackage.packagedir())
-            os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+            if sys.platform.startswith('win'):
+                print "supprime file %s "
+                print "rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine']
+                os.system("rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine'])
+            else:
+                os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+            #os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
                                                         mbody=json.dumps(self.datasend),
                                                         mtype='chat')
@@ -697,7 +703,13 @@ class grafcet:
             #logging.getLogger().debug("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             if  managepackage.packagedir() in self.datasend['data']['pathpackageonmachine']:
                 os.chdir( managepackage.packagedir())
-                os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+                if sys.platform.startswith('win'):
+                    print "supprime file %s "
+                    print "rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine']
+                    os.system("rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine'])
+                else:
+                    os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+            #os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
                 self.objectxmpp.logtopulse('[%s]: clear file package on machine'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
