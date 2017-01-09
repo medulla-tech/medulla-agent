@@ -24,7 +24,6 @@
 # """
 
 # TODO: Install freerdp
-#       Configure iptables
 
 PACKAGELIST="wget shorewall pulse-xmpp-agent pulse-xmppmaster-agentplugins pulseagent-plugins-machine freerdp openssh-server"
 
