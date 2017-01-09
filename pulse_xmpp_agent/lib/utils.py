@@ -226,9 +226,12 @@ def getMacAdressList():
 def getIPAdressList():
     ip_list = []
     for interface in netifaces.interfaces():
-        for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
-            if link['addr'] != '127.0.0.1':
-                ip_list.append(link['addr'])
+        try:
+            for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+                if link['addr'] != '127.0.0.1':
+                    ip_list.append(link['addr'])
+        except:
+            pass
     return ip_list
 
 def MacAdressToIp(ip):
