@@ -184,10 +184,15 @@ generate_agent() {
 	fi
 	echo "Running "${COMMAND}
 	${COMMAND}
-	if [ -e "install-pulse-agent-linux.sh" ]; then
-		XMPP_SERVER=`grep public_ip /etc/mmc/pulse2/package-server/package-server.ini.local | awk '{print $3}'`
-		sed -i "s/@@XMPP_SERVER@@/${XMPP_SERVER}/" install-pulse-agent-linux.sh
+  # Generate Pulse Agent for Linux
+  colored_echo blue "Generating Pulse Agent for Linux..."
+	if [ -n "${INVENTORY_TAG}" ]; then
+		COMMAND="./linux/generate-pulse-agent-linux.sh --inventory-tag=${INVENTORY_TAG}"
+	else
+		COMMAND="./linux/generate-pulse-agent-linux.sh"
 	fi
+	echo "Running "${COMMAND}
+	${COMMAND}
 }
 
 # And finally we run the functions

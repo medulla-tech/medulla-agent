@@ -36,27 +36,39 @@ check_root() {
 }
 
 check_distro() {
-    if [ !  -e /etc/lsb-release ]; then
-        echo "We are no able to find your linux distibution"
+    if [ ! -e /etc/os-release ]; then
+        echo "We are not able to find your linux distibution"
     else
-        DISTRO=`cat  /etc/lsb-release | grep DISTRIB_ID | cut -f2 -d'"'`
+        DISTRO=`cat /etc/os-release | grep ^ID= | cut -f2 -d'='`
     fi
 }
 
 install_agent() {
     case "$DISTRO" in
-    Mageia)
-	    urpmi $PACKAGELIST;;
-    debian)
-	    apt-get install $PACKAGELIST;;
-    *)
-	    echo "We do not support your distribution yet";;
+      mageia)
+        # Use repository
+
+        # Install packages
+  	    urpmi $PACKAGELIST
+        ;;
+      debian)
+        # Use repository
+
+        # Install packages
+  	    apt-get install $PACKAGELIST
+        ;;
+      *)
+  	    echo "We do not support your distribution yet"
+        ;;
     esac
 }
 
 configure_pulse() {
+    if [[ ! -d /etc/pulse-xmpp-agent ]]; then
+      mkdir /etc/pulse-xmpp-agent
+    fi
     pushd /etc/pulse-xmpp-agent
-        wget http://@@XMPP_SERVER@@/downloads/config/agentconf.ini
+        wget http://@@PULSE_SERVER@@/downloads/config/agentconf.ini
     popd
 }
 
