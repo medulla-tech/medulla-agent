@@ -21,10 +21,11 @@
 #
 
 # """
-# This script is designed to generate Pulse XMPP agent for Windows
-# It downloads the necessary dependencies, modifies the nsi file and finally
-# runs makensis to generate the agent
+# This script is designed to generate Pulse XMPP agent for Linux
 # """
+
+# TODO: Create rpm and deb repositories
+#				Manage inventory tags
 
 # Go to own folder
 cd "`dirname $0`"

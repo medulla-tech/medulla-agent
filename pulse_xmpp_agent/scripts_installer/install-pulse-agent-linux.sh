@@ -24,6 +24,7 @@
 # """
 
 # TODO: Install freerdp
+#       Make use of deb and rpm repositories for installing packages
 
 PACKAGELIST="wget shorewall pulse-xmpp-agent pulse-xmppmaster-agentplugins pulseagent-plugins-machine freerdp openssh-server"
 
