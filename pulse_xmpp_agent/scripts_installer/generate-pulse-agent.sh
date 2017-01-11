@@ -37,7 +37,9 @@ display_usage() {
   echo -e "\t [--conf-xmppmuchost=<XMPP configuration server MUC host>] \n"
   echo -e "\t [--conf-xmppmucpasswd=<XMPP configuration server MUC password>] \n"
   echo -e "\t [--xmpp-passwd=<XMPP server password>] \n"
+	echo -e "\t [--xmpp-mucserver=<XMPP MUC server>] \n"
   echo -e "\t [--xmpp-mucpasswd=<XMPP server MUC password>] \n"
+	echo -e "\t [--chat-domain=<XMPP domain>] \n"
   echo -e "\t [--inventory-tag=<Tag added to the inventory>] \n"
   echo -e "\t [--minimal] \n"
 }
@@ -69,8 +71,16 @@ check_arguments() {
         XMPP_SERVER_PASSWORD="${i#*=}"
         shift
         ;;
+      --xmpp-mucserver=*)
+        XMPP_MUC_SERVER="${i#*=}"
+        shift
+        ;;
       --xmpp-mucpasswd=*)
         XMPP_SERVER_MUCPASSWORD="${i#*=}"
+        shift
+        ;;
+      --chat-domain=*)
+        CHAT_DOMAIN="${i#*=}"
         shift
         ;;
       --inventory-tag=*)
@@ -112,9 +122,7 @@ colored_echo() {
 compute_settings() {
   # Compute settings for generating agent
   colored_echo blue "Generating with the following settings:"
-  if [ -z "${PUBLIC_XMPP_SERVER_ADDRESS}" ]; then
-    PUBLIC_XMPP_SERVER_ADDRESS=`grep public_ip /etc/mmc/pulse2/package-server/package-server.ini.local | awk '{print $3}'`
-  fi
+
   colored_echo blue " - XMPP configuration server: '${PUBLIC_XMPP_SERVER_ADDRESS}'"
 
   if [ -z "${PUBLIC_XMPP_SERVER_PORT}" ]; then
@@ -122,30 +130,22 @@ compute_settings() {
   fi
   colored_echo blue " - XMPP configuration server port: '${PUBLIC_XMPP_SERVER_PORT}'"
 
-	if [ -z "${PUBLIC_XMPP_SERVER_PASSWORD}" ]; then
-		PUBLIC_XMPP_SERVER_PASSWORD=$(awk '/^\[connection\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
-	fi
   colored_echo blue " - XMPP configuration server password: '${PUBLIC_XMPP_SERVER_PASSWORD}'"
 
   if [ -z "${PUBLIC_XMPP_SERVER_MUCHOST}" ]; then
-    PUBLIC_XMPP_SERVER_MUCHOST="conference.localhost"
+    PUBLIC_XMPP_SERVER_MUCHOST="conference.pulse"
   fi
   colored_echo blue " - XMPP configuration server MUC host: '${PUBLIC_XMPP_SERVER_MUCHOST}'"
 
-  if [ -z "${PUBLIC_XMPP_SERVER_MUCPASSWORD}" ]; then
-	  PUBLIC_XMPP_SERVER_MUCPASSWORD=$(awk '/^\[configuration_server\]/{f=1} f==1&&/^confmuc_password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
-  fi
   colored_echo blue " - XMPP configuration server MUC password: '${PUBLIC_XMPP_SERVER_MUCPASSWORD}'"
 
-  if [ -z "${XMPP_SERVER_PASSWORD}" ]; then
-	  XMPP_SERVER_PASSWORD=$(awk '/^\[connection\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
-  fi
   colored_echo blue " - XMPP server password: '${XMPP_SERVER_PASSWORD}'"
 
-  if [ -z "${XMPP_SERVER_MUCPASSWORD}" ]; then
-	  XMPP_SERVER_MUCPASSWORD=$(awk '/^\[chatroom\]/{f=1} f==1&&/^password/{print $3;exit}' /etc/mmc/plugins/xmppmaster.ini.local)
-  fi
+	colored_echo blue " - XMPP MUC server: '${XMPP_MUC_SERVER}'"
+
   colored_echo blue " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
+
+	colored_echo blue " - XMPP chat domain: '${CHAT_DOMAIN}'"
 
 	if [ -z "${INVENTORY_TAG}" ]; then
 		colored_echo blue " - Inventory TAG: None"
@@ -170,7 +170,9 @@ update_config_file() {
   sed -i "s/@@AGENT_CONF_XMPP_MUC_DOMAIN@@/${PUBLIC_XMPP_SERVER_MUCHOST}/" config/agentconf.ini
   sed -i "s/@@AGENT_CONF_XMPP_MUC_PASSWORD@@/${PUBLIC_XMPP_SERVER_MUCPASSWORD}/" config/agentconf.ini
   sed -i "s/@@XMPP_PASSWORD@@/${XMPP_SERVER_PASSWORD}/" config/agentconf.ini
+  sed -i "s/@@CHATROOM_SERVER@@/${XMPP_MUC_SERVER}/" config/agentconf.ini
   sed -i "s/@@CHATROOM_PASSWORD@@/${XMPP_SERVER_MUCPASSWORD}/" config/agentconf.ini
+	sed -i "s/@@CHAT_DOMAIN@@/${CHAT_DOMAIN}/" config/agentconf.ini
 	unix2dos config/agentconf.ini
 }
 

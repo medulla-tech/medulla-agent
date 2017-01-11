@@ -33,12 +33,12 @@ password = @@XMPP_PASSWORD@@
 
 [chatroom]
 # Parameters to connect to the chatrooms
-server = conference.localhost
+server = conference.pulse
 password = @@CHATROOM_PASSWORD@@
 
 [chat]
 # Domain used for chat messages
-domain = localhost
+domain = pulse
 
 # Define a specific jid for the agent. Optional
 # [jid_01]
