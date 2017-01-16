@@ -149,7 +149,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     'priority':priority,
                     'who':who
                     }
-        self.send_message(mto=jid.JID("log@localhost"),
+        self.send_message(mto=jid.JID("log@pulse"),
                                 mbody=json.dumps(msgbody),
                                 mtype='chat')
 
@@ -185,10 +185,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # ne sont traite par master seulement action loginfos
         try:
             self.send_message(  mbody = json.dumps(msgdata),
-                                mto = 'master@localhost/MASTER',
+                                mto = 'master@pulse/MASTER',
                                 mtype ='chat')
         except Exception as e:
-            logging.error("message log to 'master@localhost/MASTER' : %s " %(str(e)))
+            logging.error("message log to 'master@pulse/MASTER' : %s " %(str(e)))
             traceback.print_exc(file=sys.stdout)
             return
 
