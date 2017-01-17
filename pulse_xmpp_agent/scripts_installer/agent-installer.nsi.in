@@ -497,6 +497,38 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
   Delete $INSTDIR\uninstall.exe
+
+  ; Remove pulse user
+  StrCpy $0 `net user "pulse" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+  ; Remove OpenSSH
+  StrCpy $0 `sc.exe stop ssh-agent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc.exe stop sshd`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc.exe delete ssh-agent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc.exe delete sshd`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  RMDir /r $PROGRAMFILES\${OPENSSH_NAME}
+
+  ; Uninstall agent
   StrCpy $0 `SCHTASKS /Delete /TN "Pulse Agent"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
