@@ -45,8 +45,17 @@ PY_SLEEKXMPP_MODULE="sleekxmpp"
 PY_SLEEKXMPP_VERSION="1.3.1"
 PY_WMI_MODULE="wmi"
 PY_WMI_VERSION="1.4.9"
+PY_ZIPFILE_MODULE="zipfile2"
+PY_ZIPFILE_VERSION="0.0.12"
+LIBCURL_NAME="libcurl4"
+LIBCURL_VERSION="7.52.1-1"
+LIBCURL_FILENAME="cygcurl-4.dll"
+PY_CURL_MODULE="pycurl"
+PY_CURL_VERSION="7.43.0"
 PULSE_AGENT_NAME="pulse-xmpp-agent"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
+RSYNC_NAME="cwRsync"
+RSYNC_VERSION="5.5.0"
 OPENSSH_NAME="OpenSSH-Win32"
 OPENSSH_VERSION="v0.0.6.0"
 LAUNCHER_SSH_KEY="\/root\/\.ssh\/id_rsa.pub"
@@ -90,8 +99,6 @@ compute_parameters() {
 	PYTHON_URL="https://www.python.org/ftp/python/${PYTHON_VERSION}/${PYTHON_FILENAME}"
 	PY_VCPYTHON27_FILENAME="VCForPython27.msi"
 	PY_VCPYTHON27_URL="https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/${PY_VCPYTHON27_FILENAME}"
-	#PY_WIN32_FILENAME="pywin32-${PY_WIN32_VERSION}.zip"
-	#PY_WIN32_URL="http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20${PY_WIN32_VERSION}/${PY_WIN32_FILENAME}"
 	PY_WIN32_FILENAME="pypiwin32-${PY_WIN32_VERSION}-cp27-none-win32.whl"
 	PY_WIN32_URL="https://pypi.python.org/packages/cd/59/7cc2407b15bcd13d43933a5ae163de89b6f366dda8b2b7403453e61c3a05/${PY_WIN32_FILENAME}"
 	PY_NETIFACES_FILENAME="${PY_NETIFACES_MODULE}-${PY_NETIFACES_VERSION}.tar.gz"
@@ -100,10 +107,17 @@ compute_parameters() {
 	PY_UTILS_FILENAME="${PY_UTILS_MODULE}-${PY_UTILS_VERSION}.tar.gz"
 	PY_SLEEKXMPP_FILENAME="${PY_SLEEKXMPP_MODULE}-${PY_SLEEKXMPP_VERSION}.tar.gz"
 	PY_WMI_FILENAME="WMI-${PY_WMI_VERSION}.zip"
+	PY_ZIPFILE_FILENAME="${PY_ZIPFILE_MODULE}-${PY_ZIPFILE_VERSION}-py2.py3-none-any.whl"
+	LIBCURL_DL_FILENAME="${LIBCURL_NAME}-${LIBCURL_VERSION}.tar.xz"
+	LIBCURL_URL="http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/${LIBCURL_NAME}/${LIBCURL_DL_FILENAME}"
+	PY_CURL_FILENAME="${PY_CURL_MODULE}-${PY_CURL_VERSION}-cp27-none-win32.whl"
+	PY_CURL_URL="https://pypi.python.org/packages/69/f1/387306c495d8f9b6518ea35348668bc1e8bf56b9c7f1425b5f12df79c356/${PY_CURL_FILENAME}"
 	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.gz"
 	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 	PULSE_AGENT_TASK_XML="pulse-agent-task.xml"
 	PULSE_AGENT_PLUGINS="${PULSE_AGENT_PLUGINS_NAME}-${PULSE_AGENT_PLUGINS_VERSION}.tar.gz"
+	RSYNC_FILENAME="${RSYNC_NAME}_${RSYNC_VERSION}_x86_Free.zip"
+	RSYNC_URL="https://www.itefix.net/dl/${RSYNC_FILENAME}"
 	OPENSSH_FILENAME="${OPENSSH_NAME}.zip"
 	OPENSSH_URL="https://github.com/PowerShell/Win32-OpenSSH/releases/download/${OPENSSH_VERSION}/${OPENSSH_FILENAME}"
 	FUSION_INVENTORY_AGENT_FILENAME="${FUSION_INVENTORY_AGENT_NAME}_windows-x86_${FUSION_INVENTORY_AGENT_VERSION}.exe"
@@ -185,6 +199,46 @@ download_pip() {
 	fi
 }
 
+download_mandatory_includes() {
+	colored_echo blue "### INFO Downloading mandatory includes..."
+	download_wget ${RSYNC_URL} ${RSYNC_FILENAME}
+	download_wget ${LIBCURL_URL} ${LIBCURL_DL_FILENAME}
+	colored_echo green "### INFO Downloading mandatory includes... Done"
+}
+
+prepare_mandatory_includes() {
+	colored_echo blue "### INFO Preparing mandatory includes..."
+	# rsync
+	if [ -e ${DOWNLOAD_FOLDER}/${RSYNC_FILENAME} ]; then
+		pushd ${DOWNLOAD_FOLDER}
+		unzip ${RSYNC_FILENAME}
+		mkdir rsync
+		rm -f rsync.zip
+		FOLDERNAME="${RSYNC_FILENAME%.*}"
+		cp ${FOLDERNAME}/bin/* rsync
+		rm rsync/cygcrypto-1.0.0.dll
+		rm rsync/cygssp-0.dll
+		rm rsync/ssh-keygen.exe
+		rm rsync/ssh.exe
+		zip -r rsync.zip rsync
+		rm -rf rsync
+		popd
+	else
+		colored_echo red "${RSYNC_FILENAME} is not present in ${DOWNLOAD_FOLDER}. Please restart."
+		exit 1
+	fi
+	# libcurl
+	if [ -e ${DOWNLOAD_FOLDER}/${LIBCURL_DL_FILENAME} ]; then
+		pushd ${DOWNLOAD_FOLDER}
+		tar xJf ${LIBCURL_DL_FILENAME}
+		popd
+	else
+		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOAD_FOLDER}. Please restart."
+		exit 1
+	fi
+	colored_echo green "### INFO Preparing mandatory includes... Done"
+}
+
 download_agent_dependencies() {
 	colored_echo blue "### INFO Downloading python and dependencies..."
 	download_wget ${PYTHON_URL} ${PYTHON_FILENAME}
@@ -195,7 +249,9 @@ download_agent_dependencies() {
 	download_pip ${PY_UTILS_MODULE} ${PY_UTILS_FILENAME}
 	download_pip ${PY_SLEEKXMPP_MODULE} ${PY_SLEEKXMPP_FILENAME}
 	download_pip ${PY_WMI_MODULE} ${PY_WMI_FILENAME}
+	download_pip ${PY_ZIPFILE_MODULE} ${PY_ZIPFILE_FILENAME}
 	download_wget ${PY_WIN32_URL} ${PY_WIN32_FILENAME}
+	download_wget ${PY_CURL_URL} ${PY_CURL_FILENAME}
 	download_wget ${OPENSSH_URL} ${OPENSSH_FILENAME}
 	download_wget ${FUSION_INVENTORY_AGENT_URL} ${FUSION_INVENTORY_AGENT_FILENAME}
 	colored_echo green "### INFO Downloading python and dependencies.. Done"
@@ -212,6 +268,8 @@ update_nsi_script_full() {
 	FULL_PY_UTILS='File "${DOWNLOADS_DIR}/${PY_UTILS}"'
 	FULL_PY_SLEEKXMPP='File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"'
 	FULL_PY_WMI='File "${DOWNLOADS_DIR}/${PY_WMI}"'
+	FULL_PY_ZIPFILE='File "${DOWNLOADS_DIR}/${PY_ZIPFILE}"'
+	FULL_PY_CURL='File "${DOWNLOADS_DIR}/${PY_CURL}"'
 	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -221,6 +279,8 @@ update_nsi_script_full() {
 	INSTALL_FULL_PY_UTILS='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_UTILS}`'
 	INSTALL_FULL_PY_SLEEKXMPP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_SLEEKXMPP}`'
 	INSTALL_FULL_PY_WMI='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WMI}`'
+	INSTALL_FULL_PY_ZIPFILE='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_ZIPFILE}`'
+	INSTALL_FULL_PY_CURL='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_CURL}`'
 
 	sed -e "s/@@PRODUCT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOAD_FOLDER}/" \
@@ -251,6 +311,13 @@ update_nsi_script_full() {
 		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_WMI@@/$(sed_escape ${FULL_PY_WMI})/" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_WMI@@/$(sed_escape ${INSTALL_FULL_PY_WMI})/" \
+		-e "s/@@PY_ZIPFILE@@/${PY_ZIPFILE_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_ZIPFILE@@/$(sed_escape ${FULL_PY_ZIPFILE})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_ZIPFILE@@/$(sed_escape ${INSTALL_FULL_PY_ZIPFILE})/" \
+		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
+		-e "s/@@PY_CURL@@/${PY_CURL_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CURL@@/$(sed_escape ${FULL_PY_CURL})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_CURL@@/$(sed_escape ${INSTALL_FULL_PY_CURL})/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
@@ -276,6 +343,7 @@ update_nsi_script_dl() {
 	DL_PYTHON_FILENAME='${DownloadFile} '"${PYTHON_URL}"' ${PYTHON_FILENAME}'
 	DL_PY_VCPYTHON27='${DownloadFile} '"${PY_VCPYTHON27_URL}"' ${PY_VCPYTHON27}'
 	DL_PY_WIN32='${DownloadFile} '"${PY_WIN32_URL}"' ${PY_WIN32_FILENAME}'
+	DL_PY_CURL='${DownloadFile} '"${PY_CURL_URL}"' ${PY_CURL_FILENAME}'
 	DL_OPENSSH='${DownloadFile} '"${OPENSSH_URL}"' ${OPENSSH_FILENAME}'
 	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
 	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -285,6 +353,8 @@ update_nsi_script_dl() {
 	INSTALL_DL_PY_UTILS='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_UTILS}`'
 	INSTALL_DL_PY_SLEEKXMPP='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_SLEEKXMPP}`'
 	INSTALL_DL_PY_WMI='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_WMI}`'
+	INSTALL_DL_PY_ZIPFILE='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_ZIPFILE}`'
+	INSTALL_DL_PY_CURL='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_CURL}`'
 
 	sed -e "s/@@PRODUCT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOAD_FOLDER}/" \
@@ -315,6 +385,13 @@ update_nsi_script_dl() {
 		-e "s/@@PY_WMI@@/${PY_WMI_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_WMI@@//" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_WMI@@/$(sed_escape ${INSTALL_DL_PY_WMI})/" \
+		-e "s/@@PY_ZIPFILE@@/${PY_ZIPFILE_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_ZIPFILE@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_ZIPFILE@@/$(sed_escape ${INSTALL_DL_PY_ZIPFILE})/" \
+		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
+		-e "s/@@PY_CURL@@/${PY_CURL_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CURL@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_CURL@@/$(sed_escape ${INSTALL_DL_PY_CURL})/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
@@ -349,6 +426,8 @@ generate_agent_installer() {
 check_arguments "$@"
 compute_parameters
 prepare_system
+download_mandatory_includes
+prepare_mandatory_includes
 if [[ ${MINIMAL} -eq 1 ]]; then
 	update_nsi_script_dl
 else
