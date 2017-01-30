@@ -38,7 +38,12 @@
 
 # Variables
 DESC="Pulse2 XMPP Agent"
-DAEMON="/usr/share/pyshared/pulse_xmpp_agent/launcher.py"
+
+if [ -e "/usr/share/pyshared/pulse_xmpp_agent/launcher.py" ]; then
+       DAEMON="/usr/share/pyshared/pulse_xmpp_agent/launcher.py"
+else
+       DAEMON="/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py"
+fi
 
 # Function to start daemon
 start () {
