@@ -222,6 +222,7 @@ prepare_mandatory_includes() {
 		rm rsync/ssh.exe
 		zip -r rsync.zip rsync
 		rm -rf rsync
+		rm -rf ${FOLDERNAME}
 		popd
 	else
 		colored_echo red "${RSYNC_FILENAME} is not present in ${DOWNLOAD_FOLDER}. Please restart."
