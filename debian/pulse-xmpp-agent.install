@@ -1,0 +1,4 @@
+usr/lib/python2.*/*-packages/pulse_xmpp_agent
+var/log/pulse/
+etc/init.d/
+etc/pulse-xmpp-agent/

@@ -1,0 +1,20 @@
+Source: pulse-xmpp-agent
+Section: python
+Architecture: all
+Priority: optional
+Maintainer: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
+Uploaders: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
+Build-Depends: debhelper (>= 9),
+               dh-python,
+               python-all-dev (>= 2.6.6-3~),
+Standards-Version: 3.9.8
+Homepage: http://cyberelk.net/tim/software/pycups/
+Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/python-cups.git
+Vcs-Browser: https://anonscm.debian.org/cgit/python-modules/packages/python-cups.git
+X-Python-Version: >= 2.7
+
+Package: pulse-xmpp-agent
+Architecture: all
+Provides: ${python:Provides}
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-utils, python-mysqldb-dbg
+Description: Python bindings for CUPS

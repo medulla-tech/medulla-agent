@@ -1,0 +1,155 @@
+pulse-xmpp-agent (1.0-10) unstable; urgency=low
+
+ * Fix default requires
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 30 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (1.0-9) unstable; urgency=low
+
+ * xmpp mutisite miltidomain ( 024693c23236ad6d19213d7972d9a073cb87eddc )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 30 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (1.0-8) unstable; urgency=low
+
+ * Addition of zipfile2 and pycurl python modules to Windows installer
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 30 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (1.0-7) unstable; urgency=low
+
+ * Use pulse as main XMPP domain instead of localhost ( f1d26e93aec148ddeff040eef8f9ad44fba648fd )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Wed, 11 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (1.0-6) unstable; urgency=low
+
+ * Configuration of agent for multisite environments ( 3b380ab933b0deb6a5278174de6770defdb72592 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Wed, 11 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (1.0-5) unstable; urgency=low
+
+ * Fix startup script 
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 09 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (1.0-4) unstable; urgency=low
+
+ * Linux agent script: create missing generators ( 9242781160d8dcc5caab790eb7e3bffe29075ed3 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 09 Jan 2017 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-45) unstable; urgency=low
+
+ * Fix if/else syntax error ( ceb4a87a0948134b330a1ba86e4c354297a334a4 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-44) unstable; urgency=low
+
+ * add alias for linux install ( 61529ee328af8b9497c735076153d3edd37069e6 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-43) unstable; urgency=low
+
+ * Translation fixes ( 455112ff1d2900a5eb4019dc7311a8575bfcc63f )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-42) unstable; urgency=low
+
+ * Fix confmuc_password in generation of agent config file ( f75954ed424f484664c519402027ada537de8a58 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-41) unstable; urgency=low
+
+ * Fix typo in function name ( f2b3d410fa348e78c7bd1c4ea814e7a62375125c )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-40) unstable; urgency=low
+
+ * Fix parametreconf class name ( 7f153c245dfeeb2dd8b31aed65d523dca94495d8 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-39) unstable; urgency=low
+
+ * Translation fixes ( 2ae091b23e292de82fa0e962b64ac81b5aa45dc9 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-38) unstable; urgency=low
+
+ * Fix translations ( 44dd6f028ce3af1904dc99635631ef541b4dfd64 ) 
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-37) unstable; urgency=low
+
+ * Translation fixes ( 0a3e7df763f17052576e35c9469cfdc50b13376c ) 
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-36) unstable; urgency=low
+
+ * Generation of minimal version of installer ( f679d50b8eedd2013b199f021bae4ab902f458c6 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-35) unstable; urgency=low
+
+ * Removal of rsync folder ( dd2d836e70fa8e4c9c775e1dead478c51a01f3a9 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-34) unstable; urgency=low
+
+ * Remove quotes from guacamole baseurl ( e220ad29a1848d971c0750650c568b48080a45a1 ) 
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-33) unstable; urgency=low
+
+ * Fix pluginlist and automatic retrieval of XMPP parameters
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-32) unstable; urgency=low
+
+ *  fixe add config plugin ( 0ac88f52d5111df89bcca3bf2c0260b5f7112767 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-31) unstable; urgency=low
+
+ *  chang mode start/stop service ( 48f5ae07992283667bbff10c3bee26a7e889cafb )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-30) unstable; urgency=low
+
+ *  Fix rsync path + Do not run agent right after install ( c3925fde7d382078700f9ee2ee3fb5da14dadb86 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-29) unstable; urgency=low
+
+ *  Addition of rsync to the agent installer for Windows ( d512477d710b29940e122f7079411aba0e79b7f5 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-28) unstable; urgency=low
+
+ *  Fix error in previous commit ( 13d61662426867a0b9cdc3475947bfeb30abb696 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
+
+pulse-xmpp-agent (0.1-27) unstable; urgency=low
+
+ *  Addition of SSH and Inventory to the installer ( a7a73cd88c25487d3adf0027827a4cdfb86a6c86 )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
