@@ -83,8 +83,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
         self.agentsiveo    = jid.JID(self.config.jidagentsiveo)
-        self.agentmaster = jid.JID("master@%s"%self.boundjid.host)
-
+        self.agentmaster = jid.JID("master@pulse")
         self.session = session(self.config.agenttype)
 
         self.signalinfo = {}
@@ -149,15 +148,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     'priority':priority,
                     'who':who
                     }
-        self.send_message(mto=jid.JID("log@localhost"),
+        self.send_message(mto=jid.JID("log@pulse"),
                                 mbody=json.dumps(msgbody),
                                 mtype='chat')
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
         dataobj=self.seachInfoMachine()
-        logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%("master@%s"%self.config.chatserver, json.dumps(dataobj, indent=4, sort_keys=True)))
-        self.send_message(mto = "master@%s"%self.config.chatserver,
+        logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%(self.agentmaster, json.dumps(dataobj, indent=4, sort_keys=True)))
+        self.send_message(mto = self.agentmaster,
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
 
@@ -185,10 +184,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # ne sont traite par master seulement action loginfos
         try:
             self.send_message(  mbody = json.dumps(msgdata),
-                                mto = 'master@localhost/MASTER',
+                                mto = '%s/MASTER'%self.agentmaster,
                                 mtype ='chat')
         except Exception as e:
-            logging.error("message log to 'master@localhost/MASTER' : %s " %(str(e)))
+            logging.error("message log to '%s/MASTER' : %s " %  ( self.agentmaster,str(e)))
             traceback.print_exc(file=sys.stdout)
             return
 
