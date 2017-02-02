@@ -40,6 +40,11 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'relayserver_agent', str(jid))
     Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
+    try:
+        domain = str(jid).split("@")[1].split("/")[0]
+    except:
+        domain=str(jid)
+    Config.set('chat', 'domain', domain)
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
