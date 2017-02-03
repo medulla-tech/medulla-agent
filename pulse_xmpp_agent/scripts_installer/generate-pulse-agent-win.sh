@@ -430,7 +430,7 @@ update_nsi_script_dl() {
 
 generate_agent_installer() {
 	colored_echo blue "### INFO Generating installer..."
-	makensis agent-installer.nsi
+	makensis -V1 agent-installer.nsi
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Generation of agent failed. Please restart"
 		exit 1
