@@ -33,9 +33,12 @@ from  agentconffile import conffilename
 from sleekxmpp import jid
 
 
+
 def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
+    if not Config.has_option("configuration_server", "confdomain"):
+        Config.set('configuration_server', 'confdomain',Config.get('chat', 'domain'))
     Config.set('connection', 'port'  , str(port) )
     Config.set('connection', 'server', str(ipserver))
     Config.set('global', 'relayserver_agent', str(jid))
@@ -47,6 +50,7 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config.set('chat', 'domain', domain)
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
+
 
 # Singleton/SingletonDecorator.py
 class SingletonDecorator:
@@ -147,6 +151,13 @@ class confParameter:
         except:
             self.debug = 'NOTSET'
         self.debug = self.debug.upper()
+
+        # use [chat) domain for first connection if not  [configuration_server] [confdomain]
+        # agent connection add [configuration_server] [confdomain]
+        if Config.has_option("configuration_server", "confdomain"):
+            self.confdomain = Config.get('configuration_server', 'confdomain')
+        else:
+            self.confdomain = self.chatserver
 
         if self.debug == 'CRITICAL':
             self.levellog = 50

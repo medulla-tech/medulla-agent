@@ -58,6 +58,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
+        resourcejid[0]=conf.confdomain
         newjidconf[0] = getRandomName(10,"conf")
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+getRandomName(10,"conf")
 
@@ -151,18 +152,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data = json.loads(msg['body'])
         except:
             return
-        print data['data']
-        print "session %s %s"%(self.session , data['sessionid'])
-        print "session %s %s"%(msg['from'].user, "master" )
-        print "session %s resultconnectionconf"%(data['action'])
-        print "session %s %s"%(msg['from'].resource, "MASTER")
-
         if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
-            logging.info("Start relay server agent configuration %s"%data['data'])
-            print data['data']
+            logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'], indent=4, sort_keys=True))
             logging.log(DEBUGPULSE,"write new config")
             changeconnection(conffilename(opts.typemachine), data['data'][1],data['data'][0],data['data'][2],data['data'][3])
-        elif data['ret'] == 0:
+        elif data['ret'] != 0:
             logging.error("configuration dynamic error")
         else:
             return
@@ -177,7 +171,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.session = getRandomName(10,"session")
         dataobj['sessionid'] = self.session
         dataobj['base64'] = False
-        self.send_message(mto = "master@%s"%self.config.chatserver,
+        self.send_message(mto = "master@%s"%self.config.confdomain,
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
 
