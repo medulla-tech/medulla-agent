@@ -57,40 +57,84 @@ class Logs(Base):
     priority = Column(Integer, default = 0)
     who = Column(String(20), nullable=False, default = "")
 
+
 class configuration:
     def __init__(self):
         Config = ConfigParser.ConfigParser()
-        Config.read("/etc/mmc/plugins/xmppagentlog.ini")
+        Configlocal= ConfigParser.ConfigParser()
+        Config.read("/etc/mmc/plugins/xmppmaster.ini")
+        Configlocal.read("/etc/mmc/plugins/xmppmaster.ini.local")
 
-        self.Port= Config.get('domain', 'port')
+        if  Configlocal.has_option("connection", "password"):
+            self.Password=Configlocal.get('connection', 'password')
+        else:
+            self.Password=Config.get('connection', 'password')
 
-        self.Server= Config.get('domain', 'server')
+        if  Configlocal.has_option("connection", "port"):
+            self.Port=Configlocal.get('connection', 'port')
+        else:
+            self.Port=Config.get('connection', 'port')
+            
+        if  Configlocal.has_option("connection", "Server"):
+            self.Server=Configlocal.get('connection', 'Server')
+        else:
+            self.Server=Config.get('connection', 'Server')
 
-        self.Chatadress= Config.get('domain', 'chat')
-        
+        if  Configlocal.has_option("chat", "domain"):
+            self.Chatadress=Configlocal.get('chat', 'domain')
+        else:
+            self.Chatadress=Config.get('chat', 'domain')
         self.Jid="log@%s/log"% self.Chatadress
-        
-        self.Password=Config.get('domain', 'password')
-        
-        self.master=Config.get('domain', 'master')
+        self.master="master@%s/MASTER"%self.Chatadress
+
 
 # database
-        self.dbport = Config.get('database', 'dbport')
-        self.dbdriver = Config.get('database', 'dbdriver')
-        self.dbhost = Config.get('database', 'dbhost')
-        self.dbname = Config.get('database', 'dbname')
-        self.dbuser = Config.get('database', 'dbuser')
-        self.dbpasswd = Config.get('database', 'dbpasswd')
+        if  Configlocal.has_option("database", "dbport"):
+            self.dbport=Configlocal.get('database', 'dbport')
+        else:
+            self.dbport=Config.get('database', 'dbport')
 
+        if  Configlocal.has_option("database", "dbdriver"):
+            self.dbdriver=Configlocal.get('database', 'dbdriver')
+        else:
+            self.dbdriver=Config.get('database', 'dbdriver')
+
+        if  Configlocal.has_option("database", "dbhost"):
+            self.dbhost=Configlocal.get('database', 'dbhost')
+        else:
+            self.dbhost=Config.get('database', 'dbhost')
+
+        if  Configlocal.has_option("database", "dbname"):
+            self.dbname=Configlocal.get('database', 'dbname')
+        else:
+            self.dbname=Config.get('database', 'dbname')
+
+        if  Configlocal.has_option("database", "dbuser"):
+            self.dbuser=Configlocal.get('database', 'dbuser')
+        else:
+            self.dbuser=Config.get('database', 'dbuser')
+        
+        if  Configlocal.has_option("database", "dbpasswd"):
+            self.dbpasswd=Configlocal.get('database', 'dbpasswd')
+        else:
+            self.dbpasswd=Config.get('database', 'dbpasswd')
+            
+            
+        if  Configlocal.has_option("global", "log_level"):
+            self.log_level=Configlocal.get('global', 'log_level')
+        else:
+            self.log_level=Config.get('global', 'log_level')
+            
 #global
-        if Config.get('global', 'log_level') == "INFO":
+        if self.log_level == "INFO":
             self.debug = logging.INFO
-        elif Config.get('global', 'log_level') == "DEBUG":
+        elif self.log_level == "DEBUG":
             self.debug = logging.DEBUG
-        elif Config.get('global', 'log_level') == "ERROR":
+        elif self.log_level == "ERROR":
             self.debug = logging.ERROR
         else:
             self.debug = 5
+
 
     def getRandomName(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
