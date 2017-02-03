@@ -176,6 +176,29 @@ update_config_file() {
 	unix2dos config/agentconf.ini
 }
 
+check_previous_conf() {
+	# Check that agentconf.ini is present
+	if [ -e config/agentconf.ini ]; then
+		colored_echo blue "Agent will be generated from previous config file (config/agentconf.ini)."
+	else
+		colored_echo red "No previous config file found. Please run the script by specifying the needed parameters:"
+		display_usage
+		exit 0
+	fi
+	# Check if inventory tag and agent size are defined
+	if [ -z "${INVENTORY_TAG}" ]; then
+		colored_echo blue " - Inventory TAG: None"
+	else
+		colored_echo blue " - Inventory TAG: '${INVENTORY_TAG}'"
+  fi
+	if [[ ${MINIMAL} -eq 1 ]]; then
+		GENERATED_SIZE="--minimal"
+    colored_echo blue " - Agent generated: minimal"
+	else
+		colored_echo blue " - Agent generated: full"
+  fi
+}
+
 generate_agent() {
   # Generate Pulse Agent for Windows
   colored_echo blue "Generating Pulse Agent for Windows..."
@@ -198,7 +221,12 @@ generate_agent() {
 }
 
 # And finally we run the functions
+
 check_arguments "$@"
-compute_settings
-update_config_file
+if [ $# -lt 3 ]; then
+	check_previous_conf
+else
+	compute_settings
+	update_config_file
+fi
 generate_agent
