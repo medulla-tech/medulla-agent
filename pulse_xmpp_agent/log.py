@@ -28,10 +28,9 @@ import json
 import hashlib
 import datetime
 from sqlalchemy import create_engine
-
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Text 
 #from sqlalchemy.dialects.mysql import  TINYINT
-#from sqlalchemy.ext.declarative import declarative_base
+
 #from mmc.database.database_helper import DBObj
 #from sqlalchemy.orm import relationship
 #import datetime
@@ -56,6 +55,27 @@ class Logs(Base):
     sessionname = Column(String(20), nullable=False, default = "")
     priority = Column(Integer, default = 0)
     who = Column(String(20), nullable=False, default = "")
+
+class Deploy(Base):
+    # ====== Table name =========================
+    __tablename__ = 'deploy'
+    # ====== Fields =============================
+    # Here we define columns for the table deploy.
+    # Notice that each column is also a normal Python instance attribute.
+    id = Column(Integer, primary_key=True)
+    inventoryuuid = Column(String(11), nullable=False)
+    pathpackage = Column(String(100), nullable=False)
+    jid_relay = Column(String(45), nullable=False)
+    jidmachine = Column(String(45), nullable=False)
+    state = Column(String(45), nullable=False)
+    sessionid = Column(String(45), nullable=False)
+    start = Column(DateTime, default=datetime.datetime.utcnow)
+    result = Column(Text ),
+    host = Column(String(45), nullable=False)
+    user = Column(String(45), nullable=False,default = "")
+    deploycol = Column(String(45), nullable=False,default = "")
+    login = Column(String(45), nullable=False)
+    command = Column(Integer)
 
 
 class configuration:
@@ -86,8 +106,6 @@ class configuration:
             self.Chatadress=Config.get('chat', 'domain')
         self.Jid="log@%s/log"% self.Chatadress
         self.master="master@%s/MASTER"%self.Chatadress
-
-
 # database
         if  Configlocal.has_option("database", "dbport"):
             self.dbport=Configlocal.get('database', 'dbport')
@@ -204,13 +222,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        
         print self.boundjid
-        print self.boundjid
-        print self.boundjid
-        print self.boundjid
-        print self.boundjid
-        
+
     def register(self, iq):
         """ This function is called for automatic registration """
         resp = self.Iq()
@@ -230,6 +243,27 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.disconnect()
 
 
+    def updatedeployresultandstate(self, sessionid, state, result ):
+        engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
+                                                                self.config.dbuser,
+                                                                self.config.dbpasswd,
+                                                                self.config.dbhost,
+                                                                self.config.dbname
+                                                                  ))
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        try:
+            session.query(Deploy).filter(Deploy.sessionid == sessionid).\
+                    update({Deploy.state: state, Deploy.result : result})
+            session.commit()
+            session.flush()
+            session.close()
+            return 1
+        except Exception, e:
+            logging.getLogger().error(str(e))
+            return -1
+
+
     def registrelog(self,text, type='noset', sessionname='', priority = 0, who='' ):
         #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
         engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
@@ -244,6 +278,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         session.add(log)
         session.commit()
         session.flush()
+        session.close()
 
     def message(self, msg):
         #save log message
@@ -251,6 +286,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             dataobj = json.loads(msg['body'])
             if 'text' in dataobj and 'type' in dataobj and 'session' in dataobj and  'priority' in dataobj and  'who' in dataobj:
                 self.registrelog(dataobj['text'], dataobj['type'], dataobj['session'], dataobj['priority'], dataobj['who'])
+            elif 'action' in dataobj :
+                if dataobj['action'] == 'resultapplicationdeploymentjson':
+                    #log dans base resultat
+                    if dataobj['ret'] == 0:
+                        self.updatedeployresultandstate( dataobj['sessionid'], "END SUCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+                    else:
+                        self.updatedeployresultandstate( dataobj['sessionid'], "END ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+            else:
+                pass
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur['data']['msg'] = "ERROR : Message structure"

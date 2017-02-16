@@ -60,10 +60,9 @@ class grafcet:
             # end deploy
             # traitement
             self.datasend['ret'] = 255
-        
+
             logging.getLogger().debug("object datasend \n%s "% json.dumps(self.datasend, indent=4, sort_keys=True))
-        
-        
+
             self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
                                                     mbody=json.dumps(self.datasend),
                                                     mtype='chat')
@@ -278,13 +277,37 @@ class grafcet:
             else:
                 os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             #os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
-            self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
-                                                        mbody=json.dumps(self.datasend),
-                                                        mtype='chat')
+            datas = {}
+            datas = self.datasend
+            self.objectxmpp.send_message(   mto='log@pulse',
+                                            mbody=json.dumps(self.datasend),
+                                            mtype='chat')
+            try:
+                del datas['data']['descriptor']['sequence']
+            except:
+                pass
+            try:
+                del datas['data']['environ']
+                del datas['data']['packagefile']
+                del datas['data']['transfert']
+            except:
+                pass
+
+            self.objectxmpp.send_message(   mto=self.datasend['data']['jidmaster'],
+                                            mbody=json.dumps(datas),
+                                            mtype='chat')
+
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
-
+            self.datasend['ret'] = 255
+            self.datas['ret'] = 255
+            self.objectxmpp.send_message(   mto='log@pulse',
+                                            mbody=json.dumps(self.datasend),
+                                            mtype='chat')
+            self.objectxmpp.send_message(   mto=self.datasend['data']['jidmaster'],
+                                            mbody=json.dumps(datas),
+                                            mtype='chat')
 
     def steplog(self):
         logging.getLogger().debug("deploy %s on machine %s [%s] STEP %s\n %s "% (  self.data['descriptor']['info']['name'],
@@ -292,8 +315,6 @@ class grafcet:
                                                                                 self.sessionid,
                                                                                 self.workingstep['step'],
                                                                                 json.dumps(self.workingstep, indent=4, sort_keys=True)))
-        pass
-
     def __terminateifcompleted__(self,workingstep):
         if 'completed' in self.workingstep:
             if self.workingstep['completed'] >=1:
@@ -309,7 +330,8 @@ class grafcet:
             self.objectxmpp.logtopulse('[%s]: current directory %s'%(self.workingstep['step'],self.workingstep['pwd']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
@@ -387,7 +409,8 @@ class grafcet:
             self.objectxmpp.logtopulse('[%s]: errorcode %s for command : %s '%(self.workingstep['step'],self.workingstep['codereturn'],self.workingstep['command']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who = self.objectxmpp.boundjid.bare)
             self.steplog()
             if 'succes' in self.workingstep and  self.workingstep['codereturn'] == 0:
                 #goto succes
@@ -414,7 +437,8 @@ class grafcet:
         self.objectxmpp.logtopulse('[%s]: Terminate deploy SUCCESS'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
         if self.__terminateifcompleted__(self.workingstep) : return
         self.terminate(0)
         self.steplog()
@@ -431,7 +455,8 @@ class grafcet:
         self.objectxmpp.logtopulse('[%s]: Terminate deploy ERROR'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
         if self.__terminateifcompleted__(self.workingstep) : return
         self.terminate(-1)
         self.steplog()
@@ -530,7 +555,8 @@ class grafcet:
         self.objectxmpp.logtopulse('[%s]: Dialog : Reponse %s'%(self.workingstep['step'],result[-1]),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
 
         if 'goto' in self.workingstep :
             self.__search_Next_step_int__(self.workingstep['goto'])
@@ -622,7 +648,8 @@ class grafcet:
         self.objectxmpp.logtopulse('[%s]: Waitting %s s for continue'%(self.workingstep['step'],timewaiting),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
         self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( "sleep "+ str(self.workingstep['waiting']) ,
                                                                             self.datasend,
                                                                             self.objectxmpp.boundjid.bare, 
@@ -651,7 +678,8 @@ class grafcet:
             self.objectxmpp.logtopulse('[%s]: Restart machine'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'] ,
+                                       who=self.objectxmpp.boundjid.bare)
             logging.debug("actionrestartmachine  RESTART MACHINE")
             if sys.platform.startswith('linux'):
                 logging.debug("actionrestartmachine  shutdown machine linux")
@@ -688,7 +716,8 @@ class grafcet:
             self.objectxmpp.logtopulse('[%s]: Restart agent machine'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
             self.objectxmpp.restartBot()
         except Exception as e:
             print str(e)
@@ -696,7 +725,7 @@ class grafcet:
 
     def actioncleaning(self):
         ##logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = '')
-        objectxmpp.logtopulse('actiondeploymentcomplete', type='deploy', sessionname = self.sessionid)
+        self.objectxmpp.logtopulse('actiondeploymentcomplete', type='deploy', sessionname = self.sessionid,who=self.objectxmpp.boundjid.bare)
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.__action_completed__(self.workingstep)
@@ -713,7 +742,8 @@ class grafcet:
                 self.objectxmpp.logtopulse('[%s]: clear file package on machine'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
-                                       priority =self.workingstep['step'] )
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
