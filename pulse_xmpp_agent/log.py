@@ -70,7 +70,7 @@ class Deploy(Base):
     state = Column(String(45), nullable=False)
     sessionid = Column(String(45), nullable=False)
     start = Column(DateTime, default=datetime.datetime.utcnow)
-    result = Column(Text ),
+    result = Column(Text )
     host = Column(String(45), nullable=False)
     user = Column(String(45), nullable=False,default = "")
     deploycol = Column(String(45), nullable=False,default = "")
