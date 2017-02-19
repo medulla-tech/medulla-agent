@@ -40,18 +40,23 @@ class process_on_end_send_message_xmpp:
         logging.info('manage process start')
 
     def add_processcommand(self, command ,message ,tosucces=None, toerror=None, timeout = 50, step = None):
+        if not !(step is None or isinstance( step, int )):
+            logging.error('Error Descriptor Step in not Integer')
+            return False
         if tosucces is None and toerror is None:
-            return
+            logging.error("any agent to process result from queue")
+            return False
  
         message['data']['tosucces'] = tosucces
         message['data']['toerror']  = toerror
-        if step == None:
+        if step is None:
             createprocesscommand = Process(target=self.processcommand, args=(command ,
                                                                             self.queue_out_session,
                                                                             message,
                                                                             timeout))
             self.processtable.append(createprocesscommand)
             createprocesscommand.start()
+            return True
         elif isinstance( step, int ):
             createprocessstepcommand = Process(target=self.processstepcommand, args=(command ,
                                                                             self.queue_out_session,
@@ -60,6 +65,7 @@ class process_on_end_send_message_xmpp:
                                                                             step))
             self.processtable.append(createprocessstepcommand)
             createprocessstepcommand.start()
+            return True
 
     def processstepcommand ( self,  command , queue_out_session, message, timeout, step):
         try:
