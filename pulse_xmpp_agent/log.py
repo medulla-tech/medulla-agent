@@ -17,7 +17,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-import sys
+import sys, os
 import logging
 import ConfigParser
 import sleekxmpp
@@ -28,7 +28,9 @@ import json
 import hashlib
 import datetime
 from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Text 
+from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Text
+from optparse import OptionParser
+from lib.utils import StreamToLogger
 #from sqlalchemy.dialects.mysql import  TINYINT
 
 #from mmc.database.database_helper import DBObj
@@ -38,6 +40,7 @@ from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, T
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.declarative import declarative_base
+from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 
 Base = declarative_base()
@@ -303,13 +306,41 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mtype='chat')
             traceback.print_exc(file=sys.stdout)
 
+def createDaemon(opts,conf):
+    """
+        This function create a service/Daemon that will execute a det. task
+    """
+    try:
+        pid = os.fork()
+        if pid > 0:
+            print 'PID: %d' % pid
+            os._exit(0)
+        doTask(opts,conf)
+    except OSError, error:
+        logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
+        traceback.print_exc(file=sys.stdout)
+        os._exit(1)
 
-if __name__ == '__main__':
-    # Setup the command line arguments.
-    conf=configuration()
-
-    logging.basicConfig(level=conf.debug,
-                        format='%(levelname)-8s %(message)s')
+        
+def doTask(opts, conf):
+    print "hello"
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+    #logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    
+    if opts.consoledebug :
+            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    else:
+        stdout_logger = logging.getLogger('STDOUT')
+        sl = StreamToLogger(stdout_logger, logging.INFO)
+        sys.stdout = sl
+        stderr_logger = logging.getLogger('STDERR')
+        sl = StreamToLogger(stderr_logger, logging.INFO)
+        sys.stderr = sl
+        logging.basicConfig(level = logging.INFO,
+                            format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                            filename = "/var/log/pulse/xmpp-agent-log.log",
+                            filemode = 'a')
     xmpp = MUCBot(conf)
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0045') # Multi-User Chat
@@ -325,8 +356,40 @@ if __name__ == '__main__':
         # need to use:
         #
         # if xmpp.connect(('talk.google.com', 5222)):
-        #     ...
         xmpp.process(block=True)
         print("Done")
     else:
         print("Unable to connect.")
+
+if __name__ == '__main__':
+    if not sys.platform.startswith('linux'):
+        print "Agent log on systeme linux only"
+     
+     
+    if os.getuid() != 0:
+        print "Agent must be running as root"
+        sys.exit(0)
+
+    optp = OptionParser()
+    optp.add_option("-d", 
+                    "--deamon", 
+                    action = "store_true",
+                    dest = "deamon", 
+                    default = False,
+                    help = "deamonize process")
+    
+    optp.add_option("-c",
+                    "--consoledebug",
+                    action = "store_true",
+                    dest = "consoledebug",
+                    default = False,
+                    help = "console debug")
+    
+    opts, args = optp.parse_args()
+    
+    # Setup the command line arguments.
+    conf  = configuration()
+    if not opts.deamon :
+        doTask(opts, conf)
+    else:
+        createDaemon(opts, conf)
