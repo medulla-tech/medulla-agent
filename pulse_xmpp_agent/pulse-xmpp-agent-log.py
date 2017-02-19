@@ -323,7 +323,6 @@ def createDaemon(opts,conf):
 
         
 def doTask(opts, conf):
-    print "hello"
     logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     #logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     
