@@ -40,7 +40,7 @@ class process_on_end_send_message_xmpp:
         logging.info('manage process start')
 
     def add_processcommand(self, command ,message ,tosucces=None, toerror=None, timeout = 50, step = None):
-        if not !(step is None or isinstance( step, int )):
+        if not (step is None or isinstance( step, int )):
             logging.error('Error Descriptor Step in not Integer')
             return False
         if tosucces is None and toerror is None:
