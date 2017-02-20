@@ -77,7 +77,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
-        laps_time_inventory = 3700
+        inventory_interval = 3700
         self.config = conf
         self.nicklistchatroomcommand={}
 
