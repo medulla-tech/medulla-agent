@@ -77,6 +77,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
+        laps_time_inventory = 3700
         self.config = conf
         self.nicklistchatroomcommand={}
 
@@ -107,6 +108,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
+        self.schedule('manage session', laps_time_inventory , self.handleinventory, repeat=True)
 
         if  not self.config.agenttype in ['relayserver']:
             #executer seulement par machine
@@ -154,6 +156,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_message(mto=jid.JID("log@pulse"),
                                 mbody=json.dumps(msgbody),
                                 mtype='chat')
+
+    def handleinventory(self):
+        msg = { 'from' : "master@pulse/MASTER",
+              'to': self.boundjid.bare
+        }
+        sessionid = getRandomName(6, "inventory")
+        dataerreur = {}
+        dataerreur['action']= "resultinventory"
+        dataerreur['data']={}
+        dataerreur['data']['msg'] = "ERROR : inventory"
+        dataerreur['sessionid'] = sessionid
+        dataerreur['ret'] = 255
+        dataerreur['base64'] = False
+        call_plugin("inventory",
+                    self,
+                    "inventory",
+                    getRandomName(6, "inventory"),
+                    {},
+                    msg,
+                    dataerreur)
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
