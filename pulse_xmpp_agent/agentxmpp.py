@@ -76,8 +76,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # reload plugins list all 15 minutes
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
-        laps_time_handlemanagesession = 15
-        inventory_interval = 3700
+        laps_time_handlemanagesession = 15       
         self.config = conf
         self.nicklistchatroomcommand={}
 
@@ -108,7 +107,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
-        self.schedule('manage session', inventory_interval , self.handleinventory, repeat=True)
+        self.schedule('manage session',  self.config.inventory_interval , self.handleinventory, repeat=True)
 
         if  not self.config.agenttype in ['relayserver']:
             #executer seulement par machine

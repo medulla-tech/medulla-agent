@@ -123,7 +123,7 @@ class confParameter:
                 self.logfile = os.path.join("/", "Library", "Application Support", "Pulse", "var", "log", "xmpp-agent.log")
             else:
                self.logfile = os.path.join("/", "var", "log" , "pulse", "xmpp-agent.log")
-
+        
         #information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get('configuration_server', 'confserver')
@@ -196,6 +196,12 @@ class confParameter:
         else:
             self.relayserverdeploy = jid.JID(self.agentcommand)
             self.jidchatroomcommand = str(self.agentcommand)
+
+        #inventory_interval est par default a 3700 seconde
+        self.inventory_interval = 3700
+        if Config.has_option("inventory", "inventory_interval"):
+            self.inventory_interval = Config.getint("inventory", "inventory_interval")
+
 
         self.information={}
         self.PlatformSystem=platform.platform()
