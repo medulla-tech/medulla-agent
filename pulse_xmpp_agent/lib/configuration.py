@@ -197,7 +197,6 @@ class confParameter:
             self.relayserverdeploy = jid.JID(self.agentcommand)
             self.jidchatroomcommand = str(self.agentcommand)
 
-        #inventory_interval est par default a 3700 seconde
         self.inventory_interval = 3700
         if Config.has_option("inventory", "inventory_interval"):
             self.inventory_interval = Config.getint("inventory", "inventory_interval")
