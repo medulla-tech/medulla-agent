@@ -25,9 +25,25 @@ if sys.platform.startswith('win'):
     import _winreg
 
 
+def singletonclass(class_):
+  instances = {}
+  def getinstance(*args, **kwargs):
+    if class_ not in instances:
+        instances[class_] = class_(*args, **kwargs)
+    return instances[class_]
+  return getinstance
+
+
+class MyClass(BaseClass):
+  pass
+
+
+
+@singletonclass
 class constantregisterwindows:
 
-    keysregister ={'HKEY_CLASSES_ROOT' : 'Registry entries subordinate to this key define types (or classes) of documents and the properties associated with those types.Shell and COM applications use the information stored under this key.',
+    def __init__(self):
+        self.keysregister ={'HKEY_CLASSES_ROOT' : 'Registry entries subordinate to this key define types (or classes) of documents and the properties associated with those types.Shell and COM applications use the information stored under this key.',
                         'HKEY_CURRENT_USER' : 'Registry entries subordinate to this key define the preferences of the current user. These preferences include the settings of environment variables, data about program groups, colors, printers, network connections, and application preferences.',
                         'HKEY_LOCAL_MACHINE' : 'Registry entries subordinate to this key define the physical state of the computer, including data about the bus type, system memory, and installed hardware and software.',
                         'HKEY_USERS' :'Registry entries subordinate to this key define the default user configuration for new users on the local computer and the user configuration for the current user.',
@@ -48,7 +64,7 @@ class constantregisterwindows:
                         'KEY_WOW64_32KEY':'Indicates that an application on 64-bit Windows should operate on the 32-bit registry view.'
                         }
 
-    typeregister ={'REG_BINARY':'Binary data in any form.',
+        self.typeregister ={'REG_BINARY':'Binary data in any form.',
                         'REG_DWORD':'32-bit number.',
                         'REG_DWORD_LITTLE_ENDIAN':'A 32-bit number in little-endian format.',
                         'REG_DWORD_BIG_ENDIAN':'A 32-bit number in big-endian format.',
@@ -62,33 +78,33 @@ class constantregisterwindows:
                         'REG_SZ':'A null-terminated string.'
                         }
 
-    @staticmethod
-    def is_exist_key( key):
-        if key in keysregister:
+
+    def is_exist_key(self,key):
+        if key in self.keysregister:
             return True
         return False
 
-    @staticmethod
-    def is_exist_type( type):
-        if type in keysregister:
+
+    def is_exist_type(self,type):
+        if type in self.keysregister:
             return True
         return False
 
-    @staticmethod
-    def desciptionkey( key):
+
+    def desciptionkey(self, key):
         if is_exist_key(key):
-            return keysregister[key]
+            return self.keysregister[key]
         return ""
 
-    @staticmethod
-    def desciptiontype( type):
+
+    def desciptiontype(self, type):
         if is_exist_type(type):
-            return keysregister[type]
+            return self.keysregister[type]
         return ""
 
-    @staticmethod
-    def getType( type ):
-        if type in typeregister:
+
+    def getType( self, type ):
+        if type in self.typeregister:
             if type == 'REG_BINARY':
                 return _winreg.REG_BINARY
             elif type == 'REG_DWORD':
@@ -115,9 +131,9 @@ class constantregisterwindows:
                 return _winreg.REG_SZ
         raise
 
-    @staticmethod
-    def getkey( key ):
-        if key in keysregister:
+
+    def getkey( self, key ):
+        if key in self.keysregister:
             if key == 'HKEY_CLASSES_ROOT':
                 return _winreg.HKEY_CLASSES_ROOT
             elif key == 'HKEY_CURRENT_USER':
@@ -157,4 +173,3 @@ class constantregisterwindows:
             elif key == 'KEY_WOW64_32KEY':
                 return _winreg.KEY_WOW64_32KEY
         raise
-
