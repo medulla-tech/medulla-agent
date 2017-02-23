@@ -156,9 +156,9 @@ class process_on_end_send_message_xmpp:
         try:
             messagestr=json.dumps(message)
         except:
-        traceback.print_exc(file=sys.stdout)
-        logging.getLogger().error("error json")
-        sys.exit(0)
+            traceback.print_exc(file=sys.stdout)
+            logging.getLogger().error("error json")
+            sys.exit(0)
 
 
         if not (step is None or isinstance( step, int )):
