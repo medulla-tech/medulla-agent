@@ -33,12 +33,6 @@ def singletonclass(class_):
     return instances[class_]
   return getinstance
 
-
-class MyClass(BaseClass):
-  pass
-
-
-
 @singletonclass
 class constantregisterwindows:
 
