@@ -184,7 +184,9 @@ class grafcet:
         cmd = cmd.replace('@@@LIST_IP_ADRESS@@@', " ".join(getIPAdressList()))
 
         cmd = cmd.replace('@@@IP_MACHINE_XMPP@@@', self.data['ipmachine'])
-        cmd = cmd.replace('@@@MAC_ADRESS_MACHINE_XMPP@@@', MacAdressToIp(self.data['ipmachine']))
+        ip = MacAdressToIp(self.data['ipmachine'])
+        if ip is not None:
+            cmd = cmd.replace('@@@MAC_ADRESS_MACHINE_XMPP@@@', ip)
 
         cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
         #recherche variable environnement
