@@ -25,7 +25,7 @@ import logging
 import ConfigParser
 import sleekxmpp
 import platform
-import netifaces
+import netifaces, socket
 import random
 import base64
 import json
@@ -76,7 +76,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # reload plugins list all 15 minutes
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
-        laps_time_handlemanagesession = 15       
+        laps_time_handlemanagesession = 15
         self.config = conf
         self.nicklistchatroomcommand={}
 
@@ -123,6 +123,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler ( 'changed_status', self.changed_status)
+        if is_valid_ipv4(self.config.Server):
+            self.ipserverxmpp=self.config.Server
+        else:
+            self.ipserverxmpp= socket.gethostbyname(self.config.Server)
 
     def changed_status(self,mmm):
         print "%s %s"%(mmm['from'],mmm['type'])
@@ -134,9 +138,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+        self.config.ipxmpp = getIpXmppInterface(self.ipserverxmpp, self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        ###self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         #self.loginformation("agent %s ready"%self.config.jidagent)
         #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
