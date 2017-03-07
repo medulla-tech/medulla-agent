@@ -25,7 +25,7 @@ import logging
 import ConfigParser
 import sleekxmpp
 import platform
-import netifaces, socket
+import netifaces
 import random
 import base64
 import json
@@ -78,6 +78,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
         self.config = conf
+
         self.nicklistchatroomcommand={}
 
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
@@ -101,14 +102,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.ippublic = None
         if self.ippublic == "":
             self.ippublic == None
-        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
-        self.md5reseau = hashlib.md5(obj['result']).hexdigest()
+
+        self.md5reseau = refreshfingerprint()
+
         # update every hour
         self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
-        self.schedule('manage session',  self.config.inventory_interval , self.handleinventory, repeat=True)
-
+        self.schedule('manage session', self.config.inventory_interval , self.handleinventory, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
             #executer seulement par machine
             self.schedule('session reload', 15 , self.reloadsesssion, repeat=False)
@@ -123,10 +124,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler ( 'changed_status', self.changed_status)
-        if is_valid_ipv4(self.config.Server):
-            self.ipserverxmpp=self.config.Server
-        else:
-            self.ipserverxmpp= socket.gethostbyname(self.config.Server)
 
     def changed_status(self,mmm):
         print "%s %s"%(mmm['from'],mmm['type'])
@@ -138,9 +135,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        self.config.ipxmpp = getIpXmppInterface(self.ipserverxmpp, self.config.Port)
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
-        ###self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         #self.loginformation("agent %s ready"%self.config.jidagent)
         #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
@@ -161,9 +158,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mtype='chat')
 
     def handleinventory(self):
-        msg = { 'from' : "master@pulse/MASTER",
+        msg={ 'from' : "master@pulse/MASTER",
               'to': self.boundjid.bare
-        }
+            }
         sessionid = getRandomName(6, "inventory")
         dataerreur = {}
         dataerreur['action']= "resultinventory"
@@ -233,15 +230,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
-            obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
-            md5ctl = hashlib.md5(obj['result']).hexdigest()
+            md5ctl = createfingerprintnetwork()
             if self.md5reseau != md5ctl:
+                refreshfingerprint()
                 logging.log(DEBUGPULSE,"network changed for %s!\n RESTART AGENT" % self.boundjid.user)
                 self.restartBot()
         except Exception as e:
             logging.error(" %s " %(str(e)))
             traceback.print_exc(file=sys.stdout)
-
 
     def restartBot(self):
         global restart
@@ -348,7 +344,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.eventmanage.addevent(datacontinue)
                     return
                 try:
-                    msg['body']= dataobj
+                    msg['body'] = dataobj
                     logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
                     call_plugin(dataobj['action'],
                                 self,
@@ -463,12 +459,11 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
     """
     try:
         if sys.platform.startswith('win'):
-            #import multiprocessing
-            #p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
-            #p.daemon = True
-            #p.start()
-            #p.join()
-            doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
+            import multiprocessing
+            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
+            p.daemon = True
+            p.start()
+            p.join()
         else:
             # Store the Fork PID
             pid = os.fork()

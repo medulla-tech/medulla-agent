@@ -22,8 +22,7 @@
 
 import netifaces
 import json
-import subprocess, shlex
-import subprocess, threading
+import subprocess, shlex, threading
 from threading import Timer
 import sys, os
 import logging
@@ -34,7 +33,7 @@ from pprint import pprint
 import hashlib
 import base64
 from configuration import  confParameter
-import urllib
+import urllib, urllib2
 
 DEBUGPULSE=25
 
@@ -46,6 +45,72 @@ if sys.platform.startswith('win'):
     import win32net
     import win32netcon
     import socket
+
+
+def Setdirectorytempinfo():
+    dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
+    print dirtempinfo
+    if not os.path.exists(dirtempinfo):
+        os.makedirs(dirtempinfo, mode=0007)
+    return dirtempinfo
+
+def networkinfoexist():
+    filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintnetwork')
+    if os.path.exists(filenetworkinfo):
+        return True
+    return False
+
+def createfingerprintnetwork():
+    md5network = ""
+    if sys.platform.startswith('win'):
+        obj = simplecommandstr("ipconfig")
+        md5network = hashlib.md5(obj['result']).hexdigest()
+    elif sys.platform.startswith('linux'):
+        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
+        md5network = hashlib.md5(obj['result']).hexdigest()
+    elif sys.platform.startswith('darwin'):
+        obj = simplecommandstr("ipconfig")
+        md5network = hashlib.md5(obj['result']).hexdigest()
+    return md5network
+
+def startspeedagent():
+    if networkinfoexist():
+        fingerprintnetwork = file_get_contents(os.path.join(Setdirectorytempinfo(), 'fingerprintnetwork'))
+        newfingerprint = createfingerprintnetwork()
+        if fingerprintnetwork == newfingerprint:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def refreshfingerprint():
+    fp =  createfingerprintnetwork()
+    file_put_contents(os.path.join(Setdirectorytempinfo(), 'fingerprintnetwork'), fp )
+    return fp
+
+def file_get_contents(filename, use_include_path = 0, context = None, offset = -1, maxlen = -1):
+    if (filename.find('://') > 0):
+        ret = urllib2.urlopen(filename).read()
+        if (offset > 0):
+            ret = ret[offset:]
+        if (maxlen > 0):
+            ret = ret[:maxlen]
+        return ret
+    else:
+        fp = open(filename,'rb')
+        try:
+            if (offset > 0):
+                fp.seek(offset)
+            ret = fp.read(maxlen)
+            return ret
+        finally:
+            fp.close( )
+
+def file_put_contents(filename,  data):
+    f = open(filename, 'w')
+    f.write(data)
+    f.close()
 
 def getCurrentWorkingDirectory():
     return os.path.abspath(os.getcwd())
@@ -61,7 +126,6 @@ def getLibPath():
 
 def getPerlScriptPath(name):
     return os.path.abspath(os.path.join(getCurrentWorkingDirectory(),"script","perl",name))
-
 
 def showJSONData(jsondata):
     pp = pprint.PrettyPrinter(indent=4)
@@ -92,7 +156,6 @@ def get_connection_name_from_guid(iface_guids):
         except :
             pass
     return iface_names
-
 
 def CreateWinUser(login,Password,Groups=['Users']):
     """
@@ -423,8 +486,6 @@ class shellcommandtimeout(object):
                 self.result = "error tineout"
 
         return self.obj
-
-
 
 
 def servicelinuxinit(name,action):

@@ -23,6 +23,9 @@
 from optparse import OptionParser
 import os, sys
 
+from lib.utils import *
+
+
 if __name__ == '__main__':
     optp = OptionParser()
     optp.add_option("-t", "--type",
@@ -39,15 +42,16 @@ if __name__ == '__main__':
         sys.exit(1)
 
     os.chdir(os.path.dirname(sys.argv[0]))
-
     if not opts.consoledebug:
         if opts.typemachine.lower() in ["machine"]:
-            if sys.platform.startswith('win'):
-                print "Running", 'connectionagent.py -t %s'%opts.typemachine
-                os.system('connectionagent.py -t %s'%opts.typemachine)
-            else:
-                print "Running", 'python connectionagent.py -t %s'%opts.typemachine
-                os.system('python connectionagent.py -t %s'%opts.typemachine)
+            if not startspeedagent():
+                print "startspeedagent False"
+                if sys.platform.startswith('win'):
+                    print "Running", 'connectionagent.py -t %s'%opts.typemachine
+                    os.system('connectionagent.py -t %s'%opts.typemachine)
+                else:
+                    print "Running", 'python connectionagent.py -t %s'%opts.typemachine
+                    os.system('python connectionagent.py -t %s'%opts.typemachine)
 
         if sys.platform.startswith('win'):
             print "Running", 'agentxmpp.py -d -t %s'%opts.typemachine
@@ -57,12 +61,13 @@ if __name__ == '__main__':
             os.system('python agentxmpp.py -d -t %s'%opts.typemachine)
     else:
         if opts.typemachine.lower() in ["machine"]:
-            if sys.platform.startswith('win'):
-                print "Running", 'connectionagent.py -c -t %s'%opts.typemachine
-                os.system('connectionagent.py -c -t %s'%opts.typemachine)
-            else:
-                print "Running", 'python connectionagent.py -c -t %s'%opts.typemachine
-                os.system('python connectionagent.py -c -t %s'%opts.typemachine)
+            if not startspeedagent():
+                if sys.platform.startswith('win'):
+                    print "Running", 'connectionagent.py -c -t %s'%opts.typemachine
+                    os.system('connectionagent.py -c -t %s'%opts.typemachine)
+                else:
+                    print "Running", 'python connectionagent.py -c -t %s'%opts.typemachine
+                    os.system('python connectionagent.py -c -t %s'%opts.typemachine)
         if sys.platform.startswith('win'):
             print "Running", 'agentxmpp.py -c -t %s'%opts.typemachine
             os.system('agentxmpp.py -c -t %s'%opts.typemachine)
