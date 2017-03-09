@@ -241,7 +241,7 @@ class grafcet:
                     logging.getLogger().error("inconsistency in descriptor")
                 return 5
 
-    def terminate(self,ret):
+    def terminate(self,ret, clear = True):
         try:
             self.__action_completed__(self.workingstep)
             self.objectxmpp.session.clearnoevent(self.sessionid)
@@ -272,12 +272,13 @@ class grafcet:
                 pass
             self.datasend['ret'] = ret
             os.chdir( managepackage.packagedir())
-            if sys.platform.startswith('win'):
-                print "supprime file %s "
-                print "rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine']
-                os.system("rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine'])
-            else:
-                os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+            if clear:
+                if sys.platform.startswith('win'):
+                    print "supprime file"
+                    print "rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine']
+                    os.system("rmdir /s /q \"%s\""%self.datasend['data']['pathpackageonmachine'])
+                else:
+                    os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             #os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             datas = {}
             datas = self.datasend
@@ -436,37 +437,48 @@ class grafcet:
     def actionsuccescompletedend(self):
         """
         descriptor type
-        {   
+        {
             "step" : 11,
-            "action" : "actionsuccescompletedend"
+            "action" : "actionsuccescompletedend",
+            "clear" : True
         }
-
+        clear optionnel option
+        if clear is not defini then clear = True
         """
+        clear = True
+        if 'clear' in self.workingstep:
+            if isinstance(self.workingstep['clear'], bool):
+                clear = self.workingstep['clear']
         self.objectxmpp.logtopulse('[%s]: Terminate deploy SUCCESS'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
                                        priority =self.workingstep['step'],
                                        who=self.objectxmpp.boundjid.bare)
         if self.__terminateifcompleted__(self.workingstep) : return
-        self.terminate(0)
+        self.terminate(0, clear)
         self.steplog()
 
     def actionerrorcompletedend(self):
         """
         descriptor type
-        {   
+        {
             "step" : 11,
-            "action" : "actionerrorcompletedend"
+            "action" : "actionerrorcompletedend",
+            "clear" : True
         }
-
+        clear optionnel option
+        if clear is not defini then clear = True
         """
+        clear = True
+        if 'clear' in self.workingstep and isinstance(self.workingstep['clear'], bool):
+            clear = self.workingstep['clear']
         self.objectxmpp.logtopulse('[%s]: Terminate deploy ERROR'%(self.workingstep['step']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
                                        priority =self.workingstep['step'],
                                        who=self.objectxmpp.boundjid.bare)
         if self.__terminateifcompleted__(self.workingstep) : return
-        self.terminate(-1)
+        self.terminate(-1, clear)
         self.steplog()
 
     def actionconfirm(self):
