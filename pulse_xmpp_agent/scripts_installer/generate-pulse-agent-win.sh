@@ -160,13 +160,6 @@ sed_escape() {
 	echo "$@" |sed -e 's/[\/&\$"]/\\&/g'
 }
 
-prepare_system() {
-	colored_echo blue "### INFO Installing tools needed..."
-	# Install needed tools
-	apt-get -y install nsis python-pip
-	colored_echo green "### INFO Installing tools needed... Done"
-}
-
 download_wget() {
 	local URL=$1
 	local FILENAME=$2
@@ -441,7 +434,6 @@ generate_agent_installer() {
 # Run the script
 check_arguments "$@"
 compute_parameters
-prepare_system
 download_mandatory_includes
 prepare_mandatory_includes
 if [[ ${MINIMAL} -eq 1 ]]; then
