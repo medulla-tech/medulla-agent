@@ -199,7 +199,7 @@ check_previous_conf() {
   fi
 }
 
-generate_agent() {
+generate_agent_win() {
   # Generate Pulse Agent for Windows
   colored_echo blue "Generating Pulse Agent for Windows..."
 	if [ -n "${INVENTORY_TAG}" ]; then
@@ -209,6 +209,9 @@ generate_agent() {
 	fi
 	echo "Running "${COMMAND}
 	${COMMAND}
+}
+
+generate_agent_lin() {
   # Generate Pulse Agent for Linux
   colored_echo blue "Generating Pulse Agent for Linux..."
 	if [ -n "${INVENTORY_TAG}" ]; then
@@ -229,4 +232,5 @@ else
 	compute_settings
 	update_config_file
 fi
-generate_agent
+generate_agent_win
+generate_agent_lin
