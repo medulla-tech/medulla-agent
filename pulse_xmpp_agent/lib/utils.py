@@ -48,6 +48,10 @@ if sys.platform.startswith('win'):
 
 
 def Setdirectorytempinfo():
+    """
+    function Setdirectorytempinfo
+    : return path directory INFO Temporaly and key RSA
+    """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     print dirtempinfo
     if not os.path.exists(dirtempinfo):

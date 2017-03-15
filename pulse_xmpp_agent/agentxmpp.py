@@ -53,7 +53,7 @@ from multiprocessing import Process, Queue, TimeoutError
 import threading
 
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
-
+from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
 
@@ -102,9 +102,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.ippublic = None
         if self.ippublic == "":
             self.ippublic == None
-
         self.md5reseau = refreshfingerprint()
-
         # update every hour
         self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
@@ -124,6 +122,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler ( 'changed_status', self.changed_status)
+        #generateRSAclefagent()
+        self.RSA = MsgsignedRSA(self.config.agenttype)
 
     def changed_status(self,mmm):
         print "%s %s"%(mmm['from'],mmm['type'])
@@ -297,13 +297,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataerreur={
                     "action": "resultmsginfoerror",
                     "sessionid" : "",
-                    "ret" :   255,
-                    "base64"  : False,
+                    "ret" : 255,
+                    "base64" : False,
                     "data": {"msg" : ""}
         }
 
         if not 'action' in dataobj:
             logging.error("warning message action missing %s"%(msg))
+            return
+
+        if dataobj['action'] == "installkeymaster":
+            # note install publickeymaster
+            self.masterpublickey = installpublickey("master", dataobj['keypublicbase64'] )
             return
 
         if dataobj['action'] ==  "resultmsginfoerror":
@@ -389,8 +394,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             traceback.print_exc(file=sys.stdout)
 
     def seachInfoMachine(self):
-        er = networkagentinfo("master","infomachine")
+        er = networkagentinfo("master", "infomachine")
         er.messagejson['info'] = self.config.information
+        #send key public agent
+        er.messagejson['publickey'] =  self.RSA.loadkeypublictobase64()
+        #send if master public key public is missing
+        er.messagejson['is_masterpublickey'] = self.RSA.isPublicKey("master")
         for t in er.messagejson['listipinfo']:
             if t['ipaddress'] == self.config.ipxmpp:
                 xmppmask = t['mask']
@@ -436,7 +445,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic,
-            'remoteservice' : protoandport()
+            'remoteservice' : protoandport(),
         }
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
