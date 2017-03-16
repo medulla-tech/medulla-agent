@@ -54,6 +54,8 @@ PY_CURL_MODULE="pycurl"
 PY_CURL_VERSION="7.43.0"
 PY_LXML_MODULE="lxml"
 PY_LXML_VERSION="3.6.0"
+PY_CRYPTO_MODULE="pycrypto"
+PY_CRYPTO_VERSION="2.6.1"
 PULSE_AGENT_NAME="pulse-xmpp-agent"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_NAME="cwRsync"
@@ -116,6 +118,8 @@ compute_parameters() {
 	PY_CURL_URL="https://pypi.python.org/packages/69/f1/387306c495d8f9b6518ea35348668bc1e8bf56b9c7f1425b5f12df79c356/${PY_CURL_FILENAME}"
 	PY_LXML_FILENAME="${PY_LXML_MODULE}-${PY_LXML_VERSION}-cp27-none-win32.whl"
 	PY_LXML_URL="https://pypi.python.org/packages/f1/c7/e19d317cc948095abc872a6e6ae78ac80260f2b45771dfa7a7ce86865f5b/${PY_LXML_FILENAME}"
+	PY_CRYPTO_FILENAME="${PY_CRYPTO_MODULE}-${PY_CRYPTO_VERSION}.tar.gz"
+	PY_CRYPTO_URL="https://pypi.python.org/packages/60/db/645aa9af249f059cc3a368b118de33889219e0362141e75d4eaf6f80f163/${PY_CRYPTO_FILENAME}"
 	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.gz"
 	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 	PULSE_AGENT_TASK_XML="pulse-agent-task.xml"
@@ -251,6 +255,7 @@ download_agent_dependencies() {
 	download_wget ${PY_WIN32_URL} ${PY_WIN32_FILENAME}
 	download_wget ${PY_CURL_URL} ${PY_CURL_FILENAME}
 	download_wget ${PY_LXML_URL} ${PY_LXML_FILENAME}
+	download_wget ${PY_CRYPTO_URL} ${PY_CRYPTO_FILENAME}
 	download_wget ${OPENSSH_URL} ${OPENSSH_FILENAME}
 	download_wget ${FUSION_INVENTORY_AGENT_URL} ${FUSION_INVENTORY_AGENT_FILENAME}
 	colored_echo green "### INFO Downloading python and dependencies.. Done"
@@ -270,6 +275,7 @@ update_nsi_script_full() {
 	FULL_PY_ZIPFILE='File "${DOWNLOADS_DIR}/${PY_ZIPFILE}"'
 	FULL_PY_CURL='File "${DOWNLOADS_DIR}/${PY_CURL}"'
 	FULL_PY_LXML='File "${DOWNLOADS_DIR}/${PY_LXML}"'
+	FULL_PY_CRYPTO='File "${DOWNLOADS_DIR}/${PY_CRYPTO}"'
 	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -282,6 +288,7 @@ update_nsi_script_full() {
 	INSTALL_FULL_PY_ZIPFILE='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_ZIPFILE}`'
 	INSTALL_FULL_PY_CURL='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_CURL}`'
 	INSTALL_FULL_PY_LXML='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_LXML}`'
+	INSTALL_FULL_PY_CRYPTO='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_CRYPTO}`'
 
 	sed -e "s/@@PRODUCT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOAD_FOLDER}/" \
@@ -322,6 +329,9 @@ update_nsi_script_full() {
 		-e "s/@@PY_LXML@@/${PY_LXML_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_LXML@@/$(sed_escape ${FULL_PY_LXML})/" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_LXML@@/$(sed_escape ${INSTALL_FULL_PY_LXML})/" \
+		-e "s/@@PY_CRYPTO@@/${PY_CRYPTO_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CRYPTO@@/$(sed_escape ${FULL_PY_CRYPTO})/" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_CRYPTO@@/$(sed_escape ${INSTALL_FULL_PY_CRYPTO})/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
@@ -349,6 +359,7 @@ update_nsi_script_dl() {
 	DL_PY_WIN32='${DownloadFile} '"${PY_WIN32_URL}"' ${PY_WIN32_FILENAME}'
 	DL_PY_CURL='${DownloadFile} '"${PY_CURL_URL}"' ${PY_CURL_FILENAME}'
 	DL_PY_LXML='${DownloadFile} '"${PY_LXML_URL}"' ${PY_LXML_FILENAME}'
+	DL_PY_CRYPTO='${DownloadFile} '"${PY_CRYPTO_URL}"' ${PY_CRYPTO_FILENAME}'
 	DL_OPENSSH='${DownloadFile} '"${OPENSSH_URL}"' ${OPENSSH_FILENAME}'
 	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
 	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -361,6 +372,7 @@ update_nsi_script_dl() {
 	INSTALL_DL_PY_ZIPFILE='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_ZIPFILE}`'
 	INSTALL_DL_PY_CURL='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_CURL}`'
 	INSTALL_DL_PY_LXML='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_LXML}`'
+	INSTALL_DL_PY_CRYPTO='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_CRYPTO}`'
 
 	sed -e "s/@@PRODUCT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOAD_FOLDER}/" \
@@ -401,6 +413,9 @@ update_nsi_script_dl() {
 		-e "s/@@PY_LXML@@/${PY_LXML_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_LXML@@//" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_LXML@@/$(sed_escape ${INSTALL_DL_PY_LXML})/" \
+		-e "s/@@PY_CRYPTO@@/${PY_CRYPTO_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CRYPTO@@//" \
+		-e "s/@@INSTALL_FULL_OR_DL_PY_CRYPTO@@/$(sed_escape ${INSTALL_DL_PY_CRYPTO})/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \

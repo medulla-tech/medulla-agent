@@ -46,6 +46,7 @@ RequestExecutionLevel admin
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
 !define PY_CURL "@@PY_CURL@@"
 !define PY_LXML "@@PY_LXML@@"
+!define PY_CRYPTO "@@PY_CRYPTO@@"
 !define PULSE_AGENT "@@PULSE_AGENT@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
@@ -157,6 +158,7 @@ Section "Python Modules" sec_pymod
   @@FULL_OR_DL_PY_ZIPFILE@@
   @@FULL_OR_DL_PY_CURL@@
   @@FULL_OR_DL_PY_LXML@@
+  @@FULL_OR_DL_PY_CRYPTO@@
   ${LogString} "Python modules Installation...."
   ${LogString} "------------------------------------------------------"
 
@@ -243,6 +245,14 @@ Section "Python Modules" sec_pymod
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
 
+  ; Install of Python crypto module
+  @@INSTALL_FULL_OR_DL_PY_CRYPTO@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
   Delete $INSTDIR\tmp\${PY_WIN32}
   Delete $INSTDIR\tmp\${PY_NETIFACES}
   Delete $INSTDIR\tmp\${PY_COMTYPES}
@@ -253,6 +263,7 @@ Section "Python Modules" sec_pymod
   Delete $INSTDIR\tmp\${PY_ZIPFILE}
   Delete $INSTDIR\tmp\${PY_CURL}
   Delete $INSTDIR\tmp\${PY_LXML}
+  Delete $INSTDIR\tmp\${PY_CRYPTO}
 SectionEnd
 
 ; rsync installation
