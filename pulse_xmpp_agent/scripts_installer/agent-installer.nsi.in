@@ -126,7 +126,7 @@ Section "Python" sec_py
   ${LogString} "------------------------------------------------------"
 
   ; Install of Python
-  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_FILENAME}" /quiet /norestart ALLUSERS=1`
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PYTHON_FILENAME}" /quiet /norestart ALLUSERS=1 ADDLOCAL=ALL`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
