@@ -31,6 +31,9 @@ import logging
 import netifaces
 import re
 import time
+import zipfile
+
+
 from managepackage import managepackage
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
@@ -341,6 +344,87 @@ class grafcet:
             print str(e)
             traceback.print_exc(file=sys.stdout)
 
+    def __resultinfo__(self, workingstepinfo, listresult):
+        for t in workingstepinfo:
+            if t == "@resultcommand":
+                workingstepinfo[t] = os.linesep.join(listresult)
+            elif t.endswith('lastlines'):
+                nb = t.split("@")
+                nb1 = -int(nb[0])
+                logging.getLogger().debug( "=======lastlines============%s============================="%nb1)
+                tab = listresult[nb1:]
+                workingstepinfo[t] = os.linesep.join(tab)
+            elif t.endswith('firstlines'):
+                nb = t.split("@")
+                nb1 = int(nb[0])
+                logging.getLogger().debug( "=======firstlines============%s============================="%nb1)
+                tab = listresult[:nb1]
+                workingstepinfo[t] = os.linesep.join(tab)
+
+    def action_unzip_file(self):
+        """
+        unzip file from python
+        descriptor type
+        {
+            "step" : intnb,
+            "action" : "action_unzip_file",
+            "filename" : "namefile",
+            "pathdirectorytounzip" : "pathdirextract",
+            "@resultcommand" : ""
+        }
+        filename if current directory or pathfilename
+        optionnel
+            @resultcommand list files
+            10@lastlines 10 last lines
+            10@firstlines 10 first lines
+            succes
+            error
+            goto
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep) : return
+            self.__action_completed__(self.workingstep)
+            zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
+            zip_ref.extractall(self.workingstep['pathdirectorytounzip'])
+            listname = zip_ref.namelist()
+            self.__resultinfo__(self.workingstep, listname)
+            zip_ref.close()
+
+            self.objectxmpp.logtopulse('[%s]: unzip %s to directory %s'%(self.workingstep['step'],self.workingstep['filename'],self.workingstep['pathdirectorytounzip']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
+            if 'goto' in self.workingstep :
+                self.__search_Next_step_int__(self.workingstep['goto'])
+                self.__execstep__()
+                return
+
+            if 'succes' in self.workingstep:
+                #goto succes
+                self.__search_Next_step_int__(self.workingstep['succes'])
+                self.__execstep__()
+            else:
+                self.__Etape_Next_in__()
+                self.steplog()
+
+        except Exception as e:
+            self.workingstep['@resultcommand'] = traceback.format_exc()
+            print str(e)
+            #traceback.print_exc(file=sys.stdout)
+            self.objectxmpp.logtopulse('[%s]: error unzip %s to directory %s : %s'%(self.workingstep['step'],
+                                                                                    self.workingstep['filename'],
+                                                                                    self.workingstep['pathdirectorytounzip']),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
+            if 'error' in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep['error'])
+                self.__execstep__()
+            else:
+                self.__Etape_Next_in__()
+                self.steplog()
 
     def actionprocessscript(self):
         try:
