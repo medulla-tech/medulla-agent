@@ -3,11 +3,11 @@ Description=Pulse2 XMPP Agent ( Machine )
 After=samba.service slapd.service
 
 [Service]
-PIDFile=/var/run/machine.pid
+#PIDFile=/var/run/machine.pid
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/launcher.py -t machine
+ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/agentxmpp.py -d -t machine
 
 [Install]
 WantedBy=multi-user.target

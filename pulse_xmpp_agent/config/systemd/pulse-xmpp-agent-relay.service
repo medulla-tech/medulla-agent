@@ -3,11 +3,11 @@ Description=Pulse2 XMPP Agent ( Relay )
 After=samba.service slapd.service
 
 [Service]
-PIDFile=/var/run/launcher.pid
+#PIDFile=/var/run/launcher.pid
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/launcher.py -t relayserver
+ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/agentxmpp.py -d -t relayserver
 
 [Install]
 WantedBy=multi-user.target
