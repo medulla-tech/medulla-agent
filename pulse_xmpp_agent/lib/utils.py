@@ -406,8 +406,12 @@ def is_valid_ipv6(ip):
 
 
 
-#linux systemd ou init
 def typelinux():
+    """
+    This function check if the linux system uses systemd or initv
+
+    :return: the init system of the linux system
+    """
     p = subprocess.Popen('cat /proc/1/comm',
                             shell=True,
                             stdout=subprocess.PIPE,
@@ -415,7 +419,6 @@ def typelinux():
     result = p.stdout.readlines()
     code_result= p.wait()
     system=result[0].rstrip('\n')
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 def isprogramme(name):
