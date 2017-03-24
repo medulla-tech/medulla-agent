@@ -422,14 +422,14 @@ def typelinux():
     return system
 
 def isprogramme(name):
-    obj={}
+    obj = {}
     p = subprocess.Popen("which %s"%(name),
                             shell=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    obj['code']=p.wait()
-    obj['result']=result
+    obj['code'] = p.wait()
+    obj['result'] = result
     if obj['result'] != "":
         return True
     else:
