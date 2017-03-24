@@ -417,8 +417,8 @@ def typelinux():
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    code_result= p.wait()
-    system=result[0].rstrip('\n')
+    code_result = p.wait()
+    system = result[0].rstrip('\n')
     return system
 
 def isprogramme(name):
