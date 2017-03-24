@@ -238,6 +238,11 @@ def isWinUserAdmin():
 
 #mac OS
 def isMacOsUserAdmin():
+    """
+    This function checks if the user is an Admin or a simple user
+
+    :returns: bool -- True if the user user is root. False otherwise
+    """
     obj=simplecommand("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
     if int(obj['code']) == 0:
         return True
