@@ -427,9 +427,6 @@ def isprogramme(name):
     result = p.stdout.readlines()
     obj['code']=p.wait()
     obj['result']=result
-    #print obj['code']
-    #print obj['result']
-    #print obj
     if obj['result'] != "":
         return True
     else:
