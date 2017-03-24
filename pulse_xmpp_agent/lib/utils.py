@@ -22,9 +22,12 @@
 
 import netifaces
 import json
-import subprocess, shlex, threading
+import subprocess
+import shlex
+import threading
 from threading import Timer
-import sys, os
+import sys
+import os
 import logging
 import random
 import re
@@ -33,7 +36,8 @@ from pprint import pprint
 import hashlib
 import base64
 from configuration import  confParameter
-import urllib, urllib2
+import urllib
+import urllib2
 
 DEBUGPULSE=25
 
