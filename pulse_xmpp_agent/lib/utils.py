@@ -463,14 +463,12 @@ class shellcommandtimeout(object):
 
     def run(self):
         def target():
-            #print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'], 
                                             shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
             self.process.communicate()
-            #print 'Thread finished'
         thread = threading.Thread(target=target)
         thread.start()
 
@@ -478,12 +476,9 @@ class shellcommandtimeout(object):
         if thread.is_alive():
             print 'Terminating process'
             print "timeout %s"%self.obj['timeout']
-            #self.codereturn = -255
-            #self.result = "error tineour"
             self.process.terminate()
             thread.join()
 
-        #self.result = self.process.stdout.readlines()
         self.obj['codereturn'] = self.process.returncode
 
         if self.obj['codereturn']==-15:
