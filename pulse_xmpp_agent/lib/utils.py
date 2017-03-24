@@ -404,8 +404,6 @@ def is_valid_ipv6(ip):
     """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
     return pattern.match(ip) is not None
 
-
-
 def typelinux():
     """
     This function check if the linux system uses systemd or initv
