@@ -794,6 +794,7 @@ def searchippublic(site = 1):
             ip = page.split("IP : ")[1].split("<br>")[0]
             return ip
     except:
+        # FIXME: Shouldn't it be the local ip ?
         return "192.168.56.2"
 
 
