@@ -594,6 +594,7 @@ def windowsservice(name, action):
 def methodservice():
     import pythoncom
     import wmi
+
     pythoncom.CoInitialize ()
     try:
         c = wmi.WMI ()
@@ -613,15 +614,6 @@ def file_put_content(filename, contents,mode="w"):
     fh.write(contents)
     fh.close()
 
-##windows
-#def listusergroup():
-    #import wmi
-    #c = wmi.WMI()
-    #for group in c.Win32_Group():
-    #print group.Caption
-    #for user in group.associators("Win32_GroupUser"):
-        #print "  ", user.Caption
-
 #decorateur pour simplifier les plugins
 def pluginprocess(func):
     def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
@@ -637,8 +629,6 @@ def pluginprocess(func):
         dataerreur['sessionid'] = sessionid
         try:
             response = func( objetxmpp, action, sessionid, data, message, dataerreur, result)
-            #encode  result['data'] si besoin
-            #print result
             if result['base64'] == True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s"%result
