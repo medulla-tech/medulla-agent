@@ -122,7 +122,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler ( 'changed_status', self.changed_status)
-        #generateRSAclefagent()
         self.RSA = MsgsignedRSA(self.config.agenttype)
 
     def changed_status(self,mmm):
@@ -138,8 +137,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        #self.loginformation("agent %s ready"%self.config.jidagent)
-        #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
         self.logtopulse("Start Agent", who =  self.boundjid.bare) 
 
@@ -188,8 +185,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def reloadsesssion(self):
         #recupere les sessions existantes
         self.session.loadsessions()
-        #if  not self.config.agenttype in ['relayserver']:
-            #executer seulement par machine
         for i in self.session.sessiondata:
             logging.log(DEBUGPULSE,"REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT")
             msg={
@@ -217,7 +212,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
 
     def handlereprise_evenement(self):
-        #self.eventTEVENT = [i for i in self.eventTEVENT if self.session.isexist(i['sessionid'])]
         #appelle plugins en local sur un evenement
         self.eventmanage.manage_event_loop()
 
@@ -245,11 +239,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
 
-    #def loginformation(self,msgdata):
-        #self.send_message( mbody = msgdata,
-                           #mto = self.config.jidchatroomlog,
-                           #mtype ='groupchat')
-
     def register(self, iq):
         """ This function is called for automatic registation """
         resp = self.Iq()
@@ -269,9 +258,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def filtre_message(self, msg):
         pass
-
-    #def ischatroomdeploy(self, jidmessage ):
-        #return jidmessage in self.nicklistchatroomcommand
 
     def message(self, msg):
         possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
@@ -315,9 +301,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
             return
         try :
-            #if dataobj['action'] == "resultmsginfoerror":
-                #logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
-                #return
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
