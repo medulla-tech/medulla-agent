@@ -125,9 +125,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler ( 'changed_status', self.changed_status)
         self.RSA = MsgsignedRSA(self.config.agenttype)
 
-    def changed_status(self,mmm):
-        print "%s %s"%(mmm['from'],mmm['type'])
-        if mmm['from'].user == 'master' and mmm['type'] == 'available':
+    def changed_status(self,message):
+        print "%s %s"%(message['from'],message['type'])
+        if message['from'].user == 'master' and message['type'] == 'available':
             self.update_plugin()
 
     def start(self, event):
