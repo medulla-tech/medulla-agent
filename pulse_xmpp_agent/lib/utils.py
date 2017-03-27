@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2017 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -22,9 +22,12 @@
 
 import netifaces
 import json
-import subprocess, shlex, threading
+import subprocess
+import shlex
+import threading
 from threading import Timer
-import sys, os
+import sys
+import os
 import logging
 import random
 import re
@@ -33,7 +36,8 @@ from pprint import pprint
 import hashlib
 import base64
 from configuration import  confParameter
-import urllib, urllib2
+import urllib
+import urllib2
 
 DEBUGPULSE=25
 
@@ -49,8 +53,10 @@ if sys.platform.startswith('win'):
 
 def Setdirectorytempinfo():
     """
-    function Setdirectorytempinfo
-    : return path directory INFO Temporaly and key RSA
+    This function check is 'dirtempinfo' exists.
+    If not it creates it.
+
+    :return: path directory INFO Temporaly and key RSA
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     print dirtempinfo
@@ -232,6 +238,11 @@ def isWinUserAdmin():
 
 #mac OS
 def isMacOsUserAdmin():
+    """
+    This function checks if the user is an Admin or a simple user
+
+    :returns: bool -- True if the user user is root. False otherwise
+    """
     obj=simplecommand("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
     if int(obj['code']) == 0:
         return True
@@ -398,32 +409,30 @@ def is_valid_ipv6(ip):
     """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
     return pattern.match(ip) is not None
 
-
-
-#linux systemd ou init
 def typelinux():
+    """
+    This function check if the linux system uses systemd or initv
+
+    :return: the init system of the linux system
+    """
     p = subprocess.Popen('cat /proc/1/comm',
                             shell=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    code_result= p.wait()
-    system=result[0].rstrip('\n')
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
+    code_result = p.wait()
+    system = result[0].rstrip('\n')
     return system
 
 def isprogramme(name):
-    obj={}
+    obj = {}
     p = subprocess.Popen("which %s"%(name),
                             shell=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    obj['code']=p.wait()
-    obj['result']=result
-    #print obj['code']
-    #print obj['result']
-    #print obj
+    obj['code'] = p.wait()
+    obj['result'] = result
     if obj['result'] != "":
         return True
     else:
@@ -463,14 +472,12 @@ class shellcommandtimeout(object):
 
     def run(self):
         def target():
-            #print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'], 
                                             shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
             self.process.communicate()
-            #print 'Thread finished'
         thread = threading.Thread(target=target)
         thread.start()
 
@@ -478,12 +485,9 @@ class shellcommandtimeout(object):
         if thread.is_alive():
             print 'Terminating process'
             print "timeout %s"%self.obj['timeout']
-            #self.codereturn = -255
-            #self.result = "error tineour"
             self.process.terminate()
             thread.join()
 
-        #self.result = self.process.stdout.readlines()
         self.obj['codereturn'] = self.process.returncode
 
         if self.obj['codereturn']==-15:
@@ -599,6 +603,7 @@ def windowsservice(name, action):
 def methodservice():
     import pythoncom
     import wmi
+
     pythoncom.CoInitialize ()
     try:
         c = wmi.WMI ()
@@ -618,15 +623,6 @@ def file_put_content(filename, contents,mode="w"):
     fh.write(contents)
     fh.close()
 
-##windows
-#def listusergroup():
-    #import wmi
-    #c = wmi.WMI()
-    #for group in c.Win32_Group():
-    #print group.Caption
-    #for user in group.associators("Win32_GroupUser"):
-        #print "  ", user.Caption
-
 #decorateur pour simplifier les plugins
 def pluginprocess(func):
     def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
@@ -642,8 +638,6 @@ def pluginprocess(func):
         dataerreur['sessionid'] = sessionid
         try:
             response = func( objetxmpp, action, sessionid, data, message, dataerreur, result)
-            #encode  result['data'] si besoin
-            #print result
             if result['base64'] == True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s"%result
@@ -809,6 +803,7 @@ def searchippublic(site = 1):
             ip = page.split("IP : ")[1].split("<br>")[0]
             return ip
     except:
+        # FIXME: Shouldn't it be the local ip ?
         return "192.168.56.2"
 
 

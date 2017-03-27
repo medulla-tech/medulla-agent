@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2017 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -20,10 +20,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys,os
+import sys
+import os
 import logging
 import ConfigParser
-import sleekxmpp
+import platform
 import platform
 import netifaces
 import random
@@ -40,7 +41,7 @@ from lib.configuration import  confParameter
 from lib.managesession import sessiondatainfo, session
 from lib.utils import *
 from lib.manage_event import manage_event
-from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
+from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
 import pluginsmachine
 import pluginsrelay
@@ -69,33 +70,28 @@ else:
 
 
 class MUCBot(sleekxmpp.ClientXMPP):
-    def __init__(self,conf):#jid, password, room, nick):
-        logging.log(DEBUGPULSE,"start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
-        logger.info("start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
+    def __init__(self, conf):#jid, password, room, nick):
+        logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
+        logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
-        # reload plugins list all 15 minutes
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
         self.config = conf
 
-        self.nicklistchatroomcommand={}
+        self.nicklistchatroomcommand = {}
 
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
-        self.agentsiveo    = jid.JID(self.config.jidagentsiveo)
+        self.agentsiveo = jid.JID(self.config.jidagentsiveo)
         self.agentmaster = jid.JID("master@pulse")
         self.session = session(self.config.agenttype)
 
         self.signalinfo = {}
-        #self.eventTEVENT = []
-        # les queues. Ces objets sont comme des listes partageables entrent
-        # les process command utilise cette queue pour signaler un evenement a magager event.
         self.queue_read_event_from_command = Queue()
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
-        self.process_on_end_send_message_xmpp= process_on_end_send_message_xmpp(self.queue_read_event_from_command)
-        #self.nicknameagentrelayserverrefdeploy = 'deploy' #nickname used in chatroom deploy for relay server
+        self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
         try:
             self.ippublic = searchippublic()
         except:
@@ -103,101 +99,93 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
         self.md5reseau = refreshfingerprint()
-        # update every hour
-        self.schedule('update plugin', laps_time_update_plugin , self.update_plugin, repeat=True)
-        self.schedule('check network', laps_time_networkMonitor , self.networkMonitor, repeat=True)
-        self.schedule('manage session', laps_time_handlemanagesession , self.handlemanagesession, repeat=True)
-        self.schedule('manage session', self.config.inventory_interval , self.handleinventory, repeat=True)
+        self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
+        self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+        self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
+        self.schedule('manage session', self.config.inventory_interval, self.handleinventory, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
-            #executer seulement par machine
-            self.schedule('session reload', 15 , self.reloadsesssion, repeat=False)
+            self.schedule('session reload', 15, self.reloadsesssion, repeat=False)
 
-        self.schedule('reprise_evenement', 10 , self.handlereprise_evenement, repeat=True)
+        self.schedule('reprise_evenement', 10, self.handlereprise_evenement, repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        #fonction appele pour tous message
-        self.add_event_handler('message', self.message, threaded=True )
-        #fonction appeller pour event
+        self.add_event_handler('message', self.message, threaded=True)
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
-        self.add_event_handler ( 'changed_status', self.changed_status)
-        #generateRSAclefagent()
+        self.add_event_handler('changed_status', self.changed_status)
         self.RSA = MsgsignedRSA(self.config.agenttype)
 
-    def changed_status(self, msg):
-        print "%s %s"%(msg['from'], msg['type'])
-        if msg['from'].user == 'master' and msg['type'] == 'available':
+
+    def changed_status(self, message):
+        print "%s %s"%(message['from'], message['type'])
+        if message['from'].user == 'master' and message['type'] == 'available':
             self.update_plugin()
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        logging.log(DEBUGPULSE,"subscribe xmppmaster")
-        self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+        logging.log(DEBUGPULSE, "subscribe xmppmaster")
+        self.send_presence(pto=self.agentmaster, ptype='subscribe')
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        #self.loginformation("agent %s ready"%self.config.jidagent)
-        #self.update_plugin()
-        logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
-        self.logtopulse("Start Agent", who =  self.boundjid.bare) 
+        logging.log(DEBUGPULSE, "Roster agent \n%s"%self.client_roster)
+        self.logtopulse("Start Agent", who=self.boundjid.bare)
 
-    def logtopulse(self,text,type='noset',sessionname = '',priority = 0, who =""):
+    def logtopulse(self, text, type='noset', sessionname='', priority=0, who=""):
         if who == "":
             who = self.boundjid.bare
         msgbody = {
-                    'text' : text,
-                    'type':type,
-                    'session':sessionname,
-                    'priority':priority,
-                    'who':who
-                    }
+            'text' : text,
+            'type':type,
+            'session':sessionname,
+            'priority':priority,
+            'who':who
+            }
         self.send_message(mto=jid.JID("log@pulse"),
-                                mbody=json.dumps(msgbody),
-                                mtype='chat')
+                          mbody=json.dumps(msgbody),
+                          mtype='chat')
 
     def handleinventory(self):
-        msg={ 'from' : "master@pulse/MASTER",
-              'to': self.boundjid.bare
-            }
+        msg = {
+            'from' : "master@pulse/MASTER",
+            'to': self.boundjid.bare}
         sessionid = getRandomName(6, "inventory")
         dataerreur = {}
-        dataerreur['action']= "resultinventory"
-        dataerreur['data']={}
+        dataerreur['action'] = "resultinventory"
+        dataerreur['data'] = {}
         dataerreur['data']['msg'] = "ERROR : inventory"
         dataerreur['sessionid'] = sessionid
         dataerreur['ret'] = 255
         dataerreur['base64'] = False
         call_plugin("inventory",
-                    self,
-                    "inventory",
-                    getRandomName(6, "inventory"),
-                    {},
-                    msg,
-                    dataerreur)
+            self,
+            "inventory",
+            getRandomName(6, "inventory"),
+            {},
+            msg,
+            dataerreur)
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
-        dataobj=self.seachInfoMachine()
-        logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%(self.agentmaster, json.dumps(dataobj, indent=4, sort_keys=True)))
-        self.send_message(mto = self.agentmaster,
-                            mbody = json.dumps(dataobj),
-                            mtype = 'chat')
+        dataobj = self.seachInfoMachine()
+        logging.log(DEBUGPULSE, "SEND REGISTRATION XMPP to %s \n%s"%(self.agentmaster, json.dumps(dataobj, indent=4, sort_keys=True)))
+        self.send_message(mto=self.agentmaster,
+                            mbody=json.dumps(dataobj),
+                            mtype='chat')
 
     def reloadsesssion(self):
         #recupere les sessions existantes
         self.session.loadsessions()
-        #if  not self.config.agenttype in ['relayserver']:
-            #executer seulement par machine
         for i in self.session.sessiondata:
-            logging.log(DEBUGPULSE,"REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT")
-            msg={
+            logging.log(DEBUGPULSE, "REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT")
+            msg = {
                 'from' : self.boundjid.bare,
                 'to': self.boundjid.bare
                 }
 
-            call_plugin( i.datasession['action'],
+            call_plugin(i.datasession['action'],
                         self,
                         i.datasession['action'],
                         i.datasession['sessionid'],
@@ -208,20 +196,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def loginfotomaster(self, msgdata):
         # ne sont traite par master seulement action loginfos
         try:
-            self.send_message(  mbody = json.dumps(msgdata),
-                                mto = '%s/MASTER'%self.agentmaster,
-                                mtype ='chat')
+            self.send_message(mbody=json.dumps(msgdata),
+                              mto='%s/MASTER'%self.agentmaster,
+                              mtype='chat')
         except Exception as e:
-            logging.error("message log to '%s/MASTER' : %s " %  ( self.agentmaster,str(e)))
+            logging.error("message log to '%s/MASTER' : %s " % (self.agentmaster, str(e)))
             traceback.print_exc(file=sys.stdout)
             return
 
     def handlereprise_evenement(self):
-        #self.eventTEVENT = [i for i in self.eventTEVENT if self.session.isexist(i['sessionid'])]
         #appelle plugins en local sur un evenement
         self.eventmanage.manage_event_loop()
 
-    def signalsessioneventrestart(self,result):
+    def signalsessioneventrestart(self, result):
         pass
 
     def handlemanagesession(self):
@@ -229,11 +216,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def networkMonitor(self):
         try:
-            logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
+            logging.log(DEBUGPULSE, "network monitor time 180s %s!" % self.boundjid.user)
             md5ctl = createfingerprintnetwork()
             if self.md5reseau != md5ctl:
                 refreshfingerprint()
-                logging.log(DEBUGPULSE,"network changed for %s!\n RESTART AGENT" % self.boundjid.user)
+                logging.log(DEBUGPULSE, "network changed for %s!\n RESTART AGENT" % self.boundjid.user)
                 self.restartBot()
         except Exception as e:
             logging.error(" %s " %(str(e)))
@@ -242,13 +229,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def restartBot(self):
         global restart
         restart = True
-        logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
+        logging.log(DEBUGPULSE, "restart xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
-
-    #def loginformation(self,msgdata):
-        #self.send_message( mbody = msgdata,
-                           #mto = self.config.jidchatroomlog,
-                           #mtype ='groupchat')
 
     def register(self, iq):
         """ This function is called for automatic registation """
@@ -270,21 +252,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def filtre_message(self, msg):
         pass
 
-    #def ischatroomdeploy(self, jidmessage ):
-        #return jidmessage in self.nicklistchatroomcommand
-
     def message(self, msg):
-        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
+        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log', self.jidchatroomcommand.user]
         if not msg['type'] == "chat":
             return
-        try :
+        try:
             dataobj = json.loads(msg['body'])
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur['data']['msg'] = "ERROR : Message structure"
-            self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
+            self.send_message(mto=msg['from'],
+                              mbody=json.dumps(dataerreur),
+                              mtype='chat')
             traceback.print_exc(file=sys.stdout)
 
         if not msg['from'].user in possibleclient:
@@ -294,7 +273,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     logging.warning("filtre message from %s " % (msg['from'].bare))
                     return
 
-        dataerreur={
+        dataerreur = {
                     "action": "resultmsginfoerror",
                     "sessionid" : "",
                     "ret" : 255,
@@ -308,28 +287,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if dataobj['action'] == "installkeymaster":
             # note install publickeymaster
-            self.masterpublickey = installpublickey("master", dataobj['keypublicbase64'] )
+            self.masterpublickey = installpublickey("master", dataobj['keypublicbase64'])
             return
 
-        if dataobj['action'] ==  "resultmsginfoerror":
-            logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
+        if dataobj['action'] == "resultmsginfoerror":
+            logging.warning("message from %s for action %s" % (msg['from'].bare, dataobj['action']))
             return
-        try :
-            #if dataobj['action'] == "resultmsginfoerror":
-                #logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
-                #return
+        try:
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
-                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
-                    (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
-                        #data in base 64
-                        mydata = json.loads(base64.b64decode(dataobj['data']))
+                    ((isinstance(dataobj['base64'], bool) and dataobj['base64'] == True) or
+                    (isinstance(dataobj['base64'], str) and dataobj['base64'].lower() == 'true')):
+                    #data in base 64
+                    mydata = json.loads(base64.b64decode(dataobj['data']))
                 else:
                     mydata = dataobj['data']
 
                 if not dataobj.has_key('sessionid'):
                     dataobj['sessionid']= getRandomName(6, "xmpp")
-                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],dataobj['sessionid']))
+                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'], dataobj['sessionid']))
 
                 del dataobj['data']
                 # traitement TEVENT
@@ -350,7 +326,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     return
                 try:
                     msg['body'] = dataobj
-                    logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
+                    logging.info("call plugin %s from %s" % (dataobj['action'], msg['from'].user))
                     call_plugin(dataobj['action'],
                                 self,
                                 dataobj['action'],
@@ -358,46 +334,46 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mydata,
                                 msg,
                                 dataerreur
-                                )
+                               )
                 except TypeError:
                     if dataobj['action'] != "resultmsginfoerror":
                         dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
                         dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='chat')
-                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
+                        self.send_message(mto=msg['from'],
+                                          mbody=json.dumps(dataerreur),
+                                          mtype='chat')
+                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'], sys.exc_info()[0]))
                     traceback.print_exc(file=sys.stdout)
 
                 except Exception as e:
-                    logging.error("execution plugin [%s]  : %s " % (dataobj['action'],str(e)))
+                    logging.error("execution plugin [%s]  : %s " % (dataobj['action'], str(e)))
                     if dataobj['action'].startswith('result'):
                         return
                     if dataobj['action'] != "resultmsginfoerror":
-                        dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
+                        dataerreur['data']['msg'] = "ERROR : plugin execution %s" % dataobj['action']
                         dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='chat')
+                        self.send_message(mto=msg['from'],
+                                          mbody=json.dumps(dataerreur),
+                                          mtype='chat')
                     traceback.print_exc(file=sys.stdout)
             else:
                 dataerreur['data']['msg'] = "ERROR : Action ignored"
-                self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
+                self.send_message(mto=msg['from'],
+                                  mbody=json.dumps(dataerreur),
+                                  mtype='chat')
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur['data']['msg'] = "ERROR : Message structure"
-            self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
+            self.send_message(mto=msg['from'],
+                              mbody=json.dumps(dataerreur),
+                              mtype='chat')
             traceback.print_exc(file=sys.stdout)
 
     def seachInfoMachine(self):
         er = networkagentinfo("master", "infomachine")
         er.messagejson['info'] = self.config.information
         #send key public agent
-        er.messagejson['publickey'] =  self.RSA.loadkeypublictobase64()
+        er.messagejson['publickey'] = self.RSA.loadkeypublictobase64()
         #send if master public key public is missing
         er.messagejson['is_masterpublickey'] = self.RSA.isPublicKey("master")
         for t in er.messagejson['listipinfo']:
@@ -405,7 +381,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppmask = t['mask']
                 try:
                     xmppbroadcast = t['broadcast']
-                except :
+                except:
                     xmppbroadcast = ""
                 xmppdhcp = t['dhcp']
                 xmppdhcpserver = t['dhcpserver']
@@ -413,17 +389,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppmacaddress = t['macaddress']
                 xmppmacnotshortened = t['macnotshortened']
                 ipconnection = self.config.Server
-                portconnection =self.config.Port
-                break;
+                portconnection = self.config.Port
+                break
 
-        subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
+        subnetreseauxmpp = subnetnetwork(self.config.ipxmpp, xmppmask)
 
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
             'compress' : False,
             'deployment' : self.config.jidchatroomcommand,
-            'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
+            'who'    : "%s/%s"%(self.config.jidchatroomcommand, self.config.NickName),
             'machine': self.config.NickName,
             'platform' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
@@ -469,7 +445,9 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
-            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
+            p = multiprocessing.Process(name='xmppagent', 
+                    target=doTask, 
+                    args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
             p.daemon = True
             p.start()
             p.join()
@@ -486,30 +464,19 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
         os._exit(1)
 
 
-def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     global restart
 
-    if platform.system()=='Windows':
+    if platform.system() == 'Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
     else:
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
 
-    if not optsdeamon :
-        if optsconsoledebug :
-            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-        else:
-            stdout_logger = logging.getLogger('STDOUT')
-            sl = StreamToLogger(stdout_logger, tglevellog)
-            sys.stdout = sl
-            stderr_logger = logging.getLogger('STDERR')
-            sl = StreamToLogger(stderr_logger, tglevellog)
-            sys.stderr = sl
-            logging.basicConfig(level = tglevellog,
-                        format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                        filename = tglogfile,
-                        filemode = 'a')
+    if not optsdeamon and optsconsoledebug:
+            logging.basicConfig(level = logging.DEBUG, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, tglevellog)
@@ -517,10 +484,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         stderr_logger = logging.getLogger('STDERR')
         sl = StreamToLogger(stderr_logger, tglevellog)
         sys.stderr = sl
-        logging.basicConfig(level = tglevellog,
-                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                    filename = tglogfile,
-                    filemode = 'a')
+        logging.basicConfig(level=tglevellog,
+                    format='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+                    filename=tglogfile,
+                    filemode='a')
 
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
