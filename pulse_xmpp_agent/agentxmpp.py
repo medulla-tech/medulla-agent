@@ -482,7 +482,7 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
             logging.basicConfig(level = logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
         else:
-            # FIXME: Add in its own function
+            #fixme: Add in its own function
             stdout_logger = logging.getLogger('STDOUT')
             sl = StreamToLogger(stdout_logger, tglevellog)
             sys.stdout = sl
