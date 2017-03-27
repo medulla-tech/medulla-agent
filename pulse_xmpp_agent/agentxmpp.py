@@ -99,22 +99,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
         self.md5reseau = refreshfingerprint()
-        # update every hour
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
         self.schedule('manage session', self.config.inventory_interval, self.handleinventory, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
-            #executer seulement par machine
             self.schedule('session reload', 15, self.reloadsesssion, repeat=False)
 
         self.schedule('reprise_evenement', 10, self.handlereprise_evenement, repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-        #fonction appele pour tous message
         self.add_event_handler('message', self.message, threaded=True)
-        #fonction appeller pour event
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
