@@ -333,7 +333,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mydata,
                                 msg,
                                 dataerreur
-                                )
+                               )
                 except TypeError:
                     if dataobj['action'] != "resultmsginfoerror":
                         dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
