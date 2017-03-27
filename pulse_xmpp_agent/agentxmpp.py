@@ -25,7 +25,7 @@ import os
 import logging
 import ConfigParser
 import platform
-import platform
+import sleekxmpp
 import netifaces
 import random
 import base64
