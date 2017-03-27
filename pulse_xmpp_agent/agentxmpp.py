@@ -136,20 +136,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if who == "":
             who = self.boundjid.bare
         msgbody = {
-                    'text' : text,
-                    'type':type,
-                    'session':sessionname,
-                    'priority':priority,
-                    'who':who
-                    }
+            'text' : text,
+            'type':type,
+            'session':sessionname,
+            'priority':priority,
+            'who':who
+            }
         self.send_message(mto=jid.JID("log@pulse"),
-                                mbody=json.dumps(msgbody),
-                                mtype='chat')
+                          mbody=json.dumps(msgbody),
+                          mtype='chat')
 
     def handleinventory(self):
-        msg = { 'from' : "master@pulse/MASTER",
-              'to': self.boundjid.bare
-            }
+        msg = {
+            'from' : "master@pulse/MASTER",
+            'to': self.boundjid.bare}
         sessionid = getRandomName(6, "inventory")
         dataerreur = {}
         dataerreur['action'] = "resultinventory"
@@ -159,12 +159,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataerreur['ret'] = 255
         dataerreur['base64'] = False
         call_plugin("inventory",
-                    self,
-                    "inventory",
-                    getRandomName(6, "inventory"),
-                    {},
-                    msg,
-                    dataerreur)
+            self,
+            "inventory",
+            getRandomName(6, "inventory"),
+            {},
+            msg,
+            dataerreur)
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
