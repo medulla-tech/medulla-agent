@@ -20,11 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys
-import os
+import sys,os
 import logging
 import ConfigParser
-import platform
+import sleekxmpp
 import platform
 import netifaces
 import random
@@ -41,7 +40,7 @@ from lib.configuration import  confParameter
 from lib.managesession import sessiondatainfo, session
 from lib.utils import *
 from lib.manage_event import manage_event
-from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
+from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
 import pluginsmachine
 import pluginsrelay
@@ -56,7 +55,6 @@ import threading
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
-
 
 logger = logging.getLogger()
 global restart
@@ -115,6 +113,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
         self.RSA = MsgsignedRSA(self.config.agenttype)
+
 
     def changed_status(self, message):
         print "%s %s"%(message['from'], message['type'])
@@ -252,7 +251,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def message(self, msg):
-        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user, 'log', self.jidchatroomcommand.user]
+        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
         if not msg['type'] == "chat":
             return
         try:
@@ -260,10 +259,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur['data']['msg'] = "ERROR : Message structure"
-            self.send_message(mto=msg['from'],
-                              mbody=json.dumps(dataerreur),
-                              mtype='chat')
+            self.send_message(  mto=msg['from'],
+                                        mbody=json.dumps(dataerreur),
+                                        mtype='chat')
             traceback.print_exc(file=sys.stdout)
+            return
 
         if not msg['from'].user in possibleclient:
             if not('sessionid' in  dataobj and self.session.isexist(dataobj['sessionid'])):
@@ -272,7 +272,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     logging.warning("filtre message from %s " % (msg['from'].bare))
                     return
 
-        dataerreur = {
+        dataerreur={
                     "action": "resultmsginfoerror",
                     "sessionid" : "",
                     "ret" : 255,
@@ -284,27 +284,54 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.error("warning message action missing %s"%(msg))
             return
 
-        if dataobj['action'] == "installkeymaster":
-            # note install publickeymaster
-            self.masterpublickey = installpublickey("master", dataobj['keypublicbase64'])
+        if dataobj['action'] == "restarfrommaster":
+            if sys.platform.startswith('linux'):
+                logging.debug("actionrestartmachine  shutdown machine linux")
+                os.system("shutdown -r now")
+            elif sys.platform.startswith('win'):
+                logging.debug("actionrestartmachine  shutdown machine windows")
+                os.system("shutdown /r")
+            elif sys.platform.startswith('darwin'):
+                logging.debug("actionrestartmachine  shutdown machine MacOS")
+                os.system("shutdown -r now")
             return
 
-        if dataobj['action'] == "resultmsginfoerror":
-            logging.warning("message from %s for action %s" % (msg['from'].bare, dataobj['action']))
+        if dataobj['action'] == "shutdownfrommaster":
+            if sys.platform.startswith('linux'):
+                logging.debug("shutdown -P -f -t 3  \"restart from administrator\"")
+                os.system("shutdown -P -f -t 3  \"restart from administrator\"")
+            elif sys.platform.startswith('win'):
+                logging.debug("shutdown -s -t 1 -f \"stop from administrator in 60 secondes\"")
+                os.system("shutdown -s -t 1 -f \"stop from administrator in 60 secondes\"")
+            elif sys.platform.startswith('darwin'):
+                logging.debug("actionrestartmachine  shutdown machine MacOS")
+                os.system("shutdown -s now \"restart from administrator\"")
             return
-        try:
+
+        if dataobj['action'] == "installkeymaster":
+            # note install publickeymaster
+            self.masterpublickey = installpublickey("master", dataobj['keypublicbase64'] )
+            return
+
+        if dataobj['action'] ==  "resultmsginfoerror":
+            logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
+            return
+        try :
+            #if dataobj['action'] == "resultmsginfoerror":
+                #logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
+                #return
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
-                    ((isinstance(dataobj['base64'], bool) and dataobj['base64'] == True) or
-                    (isinstance(dataobj['base64'], str) and dataobj['base64'].lower() == 'true')):
-                    #data in base 64
-                    mydata = json.loads(base64.b64decode(dataobj['data']))
+                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
+                    (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
+                        #data in base 64
+                        mydata = json.loads(base64.b64decode(dataobj['data']))
                 else:
                     mydata = dataobj['data']
 
                 if not dataobj.has_key('sessionid'):
                     dataobj['sessionid']= getRandomName(6, "xmpp")
-                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'], dataobj['sessionid']))
+                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],dataobj['sessionid']))
 
                 del dataobj['data']
                 # traitement TEVENT
@@ -325,7 +352,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     return
                 try:
                     msg['body'] = dataobj
-                    logging.info("call plugin %s from %s" % (dataobj['action'], msg['from'].user))
+                    logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
                     call_plugin(dataobj['action'],
                                 self,
                                 dataobj['action'],
@@ -333,39 +360,39 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mydata,
                                 msg,
                                 dataerreur
-                               )
+                                )
                 except TypeError:
                     if dataobj['action'] != "resultmsginfoerror":
                         dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
                         dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(mto=msg['from'],
-                                          mbody=json.dumps(dataerreur),
-                                          mtype='chat')
-                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'], sys.exc_info()[0]))
+                        self.send_message(  mto=msg['from'],
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
+                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
                     traceback.print_exc(file=sys.stdout)
 
                 except Exception as e:
-                    logging.error("execution plugin [%s]  : %s " % (dataobj['action'], str(e)))
+                    logging.error("execution plugin [%s]  : %s " % (dataobj['action'],str(e)))
                     if dataobj['action'].startswith('result'):
                         return
                     if dataobj['action'] != "resultmsginfoerror":
-                        dataerreur['data']['msg'] = "ERROR : plugin execution %s" % dataobj['action']
+                        dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
                         dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(mto=msg['from'],
-                                          mbody=json.dumps(dataerreur),
-                                          mtype='chat')
+                        self.send_message(  mto=msg['from'],
+                                            mbody=json.dumps(dataerreur),
+                                            mtype='chat')
                     traceback.print_exc(file=sys.stdout)
             else:
                 dataerreur['data']['msg'] = "ERROR : Action ignored"
-                self.send_message(mto=msg['from'],
-                                  mbody=json.dumps(dataerreur),
-                                  mtype='chat')
+                self.send_message(  mto=msg['from'],
+                                        mbody=json.dumps(dataerreur),
+                                        mtype='chat')
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur['data']['msg'] = "ERROR : Message structure"
-            self.send_message(mto=msg['from'],
-                              mbody=json.dumps(dataerreur),
-                              mtype='chat')
+            self.send_message(  mto=msg['from'],
+                                        mbody=json.dumps(dataerreur),
+                                        mtype='chat')
             traceback.print_exc(file=sys.stdout)
 
     def seachInfoMachine(self):
