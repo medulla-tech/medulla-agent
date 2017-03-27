@@ -477,22 +477,9 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
 
-    if not optsdeamon:
-        if optsconsoledebug:
+    if not optsdeamon and optsconsoledebug:
             logging.basicConfig(level = logging.DEBUG, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
-        else:
-            #fixme: Add in its own function
-            stdout_logger = logging.getLogger('STDOUT')
-            sl = StreamToLogger(stdout_logger, tglevellog)
-            sys.stdout = sl
-            stderr_logger = logging.getLogger('STDERR')
-            sl = StreamToLogger(stderr_logger, tglevellog)
-            sys.stderr = sl
-            logging.basicConfig(level=tglevellog,
-                        format='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                        filename=tglogfile,
-                        filemode='a')
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, tglevellog)
