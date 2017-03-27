@@ -24,7 +24,7 @@ import sys
 import os
 import logging
 import ConfigParser
-import sleekxmpp
+import platform
 import platform
 import netifaces
 import random
@@ -125,7 +125,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.get_roster()
         self.send_presence()
         logging.log(DEBUGPULSE, "subscribe xmppmaster")
-        self.send_presence(pto = self.agentmaster, ptype = 'subscribe')
+        self.send_presence(pto=self.agentmaster, ptype = 'subscribe')
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
