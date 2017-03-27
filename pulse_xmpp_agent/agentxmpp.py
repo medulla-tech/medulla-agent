@@ -125,9 +125,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #generateRSAclefagent()
         self.RSA = MsgsignedRSA(self.config.agenttype)
 
-    def changed_status(self,mmm):
-        print "%s %s"%(mmm['from'],mmm['type'])
-        if mmm['from'].user == 'master' and mmm['type'] == 'available':
+    def changed_status(self, msg):
+        print "%s %s"%(msg['from'], msg['type'])
+        if msg['from'].user == 'master' and msg['type'] == 'available':
             self.update_plugin()
 
     def start(self, event):
