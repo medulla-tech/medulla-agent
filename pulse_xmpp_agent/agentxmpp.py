@@ -252,7 +252,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def message(self, msg):
-        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log', self.jidchatroomcommand.user]
+        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user, 'log', self.jidchatroomcommand.user]
         if not msg['type'] == "chat":
             return
         try:
