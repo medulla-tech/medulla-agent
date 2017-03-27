@@ -20,7 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys,os
+import sys
+import os
 import logging
 import ConfigParser
 import sleekxmpp
@@ -40,7 +41,7 @@ from lib.configuration import  confParameter
 from lib.managesession import sessiondatainfo, session
 from lib.utils import *
 from lib.manage_event import manage_event
-from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
+from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
 import pluginsmachine
 import pluginsrelay
@@ -69,7 +70,7 @@ else:
 
 
 class MUCBot(sleekxmpp.ClientXMPP):
-    def __init__(self,conf):#jid, password, room, nick):
+    def __init__(self, conf):#jid, password, room, nick):
         logging.log(DEBUGPULSE,"start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
         logger.info("start machine1  %s Type %s" %( conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
