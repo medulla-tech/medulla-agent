@@ -804,7 +804,7 @@ def searchippublic(site = 1):
             return ip
     except:
         # FIXME: Shouldn't it be the local ip ?
-        return "192.168.56.2"
+        return None
 
 
 # decorateur pour simplifier les plugins
