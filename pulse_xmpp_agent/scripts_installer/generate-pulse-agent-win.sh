@@ -87,7 +87,7 @@ OPENSSH_VERSION="v0.0.6.0"
 LAUNCHER_SSH_KEY="\/root\/\.ssh\/id_rsa.pub"
 FUSION_INVENTORY_AGENT_NAME="fusioninventory-agent"
 FUSION_INVENTORY_AGENT_VERSION="2.3.18"
-DOWNLOAD_FOLDER="py_downloads"
+DOWNLOAD_FOLDER="downloads"
 PULSE_AGENT_PLUGINS_NAME="pulse-agent-plugins"
 PULSE_AGENT_PLUGINS_VERSION="1.1"
 RSYNC_FILENAME="rsync.zip"
@@ -186,49 +186,6 @@ sed_escape() {
 	echo "$@" |sed -e 's/[\/&\$"]/\\&/g'
 }
 
-download_wget() {
-	local URL=$1
-	local FILENAME=$2
-	if [ ! -d ${DOWNLOAD_FOLDER} ]; then
-		mkdir ${DOWNLOAD_FOLDER}
-	fi
-	if [ -e ${DOWNLOAD_FOLDER}/${FILENAME} ]; then
-		colored_echo green "${FILENAME} already available. Skipping download."
-	else
-		colored_echo blue "Downloading ${FILENAME}..."
-		wget --directory-prefix=${DOWNLOAD_FOLDER} ${URL}
-		if [ ! -e ${DOWNLOAD_FOLDER}/${FILENAME} ]; then
-			colored_echo red "${FILENAME} download failed. Please restart."
-			exit 1
-		fi
-	fi
-}
-
-download_pip() {
-	local PY_MODULE=$1
-	local PY_MODULE_FILENAME=$2
-	if [ ! -d ${DOWNLOAD_FOLDER} ]; then
-		mkdir ${DOWNLOAD_FOLDER}
-	fi
-	if [ -e ${DOWNLOAD_FOLDER}/${PY_MODULE_FILENAME} ]; then
-		colored_echo green "${PY_MODULE_FILENAME} already available. Skipping download."
-	else
-		colored_echo blue "Downloading ${PY_MODULE_FILENAME}..."
-		pip install ${PY_MODULE} --download="${DOWNLOAD_FOLDER}"
-		if [ ! -e ${DOWNLOAD_FOLDER}/${PY_MODULE_FILENAME} ]; then
-			colored_echo red "${PY_MODULE_FILENAME} download failed. Please restart."
-			exit 1
-		fi
-	fi
-}
-
-download_mandatory_includes() {
-	colored_echo blue "### INFO Downloading mandatory includes..."
-	download_wget ${RSYNC_URL} ${RSYNC_FILENAME}
-	download_wget ${LIBCURL_URL} ${LIBCURL_DL_FILENAME}
-	colored_echo green "### INFO Downloading mandatory includes... Done"
-}
-
 prepare_mandatory_includes() {
 	colored_echo blue "### INFO Preparing mandatory includes..."
 	# rsync
@@ -263,41 +220,21 @@ prepare_mandatory_includes() {
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
-download_agent_dependencies() {
-	colored_echo blue "### INFO Downloading python and dependencies..."
-	download_wget ${PYTHON_URL} ${PYTHON_FILENAME}
-	download_wget ${PY_VCPYTHON27_URL} ${PY_VCPYTHON27_FILENAME}
-	download_pip ${PY_NETIFACES_MODULE} ${PY_NETIFACES_FILENAME}
-	download_pip ${PY_COMTYPES_MODULE} ${PY_COMTYPES_FILENAME}
-	download_pip ${PY_CONFIGPARSER_MODULE} ${PY_CONFIGPARSER_FILENAME}
-	download_pip ${PY_UTILS_MODULE} ${PY_UTILS_FILENAME}
-	download_pip ${PY_SLEEKXMPP_MODULE} ${PY_SLEEKXMPP_FILENAME}
-	download_pip ${PY_WMI_MODULE} ${PY_WMI_FILENAME}
-	download_pip ${PY_ZIPFILE_MODULE} ${PY_ZIPFILE_FILENAME}
-	download_wget ${PY_WIN32_URL} ${PY_WIN32_FILENAME}
-	download_wget ${PY_CURL_URL} ${PY_CURL_FILENAME}
-	download_wget ${PY_LXML_URL} ${PY_LXML_FILENAME}
-	download_wget ${PY_CRYPTO_URL} ${PY_CRYPTO_FILENAME}
-	download_wget ${OPENSSH_URL} ${OPENSSH_FILENAME}
-	download_wget ${FUSION_INVENTORY_AGENT_URL} ${FUSION_INVENTORY_AGENT_FILENAME}
-	colored_echo green "### INFO Downloading python and dependencies.. Done"
-}
-
 update_nsi_script_full() {
 	colored_echo blue "### INFO Updating NSIS script..."
 	FULL_PYTHON_FILENAME='File "${DOWNLOADS_DIR}/${PYTHON_FILENAME}"'
 	FULL_PY_VCPYTHON27='File "${DOWNLOADS_DIR}/${PY_VCPYTHON27}"'
-	FULL_PY_WIN32='File "${DOWNLOADS_DIR}/${PY_WIN32}"'
-	FULL_PY_NETIFACES='File "${DOWNLOADS_DIR}/${PY_NETIFACES}"'
-	FULL_PY_COMTYPES='File "${DOWNLOADS_DIR}/${PY_COMTYPES}"'
-	FULL_PY_CONFIGPARSER='File "${DOWNLOADS_DIR}/${PY_CONFIGPARSER}"'
-	FULL_PY_UTILS='File "${DOWNLOADS_DIR}/${PY_UTILS}"'
-	FULL_PY_SLEEKXMPP='File "${DOWNLOADS_DIR}/${PY_SLEEKXMPP}"'
-	FULL_PY_WMI='File "${DOWNLOADS_DIR}/${PY_WMI}"'
-	FULL_PY_ZIPFILE='File "${DOWNLOADS_DIR}/${PY_ZIPFILE}"'
-	FULL_PY_CURL='File "${DOWNLOADS_DIR}/${PY_CURL}"'
-	FULL_PY_LXML='File "${DOWNLOADS_DIR}/${PY_LXML}"'
-	FULL_PY_CRYPTO='File "${DOWNLOADS_DIR}/${PY_CRYPTO}"'
+	FULL_PY_WIN32='File "${DOWNLOADS_DIR}/python_modules/${PY_WIN32}"'
+	FULL_PY_NETIFACES='File "${DOWNLOADS_DIR}/python_modules/${PY_NETIFACES}"'
+	FULL_PY_COMTYPES='File "${DOWNLOADS_DIR}/python_modules/${PY_COMTYPES}"'
+	FULL_PY_CONFIGPARSER='File "${DOWNLOADS_DIR}/python_modules/${PY_CONFIGPARSER}"'
+	FULL_PY_UTILS='File "${DOWNLOADS_DIR}/python_modules/${PY_UTILS}"'
+	FULL_PY_SLEEKXMPP='File "${DOWNLOADS_DIR}/python_modules/${PY_SLEEKXMPP}"'
+	FULL_PY_WMI='File "${DOWNLOADS_DIR}/python_modules/${PY_WMI}"'
+	FULL_PY_ZIPFILE='File "${DOWNLOADS_DIR}/python_modules/${PY_ZIPFILE}"'
+	FULL_PY_CURL='File "${DOWNLOADS_DIR}/python_modules/${PY_CURL}"'
+	FULL_PY_LXML='File "${DOWNLOADS_DIR}/python_modules/${PY_LXML}"'
+	FULL_PY_CRYPTO='File "${DOWNLOADS_DIR}/python_modules/${PY_CRYPTO}"'
 	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -471,12 +408,10 @@ generate_agent_installer() {
 # Run the script
 check_arguments "$@"
 compute_parameters
-download_mandatory_includes
 prepare_mandatory_includes
 if [[ ${MINIMAL} -eq 1 ]]; then
 	update_nsi_script_dl
 else
-	download_agent_dependencies
 	update_nsi_script_full
 fi
 generate_agent_installer
