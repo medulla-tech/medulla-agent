@@ -376,7 +376,7 @@ Section "rsync" sec_rsync
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
   ; Add pulse user to administrators group
-  StrCpy $0 `net localgroup administrators "pulse" /ADD`
+  StrCpy $0 `net localgroup administrators "pulse" /ADD || net localgroup administrateurs "pulse" /ADD`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -441,7 +441,7 @@ Section "RDP Setup" sec_rdp
   ${If} ${IsWinXP}
     StrCpy $0 `netsh firewall set service type = remotedesktop mode = enable`
   ${Else}
-    StrCpy $0 `netsh advfirewall firewall set rule group="remote desktop" new enable=Yes`
+    StrCpy $0 `netsh advfirewall firewall set rule group="remote desktop" new enable=Yes || netsh advfirewall firewall set rule group="Microsoft Remote Desktop" new enable=Yes`
   ${EndIf}
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
