@@ -596,7 +596,7 @@ Section "Uninstall"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
-  RMDir /r C:\Python27\Lib\site-packages\pulse_xmpp_agent\
+  RMDir /r "C:\Python27\Lib\site-packages\pulse_xmpp_agent\"
   Delete $INSTDIR\etc\${PULSE_AGENT_CONFFILE}
   RMDir /r $INSTDIR
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
