@@ -453,7 +453,7 @@ class grafcet:
 
 
     def action_command_natif_shell(self):
-        """ information 
+        """ information
         "@resultcommand or nb@lastlines or nb@firstlines": "", 
         "action": "action_command_natif_shell", 
         "codereturn": "", 
