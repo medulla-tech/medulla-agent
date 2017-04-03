@@ -73,24 +73,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
-        #self.md5reseau = hashlib.md5(obj['result']).hexdigest()
-        # demande mise à jour toutes les heures.
-        #self.schedule('update plugin', 3600 , self.update_plugin, repeat=True)
-        #self.schedule('surveille reseau', 180 , self.networkMonitor, repeat=True)
-
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
 
         self.add_event_handler("muc::%s::presence" % conf.confjidchatroom,
                                self.muc_presenceConf)
-        """ sortie presense dans chatroom Command """
         self.add_event_handler("muc::%s::got_offline" % conf.confjidchatroom,
                                self.muc_offlineConf)
-        """ nouvelle presense dans chatroom Command """
         self.add_event_handler("muc::%s::got_online" % conf.confjidchatroom,
                                self.muc_onlineConf)
 
-        #fonction appeler pour tous message
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
 
