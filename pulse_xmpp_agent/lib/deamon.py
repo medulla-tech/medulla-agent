@@ -61,7 +61,6 @@ class Daemon(object):
         sys.stdout.flush()
         sys.stderr.flush()
 
-        # 
         self.attach_stream('stdin', mode='r')
         self.attach_stream('stdout', mode='a+')
         self.attach_stream('stderr', mode='a+')

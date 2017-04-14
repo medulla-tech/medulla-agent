@@ -29,25 +29,21 @@ import netifaces
 import random
 import base64
 import json
-import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 import hashlib
-import shutil
 import errno
 from lib.networkinfo import networkagentinfo
-from lib.configuration import  confParameter
-from lib.managesession import sessiondatainfo, session
+from lib.configuration import confParameter
+from lib.managesession import session
 from lib.utils import *
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
 import pluginsmachine
-import pluginsrelay
 from optparse import OptionParser
 import time
 import pprint
-from time import mktime
 from datetime import datetime
 from multiprocessing import Process, Queue, TimeoutError
 import threading
