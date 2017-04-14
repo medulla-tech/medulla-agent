@@ -177,10 +177,17 @@ class manage_event:
                                     if int(i['step']) == nb_currentworkingset:
                                         logging.debug('deploy [process command : %s ]\n%s'%( event['eventMessageraw']['sessionid'],json.dumps(i , indent=4, sort_keys=True)))
                                         if 'command' in i:
-                                            self.objectxmpp.logtopulse('[%s]: [process command] errorcode %s for command : %s '%(i['step'],i['codereturn'],i['action']),
-                                            type='deploy',
-                                            sessionname = event['eventMessageraw']['sessionid'] ,
-                                            priority = i['step'] )
+                                            if i['codereturn'] == 0 : 
+                                                color = "green"
+                                            else:
+                                                color = "red"
+                                            self.objectxmpp.logtopulse('[%s]:<span style="color: %s;"> [Process command] errorcode %s for command : %s <span>'%(i['step'],
+                                                                                                                                                        color,
+                                                                                                                                                        i['codereturn'],
+                                                                                                                                                        i['command'][:20]),
+                                                                                                                                                        type='deploy',
+                                                                                                                                                        sessionname = event['eventMessageraw']['sessionid'],
+                                                                                                                                                        priority = i['step'] )
                                         else:
                                             self.objectxmpp.logtopulse('[%s]: %s '%(i['step'], i['action']),
                                             type='deploy',

@@ -23,7 +23,7 @@
 import sys,os,platform
 import os.path
 import json
-from multiprocessing import Process, Queue, TimeoutError
+from multiprocessing import Process, Queue, TimeoutError, Pool
 import threading
 from lib.utils import simplecommandstr
 import traceback
@@ -31,8 +31,16 @@ import logging
 import subprocess
 from threading import Timer
 logger = logging.getLogger()
+import time
+
+
+
+def test():
+    time.sleep(2)
+    print "jhhhhhhhhhhhhjjjjjjjjjjjjjjjjjjjjjjjjjjjkkkkkkkkkkkkkkkkllllllllllllmmmmmmmmmmmmm"
 
 def processcommand(command , queue_out_session, messagestr, timeout):
+    logging.error("########processcommand")
     try:
         message = json.loads(messagestr)
     except:
@@ -87,6 +95,9 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                 break
 
         if len (workingstep) != 0:
+            #logging.debug("dddd###################\n#######################\n#######################\n#################")
+            #logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
+            #logging.debug("dddd###################\n#######################\n#######################\n#################")
             #structure message for msgout
             logging.getLogger().debug("================================================")
             logging.getLogger().debug(" execution command in process")
@@ -130,7 +141,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
             msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
             queue_out_session.put(msgoutsucces)
         else:
-            logging.getLogger().debug("MESSAGE error descriptor")
+            logging.getLogger().debug("######MESSAGE error#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
 
     except TimeoutError:
         logging.getLogger().error("TimeoutError process  %s sessionid : %s"%(command,message['sessionid']))
@@ -150,24 +161,21 @@ class process_on_end_send_message_xmpp:
         self.queue_out_session = queue_out_session
         logging.info('manage process start')
 
-    def add_processcommand(self, command ,message ,tosucces=None, toerror=None, timeout = 50, step = None):
+    def add_processcommand(self, command, message, tosucces=None, toerror=None, timeout = 50, step = None):
         message['data']['tosucces'] = tosucces
         message['data']['toerror']  = toerror
-        try:
-            messagestr=json.dumps(message)
-        except:
-            traceback.print_exc(file=sys.stdout)
-            logging.getLogger().error("error json")
-            sys.exit(0)
-
+        messagestr=json.dumps(message)
 
         if not (step is None or isinstance( step, int )):
             logging.error('Error Descriptor Step in not Integer')
             return False
-
         if tosucces is None and toerror is None:
             logging.error("any agent to process result from queue")
             return False
+ 
+        message['data']['tosucces'] = tosucces
+        message['data']['toerror']  = toerror
+
 
         if step is None:
             createprocesscommand = Process(target=processcommand, args=(command ,
@@ -186,6 +194,125 @@ class process_on_end_send_message_xmpp:
             createprocessstepcommand.start()
             return True
 
+
+    def processstepcommand ( self,  command , queue_out_session, messagestr, timeout, step):
+        print "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+        logging.getLogger().error("########processstepcommand")
+        try:
+            message = json.loads(messagestr)
+        except:
+            traceback.print_exc(file=sys.stdout)
+            logging.getLogger().error("error json")
+            sys.exit(0)
+
+        try:
+            workingstep = {}
+            #logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'], indent=4, sort_keys=True))
+            sequence = message['data']['descriptor']['sequence']
+            for i in sequence:
+                if i['step'] == step:
+                    workingstep = i
+                    break
+
+            if len (workingstep) != 0:
+                #logging.debug("dddd###################\n#######################\n#######################\n#################")
+                #logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
+                #logging.debug("dddd###################\n#######################\n#######################\n#################")
+                #structure message for msgout
+                logging.getLogger().debug("================================================")
+                logging.getLogger().debug(" execution command in process")
+                logging.getLogger().debug("command : \n%s"%command)
+                logging.getLogger().debug("================================================")
+                cmd = cmdx(command, timeout)
+                workingstep['codereturn'] = cmd.code_error
+                workingstep['completed'] = 1
+                result = cmd.stdout.split('\n')
+                result  = [x.strip() for x in result if x !='']
+
+                print result
+                for t in workingstep:
+                    if t == "@resultcommand":
+                        workingstep[t] = os.linesep.join(result)
+                    elif t.endswith('lastlines'):
+                        nb = t.split("@")
+                        nb1 = -int(nb[0])
+                        logging.getLogger().debug( "=======lastlines============%s========"%nb1)
+                        tab = result[nb1:]
+                        workingstep[t] = os.linesep.join(tab)
+                    elif t.endswith('firstlines'):
+                        nb = t.split("@")
+                        nb1 = int(nb[0])
+                        logging.getLogger().debug( "=======firstlines============%s======="%nb1)
+                        tab = result[:nb1]
+                        workingstep[t] = os.linesep.join(tab)
+                if 'goto' in workingstep:
+                    message['data']['stepcurrent'] = workingstep['goto']
+                elif 'succes' in workingstep and  workingstep['codereturn'] == 0:
+                    message['data']['stepcurrent'] = workingstep['succes']
+                elif 'error' in workingstep and  workingstep['codereturn'] != 0:
+                    message['data']['stepcurrent'] = workingstep['error']
+                else :
+                    message['data']['stepcurrent'] = message['data']['stepcurrent'] + 1
+
+                logging.getLogger().debug("Next Step : %s"%message['data']['stepcurrent'])
+                msgoutsucces = {
+                            'eventMessageraw': message
+                }
+
+                msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+                queue_out_session.put(msgoutsucces)
+            else:
+                logging.getLogger().debug("######MESSAGE error#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
+
+        except TimeoutError:
+            logging.getLogger().error("TimeoutError process  %s sessionid : %s"%(command,message['sessionid']))
+        except KeyboardInterrupt:
+            logging.getLogger().warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
+        except :
+            traceback.print_exc(file=sys.stdout)
+            logging.getLogger().error("error execution process %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
+
+    def terminateprocess(self,p):
+        p.terminate()
+
+    def processcommand( self,  command , queue_out_session, messagestr, timeout):
+        logging.error("########processcommand")
+        try:
+            message = json.loads(messagestr)
+        except:
+            traceback.print_exc(file=sys.stdout)
+            logging.getLogger().error("error json")
+            sys.exit(0)
+        try:
+            #structure message for msgout
+            msgoutsucces = {
+                        'eventMessageraw': message
+            }
+            logging.debug("================================================")
+            logging.debug(" execution command in process")
+            logging.debug("command : \n%s"%command)
+            logging.debug("================================================")
+            cmd = cmdx(command,timeout)
+            msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+            msgoutsucces['eventMessageraw']['data']['result'] = cmd.stdout
+            logging.debug("code error  %s"% cmd.code_error)
+            logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
+            queue_out_session.put(msgoutsucces)
+            #logging.debug("code error  %s"% cmd.code_error)
+            #logging.debug("result  %s"% cmd.stdout) 
+            logging.debug("================================================")
+
+        except TimeoutError:
+            logging.error("TimeoutError process  %s sessionid : %s"%(command,message['sessionid']))
+        except KeyboardInterrupt:
+            logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
+        except :
+            traceback.print_exc(file=sys.stdout)
+            logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
+            sys.exit(0)
 
 
  
@@ -209,8 +336,7 @@ class mannageprocess:
         self.processtable.append(createprocesscommand)
         createprocesscommand.start()
 
-    def processcommand( self,  command , queue_out_session, sessionid,
-                        eventstart, eventfinish, eventerror, timeout, keysdescriptor):
+    def processcommand( self,  command , queue_out_session, sessionid, eventstart, eventfinish, eventerror, timeout, keysdescriptor):
         #il y a 2 types de messages event ceux de la boucle interne et ceux envoyé en TEVENT
         try:
             #structure message for msgout
@@ -240,7 +366,7 @@ class mannageprocess:
             print cmd.code_error
             print cmd.stdout
             print "================================================"
-            
+
             if ev != False:
                 if '_eventype' in ev and '_eventype' == 'TEVENT':
                     #ecrit dans queue_out_session le TEVENT

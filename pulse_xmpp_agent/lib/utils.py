@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
 #
-# (c) 2016-2017 siveo, http://www.siveo.net
+# (c) 2016 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -22,12 +22,9 @@
 
 import netifaces
 import json
-import subprocess
-import shlex
-import threading
+import subprocess, shlex, threading
 from threading import Timer
-import sys
-import os
+import sys, os
 import logging
 import random
 import re
@@ -36,9 +33,8 @@ from pprint import pprint
 import hashlib
 import base64
 from configuration import  confParameter
-import urllib
-import urllib2
-
+import urllib, urllib2
+import pickle
 DEBUGPULSE=25
 
 
@@ -53,22 +49,41 @@ if sys.platform.startswith('win'):
 
 def Setdirectorytempinfo():
     """
-    This function check is 'dirtempinfo' exists.
-    If not it creates it.
-
-    :return: path directory INFO Temporaly and key RSA
+    function Setdirectorytempinfo
+    : return path directory INFO Temporaly and key RSA
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
-    print dirtempinfo
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0007)
     return dirtempinfo
+
+def cleanbacktodeploy(objectxmpp):
+    delsession = [session for session in objectxmpp.back_to_deploy  if not objectxmpp.session.isexist(session)]
+    for session in delsession:
+        del (objectxmpp.back_to_deploy[session])
+    if len(delsession) != 0:
+        logging.log(DEBUGPULSE,"Clear dependency : %s"%delsession)
+        save_back_to_deploy(objectxmpp.back_to_deploy)
 
 def networkinfoexist():
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintnetwork')
     if os.path.exists(filenetworkinfo):
         return True
     return False
+
+def save_back_to_deploy(obj):
+    fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
+    save_obj(obj, fileback_to_deploy )
+
+def load_back_to_deploy():
+    fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
+    return load_obj( fileback_to_deploy )
+
+def listback_to_deploy(objectxmpp):
+    if len(objectxmpp.back_to_deploy)!= 0:
+        print "list session pris en compte back_to_deploy"
+        for u in objectxmpp.back_to_deploy:
+            print u
 
 def createfingerprintnetwork():
     md5network = ""
@@ -121,6 +136,22 @@ def file_put_contents(filename,  data):
     f = open(filename, 'w')
     f.write(data)
     f.close()
+
+
+
+def save_obj(obj, name ):
+    """
+    funct save serialised object
+    """
+    with open(name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+def load_obj( name ):
+    """
+    function load serialized object
+    """
+    with open(name + '.pkl', 'rb') as f:
+        return pickle.load(f)
 
 def getCurrentWorkingDirectory():
     return os.path.abspath(os.getcwd())
@@ -238,11 +269,6 @@ def isWinUserAdmin():
 
 #mac OS
 def isMacOsUserAdmin():
-    """
-    This function checks if the user is an Admin or a simple user
-
-    :returns: bool -- True if the user user is root. False otherwise
-    """
     obj=simplecommand("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
     if int(obj['code']) == 0:
         return True
@@ -409,30 +435,32 @@ def is_valid_ipv6(ip):
     """, re.VERBOSE | re.IGNORECASE | re.DOTALL)
     return pattern.match(ip) is not None
 
-def typelinux():
-    """
-    This function check if the linux system uses systemd or initv
 
-    :return: the init system of the linux system
-    """
+
+#linux systemd ou init
+def typelinux():
     p = subprocess.Popen('cat /proc/1/comm',
                             shell=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    code_result = p.wait()
-    system = result[0].rstrip('\n')
+    code_result= p.wait()
+    system=result[0].rstrip('\n')
+    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 def isprogramme(name):
-    obj = {}
+    obj={}
     p = subprocess.Popen("which %s"%(name),
                             shell=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
-    obj['result'] = result
+    obj['code']=p.wait()
+    obj['result']=result
+    #print obj['code']
+    #print obj['result']
+    #print obj
     if obj['result'] != "":
         return True
     else:
@@ -472,12 +500,14 @@ class shellcommandtimeout(object):
 
     def run(self):
         def target():
+            #print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'], 
                                             shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
             self.process.communicate()
+            #print 'Thread finished'
         thread = threading.Thread(target=target)
         thread.start()
 
@@ -485,9 +515,12 @@ class shellcommandtimeout(object):
         if thread.is_alive():
             print 'Terminating process'
             print "timeout %s"%self.obj['timeout']
+            #self.codereturn = -255
+            #self.result = "error tineour"
             self.process.terminate()
             thread.join()
 
+        #self.result = self.process.stdout.readlines()
         self.obj['codereturn'] = self.process.returncode
 
         if self.obj['codereturn']==-15:
@@ -603,7 +636,6 @@ def windowsservice(name, action):
 def methodservice():
     import pythoncom
     import wmi
-
     pythoncom.CoInitialize ()
     try:
         c = wmi.WMI ()
@@ -623,6 +655,15 @@ def file_put_content(filename, contents,mode="w"):
     fh.write(contents)
     fh.close()
 
+##windows
+#def listusergroup():
+    #import wmi
+    #c = wmi.WMI()
+    #for group in c.Win32_Group():
+    #print group.Caption
+    #for user in group.associators("Win32_GroupUser"):
+        #print "  ", user.Caption
+
 #decorateur pour simplifier les plugins
 def pluginprocess(func):
     def wrapper( objetxmpp, action, sessionid, data, message, dataerreur):
@@ -638,6 +679,8 @@ def pluginprocess(func):
         dataerreur['sessionid'] = sessionid
         try:
             response = func( objetxmpp, action, sessionid, data, message, dataerreur, result)
+            #encode  result['data'] si besoin
+            #print result
             if result['base64'] == True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s"%result
@@ -790,6 +833,7 @@ def subnetnetwork(adressmachine, mask):
     return decimaltoIpV4(reseaumachine)
 
 def searchippublic(site = 1):
+    return None
     try:
         if site == 1:
             try:

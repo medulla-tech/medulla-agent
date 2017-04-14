@@ -32,7 +32,7 @@ from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, T
 from optparse import OptionParser
 from lib.utils import StreamToLogger
 #from sqlalchemy.dialects.mysql import  TINYINT
-
+import copy
 #from mmc.database.database_helper import DBObj
 #from sqlalchemy.orm import relationship
 #import datetime
@@ -66,20 +66,36 @@ class Deploy(Base):
     # Here we define columns for the table deploy.
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Integer, primary_key=True)
+    #inventoryuuid = Column(String(11), nullable=False)
+    #pathpackage = Column(String(100), nullable=False)
+    #jid_relay = Column(String(45), nullable=False)
+    #jidmachine = Column(String(45), nullable=False)
+    #state = Column(String(45), nullable=False)
+    #sessionid = Column(String(45), nullable=False)
+    #start = Column(DateTime, default=datetime.datetime.utcnow)
+    #result = Column(Text )
+    #host = Column(String(45), nullable=False)
+    #user = Column(String(45), nullable=False,default = "")
+    ##deploycol = Column(String(45), nullable=False,default = "")
+    #login = Column(String(45), nullable=False)
+    #command = Column(Integer)
+    title=Column(String(255))
     inventoryuuid = Column(String(11), nullable=False)
+    group_uuid = Column(String(11))
     pathpackage = Column(String(100), nullable=False)
     jid_relay = Column(String(45), nullable=False)
     jidmachine = Column(String(45), nullable=False)
     state = Column(String(45), nullable=False)
     sessionid = Column(String(45), nullable=False)
     start = Column(DateTime, default=datetime.datetime.utcnow)
+    startcmd = Column(DateTime, default=None)
+    endcmd = Column(DateTime, default=None)
     result = Column(Text )
     host = Column(String(45), nullable=False)
-    user = Column(String(45), nullable=False,default = "")
-    deploycol = Column(String(45), nullable=False,default = "")
+    user = Column(String(45), nullable=False, default = "")
     login = Column(String(45), nullable=False)
     command = Column(Integer)
-
+    macadress=Column(String(255))
 
 class configuration:
     def __init__(self):
@@ -134,18 +150,18 @@ class configuration:
             self.dbuser=Configlocal.get('database', 'dbuser')
         else:
             self.dbuser=Config.get('database', 'dbuser')
-        
+
         if  Configlocal.has_option("database", "dbpasswd"):
             self.dbpasswd=Configlocal.get('database', 'dbpasswd')
         else:
             self.dbpasswd=Config.get('database', 'dbpasswd')
-            
-            
+
+
         if  Configlocal.has_option("global", "log_level"):
             self.log_level=Configlocal.get('global', 'log_level')
         else:
             self.log_level=Config.get('global', 'log_level')
-            
+
 #global
         if self.log_level == "INFO":
             self.debug = logging.INFO
@@ -251,13 +267,35 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                 self.config.dbuser,
                                                                 self.config.dbpasswd,
                                                                 self.config.dbhost,
-                                                                self.config.dbname
-                                                                  ))
+                                                                self.config.dbname))
         Session = sessionmaker(bind=engine)
         session = Session()
+        jsonresult = json.loads(result)
+        jsonautre = copy.deepcopy(jsonresult)
+        del (jsonautre['descriptor'])
+        del (jsonautre['packagefile'])
+        #STARDEPLOY
         try:
-            session.query(Deploy).filter(Deploy.sessionid == sessionid).\
-                    update({Deploy.state: state, Deploy.result : result})
+            dede = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+            if dede:
+                if dede.result is None:
+                    jsonbase = {
+                                "infoslist": [jsonresult['descriptor']['info']],
+                                "descriptorslist": [jsonresult['descriptor']['sequence']],
+                                "infosautre" : [jsonautre],
+                                "title" : dede.title,
+                                "session" : dede.sessionid,
+                                "macadress" : dede.macadress,
+                                "user" : dede.login
+                    }
+                else:
+                    jsonbase = json.loads(dede.result)
+                    jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
+                    jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
+                    jsonbase['infosautre'].append(jsonautre)
+                dede.result = json.dumps(jsonbase, indent=3)
+                dede.state = state
+                print dede.result
             session.commit()
             session.flush()
             session.close()

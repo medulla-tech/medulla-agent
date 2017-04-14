@@ -191,11 +191,19 @@ class session:
     def __aff__(self,x):
         if x != None : print x
 
+    def __affid__(self,x):
+        if x != None : print x.sessionid
+
     def len(self):
         return len(self.sessiondata)
 
     def affiche(self):
         map(self.__aff__, self.sessiondata)
+
+    def afficheid(self):
+        if len(self.sessiondata) != 0:
+            print "liste session existe"
+            map(self.__affid__, self.sessiondata)
 
     def sessionfromsessiondata(self, sessionid):
         for i in self.sessiondata:
