@@ -77,6 +77,7 @@ class grafcet:
 
     def __execstep__(self):
         # call function self.workingstep['action']
+        #execute step current
         method =  getattr(self,self.workingstep['action'])
         method()
 
@@ -101,14 +102,18 @@ class grafcet:
         self.__execstep__()
  
     def __set_backtoworksession__(self):
+        #tag les signaux "restart" and "reload" dans le descripteur de session 
         self.datasend['data']['restart']= True
         self.datasend['data']['sessionreload']=True
 
     def __unset_backtoworksession(self):
+        # Removes the "restart" and "reload" signals in the session descriptor
+        # next running if session existe then session clearing
         self.datasend['data']['sessionreload']=False
         self.datasend['data']['restart']= False
 
     def __next_current_step__(self):
+        #pointer to the next step
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
 
     def __action_completed__(self, datajson):
@@ -149,7 +154,7 @@ class grafcet:
 
         cmd = cmd.replace('@@@OS_COMPLET_NAME@@@', platform.platform())
 
-        ### cmd = cmd.replace('@@@UUID_PACKAGE@@@',self.data['srcpackageuuid'])
+        cmd = cmd.replace('@@@UUID_PACKAGE@@@',os.path.basename(self.datasend['data']['pathpackageonmachine']))
 
         cmd = cmd.replace('@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@', self.datasend['data']['pathpackageonmachine'])
 
@@ -204,6 +209,7 @@ class grafcet:
         return cmd
 
     def tempdir(self):
+        """return directory temp for os"""
         if sys.platform.startswith('linux'):
             return os.path.join("/","tmp")
         elif sys.platform.startswith('win'):
@@ -212,15 +218,26 @@ class grafcet:
             return os.path.join("/","tmp")
 
     def __search_Next_step_int__( self, val ):
+        """
+            goto to val
+            search step next for step number value
+            workingstep is the new step current
+        """
         valstep = 0
         if isinstance(val, int):
-            for i in self.sequence:
-                if int(i['step']) == val:
-                    self.data['stepcurrent'] = valstep
+            for step_in_sequence in self.sequence:
+                if int(step_in_sequence['step']) == val:
+                    self.data['stepcurrent'] = val
                     self.workingstep = self.sequence[self.data['stepcurrent']]
                     return 0
                 valstep=valstep+1
             logging.getLogger().error("inconsistency in descriptor")
+            self.terminate(-1, False,  "end error inconsistency in descriptor verify the step number [step %s not exist]"%val)
+            self.objectxmpp.logtopulse("end error inconsistency in descriptor verify the step number [step %s not exist]"%val,
+                                        type='deploy',
+                                        sessionname = self.sessionid ,
+                                        priority =val,
+                                        who=self.objectxmpp.boundjid.bare)
             return 5
         elif isinstance(val, str):
             if val == 'next':
@@ -228,7 +245,7 @@ class grafcet:
                 self.workingstep = self.sequence[self.data['stepcurrent']]
                 return 0
             elif val == 'end':
-                for i in self.sequence:
+                for step_in_sequence in self.sequence:
                     if self.sequence['action']=='actiondeploymentcomplete':
                         self.data['stepcurrent'] = valstep
                         self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -237,7 +254,7 @@ class grafcet:
                     logging.getLogger().error("inconsistency in descriptor")
                 return 5
             elif val == 'error':
-                for i in self.sequence:
+                for step_in_sequence in self.sequence:
                     if self.sequence['action']=='actionerrordeployment':
                         self.data['stepcurrent'] = valstep
                         self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -247,6 +264,11 @@ class grafcet:
                 return 5
 
     def terminate(self, ret, clear = True, msgstate = ""):
+        """ 
+            use for terminate deploy
+            send msg to log sequence
+            Clean client disk packages (ie clear)
+        """
         try:
             self.__action_completed__(self.workingstep)
             self.objectxmpp.session.clearnoevent(self.sessionid)
@@ -335,18 +357,135 @@ class grafcet:
                                             mtype='chat')
 
     def steplog(self):
+        """inscrit log"""
         logging.getLogger().debug("deploy %s on machine %s [%s] STEP %s\n %s "% (  self.data['descriptor']['info']['name'],
                                                                                 self.objectxmpp.boundjid.bare,
                                                                                 self.sessionid,
                                                                                 self.workingstep['step'],
                                                                                 json.dumps(self.workingstep, indent=4, sort_keys=True)))
     def __terminateifcompleted__(self,workingstep):
+        """test if step taged completed"""
         if 'completed' in self.workingstep:
             if self.workingstep['completed'] >=1:
                 return True
         return False
 
+
+    def __resultinfo__(self, workingstepinfo, listresult):
+        for t in workingstepinfo:
+            if t == "@resultcommand":
+                workingstepinfo[t] = os.linesep.join(listresult)
+            elif t.endswith('lastlines'):
+                nb = t.split("@")
+                nb1 = -int(nb[0])
+                logging.getLogger().debug( "=======lastlines============%s============================="%nb1)
+                tab = listresult[nb1:]
+                workingstepinfo[t] = os.linesep.join(tab)
+            elif t.endswith('firstlines'):
+                nb = t.split("@")
+                nb1 = int(nb[0])
+                logging.getLogger().debug( "=======firstlines============%s============================="%nb1)
+                tab = listresult[:nb1]
+                workingstepinfo[t] = os.linesep.join(tab)
+
+    def __Go_to_by_jump_succes_and_error__(self, returncode):
+        if returncode != 0 and 'error' in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep['error'])
+            self.__execstep__()
+            return True
+        elif re['codereturn'] == 0 and 'succes' in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep['succes'])
+            self.__execstep__()
+            return True
+        else:
+            return False
+
+
+    def __Go_to_by_jump__(self, result):
+        if 'goto' in self.workingstep :
+            self.__search_Next_step_int__(self.workingstep['goto'])
+            self.__execstep__()
+            return True
+        elif 'gotoyes' in self.workingstep and result == "yes":
+            #goto Faire directement reboot
+            self.__search_Next_step_int__(self.workingstep['gotoyes'])
+            self.__execstep__()
+            return True
+        elif 'gotono' in self.workingstep and result == "no":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotono'])
+            self.__execstep__()
+            return True
+        elif 'gotoopen' in self.workingstep and result == "open":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoopen'])
+            self.__execstep__()
+            return True
+        elif 'gotosave' in self.workingstep and result == "save":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotosave'])
+            self.__execstep__()
+            return True
+        elif 'gotocancel' in self.workingstep and result == "cancel":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotocancel'])
+            self.__execstep__()
+            return True
+        elif 'gotoclose' in self.workingstep and result == "close":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoclose'])
+            self.__execstep__()
+            return True
+        elif 'gotodiscard' in self.workingstep and result == "discard":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotodiscard'])
+            self.__execstep__()
+            return True
+        elif 'gotoapply' in self.workingstep and result == "apply":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoapply'])
+            self.__execstep__()
+            return True
+        elif 'gotoreset' in self.workingstep and result == "reset":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoreset'])
+            self.__execstep__()
+            return True
+        elif 'gotorestoreDefaults' in self.workingstep and result == "restoreDefaults":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotorestoreDefaults'])
+            self.__execstep__()
+            return True
+        elif 'gotoabort' in self.workingstep and result == "abort":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoabort'])
+            self.__execstep__()
+            return True
+        elif 'gotoretry' in self.workingstep and result == "retry":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoretry'])
+            self.__execstep__()
+            return True
+        elif 'gotoignore' in self.workingstep and result == "ignore":
+            #goto attendre pour Faire reboot
+            self.__search_Next_step_int__(self.workingstep['gotoignore'])
+            self.__execstep__()
+            return True
+        else:
+            return False
+
+
+    ######################################################
+    ###DEFINITIONS OF EXISTING ACTIONS FOR A DESCRIPTOR###
+    ######################################################
+
     def action_pwd_package(self):
+        """
+        {
+                "action": "action_pwd_package", 
+                "step": 0
+        }
+        """
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.__action_completed__(self.workingstep)
@@ -368,23 +507,6 @@ class grafcet:
                                         sessionname = self.sessionid ,
                                         priority =self.workingstep['step'],
                                         who=self.objectxmpp.boundjid.bare)
-
-    def __resultinfo__(self, workingstepinfo, listresult):
-        for t in workingstepinfo:
-            if t == "@resultcommand":
-                workingstepinfo[t] = os.linesep.join(listresult)
-            elif t.endswith('lastlines'):
-                nb = t.split("@")
-                nb1 = -int(nb[0])
-                logging.getLogger().debug( "=======lastlines============%s============================="%nb1)
-                tab = listresult[nb1:]
-                workingstepinfo[t] = os.linesep.join(tab)
-            elif t.endswith('firstlines'):
-                nb = t.split("@")
-                nb1 = int(nb[0])
-                logging.getLogger().debug( "=======firstlines============%s============================="%nb1)
-                tab = listresult[:nb1]
-                workingstepinfo[t] = os.linesep.join(tab)
 
     def action_unzip_file(self):
         """
@@ -409,8 +531,14 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.__action_completed__(self.workingstep)
+            self.workingstep['filename'] = self.replaceTEMPLATE(self.workingstep['filename'])
             zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
-            zip_ref.extractall(self.workingstep['pathdirectorytounzip'])
+            if not 'pathdirectorytounzip' in self.workingstep:
+                #self.datasend['data']['pathpackageonmachine'] = self.replaceTEMPLATE(self.datasend['data']['pathpackageonmachine'])
+                zip_ref.extractall(self.datasend['data']['pathpackageonmachine'])
+            else:
+                self.workingstep['pathdirectorytounzip'] = self.replaceTEMPLATE(self.workingstep['pathdirectorytounzip'])
+                zip_ref.extractall(self.workingstep['pathdirectorytounzip'])
             listname = zip_ref.namelist()
             self.__resultinfo__(self.workingstep, listname)
             zip_ref.close()
@@ -451,13 +579,25 @@ class grafcet:
                 self.__Etape_Next_in__()
                 self.steplog()
 
-
     def actionprocessscript(self):
+        """
+        {
+                "step": intnb,
+                "action": "actionprocessscript", 
+                "command": "xmppdeploy.bat",
+
+                "codereturn": "",
+                "timeout": 900,
+                "error": 5, 
+                "success": 3, 
+                "@resultcommand": ""
+        }
+        """
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.workingstep['command'] = self.replaceTEMPLATE(self.workingstep['command'])
             if not  "timeout" in self.workingstep:
-                self.workingstep['timeout'] = 15
+                self.workingstep['timeout'] = 900
                 logging.getLogger().warn( "timeout missing : default value 15s")
             # working Step recup from process et session
             comdbool = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( self.workingstep['command'] ,
@@ -487,16 +627,15 @@ class grafcet:
 
     def action_command_natif_shell(self):
         """ information
-        "@resultcommand or nb@lastlines or nb@firstlines": "", 
-        "action": "action_command_natif_shell", 
-        "codereturn": "", 
-        "command": "ls", 
-        "error": "END", 
-        "step": "1", 
-        "succes": 3
-        timeout
+            "@resultcommand or nb@lastlines or nb@firstlines": "", 
+            "action": "action_command_natif_shell", 
+            "codereturn": "", 
+            "command": "ls", 
+            "error": "END", 
+            "step": "1", 
+            "succes": 3
+            timeout
         """
-
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.workingstep['command'] = self.replaceTEMPLATE(self.workingstep['command'])
@@ -517,39 +656,26 @@ class grafcet:
             #logging.getLogger().debug( "codeerror %s"% self.workingstep['codereturn'])
             #logging.getLogger().debug( "result \n%s"%os.linesep.join(result))
             #logging.getLogger().debug( "================================================")
-            for t in self.workingstep:
-                if t == "@resultcommand":
-                    self.workingstep[t] = os.linesep.join(result)
-                elif t.endswith('lastlines'):
-                    nb = t.split("@")
-                    nb1 = -int(nb[0])
-                    logging.getLogger().debug( "=======lastlines============%s============================="%nb1)
-                    tab = result[nb1:]
-                    self.workingstep[t] = os.linesep.join(tab)
-                elif t.endswith('firstlines'):
-                    nb = t.split("@")
-                    nb1 = int(nb[0])
-                    logging.getLogger().debug( "=======firstlines============%s============================="%nb1)
-                    tab = result[:nb1]
-                    self.workingstep[t] = os.linesep.join(tab)
+
+            #reseigne @resultcommand or nb@lastlines or nb@firstlines
+            self.__resultinfo__(self.workingstep, result)
             self.objectxmpp.logtopulse('[%s]: errorcode %s for command : %s '%(self.workingstep['step'], self.workingstep['codereturn'], self.workingstep['command']),
                                        type = 'deploy',
                                        sessionname = self.sessionid ,
                                        priority = self.workingstep['step'],
                                        who = self.objectxmpp.boundjid.bare)
             self.steplog()
-            if 'succes' in self.workingstep and  self.workingstep['codereturn'] == 0:
-                #goto succes
-                self.__search_Next_step_int__(self.workingstep['succes'])
-                self.__execstep__()
-            elif 'error' in self.workingstep and  self.workingstep['codereturn'] != 0:
-                self.__search_Next_step_int__(self.workingstep['error'])
-                self.__execstep__()
-            else:
-                self.__Etape_Next_in__()
+            if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
+                return
+            self.__Etape_Next_in__()
+            return
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
+            if re['codereturn'] != 0 and 'error' in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep['succes'])
+                self.__execstep__()
+                return
             self.terminate(-1, False,  "end error in action_command_natif_shell step %s"%self.workingstep['step'])
             self.objectxmpp.logtopulse('[%s]: error action_command_natif_shell : %s'%(self.workingstep['step']),
                                         type='deploy',
@@ -581,11 +707,10 @@ class grafcet:
         self.terminate(0, clear, "end success")
         self.steplog()
 
-
     def actionerrorcompletedend(self):
         """
         descriptor type
-        {   
+        {
             "step" : 11,
             "action" : "actionerrorcompletedend",
             "clear" : true
@@ -689,8 +814,7 @@ class grafcet:
                                         " -B " + ",".join(self.workingstep['boutontype'])
         #todo si action deja faite return
 
-        # appelle boite de dialog 
-
+        # appelle boite de dialog
 
         re = shellcommandtimeout(command, 60).run()
         self.steplog()
@@ -701,71 +825,14 @@ class grafcet:
                                        sessionname = self.sessionid ,
                                        priority =self.workingstep['step'],
                                        who=self.objectxmpp.boundjid.bare)
-
-        if 'goto' in self.workingstep :
-            self.__search_Next_step_int__(self.workingstep['goto'])
-            self.__execstep__()
-        elif 'gotoyes' in self.workingstep and result[0] == "yes":
-            #goto Faire directement reboot
-            self.__search_Next_step_int__(self.workingstep['gotoyes'])
-            self.__execstep__()
-        elif 'gotono' in self.workingstep and result[0] == "no":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotono'])
-            self.__execstep__()
-        elif 'gotoopen' in self.workingstep and result[0] == "open":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoopen'])
-            self.__execstep__()
-        elif 'gotosave' in self.workingstep and result[0] == "save":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotosave'])
-            self.__execstep__()
-        elif 'gotocancel' in self.workingstep and result[0] == "cancel":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotocancel'])
-            self.__execstep__()
-        elif 'gotoclose' in self.workingstep and result[0] == "close":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoclose'])
-            self.__execstep__()
-        elif 'gotodiscard' in self.workingstep and result[0] == "discard":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotodiscard'])
-            self.__execstep__()
-        elif 'gotoapply' in self.workingstep and result[0] == "apply":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoapply'])
-            self.__execstep__()
-        elif 'gotoreset' in self.workingstep and result[0] == "reset":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoreset'])
-            self.__execstep__()
-        elif 'gotorestoreDefaults' in self.workingstep and result[0] == "restoreDefaults":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotorestoreDefaults'])
-            self.__execstep__()
-        elif 'gotoabort' in self.workingstep and result[0] == "abort":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoabort'])
-            self.__execstep__()
-        elif 'gotoretry' in self.workingstep and result[0] == "retry":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoretry'])
-            self.__execstep__()
-        elif 'gotoignore' in self.workingstep and result[0] == "ignore":
-            #goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoignore'])
-            self.__execstep__()
-        elif re['codereturn'] != 0 and 'error' in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep['error'])
-            self.__execstep__()
-        elif re['codereturn'] == 0 and 'succes' in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep['succes'])
-            self.__execstep__()
-        else:
-            self.__Etape_Next_in__()
+        if self.__Go_to_by_jump__(result[0]):
             return
+        if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
+            return
+        self.__Etape_Next_in__()
+        return
+
+
         #self.objectxmpp.logtopulse('[%s]: Dialog : Reponse %s'%(self.workingstep['step'],result[0]),
                                        #type='deploy',
                                        #sessionname = self.sessionid ,
@@ -783,7 +850,7 @@ class grafcet:
 
         """
         #todo si action deja faite return
-        self.steplog() 
+        self.steplog()
         if not  "waiting" in self.workingstep:
             self.workingstep['waiting'] = 180
             logging.getLogger().warn( "waiting missing : default value 180s")
@@ -813,16 +880,18 @@ class grafcet:
             "step" : 9,
             "action": "actionrestart"
         }
-        """ 
+        """
         try:
-            if self.__terminateifcompleted__(self.workingstep) : return
-            self.__next_current_step__() #prepare action suivante
-            self.__set_backtoworksession__()#session reprise after restart start
+            #if step taged completed then end
+            if self.__terminateifcompleted__(self.workingstep) : return 
+            self.__next_current_step__() #pointe maintenant sur l tape suivante
+            #update compteur step used
+            self.__action_completed__(self.workingstep)
+            self.__set_backtoworksession__()#tag this session [reload session] and [execute etape] newly currente step.
             #rewrite session 
             objsession =   self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
             objsession.setdatasession(self.datasend)
             # Restart machine based on OS
-            self.__action_completed__(self.workingstep)
             self.steplog()
             self.objectxmpp.logtopulse('[%s]: Restart machine'%(self.workingstep['step']),
                                        type='deploy',
@@ -850,7 +919,6 @@ class grafcet:
                                         priority =self.workingstep['step'],
                                         who=self.objectxmpp.boundjid.bare)
 
-
     def actionrestartbot(self):
         """
         descriptor type :
@@ -861,9 +929,9 @@ class grafcet:
         """ 
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
-            self.__action_completed__(self.workingstep)
             self.__next_current_step__() #prepare action suivante
-            self.__set_backtoworksession__()#session reprise after restart start
+            self.__action_completed__(self.workingstep)
+            self.__set_backtoworksession__()#tag this session [reload session] and [execute etape] newly currente step.
             #rewrite session 
             objsession =   self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
             objsession.setdatasession(self.datasend)
