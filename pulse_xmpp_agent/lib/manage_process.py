@@ -125,7 +125,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                     workingstep[t] = unicode( os.linesep.join(tab), errors='ignore')
             if 'goto' in workingstep:
                 message['data']['stepcurrent'] = workingstep['goto']
-            elif 'succes' in workingstep and  workingstep['codereturn'] == 0:
+            elif 'success' in workingstep and  workingstep['codereturn'] == 0:
                 message['data']['stepcurrent'] = workingstep['succes']
             elif 'error' in workingstep and  workingstep['codereturn'] != 0:
                 message['data']['stepcurrent'] = workingstep['error']
