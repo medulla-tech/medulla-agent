@@ -196,6 +196,7 @@ class grafcet:
         cmd = cmd.replace('@@@LIST_IP_ADRESS@@@', " ".join(getIPAdressList()))
 
         cmd = cmd.replace('@@@IP_MACHINE_XMPP@@@', self.data['ipmachine'])
+
         cmd = cmd.replace('@@@MAC_ADRESS_MACHINE_XMPP@@@', MacAdressToIp(self.data['ipmachine']))
 
         cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
@@ -219,9 +220,9 @@ class grafcet:
 
     def __search_Next_step_int__( self, val ):
         """
-            goto to val
-            search step next for step number value
-            workingstep is the new step current
+        goto to val
+        search step next for step number value
+        workingstep is the new step current
         """
         valstep = 0
         if isinstance(val, int):
@@ -265,9 +266,9 @@ class grafcet:
 
     def terminate(self, ret, clear = True, msgstate = ""):
         """ 
-            use for terminate deploy
-            send msg to log sequence
-            Clean client disk packages (ie clear)
+        use for terminate deploy
+        send msg to log sequence
+        Clean client disk packages (ie clear)
         """
         try:
             self.__action_completed__(self.workingstep)
@@ -370,7 +371,6 @@ class grafcet:
                 return True
         return False
 
-
     def __resultinfo__(self, workingstepinfo, listresult):
         for t in workingstepinfo:
             if t == "@resultcommand":
@@ -399,7 +399,6 @@ class grafcet:
             return True
         else:
             return False
-
 
     def __Go_to_by_jump__(self, result):
         if 'goto' in self.workingstep :
@@ -474,7 +473,6 @@ class grafcet:
         else:
             return False
 
-
     ######################################################
     ###DEFINITIONS OF EXISTING ACTIONS FOR A DESCRIPTOR###
     ######################################################
@@ -483,14 +481,21 @@ class grafcet:
         """
         {
                 "action": "action_pwd_package", 
-                "step": 0
+                "step": 0,
+                "packageuuid" : ""  obtionnel
         }
         """
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
             self.__action_completed__(self.workingstep)
-            os.chdir( self.datasend['data']['pathpackageonmachine'])
-            self.workingstep['pwd']= os.getcwd()
+            if 'packageuuid' in self.workingstep and os.path.isdir(self.replaceTEMPLATE(self.workingstep['packageuuid'])):
+                self.workingstep['packageuuid'] = self.replaceTEMPLATE(self.workingstep['packageuuid'])
+                os.chdir(self.workingstep['packageuuid'])
+                self.workingstep['pwd']= os.getcwd()
+            else:
+                os.chdir( self.datasend['data']['pathpackageonmachine'])
+                self.workingstep['pwd']= os.getcwd()
+
             self.objectxmpp.logtopulse('[%s]: current directory %s'%(self.workingstep['step'],self.workingstep['pwd']),
                                        type='deploy',
                                        sessionname = self.sessionid ,
@@ -507,6 +512,63 @@ class grafcet:
                                         sessionname = self.sessionid ,
                                         priority =self.workingstep['step'],
                                         who=self.objectxmpp.boundjid.bare)
+
+    def action_set_environ(self):
+        """
+        {
+                "action": "action_set_environ", 
+                "step": 0,
+                "environ" : {"PLIP22" : "plop"  }
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep) : return
+            self.__action_completed__(self.workingstep)
+            if 'environ' in self.workingstep:
+                if type(self.workingstep['environ']) is dict:
+                    for z in self.workingstep['environ']:
+                        a = self.replaceTEMPLATE(z)
+                        b = self.replaceTEMPLATE(self.workingstep['environ'][a])
+                        os.environ[a] = b
+                        self.objectxmpp.logtopulse('[%s] : set varaible Environnement %s = %s'%(self.workingstep['step'],a,b),
+                                       type='deploy',
+                                       sessionname = self.sessionid ,
+                                       priority =self.workingstep['step'],
+                                       who=self.objectxmpp.boundjid.bare)
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_set_environ step %s"%self.workingstep['step'])
+            self.objectxmpp.logtopulse('[%s]: error action_set_environ '%(self.workingstep['step']),
+                                        type='deploy',
+                                        sessionname = self.sessionid ,
+                                        priority =self.workingstep['step'],
+                                        who=self.objectxmpp.boundjid.bare)
+
+    def action_no_operation(self):
+        """
+        {
+                "action": "action_no_operation", 
+                "step": n,
+                "environ" : {"PLIP22" : "plop" ,"dede","kk" }
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep) : return
+            self.__action_completed__(self.workingstep)
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_no_operation step %s"%self.workingstep['step'])
+            self.objectxmpp.logtopulse('[%s]: error action_no_operation'%(self.workingstep['step']),
+                                        type='deploy',
+                                        sessionname = self.sessionid ,
+                                        priority =self.workingstep['step'],
+                                        who = self.objectxmpp.boundjid.bare)
 
     def action_unzip_file(self):
         """
@@ -560,7 +622,6 @@ class grafcet:
             else:
                 self.__Etape_Next_in__()
                 self.steplog()
-
         except Exception as e:
             self.workingstep['@resultcommand'] = traceback.format_exc()
             print str(e)
@@ -627,14 +688,14 @@ class grafcet:
 
     def action_command_natif_shell(self):
         """ information
-            "@resultcommand or nb@lastlines or nb@firstlines": "", 
-            "action": "action_command_natif_shell", 
-            "codereturn": "", 
-            "command": "ls", 
-            "error": "END", 
-            "step": "1", 
-            "succes": 3
-            timeout
+        "@resultcommand or nb@lastlines or nb@firstlines": "", 
+        "action": "action_command_natif_shell", 
+        "codereturn": "", 
+        "command": "ls", 
+        "error": "END", 
+        "step": "1", 
+        "succes": 3
+        timeout
         """
         try:
             if self.__terminateifcompleted__(self.workingstep) : return
@@ -659,6 +720,7 @@ class grafcet:
 
             #reseigne @resultcommand or nb@lastlines or nb@firstlines
             self.__resultinfo__(self.workingstep, result)
+
             self.objectxmpp.logtopulse('[%s]: errorcode %s for command : %s '%(self.workingstep['step'], self.workingstep['codereturn'], self.workingstep['command']),
                                        type = 'deploy',
                                        sessionname = self.sessionid ,
@@ -706,6 +768,7 @@ class grafcet:
         if self.__terminateifcompleted__(self.workingstep) : return
         self.terminate(0, clear, "end success")
         self.steplog()
+
 
     def actionerrorcompletedend(self):
         """
@@ -763,7 +826,6 @@ class grafcet:
         # bouton no -> branchement etape pointer par gotono
 
         """
-
         #composition command
         if not 'title' in self.workingstep:
             self.workingstep['title']="Confirmation"
@@ -832,7 +894,6 @@ class grafcet:
         self.__Etape_Next_in__()
         return
 
-
         #self.objectxmpp.logtopulse('[%s]: Dialog : Reponse %s'%(self.workingstep['step'],result[0]),
                                        #type='deploy',
                                        #sessionname = self.sessionid ,
@@ -873,6 +934,7 @@ class grafcet:
                                        sessionname = self.sessionid ,
                                        priority =self.workingstep['step'],
                                        who=self.objectxmpp.boundjid.bare)
+
     def actionrestart(self):
         """
         descriptor type :
