@@ -110,10 +110,10 @@ SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
-  NSISdl::download /TIMEOUT=30000 ${url} ${filename}
-  Pop $R0 ;Get the return value
-  StrCmp $R0 "success" +3
-    MessageBox MB_OK "Download of ${url} failed: $R0"
+  inetc::get /NOCANCEL ${url} ${filename} /END
+  Pop $0 ;Get the return value
+  StrCmp $0 "OK" +3
+    MessageBox MB_OK "Download of ${url} failed: $0"
     Quit
 !macroend
 
