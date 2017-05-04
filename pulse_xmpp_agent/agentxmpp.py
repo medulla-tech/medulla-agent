@@ -47,7 +47,7 @@ import pprint
 from datetime import datetime
 from multiprocessing import Process, Queue, TimeoutError
 import threading
-
+from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
@@ -73,6 +73,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
         self.config = conf
+        self.manage_scheduler  = manage_scheduler(self)
 
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
@@ -93,6 +94,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
         self.md5reseau = refreshfingerprint()
+
+        self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
+
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
@@ -110,6 +114,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler('changed_status', self.changed_status)
         self.RSA = MsgsignedRSA(self.config.agenttype)
 
+    def schedulerfunction(self):
+        self.manage_scheduler.process_on_event()
 
     def changed_status(self, message):
         print "%s %s"%(message['from'], message['type'])
@@ -124,7 +130,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         #self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        #self.loginformation("agent %s ready"%self.config.jidagent)
+        #self.loginfotomaster("agent %s ready"%self.config.jidagent)
         #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
         self.logtopulse("Start Agent", who =  self.boundjid.bare)
@@ -237,10 +243,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
 
-    #def loginformation(self,msgdata):
-        #self.send_message( mbody = msgdata,
-                           #mto = self.config.jidchatroomlog,
-                           #mtype ='groupchat')
+    
 
     def register(self, iq):
         """ This function is called for automatic registation """
