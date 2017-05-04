@@ -92,7 +92,7 @@ class confParameter:
                     for keyparameter, valueparameter in liststuple:
                         setattr(self, keyparameter,valueparameter)
                 else:
-                    logging.getLogger().warning("parameter File pluging %s : missing"%self.nameplugindir)
+                    logging.getLogger().warning("parameter File plugin %s : missing"%self.nameplugindir)
 
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
