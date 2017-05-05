@@ -22,15 +22,9 @@
 
 import sys,os,platform
 import os.path
-import json
-from multiprocessing import Process, Queue, TimeoutError
-import threading
-from utils import getRandomName
-from sleekxmpp import jid
+
 import traceback
 import logging
-import sys
-#import descriptorscheduler
 import time
 from datetime import datetime
 import croniter
