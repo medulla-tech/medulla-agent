@@ -389,6 +389,46 @@ class grafcet:
                 workingstepinfo[t] = os.linesep.join(tab)
 
     def __Go_to_by_jump_succes_and_error__(self, returncode):
+        """
+        check return code and jump
+        gotoreturncode@n n is nomber eg gotoreturncode@5 : 3
+        {
+                ......
+                ......
+                ......
+                "step": 5    STEP WITH CODERETURN
+
+                "codereturn": "",
+                "gotoreturncode@5" : "3"   => if return code is 5 goto step 3
+        }
+        check return code and sucess 
+        {
+                ......
+                ......
+                ......
+                "step": 5    Step with success return code 0
+                "codereturn": "",
+                "success": 3,    => if return code is 0 goto step 3
+        }
+        check return code and error 
+        {
+                ......
+                ......
+                ......
+                "step": 5    Step with error return code diff 0
+                "codereturn": "",
+                "error": 3,    => if return code is dofferent of 0 goto step 3
+        }
+        """
+        for t in self.workingstep:
+            if t.startswith("gotoreturncode"):
+                tab = t.split("@")
+                if len(tab) == 2 :
+                    val = int(tab[1])
+                    self.__search_Next_step_int__(val)
+                    self.__execstep__()
+                    return True
+        #if 'goto' in self.workingstep :
         if returncode != 0 and 'error' in self.workingstep:
             self.__search_Next_step_int__(self.workingstep['error'])
             self.__execstep__()
