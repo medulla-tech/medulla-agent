@@ -457,6 +457,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             try:
                 if self.config.public_ip != "":
                     subnetreseauxmpp = "0.0.0.0"
+                    xmppmask = "0.0.0.0"
             except Exception:
                 logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
