@@ -127,7 +127,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+        try :
+            if self.config.public_ip != "":
+                logging.log(DEBUGPULSE,"Attribution ip public by configuration : [%s]"%self.config.public_ip)
+                self.config.ipxmpp = self.config.public_ip
+            else:
+                logging.warning("Attribution ip public by configuration : [%s]"%self.config.public_ip)
+                raise AttributeError
+        except AttributeError:
+            self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         #self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         #self.loginfotomaster("agent %s ready"%self.config.jidagent)
@@ -205,8 +213,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def loginfotomaster(self, msgdata):
         # ne sont traite par master seulement action loginfos
+        logstruct={
+                    "action": "infolog",
+                    "sessionid" : getRandomName(6, "xmpplog"),
+                    "ret" : 0,
+                    "base64" : False,
+                    "data": {"msg" : msgdata}
+        }
         try:
-            self.send_message(  mbody = json.dumps(msgdata),
+            self.send_message(  mbody = json.dumps(logstruct),
                                 mto = '%s/MASTER'%self.agentmaster,
                                 mtype ='chat')
         except Exception as e:
@@ -437,8 +452,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 portconnection =self.config.Port
                 break;
 
-        subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
-
+        try:
+            subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
+        except Exception:
+            logreception = """imposible calculate subnetnetwork verify the configuration
+Check if ip [%s] is correct:
+If parameter of agent_type is relayserver and the parameter request_type is public,
+you must set public_ip in type with an address that exists on the machine.
+Otherwise the ip server parameter in the connection session is false
+It must be expressed in ip notation.
+It seems that mask for this ip [%s] does not exist
+TERMINE PROGRAM by  %s"""%(self.config.ipxmpp, self.config.ipxmpp, self.boundjid.bare)
+            self.loginfotomaster(logreception)
+            sys.exit(0)
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,

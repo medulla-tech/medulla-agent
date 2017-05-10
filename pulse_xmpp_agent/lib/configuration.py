@@ -75,6 +75,12 @@ class confParameter:
             self.agenttype = Config.get('type', 'agent_type')
         except:
             self.agenttype = "machine"
+        if self.agenttype == "relayserver":
+
+            if Config.has_option("type", "request_type"):
+                self.request_type = Config.get('type', 'request_type')
+                if self.request_type.lower() == "public" and  Config.has_option("type", "public_ip"):
+                    self.public_ip = Config.get('type', 'public_ip')
 
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         #par convention :

@@ -37,7 +37,7 @@ import time
 
 def test():
     time.sleep(2)
-    print "jhhhhhhhhhhhhjjjjjjjjjjjjjjjjjjjjjjjjjjjkkkkkkkkkkkkkkkkllllllllllllmmmmmmmmmmmmm"
+    print "test"
 
 def processcommand(command , queue_out_session, messagestr, timeout):
     logging.error("########processcommand")
@@ -195,7 +195,6 @@ class process_on_end_send_message_xmpp:
 
 
     def processstepcommand ( self,  command , queue_out_session, messagestr, timeout, step):
-        print "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
         logging.getLogger().error("########processstepcommand")
         try:
             message = json.loads(messagestr)
@@ -437,9 +436,6 @@ class mannageprocess:
             traceback.print_exc(file=sys.stdout)
             logging.error("error execution process %s sessionid : %s"%(command,sessionid))
             sys.exit(0)
-
-
-
 
 class cmdx(object):
     def __init__(self, cmd, timeout):
