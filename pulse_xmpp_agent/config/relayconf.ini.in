@@ -17,6 +17,9 @@ version_agent = 1.1
 agent_type = relayserver
 # The location of the guacamole server.
 guacamole_baseurl = @@GUACAMOLE_BASEURL@@
+# Serve public or private requests
+# request_type = private
+# public_ip = 123.123.123.123
 
 [plugin]
 # Plugins configs to be loaded
