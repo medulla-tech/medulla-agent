@@ -435,6 +435,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
         er.messagejson['publickey'] =  self.RSA.loadkeypublictobase64()
         #send if master public key public is missing
         er.messagejson['is_masterpublickey'] = self.RSA.isPublicKey("master")
+
+        xmppbroadcast = ""
+        xmppdhcp = ""
+        xmppdhcpserver = ""
+        xmppgateway = ""
+        xmppmacaddress = ""
+        xmppmacnotshortened = ""
+        ipconnection = self.config.Server
+        portconnection =self.config.Port
         for t in er.messagejson['listipinfo']:
             if t['ipaddress'] == self.config.ipxmpp:
                 xmppmask = t['mask']
