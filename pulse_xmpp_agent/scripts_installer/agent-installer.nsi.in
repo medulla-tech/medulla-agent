@@ -48,6 +48,8 @@ RequestExecutionLevel admin
 !define PY_LXML "@@PY_LXML@@"
 !define PY_CRYPTO "@@PY_CRYPTO@@"
 !define PY_CRON "@@PY_CRON@@"
+!define PY_CRON_DEPS_1 "@@PY_CRON_DEPS_1@@"
+!define PY_CRON_DEPS_2 "@@PY_CRON_DEPS_2@@"
 !define PULSE_AGENT "@@PULSE_AGENT@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
@@ -161,6 +163,8 @@ Section "Python Modules" sec_pymod
   @@FULL_OR_DL_PY_LXML@@
   @@FULL_OR_DL_PY_CRYPTO@@
   @@FULL_OR_DL_PY_CRON@@
+  @@FULL_OR_DL_PY_CRON_DEPS_1@@
+  @@FULL_OR_DL_PY_CRON_DEPS_2@@
   ${LogString} "Python modules Installation...."
   ${LogString} "------------------------------------------------------"
 
@@ -275,6 +279,8 @@ Section "Python Modules" sec_pymod
   Delete $INSTDIR\tmp\${PY_LXML}
   Delete $INSTDIR\tmp\${PY_CRYPTO}
   Delete $INSTDIR\tmp\${PY_CRON}
+  Delete $INSTDIR\tmp\${PY_CRON_DEPS_1}
+  Delete $INSTDIR\tmp\${PY_CRON_DEPS_2}
 SectionEnd
 
 ; rsync installation

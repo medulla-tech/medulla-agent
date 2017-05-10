@@ -46,6 +46,8 @@
 #	https://pypi.python.org/packages/69/f1/387306c495d8f9b6518ea35348668bc1e8bf56b9c7f1425b5f12df79c356/pycurl-7.43.0-cp27-none-win32.whl
 #	https://pypi.python.org/packages/f1/c7/e19d317cc948095abc872a6e6ae78ac80260f2b45771dfa7a7ce86865f5b/lxml-3.6.0-cp27-none-win32.whl
 #	https://pypi.python.org/packages/60/db/645aa9af249f059cc3a368b118de33889219e0362141e75d4eaf6f80f163/pycrypto-2.6.1.tar.gz
+# https://pypi.python.org/packages/40/8b/275015d7a9ec293cf1bbf55433258fbc9d0711890a7f6dc538bac7b86bce/python_dateutil-2.6.0-py2.py3-none-any.whl
+# https://pypi.python.org/packages/c8/0a/b6723e1bc4c516cb687841499455a8505b44607ab535be01091c0f24f079/six-1.10.0-py2.py3-none-any.whl
 # https://pypi.python.org/packages/58/2a/17d003f2a9a0188cf9365d63b3351c6522b7d83996b70270c65c789e35b9/croniter-0.3.16.tar.gz
 
 # Go to own folder
@@ -80,6 +82,10 @@ PY_CRYPTO_MODULE="pycrypto"
 PY_CRYPTO_VERSION="2.6.1"
 PY_CRON_MODULE="croniter"
 PY_CRON_VERSION="0.3.16"
+PY_CRON_DEPS_1_MODULE="python_dateutil"
+PY_CRON_DEPS_1_VERSION="2.6.0"
+PY_CRON_DEPS_2_MODULE="six"
+PY_CRON_DEPS_2_VERSION="1.10.0"
 PULSE_AGENT_NAME="pulse-xmpp-agent"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_NAME="cwRsync"
@@ -145,6 +151,10 @@ compute_parameters() {
 	PY_CRYPTO_URL="http://agents.siveo.net/win/${PY_CRYPTO_FILENAME}"
 	PY_CRON_FILENAME="${PY_CRON_MODULE}-${PY_CRON_VERSION}.tar.gz"
 	PY_CRON_URL="http://agents.siveo.net/win/${PY_CRON_FILENAME}"
+	PY_CRON_DEPS_1_FILENAME="${PY_CRON_DEPS_1_MODULE}-${PY_CRON_DEPS_1_VERSION}-py2.py3-none-any.whl"
+	PY_CRON_DEPS_1_URL="http://agents.siveo.net/win/${PY_CRON_DEPS_1_FILENAME}"
+	PY_CRON_DEPS_2_FILENAME="${PY_CRON_DEPS_2_MODULE}-${PY_CRON_DEPS_2_VERSION}-py2.py3-none-any.whl"
+	PY_CRON_DEPS_2_URL="http://agents.siveo.net/win/${PY_CRON_DEPS_2_FILENAME}"
 	PULSE_AGENT_FILENAME="${PULSE_AGENT_NAME}-${AGENT_VERSION}.tar.gz"
 	PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 	PULSE_AGENT_TASK_XML="pulse-agent-task.xml"
@@ -239,6 +249,8 @@ update_nsi_script_full() {
 	FULL_PY_LXML='File "${DOWNLOADS_DIR}/python_modules/${PY_LXML}"'
 	FULL_PY_CRYPTO='File "${DOWNLOADS_DIR}/python_modules/${PY_CRYPTO}"'
 	FULL_PY_CRON='File "${DOWNLOADS_DIR}/python_modules/${PY_CRON}"'
+	FULL_PY_CRON_DEPS_1='File "${DOWNLOADS_DIR}/python_modules/${PY_CRON_DEPS_1}"'
+	FULL_PY_CRON_DEPS_2='File "${DOWNLOADS_DIR}/python_modules/${PY_CRON_DEPS_2}"'
 	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -299,6 +311,10 @@ update_nsi_script_full() {
 		-e "s/@@PY_CRON@@/${PY_CRON_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_CRON@@/$(sed_escape ${FULL_PY_CRON})/" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_CRON@@/$(sed_escape ${INSTALL_FULL_PY_CRON})/" \
+		-e "s/@@PY_CRON_DEPS_1@@/${PY_CRON_DEPS_1_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CRON_DEPS_1@@/$(sed_escape ${FULL_PY_CRON_DEPS_1})/" \
+		-e "s/@@PY_CRON_DEPS_2@@/${PY_CRON_DEPS_2_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CRON_DEPS_2@@/$(sed_escape ${FULL_PY_CRON_DEPS_2})/" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
@@ -328,6 +344,8 @@ update_nsi_script_dl() {
 	DL_PY_LXML='${DownloadFile} '"${PY_LXML_URL}"' ${PY_LXML_FILENAME}'
 	DL_PY_CRYPTO='${DownloadFile} '"${PY_CRYPTO_URL}"' ${PY_CRYPTO_FILENAME}'
 	DL_PY_CRON='${DownloadFile} '"${PY_CRON_URL}"' ${PY_CRON_FILENAME}'
+	DL_PY_CRON_DEPS_1='${DownloadFile} '"${PY_CRON_DEPS_1_URL}"' ${PY_CRON_DEPS_1_FILENAME}'
+	DL_PY_CRON_DEPS_2='${DownloadFile} '"${PY_CRON_DEPS_2_URL}"' ${PY_CRON_DEPS_2_FILENAME}'
 	DL_OPENSSH='${DownloadFile} '"${OPENSSH_URL}"' ${OPENSSH_FILENAME}'
 	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
 	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
@@ -388,6 +406,10 @@ update_nsi_script_dl() {
 		-e "s/@@PY_CRON@@/${PY_CRON_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_CRON@@//" \
 		-e "s/@@INSTALL_FULL_OR_DL_PY_CRON@@/$(sed_escape ${INSTALL_DL_PY_CRON})/" \
+		-e "s/@@PY_CRON_DEPS_1@@/${PY_CRON_DEPS_1_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CRON_DEPS_1@@//" \
+		-e "s/@@PY_CRON_DEPS_2@@/${PY_CRON_DEPS_2_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PY_CRON_DEPS_2@@//" \
 		-e "s/@@PULSE_AGENT@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_NAME@@/${PULSE_AGENT_NAME}/" \
