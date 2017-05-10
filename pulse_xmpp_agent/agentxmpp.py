@@ -454,7 +454,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
-            logreception = """
+            try:
+                if self.config.public_ip != "":
+                    subnetreseauxmpp = "0.0.0.0"
+            except Exception:
+                logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 
 Check if ip [%s] is correct:
@@ -463,13 +467,9 @@ you must set public_ip in type with an address that exists on the machine.
 Otherwise the ip server parameter in the connection session is false
 It must be expressed in ip notation.
 It seems that mask for this ip [%s] does not exist
-AGENT %s ERROR TERMINATE"""%( self.boundjid.bare,
-                             er.messagejson['info']['hostname'],
-                             self.config.ipxmpp,
-                             self.config.ipxmpp,
-                             self.boundjid.bare)
-            self.loginfotomaster(logreception)
-            sys.exit(0)
+AGENT %s ERROR TERMINATE"""%( self.boundjid.bare, er.messagejson['info']['hostname'], self.config.ipxmpp, self.config.ipxmpp, self.boundjid.bare)
+                self.loginfotomaster(logreception)
+                sys.exit(0)
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
