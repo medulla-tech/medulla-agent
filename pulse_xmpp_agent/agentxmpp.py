@@ -127,19 +127,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        try :
-            if self.config.public_ip != "":
-                logging.log(DEBUGPULSE,"Attribution ip public by configuration : [%s]"%self.config.public_ip)
-                self.config.ipxmpp = self.config.public_ip
-            else:
-                logging.warning("Attribution ip public by configuration : [%s]"%self.config.public_ip)
-                raise AttributeError
-        except AttributeError:
-            self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+        self.ipconnection = self.config.Server
+        if  self.config.agenttype in ['relayserver']:
+            try :
+                if self.config.public_ip != "":
+                    logging.log(DEBUGPULSE,"Attribution ip public by configuration for ipconnexion: [%s]"%self.config.public_ip)
+                    self.ipconnection = self.config.public_ip
+            except Exception:
+                pass
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
-        #self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        #self.loginfotomaster("agent %s ready"%self.config.jidagent)
-        #self.update_plugin()
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
         self.logtopulse("Start Agent", who =  self.boundjid.bare)
         try:
@@ -436,15 +434,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #send if master public key public is missing
         er.messagejson['is_masterpublickey'] = self.RSA.isPublicKey("master")
 
-        xmppbroadcast = ""
-        xmppdhcp = ""
-        xmppdhcpserver = ""
-        xmppgateway = ""
-        xmppmacaddress = ""
-        xmppmacnotshortened = ""
-        ipconnection = self.config.Server
-        portconnection =self.config.Port
         for t in er.messagejson['listipinfo']:
+            # search network info used for xmpp
             if t['ipaddress'] == self.config.ipxmpp:
                 xmppmask = t['mask']
                 try:
@@ -456,30 +447,30 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppgateway = t['gateway']
                 xmppmacaddress = t['macaddress']
                 xmppmacnotshortened = t['macnotshortened']
-                ipconnection = self.config.Server
                 portconnection =self.config.Port
                 break;
-
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
-            try:
-                if self.config.public_ip != "":
-                    subnetreseauxmpp = "0.0.0.0"
-                    xmppmask = "0.0.0.0"
-            except Exception:
-                logreception = """
+            logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
-
 Check if ip [%s] is correct:
-If parameter of agent_type is relayserver and the parameter request_type is public,
-you must set public_ip in type with an address that exists on the machine.
-Otherwise the ip server parameter in the connection session is false
-It must be expressed in ip notation.
-It seems that mask for this ip [%s] does not exist
-AGENT %s ERROR TERMINATE"""%( self.boundjid.bare, er.messagejson['info']['hostname'], self.config.ipxmpp, self.config.ipxmpp, self.boundjid.bare)
-                self.loginfotomaster(logreception)
-                sys.exit(0)
+check if interface exist with ip %s
+
+Warning Configuration machine %s
+[connection] 
+server = It must be expressed in ip notation.
+
+server = 127.0.0.1  correct
+server = localhost in not correct
+AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
+                             er.messagejson['info']['hostname'],
+                             self.config.ipxmpp,
+                             self.config.ipxmpp,
+                             er.messagejson['info']['hostname'],
+                             self.boundjid.bare)
+            self.loginfotomaster(logreception)
+            sys.exit(0)
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
@@ -503,7 +494,7 @@ AGENT %s ERROR TERMINATE"""%( self.boundjid.bare, er.messagejson['info']['hostna
             'xmppgateway' : xmppgateway,
             'xmppmacaddress' : xmppmacaddress,
             'xmppmacnotshortened' : xmppmacnotshortened,
-            'ipconnection':ipconnection,
+            'ipconnection': self.ipconnection,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic,
