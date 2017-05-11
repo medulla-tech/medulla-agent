@@ -1,3 +1,9 @@
+pulse-xmpp-agent (1.2-1) unstable; urgency=low
+
+ * New version 1.2 ( 0da3aff0602261922c4d4edac87a587d281f6afd )
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 30 Jan 2017 14:21:01 +0200
+
 pulse-xmpp-agent (1.0-10) unstable; urgency=low
 
  * Fix default requires
