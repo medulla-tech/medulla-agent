@@ -14,7 +14,7 @@ relayserver_agent =
 
 [version]
 # Agent version
-version_agent = 1.1
+version_agent = 1.2
 
 [type]
 # The agent type: machine or relayserver
