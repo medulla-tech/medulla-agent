@@ -129,7 +129,7 @@ class confParameter:
                 self.logfile = os.path.join("/", "Library", "Application Support", "Pulse", "var", "log", "xmpp-agent.log")
             else:
                self.logfile = os.path.join("/", "var", "log" , "pulse", "xmpp-agent.log")
-        
+
         #information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get('configuration_server', 'confserver')
@@ -149,8 +149,6 @@ class confParameter:
             self.baseurlguacamole = Config.get('type', 'guacamole_baseurl')
         except:
             self.baseurlguacamole = ""
-
-        self.version_agent = Config.get('version', 'version_agent')
 
         try:
             self.debug = Config.get('global', 'log_level')

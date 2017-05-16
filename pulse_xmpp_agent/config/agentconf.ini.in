@@ -12,10 +12,6 @@ log_level = INFO
 # Relay agent jid associated to this client. Defined automatically at startup
 relayserver_agent =
 
-[version]
-# Agent version
-version_agent = 1.2
-
 [type]
 # The agent type: machine or relayserver
 agent_type = machine

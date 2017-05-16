@@ -8,10 +8,6 @@ log_level = INFO
 # Log file if used with -d (deamonize)
 # logfile = /var/log/pulse/xmpp-agent.log
 
-[version]
-# Agent version
-version_agent = 1.2
-
 [type]
 # The agent type: machine or relayserver
 agent_type = relayserver
