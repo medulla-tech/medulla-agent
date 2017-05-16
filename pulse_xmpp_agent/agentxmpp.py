@@ -127,6 +127,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
+        if self.config.agenttype in ['machine']:
+            self.send_presence ( pto = self.config.jidchatroomcommand , ptype = 'subscribe' )
         self.ipconnection = self.config.Server
         if  self.config.agenttype in ['relayserver']:
             try :
