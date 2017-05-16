@@ -74,7 +74,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 15
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
-
+        self.machinerelayserver=[]
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
@@ -118,9 +118,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.manage_scheduler.process_on_event()
 
     def changed_status(self, message):
-        print "%s %s"%(message['from'], message['type'])
-        if message['from'].user == 'master' and message['type'] == 'available':
-            self.update_plugin()
+        #print "%s %s"%(message['from'], message['type'])
+        if message['from'].user == 'master':
+            if message['type'] == 'available':
+                self.update_plugin()
+        else:
+            if self.config.agenttype in ['machine']:
+                if self.boundjid.bare != message['from'].bare : 
+                    try:
+                        if message['type'] == 'available':
+                            self.machinerelayserver.append(message['from'].bare)
+                        elif message['type'] == 'unavailable':
+                            self.machinerelayserver.remove(message['from'].bare)
+                    except Exception:
+                        pass
 
     def start(self, event):
         self.get_roster()
