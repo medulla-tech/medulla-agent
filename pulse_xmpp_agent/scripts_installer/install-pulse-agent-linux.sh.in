@@ -63,6 +63,32 @@ install_agent() {
     esac
 }
 
+check_python_modules() {
+	MODULELIST="netifaces configparser utils sleekxmpp zipfile2 pycurl lxml pycrypto python_dateutil six croniter"
+	# TODO: Add support for debian
+	for MODULE in $MODULELIST
+	do
+		case "$DISTRO" in
+		mageia)
+			urpmq -i python-$MODULE &> /dev/null
+			if [ $? == "0" ]; then
+				urpmi --auto python-$MODULE
+			else
+				pip install $MODULE
+			fi
+		;;
+		case debian)
+			dpkg -l python-$MODULE &> /dev/null
+			if [ $? == "0" ]; then
+				apt-get install python-$MODULE
+			else
+				pip install $MODULE
+			fi
+		;;
+		esac
+	done
+}
+
 configure_pulse() {
     if [[ ! -d /etc/pulse-xmpp-agent ]]; then
       mkdir /etc/pulse-xmpp-agent
@@ -80,5 +106,6 @@ configure_iptables() {
 check_root
 check_distro
 install_agent
+check_python_modules
 configure_pulse
 configure_iptables
