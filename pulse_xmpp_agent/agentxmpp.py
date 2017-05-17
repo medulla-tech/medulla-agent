@@ -94,7 +94,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
         self.md5reseau = refreshfingerprint()
-
+        refreshfingerprintconf(self.config.agenttype)
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
 
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)

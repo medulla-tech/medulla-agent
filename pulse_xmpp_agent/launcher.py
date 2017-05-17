@@ -25,7 +25,6 @@ import os, sys
 
 from lib.utils import *
 
-
 if __name__ == '__main__':
     optp = OptionParser()
     optp.add_option("-t", "--type",
@@ -40,12 +39,24 @@ if __name__ == '__main__':
     if not opts.typemachine.lower() in ["machine",'relayserver']:
         print "Parameter error"
         sys.exit(1)
+    if not testagentconf(opts.typemachine):
+        print "warning configuration  option missing \neg:   guacamole_baseurl  , connection/port/server' , global/relayserver_agent"
+        print "reconfiguration"
 
+    if networkchanged():
+        print "network changed reconfiguration"
+
+    if confchanged(opts.typemachine):
+        print "conf changed reconfiguration"
+
+    testspeedagent = networkchanged() or confchanged(opts.typemachine) or not testagentconf(opts.typemachine)
+
+    if  testspeedagent:
+        print "search configuration from master"
     os.chdir(os.path.dirname(sys.argv[0]))
     if not opts.consoledebug:
         if opts.typemachine.lower() in ["machine"]:
-            if not startspeedagent():
-                print "startspeedagent False"
+            if  testspeedagent:
                 if sys.platform.startswith('win'):
                     print "Running", 'connectionagent.py -t %s'%opts.typemachine
                     os.system('connectionagent.py -t %s'%opts.typemachine)
@@ -61,7 +72,7 @@ if __name__ == '__main__':
             os.system('python agentxmpp.py -d -t %s'%opts.typemachine)
     else:
         if opts.typemachine.lower() in ["machine"]:
-            if not startspeedagent():
+            if  testspeedagent:
                 if sys.platform.startswith('win'):
                     print "Running", 'connectionagent.py -c -t %s'%opts.typemachine
                     os.system('connectionagent.py -c -t %s'%opts.typemachine)

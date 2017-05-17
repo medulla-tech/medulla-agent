@@ -35,6 +35,8 @@ import base64
 from configuration import  confParameter
 import urllib, urllib2
 import pickle
+from  agentconffile import conffilename
+import ConfigParser
 DEBUGPULSE=25
 
 
@@ -85,6 +87,23 @@ def listback_to_deploy(objectxmpp):
         for u in objectxmpp.back_to_deploy:
             print u
 
+def testagentconf(typeconf):
+    if typeconf == "relayserver":
+        return True
+    Config = ConfigParser.ConfigParser()
+    namefileconfig = conffilename(typeconf)
+    Config.read(namefileconfig)
+    if Config.has_option("type", "guacamole_baseurl")\
+                            and Config.has_option('connection', 'port')\
+                            and Config.has_option('connection', 'server')\
+                            and Config.has_option('global', 'relayserver_agent')\
+                            and Config.get('type', 'guacamole_baseurl') != ""\
+                            and Config.get('connection', 'port') != ""\
+                            and Config.get('connection', 'server') != ""\
+                            and Config.get('global', 'relayserver_agent') != "":
+        return True
+    return False
+
 def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
@@ -98,16 +117,38 @@ def createfingerprintnetwork():
         md5network = hashlib.md5(obj['result']).hexdigest()
     return md5network
 
-def startspeedagent():
+def createfingerprintconf(typeconf):
+    namefileconfig = conffilename(typeconf)
+    return hashlib.md5(file_get_contents(namefileconfig)).hexdigest()
+
+
+def confinfoexist():
+    filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintconf')
+    if os.path.exists(filenetworkinfo):
+        return True
+    return False
+
+def confchanged(typeconf):
+    if confinfoexist():
+        fingerprintconf = file_get_contents(os.path.join(Setdirectorytempinfo(), 'fingerprintconf'))
+        newfingerprintconf = createfingerprintconf(typeconf)
+        if newfingerprintconf == fingerprintconf:
+            return False
+    return True
+
+def refreshfingerprintconf(typeconf):
+    fp =  createfingerprintconf(typeconf)
+    file_put_contents(os.path.join(Setdirectorytempinfo(), 'fingerprintconf'), fp )
+    return fp
+
+def networkchanged():
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(os.path.join(Setdirectorytempinfo(), 'fingerprintnetwork'))
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
-            return True
-        else:
             return False
     else:
-        return False
+        return True
 
 def refreshfingerprint():
     fp =  createfingerprintnetwork()
@@ -136,8 +177,6 @@ def file_put_contents(filename,  data):
     f = open(filename, 'w')
     f.write(data)
     f.close()
-
-
 
 def save_obj(obj, name ):
     """
