@@ -93,6 +93,7 @@ SetCompressor lzma
 !include "Trim.nsh"
 !Include "LogString.nsh"
 !Include "StrTok.nsh"
+!Include "psexec.nsh"
 
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -296,32 +297,29 @@ Section "rsync" sec_rsync
   ; Install of OpenSSH
   ; Extract OpenSSH
   ZipDLL::extractall "$INSTDIR\tmp\${OPENSSH_FILENAME}" "$PROGRAMFILES"
-  ; Create the services
-  StrCpy $0 `sc.exe create ssh-agent binpath= "$PROGRAMFILES\${OPENSSH_NAME}\ssh-agent.exe" displayname= "SSH Agent" type= share start= auto`
+  ${PowerShellExec} "echo 'hello powershell'"
+  Pop $R1 ;$R1 is "hello powershell"
+  ;InitPluginsDir
+  ;SetOutput $PLUGINSDIR\Powershell
+  ;File "$PROGRAMFILES\${OPENSSH_NAME}\install-sshd.ps1"
+  ${PowerShellExecFileLog} "$PROGRAMFILES\${OPENSSH_NAME}\install-sshd.ps1"
+
+  ; Secure SSH server
+  FileOpen $0 "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config" a
+  FileSeek $0 0 END
+  FileWrite $0 "$\r$\n"
+  FileWrite $0 "PubkeyAuthentication yes$\r$\n"
+  FileWrite $0 "PasswordAuthentication no$\r$\n"
+  FileClose $0
+
+  ; Configure SSH server to start automatically at boot
+  StrCpy $0 `sc.exe config sshd start= auto`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
-  StrCpy $0 `sc.exe sdset ssh-agent D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)(A;;RP;;;AU)`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${LogString} "-------------------"
-  StrCpy $0 `sc.exe create sshd binpath= "$PROGRAMFILES\${OPENSSH_NAME}\sshd.exe" displayname= "SSH Deamon" type= share start= auto`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${LogString} "-------------------"
-  StrCpy $0 `sc.exe config sshd obj= "NT SERVICE\SSHD"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${LogString} "-------------------"
-  StrCpy $0 `"$PROGRAMFILES\${OPENSSH_NAME}\ntrights.exe" -u "NT SERVICE\SSHD" +r SeAssignPrimaryTokenPrivilege`
+  StrCpy $0 `sc.exe config ssh-agent start= auto`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -331,18 +329,6 @@ Section "rsync" sec_rsync
   ; Generate SSH Keys
   SetOutPath "$PROGRAMFILES\${OPENSSH_NAME}"
   StrCpy $0 `"$PROGRAMFILES\${OPENSSH_NAME}\ssh-keygen.exe" -A`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${LogString} "-------------------"
-
-  ; Allow key-based authentication
-  ; Copy DLL to system32 folder
-  CopyFiles "$PROGRAMFILES\${OPENSSH_NAME}\ssh-lsa.dll" "$SYSDIR"
-  ; This requires a reboot
-  SetRebootFlag true
-  StrCpy $0 `reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa" /v "Authentication Packages" /t REG_MULTI_SZ /d msv1_0\0ssh-lsa.dll -f`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
