@@ -32,7 +32,7 @@ import random
 from  agentconffile import conffilename
 from sleekxmpp import jid
 
-
+from utils import ipfromdns
 
 def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
@@ -40,7 +40,7 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     if not Config.has_option("configuration_server", "confdomain"):
         Config.set('configuration_server', 'confdomain',Config.get('chat', 'domain'))
     Config.set('connection', 'port'  , str(port) )
-    Config.set('connection', 'server', str(ipserver))
+    Config.set('connection', 'server', ipfromdns(str(ipserver)))
     Config.set('global', 'relayserver_agent', str(jid))
     Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
     try:
@@ -66,9 +66,9 @@ def infos_network_packageserver():
     Config = ConfigParser.ConfigParser()
     namefileconfig = os.path.join('etc','mmc','pulse2','package-server','package-server.ini')
     namefileconfiglocal = os.path.join('etc','mmc','pulse2','package-server','package-server.ini.local')
-    public_ip = loadparameters(namefileconfiglocal, "main", "public_ip")
+    public_ip = ipfromdns(loadparameters(namefileconfiglocal, "main", "public_ip"))
     if public_ip == "":
-        public_ip = loadparameters(namefileconfig, "main", "public_ip")
+        public_ip = ipfromdns(loadparameters(namefileconfig, "main", "public_ip"))
     port = loadparameters(namefileconfiglocal, "main", "port")
     if port == "":
         port = loadparameters(namefileconfig, "main", "port")
@@ -89,7 +89,7 @@ class confParameter:
         Config.read(namefileconfig)
         self.packageserver = {}
         self.Port = Config.get('connection', 'port')
-        self.Server = Config.get('connection', 'server')
+        self.Server = ipfromdns(Config.get('connection', 'server'))
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
 
@@ -112,7 +112,7 @@ class confParameter:
             if Config.has_option("type", "request_type"):
                 self.request_type = Config.get('type', 'request_type')
                 if self.request_type.lower() == "public" and  Config.has_option("type", "public_ip"):
-                    self.public_ip_relayserver = Config.get('type', 'public_ip')
+                    self.public_ip_relayserver = ipfromdns(Config.get('type', 'public_ip'))
 
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         #par convention :

@@ -32,7 +32,7 @@ import traceback
 from pprint import pprint
 import hashlib
 import base64
-from configuration import  confParameter
+#from configuration import  confParameter
 import urllib, urllib2
 import pickle
 from  agentconffile import conffilename
@@ -853,7 +853,6 @@ def getIpXmppInterface(ipadress,Port):
                 resultip =  b[1].split(':')[0]
     return resultip
 
-
 # 3 functions used for subnet network
 def ipV4toDecimal(ipv4):
     d = ipv4.split('.')
@@ -890,7 +889,7 @@ def searchippublic(site = 1):
 
 
 # decorateur pour simplifier les plugins
-# verifie session existe.
+# verify session exist.
 # pas de session end
 def pulginmaster(func):
     def wrapper( objetxmpp, action, sessionid, data, message, ret ):
@@ -903,8 +902,6 @@ def pulginmaster(func):
         response = func( objetxmpp, action, sessionid, data, message, ret, objsessiondata)
         return response
     return wrapper
-
-
 
 def pulginmastersessionaction( sessionaction, timeminute = 10 ):
     def decorateur(func):
@@ -926,7 +923,6 @@ def pulginmastersessionaction( sessionaction, timeminute = 10 ):
             return response
         return wrapper
     return decorateur
-
 
 def merge_dicts(*dict_args):
     result = {}
@@ -1000,3 +996,39 @@ def protoandport():
                 if colonne[-1] ==  pidrdp:
                     protport['rdp']=colonne[1].split(':')[1]
     return protport
+
+def ipfromdns(ipdata):
+    """ This function converts a dns to ipv4
+        If not find return ""
+        function tester on OS:
+        MAcOs, linux (debian, redhat, ubuntu), windows
+        eg : print ip("sfr.fr")
+        80.125.163.172
+    """
+    def strnslookup(str):
+        adress = False
+        for t in str:
+            if "Name" in t:
+                adress = True
+            if adress == True and "Address" in t:
+                return t.split(":")[1].strip()
+        return ""
+
+    def searchipfromdns(ip):
+        re = shellcommandtimeout("nslookup %s"%ip, 10).run()
+        result  = [x.strip() for x in re['result'] if x !='']
+        if sys.platform.startswith('linux'):
+            return strnslookup(result)
+        elif sys.platform.startswith('win'):
+            return strnslookup(result)
+        elif sys.platform.startswith('darwin'):
+            return strnslookup(result)
+
+    if ipdata != "" and ipdata != None:
+        if ipdata.lower() == "localhost":
+            return "127.0.0.1"
+        if is_valid_ipv4(ipdata):
+            return ipdata
+        else:
+            return searchipfromdns(ipdata)
+    return ""
