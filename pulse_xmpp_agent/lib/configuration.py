@@ -62,25 +62,57 @@ class SingletonDecorator:
             self.instance = self.klass(*args,**kwds)
         return self.instance
 
+def infos_network_packageserver():
+    Config = ConfigParser.ConfigParser()
+    namefileconfig = os.path.join('etc','mmc','pulse2','package-server','package-server.ini')
+    namefileconfiglocal = os.path.join('etc','mmc','pulse2','package-server','package-server.ini.local')
+    public_ip = loadparameters(namefileconfiglocal, "main", "public_ip")
+    if public_ip == "":
+        public_ip = loadparameters(namefileconfig, "main", "public_ip")
+    port = loadparameters(namefileconfiglocal, "main", "port")
+    if port == "":
+        port = loadparameters(namefileconfig, "main", "port")
+    return { 'port' : port, 'public_ip': public_ip}
+
+def loadparameters(namefile, group, key):
+        Config = ConfigParser.ConfigParser()
+        Config.read(namefile)
+        value = ""
+        if Config.has_option("group", "key"):
+            value = Config.get('group', 'key')
+        return value
+
 class confParameter:
     def __init__(self,typeconf='machine'):
         Config = ConfigParser.ConfigParser()
         namefileconfig = conffilename(typeconf)
         Config.read(namefileconfig)
+        self.packageserver = {}
         self.Port = Config.get('connection', 'port')
         self.Server = Config.get('connection', 'server')
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
+
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except:
             self.agenttype = "machine"
-        if self.agenttype == "relayserver":
 
+        if self.agenttype == "relayserver":
+            packageserver = infos_network_packageserver()
+            if packageserver["public_ip"] == '':
+                self.packageserver["public_ip"] = self.Server
+            if packageserver["port"] == '':
+                self.packageserver["port"] = 9990
+            else:
+                self.packageserver["port"] = int(packageserver["port"])
+        self.public_ip = ""
+        self.public_ip_relayserver = ""
+        if self.agenttype == "relayserver":
             if Config.has_option("type", "request_type"):
                 self.request_type = Config.get('type', 'request_type')
                 if self.request_type.lower() == "public" and  Config.has_option("type", "public_ip"):
-                    self.public_ip = Config.get('type', 'public_ip')
+                    self.public_ip_relayserver = Config.get('type', 'public_ip')
 
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         #par convention :

@@ -87,12 +87,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
-        try:
-            self.ippublic = searchippublic()
-        except:
-            self.ippublic = None
-        if self.ippublic == "":
-            self.ippublic == None
+        if self.config.public_ip == "":
+            try:
+                self.config.public_ip = searchippublic()
+            except:
+                self.config.public_ip = None
+        if self.config.public_ip == "":
+            self.config.public_ip == None
         self.md5reseau = refreshfingerprint()
         refreshfingerprintconf(self.config.agenttype)
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
@@ -142,10 +143,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_presence ( pto = self.config.jidchatroomcommand , ptype = 'subscribe' )
         self.ipconnection = self.config.Server
         if  self.config.agenttype in ['relayserver']:
-            try :
-                if self.config.public_ip != "":
-                    logging.log(DEBUGPULSE,"Attribution ip public by configuration for ipconnexion: [%s]"%self.config.public_ip)
-                    self.ipconnection = self.config.public_ip
+            try:
+                if self.config.public_ip_relayserver != "":
+                    logging.log(DEBUGPULSE,"Attribution ip public by configuration for ipconnexion: [%s]"%self.config.public_ip_relayserver)
+                    self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
         self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
@@ -510,8 +511,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'ipconnection': self.ipconnection,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
-            'ippublic' : self.ippublic,
+            'ippublic' : self.config.public_ip,
             'remoteservice' : protoandport(),
+            'pakageserver' : self.config.packageserver
         }
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
