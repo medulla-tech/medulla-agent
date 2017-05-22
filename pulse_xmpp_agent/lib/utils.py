@@ -818,11 +818,12 @@ def pulgindeploy1(func):
     return wrapper
 
 #determine adresse ip utiliser pour xmpp
-def getIpXmppInterface(ipadress,Port):
+def getIpXmppInterface(ipadress1, Port):
     resultip =  ''
+    ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE,"recherche adresse ip serveur XMPP")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress)
+        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port, ipadress)
         obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
         logging.log(DEBUGPULSE,"netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
         if len(obj['result']) != 0:

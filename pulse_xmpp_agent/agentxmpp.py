@@ -149,7 +149,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server,self.config.Port)
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
