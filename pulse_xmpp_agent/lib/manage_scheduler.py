@@ -28,17 +28,14 @@ import logging
 import time
 from datetime import datetime
 import croniter
+#from lib.utils import
 
-print os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptorscheduler"))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptorscheduler")))
 logger = logging.getLogger()
-
-
 
 class manage_scheduler:
     """
     This class manages events and it executes the scheduler plugins that are contained in
-     The / descriptorscheduler
+     The / descriptor_scheduler_relay or descriptor_scheduler_machine
      Scheduled plugins are files prefixed by scheduling_
 
      These files must have a function schedule_main
@@ -57,8 +54,15 @@ class manage_scheduler:
         self.now = datetime.now()
 
         self.objectxmpp = objectxmpp
-        self.directoryschedule =  os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptorscheduler"))
 
+        #addition path to sys
+        if  self.objectxmpp.config.agenttype in ['relayserver']:
+            descriptor_scheduler = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptor_scheduler_relay")
+        elif self.objectxmpp.config.agenttype in ['machine']:
+            descriptor_scheduler = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptor_scheduler_machine")
+        self.directoryschedule =  os.path.abspath(descriptor_scheduler)
+        print "directory to descriptor scheduler (%s : %s)"%(self.objectxmpp.config.agenttype, self.directoryschedule )
+        sys.path.append(self.directoryschedule)
         #creation repertoire si non exist
         if not os.path.exists(self.directoryschedule):
             logging.getLogger().debug("create directory scheduler %s"%self.directoryschedule)
