@@ -54,7 +54,7 @@
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="1.4"
+AGENT_VERSION="1.5"
 PYTHON_VERSION="2.7.9"
 PY_WIN32_VERSION="219"
 PY_NETIFACES_MODULE="netifaces"

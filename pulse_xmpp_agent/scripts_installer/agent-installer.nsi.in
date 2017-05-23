@@ -527,6 +527,14 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create packages folder to hold packages to be deployed on client
   CreateDirectory $INSTDIR\tmp\packages
 
+  ; Run the agent
+  StrCpy $0 `SCHTASKS /Run /TN "${PRODUCT_NAME}"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
   SectionIn RO
   WriteUninstaller $INSTDIR\uninstall.exe
   ; Add ourselves to Add/remove programs
