@@ -66,9 +66,9 @@ def infos_network_packageserver():
     Config = ConfigParser.ConfigParser()
     namefileconfig = os.path.join('etc','mmc','pulse2','package-server','package-server.ini')
     namefileconfiglocal = os.path.join('etc','mmc','pulse2','package-server','package-server.ini.local')
-    public_ip = ipfromdns(loadparameters(namefileconfiglocal, "main", "public_ip"))
+    public_ip = loadparameters(namefileconfiglocal, "main", "public_ip")
     if public_ip == "":
-        public_ip = ipfromdns(loadparameters(namefileconfig, "main", "public_ip"))
+        public_ip = loadparameters(namefileconfig, "main", "public_ip")
     port = loadparameters(namefileconfiglocal, "main", "port")
     if port == "":
         port = loadparameters(namefileconfig, "main", "port")
