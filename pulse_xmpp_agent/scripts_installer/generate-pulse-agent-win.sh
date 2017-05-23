@@ -54,7 +54,7 @@
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="1.5"
+AGENT_VERSION="1.6"
 PYTHON_VERSION="2.7.9"
 PY_WIN32_VERSION="219"
 PY_NETIFACES_MODULE="netifaces"
@@ -97,7 +97,6 @@ FUSION_INVENTORY_AGENT_VERSION="2.3.18"
 DOWNLOAD_FOLDER="downloads"
 PULSE_AGENT_PLUGINS_NAME="pulse-agent-plugins"
 PULSE_AGENT_PLUGINS_VERSION="1.2"
-RSYNC_FILENAME="rsync.zip"
 
 
 # Display usage
@@ -327,7 +326,7 @@ update_nsi_script_full() {
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${FULL_FUSION_INVENTORY_AGENT})/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
-		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
+		-e "s/@@RSYNC_FILENAME@@/rsync.zip/" \
 		-e "s/@@GENERATED_SIZE@@/FULL/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
@@ -422,7 +421,7 @@ update_nsi_script_dl() {
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${DL_FUSION_INVENTORY_AGENT})/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
-		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
+		-e "s/@@RSYNC_FILENAME@@/rsync.zip/" \
 		-e "s/@@GENERATED_SIZE@@/MINIMAL/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
