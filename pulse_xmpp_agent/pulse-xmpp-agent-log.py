@@ -28,7 +28,7 @@ import json
 import hashlib
 import datetime
 from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, Text
+from sqlalchemy import Column, String, Integer, DateTime, Text
 from optparse import OptionParser
 from lib.utils import StreamToLogger
 #from sqlalchemy.dialects.mysql import  TINYINT
@@ -40,7 +40,7 @@ import copy
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.declarative import declarative_base
-from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.logcolor import  add_coloring_to_emit_ansi
 
 
 Base = declarative_base()
