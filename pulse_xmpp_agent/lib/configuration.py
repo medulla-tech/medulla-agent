@@ -78,8 +78,8 @@ def loadparameters(namefile, group, key):
         Config = ConfigParser.ConfigParser()
         Config.read(namefile)
         value = ""
-        if Config.has_option("group", "key"):
-            value = Config.get('group', 'key')
+        if Config.has_option(group, key):
+            value = Config.get(group, key)
         return value
 
 class confParameter:
@@ -100,6 +100,7 @@ class confParameter:
 
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
+            self.packageserver["public_ip"] = packageserver["public_ip"]
             if packageserver["public_ip"] == '':
                 self.packageserver["public_ip"] = self.Server
             if packageserver["port"] == '':
