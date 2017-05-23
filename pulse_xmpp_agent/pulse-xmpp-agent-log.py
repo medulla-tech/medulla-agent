@@ -36,7 +36,7 @@ import copy
 #from mmc.database.database_helper import DBObj
 #from sqlalchemy.orm import relationship
 #import datetime
-
+import traceback
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -338,10 +338,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 pass
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
-            dataerreur['data']['msg'] = "ERROR : Message structure"
-            self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
             traceback.print_exc(file=sys.stdout)
 
 def createDaemon(opts,conf):
