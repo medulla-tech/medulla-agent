@@ -153,7 +153,6 @@ class  networkagentinfo:
                                                 stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
         code_result= p.wait()
-        dataroute=[]
         obj1={}
         for i in range(len(result)):
             #print result[i].rstrip('\n')
@@ -489,7 +488,6 @@ def rewriteInterfaceTypeDebian(data,interface ):
 
 def typelinuxfamily():
     debiandist = ['astra', 'canaima', 'collax', 'cumulus', 'damn', 'debian', 'doudoulinux', 'euronode', 'finnix', 'grml', 'kanotix', 'knoppix', 'linex', 'linspire',   'advanced', 'lmde', 'mepis','ocera', 'ordissimo','parsix', 'pureos', 'rays', 'aptosid', 'ubuntu', 'univention', 'xandros']
-    redhadlist=['centos', 'rhel', 'redhat', 'fedora', 'mageia','mga', 'mandriva', 'suse', 'oracle', 'scientific', 'fermi']
     val = platform.platform().lower()
     for t in debiandist:
         if t in val:
