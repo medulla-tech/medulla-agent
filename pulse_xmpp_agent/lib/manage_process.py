@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys,os,platform
+import sys,os
 import os.path
 import json
 from multiprocessing import Process, Queue, TimeoutError, Pool
