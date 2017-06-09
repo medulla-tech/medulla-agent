@@ -20,29 +20,38 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys
-import os
+import sys,os
 import logging
+import ConfigParser
 import sleekxmpp
 import platform
+import netifaces
+import random
 import base64
 import json
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
+import hashlib
+import errno
 from lib.networkinfo import networkagentinfo
 from lib.configuration import confParameter
 from lib.managesession import session
 from lib.utils import *
 from lib.manage_event import manage_event
+from lib.manage_info_command import manage_infoconsole
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
 import pluginsmachine
 from optparse import OptionParser
 import time
-from multiprocessing import Queue
+import pprint
+from datetime import datetime
+from multiprocessing import Process, Queue, TimeoutError
+import threading
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
+from multiprocessing.managers import SyncManager
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
 
@@ -56,6 +65,8 @@ if sys.version_info < (3, 0):
 else:
     raw_input = input
 
+class QueueManager(SyncManager):
+    pass
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self, conf):#jid, password, room, nick):
@@ -67,34 +78,40 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 15
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
-        self.machinerelayserver=[]
+        self.machinerelayserver = []
+
+        
+        self.qin = Queue(10)
+
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
         self.agentmaster = jid.JID("master@pulse")
         self.session = session(self.config.agenttype)
-
+        self.reversessh = None
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
+
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
+
+        #use public_ip for localisation
         if self.config.public_ip == "":
             try:
                 self.config.public_ip = searchippublic()
-            except:
-                self.config.public_ip = None
+            except Exception:
+                pass
         if self.config.public_ip == "":
             self.config.public_ip == None
         self.md5reseau = refreshfingerprint()
-        refreshfingerprintconf(self.config.agenttype)
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
-
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
         self.schedule('manage session', self.config.inventory_interval, self.handleinventory, repeat=True)
+        #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
             self.schedule('session reload', 15, self.reloadsesssion, repeat=False)
 
@@ -106,7 +123,104 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
+        #self.add_event_handler('dedee', self.dede, threaded=True)
+
         self.RSA = MsgsignedRSA(self.config.agenttype)
+        
+        #### manage information extern for Agent RS(relayserver) ou M(machine)
+        if  self.config.agenttype in ['relayserver']:
+            self.qoutARS = Queue(10)
+            QueueManager.register('json_to_ARS' , self.setinARS)
+            QueueManager.register('json_from_ARS', self.getoutARS)
+            QueueManager.register('size_nb_msg_ARS' , self.sizeoutARS)
+            #queue_in, queue_out, objectxmpp
+            self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutARS, self)
+        else :
+            self.qoutAM = Queue(10)
+            QueueManager.register('json_to_AM' , self.setinAM)
+            QueueManager.register('json_from_AM', self.getoutAM)
+            QueueManager.register('size_nb_msg_AM' , self.sizeoutAM)
+            self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutAM, self)
+        self.managerQueue = QueueManager(("", self.config.parametersscriptconnection['port']),
+                                         authkey = self.config.passwordconnection)
+        self.managerQueue.start()
+
+    def setinARS(self, data):
+        self.__setin(data , self.qoutARS)
+
+    def setinAM(self, data):
+        self.__setin(data , self.qoutAM)
+
+    def __setin(self, data , q):
+        self.qin.put(data)
+
+    def gestioneventconsole(self, event, q):
+        try:
+            dataobj = json.loads(event)
+        except Exception as e:
+            logging.error("bad struct jsopn Message console %s : %s " %(event, str(e)))
+            q.put("bad struct jsopn Message console %s : %s " %(event, str(e)))
+        listaction = [] # cette liste contient les function directement appelable depuis console.
+        #check action in message
+        if 'action' in dataobj:
+            if not 'sessionid' in dataobj:
+                dataobj['sessionid'] = getRandomName(6, dataobj["action"])
+            if dataobj["action"] in listaction:
+                #call fubnction agent direct
+                func = getattr(self, dataobj["action"])
+                if "params_by_val" in dataobj and not "params_by_name" in dataobj:
+                    func(*dataobj["params_by_val"])
+                elif "params_by_val" in dataobj and "params_by_name" in dataobj:
+                    func(*dataobj["params_by_val"], **dataobj["params_by_name"])
+                elif "params_by_name" in dataobj and not "params_by_val" in dataobj:
+                    func( **dataobj["params_by_name"])
+                else :
+                    func()
+            else:
+                #call plugin
+                dataerreur = { "action" : "result" + dataobj["action"],
+                               "data" : { "msg" : "error plugin : "+ dataobj["action"]
+                               },
+                               'sessionid' : dataobj['sessionid'],
+                               'ret' : 255,
+                               'base64' : False
+                }
+                msg = {'from' : 'console', "to" : self.boundjid.bare, 'type' : 'chat' }
+                if not 'data' in dataobj:
+                    dataobj['data'] = {}
+                call_plugin(dataobj["action"],
+                    self,
+                    dataobj["action"],
+                    dataobj['sessionid'],
+                    dataobj['data'],
+                    msg,
+                    dataerreur)
+        else:
+            logging.error("action missing in jsopn Message console %s" %(data))
+            q.put("action missing in jsopn Message console %s" %(data))
+            return
+
+    def getoutARS(self, timeq=10):
+        return self.__getout(timeq,self.qoutARS)
+
+    def getoutAM(self, timeq=10):
+        return self.__getout(timeq, self.qoutAM)
+
+    def __getout(self, timeq, q):
+        try:
+            valeur = q.get(True, timeq)
+        except Exception as e:
+            valeur=""
+        return valeur
+
+    def sizeoutARS(self):
+        return self.__sizeout(self.qoutARS)
+
+    def sizeoutAM(self):
+        return self.__sizeout(self.qoutAM)
+
+    def __sizeout(self, q):
+        return q.qsize()
 
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
@@ -132,9 +246,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        if self.config.agenttype in ['machine']:
-            self.send_presence ( pto = self.config.jidchatroomcommand , ptype = 'subscribe' )
         self.ipconnection = self.config.Server
+
         if  self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
@@ -142,6 +255,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
+
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
@@ -151,8 +265,40 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.back_to_deploy = load_back_to_deploy()
         except IOError:
             self.back_to_deploy = {}
-
         cleanbacktodeploy(self)
+
+    def send_message_agent( self,
+                            mto,
+                            mbody,
+                            msubject=None,
+                            mtype=None,
+                            mhtml=None,
+                            mfrom=None,
+                            mnick=None):
+        if mto != "console":
+            print "send command %s"%json.dumps(mbody)
+            self.send_message(
+                                mto,
+                                json.dumps(mbody),
+                                msubject,
+                                mtype,
+                                mhtml,
+                                mfrom,
+                                mnick)
+        else :
+            if self.config.agenttype in ['relayserver']:
+                q = self.qoutARS
+            else:
+                q = self.qoutAM
+            if q.full():
+                #vide queue
+                while not q.empty():
+                    q.get()
+            else:
+                try :
+                    q.put(json.dumps(mbody), True, 10)
+                except Exception:
+                    print "put in queue impossible"
 
     def logtopulse(self, text, type = 'noset', sessionname = '', priority = 0, who =""):
         if who == "":
@@ -164,9 +310,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     'priority':priority,
                     'who':who
                     }
-        self.send_message(mto=jid.JID("log@pulse"),
-                                mbody=json.dumps(msgbody),
-                                mtype='chat')
+        self.send_message(  mto = jid.JID("log@pulse"),
+                            mbody=json.dumps(msgbody),
+                            mtype='chat')
+
+    #def queueinfo(self):
+        ##if self.qin.qsize() > 0:
+            ##print self.qin.get()
+        #pass
 
     def handleinventory(self):
         msg={ 'from' : "master@pulse/MASTER",
@@ -190,7 +341,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
-        dataobj=self.seachInfoMachine()
+        dataobj  = self.seachInfoMachine()
         logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%(self.agentmaster, json.dumps(dataobj, indent=4, sort_keys=True)))
         self.send_message(  mto = self.agentmaster,
                             mbody = json.dumps(dataobj),
@@ -217,13 +368,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         {})
 
     def loginfotomaster(self, msgdata):
-        # ne sont traite par master seulement action loginfos
         logstruct={
                     "action": "infolog",
                     "sessionid" : getRandomName(6, "xmpplog"),
                     "ret" : 0,
                     "base64" : False,
-                    "msg" : msgdata }
+                    "msg":  msgdata }
         try:
             self.send_message(  mbody = json.dumps(logstruct),
                                 mto = '%s/MASTER'%self.agentmaster,
@@ -243,6 +393,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def handlemanagesession(self):
         self.session.decrementesessiondatainfo()
+        print self.machinerelayserver
 
     def networkMonitor(self):
         try:
@@ -261,8 +412,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         restart = True
         logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
-
-    
 
     def register(self, iq):
         """ This function is called for automatic registation """
@@ -283,9 +432,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def filtre_message(self, msg):
         pass
-
-    #def ischatroomdeploy(self, jidmessage ):
-        #return jidmessage in self.nicklistchatroomcommand
 
     def message(self, msg):
         possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
@@ -440,7 +586,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         er.messagejson['publickey'] =  self.RSA.loadkeypublictobase64()
         #send if master public key public is missing
         er.messagejson['is_masterpublickey'] = self.RSA.isPublicKey("master")
-
         for t in er.messagejson['listipinfo']:
             # search network info used for xmpp
             if t['ipaddress'] == self.config.ipxmpp:
@@ -454,7 +599,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppgateway = t['gateway']
                 xmppmacaddress = t['macaddress']
                 xmppmacnotshortened = t['macnotshortened']
-                portconnection =self.config.Port
+                portconnection = self.config.Port
                 break;
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
@@ -477,7 +622,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                              er.messagejson['info']['hostname'],
                              self.boundjid.bare)
             self.loginfotomaster(logreception)
-            sys.exit(0)
+            sys.exit(0) 
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
@@ -501,13 +646,14 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'xmppgateway' : xmppgateway,
             'xmppmacaddress' : xmppmacaddress,
             'xmppmacnotshortened' : xmppmacnotshortened,
-            'ipconnection': self.ipconnection,
+            'ipconnection':self.ipconnection,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.config.public_ip,
             'remoteservice' : protoandport(),
             'pakageserver' : self.config.packageserver
         }
+
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
             if element.endswith('.py') and element.startswith('plugin_'):
@@ -607,9 +753,14 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
         if xmpp.connect(address=(tg.Server,tg.Port)):
             xmpp.process(block=True)
+            logging.log(DEBUGPULSE,"terminate infocommand")
+            xmpp.qin.put("quit")
             xmpp.queue_read_event_from_command.put("quit")
-            logging.error("wait 2s end thread event loop")
+            logging.log(DEBUGPULSE,"wait 2s end thread event loop")
+            logging.log(DEBUGPULSE,"terminate manage data sharing")
+            xmpp.managerQueue.shutdown()
             time.sleep(2)
+            logging.log(DEBUGPULSE,"terminate scheduler")
             xmpp.scheduler.quit()
             logging.log(DEBUGPULSE,"bye bye Agent")
         else:

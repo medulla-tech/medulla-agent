@@ -66,9 +66,9 @@ def infos_network_packageserver():
     Config = ConfigParser.ConfigParser()
     namefileconfig = os.path.join('etc','mmc','pulse2','package-server','package-server.ini')
     namefileconfiglocal = os.path.join('etc','mmc','pulse2','package-server','package-server.ini.local')
-    public_ip = loadparameters(namefileconfiglocal, "main", "public_ip")
+    public_ip = ipfromdns(loadparameters(namefileconfiglocal, "main", "public_ip"))
     if public_ip == "":
-        public_ip = loadparameters(namefileconfig, "main", "public_ip")
+        public_ip = ipfromdns(loadparameters(namefileconfig, "main", "public_ip"))
     port = loadparameters(namefileconfiglocal, "main", "port")
     if port == "":
         port = loadparameters(namefileconfig, "main", "port")
@@ -78,8 +78,8 @@ def loadparameters(namefile, group, key):
         Config = ConfigParser.ConfigParser()
         Config.read(namefile)
         value = ""
-        if Config.has_option(group, key):
-            value = Config.get(group, key)
+        if Config.has_option("group", "key"):
+            value = Config.get('group', 'key')
         return value
 
 class confParameter:
@@ -98,9 +98,22 @@ class confParameter:
         except:
             self.agenttype = "machine"
 
+        
+        self.parametersscriptconnection = {}
+
+        if self.agenttype == "relayserver":
+            if Config.has_option("connection", "portARSscript"):
+                self.parametersscriptconnection['port'] = Config.get('connection', 'portARSscript')
+            else:
+                self.parametersscriptconnection['port'] = 5001
+        else:
+            if Config.has_option("connection", "portAMscript"):
+                self.parametersscriptconnection['port'] = Config.get('connection', 'portAMscript')
+            else:
+                self.parametersscriptconnection['port'] = 5000
+
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
-            self.packageserver["public_ip"] = packageserver["public_ip"]
             if packageserver["public_ip"] == '':
                 self.packageserver["public_ip"] = self.Server
             if packageserver["port"] == '':
