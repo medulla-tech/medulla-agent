@@ -46,6 +46,8 @@ server = 192.168.56.2
 port = 5222
 # XMPP password
 password = @@XMPP_PASSWORD@@
+# Port for interacting with the machine agent
+# portAMscript = 5000
 
 [chatroom]
 # Parameters to connect to the chatrooms

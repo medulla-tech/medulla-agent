@@ -29,6 +29,9 @@ server = @@XMPP_SERVER@@
 port = 5222
 # XMPP password
 password = @@XMPP_PASSWORD@@
+# Port for interacting with the relay agent
+# portARSscript = 5001
+
 
 [chatroom]
 # Parameters to connect to the chatrooms
