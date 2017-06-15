@@ -63,7 +63,6 @@ class SingletonDecorator:
         return self.instance
 
 def infos_network_packageserver():
-    Config = ConfigParser.ConfigParser()
     namefileconfig = os.path.join('etc','mmc','pulse2','package-server','package-server.ini')
     namefileconfiglocal = os.path.join('etc','mmc','pulse2','package-server','package-server.ini.local')
     public_ip = ipfromdns(loadparameters(namefileconfiglocal, "main", "public_ip"))

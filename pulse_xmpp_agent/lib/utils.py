@@ -266,7 +266,7 @@ def create_Win_user(username, password, full_name=None, comment=None):
     Create a system user account for Rattail.
     """
     try:
-        d = win32net.NetUserGetInfo(None, username, 1)
+        win32net.NetUserGetInfo(None, username, 1)
         return
     except:
         pass
