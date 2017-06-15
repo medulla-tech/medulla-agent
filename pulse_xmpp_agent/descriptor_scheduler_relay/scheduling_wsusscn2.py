@@ -1,16 +1,9 @@
-import json
-import sys, os
-import traceback
-import pprint
-import logging
-import pycurl
-import platform
+import os
 from lib.utils import shellcommandtimeout
-import copy
 
 # nb  -1 infinie
 # all tuesday at 22h30
-SCHEDULE = {"schedule" : "SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}", "nb" : -1}
+SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
 def schedule_main(objectxmpp):
     """ install 
