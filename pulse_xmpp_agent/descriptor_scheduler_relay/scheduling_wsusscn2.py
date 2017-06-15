@@ -10,7 +10,6 @@ def schedule_main(objectxmpp):
     /usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptorscheduler/scheduling_wsusscn2.py
     download file Wsusscn2.cab on link http://go.microsoft.com/fwlink/p/?LinkID=74689
 
-    fish://root@192.168.56.25/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptorscheduler/scheduling_wsusscn2.py
     """
     print "*******************************************"
     print "*******************************************"
