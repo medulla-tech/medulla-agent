@@ -348,9 +348,9 @@ def getIpListreduite():
         try:
             if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]['addr'])
             if_ip = addrs[netifaces.AF_INET][0]['addr']
-            adresse = int(if_mac,16)
-            if adresse != 0:
-                listmacadress[adresse]= if_mac
+            address = int(if_mac,16)
+            if address != 0:
+                listmacadress[address]= if_mac
         except :
             pass
     return listmacadress
@@ -818,12 +818,12 @@ def pulgindeploy1(func):
         return response
     return wrapper
 
-#determine adresse ip utiliser pour xmpp
+#determine address ip utiliser pour xmpp
 def getIpXmppInterface(ipadress1, Port):
     resultip =  ''
     ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
-        logging.log(DEBUGPULSE,"recherche adresse ip serveur XMPP")
+        logging.log(DEBUGPULSE,"Searching for the XMPP Server IP Adress")
         print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port, ipadress)
         obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
         logging.log(DEBUGPULSE,"netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6"%(Port,ipadress))
