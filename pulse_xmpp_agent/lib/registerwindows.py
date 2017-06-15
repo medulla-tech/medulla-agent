@@ -20,7 +20,6 @@
 # MA 02110-1301, USA.
 
 import sys
-import platform
 
 if sys.platform.startswith('win'):
     import _winreg

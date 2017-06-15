@@ -24,13 +24,11 @@ import sys,os,platform
 import os.path
 import os
 import json
-from utils import simplecommandstr, getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout
-import pprint
+from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout
 import traceback
 import logging
 import netifaces
 import re
-import time
 from managepackage import managepackage
 
 import zipfile
@@ -38,7 +36,6 @@ import zipfile
 
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
-    import _winreg
 
 logger = logging.getLogger()
 

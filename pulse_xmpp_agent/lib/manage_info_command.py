@@ -20,16 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys,os,platform
 import os.path
-import json
-from multiprocessing import Process, Queue, TimeoutError
 import threading
-from utils import getRandomName, call_plugin
-from  sleekxmpp import jid
-import traceback
+from utils import getRandomName
 import logging
-import time
 
 logger = logging.getLogger()
 

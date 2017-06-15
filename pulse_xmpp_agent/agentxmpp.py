@@ -23,17 +23,12 @@
 import sys
 import os
 import logging
-import ConfigParser
 import sleekxmpp
 import platform
-import netifaces
-import random
 import base64
 import json
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-import hashlib
-import errno
 from lib.networkinfo import networkagentinfo
 from lib.configuration import confParameter
 from lib.managesession import session
@@ -42,13 +37,9 @@ from lib.manage_event import manage_event
 from lib.manage_info_command import manage_infoconsole
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
-import pluginsmachine
 from optparse import OptionParser
 import time
-import pprint
-from datetime import datetime
-from multiprocessing import Process, Queue, TimeoutError
-import threading
+from multiprocessing import Queue
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey

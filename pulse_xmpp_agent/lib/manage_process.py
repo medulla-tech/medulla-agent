@@ -23,9 +23,7 @@
 import sys,os
 import os.path
 import json
-from multiprocessing import Process, TimeoutError, Pool
-import threading
-from lib.utils import simplecommandstr
+from multiprocessing import Process, TimeoutError
 import traceback
 import logging
 import subprocess

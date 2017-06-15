@@ -24,7 +24,6 @@ import netifaces
 import json
 import subprocess
 import threading
-from threading import Timer
 import sys
 import os
 import logging
