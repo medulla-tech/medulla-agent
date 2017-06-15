@@ -308,7 +308,6 @@ def isWinUserAdmin():
     else:
         raise RuntimeError, "Unsupported operating system for this module: %s" % (os.name,)
 
-#mac OS
 def isMacOsUserAdmin():
     obj=simplecommand("cat /etc/master.passwd")#pour linux "cat /etc/shadow")
     if int(obj['code']) == 0:
