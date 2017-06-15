@@ -703,31 +703,23 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     else:
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+    # format log more informations
+    format = '%(asctime)s - %(levelname)s - %(message)s'
+    # more information log
+    # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon :
         if optsconsoledebug :
-            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+            logging.basicConfig(level = logging.DEBUG, format=format)
         else:
-            stdout_logger = logging.getLogger('STDOUT')
-            sl = StreamToLogger(stdout_logger, tglevellog)
-            sys.stdout = sl
-            stderr_logger = logging.getLogger('STDERR')
-            sl = StreamToLogger(stderr_logger, tglevellog)
-            sys.stderr = sl
-            logging.basicConfig(level = tglevellog,
-                        format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                        filename = tglogfile,
-                        filemode = 'a')
+            logging.basicConfig( level = tglevellog,
+                                 format = format,
+                                 filename = tglogfile,
+                                 filemode = 'a')
     else:
-        stdout_logger = logging.getLogger('STDOUT')
-        sl = StreamToLogger(stdout_logger, tglevellog)
-        sys.stdout = sl
-        stderr_logger = logging.getLogger('STDERR')
-        sl = StreamToLogger(stderr_logger, tglevellog)
-        sys.stderr = sl
-        logging.basicConfig(level = tglevellog,
-                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                    filename = tglogfile,
-                    filemode = 'a')
+        logging.basicConfig( level = tglevellog,
+                             format = format,
+                             filename = tglogfile,
+                             filemode = 'a')
     if optstypemachine.lower() in ["machine"]:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
     else:
@@ -761,6 +753,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE,"terminate manage data sharing")
             xmpp.managerQueue.shutdown()
             time.sleep(2)
+
             logging.log(DEBUGPULSE,"terminate scheduler")
             xmpp.scheduler.quit()
             logging.log(DEBUGPULSE,"bye bye Agent")
@@ -768,6 +761,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE,"Unable to connect.")
             restart = False
         if not restart: break
+
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
