@@ -25,6 +25,7 @@ import subprocess
 import sys
 import platform
 import utils
+from lib.utils import simplecommand
 
 if sys.platform.startswith('win'):
     import wmi
