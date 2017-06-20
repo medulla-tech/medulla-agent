@@ -475,8 +475,11 @@ def is_valid_ipv6(ip):
 
 
 
-#linux systemd ou init
 def typelinux():
+    """
+        This function is used to tell which init system is used on the server.
+        :return: Return the used init system between init.d or systemd
+    """
     p = subprocess.Popen('cat /proc/1/comm',
                             shell=True,
                             stdout=subprocess.PIPE,
