@@ -25,7 +25,7 @@ import subprocess
 import sys
 import platform
 import utils
-from lib.utils import simplecommand
+from lib.utils import simplecommand, windowsservice
 
 if sys.platform.startswith('win'):
     import wmi
