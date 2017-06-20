@@ -931,8 +931,8 @@ def merge_dicts(*dict_args):
     return result
 
 def portline(result):
-    colonne = [x.strip() for x in result.split(' ') if x != ""]
-    return colonne[-2:-1][0].split(':')[1]
+    column = [x.strip() for x in result.split(' ') if x != ""]
+    return column[-2:-1][0].split(':')[1]
 
 
 def protoandport():
@@ -967,33 +967,33 @@ def protoandport():
                     pidrdp = pidrdptmp
             else:
                 if line.startswith("sshd"):
-                    colonne = [x for x in line.split(' ') if x !=""]
-                    pidssh = colonne[1]
+                    column = [x for x in line.split(' ') if x !=""]
+                    pidssh = column[1]
                 elif line.startswith("tvnserver"):
-                    colonne = [x for x in line.split(' ') if x !=""]
-                    if colonne[2] == 'tvnserver':
-                        pidvnc = colonne[1]
+                    column = [x for x in line.split(' ') if x !=""]
+                    if column[2] == 'tvnserver':
+                        pidvnc = column[1]
                 elif line.startswith("svchost"):
-                    colonne = [x for x in line.split(' ') if x !=""]
+                    column = [x for x in line.split(' ') if x !=""]
 
         networkwin = simplecommand( 'netstat -a -n -o | findstr TCP | findstr 0.0.0.0' )
         for line in networkwin['result']:
             if pidvnc != None and pidvnc in line:
-                colonne = [x.strip() for x in line.split(' ') if x !=""]
-                vncporwin = colonne[1].split(':')[1]
+                column = [x.strip() for x in line.split(' ') if x !=""]
+                vncporwin = column[1].split(':')[1]
                 if not 'vnc' in  protport:
                     protport['vnc']=vncporwin
                 else:
                     if vncporwin > protport['vnc']:
                         protport['vnc']=vncporwin
             if not 'ssh' in  protport and pidssh != None and pidssh in line:
-                colonne = [x.strip() for x in line.split(' ') if x !=""]
-                if colonne[-1] ==  pidssh:
-                    protport['ssh']=colonne[1].split(':')[1]
+                column = [x.strip() for x in line.split(' ') if x !=""]
+                if column[-1] ==  pidssh:
+                    protport['ssh']=column[1].split(':')[1]
             if not 'rdp' in  protport and pidrdp  != None and pidrdp in line:
-                colonne = [x.strip() for x in line.split(' ') if x !=""]
-                if colonne[-1] ==  pidrdp:
-                    protport['rdp']=colonne[1].split(':')[1]
+                column = [x.strip() for x in line.split(' ') if x !=""]
+                if column[-1] ==  pidrdp:
+                    protport['rdp']=column[1].split(':')[1]
     return protport
 
 def ipfromdns(ipdata):
