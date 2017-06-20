@@ -643,7 +643,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'classutil' : self.config.classutil,
             'ippublic' : self.config.public_ip,
             'remoteservice' : protoandport(),
-            'pakageserver' : self.config.packageserver
+            'packageserver' : self.config.packageserver
         }
 
         sys.path.append(self.config.pathplugins)
