@@ -518,3 +518,5 @@ def getWindowsNameInterfaceForMacadress(macadress):
 def getUserName():
     if sys.platform.startswith('linux'):
         obj = simplecommand("who | cut -d" "  -f1 | uniq")
+
+    return obj
