@@ -975,7 +975,6 @@ def protoandport():
                         pidvnc = colonne[1]
                 elif line.startswith("svchost"):
                     colonne = [x for x in line.split(' ') if x !=""]
-                    pidrdptmp = colonne[1]
 
         networkwin = simplecommand( 'netstat -a -n -o | findstr TCP | findstr 0.0.0.0' )
         for line in networkwin['result']:
