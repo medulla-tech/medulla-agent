@@ -123,9 +123,16 @@ generate_agent_installer() {
 	colored_echo green "### INFO  Generating installer... Done"
 }
 
+create_pulse_user() {
+	useradd pulse -d /var/lib/pulse2 -s /bin/rbash
+	mkdir -p /var/lib/pulse2/packages
+	chmod -R 770 /var/lib/pulse2/packages
+}
+
 # Run the script
 check_arguments "$@"
 compute_parameters
 prepare_system
 create_repos
 generate_agent_installer
+create_pulse_user
