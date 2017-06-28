@@ -63,7 +63,7 @@ class manage_event:
                     }
 
     @staticmethod
-    def create_EVENT( to, action, sessionid, Dtypequery, Devent,ret=0,base64 =False):
+    def create_EVENT( to, action, sessionid, Dtypequery, devent,ret=0,base64 =False):
             return  {
                         'to' : to,
                         'action': action ,
