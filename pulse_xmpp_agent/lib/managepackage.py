@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys,os,platform
+import sys,os
 import os.path
 import json
 import logging
