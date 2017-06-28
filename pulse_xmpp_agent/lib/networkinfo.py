@@ -190,7 +190,7 @@ class  networkagentinfo:
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
             result = p.stdout.readlines()
-            code_result= p.wait()
+            #code_result= p.wait()
 
             for i in range(len(result)):
                 result[i]=result[i].rstrip('\n')
@@ -243,7 +243,7 @@ class  networkagentinfo:
         self.messagejson["listipinfo"]=[]
         self.messagejson["dhcp"] = 'False'
         for i in netifaces.interfaces():
-            addrs = netifaces.ifaddresses(i)
+            #addrs = netifaces.ifaddresses(i)
             try:
                 #if_mac = addrs[netifaces.AF_LINK][0]['addr']
                 #if_ip = addrs[netifaces.AF_INET][0]['addr']
