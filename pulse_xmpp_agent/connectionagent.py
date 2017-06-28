@@ -30,7 +30,8 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
-from lib.utils import *
+
+from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork
 from optparse import OptionParser
 
 

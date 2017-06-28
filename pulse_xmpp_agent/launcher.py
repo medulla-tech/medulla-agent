@@ -23,7 +23,7 @@
 from optparse import OptionParser
 import os, sys
 
-from lib.utils import *
+from lib.utils import testagentconf, networkchanged, confchanged
 
 if __name__ == '__main__':
     optp = OptionParser()
