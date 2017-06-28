@@ -172,7 +172,6 @@ class  networkagentinfo:
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        code_result= p.wait()
         system=result[0].rstrip('\n')
         """ Returns the list of ip gateways for linux interfaces """
 
