@@ -71,10 +71,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
         self.machinerelayserver = []
-
-        
-        self.qin = Queue(10)
-
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
@@ -118,34 +114,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #self.add_event_handler('dedee', self.dede, threaded=True)
 
         self.RSA = MsgsignedRSA(self.config.agenttype)
-        
-        #### manage information extern for Agent RS(relayserver) ou M(machine)
+
+        #### manage information extern for Agent RS(relayserver only dont working on windows.)
+        ##################
         if  self.config.agenttype in ['relayserver']:
+            from lib.manage_info_command import manage_infoconsole
+            self.qin = Queue(10)
             self.qoutARS = Queue(10)
             QueueManager.register('json_to_ARS' , self.setinARS)
             QueueManager.register('json_from_ARS', self.getoutARS)
             QueueManager.register('size_nb_msg_ARS' , self.sizeoutARS)
             #queue_in, queue_out, objectxmpp
             self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutARS, self)
-        else :
-            self.qoutAM = Queue(10)
-            QueueManager.register('json_to_AM' , self.setinAM)
-            QueueManager.register('json_from_AM', self.getoutAM)
-            QueueManager.register('size_nb_msg_AM' , self.sizeoutAM)
-            self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutAM, self)
-        self.managerQueue = QueueManager(("", self.config.parametersscriptconnection['port']),
-                                         authkey = self.config.passwordconnection)
-        self.managerQueue.start()
+            self.managerQueue = QueueManager(("", self.config.parametersscriptconnection['port']),
+                                            authkey = self.config.passwordconnection)
+            self.managerQueue.start()
 
-    def setinARS(self, data):
-        self.__setin(data , self.qoutARS)
+    def __sizeout(self, q):
+        return q.qsize()
 
-    def setinAM(self, data):
-        self.__setin(data , self.qoutAM)
+    def sizeoutARS(self):
+        return self.__sizeout(self.qoutARS)
 
     def __setin(self, data , q):
         self.qin.put(data)
 
+    def setinARS(self, data):
+        self.__setin(data , self.qoutARS)
+
+    def __getout(self, timeq, q):
+        try:
+            valeur = q.get(True, timeq)
+        except Exception as e:
+            valeur=""
+        return valeur
+
+    def getoutARS(self, timeq=10):
+        return self.__getout(timeq, self.qoutARS)
+ 
     def gestioneventconsole(self, event, q):
         try:
             dataobj = json.loads(event)
@@ -188,31 +194,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
         else:
-            logging.error("action missing in jsopn Message console %s" %(data))
+            logging.error("action missing in json Message console %s" %(data))
             q.put("action missing in jsopn Message console %s" %(data))
             return
-
-    def getoutARS(self, timeq=10):
-        return self.__getout(timeq,self.qoutARS)
-
-    def getoutAM(self, timeq=10):
-        return self.__getout(timeq, self.qoutAM)
-
-    def __getout(self, timeq, q):
-        try:
-            valeur = q.get(True, timeq)
-        except Exception:
-            valeur=""
-        return valeur
-
-    def sizeoutARS(self):
-        return self.__sizeout(self.qoutARS)
-
-    def sizeoutAM(self):
-        return self.__sizeout(self.qoutAM)
-
-    def __sizeout(self, q):
-        return q.qsize()
+    ##################
 
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
@@ -439,7 +424,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mtype='chat')
             traceback.print_exc(file=sys.stdout)
             return
-
 
         if not msg['from'].user in possibleclient:
             if not('sessionid' in  dataobj and self.session.isexist(dataobj['sessionid'])):
@@ -733,18 +717,18 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
-        print "connect"
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
         if xmpp.connect(address=(tg.Server,tg.Port)):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
-            xmpp.qin.put("quit")
+            if  xmpp.config.agenttype in ['relayserver']:
+                xmpp.qin.put("quit")
             xmpp.queue_read_event_from_command.put("quit")
             logging.log(DEBUGPULSE,"wait 2s end thread event loop")
             logging.log(DEBUGPULSE,"terminate manage data sharing")
-            xmpp.managerQueue.shutdown()
+            if  xmpp.config.agenttype in ['relayserver']:
+                xmpp.managerQueue.shutdown()
             time.sleep(2)
-
             logging.log(DEBUGPULSE,"terminate scheduler")
             xmpp.scheduler.quit()
             logging.log(DEBUGPULSE,"bye bye Agent")
@@ -752,7 +736,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE,"Unable to connect.")
             restart = False
         if not restart: break
-
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
