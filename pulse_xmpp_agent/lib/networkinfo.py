@@ -90,7 +90,6 @@ class  networkagentinfo:
             self.messagejson['users']=["system"]
 
         if sys.platform.startswith('linux'):
-                # Linux-specific code here...
                 p = subprocess.Popen("ps aux | grep dhclient | grep -v leases | grep -v grep | awk '{print $NF}'",
                                                     shell=True,
                                                     stdout=subprocess.PIPE,
@@ -135,7 +134,6 @@ class  networkagentinfo:
             return self.messagejson
 
         elif sys.platform.startswith('darwin'):
-            #code pour MacOs
             return self.MacOsNetworkInfo()
         else:
             self.messagejson['msg']= "system %s : not managed yet"%sys.platform
