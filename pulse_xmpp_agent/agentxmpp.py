@@ -144,7 +144,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def __getout(self, timeq, q):
         try:
             valeur = q.get(True, timeq)
-        except Exception as e:
+        except Exception:
             valeur=""
         return valeur
 

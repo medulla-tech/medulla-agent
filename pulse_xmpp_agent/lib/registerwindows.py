@@ -86,13 +86,13 @@ class constantregisterwindows:
 
 
     def desciptionkey(self, key):
-        if is_exist_key(key):
+        if self.is_exist_key(key):
             return self.keysregister[key]
         return ""
 
 
     def desciptiontype(self, type):
-        if is_exist_type(type):
+        if self.is_exist_type(type):
             return self.keysregister[type]
         return ""
 

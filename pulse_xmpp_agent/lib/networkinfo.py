@@ -97,7 +97,7 @@ class  networkagentinfo:
                                                     stdout=subprocess.PIPE,
                                                     stderr=subprocess.STDOUT)
                 result = p.stdout.readlines()
-                code_result= p.wait()
+                #code_result= p.wait()
                 if len(result) > 0:
                     self.messagejson['dhcp']   = 'True'
                 else:
@@ -152,7 +152,7 @@ class  networkagentinfo:
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        code_result= p.wait()
+        #code_result= p.wait()
         obj1={}
         for i in range(len(result)):
             #print result[i].rstrip('\n')
@@ -203,7 +203,7 @@ class  networkagentinfo:
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
             result = p.stdout.readlines()
-            code_result= p.wait()
+            #code_result= p.wait()
             for i in result:
                 i = i.rstrip('\n')
                 colonne=i.split(" ")
@@ -245,8 +245,8 @@ class  networkagentinfo:
         for i in netifaces.interfaces():
             addrs = netifaces.ifaddresses(i)
             try:
-                if_mac = addrs[netifaces.AF_LINK][0]['addr']
-                if_ip = addrs[netifaces.AF_INET][0]['addr']
+                #if_mac = addrs[netifaces.AF_LINK][0]['addr']
+                #if_ip = addrs[netifaces.AF_INET][0]['addr']
                 p = subprocess.Popen('ipconfig getpacket %s'%i,
                                         shell=True,
                                         stdout=subprocess.PIPE,
@@ -344,7 +344,7 @@ class  networkagentinfo:
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        code_result= p.wait()
+        #code_result= p.wait()
         for i in result:
             #i = i.rstrip('\n')
             dns.append(i.rstrip('\n'))
@@ -500,7 +500,7 @@ def getsystemressource():
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    code_result= p.wait()
+    #code_result= p.wait()
     system=result[0].rstrip('\n')
     return system
 

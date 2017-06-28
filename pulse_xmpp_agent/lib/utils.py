@@ -48,7 +48,7 @@ if sys.platform.startswith('win'):
     import _winreg as wr
     import win32net
     import win32netcon
-    import socket
+
     import win32api
 
 def Setdirectorytempinfo():
@@ -454,8 +454,8 @@ def typelinux():
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    code_result= p.wait()
-    system=result[0].rstrip('\n')
+    #code_result = p.wait()
+    system =result[0].rstrip('\n')
     """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
@@ -557,7 +557,7 @@ def service(name, action): #start | stop | restart | reload
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        code_result = p.wait()
+        #code_result = p.wait()
         system = result[0].rstrip('\n')
         if system == "init":
             p = subprocess.Popen("/etc/init.d/%s %s"%(name,action),
@@ -929,8 +929,11 @@ def protoandport():
         pidvnc = None
         pidssh = None
         pidrdp = None
-        processwin=simplecommand( 'tasklist /svc' )
+        processwin = simplecommand( 'tasklist /svc' )
         for line in processwin['result']:
+            column2 = line[26:][:8].strip()
+            if column2 != '':
+                pidrdptmp = column2
             if line.startswith(" "):
                 if "TermService" in line:
                     pidrdp = pidrdptmp

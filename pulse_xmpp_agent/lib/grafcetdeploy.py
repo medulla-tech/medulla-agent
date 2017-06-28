@@ -698,7 +698,8 @@ class grafcet:
                 self.workingstep['timeout'] = 900
                 logging.getLogger().warn( "timeout missing : default value 15s")
             # working Step recup from process et session
-            comdbool = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( self.workingstep['command'] ,
+            
+            self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( self.workingstep['command'] ,
                                                                                 self.datasend,
                                                                                 self.objectxmpp.boundjid.bare, 
                                                                                 self.objectxmpp.boundjid.bare,
