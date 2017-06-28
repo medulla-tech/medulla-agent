@@ -31,7 +31,7 @@ from lib.networkinfo import networkagentinfo
 from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
 
-from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork
+from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, isWinUserAdmin, isMacOsUserAdmin, StreamToLogger
 from optparse import OptionParser
 
 

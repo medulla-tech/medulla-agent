@@ -32,7 +32,7 @@ from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo
 from lib.configuration import confParameter
 from lib.managesession import session
-from lib.utils import  DEBUGPULSE, getIpXmppInterface, refreshfingerprint, getRandomName, load_back_to_deploy, cleanbacktodeploy, call_plugin, searchippublic, subnetnetwork, protoandport
+from lib.utils import  DEBUGPULSE, getIpXmppInterface, refreshfingerprint, getRandomName, load_back_to_deploy, cleanbacktodeploy, call_plugin, searchippublic, subnetnetwork, protoandport, createfingerprintnetwork, isWinUserAdmin, isMacOsUserAdmin
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
@@ -193,8 +193,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
         else:
-            logging.error("action missing in json Message console %s" %(data))
-            q.put("action missing in jsopn Message console %s" %(data))
+            logging.error("action missing in json Message console %s" %(dataobj))
+            q.put("action missing in jsopn Message console %s" %(dataobj))
             return
     ##################
 
@@ -417,7 +417,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
             dataobj = json.loads(msg['body'])
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
-            dataerreur['data']['msg'] = "ERROR : Message structure"
+            dataerreur={
+                    "action": "resultmsginfoerror",
+                    "sessionid" : "",
+                    "ret" : 255,
+                    "base64" : False,
+                    "data": {"msg" : "ERROR : Message structure"}
+        }
             self.send_message(  mto=msg['from'],
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
