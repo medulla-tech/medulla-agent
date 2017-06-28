@@ -33,6 +33,7 @@ from lib.networkinfo import networkagentinfo
 from lib.configuration import confParameter
 from lib.managesession import session
 from lib.utils import *
+from lib.utils import  DEBUGPULSE, getIpXmppInterface, refreshfingerprint, getRandomName, load_back_to_deploy, cleanbacktodeploy, call_plugin, searchippublic
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
