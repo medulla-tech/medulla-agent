@@ -38,6 +38,7 @@ import urllib2
 import pickle
 from  agentconffile import conffilename
 import ConfigParser
+
 DEBUGPULSE=25
 
 
@@ -48,7 +49,7 @@ if sys.platform.startswith('win'):
     import win32net
     import win32netcon
     import socket
-
+    import win32api
 
 def Setdirectorytempinfo():
     """
@@ -258,38 +259,6 @@ def CreateWinUser(login,Password,Groups=['Users']):
     d = [{"domainandname" : domain+"\\"+login}]
     for gr in Groups:
         win32net.NetLocalGroupAddMembers(None, gr, 3, d)
-
-
-def create_Win_user(username, password, full_name=None, comment=None):
-    """
-    Create a system user account for Rattail.
-    """
-    try:
-        win32net.NetUserGetInfo(None, username, 1)
-        return
-    except:
-        pass
-    if not full_name:
-        full_name = "{0} User".format(username.capitalize())
-    if not comment:
-        comment = "System user account for Rattail applications"
-    win32net.NetUserAdd(None, 2, {
-            'name': username,
-            'password': password,
-            'priv': win32netcon.USER_PRIV_USER,
-            'comment': comment,
-            'flags': (win32netcon.UF_NORMAL_ACCOUNT
-                      | win32netcon.UF_PASSWD_CANT_CHANGE
-                      | win32netcon.UF_DONT_EXPIRE_PASSWD),
-            'full_name': full_name,
-            'acct_expires': win32netcon.TIMEQ_FOREVER,
-            })
-
-    win32net.NetLocalGroupAddMembers(None, 'Users', 3, [
-            {'domainandname': r'{0}\{1}'.format(socket.gethostname(), username)}])
-
-    hide_user_account(username)
-    return True
 
 def isWinUserAdmin():
     if os.name == 'nt':
