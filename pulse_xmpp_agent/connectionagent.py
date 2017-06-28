@@ -226,7 +226,7 @@ def createDaemon(tg):
             p.daemon = True
             p.start()
             p.join()
-            logging.log(DEBUGPULSE,"Start Agent %s" % (self.boundjid.user))
+            logging.log(DEBUGPULSE,"Start Agent %s" % (tg['jidagent']))
         else:
             # Store the Fork PID
             pid = os.fork()
@@ -242,7 +242,6 @@ def createDaemon(tg):
 def doTask(tg):
     # Setup the command line arguments.
     global restart
-
     while True:
         restart = False
         if tg.agenttype != "relayserver":
