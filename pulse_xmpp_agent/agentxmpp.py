@@ -34,7 +34,6 @@ from lib.configuration import confParameter
 from lib.managesession import session
 from lib.utils import *
 from lib.manage_event import manage_event
-from lib.manage_info_command import manage_infoconsole
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
 from optparse import OptionParser
