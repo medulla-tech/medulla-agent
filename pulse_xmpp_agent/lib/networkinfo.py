@@ -56,7 +56,6 @@ class  networkagentinfo:
         mac = mac.replace(":","")
         mac = mac.replace("-","")
         mac = mac.replace(" ","")
-        #mac = mac.replace("/","")
         return mac
 
     def getuser(self):
@@ -97,7 +96,6 @@ class  networkagentinfo:
                                                     stdout=subprocess.PIPE,
                                                     stderr=subprocess.STDOUT)
                 result = p.stdout.readlines()
-                #code_result= p.wait()
                 if len(result) > 0:
                     self.messagejson['dhcp']   = 'True'
                 else:
@@ -108,8 +106,6 @@ class  networkagentinfo:
                 return self.messagejson
 
         elif sys.platform.startswith('win'):
-            ##code windows
-            #import wmi
             """ revoit objet reseau windows """
             pythoncom.CoInitialize ()
             try:
@@ -152,10 +148,8 @@ class  networkagentinfo:
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        #code_result= p.wait()
         obj1={}
         for i in range(len(result)):
-            #print result[i].rstrip('\n')
             result[i]=result[i].rstrip('\n')
             d = result[i].split("=")
             obj1[d[0]]=d[1]
@@ -190,20 +184,17 @@ class  networkagentinfo:
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
             result = p.stdout.readlines()
-            #code_result= p.wait()
 
             for i in range(len(result)):
                 result[i]=result[i].rstrip('\n')
                 d = result[i].split("@")
                 obj1[d[0]]=d[1]
         elif system == "systemd":
-            #p = subprocess.Popen('systemctl status network | grep -i "dhclient\["',
             p = subprocess.Popen('journalctl | grep "dhclient\["',
                                     shell=True,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
             result = p.stdout.readlines()
-            #code_result= p.wait()
             for i in result:
                 i = i.rstrip('\n')
                 colonne=i.split(" ")
@@ -254,8 +245,6 @@ class  networkagentinfo:
                 result = p.stdout.readlines()
                 code_result= p.wait()
                 if code_result == 0 :
-                    #print if_mac
-                    #print if_ip
                     partinfo={}
                     partinfo["dhcpserver"] = ''
                     partinfo["dhcp"] = 'False'
@@ -265,24 +254,18 @@ class  networkagentinfo:
                         if len(colonne) != 2:
                             colonne = i.split(":")
                         if colonne[0].strip().startswith('yiaddr'):
-                            #yiaddr = 192.168.0.12
                             partinfo["ipaddress"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('chaddr'):
-                            #chaddr = 0:88:65:35:32:f0
                             partinfo["macaddress"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('subnet_mask'):
-                            #subnet_mask (ip): 255.255.255.0
                             partinfo["mask"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('router'):
-                            #router (ip_mult): {192.168.0.1}
                             partinfo["gateway"] = colonne[1].strip(" {}")
                         elif colonne[0].strip().startswith('server_identifier'):
-                            #server_identifier (ip): 192.168.0.1
                             partinfo["dhcpserver"] = colonne[1].strip()
                             partinfo["dhcp"] = 'True'
                             self.messagejson["dhcp"] = 'True'
                         elif colonne[0].strip().startswith('domain_name_server'):
-                            #domain_name_server (ip_mult): {8.8.8.8, 0.0.0.0}
                             self.messagejson["listdns"] = colonne[1].strip(" {}").split(",")
                             self.messagejson["listdns"] = [x.strip() for x in self.messagejson["listdns"]]
                         else:
@@ -344,9 +327,7 @@ class  networkagentinfo:
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        #code_result= p.wait()
         for i in result:
-            #i = i.rstrip('\n')
             dns.append(i.rstrip('\n'))
         return dns
 
@@ -373,7 +354,6 @@ class updatedns:
         if sys.platform.startswith('linux'):
             mon_fichier = open("/etc/resolv.conf", "wb")
             for t in param:
-                #if is_valid_ipv4(param):
                 mon_fichier.write("nameserver\t%s"%param)
             print windowsservice('networking','restart')
         elif sys.platform.startswith('win'):
