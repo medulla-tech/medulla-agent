@@ -12,6 +12,9 @@ logger = logging.getLogger()
 class managepackage:
     @staticmethod
     def packagedir():
+        """
+            Returns the directory containing the packages, whatever the operating system
+        """
         if sys.platform.startswith('linux'):
             return os.path.join("/", "var" ,"lib","pulse2","packages")
         elif sys.platform.startswith('win'):
@@ -23,10 +26,16 @@ class managepackage:
 
     @staticmethod
     def listpackages():
+        """
+            return packages list of package directory
+        """
         return [ os.path.join(managepackage.packagedir(),x) for x in os.listdir(managepackage.packagedir()) if os.path.isdir(os.path.join(managepackage.packagedir(),x)) ]
 
     @staticmethod
     def loadjsonfile(filename):
+        """
+        load json file is return object python
+        """
         if os.path.isfile(filename ):
             with open(filename,'r') as info:
                 dd = info.read()
@@ -39,6 +48,9 @@ class managepackage:
 
     @staticmethod
     def getdescriptorpackageuuid(packageuuid):
+        """
+            return descriptor json package from directory uuid
+        """
         file = os.path.join(managepackage.packagedir(),packageuuid,"xmppdeploy.json")
         if os.path.isfile(file):
             try:
@@ -97,7 +109,7 @@ class managepackage:
 
 class search_list_of_deployment_packages:
     """
-    recurcivement search toutes les dependences pour ce package
+        Recursively search for all dependencies for this package
     """
     def __init__(self, packageuuid):
         self.list_of_deployment_packages = set()
@@ -111,11 +123,11 @@ class search_list_of_deployment_packages:
         self.list_of_deployment_packages.add(packageuuid)
         objdescriptor = managepackage.getdescriptorpackageuuid(packageuuid)
         if objdescriptor is not None:
-            ll = self.__list_dependence__(objdescriptor)
+            listdependencyfordescriptor = self.__list_dependence__(objdescriptor)
             #print ll
-            for y in ll:
-                if y not in  self.list_of_deployment_packages:
-                    self.__recursif__(y)
+            for uuidpackage in listdependencyfordescriptor:
+                if uuidpackage not in  self.list_of_deployment_packages:
+                    self.__recursif__(uuidpackage)
 
     def __list_dependence__(self, objdescriptor):
         if objdescriptor is not None and \
