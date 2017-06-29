@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-import os
+import sys, os
 import os.path
 import json
 import logging
 
 logger = logging.getLogger()
 
+
 class managepackage:
     @staticmethod
     def packagedir():
-        """
-            Returns the directory containing the packages, whatever the operating system
-        """
         if sys.platform.startswith('linux'):
             return os.path.join("/", "var" ,"lib","pulse2","packages")
         elif sys.platform.startswith('win'):
@@ -26,16 +23,10 @@ class managepackage:
 
     @staticmethod
     def listpackages():
-        """
-            return packages list of package directory
-        """
         return [ os.path.join(managepackage.packagedir(),x) for x in os.listdir(managepackage.packagedir()) if os.path.isdir(os.path.join(managepackage.packagedir(),x)) ]
 
     @staticmethod
     def loadjsonfile(filename):
-        """
-        load json file is return object python
-        """
         if os.path.isfile(filename ):
             with open(filename,'r') as info:
                 dd = info.read()
@@ -45,19 +36,6 @@ class managepackage:
             except Exception as e:
                 logger.error("filename %s error decodage [%s]"%(filename ,str(e)))
         return None
-
-    @staticmethod
-    def getdescriptorpackageuuid(packageuuid):
-        """
-            return descriptor json package from directory uuid
-        """
-        file = os.path.join(managepackage.packagedir(),packageuuid,"xmppdeploy.json")
-        if os.path.isfile(file):
-            try:
-                jr = managepackage.loadjsonfile(file)
-                return jr
-            except Exception:
-                return None
 
     @staticmethod
     def getdescriptorpackagename(packagename):
@@ -107,6 +85,21 @@ class managepackage:
             return jr['info']['name']
         return None
 
+    @staticmethod
+    def getdescriptorpackageuuid(packageuuid):
+        file = os.path.join(managepackage.packagedir(),packageuuid,"xmppdeploy.json")
+        if os.path.isfile(file):
+            try:
+                jr = managepackage.loadjsonfile(file)
+                return jr
+            except Exception:
+                return None
+
+    @staticmethod
+    def getpathpackage(uuidpackage):
+        return os.path.join(managepackage.packagedir(), uuidpackage)
+
+
 class search_list_of_deployment_packages:
     """
         Recursively search for all dependencies for this package
@@ -123,11 +116,11 @@ class search_list_of_deployment_packages:
         self.list_of_deployment_packages.add(packageuuid)
         objdescriptor = managepackage.getdescriptorpackageuuid(packageuuid)
         if objdescriptor is not None:
-            listdependencyfordescriptor = self.__list_dependence__(objdescriptor)
+            ll = self.__list_dependence__(objdescriptor)
             #print ll
-            for uuidpackage in listdependencyfordescriptor:
-                if uuidpackage not in  self.list_of_deployment_packages:
-                    self.__recursif__(uuidpackage)
+            for y in ll:
+                if y not in  self.list_of_deployment_packages:
+                    self.__recursif__(y)
 
     def __list_dependence__(self, objdescriptor):
         if objdescriptor is not None and \
