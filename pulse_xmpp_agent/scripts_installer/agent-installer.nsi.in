@@ -289,7 +289,7 @@ Section "rsync" sec_rsync
   SetOutPath "$INSTDIR\tmp"
   @@FULL_OR_DL_OPENSSH@@
   File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
-  SetOutPath "$INSTDIR\.ssh\"
+  SetOutPath "C:\Users\Pulse\.ssh\"
   File "${LAUNCHER_SSH_KEY}"
   ${LogString} "OpenSSH Installation...."
   ${LogString} "------------------------------------------------------"
@@ -310,6 +310,7 @@ Section "rsync" sec_rsync
   FileWrite $0 "$\r$\n"
   FileWrite $0 "PubkeyAuthentication yes$\r$\n"
   FileWrite $0 "PasswordAuthentication no$\r$\n"
+  FileWrite $0 "PidFile C:\\Windows\\Temp\\sshd.pid$\r$\n"
   FileClose $0
 
   ; Configure SSH server to start automatically at boot
