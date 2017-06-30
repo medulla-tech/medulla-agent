@@ -1003,3 +1003,30 @@ def ipfromdns(ipdata):
         else:
             return searchipfromdns(ipdata)
     return ""
+
+def install_keypub_authorized_keys(keypubstr):
+    """
+        This function installs the public key in the authorized_keys file whatever the bone for pulse
+    """
+    if sys.platform.startswith('linux'):
+        authorized_keys=os.path.join('/','root','.ssh','authorized_keys')
+    elif sys.platform.startswith('win'):
+        authorized_keys=os.path.join('C',os.environ["ProgramFiles"],'Pulse','.ssh','authorized_keys')
+    elif sys.platform.startswith('darwin'):
+        authorized_keys=os.path.join('var','root','.ssh','authorized_keys')
+    else:
+        pass
+    #See if the key is already installed
+    addkey = True
+    source = open(authorized_keys, "r")
+    for ligne in source:
+        if keypubstr in ligne:
+            addkey = False
+            break
+    source.close()
+    if addkey:
+        source = open(authorized_keys, "a")
+        source.write('\n')
+        source.write(keypubstr)
+        source.close()
+
