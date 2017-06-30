@@ -340,31 +340,22 @@ Section "rsync" sec_rsync
   Pop $0
   Var /GLOBAL Password
   StrCpy $Password "$0"
-  StrCpy $0 `net user "pulse" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR"`
-  ${LogString} "Running net user pulse ************ /ADD /COMMENT:Pulse user with admin rights on the system /PROFILEPATH:$INSTDIR"
+  StrCpy $0 `net user "pulse" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
+  ${LogString} "Running net user pulse ************ /ADD /COMMENT:Pulse user with admin rights on the system"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
-  SetOutPath "$INSTDIR\.ssh"
+  SetOutPath "C:\Users\Pulse\.ssh"
   Rename id_rsa.pub authorized_keys
   ${LogString} "Setting permissions on pulse user profile folder"
-  StrCpy $0 `wmic useraccount where name="pulse" get sid /VALUE`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  ${If} $0 = 0
-    Pop $1
-    ${Trim} $0 $1
-    ${StrTok} $0 "$0" "=" "L" "1"
-    Var /GLOBAL SID
-    StrCpy $SID "$0"
-    ${LogString} "User SID: $SID"
-    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$SID" "ProfileImagePath" "$INSTDIR"
-  ${Else}
-    ${LogString} "Return code was: $0"
-  ${EndIf}
   AccessControl::ClearOnFile /NOINHERIT "$INSTDIR" pulse FullAccess
+  Pop $R0
+  ${If} $R0 == error
+    Pop $R0
+    ${LogString} "AccessControl error: $R0"
+  ${EndIf}
+  AccessControl::ClearOnFile /NOINHERIT "C:\Users\Pulse\" pulse FullAccess
   Pop $R0
   ${If} $R0 == error
     Pop $R0

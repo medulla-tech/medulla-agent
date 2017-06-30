@@ -32,7 +32,7 @@
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
-# https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.14.0/OpenSSH-Win32.zip
+# https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.12.0/OpenSSH-Win32.zip
 #	https://github.com/tabad/fusioninventory-agent-windows-installer/releases/download/2.3.18/fusioninventory-agent_windows-x86_2.3.18.exe
 #	In /var/lib/pulse2/clients/win32/downloads/python_modules/:
 #	https://pypi.python.org/packages/cd/59/7cc2407b15bcd13d43933a5ae163de89b6f366dda8b2b7403453e61c3a05/pypiwin32-219-cp27-none-win32.whl
