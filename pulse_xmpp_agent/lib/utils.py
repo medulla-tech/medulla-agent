@@ -1004,29 +1004,110 @@ def ipfromdns(ipdata):
             return searchipfromdns(ipdata)
     return ""
 
-def install_keypub_authorized_keys(keypubstr):
+def install_or_undinstall_keypub_authorized_keys( install = True, keypub = None, user = "pulse"):
     """
-        This function installs the public key in the authorized_keys file whatever the bone for pulse
+        This function installs or undinstall the public key in the authorized_keys file for user "user"
+        If keypub is not specified then the function uninstall the key for user "user"
     """
-    if sys.platform.startswith('linux'):
-        authorized_keys=os.path.join('/','root','.ssh','authorized_keys')
-    elif sys.platform.startswith('win'):
-        authorized_keys=os.path.join('C',os.environ["ProgramFiles"],'Pulse','.ssh','authorized_keys')
-    elif sys.platform.startswith('darwin'):
-        authorized_keys=os.path.join('var','root','.ssh','authorized_keys')
+    path_ssh = os.path.join(os.path.expanduser('~%s'%user),".ssh")
+    path_authorized_keys = os.path.join(path_ssh,"authorized_keys")
+    logging.log(DEBUGPULSE,"file path_authorized_keys : %s"%path_authorized_keys)
+    if not os.path.isdir(path_ssh):
+        try:
+            os.makedirs(path_ssh, 0700)
+        except OSError:
+            pass
+    if not os.path.exists(path_authorized_keys):
+        try:
+            open(path_authorized_keys, 'a').close()
+            if not sys.platform.startswith('win'):
+                os.chmod(path_authorized_keys, 0600)
+                obj = simplecommandstr("grep pulse /etc/passwd | cut -d':' -f3")
+                os.chown(path_authorized_keys, int(obj['result']), -1)
+        except Exception as e:
+            logging.log(DEBUGPULSE,"ERROR %s"%str(e))
+
+    if install:
+        logging.log(DEBUGPULSE,"install key")
+        #See if the key is already installed
+        addkey = True
+        try:
+            source = open(path_authorized_keys, "r")
+            for ligne in source.readlines():
+                if ligne.startswith(keypub):
+                    addkey = False
+                    break
+            source.close()
+        except Exception as e:
+            logging.log(DEBUGPULSE,"ERROR %s"%str(e))
+
+        logging.log(DEBUGPULSE,"addkey condition %s"%addkey)
+        if addkey:
+            logging.log(DEBUGPULSE,"on doit installer la clef %s"%keypub)
+            logging.log(DEBUGPULSE,"on install la clef %s"%keypub)
+            try:
+                source = open(path_authorized_keys, "a")
+                source.write('\n')
+                source.write(keypub)
+                source.close()
+            except Exception as e :
+                logging.log(DEBUGPULSE,"ERROR %s"%str(e))
     else:
-        pass
-    #See if the key is already installed
-    addkey = True
-    source = open(authorized_keys, "r")
-    for ligne in source:
-        if keypubstr in ligne:
-            addkey = False
-            break
-    source.close()
-    if addkey:
-        source = open(authorized_keys, "a")
-        source.write('\n')
-        source.write(keypubstr)
+        logging.log(DEBUGPULSE,"undinstall key")
+        filesouce = ""
+        source = open(path_authorized_keys, "r")
+        for ligne in source:
+            if ligne.startswith(os.sep):
+                continue
+            if not ligne.startswith(keypub):
+                filesouce = filesouce + ligne
+        source.close()
+        source = open(path_authorized_keys, "w").write(filesouce)
         source.close()
 
+def get_keypub_ssh( name = "id_rsa.pub", user = "root"):
+    """
+        return key public
+        only for linux
+    """
+    path_ssh = os.path.join(os.path.expanduser('~%s'%user),".ssh", name)
+    source = open(path_ssh, "r")
+    keypub = source.read().strip(" \n\t")
+    source.close()
+    return keypub
+
+def get_sid_user(name):
+    """
+        for windows only
+    """
+    wmi_obj = wmi.WMI()
+    wmi_sql = "select * from Win32_UserAccount Where Name ='%s'"%name
+    wmi_out = wmi_obj.query( wmi_sql )
+    for dev in wmi_out:
+        return dev.SID
+
+if sys.platform.startswith('win'):
+    def set_reg(name, value, subkey, key = wr.HKEY_LOCAL_MACHINE , type =  wr.REG_SZ):
+        try:
+            wr.CreateKey(key, subkey)
+            registry_key = wr.OpenKey(wr.HKEY_CURRENT_USER,
+                                        subkey,
+                                        0,
+                                        wr.KEY_WRITE)
+            wr.SetValueEx(registry_key, name, 0, type, value)
+            wr.CloseKey(registry_key)
+            return True
+        except WindowsError:
+            return False
+
+    def get_reg(name, subkey, key = wr.HKEY_LOCAL_MACHINE):
+        try:
+            registry_key = wr.OpenKey(  key, 
+                                        subkey,
+                                        0,
+                                        wr.KEY_READ)
+            value, regtype = wr.QueryValueEx(registry_key, name)
+            wr.CloseKey(registry_key)
+            return value
+        except WindowsError:
+            return None
