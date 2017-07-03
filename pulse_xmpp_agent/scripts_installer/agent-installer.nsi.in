@@ -166,6 +166,7 @@ Section "Python Modules" sec_pymod
   @@FULL_OR_DL_PY_CRON@@
   @@FULL_OR_DL_PY_CRON_DEPS_1@@
   @@FULL_OR_DL_PY_CRON_DEPS_2@@
+  File "${DOWNLOADS_DIR}/usr/bin/${LIBCURL_FILENAME}"
   ${LogString} "Python modules Installation...."
   ${LogString} "------------------------------------------------------"
 
@@ -234,7 +235,12 @@ Section "Python Modules" sec_pymod
   ${LogString} "-------------------"
 
   ; Copy libcurl DLL to system32 folder
-  CopyFiles "${DOWNLOADS_DIR}\usr\bin\${LIBCURL_FILENAME}" "$SYSDIR"
+  CopyFiles /SILENT "$INSTDIR\tmp\${LIBCURL_FILENAME}" "$SYSDIR"
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ; This requires a reboot
+  SetRebootFlag true
 
   ; Install of Python curl module (pycurl)
   @@INSTALL_FULL_OR_DL_PY_CURL@@
@@ -282,6 +288,7 @@ Section "Python Modules" sec_pymod
   Delete $INSTDIR\tmp\${PY_CRON}
   Delete $INSTDIR\tmp\${PY_CRON_DEPS_1}
   Delete $INSTDIR\tmp\${PY_CRON_DEPS_2}
+  Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
 SectionEnd
 
 ; rsync installation
@@ -289,7 +296,7 @@ Section "rsync" sec_rsync
   SetOutPath "$INSTDIR\tmp"
   @@FULL_OR_DL_OPENSSH@@
   File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
-  SetOutPath "C:\Users\Pulse\.ssh\"
+  SetOutPath "$INSTDIR\.ssh\"
   File "${LAUNCHER_SSH_KEY}"
   ${LogString} "OpenSSH Installation...."
   ${LogString} "------------------------------------------------------"
@@ -341,22 +348,31 @@ Section "rsync" sec_rsync
   Pop $0
   Var /GLOBAL Password
   StrCpy $Password "$0"
-  StrCpy $0 `net user "pulse" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
-  ${LogString} "Running net user pulse ************ /ADD /COMMENT:Pulse user with admin rights on the system"
+  StrCpy $0 `net user "pulse" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system" /PROFILEPATH:"$INSTDIR"`
+  ${LogString} "Running net user pulse ************ /ADD /COMMENT:Pulse user with admin rights on the system /PROFILEPATH:$INSTDIR"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
-  SetOutPath "C:\Users\Pulse\.ssh"
+  SetOutPath "$INSTDIR\.ssh"
   Rename id_rsa.pub authorized_keys
   ${LogString} "Setting permissions on pulse user profile folder"
-  AccessControl::ClearOnFile /NOINHERIT "$INSTDIR" pulse FullAccess
-  Pop $R0
-  ${If} $R0 == error
-    Pop $R0
-    ${LogString} "AccessControl error: $R0"
+  StrCpy $0 `wmic useraccount where name="pulse" get sid /VALUE`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  ${If} $0 = 0
+    Pop $1
+    ${Trim} $0 $1
+    ${StrTok} $0 "$0" "=" "L" "1"
+    Var /GLOBAL SID
+    StrCpy $SID "$0"
+    ${LogString} "User SID: $SID"
+    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$SID" "ProfileImagePath" "$INSTDIR"
+  ${Else}
+    ${LogString} "Return code was: $0"
   ${EndIf}
-  AccessControl::ClearOnFile /NOINHERIT "C:\Users\Pulse\" pulse FullAccess
+  AccessControl::ClearOnFile /NOINHERIT "$INSTDIR" pulse FullAccess
   Pop $R0
   ${If} $R0 == error
     Pop $R0
@@ -415,8 +431,12 @@ Section "rsync" sec_rsync
   ; Extract rsync
   ZipDLL::extractall "$INSTDIR\tmp\${RSYNC_FILENAME}" "$INSTDIR\tmp\"
   ; Copy rsync files to system32 folder
-  CopyFiles "$INSTDIR\tmp\rsync\*" "$SYSDIR"
+  CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$SYSDIR"
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
+  ; This requires a reboot
+  SetRebootFlag true
 
   Delete $INSTDIR\tmp\${OPENSSH_FILENAME}
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
@@ -517,7 +537,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create log folder to hold agent logs
   CreateDirectory $INSTDIR\var\log
   ; Create packages folder to hold packages to be deployed on client
-  CreateDirectory $INSTDIR\tmp\packages
+  CreateDirectory $INSTDIR\var\tmp\packages
 
   ; Run the agent
   StrCpy $0 `SCHTASKS /Run /TN "${PRODUCT_NAME}"`
