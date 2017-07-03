@@ -304,20 +304,19 @@ Section "rsync" sec_rsync
   ; Install of OpenSSH
   ; Extract OpenSSH
   ZipDLL::extractall "$INSTDIR\tmp\${OPENSSH_FILENAME}" "$PROGRAMFILES"
-  ${PowerShellExec} "echo 'hello powershell'"
-  Pop $R1 ;$R1 is "hello powershell"
-  ;InitPluginsDir
-  ;SetOutput $PLUGINSDIR\Powershell
-  ;File "$PROGRAMFILES\${OPENSSH_NAME}\install-sshd.ps1"
   ${PowerShellExecFileLog} "$PROGRAMFILES\${OPENSSH_NAME}\install-sshd.ps1"
 
-  ; Secure SSH server
-  FileOpen $0 "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config" a
+  ; Generate config file of SSH server
+  CopyFiles /SILENT "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config" "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config.bak"
+  FileOpen $0 "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config" w
   FileSeek $0 0 END
   FileWrite $0 "$\r$\n"
+  FileWrite $0 "Subsystem	sftp	sftp-server.exe$\r$\n"
+  FileWrite $0 "hostkeyagent \\.\pipe\openssh-ssh-agent$\r$\n"
   FileWrite $0 "PubkeyAuthentication yes$\r$\n"
   FileWrite $0 "PasswordAuthentication no$\r$\n"
-  FileWrite $0 "PidFile C:\\Windows\\Temp\\sshd.pid$\r$\n"
+  FileWrite $0 "PidFile C:\Windows\Temp\sshd.pid$\r$\n"
+  FileWrite $0 "AuthorizedKeysFile	$\"$INSTDIR\.ssh\authorized_keys$\"$\r$\n"
   FileClose $0
 
   ; Configure SSH server to start automatically at boot
@@ -400,6 +399,41 @@ Section "rsync" sec_rsync
   ${LogString} "-------------------"
   ; Hide the account
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulse" 0
+
+  ; Set permissions for keys etc
+  ${PowerShellExecLog} "cd $\"$PROGRAMFILES\${OPENSSH_NAME}$\" ; .\FixHostFilePermissions.ps1 -Confirm:$false"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /setowner Pulse`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /grant Administrators:F`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /grant Pulse:F`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /remove "NT SERVICE\sshd"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /grant "NT SERVICE\sshd:(R)"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /inheritance:r`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
 
   ; Start the service
   StrCpy $0 `sc start sshd`
