@@ -349,9 +349,9 @@ class updatedns:
             self.messagejson['data']['msg']="Error: DNS list empty"
             return
         if sys.platform.startswith('linux'):
-            mon_fichier = open("/etc/resolv.conf", "wb")
+            networkconffile = open("/etc/resolv.conf", "wb")
             for t in param:
-                mon_fichier.write("nameserver\t%s"%param)
+                networkconffile.write("nameserver\t%s"%param)
             print windowsservice('networking','restart')
         elif sys.platform.startswith('win'):
             pass
