@@ -31,12 +31,6 @@ from threading import Timer
 logger = logging.getLogger()
 import time
 
-
-
-def test():
-    time.sleep(2)
-    print "test"
-
 def processcommand(command , queue_out_session, messagestr, timeout):
     logging.error("########processcommand")
     try:
