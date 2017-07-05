@@ -401,7 +401,7 @@ Section "rsync" sec_rsync
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulse" 0
 
   ; Set permissions for keys etc
-  ${PowerShellExecLog} "cd $\"$PROGRAMFILES\${OPENSSH_NAME}$\" ; .\FixHostFilePermissions.ps1 -Confirm:$false"
+  ${PowerShellExecLog} "cd $\"$PROGRAMFILES\${OPENSSH_NAME}$\" ; .\FixHostFilePermissions.ps1 -Confirm:$$false"
   StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /setowner Pulse`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
