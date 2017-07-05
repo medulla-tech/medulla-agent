@@ -214,7 +214,7 @@ class manage_event:
                                     }
                             }
                         else:
-                            msg = { 
+                            msg = {
                                     'ret' : event['ret'],
                                     'sessionid' : event['sessionid'],
                                     'base64' : event['base64'],
