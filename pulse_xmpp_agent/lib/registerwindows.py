@@ -85,7 +85,7 @@ class constantregisterwindows:
         return False
 
 
-    def desciptionkey(self, key):
+    def descriptionkey(self, key):
         if self.is_exist_key(key):
             return self.keysregister[key]
         return ""
