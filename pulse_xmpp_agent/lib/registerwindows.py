@@ -97,31 +97,31 @@ class constantregisterwindows:
         return ""
 
 
-    def getType(self, type):
-        if type in self.typeregister:
-            if type == 'REG_BINARY':
+    def getType(self, registrytype):
+        if registrytype in self.typeregister:
+            if registrytype == 'REG_BINARY':
                 return _winreg.REG_BINARY
-            elif type == 'REG_DWORD':
+            elif registrytype == 'REG_DWORD':
                 return _winreg.REG_DWORD
-            elif type == 'REG_DWORD_LITTLE_ENDIAN':
+            elif registrytype == 'REG_DWORD_LITTLE_ENDIAN':
                 return _winreg.REG_DWORD_LITTLE_ENDIAN
-            elif type == 'REG_DWORD_BIG_ENDIAN':
+            elif registrytype == 'REG_DWORD_BIG_ENDIAN':
                 return _winreg.REG_DWORD_BIG_ENDIAN
-            elif type == 'REG_EXPAND_SZ':
+            elif registrytype == 'REG_EXPAND_SZ':
                 return _winreg.REG_EXPAND_SZ
-            elif type == 'REG_LINK':
+            elif registrytype == 'REG_LINK':
                 return _winreg.REG_LINK
-            elif type == 'REG_MULTI_SZ':
+            elif registrytype == 'REG_MULTI_SZ':
                 return _winreg.REG_MULTI_SZ
-            elif type == 'REG_NONE':
+            elif registrytype == 'REG_NONE':
                 return _winreg.REG_NONE
-            elif type == 'REG_RESOURCE_LIST':
+            elif registrytype == 'REG_RESOURCE_LIST':
                 return _winreg.REG_RESOURCE_LIST
-            elif type == 'REG_FULL_RESOURCE_DESCRIPTOR':
+            elif registrytype == 'REG_FULL_RESOURCE_DESCRIPTOR':
                 return _winreg.REG_FULL_RESOURCE_DESCRIPTOR
-            elif type == 'REG_RESOURCE_REQUIREMENTS_LIST':
+            elif registrytype == 'REG_RESOURCE_REQUIREMENTS_LIST':
                 return _winreg.REG_RESOURCE_REQUIREMENTS_LIST
-            elif type == 'REG_SZ':
+            elif registrytype == 'REG_SZ':
                 return _winreg.REG_SZ
         raise
 
