@@ -79,7 +79,7 @@ class constantregisterwindows:
         return False
 
 
-    def is_exist_type(self,type):
+    def is_exist_type(self,registrytype):
         if type in self.keysregister:
             return True
         return False
