@@ -27,7 +27,7 @@
 # """
 
 # Go to own folder
-cd "`dirname $0`"
+cd "$(dirname $0)"
 
 # Display usage
 display_usage() {
