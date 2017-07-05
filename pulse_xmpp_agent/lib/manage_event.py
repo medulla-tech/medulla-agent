@@ -174,7 +174,7 @@ class manage_event:
                                     if int(i['step']) == nb_currentworkingset:
                                         logging.debug('deploy [process command : %s ]\n%s'%( event['eventMessageraw']['sessionid'],json.dumps(i , indent=4, sort_keys=True)))
                                         if 'command' in i:
-                                            if i['codereturn'] == 0 : 
+                                            if i['codereturn'] == 0 :
                                                 color = "green"
                                             else:
                                                 color = "red"
@@ -200,7 +200,7 @@ class manage_event:
                             'codeerror' in event['data']['result'] and \
                             'Dtypequery'  in event['data']['result'] and \
                             'Devent'  in event['data']['result'] :
-                            msg = { 
+                            msg = {
                                     'ret' : event['ret'],
                                     'sessionid' : event['sessionid'],
                                     'base64' : event['base64'],
@@ -233,7 +233,7 @@ class manage_event:
                         self.addevent(event)
                 except TimeoutError:
                     print "TimeoutError"
- 
+
         except KeyboardInterrupt:
             pass
         finally:
