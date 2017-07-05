@@ -91,9 +91,9 @@ class constantregisterwindows:
         return ""
 
 
-    def descriptiontype(self, type):
-        if self.is_exist_type(type):
-            return self.keysregister[type]
+    def descriptiontype(self, registertype):
+        if self.is_exist_type(registertype):
+            return self.keysregister[registertype]
         return ""
 
 
