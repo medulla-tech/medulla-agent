@@ -23,12 +23,12 @@
 import sys,os
 import os.path
 
-def conffilename( type ):
+def conffilename(agenttype):
     """
         Function defining where the configuration file is located.
         configuration file for the type of machine and the Operating System
     """
-    if type in ["machine"]:
+    if agenttype in ["machine"]:
         conffilenameparamter = "agentconf.ini"
     else:
         conffilenameparamter = "relayconf.ini"
