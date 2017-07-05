@@ -73,13 +73,13 @@ class constantregisterwindows:
                         }
 
 
-    def is_exist_key(self,key):
+    def is_exist_key(self, key):
         if key in self.keysregister:
             return True
         return False
 
 
-    def is_exist_type(self,registrytype):
+    def is_exist_type(self, registrytype):
         if type in self.typeregister:
             return True
         return False
@@ -97,7 +97,7 @@ class constantregisterwindows:
         return ""
 
 
-    def getType( self, type ):
+    def getType(self, type):
         if type in self.typeregister:
             if type == 'REG_BINARY':
                 return _winreg.REG_BINARY
@@ -126,7 +126,7 @@ class constantregisterwindows:
         raise
 
 
-    def getkey( self, key ):
+    def getkey(self, key):
         if key in self.keysregister:
             if key == 'HKEY_CLASSES_ROOT':
                 return _winreg.HKEY_CLASSES_ROOT
