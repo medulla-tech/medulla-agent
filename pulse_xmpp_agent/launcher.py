@@ -31,7 +31,7 @@ if __name__ == '__main__':
                 dest="typemachine", default=False,
                 help="Type machine : machine or relayserver")
 
-    optp.add_option("-c", "--consoledebug",action="store_true", 
+    optp.add_option("-c", "--consoledebug",action="store_true",
                 dest="consoledebug", default = False,
                   help="console debug")
 
