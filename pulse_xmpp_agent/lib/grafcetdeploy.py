@@ -86,8 +86,7 @@ class grafcet:
         self.sendnextstep()
 
     def sendnextstep(self):#self.objectxmpp.boundjid.bare
-        #logging.getLogger().debug("===========sendnextstep ========= %s "% json.dumps(self.datasend, indent=4, sort_keys=True))
-        self.objectxmpp.send_message(    mto=self.objectxmpp.boundjid.bare,
+        self.objectxmpp.send_message(mto=self.objectxmpp.boundjid.bare,
                                                     mbody=json.dumps(self.datasend),
                                                     mtype='chat')
 
