@@ -68,11 +68,11 @@ def add_coloring_to_emit_windows(fn):
         #BACKGROUND_MAGENTA   = 0x0050
         BACKGROUND_YELLOW    = 0x0060
         #BACKGROUND_GREY      = 0x0070
-        BACKGROUND_INTENSITY = 0x0080 # background color is intensified.     
+        BACKGROUND_INTENSITY = 0x0080 # background color is intensified.
 
         levelno = args[1].levelno
         if(levelno>=50):
-            color = BACKGROUND_YELLOW | FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY 
+            color = BACKGROUND_YELLOW | FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
         elif(levelno>=40):
             color = FOREGROUND_RED | FOREGROUND_INTENSITY
         elif(levelno>=30):
@@ -102,7 +102,7 @@ def add_coloring_to_emit_ansi(fn):
         elif(levelno>=30):
             color = '\x1b[33m' # yellow
         elif(levelno>=20):
-            color = '\x1b[32m' # green 
+            color = '\x1b[32m' # green
         elif(levelno>=10):
             color = '\x1b[35m' # pink
         else:
