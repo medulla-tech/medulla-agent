@@ -87,10 +87,10 @@ class managepackage:
 
     @staticmethod
     def getdescriptorpackageuuid(packageuuid):
-        file = os.path.join(managepackage.packagedir(),packageuuid,"xmppdeploy.json")
-        if os.path.isfile(file):
+        jsonfile = os.path.join(managepackage.packagedir(),packageuuid,"xmppdeploy.json")
+        if os.path.isfile(jsonfile):
             try:
-                jr = managepackage.loadjsonfile(file)
+                jr = managepackage.loadjsonfile(jsonfile)
                 return jr
             except Exception:
                 return None
