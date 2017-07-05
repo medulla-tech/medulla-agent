@@ -6,7 +6,7 @@ from lib.utils import shellcommandtimeout
 SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
 def schedule_main(objectxmpp):
-    """ install 
+    """ install
     /usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptorscheduler/scheduling_wsusscn2.py
     download file Wsusscn2.cab on link http://go.microsoft.com/fwlink/p/?LinkID=74689
 
