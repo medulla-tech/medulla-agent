@@ -40,9 +40,10 @@ class SessionkeyError(Session, KeyError):
 
 class sessiondatainfo:
 
-    def __init__(self, sessionid, datasession = {}, timevalid = 10, eventend = None, handlefunc = None, pathfile = None):
+    def __init__(self, sessionid, datasession = None, timevalid = 10, eventend = None, handlefunc = None, pathfile = None):
+        if datasession is None :
+            datasession = {}
         self.sessionid = sessionid
-        #timevalid en minute
         self.timevalid = timevalid
         self.datasession = datasession
         self.eventend = eventend
