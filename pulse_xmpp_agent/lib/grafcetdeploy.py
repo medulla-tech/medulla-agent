@@ -78,7 +78,7 @@ class grafcet:
         method =  getattr(self,self.workingstep['action'])
         method()
 
-    def __Etape_Next__(self):
+    def __Next_Step__(self):
         #next Step for xmpp message
         if not 'stepcurrent' in self.data:
             return
