@@ -412,6 +412,11 @@ Section "rsync" sec_rsync
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /grant Administrateurs:F`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
   StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /grant Pulse:F`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
