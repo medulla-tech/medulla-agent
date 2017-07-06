@@ -100,7 +100,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
-        self.schedule('manage session', self.config.inventory_interval, self.handleinventory, repeat=True)
+        self.schedule('event inventory', self.config.inventory_interval, self.handleinventory, repeat=True)
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
             self.schedule('session reload', 15, self.reloadsesssion, repeat=False)
