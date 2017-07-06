@@ -80,6 +80,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
 
+        self.ban_deploy_sessionid_list = set() # List id sessions that are banned
+        self.lapstimebansessionid = 900     # ban session id 900 secondes
+
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -150,7 +153,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def getoutARS(self, timeq=10):
         return self.__getout(timeq, self.qoutARS)
- 
+
     def gestioneventconsole(self, event, q):
         try:
             dataobj = json.loads(event)
@@ -197,6 +200,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             q.put("action missing in jsopn Message console %s" %(dataobj))
             return
     ##################
+
+    def remove_sessionid_in_ban_deploy_sessionid_list(self, sessionid):
+        """
+            this function remove sessionid banned
+        """
+        try:
+            self.ban_deploy_sessionid_list.remove(sessionid)
+        except Exception as e:
+            logger.error(str(e))
 
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
@@ -497,6 +509,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if not dataobj.has_key('sessionid'):
                     dataobj['sessionid']= getRandomName(6, "xmpp")
                     logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],dataobj['sessionid']))
+                else:
+                    if dataobj['sessionid'] in self.ban_deploy_sessionid_list:
+                        ## abort deploy if msg session id is banny
+                        logging.info("DEPLOYMENT ABORT Sesion %s"%dataobj['sessionid'])
+                        self.logtopulse("<span  style='color:red;'>DEPLOYMENT ABORT</span>",
+                                        type = 'deploy',
+                                        sessionname =  dataobj['sessionid'],
+                                        priority = -1,
+                                        who = self.boundjid.bare)
+                        return
 
                 del dataobj['data']
                 # traitement TEVENT
