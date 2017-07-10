@@ -282,7 +282,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     jsonbase = {
                                 "infoslist": [jsonresult['descriptor']['info']],
                                 "descriptorslist": [jsonresult['descriptor']['sequence']],
-                                "infosautre" : [jsonautre],
+                                "otherinfos" : [jsonautre],
                                 "title" : dede.title,
                                 "session" : dede.sessionid,
                                 "macadress" : dede.macadress,
@@ -292,7 +292,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     jsonbase = json.loads(dede.result)
                     jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
-                    jsonbase['infosautre'].append(jsonautre)
+                    jsonbase['otherinfos'].append(jsonautre)
                 dede.result = json.dumps(jsonbase, indent=3)
                 dede.state = state
                 print dede.result
