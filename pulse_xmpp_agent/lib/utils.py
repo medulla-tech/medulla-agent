@@ -1016,19 +1016,21 @@ def install_or_undinstall_keypub_authorized_keys( install = True, keypub = None,
         try:
             os.makedirs(path_ssh, 0700)
         except OSError:
-            pass
+            logging.log(DEBUGPULSE,"error create directory : %s"%path_ssh)
+            return False
     if not os.path.exists(path_authorized_keys):
         try:
             open(path_authorized_keys, 'a').close()
             if not sys.platform.startswith('win'):
                 os.chmod(path_authorized_keys, 0600)
-                obj = simplecommandstr("grep pulse /etc/passwd | cut -d':' -f3")
+                obj = simplecommandstr("grep %s /etc/passwd | cut -d':' -f3"%user)
                 os.chown(path_authorized_keys, int(obj['result']), -1)
         except Exception as e:
             logging.log(DEBUGPULSE,"ERROR %s"%str(e))
-
+            logging.log(DEBUGPULSE,"error create file : %s"%path_authorized_keys)
+            return False
     if install:
-        logging.log(DEBUGPULSE,"install key")
+        logging.log(DEBUGPULSE,"install key if key missing")
         #See if the key is already installed
         addkey = True
         try:
@@ -1040,11 +1042,9 @@ def install_or_undinstall_keypub_authorized_keys( install = True, keypub = None,
             source.close()
         except Exception as e:
             logging.log(DEBUGPULSE,"ERROR %s"%str(e))
-
-        logging.log(DEBUGPULSE,"addkey condition %s"%addkey)
+            return False
         if addkey:
-            logging.log(DEBUGPULSE,"on doit installer la clef %s"%keypub)
-            logging.log(DEBUGPULSE,"on install la clef %s"%keypub)
+            logging.log(DEBUGPULSE,"key missing, install key in  %s"%path_authorized_keys)
             try:
                 source = open(path_authorized_keys, "a")
                 source.write('\n')
@@ -1052,6 +1052,7 @@ def install_or_undinstall_keypub_authorized_keys( install = True, keypub = None,
                 source.close()
             except Exception as e :
                 logging.log(DEBUGPULSE,"ERROR %s"%str(e))
+                return False
     else:
         logging.log(DEBUGPULSE,"undinstall key")
         filesouce = ""
@@ -1064,6 +1065,7 @@ def install_or_undinstall_keypub_authorized_keys( install = True, keypub = None,
         source.close()
         source = open(path_authorized_keys, "w").write(filesouce)
         source.close()
+    return True
 
 def get_keypub_ssh( name = "id_rsa.pub", user = "root"):
     """

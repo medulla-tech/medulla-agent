@@ -43,6 +43,9 @@ logger = logging.getLogger()
 class grafcet:
 
     def __init__(self, objectxmpp, datasend):
+        #verify exist directory packagedir
+        if not os.path.isdir(managepackage.packagedir()):
+            os.makedirs(managepackage.packagedir())
         self.datasend = datasend
         self.objectxmpp = objectxmpp
         #logging.getLogger().debug("===========Class grafcet========= %s "%self.objectxmpp.boundjid.bare)
@@ -64,9 +67,10 @@ class grafcet:
 
             logging.getLogger().debug("object datasend \n%s "% json.dumps(self.datasend, indent=4, sort_keys=True))
 
-            self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
-                                                    mbody=json.dumps(self.datasend),
-                                                    mtype='chat')
+            if 'jidmaster' in self.datasend['data']:
+                self.objectxmpp.send_message(    mto=self.datasend['data']['jidmaster'],
+                                                        mbody=json.dumps(self.datasend),
+                                                        mtype='chat')
             self.objectxmpp.session.clearnoevent(self.sessionid)
 
             ######
@@ -540,9 +544,13 @@ class grafcet:
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            print str(e)
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in action_pwd_package step %s"%self.workingstep['step'])
+            self.objectxmpp.logtopulse('[%s]: error action_pwd_package : %s'%(self.workingstep['step'], str(e)),
+                                        type='deploy',
+                                        sessionname = self.sessionid ,
+                                        priority =self.workingstep['step'],
+                                        who=self.objectxmpp.boundjid.bare)
             self.objectxmpp.logtopulse('[%s]: error action_pwd_package : %s'%(self.workingstep['step']),
                                         type='deploy',
                                         sessionname = self.sessionid ,
