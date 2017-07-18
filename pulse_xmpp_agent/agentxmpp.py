@@ -43,6 +43,11 @@ from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from multiprocessing.managers import SyncManager
+
+if sys.platform.startswith('win'):
+    import win32api
+    import win32con
+
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
 
@@ -131,6 +136,59 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.managerQueue = QueueManager(("", self.config.parametersscriptconnection['port']),
                                             authkey = self.config.passwordconnection)
             self.managerQueue.start()
+
+        if sys.platform.startswith('win'):
+            result = win32api.SetConsoleCtrlHandler(self._CtrlHandler, 1)
+            if result == 0:
+                logging.log(DEBUGPULSE,'Could not SetConsoleCtrlHandler (error %r)' %
+                             win32api.GetLastError())
+            else:
+                logging.log(DEBUGPULSE,'Set handler for console events.')
+                self.is_set = True
+
+    def send_message_to_master(self , msg):
+        self.send_message(  mbody = json.dumps(msg),
+                            mto = '%s/MASTER'%self.agentmaster,
+                            mtype ='chat')
+
+    def _CtrlHandler(self, evt):
+        if sys.platform.startswith('win'):
+            msgevt={
+                    "action": "evtfrommachine",
+                    "sessionid" : getRandomName(6, "eventwin"),
+                    "ret" : 0,
+                    "base64" : False,
+                    'data' : { 'machine' : self.boundjid.bare }
+                    }
+            if evt == win32con.CTRL_SHUTDOWN_EVENT:
+                msgevt['data']['event'] = "SHUTDOWN_EVENT"
+                self.send_message_to_master(msgevt)
+                logging.log(DEBUGPULSE, "CTRL_SHUTDOWN EVENT")
+                return True
+            elif evt == win32con.CTRL_LOGOFF_EVENT:
+                msgevt['data']['event'] = "LOGOFF_EVENT"
+                self.send_message_to_master(msgevt)
+                logging.log(DEBUGPULSE, "CTRL_LOGOFF EVENT")
+                return True
+            elif evt == win32con.CTRL_BREAK_EVENT:
+                msgevt['data']['event'] = "BREAK_EVENT"
+                self.send_message_to_master(msgevt)
+                logging.log(DEBUGPULSE, "CTRL_BREAK EVENT")
+                return True
+            elif evt == win32con.CTRL_CLOSE_EVENT:
+                msgevt['data']['event'] = "CLOSE_EVENT"
+                self.send_message_to_master(msgevt)
+                logging.log(DEBUGPULSE, "CTRL_CLOSE EVENT")
+                return True
+            elif evt == win32con.CTRL_C_EVENT:
+                msgevt['data']['event'] = "CTRL_C_EVENT"
+                self.send_message_to_master(msgevt)
+                logging.log(DEBUGPULSE, "CTRL-C EVENT")
+                return True
+            else:
+                return False
+        else:
+            pass
 
     def __sizeout(self, q):
         return q.qsize()
