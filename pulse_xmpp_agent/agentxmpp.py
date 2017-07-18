@@ -158,7 +158,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" : getRandomName(6, "eventwin"),
                     "ret" : 0,
                     "base64" : False,
-                    'data' : { 'machine' : self.boundjid.bare }
+                    'data' : { 'machine' : self.boundjid.jid }
                     }
             if evt == win32con.CTRL_SHUTDOWN_EVENT:
                 msgevt['data']['event'] = "SHUTDOWN_EVENT"
