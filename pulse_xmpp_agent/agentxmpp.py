@@ -536,8 +536,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.debug("shutdown -P -f -t 3  \"restart from administrator\"")
                 os.system("shutdown -P -f -t 3  \"restart from administrator\"")
             elif sys.platform.startswith('win'):
-                logging.debug("shutdown -s -t 1 -f \"stop from administrator in 60 secondes\"")
-                os.system("shutdown -s -t 1 -f \"stop from administrator in 60 secondes\"")
+                logging.debug("shutdown /s /t 60 /f /c \"stop from administrator in 60 secondes\"")
+                os.system("shutdown /s /t 60 /f /c \"stop from administrator in 60 secondes\"")
             elif sys.platform.startswith('darwin'):
                 logging.debug("actionrestartmachine  shutdown machine MacOS")
                 os.system("shutdown -s now \"restart from administrator\"")
