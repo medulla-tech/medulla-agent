@@ -44,7 +44,7 @@ from lib.logcolor import  add_coloring_to_emit_ansi
 
 
 Base = declarative_base()
-
+#jfkjfk
 class Logs(Base):
     # ====== Table name =========================
     __tablename__ = 'logs'
@@ -57,7 +57,14 @@ class Logs(Base):
     text = Column(String(255), nullable=False)
     sessionname = Column(String(20), nullable=False, default = "")
     priority = Column(Integer, default = 0)
-    who = Column(String(20), nullable=False, default = "")
+    who = Column(String(45), nullable=False, default = "")
+    how = Column(String(255), nullable=False, default = "")
+    why = Column(String(255), nullable=False, default = "")
+    module = Column(String(45), nullable=False, default = "")
+    action = Column(String(45), nullable=False, default = "")
+    touser = Column(String(45), nullable=False, default = "")
+    fromuser = Column(String(45), nullable=False, default = "")
+
 
 class Deploy(Base):
     # ====== Table name =========================
@@ -304,29 +311,92 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.getLogger().error(str(e))
             return -1
 
+    def createlog(self, dataobj):
+        """ 
+            this function creating log in base from body message xmpp
+        """
+        try:
+            if 'text' in dataobj : 
+                text = dataobj['text'] 
+            else: 
+                return
+            type = dataobj['type'] if 'type' in dataobj else ""
+            sessionname = dataobj['session'] if 'session' in dataobj else ""
+            priority = dataobj['priority'] if 'priority' in dataobj else "" 
+            who = dataobj['who'] if 'who' in dataobj else  ""
+            how = dataobj['how'] if 'how' in dataobj else ""
+            why = dataobj['why'] if 'why' in dataobj else ""
+            module = dataobj['module'] if 'module' in dataobj else ""
+            action = dataobj['action'] if 'action' in dataobj else ""
+            fromuser = dataobj['fromuser'] if 'fromuser' in dataobj else ""
+            touser = dataobj['touser'] if 'touser' in dataobj else ""
+            self.registerlogxmpp(   text,
+                                    type = type,
+                                    sessionname = sessionname,
+                                    priority = priority,
+                                    who = who ,
+                                    how  = how,
+                                    why  = why,
+                                    module = module,
+                                    action = action,
+                                    fromuser  = fromuser,
+                                    touser  = touser)
+        except Exception as e:
+            logging.error("Message deploy error  %s %s" %(dataobj, str(e)))
+            traceback.print_exc(file=sys.stdout)
 
-    def registrelog(self,text, type='noset', sessionname='', priority = 0, who='' ):
+    def registerlogxmpp(self,
+                        text,
+                        type = 'noset',
+                        sessionname = '',
+                        priority = 0,
+                        who = '' ,
+                        how  = '',
+                        why  = '',
+                        module = '',
+                        fromuser  = '',
+                        touser  = '',
+                        action = ''
+                        ):
+        """ 
+            this function for creating log in base
+        """
         #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
         engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                                self.config.dbuser,
-                                                                self.config.dbpasswd,
-                                                                self.config.dbhost,
-                                                                self.config.dbname
-                                                                  ))
+                                                    self.config.dbuser,
+                                                    self.config.dbpasswd,
+                                                    self.config.dbhost,
+                                                    self.config.dbname
+                                                        ))
         Session = sessionmaker(bind=engine)
         session = Session()
-        log = Logs(text = text, type = type, sessionname= sessionname,priority= priority,who=who)
+        log = Logs(text = text,
+                   type = type,
+                   sessionname = sessionname,
+                   priority = priority,
+                   who = who,
+                   how = how,
+                   why = why,
+                   module = module,
+                   action = action,
+                   touser = touser,
+                   fromuser = fromuser)
         session.add(log)
         session.commit()
         session.flush()
         session.close()
 
-    def message(self, msg):
-        #save log message
-        try :
-            dataobj = json.loads(msg['body'])
+    def xmpplogdeploy(self, dataobj):
+        """ 
+            this function manage msg deploy log
+        """
+        try:
             if 'text' in dataobj and 'type' in dataobj and 'session' in dataobj and  'priority' in dataobj and  'who' in dataobj:
-                self.registrelog(dataobj['text'], dataobj['type'], dataobj['session'], dataobj['priority'], dataobj['who'])
+                self.registerlogxmpp(dataobj['text'],
+                                     type = dataobj['type'],
+                                     sessionname = dataobj['session'],
+                                     priority = dataobj['priority'],
+                                     who = dataobj['who'])
             elif 'action' in dataobj :
                 if dataobj['action'] == 'resultapplicationdeploymentjson':
                     #log dans base resultat
@@ -334,11 +404,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.updatedeployresultandstate( dataobj['sessionid'], "END SUCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
                     else:
                         self.updatedeployresultandstate( dataobj['sessionid'], "END ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
-            else:
-                pass
+        except Exception as e:
+            logging.error("obj Message deploy error  %s %s" %(dataobj, str(e)))
+            traceback.print_exc(file=sys.stdout)
+
+    def message(self, msg):
+        #save log message
+        try :
+            dataobj = json.loads(msg['body'])
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             traceback.print_exc(file=sys.stdout)
+
+        if 'log' in dataobj:
+            if dataobj['log'] == 'xmpplog':
+                self.createlog(dataobj)
+            else:
+                # other typê message
+                pass
+        else:
+            self.xmpplogdeploy(dataobj)
 
 def createDaemon(opts,conf):
     """
