@@ -521,6 +521,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         try :
             dataobj = json.loads(msg['body'])
+           
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur={
@@ -567,16 +568,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 os.system("shutdown -r now")
             return
 
-        if dataobj['action'] == "shutdownfrommaster":
+         if dataobj['action'] == "shutdownfrommaster":
+            msg = "\"Shutdown from administrator\""
+            time = 15 # default 15 seconde
+            if 'time' in dataobj['data'] and dataobj['data']['time'] != 0:
+                time = dataobj['data']['time']
+            if 'msg' in dataobj['data'] and dataobj['data']['msg'] != "":
+                msg = '"'+dataobj['data']['msg']+'"'
+
             if sys.platform.startswith('linux'):
-                logging.debug("shutdown -P -f -t 3  \"restart from administrator\"")
-                os.system("shutdown -P -f -t 3  \"restart from administrator\"")
+                cmd = "shutdown -P -f -t %s %s"%(time, msg)
+                logging.debug(cmd)
+                os.system("shutdown -P -f -t %s  \"%s\""%(time,msg))
             elif sys.platform.startswith('win'):
-                logging.debug("shutdown /s /t 60 /f /c \"stop from administrator in 60 secondes\"")
-                os.system("shutdown /s /t 60 /f /c \"stop from administrator in 60 secondes\"")
+                cmd = "shutdown /s /t %s /f /c\"%s\""%(time, msg)
+                logging.debug(cmd)
+                os.system(cmd)
             elif sys.platform.startswith('darwin'):
-                logging.debug("actionrestartmachine  shutdown machine MacOS")
-                os.system("shutdown -s now \"restart from administrator\"")
+                cmd = "shutdown -h +%s \"%s\""(time, msg)
+                logging.debug(cmd)
+                os.system(cmd)
             return
 
         if dataobj['action'] == "installkeymaster":
