@@ -32,7 +32,8 @@
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
-# https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.17.0/OpenSSH-Win32.zip
+# https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.18.0/OpenSSH-Win32.zip
+# https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.18.0/OpenSSH-Win64.zip
 #	https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.3.20/fusioninventory-agent_windows-x86_2.3.20.exe
 #	In /var/lib/pulse2/clients/win32/downloads/python_modules/:
 #	https://pypi.python.org/packages/cd/59/7cc2407b15bcd13d43933a5ae163de89b6f366dda8b2b7403453e61c3a05/pypiwin32-219-cp27-none-win32.whl
@@ -54,7 +55,7 @@
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="1.7.1"
+AGENT_VERSION="1.7.2"
 PYTHON_VERSION="2.7.9"
 PY_WIN32_VERSION="219"
 PY_NETIFACES_MODULE="netifaces"
@@ -90,7 +91,7 @@ PULSE_AGENT_NAME="pulse-xmpp-agent"
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_NAME="cwRsync"
 RSYNC_VERSION="5.5.0"
-OPENSSH_NAME="OpenSSH-Win32"
+OPENSSH_NAME="OpenSSH"
 LAUNCHER_SSH_KEY="\/root\/\.ssh\/id_rsa.pub"
 FUSION_INVENTORY_AGENT_NAME="fusioninventory-agent"
 FUSION_INVENTORY_AGENT_VERSION="2.3.20"
@@ -159,8 +160,10 @@ compute_parameters() {
 	PULSE_AGENT_PLUGINS="${PULSE_AGENT_PLUGINS_NAME}-${PULSE_AGENT_PLUGINS_VERSION}.tar.gz"
 	RSYNC_FILENAME="${RSYNC_NAME}_${RSYNC_VERSION}_x86_Free.zip"
 	RSYNC_URL="https://agents.siveo.net/win/${RSYNC_FILENAME}"
-	OPENSSH_FILENAME="${OPENSSH_NAME}.zip"
-	OPENSSH_URL="https://agents.siveo.net/win/${OPENSSH_FILENAME}"
+	OPENSSH32_FILENAME="${OPENSSH_NAME}-Win32.zip"
+	OPENSSH32_URL="https://agents.siveo.net/win/${OPENSSH32_FILENAME}"
+	OPENSSH64_FILENAME="${OPENSSH_NAME}-Win64.zip"
+	OPENSSH64_URL="https://agents.siveo.net/win/${OPENSSH64_FILENAME}"
 	FUSION_INVENTORY_AGENT_FILENAME="${FUSION_INVENTORY_AGENT_NAME}_windows-x86_${FUSION_INVENTORY_AGENT_VERSION}.exe"
 	FUSION_INVENTORY_AGENT_URL="https://agents.siveo.net/win/${FUSION_INVENTORY_AGENT_FILENAME}"
 }
@@ -249,7 +252,8 @@ update_nsi_script_full() {
 	FULL_PY_CRON='File "${DOWNLOADS_DIR}/python_modules/${PY_CRON}"'
 	FULL_PY_CRON_DEPS_1='File "${DOWNLOADS_DIR}/python_modules/${PY_CRON_DEPS_1}"'
 	FULL_PY_CRON_DEPS_2='File "${DOWNLOADS_DIR}/python_modules/${PY_CRON_DEPS_2}"'
-	FULL_OPENSSH='File "${DOWNLOADS_DIR}/${OPENSSH_FILENAME}"'
+	FULL_OPENSSH32='File "${DOWNLOADS_DIR}/${OPENSSH32_FILENAME}"'
+	FULL_OPENSSH64='File "${DOWNLOADS_DIR}/${OPENSSH64_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
 	INSTALL_FULL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_NETIFACES}`'
@@ -319,8 +323,10 @@ update_nsi_script_full() {
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		-e "s/@@PULSE_AGENT_TASK_XML@@/${PULSE_AGENT_TASK_XML}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
-		-e "s/@@OPENSSH_FILENAME@@/${OPENSSH_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_OPENSSH@@/$(sed_escape ${FULL_OPENSSH})/" \
+		-e "s/@@OPENSSH32_FILENAME@@/${OPENSSH32_FILENAME}/" \
+		-e "s/@@OPENSSH64_FILENAME@@/${OPENSSH64_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_OPENSSH32@@/$(sed_escape ${FULL_OPENSSH32})/" \
+		-e "s/@@FULL_OR_DL_OPENSSH64@@/$(sed_escape ${FULL_OPENSSH64})/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${FULL_FUSION_INVENTORY_AGENT})/" \
@@ -344,7 +350,8 @@ update_nsi_script_dl() {
 	DL_PY_CRON='${DownloadFile} '"${PY_CRON_URL}"' ${PY_CRON_FILENAME}'
 	DL_PY_CRON_DEPS_1='${DownloadFile} '"${PY_CRON_DEPS_1_URL}"' ${PY_CRON_DEPS_1_FILENAME}'
 	DL_PY_CRON_DEPS_2='${DownloadFile} '"${PY_CRON_DEPS_2_URL}"' ${PY_CRON_DEPS_2_FILENAME}'
-	DL_OPENSSH='${DownloadFile} '"${OPENSSH_URL}"' ${OPENSSH_FILENAME}'
+	DL_OPENSSH32='${DownloadFile} '"${OPENSSH32_URL}"' ${OPENSSH32_FILENAME}'
+	DL_OPENSSH64='${DownloadFile} '"${OPENSSH64_URL}"' ${OPENSSH64_FILENAME}'
 	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
 	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
 	INSTALL_DL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_NETIFACES}`'
@@ -414,8 +421,10 @@ update_nsi_script_dl() {
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		-e "s/@@PULSE_AGENT_TASK_XML@@/${PULSE_AGENT_TASK_XML}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
-		-e "s/@@OPENSSH_FILENAME@@/${OPENSSH_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_OPENSSH@@/$(sed_escape ${DL_OPENSSH})/" \
+		-e "s/@@OPENSSH32_FILENAME@@/${OPENSSH32_FILENAME}/" \
+		-e "s/@@OPENSSH64_FILENAME@@/${OPENSSH64_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_OPENSSH32@@/$(sed_escape ${DL_OPENSSH32})/" \
+		-e "s/@@FULL_OR_DL_OPENSSH64@@/$(sed_escape ${DL_OPENSSH64})/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${DL_FUSION_INVENTORY_AGENT})/" \

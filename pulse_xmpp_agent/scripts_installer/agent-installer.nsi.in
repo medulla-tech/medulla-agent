@@ -56,7 +56,8 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 !define PULSE_AGENT_TASK_XML "@@PULSE_AGENT_TASK_XML@@"
 !define OPENSSH_NAME "@@OPENSSH_NAME@@"
-!define OPENSSH_FILENAME "@@OPENSSH_FILENAME@@"
+!define OPENSSH32_FILENAME "@@OPENSSH32_FILENAME@@"
+!define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
 !define FUSION_INVENTORY_AGENT_FILENAME "@@FUSION_INVENTORY_AGENT_FILENAME@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
@@ -94,6 +95,7 @@ SetCompressor lzma
 !Include "LogString.nsh"
 !Include "StrTok.nsh"
 !Include "psexec.nsh"
+!include "x64.nsh"
 
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -294,7 +296,8 @@ SectionEnd
 ; rsync installation
 Section "rsync" sec_rsync
   SetOutPath "$INSTDIR\tmp"
-  @@FULL_OR_DL_OPENSSH@@
+  @@FULL_OR_DL_OPENSSH32@@
+  @@FULL_OR_DL_OPENSSH64@@
   File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
   SetOutPath "$INSTDIR\.ssh\"
   File "${LAUNCHER_SSH_KEY}"
@@ -302,13 +305,27 @@ Section "rsync" sec_rsync
   ${LogString} "------------------------------------------------------"
 
   ; Install of OpenSSH
+  ; Get location
+  Var /GLOBAL SSH_PATH
+  Var /GLOBAL OPENSSH_FILENAME
+  Var /GLOBAL OPENSSH_CONTENTS_FOLDER
+  ${If} ${RunningX64}
+    StrCpy $OPENSSH_FILENAME "${OPENSSH64_FILENAME}"
+    StrCpy $SSH_PATH "$PROGRAMFILES64\${OPENSSH_NAME}"
+    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win64"
+  ${Else}
+    StrCpy $OPENSSH_FILENAME "${OPENSSH32_FILENAME}"
+    StrCpy $SSH_PATH "$PROGRAMFILES\${OPENSSH_NAME}"
+    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win32"
+  ${EndIf}
   ; Extract OpenSSH
-  ZipDLL::extractall "$INSTDIR\tmp\${OPENSSH_FILENAME}" "$PROGRAMFILES"
-  ${PowerShellExecFileLog} "$PROGRAMFILES\${OPENSSH_NAME}\install-sshd.ps1"
+  ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
+  Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
+  ${PowerShellExecFileLog} "$SSH_PATH\install-sshd.ps1"
 
   ; Generate config file of SSH server
-  CopyFiles /SILENT "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config" "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config.bak"
-  FileOpen $0 "$PROGRAMFILES\${OPENSSH_NAME}\sshd_config" w
+  CopyFiles /SILENT "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config.bak"
+  FileOpen $0 "$SSH_PATH\sshd_config" w
   FileSeek $0 0 END
   FileWrite $0 "$\r$\n"
   FileWrite $0 "Subsystem	sftp	sftp-server.exe$\r$\n"
@@ -334,8 +351,8 @@ Section "rsync" sec_rsync
   ${LogString} "-------------------"
 
   ; Generate SSH Keys
-  SetOutPath "$PROGRAMFILES\${OPENSSH_NAME}"
-  StrCpy $0 `"$PROGRAMFILES\${OPENSSH_NAME}\ssh-keygen.exe" -A`
+  SetOutPath "$SSH_PATH"
+  StrCpy $0 `"$SSH_PATH\ssh-keygen.exe" -A`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -401,7 +418,7 @@ Section "rsync" sec_rsync
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulse" 0
 
   ; Set permissions for keys etc
-  ${PowerShellExecLog} "cd $\"$PROGRAMFILES\${OPENSSH_NAME}$\" ; .\FixHostFilePermissions.ps1 -Confirm:$$false"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; .\FixHostFilePermissions.ps1 -Confirm:$$false"
   StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /setowner Pulse`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -441,13 +458,13 @@ Section "rsync" sec_rsync
 
 
   ; Start the service
-  StrCpy $0 `sc start sshd`
+  StrCpy $0 `sc start ssh-agent`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
-  StrCpy $0 `sc start ssh-agent`
+  StrCpy $0 `sc start sshd`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
