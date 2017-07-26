@@ -568,7 +568,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 os.system("shutdown -r now")
             return
 
-         if dataobj['action'] == "shutdownfrommaster":
+        if dataobj['action'] == "shutdownfrommaster":
             msg = "\"Shutdown from administrator\""
             time = 15 # default 15 seconde
             if 'time' in dataobj['data'] and dataobj['data']['time'] != 0:
