@@ -574,18 +574,27 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if 'time' in dataobj['data'] and dataobj['data']['time'] != 0:
                 time = dataobj['data']['time']
             if 'msg' in dataobj['data'] and dataobj['data']['msg'] != "":
-                msg = '"'+dataobj['data']['msg']+'"'
+                msg = '"' + dataobj['data']['msg'] + '"'
 
             if sys.platform.startswith('linux'):
-                cmd = "shutdown -P -f -t %s %s"%(time, msg)
+                if int(time) == 0:
+                    cmd = "shutdown now"
+                else:
+                    cmd = "shutdown -P -f -t %s %s"%(time, msg)
                 logging.debug(cmd)
-                os.system("shutdown -P -f -t %s  \"%s\""%(time,msg))
+                os.system(cmd)
             elif sys.platform.startswith('win'):
-                cmd = "shutdown /s /t %s /f /c\"%s\""%(time, msg)
+                if int(time) == 0:
+                    cmd = "shutdown /p"
+                else:
+                    cmd = "shutdown -P -f -t %s %s"%(time, msg)
                 logging.debug(cmd)
                 os.system(cmd)
             elif sys.platform.startswith('darwin'):
-                cmd = "shutdown -h +%s \"%s\""(time, msg)
+                if int(time) == 0:
+                    cmd = "shutdown -h now"
+                else:
+                    cmd = "shutdown -h +%s \"%s\""(time, msg)
                 logging.debug(cmd)
                 os.system(cmd)
             return
