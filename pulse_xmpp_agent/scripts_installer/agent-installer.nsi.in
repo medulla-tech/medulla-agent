@@ -486,8 +486,14 @@ Section "rsync" sec_rsync
   ; Install of rsync
   ; Extract rsync
   ZipDLL::extractall "$INSTDIR\tmp\${RSYNC_FILENAME}" "$INSTDIR\tmp\"
-  ; Copy rsync files to system32 folder
-  CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$SYSDIR"
+  ; Copy rsync files to System32/SysWOW64 folder
+  ${DisableX64FSRedirection}
+  ${If} ${RunningX64}
+    CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$WINDIR\SysWOW64\"
+  ${Else}
+    CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$WINDIR\System32\"
+  ${EndIf}
+  ${EnableX64FSRedirection}
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
