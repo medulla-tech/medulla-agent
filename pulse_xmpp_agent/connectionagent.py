@@ -25,16 +25,16 @@ import logging
 import sleekxmpp
 import platform
 import base64
+import time
 import json
 from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
-
-from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, isWinUserAdmin, isMacOsUserAdmin, StreamToLogger
+from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin, StreamToLogger
 from optparse import OptionParser
 
-
+from threading import Timer
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 # Additionnal path for library and plugins
@@ -215,68 +215,111 @@ class MUCBot(sleekxmpp.ClientXMPP):
         }
         return dataobj
 
-def createDaemon(tg):
+def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
         This function create a service/Daemon that will execute a det. task
     """
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
-            p = multiprocessing.Process(target=doTask, arg=tg)
+            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
             p.daemon = True
             p.start()
             p.join()
-            logging.log(DEBUGPULSE,"Start Agent %s" % (tg['jidagent']))
+            #doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         else:
             # Store the Fork PID
             pid = os.fork()
             if pid > 0:
                 print 'PID: %d' % pid
                 os._exit(0)
-            doTask(tg)
+            doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
+        traceback.print_exc(file=sys.stdout)
         os._exit(1)
 
 
-def doTask(tg):
-    # Setup the command line arguments.
+def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     global restart
-    while True:
-        restart = False
-        if tg.agenttype != "relayserver":
-            xmpp = MUCBot(tg)
-            xmpp.register_plugin('xep_0030') # Service Discovery
-            xmpp.register_plugin('xep_0045') # Multi-User Chat
-            xmpp.register_plugin('xep_0004') # Data Forms
-            xmpp.register_plugin('xep_0050') # Adhoc Commands
-            xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
-            xmpp.register_plugin('xep_0077') # In-band Registration
-            xmpp['xep_0077'].force_registration = True
-
-            # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-
-            if xmpp.connect(address=(tg.confserver,tg.confport)):
-                xmpp.process(block=True)
-                logging.log(DEBUGPULSE,"bye bye connecteur")
-            else:
-                logging.log(DEBUGPULSE,"Unable to connect.")
-                restart = False
-            if not restart: break
+    if platform.system()=='Windows':
+        # Windows does not support ANSI escapes and we are using API calls to set the console color
+        logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
+    else:
+        # all non-Windows platforms are supporting ANSI escapes so we use them
+        logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+    # format log more informations
+    format = '%(asctime)s - %(levelname)s - %(message)s'
+    # more information log
+    # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
+    if not optsdeamon :
+        if optsconsoledebug :
+            logging.basicConfig(level = logging.DEBUG, format=format)
         else:
-            break
+            logging.basicConfig( level = tglevellog,
+                                 format = format,
+                                 filename = tglogfile,
+                                 filemode = 'a')
+    else:
+        logging.basicConfig( level = tglevellog,
+                             format = format,
+                             filename = tglogfile,
+                             filemode = 'a')
+    if optstypemachine.lower() in ["machine"]:
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
+    else:
+        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
+    # Setup the command line arguments.
+    tg = confParameter(optstypemachine)
 
+    if optstypemachine.lower() in ["machine"]:
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+    else:
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
 
+    while True:
+        if check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
+        logging.log(DEBUGPULSE,"ERROR CONNECTOR")
+        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
+            " Check that %s can be resolved"%(tg.confserver,
+                                              tg.confport,
+                                              tg.confserver))
+        logging.log(DEBUGPULSE,"verify a information ip or dns for connection configurator")
+        if ipfromdns(tg.confserver) == "" :
+            logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.confserver)
+        time.sleep(2)
+    if tg.agenttype != "relayserver":
+        xmpp = MUCBot(tg)
+        xmpp.register_plugin('xep_0030') # Service Discovery
+        xmpp.register_plugin('xep_0045') # Multi-User Chat
+        xmpp.register_plugin('xep_0004') # Data Forms
+        xmpp.register_plugin('xep_0050') # Adhoc Commands
+        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+        xmpp.register_plugin('xep_0077') # In-band Registration
+        xmpp['xep_0077'].force_registration = True
+
+        # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
+        if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
+            t = Timer(300, xmpp.terminate)
+            t.start()
+            xmpp.process(block=True)
+            t.cancel()
+            logging.log(DEBUGPULSE,"bye bye connecteur")
+        else:
+            logging.log(DEBUGPULSE,"Unable to connect.")
+    else:
+        logging.log(DEBUGPULSE,"Warning: A relay server holds a Static configuration. Do not run configurator agent on relay servers.")
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"
         sys.exit(0)
-    elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
+    elif sys.platform.startswith('win') and isWinUserAdmin() == 0 :
         print "Pulse agent must be running as Administrator"
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
         print "Pulse agent must be running as root"
         sys.exit(0)
+
     optp = OptionParser()
     optp.add_option("-d", "--deamon",action="store_true",
                  dest="deamon", default=False,
@@ -284,7 +327,6 @@ if __name__ == '__main__':
     optp.add_option("-t", "--type",
                 dest="typemachine", default=False,
                 help="Type machine : machine or relayserver")
-
     optp.add_option("-c", "--consoledebug",action="store_true",
                 dest="consoledebug", default = False,
                   help="console debug")
@@ -292,45 +334,7 @@ if __name__ == '__main__':
     opts, args = optp.parse_args()
     tg = confParameter(opts.typemachine)
 
-    if opts.typemachine.lower() in ["machine"]:
-        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
-        tg.pathplugins="pluginsmachine"
-    else:
-        tg.pathplugins="pluginsrelay"
-        sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
-
-    if platform.system()=='Windows':
-        # Windows does not support ANSI escapes and we are using API calls to set the console color
-        logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
-    else:
-        # all non-Windows platforms are supporting ANSI escapes so we use them
-        logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
-
     if not opts.deamon :
-        if opts.consoledebug:
-            logging.basicConfig(level = logging.DEBUG, format = '%(asctime)s - %(levelname)s - %(message)s')
-            doTask(tg)
-        else:
-            stdout_logger = logging.getLogger('STDOUT')
-            sl = StreamToLogger(stdout_logger, tg.levellog)
-            sys.stdout = sl
-            stderr_logger = logging.getLogger('STDERR')
-            sl = StreamToLogger(stderr_logger, logging.ERROR)
-            sys.stderr = sl
-            logging.basicConfig(level = tg.levellog,
-                        format = '[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                        filename = tg.logfile,
-                        filemode = 'a')
-            doTask(tg)
+        doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
     else:
-        stdout_logger = logging.getLogger('STDOUT')
-        sl = StreamToLogger(stdout_logger, tg.levellog)
-        sys.stdout = sl
-        stderr_logger = logging.getLogger('STDERR')
-        sl = StreamToLogger(stderr_logger, logging.ERROR)
-        sys.stderr = sl
-        logging.basicConfig(level = tg.levellog,
-                    format ='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
-                    filename = tg.logfile,
-                    filemode = 'a')
-        createDaemon(tg)
+        createDaemon(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
