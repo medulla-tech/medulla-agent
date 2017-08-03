@@ -279,7 +279,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
 
     while True:
-        if check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
+        if ipfromdns(tg.confserver) != "" and  check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
         logging.log(DEBUGPULSE,"ERROR CONNECTOR")
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.confserver,
