@@ -32,7 +32,11 @@ from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo
 from lib.configuration import confParameter
 from lib.managesession import session
-from lib.utils import  DEBUGPULSE, getIpXmppInterface, refreshfingerprint, getRandomName, load_back_to_deploy, cleanbacktodeploy, call_plugin, searchippublic, subnetnetwork, protoandport, createfingerprintnetwork, isWinUserAdmin, isMacOsUserAdmin, check_exist_ip_port, ipfromdns
+from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
+                        getRandomName, load_back_to_deploy, cleanbacktodeploy,\
+                        call_plugin, searchippublic, subnetnetwork,\
+                        protoandport, createfingerprintnetwork, isWinUserAdmin,\
+                        isMacOsUserAdmin, check_exist_ip_port, ipfromdns
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
 import traceback
@@ -849,6 +853,17 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
 
     while True:
+        if check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
+            " Check that %s can be resolved"%(tg.Server,
+                                              tg.Port,
+                                              tg.Server))
+        logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
+        if ipfromdns(tg.Server) == "" :
+            logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.Server)
+        time.sleep(2)
+
+    while True:
         restart = False
         xmpp = MUCBot(tg)
         xmpp.register_plugin('xep_0030') # Service Discovery
@@ -859,7 +874,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-        if xmpp.connect(address=(tg.Server,tg.Port)):
+        
+        
+        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             if  xmpp.config.agenttype in ['relayserver']:
