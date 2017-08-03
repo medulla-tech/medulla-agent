@@ -23,7 +23,7 @@
 from optparse import OptionParser
 import os, sys
 
-from lib.utils import testagentconf, networkchanged, confchanged
+from lib.utils import testagentconf, networkchanged, confchanged, refreshfingerprintconf, refreshfingerprint
 
 if __name__ == '__main__':
     optp = OptionParser()
@@ -43,16 +43,24 @@ if __name__ == '__main__':
         print "warning configuration  option missing \neg:   guacamole_baseurl  , connection/port/server' , global/relayserver_agent"
         print "reconfiguration"
 
-    if networkchanged():
+    nchanged = networkchanged()
+    if nchanged:
         print "network changed reconfiguration"
+        refreshfingerprint()
 
-    if confchanged(opts.typemachine):
+    cchanged = confchanged(opts.typemachine)
+    if cchanged:
         print "conf changed reconfiguration"
+        refreshfingerprintconf(opts.typemachine)
 
-    testspeedagent = networkchanged() or confchanged(opts.typemachine) or not testagentconf(opts.typemachine)
+    #test if agent conf is configured one
+    testagenttype = testagentconf(opts.typemachine)
+
+    testspeedagent = nchanged or cchanged or not testagenttype
 
     if  testspeedagent:
         print "search configuration from master"
+
     os.chdir(os.path.dirname(sys.argv[0]))
     if not opts.consoledebug:
         if opts.typemachine.lower() in ["machine"]:
