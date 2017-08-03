@@ -219,7 +219,7 @@ class process_on_end_send_message_xmpp:
                 result = cmd.stdout.split('\n')
                 result  = [x.strip() for x in result if x !='']
 
-                print result
+                #print result
                 for t in workingstep:
                     if t == "@resultcommand":
                         workingstep[t] = os.linesep.join(result)

@@ -60,15 +60,15 @@ class manage_scheduler:
         elif self.objectxmpp.config.agenttype in ['machine']:
             descriptor_scheduler = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptor_scheduler_machine")
         self.directoryschedule =  os.path.abspath(descriptor_scheduler)
-        print "directory to descriptor scheduler (%s : %s)"%(self.objectxmpp.config.agenttype, self.directoryschedule )
+        #print "directory to descriptor scheduler (%s : %s)"%(self.objectxmpp.config.agenttype, self.directoryschedule )
         sys.path.append(self.directoryschedule)
         #creation repertoire si non exist
         if not os.path.exists(self.directoryschedule):
             logging.getLogger().debug("create directory scheduler %s"%self.directoryschedule)
             os.makedirs(self.directoryschedule, 0700 )
-        print self.directoryschedule
+        #print self.directoryschedule
         namefile = os.path.join(self.directoryschedule,"__init__.py")
-        print namefile
+        #print namefile
         if not os.path.exists(namefile):
             fichier = open(namefile, "w")
             fichier.write("###WARNING : never delete this file")

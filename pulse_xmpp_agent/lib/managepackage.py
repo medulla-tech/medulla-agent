@@ -53,7 +53,7 @@ class managepackage:
     @staticmethod
     def getversionpackagename(packagename):
         for package in managepackage.listpackages():
-            print os.path.join(package,"xmppdeploy.json")
+            #print os.path.join(package,"xmppdeploy.json")
             try:
                 jr = managepackage.loadjsonfile(os.path.join(package,"xmppdeploy.json"))
                 if 'info' in jr \
@@ -117,7 +117,6 @@ class search_list_of_deployment_packages:
         objdescriptor = managepackage.getdescriptorpackageuuid(packageuuid)
         if objdescriptor is not None:
             ll = self.__list_dependence__(objdescriptor)
-            #print ll
             for y in ll:
                 if y not in  self.list_of_deployment_packages:
                     self.__recursif__(y)
