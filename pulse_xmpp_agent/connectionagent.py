@@ -27,11 +27,12 @@ import platform
 import base64
 import time
 import json
+import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo
 from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin, StreamToLogger
+from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin
 from optparse import OptionParser
 
 from threading import Timer

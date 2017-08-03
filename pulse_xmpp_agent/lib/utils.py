@@ -315,7 +315,7 @@ def getIpListreduite():
         addrs = netifaces.ifaddresses(i)
         try:
             if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]['addr'])
-            if_ip = addrs[netifaces.AF_INET][0]['addr']
+            #if_ip = addrs[netifaces.AF_INET][0]['addr']
             address = int(if_mac,16)
             if address != 0:
                 listmacadress[address]= if_mac

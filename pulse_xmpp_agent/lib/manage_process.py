@@ -29,7 +29,7 @@ import logging
 import subprocess
 from threading import Timer
 logger = logging.getLogger()
-import time
+
 
 def processcommand(command , queue_out_session, messagestr, timeout):
     logging.error("########processcommand")
