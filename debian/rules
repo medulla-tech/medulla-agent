@@ -22,7 +22,7 @@ override_dh_auto_install:
 	dh_auto_install
 	set -ex; python setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb;
 	mkdir -p $(CURDIR)/debian/tmp/var/log/pulse/
-	mkdir -p $(CURDIR)/debian/tmp/etc/init.d/
-	cp -fr pulse_xmpp_agent/config/init.d/* $(CURDIR)/debian/tmp/etc/init.d/
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/systemd/system
+	cp -fr pulse_xmpp_agent/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
 	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 
