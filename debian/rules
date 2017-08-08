@@ -24,5 +24,8 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/var/log/pulse/
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/systemd/system
 	cp -fr pulse_xmpp_agent/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
+	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-agent-relay.service
+	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-agent-log.service
+
 	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 
