@@ -226,7 +226,7 @@ generate_agent_lin() {
 generate_agent_package() {
   # Generate Pulse Agent package for updating agent from Pulse
   colored_echo blue "Generating Pulse Agent package..."
-	COMMAND="./generate-agent-package
+	COMMAND="./generate-agent-package"
 	echo "Running "${COMMAND}
 	${COMMAND}
 }
