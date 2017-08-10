@@ -1,0 +1,183 @@
+#!/bin/bash
+
+# -*- coding: utf-8; -*-
+#
+# (c) 2017 siveo, http://www.siveo.net
+#
+# Author(s):
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2.  If not, see <http://www.gnu.org/licenses/>.
+
+echo "INFO: Generating package ${PACKAGE_NAME}..."
+
+# Detect if uuid or uuidgen is available
+if uuid; then
+  PACKAGE_UUID=$(uuid)
+elif uuidgen; then
+  PACKAGE_UUID=$(uuidgen)
+else
+  echo "ERROR: Please install uuid or uuidgen."
+  exit 1
+fi
+
+# A few settings
+PACKAGE_NAME="Pulse Agent"
+PACKAGE_DESC="XMPP Agent for machines managed by Pulse"
+AGENT_VERSION=$(grep ^AGENT_VERSION= /var/lib/pulse2/clients/win32/generate-pulse-agent-win.sh | cut -d '"' -f2)
+PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
+PULSE_AGENT_PATH="/var/lib/pulse2/clients/win32"
+
+# Create the package
+mkdir -p /var/lib/pulse2/packages/${PACKAGE_UUID}
+pushd /var/lib/pulse2/packages/${PACKAGE_UUID}
+
+# Copy the agent to the package folder
+cp ${PULSE_AGENT_PATH}/${PULSE_AGENT_FILENAME} .
+
+# Generate xmppdeploy.json
+cat <<EOF > xmppdeploy.json
+{
+    "info": {
+        "description": "${PACKAGE_DESC}",
+        "name": "${PACKAGE_NAME} v${AGENT_VERSION}",
+        "software": "agentxmpp",
+        "transferfile": "true",
+        "version": "${AGENT_VERSION}"
+    },
+    "win": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "success": 3,
+                "codereturn": "",
+                "step": 1,
+                "command": "xmppdeploywin.bat",
+                "timeout": 900,
+                "error": 4,
+                "action": "actionprocessscript",
+                "@resultcommand": ""
+            },
+            {
+                "action": "actionrestartbot",
+                "step": 2
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 3
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 4
+            }
+        ]
+    },
+    "linux": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "success": 3,
+                "codereturn": "",
+                "step": 1,
+                "command": "/bin/bash ./xmppdeploylinux",
+                "timeout": 900,
+                "error": 4,
+                "action": "actionprocessscript",
+                "@resultcommand": ""
+            },
+            {
+                "step" : 2,
+                "action": "actionrestartbot"
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 3
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 4
+            }
+        ]
+    },
+    "darwin": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "success": 3,
+                "codereturn": "",
+                "step": 1,
+                "command": "./xmppdeploydarwin",
+                "timeout": 900,
+                "error": 4,
+                "action": "actionprocessscript",
+                "@resultcommand": ""
+            },
+            {
+                "action": "actionrestartbot",
+                "step": 2
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 3
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 4
+            }
+        ]
+    }
+}
+EOF
+
+# Generate xmppdeploywin.bat
+cat <<EOF > xmppdeploywin.bat
+pip install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME}
+EOF
+
+# Generate xmppdeploylinux
+cat <<EOF > xmppdeploylinux
+#!/bin/bash
+pip install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME}
+EOF
+chmod +x xmppdeploylinux
+
+# Generate xmppdeploydarwin
+cat <<EOF > xmppdeploydarwin
+#!/bin/bash
+pip install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME}
+EOF
+chmod +x xmppdeploydarwin
+
+# Generate conf.json
+cat <<EOF > conf.json
+{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux", "entity_id": "0", "sub_packages": [], "reboot": 0, "version": "${AGENT_VERSION}",
+"inventory": {"associateinventory": "1", "licenses": "10000", "queries": {"Qversion": "${AGENT_VERSION}", "Qvendor": "SIVEO", "boolcnd": "", "Qsoftware": "${PACKAGE_NAME}"}}, "id": "${PACKAGE_UUID}", "name": "${PACKAGE_NAME} v${AGENT_VERSION}"}
+EOF
+
+popd
+
+# Restart package server
+service pulse2-package-server restart
+
+echo "INFO: Generating package ${PACKAGE_NAME}... Done"

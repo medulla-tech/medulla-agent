@@ -223,6 +223,14 @@ generate_agent_lin() {
 	${COMMAND}
 }
 
+generate_agent_package() {
+  # Generate Pulse Agent package for updating agent from Pulse
+  colored_echo blue "Generating Pulse Agent package..."
+	COMMAND="./generate-agent-package
+	echo "Running "${COMMAND}
+	${COMMAND}
+}
+
 # And finally we run the functions
 
 check_arguments "$@"
@@ -234,3 +242,4 @@ else
 fi
 generate_agent_win
 generate_agent_lin
+generate_agent_package
