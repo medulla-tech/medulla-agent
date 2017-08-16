@@ -27,6 +27,7 @@ import os
 import base64
 from utils import file_get_contents
 
+
 class MsgsignedRSA:
     """
         Class use for verify from message xmpp.
@@ -53,8 +54,14 @@ class MsgsignedRSA:
         :return: Function init has no return
         """
         self.type = type
-        self.filekeypublic = os.path.join(self.Setdirectorytempinfo(),"%s-public-RSA.key"%self.type)
-        self.fileallkey    = os.path.join(self.Setdirectorytempinfo(),"%s-all-RSA.key"%self.type)
+        self.filekeypublic = os.path.join(
+            self.Setdirectorytempinfo(),
+            "%s-public-RSA.key" %
+            self.type)
+        self.fileallkey = os.path.join(
+            self.Setdirectorytempinfo(),
+            "%s-all-RSA.key" %
+            self.type)
         self.dirtempinfo = self.Setdirectorytempinfo()
         self.allkey = None
         self.publickey = None
@@ -66,7 +73,8 @@ class MsgsignedRSA:
         them in the case where it does not exist.
         """
         if self.allkey is None or self.publickey is None:
-            if os.path.exists(self.filekeypublic) and os.path.exists(self.fileallkey):
+            if os.path.exists(self.filekeypublic) and os.path.exists(
+                    self.fileallkey):
                 f = open(self.fileallkey, 'r')
                 self.allkey = pickle.load(f)
                 f.close()
@@ -74,7 +82,7 @@ class MsgsignedRSA:
                 self.publickey = pickle.load(f)
                 f.close()
             else:
-                #recherche keyfile si not exist then generate.
+                # recherche keyfile si not exist then generate.
                 self.generateRSAclefagent()
 
     def loadkeyall(self):
@@ -133,7 +141,7 @@ class MsgsignedRSA:
         """
         return pickle.dumps(self.publickey)
 
-    def strtokeypublic(self,str):
+    def strtokeypublic(self, str):
         """
         Function string public key to obj keyRSA
         """
@@ -143,7 +151,7 @@ class MsgsignedRSA:
         """
         Function string key to obj keyRSA
         """
-        return  pickle.loads(str)
+        return pickle.loads(str)
 
     def Obj_KeyRSA_to_Base64(self, objectkey):
         """
@@ -160,7 +168,7 @@ class MsgsignedRSA:
         Function stringbase64 to object keyRSA
         :param strbase64: string encoded in base64
         :type strbase64:  string
-        :return: object 
+        :return: object
         """
         return pickle.loads(base64.b64decode(strbase64))
 
@@ -180,16 +188,20 @@ class MsgsignedRSA:
         """
         create directory
         """
-        dirtempinfo =   os.path.join(os.path.dirname(os.path.realpath(__file__)),"..", "INFOSTMP")
+        dirtempinfo = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            "..",
+            "INFOSTMP")
         if not os.path.exists(dirtempinfo):
-            os.makedirs(dirtempinfo, mode=0700)
+            os.makedirs(dirtempinfo, mode=0o700)
         return dirtempinfo
 
     def signedmsg(self, msg):
         """
         Function signed message with key private.
         """
-        return  self.allkey.sign(msg, None)[0]
+        return self.allkey.sign(msg, None)[0]
 
     def verifymsg(self, keypublic, msg, signed_message):
         """
@@ -205,14 +217,18 @@ class MsgsignedRSA:
         :type name : string
         :return boolean exist or not exist
         """
-        filepublickey = os.path.join(self.Setdirectorytempinfo(),"%s-public-RSA.key"%name)
+        filepublickey = os.path.join(
+            self.Setdirectorytempinfo(),
+            "%s-public-RSA.key" %
+            name)
         if os.path.exists(filepublickey):
             return True
         else:
             return False
 
+
 def installpublickey(name, keybase64):
-    """ 
+    """
     function install key from str base64 key to file name
     remarque: install only if key name missing
         if key exist in file then not use parameter keybase64
@@ -224,15 +240,20 @@ def installpublickey(name, keybase64):
 
     :return: Function return objetkey load from file ou use keybase64 parameter
     """
-    filepublickey = os.path.join(os.path.dirname(os.path.realpath(__file__)),"..", "INFOSTMP","%s-public-RSA.key"%name)
-    if os.path.exists( filepublickey ):
+    filepublickey = os.path.join(
+        os.path.dirname(
+            os.path.realpath(__file__)),
+        "..",
+        "INFOSTMP",
+        "%s-public-RSA.key" %
+        name)
+    if os.path.exists(filepublickey):
         f = open(filepublickey, 'r')
         key = pickle.load(f)
         f.close()
         return key
     else:
-        #install key public
+        # install key public
         key = pickle.loads(base64.b64decode(keybase64))
         pickle.dump(key, open(filepublickey, 'w'))
         return key
-
