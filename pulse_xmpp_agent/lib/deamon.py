@@ -42,7 +42,7 @@ class Daemon(object):
 
     def daemonize(self):
         """
-        do the UNIX double-fork magic, see Stevens' "Advanced 
+        do the UNIX double-fork magic, see Stevens' "Advanced
         Programming in the UNIX Environment" for details (ISBN 0201563177)
         http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
         """
@@ -62,7 +62,7 @@ class Daemon(object):
         self.attach_stream('stdin', mode='r')
         self.attach_stream('stdout', mode='a+')
         self.attach_stream('stderr', mode='a+')
-       
+
         # write pidfile
         self.create_pidfile()
 
@@ -93,7 +93,7 @@ class Daemon(object):
     def create_pidfile(self):
         atexit.register(self.delpid)
         pid = str(os.getpid())
-        open(self.pidfile,'w+').write("%s\n" % pid)
+        open(self.pidfile, 'w+').write("%s\n" % pid)
 
     def delpid(self):
         """
@@ -122,7 +122,7 @@ class Daemon(object):
         Returns the PID from pidfile
         """
         try:
-            pf = open(self.pidfile,'r')
+            pf = open(self.pidfile, 'r')
             pid = int(pf.read().strip())
             pf.close()
         except (IOError, TypeError):
@@ -140,9 +140,9 @@ class Daemon(object):
             if not silent:
                 message = "pidfile %s does not exist. Daemon not running?\n"
                 sys.stderr.write(message % self.pidfile)
-            return # not an error in a restart
+            return  # not an error in a restart
 
-        # Try killing the daemon process    
+        # Try killing the daemon process
         try:
             while True:
                 os.kill(pid, signal.SIGTERM)
