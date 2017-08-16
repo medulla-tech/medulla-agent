@@ -23,6 +23,7 @@
 import sys
 import os
 
+
 def conffilename(agenttype):
     """
         Function defining where the configuration file is located.
@@ -33,11 +34,25 @@ def conffilename(agenttype):
     else:
         conffilenameparameter = "relayconf.ini"
     if sys.platform.startswith('linux'):
-        fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent", conffilenameparameter)
+        fileconf = os.path.join(
+            "/",
+            "etc",
+            "pulse-xmpp-agent",
+            conffilenameparameter)
     elif sys.platform.startswith('win'):
-        fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", conffilenameparameter)
+        fileconf = os.path.join(
+            os.environ["ProgramFiles"],
+            "Pulse",
+            "etc",
+            conffilenameparameter)
     elif sys.platform.startswith('darwin'):
-        fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc", conffilenameparameter)
+        fileconf = os.path.join(
+            "/",
+            "Library",
+            "Application Support",
+            "Pulse",
+            "etc",
+            conffilenameparameter)
     else:
         fileconf = conffilenameparameter
 
@@ -45,5 +60,3 @@ def conffilename(agenttype):
         return fileconf
     else:
         return conffilenameparameter
-
-
