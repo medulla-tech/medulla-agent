@@ -29,21 +29,21 @@ def conffilename(agenttype):
         configuration file for the type of machine and the Operating System
     """
     if agenttype in ["machine"]:
-        conffilenameparamter = "agentconf.ini"
+        conffilenameparameter = "agentconf.ini"
     else:
-        conffilenameparamter = "relayconf.ini"
+        conffilenameparameter = "relayconf.ini"
     if sys.platform.startswith('linux'):
-        fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent", conffilenameparamter)
+        fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent", conffilenameparameter)
     elif sys.platform.startswith('win'):
-        fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", conffilenameparamter)
+        fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", conffilenameparameter)
     elif sys.platform.startswith('darwin'):
-        fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc", conffilenameparamter)
+        fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc", conffilenameparameter)
     else:
-        fileconf = conffilenameparamter
+        fileconf = conffilenameparameter
 
     if os.path.isfile(fileconf):
         return fileconf
     else:
-        return conffilenameparamter
+        return conffilenameparameter
 
 
