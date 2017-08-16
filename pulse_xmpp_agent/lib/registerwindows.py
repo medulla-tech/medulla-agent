@@ -26,76 +26,73 @@ if sys.platform.startswith('win'):
 
 
 def singletonclass(class_):
-  instances = {}
-  def getinstance(*args, **kwargs):
-    if class_ not in instances:
-        instances[class_] = class_(*args, **kwargs)
-    return instances[class_]
-  return getinstance
+    instances = {}
+
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+    return getinstance
+
 
 @singletonclass
 class constantregisterwindows:
 
     def __init__(self):
-        self.keysregister ={'HKEY_CLASSES_ROOT' : 'Registry entries subordinate to this key define types (or classes) of documents and the properties associated with those types.Shell and COM applications use the information stored under this key.',
-                        'HKEY_CURRENT_USER' : 'Registry entries subordinate to this key define the preferences of the current user. These preferences include the settings of environment variables, data about program groups, colors, printers, network connections, and application preferences.',
-                        'HKEY_LOCAL_MACHINE' : 'Registry entries subordinate to this key define the physical state of the computer, including data about the bus type, system memory, and installed hardware and software.',
-                        'HKEY_USERS' :'Registry entries subordinate to this key define the default user configuration for new users on the local computer and the user configuration for the current user.',
-                        'HKEY_PERFORMANCE_DATA':'Registry entries subordinate to this key allow you to access performance data. The data is not actually stored in the registry; the registry functions cause the system to collect the data from its source.',
-                        'HKEY_CURRENT_CONFIG':'Contains information about the current hardware profile of the local computer system.',
-                        'HKEY_DYN_DATA':'This key is not used in versions of Windows after 98.',
-                        'KEY_ALL_ACCESS':'Combines the STANDARD_RIGHTS_REQUIRED, KEY_QUERY_VALUE, KEY_SET_VALUE, KEY_CREATE_SUB_KEY, KEY_ENUMERATE_SUB_KEYS, KEY_NOTIFY, and KEY_CREATE_LINK access rights.',
-                        'KEY_WRITE':'Combines the STANDARD_RIGHTS_WRITE, KEY_SET_VALUE, and KEY_CREATE_SUB_KEY access rights.',
-                        'KEY_READ':'Combines the STANDARD_RIGHTS_READ, KEY_QUERY_VALUE, KEY_ENUMERATE_SUB_KEYS, and KEY_NOTIFY values.',
-                        'KEY_EXECUTE':'Combines the STANDARD_RIGHTS_READ, KEY_QUERY_VALUE, KEY_ENUMERATE_SUB_KEYS, and KEY_NOTIFY values.',
-                        'KEY_QUERY_VALUE':'Required to query the values of a registry key.',
-                        'KEY_SET_VALUE':'Required to create, delete, or set a registry value.',
-                        'KEY_CREATE_SUB_KEY':'Required to create a subkey of a registry key.',
-                        'KEY_ENUMERATE_SUB_KEYS':'Required to enumerate the subkeys of a registry key.',
-                        'KEY_NOTIFY':'Required to request change notifications for a registry key or for subkeys of a registry key.',
-                        'KEY_CREATE_LINK':'Reserved for system use.',
-                        'KEY_WOW64_64KEY':'Indicates that an application on 64-bit Windows should operate on the 64-bit registry view.',
-                        'KEY_WOW64_32KEY':'Indicates that an application on 64-bit Windows should operate on the 32-bit registry view.'
-                        }
+        self.keysregister = {'HKEY_CLASSES_ROOT': 'Registry entries subordinate to this key define types (or classes) of documents and the properties associated with those types.Shell and COM applications use the information stored under this key.',
+                             'HKEY_CURRENT_USER': 'Registry entries subordinate to this key define the preferences of the current user. These preferences include the settings of environment variables, data about program groups, colors, printers, network connections, and application preferences.',
+                             'HKEY_LOCAL_MACHINE': 'Registry entries subordinate to this key define the physical state of the computer, including data about the bus type, system memory, and installed hardware and software.',
+                             'HKEY_USERS': 'Registry entries subordinate to this key define the default user configuration for new users on the local computer and the user configuration for the current user.',
+                             'HKEY_PERFORMANCE_DATA': 'Registry entries subordinate to this key allow you to access performance data. The data is not actually stored in the registry; the registry functions cause the system to collect the data from its source.',
+                             'HKEY_CURRENT_CONFIG': 'Contains information about the current hardware profile of the local computer system.',
+                             'HKEY_DYN_DATA': 'This key is not used in versions of Windows after 98.',
+                             'KEY_ALL_ACCESS': 'Combines the STANDARD_RIGHTS_REQUIRED, KEY_QUERY_VALUE, KEY_SET_VALUE, KEY_CREATE_SUB_KEY, KEY_ENUMERATE_SUB_KEYS, KEY_NOTIFY, and KEY_CREATE_LINK access rights.',
+                             'KEY_WRITE': 'Combines the STANDARD_RIGHTS_WRITE, KEY_SET_VALUE, and KEY_CREATE_SUB_KEY access rights.',
+                             'KEY_READ': 'Combines the STANDARD_RIGHTS_READ, KEY_QUERY_VALUE, KEY_ENUMERATE_SUB_KEYS, and KEY_NOTIFY values.',
+                             'KEY_EXECUTE': 'Combines the STANDARD_RIGHTS_READ, KEY_QUERY_VALUE, KEY_ENUMERATE_SUB_KEYS, and KEY_NOTIFY values.',
+                             'KEY_QUERY_VALUE': 'Required to query the values of a registry key.',
+                             'KEY_SET_VALUE': 'Required to create, delete, or set a registry value.',
+                             'KEY_CREATE_SUB_KEY': 'Required to create a subkey of a registry key.',
+                             'KEY_ENUMERATE_SUB_KEYS': 'Required to enumerate the subkeys of a registry key.',
+                             'KEY_NOTIFY': 'Required to request change notifications for a registry key or for subkeys of a registry key.',
+                             'KEY_CREATE_LINK': 'Reserved for system use.',
+                             'KEY_WOW64_64KEY': 'Indicates that an application on 64-bit Windows should operate on the 64-bit registry view.',
+                             'KEY_WOW64_32KEY': 'Indicates that an application on 64-bit Windows should operate on the 32-bit registry view.'
+                             }
 
-        self.typeregister ={'REG_BINARY':'Binary data in any form.',
-                        'REG_DWORD':'32-bit number.',
-                        'REG_DWORD_LITTLE_ENDIAN':'A 32-bit number in little-endian format.',
-                        'REG_DWORD_BIG_ENDIAN':'A 32-bit number in big-endian format.',
-                        'REG_EXPAND_SZ':'Null-terminated string containing references to environment variables (%PATH%).',
-                        'REG_LINK':'A Unicode symbolic link.',
-                        'REG_MULTI_SZ':'A sequence of null-terminated strings, terminated by two null characters. (Python handles this termination automatically.)',
-                        'REG_NONE':'No defined value type.',
-                        'REG_RESOURCE_LIST':'A device-driver resource list.',
-                        'REG_FULL_RESOURCE_DESCRIPTOR':'A hardware setting.',
-                        'REG_RESOURCE_REQUIREMENTS_LIST':'A hardware resource list.',
-                        'REG_SZ':'A null-terminated string.'
-                        }
-
+        self.typeregister = {'REG_BINARY': 'Binary data in any form.',
+                             'REG_DWORD': '32-bit number.',
+                             'REG_DWORD_LITTLE_ENDIAN': 'A 32-bit number in little-endian format.',
+                             'REG_DWORD_BIG_ENDIAN': 'A 32-bit number in big-endian format.',
+                             'REG_EXPAND_SZ': 'Null-terminated string containing references to environment variables (%PATH%).',
+                             'REG_LINK': 'A Unicode symbolic link.',
+                             'REG_MULTI_SZ': 'A sequence of null-terminated strings, terminated by two null characters. (Python handles this termination automatically.)',
+                             'REG_NONE': 'No defined value type.',
+                             'REG_RESOURCE_LIST': 'A device-driver resource list.',
+                             'REG_FULL_RESOURCE_DESCRIPTOR': 'A hardware setting.',
+                             'REG_RESOURCE_REQUIREMENTS_LIST': 'A hardware resource list.',
+                             'REG_SZ': 'A null-terminated string.'
+                             }
 
     def is_exist_key(self, key):
         if key in self.keysregister:
             return True
         return False
 
-
     def is_exist_type(self, registrytype):
         if type in self.typeregister:
             return True
         return False
-
 
     def descriptionkey(self, key):
         if self.is_exist_key(key):
             return self.keysregister[key]
         return ""
 
-
     def descriptiontype(self, registertype):
         if self.is_exist_type(registertype):
             return self.keysregister[registertype]
         return ""
-
 
     def getType(self, registrytype):
         if registrytype in self.typeregister:
@@ -124,7 +121,6 @@ class constantregisterwindows:
             elif registrytype == 'REG_SZ':
                 return _winreg.REG_SZ
         raise
-
 
     def getkey(self, key):
         if key in self.keysregister:
