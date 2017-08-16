@@ -26,13 +26,15 @@ import logging
 
 logger = logging.getLogger()
 
+
 class manage_infoconsole:
     def __init__(self, queue_in, queue_out, objectxmpp):
-        self.namethread =  getRandomName(5, "threadevent")
+        self.namethread = getRandomName(5, "threadevent")
         self.objectxmpp = objectxmpp
         self.queueinfo = queue_in
         self.queueinfoout = queue_out
-        self.threadevent = threading.Thread( name = self.namethread, target = self.loopinfoconsol)
+        self.threadevent = threading.Thread(
+            name=self.namethread, target=self.loopinfoconsol)
         self.threadevent.start()
         logging.info('manage event start')
 
@@ -45,5 +47,5 @@ class manage_infoconsole:
                     break
                 self.objectxmpp.gestioneventconsole(event, self.queueinfoout)
             except Exception as e:
-                logging.error('error in manage infoconsole %s'%str(e))
+                logging.error('error in manage infoconsole %s' % str(e))
         logging.error('quit infocommand')
