@@ -64,6 +64,8 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_PLUGINS "@@PULSE_AGENT_PLUGINS@@"
 !define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
 !define GENERATED_SIZE "@@GENERATED_SIZE@@"
+!define RDPWRAP_FILENAME "@@RDPWRAP_FILENAME@@"
+!define RDPWRAP_FOLDERNAME "@@RDPWRAP_FOLDERNAME@@"
 
 SetCompressor lzma
 
@@ -507,11 +509,25 @@ SectionEnd
 
 ; Setup of RDP & Firewall
 Section "RDP Setup" sec_rdp
+  SetOutPath "$INSTDIR\tmp"
+  @@FULL_OR_DL_RDPWRAP@@
   ${LogString} "RDP setup for remote control of machine via Pulse...."
   ${LogString} "------------------------------------------------------"
 
+  ; Setup of RDPWrap
+  ; Extract RDPWrap
+  ZipDLL::extractall "$INSTDIR\tmp\${RDPWRAP_FILENAME}" "$INSTDIR\tmp\"
+  ; Install
+  StrCpy $0 `"$INSTDIR\tmp\${RDPWRAP_FOLDERNAME}\RDPWInst.exe" -i`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
   ; Setup of rdp
   WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fDenyTSConnections" 0
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fSingleSessionPerUser" 0
   ${If} ${AtLeastWin7}
     WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "UserAuthentication" 0
   ${EndIf}
@@ -530,6 +546,9 @@ Section "RDP Setup" sec_rdp
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${RDPWRAP_FILENAME}
+  RMDir /r $INSTDIR\tmp\${RDPWRAP_FOLDERNAME}
 SectionEnd
 
 ; Setup of Fusion Inventory agent

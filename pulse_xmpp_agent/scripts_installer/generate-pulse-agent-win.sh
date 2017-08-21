@@ -35,6 +35,7 @@
 # https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.18.0/OpenSSH-Win32.zip
 # https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.18.0/OpenSSH-Win64.zip
 #	https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.3.20/fusioninventory-agent_windows-x86_2.3.20.exe
+# https://github.com/stascorp/rdpwrap/releases/download/v1.6.1/RDPWrap-v1.6.1.zip
 #	In /var/lib/pulse2/clients/win32/downloads/python_modules/:
 #	https://pypi.python.org/packages/cd/59/7cc2407b15bcd13d43933a5ae163de89b6f366dda8b2b7403453e61c3a05/pypiwin32-219-cp27-none-win32.whl
 #	https://pypi.python.org/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz
@@ -95,6 +96,8 @@ OPENSSH_NAME="OpenSSH"
 LAUNCHER_SSH_KEY="\/root\/\.ssh\/id_rsa.pub"
 FUSION_INVENTORY_AGENT_NAME="fusioninventory-agent"
 FUSION_INVENTORY_AGENT_VERSION="2.3.20"
+RDPWRAP_NAME="RDPWrap"
+RDPWRAP_VERSION="1.6.1"
 DOWNLOAD_FOLDER="downloads"
 PULSE_AGENT_PLUGINS_NAME="pulse-agent-plugins"
 PULSE_AGENT_PLUGINS_VERSION="1.2"
@@ -166,6 +169,9 @@ compute_parameters() {
 	OPENSSH64_URL="https://agents.siveo.net/win/${OPENSSH64_FILENAME}"
 	FUSION_INVENTORY_AGENT_FILENAME="${FUSION_INVENTORY_AGENT_NAME}_windows-x86_${FUSION_INVENTORY_AGENT_VERSION}.exe"
 	FUSION_INVENTORY_AGENT_URL="https://agents.siveo.net/win/${FUSION_INVENTORY_AGENT_FILENAME}"
+	RDPWRAP_FILENAME="${RDPWRAP_NAME}-v${RDPWRAP_VERSION}.zip"
+	RDPWRAP_FOLDERNAME="${RDPWRAP_NAME}-v${RDPWRAP_VERSION}"
+	RDPWRAP_URL="https://agents.siveo.net/win/${RDPWRAP_FILENAME}"
 }
 
 display_usage() {
@@ -255,6 +261,7 @@ update_nsi_script_full() {
 	FULL_OPENSSH32='File "${DOWNLOADS_DIR}/${OPENSSH32_FILENAME}"'
 	FULL_OPENSSH64='File "${DOWNLOADS_DIR}/${OPENSSH64_FILENAME}"'
 	FULL_FUSION_INVENTORY_AGENT='File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT_FILENAME}"'
+	FULL_RDPWRAP='File "${DOWNLOADS_DIR}/${RDPWRAP_FILENAME}"'
 	INSTALL_FULL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
 	INSTALL_FULL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_NETIFACES}`'
 	INSTALL_FULL_PY_COMTYPES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_COMTYPES}`'
@@ -331,6 +338,9 @@ update_nsi_script_full() {
 		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${FULL_FUSION_INVENTORY_AGENT})/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
+		-e "s/@@RDPWRAP_FILENAME@@/${RDPWRAP_FILENAME}/" \
+		-e "s/@@RDPWRAP_FOLDERNAME@@/${RDPWRAP_FOLDERNAME}/" \
+		-e "s/@@FULL_OR_DL_RDPWRAP@@/$(sed_escape ${FULL_RDPWRAP})/" \
 		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
 		-e "s/@@RSYNC_FILENAME@@/rsync.zip/" \
 		-e "s/@@GENERATED_SIZE@@/FULL/" \
@@ -353,6 +363,7 @@ update_nsi_script_dl() {
 	DL_OPENSSH32='${DownloadFile} '"${OPENSSH32_URL}"' ${OPENSSH32_FILENAME}'
 	DL_OPENSSH64='${DownloadFile} '"${OPENSSH64_URL}"' ${OPENSSH64_FILENAME}'
 	DL_FUSION_INVENTORY_AGENT='${DownloadFile} '"${FUSION_INVENTORY_AGENT_URL}"' ${FUSION_INVENTORY_AGENT_FILENAME}'
+	DL_RDPWRAP='${DownloadFile} '"$RDPWRAP_URL"' ${RDPWRAP_FILENAME}'
 	INSTALL_DL_PY_WIN32='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade --no-index --find-links="$INSTDIR\tmp" ${PY_WIN32}`'
 	INSTALL_DL_PY_NETIFACES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_NETIFACES}`'
 	INSTALL_DL_PY_COMTYPES='StrCpy $0 `C:\Python27\Scripts\pip install --upgrade ${PY_COMTYPES}`'
@@ -429,6 +440,9 @@ update_nsi_script_dl() {
 		-e "s/@@FUSION_INVENTORY_AGENT_FILENAME@@/${FUSION_INVENTORY_AGENT_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT@@/$(sed_escape ${DL_FUSION_INVENTORY_AGENT})/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
+		-e "s/@@RDPWRAP_FILENAME@@/${RDPWRAP_FILENAME}/" \
+		-e "s/@@RDPWRAP_FOLDERNAME@@/${RDPWRAP_FOLDERNAME}/" \
+		-e "s/@@FULL_OR_DL_RDPWRAP@@/$(sed_escape ${DL_RDPWRAP})/" \
 		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
 		-e "s/@@RSYNC_FILENAME@@/rsync.zip/" \
 		-e "s/@@GENERATED_SIZE@@/MINIMAL/" \
