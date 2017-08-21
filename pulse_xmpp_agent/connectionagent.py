@@ -155,6 +155,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         else:
             return
         self.disconnect(wait=5)
+    
+    def terminate(self):
+        self.disconnect()
 
     def muc_message(self, msg):
         pass
