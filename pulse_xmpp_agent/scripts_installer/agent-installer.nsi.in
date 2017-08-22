@@ -516,7 +516,8 @@ Section "RDP Setup" sec_rdp
 
   ; Setup of RDPWrap
   ; Extract RDPWrap
-  ZipDLL::extractall "$INSTDIR\tmp\${RDPWRAP_FILENAME}" "$INSTDIR\tmp\"
+  CreateDirectory $INSTDIR\tmp\${RDPWRAP_FOLDERNAME}
+  ZipDLL::extractall "$INSTDIR\tmp\${RDPWRAP_FILENAME}" "$INSTDIR\tmp\${RDPWRAP_FOLDERNAME}"
   ; Install
   StrCpy $0 `"$INSTDIR\tmp\${RDPWRAP_FOLDERNAME}\RDPWInst.exe" -i`
   ${LogString} "Running $0"
