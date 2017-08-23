@@ -327,6 +327,37 @@ class networkagentinfo:
             dns.append(i.rstrip('\n'))
         return dns
 
+def powershellfqdnwindowscommand():
+    """
+        search fqdn for machine windows from Actifdyrectory
+    """
+    try:
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(name=$env:computername)(objectClass=computer))")"""], 
+              shell=True)
+        return output
+    except subprocess.CalledProcessError, e:
+        logging.getLogger().error("subproces powershellfqdnwindowscommand.output = " + e.output)
+    return ""
+
+def ADwindows():
+    """
+        AD information for machine
+    """
+    logging.getLogger().warning("fqdn AD missing")
+    fqdnwindows = ""
+    if sys.platform.startswith('linux'):
+        #fake pour test.
+        fqdnwindows = "Machines/Workstations/Chambéry"
+        pass
+    elif sys.platform.startswith('win'):
+        #powershell fonction
+        fqdnwindows = powershellfqdnwindowscommand()
+        if fqdnwindows == "":
+            logging.getLogger().warning("fqdn AD inconue")
+    elif sys.platform.startswith('darwin'):
+        pass
+    return fqdnwindows
+
 
 def interfacename(mac):
     for i in netifaces.interfaces():
@@ -359,7 +390,6 @@ def isInterfaceToIpadress(interface, ip):
     if if_ip == ip:
         return True
     return False
-
 
 def rewriteInterfaceTypeRedhad(file, data, interface):
     tab = []

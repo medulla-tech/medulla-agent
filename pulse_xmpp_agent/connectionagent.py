@@ -29,7 +29,7 @@ import time
 import json
 import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
-from lib.networkinfo import networkagentinfo
+from lib.networkinfo import networkagentinfo, ADwindows
 from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
 from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin
@@ -215,7 +215,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppmacaddress' : xmppmacaddress,
             'xmppmacnotshortened' : xmppmacnotshortened,
             'classutil' : self.config.classutil,
-            'ippublic' : self.ippublic
+            'ippublic' : self.ippublic,
+            'fqdnadwindows' : ADwindows()
         }
         return dataobj
 
