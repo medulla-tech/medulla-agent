@@ -329,7 +329,7 @@ class networkagentinfo:
 
 def powershellfqdnwindowscommand():
     """
-        search fqdn for machine windows from Actifdyrectory
+        search fqdn for machine windows from activedirectory
     """
     try:
         output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(name=$env:computername)(objectClass=computer))")"""], 
