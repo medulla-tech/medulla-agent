@@ -61,8 +61,7 @@ class networkagentinfo:
         return mac
 
     def getuser(self):
-        if sys.platform.startswith(
-                'linux') or sys.platform.startswith('darwin'):
+        if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
             obj = utils.simplecommandstr("users")
         else:
             # todo
@@ -74,8 +73,7 @@ class networkagentinfo:
             computer = c()[0]
             for propertyName in sorted(list(c.properties)):
                 if propertyName == "UserName":
-                    obj['result'] = getattr(
-                        computer, propertyName, '').split("\\")[1]
+                    obj['result'] = getattr(computer, propertyName, '').split("\\")[1]
         dd = [i.strip("\n") for i in obj['result'].split(" ") if i != ""]
         return list(set(dd))
 
