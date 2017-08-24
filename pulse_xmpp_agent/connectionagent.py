@@ -29,7 +29,7 @@ import time
 import json
 import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
-from lib.networkinfo import networkagentinfo, ADwindows
+from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import  confParameter, changeconnection
 from lib.agentconffile import conffilename
 from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin
@@ -168,6 +168,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.session = getRandomName(10,"session")
         dataobj['sessionid'] = self.session
         dataobj['base64'] = False
+        #----------------------------------
+        print "affiche object"
+        print json.dumps(dataobj, indent = 4)
+        #----------------------------------
         self.send_message(mto = "master@%s"%self.config.confdomain,
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
@@ -216,8 +220,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppmacnotshortened' : xmppmacnotshortened,
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic,
-            'fqdnadwindows' : ADwindows()
+            'adorgbymachine' : organizationbymachine(),
+            'adorgbyuser' : ''
         }
+        lastusersession = powershellgetlastuser()
+        if lastusersession != "":
+            dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
         return dataobj
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):

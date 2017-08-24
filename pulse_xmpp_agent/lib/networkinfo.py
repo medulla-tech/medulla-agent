@@ -25,7 +25,9 @@ import subprocess
 import sys
 import platform
 import utils
-from lib.utils import simplecommand
+from lib.utils import simplecommand, windowsservice, powerschellscriptps1 
+import logging
+import os
 
 if sys.platform.startswith('win'):
     import wmi
@@ -332,28 +334,101 @@ def powershellfqdnwindowscommand():
         search fqdn for machine windows from activedirectory
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(name=$env:computername)(objectClass=computer))")"""], 
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(name=$env:computername)(objectClass=computer))").findone().path"""], 
               shell=True)
         return output
     except subprocess.CalledProcessError, e:
         logging.getLogger().error("subproces powershellfqdnwindowscommand.output = " + e.output)
     return ""
 
-def ADwindows():
+def powershellfqdnwindowscommandbyuser(user):
+    try:
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().properties.adspath"""%user], 
+              shell=True)
+        return output
+    except subprocess.CalledProcessError, e:
+        logging.getLogger().error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
+    return ""
+
+def powershellgetlastuser():
+    if sys.platform.startswith('win'):
+        script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "script", "getlastuser.ps1"))
+        result = powerschellscriptps1(script)
+        if result['code'] == 0:
+            ret = []
+            line =  [ x.replace("\n",'') for x in result['result'].split("\r\n") if x.replace("\n",'') != ""]
+            if len(line) == 3:
+                descriptor = [x for x in line[0].split(' ') if x !=""]
+                informationuser = [x for x in line[2].split(' ') if x !=""]
+                if  descriptor[0].startswith('Last'):
+                    ret = informationuser[1].split('\\')
+                if  descriptor[1].startswith('Last'):
+                    ret = informationuser[0].split('\\')
+                return ret[1]
+    return ""
+
+def organizationbymachine():
     """
         AD information for machine
+        search fqdn for machine windows from activedirectory
     """
-    logging.getLogger().warning("fqdn AD missing")
     fqdnwindows = ""
     if sys.platform.startswith('linux'):
-        #fake pour test.
-        fqdnwindows = "Machines/Workstations/Chambéry"
         pass
     elif sys.platform.startswith('win'):
         #powershell fonction
         fqdnwindows = powershellfqdnwindowscommand()
         if fqdnwindows == "":
             logging.getLogger().warning("fqdn AD inconue")
+        else:
+            fqdnwindows = fqdnwindows.replace("LDAP://","")
+            elt = fqdnwindows.split(',')
+            list_ou=[]
+            list_dc=[]
+            for t in elt:
+                if t.startswith('CN'):
+                    cn= t.replace('CN=','')
+                if t.startswith('OU'):
+                    list_ou.append(t.replace('OU=',''))
+                if t.startswith('DC'):
+                    list_dc.append(t.replace('DC=',''))
+            ou = ("/").join(list_ou)
+            dc = (".").join(list_dc)
+            fqdnwindows = cn + "@@"+ ou + "@@" + dc
+    elif sys.platform.startswith('darwin'):
+        pass
+    return fqdnwindows
+
+def organizationbyuser(user):
+    """
+        AD information for user
+        search fqdn for machine windows from activedirectory
+    """
+    fqdnwindows = ""
+    if sys.platform.startswith('linux'):
+        pass
+    elif sys.platform.startswith('win'):
+        #powershell fonction
+        fqdnwindows = powershellfqdnwindowscommandbyuser(user)
+        if fqdnwindows == "":
+            logging.getLogger().warning("fqdn AD inconue")
+        else:
+            fqdnwindows = fqdnwindows.replace("LDAP://","")
+            elt = fqdnwindows.split(',')
+            list_cn = []
+            list_ou = []
+            list_dc = []
+            for t in elt:
+                if t.startswith('CN'):
+                    list_cn.append( t.replace('CN=',''))
+                if t.startswith('OU'):
+                    list_ou.append(t.replace('OU=',''))
+                if t.startswith('DC'):
+                    list_dc.append(t.replace('DC=',''))
+            cn = (".").join(list_cn)
+            ou = ("/").join(list_ou)
+            dc = (".").join(list_dc)
+            fqdnwindows = cn + "@@"+ ou + "@@" + dc
     elif sys.platform.startswith('darwin'):
         pass
     return fqdnwindows

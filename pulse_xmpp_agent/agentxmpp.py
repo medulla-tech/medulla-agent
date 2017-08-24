@@ -29,7 +29,7 @@ import base64
 import json
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-from lib.networkinfo import networkagentinfo, ADwindows
+from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import confParameter
 from lib.managesession import session
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
@@ -773,9 +773,13 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'ippublic' : self.config.public_ip,
             'remoteservice' : protoandport(),
             'packageserver' : self.config.packageserver,
-            'fqdnadwindows' : ADwindows()
+            'adorgbymachine' : organizationbymachine(),
+            'adorgbyuser' : ''
         }
 
+        lastusersession = powershellgetlastuser()
+        if lastusersession != "":
+            dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
             if element.endswith('.py') and element.startswith('plugin_'):

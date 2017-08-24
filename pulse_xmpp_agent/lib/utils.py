@@ -563,6 +563,10 @@ def simplecommandstr(cmd):
     obj['result'] = "\n".join(result)
     return obj
 
+def powerschellscriptps1(namescript):
+    print "powershell -ExecutionPolicy Bypass -File  %s"%namescript
+    obj = simplecommandstr("powershell -ExecutionPolicy Bypass -File %s"%namescript)
+    return obj
 
 class shellcommandtimeout(object):
     def __init__(self, cmd, timeout=15):
