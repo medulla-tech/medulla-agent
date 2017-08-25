@@ -591,7 +591,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if int(time) == 0:
                     cmd = "shutdown /p"
                 else:
-                    cmd = "shutdown -P -f -t %s %s"%(time, msg)
+                    cmd = "shutdown /s /t %s /c %s"%(time, msg)
                 logging.debug(cmd)
                 os.system(cmd)
             elif sys.platform.startswith('darwin'):
