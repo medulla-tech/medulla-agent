@@ -332,7 +332,7 @@ def powershellfqdnwindowscommand():
         search fqdn for machine windows from activedirectory
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(name=$env:computername)(objectClass=computer))").findone().path"""], 
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
               shell=True)
         return output
     except subprocess.CalledProcessError, e:
@@ -341,7 +341,7 @@ def powershellfqdnwindowscommand():
 
 def powershellfqdnwindowscommandbyuser(user):
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().properties.adspath"""%user], 
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user],
               shell=True)
         return output
     except subprocess.CalledProcessError, e:
