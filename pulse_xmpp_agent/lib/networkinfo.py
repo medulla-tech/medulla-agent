@@ -25,9 +25,10 @@ import subprocess
 import sys
 import platform
 import utils
-from lib.utils import simplecommand, windowsservice, powerschellscriptps1 
+from lib.utils import simplecommand, windowsservice, powerschellscriptps1
 import logging
 import os
+from distutils.util import strtobool
 
 if sys.platform.startswith('win'):
     import wmi
@@ -365,6 +366,19 @@ def powershellgetlastuser():
                 return ret[1]
     return ""
 
+def isMachineInDomain():
+    """
+        returns if the machine is part of an AD domain or not
+    """
+    try:
+        output = subprocess.check_output(["powershell.exe","""(gwmi win32_computersystem).partofdomain"""],
+              shell=True)
+        return bool(strtobool(output.strip()))
+    except subprocess.CalledProcessError, e:
+        logging.getLogger().error("subproces isMachineInDomain.output = " + e.output)
+    return False
+
+
 def organizationbymachine():
     """
         AD information for machine
@@ -372,64 +386,72 @@ def organizationbymachine():
     """
     fqdnwindows = ""
     if sys.platform.startswith('linux'):
-        pass
+        return ""
     elif sys.platform.startswith('win'):
-        #powershell fonction
-        fqdnwindows = powershellfqdnwindowscommand()
-        if fqdnwindows == "":
-            logging.getLogger().warning("fqdn AD inconue")
+        indomain = isMachineInDomain()
+        if indomain:
+            #powershell fonction
+            fqdnwindows = powershellfqdnwindowscommand()
+            if fqdnwindows == "":
+                logging.getLogger().warning("fqdn AD inconue")
+            else:
+                fqdnwindows = fqdnwindows.replace("LDAP://","")
+                elt = fqdnwindows.split(',')
+                list_ou=[]
+                list_dc=[]
+                for t in elt:
+                    if t.startswith('CN'):
+                        cn= t.replace('CN=','')
+                    if t.startswith('OU'):
+                        list_ou.append(t.replace('OU=',''))
+                    if t.startswith('DC'):
+                        list_dc.append(t.replace('DC=',''))
+                ou = ("/").join(list(reversed(list_ou)))
+                dc = (".").join(list_dc)
+                fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return fqdnwindows
         else:
-            fqdnwindows = fqdnwindows.replace("LDAP://","")
-            elt = fqdnwindows.split(',')
-            list_ou=[]
-            list_dc=[]
-            for t in elt:
-                if t.startswith('CN'):
-                    cn= t.replace('CN=','')
-                if t.startswith('OU'):
-                    list_ou.append(t.replace('OU=',''))
-                if t.startswith('DC'):
-                    list_dc.append(t.replace('DC=',''))
-            ou = ("/").join(list_ou)
-            dc = (".").join(list_dc)
-            fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return ""
     elif sys.platform.startswith('darwin'):
-        pass
-    return fqdnwindows
+        return ""
 
 def organizationbyuser(user):
     """
         AD information for user
         search fqdn for machine windows from activedirectory
     """
-    fqdnwindows = ""
     if sys.platform.startswith('linux'):
-        pass
+        return ""
     elif sys.platform.startswith('win'):
-        #powershell fonction
-        fqdnwindows = powershellfqdnwindowscommandbyuser(user)
-        if fqdnwindows == "":
-            logging.getLogger().warning("fqdn AD inconue")
+        fqdnwindows = ""
+        indomain = isMachineInDomain()
+        if indomain:
+            #powershell fonction
+            fqdnwindows = powershellfqdnwindowscommandbyuser(user)
+            if fqdnwindows == "":
+                logging.getLogger().warning("fqdn AD inconue")
+            else:
+                fqdnwindows = fqdnwindows.replace("LDAP://","")
+                elt = fqdnwindows.split(',')
+                list_cn = []
+                list_ou = []
+                list_dc = []
+                for t in elt:
+                    if t.startswith('CN'):
+                        list_cn.append( t.replace('CN=',''))
+                    if t.startswith('OU'):
+                        list_ou.append(t.replace('OU=',''))
+                    if t.startswith('DC'):
+                        list_dc.append(t.replace('DC=',''))
+                cn = (".").join(list_cn)
+                ou = ("/").join(list(reversed(list_ou)))
+                dc = (".").join(list_dc)
+                fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return fqdnwindows
         else:
-            fqdnwindows = fqdnwindows.replace("LDAP://","")
-            elt = fqdnwindows.split(',')
-            list_cn = []
-            list_ou = []
-            list_dc = []
-            for t in elt:
-                if t.startswith('CN'):
-                    list_cn.append( t.replace('CN=',''))
-                if t.startswith('OU'):
-                    list_ou.append(t.replace('OU=',''))
-                if t.startswith('DC'):
-                    list_dc.append(t.replace('DC=',''))
-            cn = (".").join(list_cn)
-            ou = ("/").join(list_ou)
-            dc = (".").join(list_dc)
-            fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return ""
     elif sys.platform.startswith('darwin'):
-        pass
-    return fqdnwindows
+        return ""
 
 
 def interfacename(mac):
