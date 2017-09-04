@@ -49,7 +49,7 @@ setup(
     description = 'XMPP Agent for pulse',
     url='https://www.siveo.net/',
     packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script'],
-    data_files = [('', ['script/getlastuser.ps1',]),],
+    data_files = [('', ['getlastuser.ps1',]),],
     test_suite='',
     package_data={},
     entry_points={},
