@@ -321,13 +321,13 @@ Section "rsync" sec_rsync
     StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win32"
   ${EndIf}
   ; Extract OpenSSH
-  ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
-  ${PowerShellExecFileLog} "$SSH_PATH\install-sshd.ps1"
+  ZipDLL::extractall "$INSTDIR\tmp\${OPENSSH_FILENAME}" "$INSTDIR\tmp\"
+  Rename "$INSTDIR\tmp\${OPENSSH_CONTENTS_FOLDER}" "${SSH_PATH}"
+  ${PowerShellExecFileLog} "${SSH_PATH}\install-sshd.ps1"
 
   ; Generate config file of SSH server
-  CopyFiles /SILENT "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config.bak"
-  FileOpen $0 "$SSH_PATH\sshd_config" w
+  CopyFiles /SILENT "${SSH_PATH}\sshd_config" "${SSH_PATH}\sshd_config.bak"
+  FileOpen $0 "${SSH_PATH}\sshd_config" w
   FileSeek $0 0 END
   FileWrite $0 "$\r$\n"
   FileWrite $0 "Subsystem	sftp	sftp-server.exe$\r$\n"
@@ -353,8 +353,8 @@ Section "rsync" sec_rsync
   ${LogString} "-------------------"
 
   ; Generate SSH Keys
-  SetOutPath "$SSH_PATH"
-  StrCpy $0 `"$SSH_PATH\ssh-keygen.exe" -A`
+  SetOutPath "${SSH_PATH}"
+  StrCpy $0 `"${SSH_PATH}\ssh-keygen.exe" -A`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -420,7 +420,7 @@ Section "rsync" sec_rsync
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulse" 0
 
   ; Set permissions for keys etc
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; .\FixHostFilePermissions.ps1 -Confirm:$$false"
+  ${PowerShellExecLog} "cd $\"${SSH_PATH}$\" ; .\FixHostFilePermissions.ps1 -Confirm:$$false"
   StrCpy $0 `icacls "$INSTDIR\.ssh\authorized_keys" /setowner Pulse`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
