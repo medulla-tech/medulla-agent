@@ -32,7 +32,7 @@ elif sys.platform.startswith('darwin'):
     fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc")
 
 for scheme in INSTALL_SCHEMES.values():
-    scheme['data'] = scheme['purelib']
+    scheme['data'] = os.path.join("scheme['purelib']", "pulse_xmpp_agent")
 
 setup(
     classifiers=[
