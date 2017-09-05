@@ -19,6 +19,7 @@
 # MA 02110-1301, USA.
 
 from setuptools import setup
+from distutils.command.install import INSTALL_SCHEMES
 
 import os
 import sys
@@ -30,6 +31,8 @@ elif sys.platform.startswith('win'):
 elif sys.platform.startswith('darwin'):
     fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc")
 
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = scheme['purelib']
 
 setup(
     classifiers=[
