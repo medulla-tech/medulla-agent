@@ -502,7 +502,8 @@ Section "rsync" sec_rsync
   ; This requires a reboot
   SetRebootFlag true
 
-  Delete $INSTDIR\tmp\$OPENSSH_FILENAME
+  Delete $INSTDIR\tmp\$OPENSSH32_FILENAME
+  Delete $INSTDIR\tmp\$OPENSSH64_FILENAME
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
   RMDir /r $INSTDIR\tmp\rsync
 SectionEnd
