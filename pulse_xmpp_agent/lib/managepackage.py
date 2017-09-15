@@ -44,7 +44,7 @@ class managepackage:
                 return jr
             except Exception as e:
                 logger.error(
-                    "filename %s error decodage [%s]" %
+                    "filename %s error while decoding [%s]" %
                     (filename, str(e)))
         return None
 
