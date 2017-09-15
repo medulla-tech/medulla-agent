@@ -103,7 +103,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception:
                 pass
         if self.config.public_ip == "":
-            self.config.public_ip == None
+            self.config.public_ip = None
+
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
