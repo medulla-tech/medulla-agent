@@ -365,7 +365,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-    #jfkjfk
     def xmpplog(self,
                 text,
                 type = 'noset',
