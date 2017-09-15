@@ -161,6 +161,10 @@ class networkagentinfo:
             return False
 
     def IpDhcp(self):
+
+        """
+        This function provide the IP of the dhcp server used on the machine.
+        """
         obj1 = {}
         system = ""
         ipdhcp = ""
