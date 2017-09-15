@@ -60,7 +60,7 @@ class managepackage:
                     return jr
             except Exception as e:
                 logger.error(
-                    "package %s verify format descripttor [%s]" %
+                    "package %s verify format descriptor [%s]" %
                     (package, str(e)))
         return None
 
