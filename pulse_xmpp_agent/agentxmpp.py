@@ -96,7 +96,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
 
-        #use public_ip for localisation
+        # use public_ip for localisation
         if self.config.public_ip == "":
             try:
                 self.config.public_ip = searchippublic()
