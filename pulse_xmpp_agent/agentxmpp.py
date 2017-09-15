@@ -400,11 +400,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype='chat')
 
 
-    #def queueinfo(self):
-        ##if self.qin.qsize() > 0:
-            ##print self.qin.get()
-        #pass
-
     def handleinventory(self):
         msg={ 'from' : "master@pulse/MASTER",
               'to': self.boundjid.bare
