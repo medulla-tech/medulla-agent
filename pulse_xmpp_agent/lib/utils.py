@@ -1058,7 +1058,7 @@ def protoandport():
             else:
                 if line.startswith("sshd"):
                     column = [x for x in line.split(' ') if x != ""]
-                    pidssh = column[1]
+                    pidssh = None #We do not want to show ssh for Windows machines
                 elif line.startswith("tvnserver"):
                     column = [x for x in line.split(' ') if x != ""]
                     if column[2] == 'tvnserver':
