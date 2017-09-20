@@ -30,7 +30,7 @@
 #	In /var/lib/pulse2/clients/win32/downloads/:
 #	https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
-#	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.55.1-1.tar.xz
+#	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
 # https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.18.0/OpenSSH-Win32.zip
 # https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.18.0/OpenSSH-Win64.zip
@@ -74,7 +74,7 @@ PY_WMI_VERSION="1.4.9"
 PY_ZIPFILE_MODULE="zipfile2"
 PY_ZIPFILE_VERSION="0.0.12"
 LIBCURL_NAME="libcurl4"
-LIBCURL_VERSION="7.55.1-1"
+LIBCURL_VERSION="7.52.1-1"
 LIBCURL_FILENAME="cygcurl-4.dll"
 PY_CURL_MODULE="pycurl"
 PY_CURL_VERSION="7.43.0"
