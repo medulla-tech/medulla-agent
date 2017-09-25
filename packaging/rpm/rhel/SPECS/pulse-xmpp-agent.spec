@@ -1,5 +1,6 @@
 %define tarname		pulse-xmpp-agent
 %define git                    SHA
+%define use_git         1
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
