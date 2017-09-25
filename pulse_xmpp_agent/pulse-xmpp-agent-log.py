@@ -120,7 +120,7 @@ class configuration:
             self.Port=Configlocal.get('connection', 'port')
         else:
             self.Port=Config.get('connection', 'port')
-            
+
         if  Configlocal.has_option("connection", "Server"):
             self.Server=Configlocal.get('connection', 'Server')
         else:
@@ -312,17 +312,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return -1
 
     def createlog(self, dataobj):
-        """ 
+        """
             this function creating log in base from body message xmpp
         """
         try:
-            if 'text' in dataobj : 
-                text = dataobj['text'] 
-            else: 
+            if 'text' in dataobj :
+                text = dataobj['text']
+            else:
                 return
             type = dataobj['type'] if 'type' in dataobj else ""
             sessionname = dataobj['session'] if 'session' in dataobj else ""
-            priority = dataobj['priority'] if 'priority' in dataobj else "" 
+            priority = dataobj['priority'] if 'priority' in dataobj else ""
             who = dataobj['who'] if 'who' in dataobj else  ""
             how = dataobj['how'] if 'how' in dataobj else ""
             why = dataobj['why'] if 'why' in dataobj else ""
@@ -358,7 +358,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         touser  = '',
                         action = ''
                         ):
-        """ 
+        """
             this function for creating log in base
         """
         #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
@@ -387,7 +387,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         session.close()
 
     def xmpplogdeploy(self, dataobj):
-        """ 
+        """
             this function manage msg deploy log
         """
         try:
@@ -401,7 +401,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if dataobj['action'] == 'resultapplicationdeploymentjson':
                     #log dans base resultat
                     if dataobj['ret'] == 0:
-                        self.updatedeployresultandstate( dataobj['sessionid'], "END SUCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+                        self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT SUCCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
                     else:
                         self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
         except Exception as e:
@@ -440,12 +440,12 @@ def createDaemon(opts,conf):
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
 
-        
+
 def doTask(opts, conf):
     logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     #logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-    
-    
+
+
     if opts.consoledebug :
             logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     else:
@@ -482,29 +482,29 @@ def doTask(opts, conf):
 if __name__ == '__main__':
     if not sys.platform.startswith('linux'):
         print "Agent log on systeme linux only"
-     
-     
+
+
     if os.getuid() != 0:
         print "Agent must be running as root"
         sys.exit(0)
 
     optp = OptionParser()
-    optp.add_option("-d", 
-                    "--deamon", 
+    optp.add_option("-d",
+                    "--deamon",
                     action = "store_true",
-                    dest = "deamon", 
+                    dest = "deamon",
                     default = False,
                     help = "deamonize process")
-    
+
     optp.add_option("-c",
                     "--consoledebug",
                     action = "store_true",
                     dest = "consoledebug",
                     default = False,
                     help = "console debug")
-    
+
     opts, args = optp.parse_args()
-    
+
     # Setup the command line arguments.
     conf  = configuration()
     if not opts.deamon :
