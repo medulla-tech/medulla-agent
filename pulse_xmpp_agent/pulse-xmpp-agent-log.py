@@ -281,7 +281,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         jsonautre = copy.deepcopy(jsonresult)
         del (jsonautre['descriptor'])
         del (jsonautre['packagefile'])
-        #STARDEPLOY
+        #DEPLOYMENT START
         try:
             dede = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
             if dede:
@@ -403,7 +403,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if dataobj['ret'] == 0:
                         self.updatedeployresultandstate( dataobj['sessionid'], "END SUCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
                     else:
-                        self.updatedeployresultandstate( dataobj['sessionid'], "END ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+                        self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
         except Exception as e:
             logging.error("obj Message deploy error  %s %s" %(dataobj, str(e)))
             traceback.print_exc(file=sys.stdout)
