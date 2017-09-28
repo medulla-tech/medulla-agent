@@ -98,6 +98,7 @@ SetCompressor lzma
 !Include "StrTok.nsh"
 !Include "psexec.nsh"
 !include "x64.nsh"
+!include "TextReplace.nsh"
 
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -326,17 +327,15 @@ Section "rsync" sec_rsync
   ${PowerShellExecFileLog} "$SSH_PATH\install-sshd.ps1"
 
   ; Generate config file of SSH server
-  CopyFiles /SILENT "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config.bak"
-  FileOpen $0 "$SSH_PATH\sshd_config" w
-  FileSeek $0 0 END
-  FileWrite $0 "$\r$\n"
-  FileWrite $0 "Subsystem	sftp	sftp-server.exe$\r$\n"
-  FileWrite $0 "hostkeyagent \\.\pipe\openssh-ssh-agent$\r$\n"
-  FileWrite $0 "PubkeyAuthentication yes$\r$\n"
-  FileWrite $0 "PasswordAuthentication no$\r$\n"
-  FileWrite $0 "PidFile C:\Windows\Temp\sshd.pid$\r$\n"
-  FileWrite $0 "AuthorizedKeysFile	$\"$INSTDIR\.ssh\authorized_keys$\"$\r$\n"
-  FileClose $0
+  StrCpy $0 `icacls "$SSH_PATH\sshd_config" /save "$WINDIR\Temp\aclfile"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${textreplace::ReplaceInFile} "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config" "#PubkeyAuthentication yes" "PubkeyAuthentication yes" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config" "#PasswordAuthentication yes" "PasswordAuthentication no" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config" "#PidFile /var/run/sshd.pid" "PidFile C:\Windows\Temp\sshd.pid" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\sshd_config" "$SSH_PATH\sshd_config" "AuthorizedKeysFile	.ssh/authorized_keys" "AuthorizedKeysFile	$\"$INSTDIR\.ssh\authorized_keys$\"" "/S=1 /C=1 /AO=1" $0
 
   ; Configure SSH server to start automatically at boot
   StrCpy $0 `sc.exe config ssh-agent start= auto`
@@ -457,6 +456,17 @@ Section "rsync" sec_rsync
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} "-------------------"
+  StrCpy $0 `icacls "$SSH_PATH" /restore "$WINDIR\Temp\aclfile"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `icacls "$SSH_PATH\sshd_config" /grant "NT SERVICE\sshd:(R)"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
 
 
   ; Start the service
@@ -502,8 +512,8 @@ Section "rsync" sec_rsync
   ; This requires a reboot
   SetRebootFlag true
 
-  Delete $INSTDIR\tmp\$OPENSSH32_FILENAME
-  Delete $INSTDIR\tmp\$OPENSSH64_FILENAME
+  Delete $INSTDIR\tmp\${OPENSSH32_FILENAME}
+  Delete $INSTDIR\tmp\${OPENSSH64_FILENAME}
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
   RMDir /r $INSTDIR\tmp\rsync
 SectionEnd
