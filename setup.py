@@ -19,6 +19,7 @@
 # MA 02110-1301, USA.
 
 from setuptools import setup
+from distutils.command.install import INSTALL_SCHEMES
 
 import os
 import sys
@@ -30,6 +31,8 @@ elif sys.platform.startswith('win'):
 elif sys.platform.startswith('darwin'):
     fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc")
 
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = os.path.join(scheme['purelib'], "pulse_xmpp_agent")
 
 setup(
     classifiers=[
@@ -44,11 +47,12 @@ setup(
 
     keywords='pulse xmpp agent',
     name='pulse_xmpp_agent',
-    version='1.8.0',
-    debian_distro='jessie',
+    version='1.8.1',
+    debian_distro='stretch',
     description = 'XMPP Agent for pulse',
     url='https://www.siveo.net/',
-    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay'],
+    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script'],
+    data_files = [('', ['pulse_xmpp_agent/script/getlastuser.ps1',]),],
     test_suite='',
     package_data={},
     entry_points={},

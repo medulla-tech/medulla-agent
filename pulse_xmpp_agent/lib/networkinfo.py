@@ -25,9 +25,11 @@ import subprocess
 import sys
 import platform
 import utils
-from lib.utils import simplecommand, windowsservice, powerschellscriptps1 
+from lib.utils import simplecommand, windowsservice, powerschellscriptps1
 import logging
 import os
+from distutils.util import strtobool
+import socket
 
 if sys.platform.startswith('win'):
     import wmi
@@ -142,16 +144,27 @@ class networkagentinfo:
             self.messagejson['msg'] = "system %s : not managed yet" % sys.platform
             return self.messagejson
 
-    def validIP(self, address):
-        parts = address.split(".")
-        if len(parts) != 4:
+    def isIPValid(self, ipaddress):
+        """
+        This function tests the provided IP Address to see
+        if it is a valid IP or not.
+        Only IPv4 is supported.
+
+        @param ipaddress: The ip address to test
+
+        @rtype: Boolean. True if the ip adress is valid, False otherwise
+        """
+        try:
+            socket.inet_aton(ipaddress)
+            return True
+        except socket.error:
             return False
-        for item in parts:
-            if not 0 <= int(item) <= 255:
-                return False
-        return True
 
     def IpDhcp(self):
+
+        """
+        This function provide the IP of the dhcp server used on the machine.
+        """
         obj1 = {}
         system = ""
         ipdhcp = ""
@@ -190,7 +203,7 @@ class networkagentinfo:
                     ipdhcp = colonne[-1:][0]
                 elif "bound to" in i:
                     for z in colonne:
-                        if self.validIP(z):
+                        if self.isIPValid(z):
                             ipadress = z
                             if ipdhcp != "":
                                 obj1[ipadress] = ipdhcp
@@ -332,7 +345,7 @@ def powershellfqdnwindowscommand():
         search fqdn for machine windows from activedirectory
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(name=$env:computername)(objectClass=computer))").findone().path"""], 
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
               shell=True)
         return output
     except subprocess.CalledProcessError, e:
@@ -341,7 +354,7 @@ def powershellfqdnwindowscommand():
 
 def powershellfqdnwindowscommandbyuser(user):
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().properties.adspath"""%user], 
+        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user],
               shell=True)
         return output
     except subprocess.CalledProcessError, e:
@@ -365,6 +378,19 @@ def powershellgetlastuser():
                 return ret[1]
     return ""
 
+def isMachineInDomain():
+    """
+        returns if the machine is part of an AD domain or not
+    """
+    try:
+        output = subprocess.check_output(["powershell.exe","""(gwmi win32_computersystem).partofdomain"""],
+              shell=True)
+        return bool(strtobool(output.strip()))
+    except subprocess.CalledProcessError, e:
+        logging.getLogger().error("subproces isMachineInDomain.output = " + e.output)
+    return False
+
+
 def organizationbymachine():
     """
         AD information for machine
@@ -372,64 +398,72 @@ def organizationbymachine():
     """
     fqdnwindows = ""
     if sys.platform.startswith('linux'):
-        pass
+        return ""
     elif sys.platform.startswith('win'):
-        #powershell fonction
-        fqdnwindows = powershellfqdnwindowscommand()
-        if fqdnwindows == "":
-            logging.getLogger().warning("fqdn AD inconue")
+        indomain = isMachineInDomain()
+        if indomain:
+            #powershell fonction
+            fqdnwindows = powershellfqdnwindowscommand()
+            if fqdnwindows == "":
+                logging.getLogger().warning("fqdn AD inconue")
+            else:
+                fqdnwindows = fqdnwindows.replace("LDAP://","")
+                elt = fqdnwindows.split(',')
+                list_ou=[]
+                list_dc=[]
+                for t in elt:
+                    if t.startswith('CN'):
+                        cn= t.replace('CN=','')
+                    if t.startswith('OU'):
+                        list_ou.append(t.replace('OU=',''))
+                    if t.startswith('DC'):
+                        list_dc.append(t.replace('DC=',''))
+                ou = ("/").join(list(reversed(list_ou)))
+                dc = (".").join(list_dc)
+                fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return fqdnwindows
         else:
-            fqdnwindows = fqdnwindows.replace("LDAP://","")
-            elt = fqdnwindows.split(',')
-            list_ou=[]
-            list_dc=[]
-            for t in elt:
-                if t.startswith('CN'):
-                    cn= t.replace('CN=','')
-                if t.startswith('OU'):
-                    list_ou.append(t.replace('OU=',''))
-                if t.startswith('DC'):
-                    list_dc.append(t.replace('DC=',''))
-            ou = ("/").join(list_ou)
-            dc = (".").join(list_dc)
-            fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return ""
     elif sys.platform.startswith('darwin'):
-        pass
-    return fqdnwindows
+        return ""
 
 def organizationbyuser(user):
     """
         AD information for user
         search fqdn for machine windows from activedirectory
     """
-    fqdnwindows = ""
     if sys.platform.startswith('linux'):
-        pass
+        return ""
     elif sys.platform.startswith('win'):
-        #powershell fonction
-        fqdnwindows = powershellfqdnwindowscommandbyuser(user)
-        if fqdnwindows == "":
-            logging.getLogger().warning("fqdn AD inconue")
+        fqdnwindows = ""
+        indomain = isMachineInDomain()
+        if indomain:
+            #powershell fonction
+            fqdnwindows = powershellfqdnwindowscommandbyuser(user)
+            if fqdnwindows == "":
+                logging.getLogger().warning("fqdn AD inconue")
+            else:
+                fqdnwindows = fqdnwindows.replace("LDAP://","")
+                elt = fqdnwindows.split(',')
+                list_cn = []
+                list_ou = []
+                list_dc = []
+                for t in elt:
+                    if t.startswith('CN'):
+                        list_cn.append( t.replace('CN=',''))
+                    if t.startswith('OU'):
+                        list_ou.append(t.replace('OU=',''))
+                    if t.startswith('DC'):
+                        list_dc.append(t.replace('DC=',''))
+                cn = (".").join(list_cn)
+                ou = ("/").join(list(reversed(list_ou)))
+                dc = (".").join(list_dc)
+                fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return fqdnwindows
         else:
-            fqdnwindows = fqdnwindows.replace("LDAP://","")
-            elt = fqdnwindows.split(',')
-            list_cn = []
-            list_ou = []
-            list_dc = []
-            for t in elt:
-                if t.startswith('CN'):
-                    list_cn.append( t.replace('CN=',''))
-                if t.startswith('OU'):
-                    list_ou.append(t.replace('OU=',''))
-                if t.startswith('DC'):
-                    list_dc.append(t.replace('DC=',''))
-            cn = (".").join(list_cn)
-            ou = ("/").join(list_ou)
-            dc = (".").join(list_dc)
-            fqdnwindows = cn + "@@"+ ou + "@@" + dc
+            return ""
     elif sys.platform.startswith('darwin'):
-        pass
-    return fqdnwindows
+        return ""
 
 
 def interfacename(mac):

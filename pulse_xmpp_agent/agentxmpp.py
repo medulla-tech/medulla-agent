@@ -96,14 +96,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
 
-        #use public_ip for localisation
+        # use public_ip for localisation
         if self.config.public_ip == "":
             try:
                 self.config.public_ip = searchippublic()
             except Exception:
                 pass
         if self.config.public_ip == "":
-            self.config.public_ip == None
+            self.config.public_ip = None
+
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
@@ -398,10 +399,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-    #def queueinfo(self):
-        ##if self.qin.qsize() > 0:
-            ##print self.qin.get()
-        #pass
+<<<<<<< HEAD
+>>>>>>> a62570f395339544d9ee40af19f7096b8ca6a5d1
 
     def handleinventory(self):
         msg={ 'from' : "master@pulse/MASTER",
@@ -604,7 +603,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if int(time) == 0:
                     cmd = "shutdown /p"
                 else:
-                    cmd = "shutdown -P -f -t %s %s"%(time, msg)
+                    cmd = "shutdown /s /t %s /c %s"%(time, msg)
                 logging.debug(cmd)
                 os.system(cmd)
             elif sys.platform.startswith('darwin'):

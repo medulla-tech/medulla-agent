@@ -13,6 +13,11 @@ logger = logging.getLogger()
 class managepackage:
     @staticmethod
     def packagedir():
+        """
+        This function provide the path of the package folder.
+
+        @return: string: The path of the package folder.
+        """
         if sys.platform.startswith('linux'):
             return os.path.join("/", "var", "lib", "pulse2", "packages")
         elif sys.platform.startswith('win'):
@@ -39,7 +44,7 @@ class managepackage:
                 return jr
             except Exception as e:
                 logger.error(
-                    "filename %s error decodage [%s]" %
+                    "filename %s error while decoding [%s]" %
                     (filename, str(e)))
         return None
 
@@ -55,7 +60,7 @@ class managepackage:
                     return jr
             except Exception as e:
                 logger.error(
-                    "package %s verify format descripttor [%s]" %
+                    "package %s verify format descriptor [%s]" %
                     (package, str(e)))
         return None
 

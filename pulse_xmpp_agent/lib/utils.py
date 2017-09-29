@@ -291,28 +291,6 @@ def get_connection_name_from_guid(iface_guids):
     return iface_names
 
 
-def CreateWinUser(login, Password, Groups=['Users']):
-    """
-    We check if the user exists
-    """
-    try:
-        d = win32net.NetUserGetInfo(None, login, 1)
-        return
-    except BaseException:
-        pass
-    d = {}
-    d['name'] = login
-    d['password'] = Password
-    d['comment'] = ''
-    d['flags'] = win32netcon.UF_NORMAL_ACCOUNT | win32netcon.UF_SCRIPT | win32netcon.UF_PASSWD_CANT_CHANGE | win32netcon.UF_DONT_EXPIRE_PASSWD
-    d['priv'] = win32netcon.USER_PRIV_USER
-    win32net.NetUserAdd(None, 1, d)
-    domain = win32api.GetDomainName()
-    d = [{"domainandname": domain + "\\" + login}]
-    for gr in Groups:
-        win32net.NetLocalGroupAddMembers(None, gr, 3, d)
-
-
 def isWinUserAdmin():
     if os.name == 'nt':
         import ctypes
@@ -1080,7 +1058,7 @@ def protoandport():
             else:
                 if line.startswith("sshd"):
                     column = [x for x in line.split(' ') if x != ""]
-                    pidssh = column[1]
+                    pidssh = None #We do not want to show ssh for Windows machines
                 elif line.startswith("tvnserver"):
                     column = [x for x in line.split(' ') if x != ""]
                     if column[2] == 'tvnserver':
