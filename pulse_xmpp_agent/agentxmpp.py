@@ -364,7 +364,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-    #jfkjfk
     def xmpplog(self,
                 text,
                 type = 'noset',
@@ -388,9 +387,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     'priority': priority,
                     'action' : action ,
                     'who': who,
-                    'how' : "",
-                    'why' : "",
-                    'module': "",
+                    'how' : how,
+                    'why' : why,
+                    'module': module,
                     'date' : None ,
                     'fromuser' : fromuser,
                     'touser' : touser
@@ -398,7 +397,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_message(  mto = jid.JID("log@pulse"),
                             mbody=json.dumps(msgbody),
                             mtype='chat')
-
 
     #def queueinfo(self):
         ##if self.qin.qsize() > 0:
@@ -417,6 +415,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataerreur['sessionid'] = sessionid
         dataerreur['ret'] = 255
         dataerreur['base64'] = False
+
+        self.xmpplog(
+                "Sent Inventory from agent %s (Interval : %s)"%(self.boundjid.bare,self.config.inventory_interval),
+                type = 'noset',
+                sessionname = '',
+                priority = 0,
+                action = "",
+                who = self.boundjid.bare,
+                how = "Planned",
+                why = "",
+                module = "Inventory | Inventory reception | Planned",
+                fromuser = "",
+                touser = "")
+
         call_plugin("inventory",
                     self,
                     "inventory",
@@ -424,6 +436,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     {},
                     msg,
                     dataerreur)
+
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
