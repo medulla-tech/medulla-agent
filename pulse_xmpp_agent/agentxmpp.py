@@ -399,9 +399,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-<<<<<<< HEAD
->>>>>>> a62570f395339544d9ee40af19f7096b8ca6a5d1
-
     def handleinventory(self):
         msg={ 'from' : "master@pulse/MASTER",
               'to': self.boundjid.bare
