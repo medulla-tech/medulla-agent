@@ -47,7 +47,7 @@ setup(
 
     keywords='pulse xmpp agent',
     name='pulse_xmpp_agent',
-    version='1.8.1',
+    version='1.8.2',
     debian_distro='stretch',
     description = 'XMPP Agent for pulse',
     url='https://www.siveo.net/',
