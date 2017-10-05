@@ -18,4 +18,10 @@ Package: pulse-xmpp-agent
 Architecture: all
 Provides: ${python:Provides}
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-utils, python-mysqldb-dbg, python-croniter
-Description: Python bindings for CUPS
+Description: Pulse xmpp agent
+
+Package: pulse-xmpp-agent-scheduler-machine
+Architecture: all
+Provides: ${python:Provides}
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, pulse-xmpp-agent
+Description: Machine Scheduler for Pulse Xmpp Agent
