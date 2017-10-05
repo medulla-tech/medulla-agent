@@ -1,6 +1,8 @@
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/lib
+usr/lib/python2.*/*-packages/pulse_xmpp_agent-*.egg-info/
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/*.py*
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/script
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/getlastuser.ps1
 var/log/pulse/
 usr/lib/systemd/system/
 etc/pulse-xmpp-agent/
