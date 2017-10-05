@@ -51,7 +51,7 @@ setup(
     debian_distro='stretch',
     description = 'XMPP Agent for pulse',
     url='https://www.siveo.net/',
-    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script'],
+    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
     data_files = [('', ['pulse_xmpp_agent/script/getlastuser.ps1',]),],
     test_suite='',
     package_data={},

@@ -1,4 +1,4 @@
-usr/lib/python2.*/*-packages/pulse_xmpp_agent
+#usr/lib/python2.*/*-packages/pulse_xmpp_agent
 var/log/pulse/
 usr/lib/systemd/system/
 etc/pulse-xmpp-agent/
