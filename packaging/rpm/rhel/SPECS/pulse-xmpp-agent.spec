@@ -4,7 +4,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	1.8.2
+Version:	1.8.3
 %if ! %use_git
 Release:        13%{?dist}
 %else
@@ -38,7 +38,7 @@ Pulse XMPP Agent
 #--------------------------------------------------------------------
 
 %prep
-%setup -q 
+%setup -q
 
 # Remove bundled egg-info
 rm -rf %{tarname}.egg-info
@@ -47,7 +47,7 @@ rm -rf %{tarname}.egg-info
 %py2_build
 
 %install
-%py2_install 
+%py2_install
 mkdir -p %buildroot%_var/log/pulse
 mkdir -p %buildroot%_prefix/lib/systemd/system/
 cp pulse_xmpp_agent/config/systemd/* %buildroot%_prefix/lib/systemd/system/
@@ -59,4 +59,3 @@ chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini.in %buildroot%_var/lib/pulse2/clients/config/
-
