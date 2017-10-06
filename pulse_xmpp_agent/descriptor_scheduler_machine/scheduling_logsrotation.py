@@ -3,12 +3,12 @@ import os
 import shutil
 
 # nb -1 infinie
-# everyday at 23:00
-SCHEDULE = {"schedule" : "00 23 * * *", "nb" : -1}
+# everyday at 12:00
+SCHEDULE = {"schedule" : "00 12 * * *", "nb" : -1}
 
 def schedule_main(objectxmpp):
     """
-    Rotates agent log file everyday at 23:00
+    Rotates agent log file everyday at 12:00
     We keep 1 week worth of logs
     """
     print "*******************************************"
