@@ -1196,6 +1196,10 @@ class grafcet:
 
   # WIP
     def linuxinstallfrommanagerpackages(self):
+        """
+            This function helps to find the update manager
+            depending on the linux distribution.
+        """
         if os.path.isfile("/etc/mageia-release"):
             return 'urpmi --auto'
         if os.path.isfile("/etc/redhat-release"):
