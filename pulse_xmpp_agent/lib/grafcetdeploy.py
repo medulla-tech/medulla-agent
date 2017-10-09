@@ -1195,7 +1195,7 @@ class grafcet:
                                        who=self.objectxmpp.boundjid.bare)
 
   # WIP
-    def linuxinstallfrommanagerpackages(self):
+    def getpackagemanager(self):
         """
             This function helps to find the update manager
             depending on the linux distribution.
