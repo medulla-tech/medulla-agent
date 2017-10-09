@@ -311,7 +311,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
-        self.logtopulse("Start Agent", who =  self.boundjid.bare)
+        
+        self.xmpplog("Start Agent",
+                    type = 'info',
+                    sessionname = "",
+                    priority = -1,
+                    action = "",
+                    who = self.boundjid.bare,
+                    how = "",
+                    why = "",
+                    module = "AM",
+                    date = None ,
+                    fromuser = "MASTER",
+                    touser = "")
         try:
             self.back_to_deploy = load_back_to_deploy()
         except IOError:
@@ -640,11 +652,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if dataobj['sessionid'] in self.ban_deploy_sessionid_list:
                         ## abort deploy if msg session id is banny
                         logging.info("DEPLOYMENT ABORT Sesion %s"%dataobj['sessionid'])
-                        self.logtopulse("<span  style='color:red;'>DEPLOYMENT ABORT</span>",
-                                        type = 'deploy',
-                                        sessionname =  dataobj['sessionid'],
-                                        priority = -1,
-                                        who = self.boundjid.bare)
+                        self.xmpplog("<span  style='color:red;'>DEPLOYMENT ABORT</span>",
+                                    type = 'deploy',
+                                    sessionname = dataobj['sessionid'],
+                                    priority = -1,
+                                    action = "",
+                                    who = self.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment | Banned",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
                         return
 
                 del dataobj['data']
