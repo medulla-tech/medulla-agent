@@ -1277,7 +1277,7 @@ class grafcet:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionrestartbot step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestartbot : %s' % (self.data['name'], sself.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestartbot : %s' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],
