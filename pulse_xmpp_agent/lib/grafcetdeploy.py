@@ -271,11 +271,18 @@ class grafcet:
                 -1,
                 False,
                 "end error inconsistency in descriptor verify the step number [step %s not exist]" % val)
-            self.objectxmpp.logtopulse("end error inconsistency in descriptor verify the step number [step %s not exist]" % val,
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=val,
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog("[%s] : End error inconsistency in descriptor verify the step number [step %s not exist]" % (val, self.data['name']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = val,
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment | Error | Descriptor",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
             return 5
         elif isinstance(val, str):
             if val == 'next':
@@ -587,28 +594,36 @@ class grafcet:
             else:
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-
-            self.objectxmpp.logtopulse('[%s]: current directory %s' % (self.workingstep['step'], self.workingstep['pwd']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: current directory %s' % ( self.data['name'], self.workingstep['step'], self.workingstep['pwd']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in action_pwd_package step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error action_pwd_package : %s' % (self.workingstep['step'], str(e)),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
-            self.objectxmpp.logtopulse('[%s]: error action_pwd_package : %s' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_pwd_package : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def action_set_environ(self):
         """
@@ -629,11 +644,18 @@ class grafcet:
                         b = self.replaceTEMPLATE(
                             self.workingstep['environ'][a])
                         os.environ[a] = b
-                        self.objectxmpp.logtopulse('[%s] : set varaible Environnement %s = %s' % (self.workingstep['step'], a, b),
-                                                   type='deploy',
-                                                   sessionname=self.sessionid,
-                                                   priority=self.workingstep['step'],
-                                                   who=self.objectxmpp.boundjid.bare)
+                        self.objectxmpp.xmpplog('[%s]-[%s] : set varaible Environnement %s = %s' % (self.data['name'], self.workingstep['step'], a, b),
+                                                type = 'deploy',
+                                                sessionname = self.sessionid,
+                                                priority = self.workingstep['step'],
+                                                action = "",
+                                                who = self.objectxmpp.boundjid.bare,
+                                                how = "",
+                                                why = self.data['name'],
+                                                module = "Deployment | Error | Step | Package",
+                                                date = None ,
+                                                fromuser = "MASTER",
+                                                touser = "")
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
@@ -641,11 +663,18 @@ class grafcet:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in action_set_environ step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error action_set_environ ' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: error action_set_environ ' % (self.data['name'],self.workingstep['step']),
+                    type = 'deploy',
+                    sessionname = self.sessionid,
+                    priority = self.workingstep['step'],
+                    action = "",
+                    who = self.objectxmpp.boundjid.bare,
+                    how = "",
+                    why = self.data['name'],
+                    module = "Deployment | Error | Step | Package",
+                    date = None ,
+                    fromuser = "MASTER",
+                    touser = "")
 
     def action_no_operation(self):
         """
@@ -666,11 +695,18 @@ class grafcet:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in action_no_operation step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error action_no_operation' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error action_no_operation' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def action_unzip_file(self):
         """
@@ -710,12 +746,21 @@ class grafcet:
             listname = zip_ref.namelist()
             self.__resultinfo__(self.workingstep, listname)
             zip_ref.close()
-
-            self.objectxmpp.logtopulse('[%s]: unzip %s to directory %s' % (self.workingstep['step'], self.workingstep['filename'], self.workingstep['pathdirectorytounzip']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: unzip %s to directory %s' % (self.data['name'], 
+                                                                             self.workingstep['step'],
+                                                                             self.workingstep['filename'],
+                                                                             self.workingstep['pathdirectorytounzip']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
             if 'goto' in self.workingstep:
                 self.__search_Next_step_int__(self.workingstep['goto'])
                 self.__execstep__()
@@ -732,13 +777,22 @@ class grafcet:
             self.workingstep['@resultcommand'] = traceback.format_exc()
             print str(e)
             # traceback.print_exc(file=sys.stdout)
-            self.objectxmpp.logtopulse('[%s]: error unzip %s to directory %s : %s' % (self.workingstep['step'],
-                                                                                      self.workingstep['filename'],
-                                                                                      self.workingstep['pathdirectorytounzip']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: error unzip %s to directory %s : %s' % ( self.data['name'],
+                                                                                        self.workingstep['step'],
+                                                                                        self.workingstep['filename'],
+                                                                                        self.workingstep['pathdirectorytounzip']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
+            
             if 'error' in self.workingstep:
                 self.__search_Next_step_int__(self.workingstep['error'])
                 self.__execstep__()
@@ -789,11 +843,18 @@ class grafcet:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionprocessscript step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error actionprocessscript : %s' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscript : %s' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def action_command_natif_shell(self):
         """ information
@@ -833,12 +894,18 @@ class grafcet:
 
             #reseigne @resultcommand or nb@lastlines or nb@firstlines
             self.__resultinfo__(self.workingstep, result)
-
-            self.objectxmpp.logtopulse('[%s]: errorcode %s for command : %s ' % (self.workingstep['step'], self.workingstep['codereturn'], self.workingstep['command']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s] - [%s]: errorcode %s for command : %s ' % (self.data['name'], self.workingstep['step'], self.workingstep['codereturn'], self.workingstep['command']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
             self.steplog()
             if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
                 return
@@ -854,11 +921,18 @@ class grafcet:
             self.terminate(
                 -1, False, "end error in action_command_natif_shell step %s" %
                 self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error action_command_natif_shell : %s' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: error action_command_natif_shell : %s' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def actionsuccescompletedend(self):
         """
@@ -875,11 +949,18 @@ class grafcet:
         if 'clear' in self.workingstep:
             if isinstance(self.workingstep['clear'], bool):
                 clear = self.workingstep['clear']
-        self.objectxmpp.logtopulse('[%s] :<span style="color: green;"> Terminate deploy SUCCESS <span>' % (self.workingstep['step']),
-                                   type='deploy',
-                                   sessionname=self.sessionid,
-                                   priority=self.workingstep['step'],
-                                   who=self.objectxmpp.boundjid.bare)
+        self.objectxmpp.xmpplog('[%s]-[%s] :<span style="color: green;"> Terminate deploy SUCCESS <span>' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
         if self.__terminateifcompleted__(self.workingstep):
             return
         self.terminate(0, clear, "end success")
@@ -900,11 +981,19 @@ class grafcet:
         if 'clear' in self.workingstep and isinstance(
                 self.workingstep['clear'], bool):
             clear = self.workingstep['clear']
-        self.objectxmpp.logtopulse('[%s] :<span  style="color: red;"> Terminate deploy ERROR <span>' % (self.workingstep['step']),
-                                   type='deploy',
-                                   sessionname=self.sessionid,
-                                   priority=self.workingstep['step'],
-                                   who=self.objectxmpp.boundjid.bare)
+        self.objectxmpp.xmpplog('[%s]-[%s] :<span  style="color: red;"> Terminate deploy ERROR <span>' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
+
         if self.__terminateifcompleted__(self.workingstep):
             return
         self.terminate(-1, clear, "end error")
@@ -1010,11 +1099,18 @@ class grafcet:
         self.steplog()
         result = [x.strip('\n') for x in re['result'] if x != '']
         logging.getLogger().debug("result action actionconfirm:")
-        self.objectxmpp.logtopulse('[%s]: Dialog : Reponse %s' % (self.workingstep['step'], result[-1]),
-                                   type='deploy',
-                                   sessionname=self.sessionid,
-                                   priority=self.workingstep['step'],
-                                   who=self.objectxmpp.boundjid.bare)
+        self.objectxmpp.xmpplog('[%s]-[%s]: Dialog : Reponse %s' % (self.data['name'],self.workingstep['step'], result[-1]),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
         if self.__Go_to_by_jump__(result[0]):
             return
         if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
@@ -1045,11 +1141,18 @@ class grafcet:
             logging.getLogger().warn("waiting missing : default value 180s")
         timewaiting = int(self.workingstep['waiting']) + 60
         logging.getLogger().warn("timeout  waiting : %s" % timewaiting)
-        self.objectxmpp.logtopulse('[%s]: Waitting %s s for continue' % (self.workingstep['step'], timewaiting),
-                                   type='deploy',
-                                   sessionname=self.sessionid,
-                                   priority=self.workingstep['step'],
-                                   who=self.objectxmpp.boundjid.bare)
+        self.objectxmpp.xmpplog('[%s]-[%s]: Waitting %s s for continue' % (self.data['name'],self.workingstep['step'], timewaiting),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
         comdbool = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand("sleep " + str(self.workingstep['waiting']),
                                                                                        self.datasend,
                                                                                        self.objectxmpp.boundjid.bare,
@@ -1057,11 +1160,18 @@ class grafcet:
                                                                                        timewaiting,
                                                                                        self.workingstep['step'])
         if not comdbool:
-            self.objectxmpp.logtopulse('[%s]: Error descriptor for action waitandgoto ' % (self.workingstep['step'], timewaiting),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error descriptor for action waitandgoto ' % (self.data['name'], self.workingstep['step'], timewaiting),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def actionrestart(self):
         """
@@ -1087,11 +1197,18 @@ class grafcet:
             objsession.setdatasession(self.datasend)
             # Restart machine based on OS
             self.steplog()
-            self.objectxmpp.logtopulse('[%s]: Restart machine' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: Restart machine' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
             logging.debug("actionrestartmachine  RESTART MACHINE")
             if sys.platform.startswith('linux'):
                 logging.debug("actionrestartmachine  shutdown machine linux")
@@ -1108,11 +1225,18 @@ class grafcet:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionrestart step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error actionrestart : %s' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestart : %s' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def actionrestartbot(self):
         """
@@ -1135,30 +1259,51 @@ class grafcet:
                 self.sessionid)
             objsession.setdatasession(self.datasend)
             self.steplog()
-            self.objectxmpp.logtopulse('[%s]: Restart agent machine' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: Restart agent machine' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
             self.objectxmpp.restartBot()
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionrestartbot step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error actionrestartbot : %s' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestartbot : %s' % (self.data['name'], sself.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
     def actioncleaning(self):
         ##logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = '')
-        self.objectxmpp.logtopulse(
-            'cleaning package',
-            type='deploy',
-            sessionname=self.sessionid,
-            who=self.objectxmpp.boundjid.bare)
+        self.objectxmpp.xmpplog('[%s] cleaning package'% (self.data['name']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
@@ -1176,11 +1321,18 @@ class grafcet:
                     os.system("rm -Rf %s" %
                               self.datasend['data']['pathpackageonmachine'])
             #os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
-                self.objectxmpp.logtopulse('[%s]: clear file package on machine' % (self.workingstep['step']),
-                                           type='deploy',
-                                           sessionname=self.sessionid,
-                                           priority=self.workingstep['step'],
-                                           who=self.objectxmpp.boundjid.bare)
+                self.objectxmpp.xmpplog('[%s]-[%s]: clear file package on machine' % (self.data['name'], self.workingstep['step']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Step | Package",
+                                        date = None ,
+                                        fromuser = "MASTER",
+                                        touser = "")
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
@@ -1188,11 +1340,18 @@ class grafcet:
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actioncleaning step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.logtopulse('[%s]: error actioncleaning : %s' % (self.workingstep['step']),
-                                       type='deploy',
-                                       sessionname=self.sessionid,
-                                       priority=self.workingstep['step'],
-                                       who=self.objectxmpp.boundjid.bare)
+            self.objectxmpp.xmpplog('[%s]-[%s]: error actioncleaning : %s' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Step | Package",
+                                    date = None ,
+                                    fromuser = "MASTER",
+                                    touser = "")
 
   # WIP
     def getpackagemanager(self):

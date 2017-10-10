@@ -190,7 +190,9 @@ class manage_event:
                                                 color = "green"
                                             else:
                                                 color = "red"
-                                            self.objectxmpp.logtopulse('[%s]:<span style="color: %s;"> [Process command] errorcode %s for command : %s <span>' % (i['step'],
+                                            self.objectxmpp.logtopulse('[%s]-[%s]:<span style="color: %s;"> '\
+                                                                        '[Process command] errorcode %s for command : %s <span>' % (event['eventMessageraw']['data']['name'],
+                                                                                                                                                                        i['step'],
                                                                                                                                                                   color,
                                                                                                                                                                   i['codereturn'],
                                                                                                                                                                   i['command'][:20]),
