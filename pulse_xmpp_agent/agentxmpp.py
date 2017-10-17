@@ -32,13 +32,14 @@ from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import confParameter
 from lib.managesession import session
+from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, searchippublic, subnetnetwork,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns, StreamToLogger
 from lib.manage_event import manage_event
-from lib.manage_process import mannageprocess,process_on_end_send_message_xmpp
+from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
 from optparse import OptionParser
 import time
@@ -92,6 +93,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
 
+        self.Deploybasesched = manageschedulerdeploy()
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
