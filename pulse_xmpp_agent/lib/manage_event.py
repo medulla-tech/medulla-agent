@@ -190,20 +190,38 @@ class manage_event:
                                                 color = "green"
                                             else:
                                                 color = "red"
-                                            self.objectxmpp.logtopulse('[%s]-[%s]:<span style="color: %s;"> '\
-                                                                        '[Process command] errorcode %s for command : %s <span>' % (event['eventMessageraw']['data']['name'],
-                                                                                                                                                                        i['step'],
-                                                                                                                                                                  color,
-                                                                                                                                                                  i['codereturn'],
-                                                                                                                                                                  i['command'][:20]),
-                                                                       type='deploy',
-                                                                       sessionname=event['eventMessageraw']['sessionid'],
-                                                                       priority=i['step'])
+
+                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span style="color: %s;"> '\
+                                                                        '[Process command] errorcode %s for'\
+                                                                        'command : %s <span>' % (event['eventMessageraw']['data']['name'],
+                                                                                                    i['step'],
+                                                                                                    color,
+                                                                                                    i['codereturn'],
+                                                                                                    i['command'][:20]),
+                                                                        type = 'deploy',
+                                                                        sessionname = event['eventMessageraw']['sessionid'],
+                                                                        priority = i['step'],
+                                                                        action = "",
+                                                                        who = self.objectxmpp.boundjid.bare,
+                                                                        how = "",
+                                                                        why = "",
+                                                                        module = "Deployment | Exec | Step",
+                                                                        date = None ,
+                                                                        fromuser = event['eventMessageraw']['data']['login'],
+                                                                        touser = "")
                                         else:
-                                            self.objectxmpp.logtopulse('[%s]: %s ' % (i['step'], i['action']),
-                                                                       type='deploy',
-                                                                       sessionname=event['eventMessageraw']['sessionid'],
-                                                                       priority=i['step'])
+                                            self.objectxmpp.xmpplog('[%s]: %s ' % (i['step'], i['action']),
+                                                                    type = 'deploy',
+                                                                    sessionname = event['eventMessageraw']['sessionid'],
+                                                                    priority = i['step'],
+                                                                    action = "",
+                                                                    who = self.objectxmpp.boundjid.bare,
+                                                                    how = "",
+                                                                    why = "",
+                                                                    module = "Deployment | Exec | Step",
+                                                                    date = None ,
+                                                                    fromuser = event['eventMessageraw']['data']['login'],
+                                                                    touser = "")
                                         break
                         continue
 

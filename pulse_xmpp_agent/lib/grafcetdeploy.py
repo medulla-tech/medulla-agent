@@ -281,7 +281,7 @@ class grafcet:
                                     why = "",
                                     module = "Deployment | Error | Descriptor",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
             return 5
         elif isinstance(val, str):
@@ -604,8 +604,9 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
+            
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
@@ -622,7 +623,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def action_set_environ(self):
@@ -654,7 +655,7 @@ class grafcet:
                                                 why = self.data['name'],
                                                 module = "Deployment | Error | Step | Package",
                                                 date = None ,
-                                                fromuser = "MASTER",
+                                                fromuser = self.data['login'],
                                                 touser = "")
             self.steplog()
             self.__Etape_Next_in__()
@@ -673,7 +674,7 @@ class grafcet:
                     why = self.data['name'],
                     module = "Deployment | Error | Step | Package",
                     date = None ,
-                    fromuser = "MASTER",
+                    fromuser = self.data['login'],
                     touser = "")
 
     def action_no_operation(self):
@@ -705,7 +706,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def action_unzip_file(self):
@@ -759,7 +760,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
             if 'goto' in self.workingstep:
                 self.__search_Next_step_int__(self.workingstep['goto'])
@@ -790,7 +791,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
             
             if 'error' in self.workingstep:
@@ -853,7 +854,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def action_command_natif_shell(self):
@@ -904,7 +905,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
             self.steplog()
             if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
@@ -931,7 +932,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def actionsuccescompletedend(self):
@@ -959,7 +960,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
         if self.__terminateifcompleted__(self.workingstep):
             return
@@ -991,7 +992,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
         if self.__terminateifcompleted__(self.workingstep):
@@ -1109,7 +1110,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
         if self.__Go_to_by_jump__(result[0]):
             return
@@ -1151,7 +1152,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
         comdbool = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand("sleep " + str(self.workingstep['waiting']),
                                                                                        self.datasend,
@@ -1170,7 +1171,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def actionrestart(self):
@@ -1207,7 +1208,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
             logging.debug("actionrestartmachine  RESTART MACHINE")
             if sys.platform.startswith('linux'):
@@ -1235,7 +1236,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def actionrestartbot(self):
@@ -1269,7 +1270,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
             self.objectxmpp.restartBot()
         except Exception as e:
@@ -1287,7 +1288,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
     def actioncleaning(self):
@@ -1302,7 +1303,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
         try:
             if self.__terminateifcompleted__(self.workingstep):
@@ -1331,7 +1332,7 @@ class grafcet:
                                         why = self.data['name'],
                                         module = "Deployment | Error | Step | Package",
                                         date = None ,
-                                        fromuser = "MASTER",
+                                        fromuser = self.data['login'],
                                         touser = "")
             self.steplog()
             self.__Etape_Next_in__()
@@ -1350,7 +1351,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Step | Package",
                                     date = None ,
-                                    fromuser = "MASTER",
+                                    fromuser = self.data['login'],
                                     touser = "")
 
   # WIP

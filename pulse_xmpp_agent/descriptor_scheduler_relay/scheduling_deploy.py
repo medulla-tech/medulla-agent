@@ -19,26 +19,31 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 """
-This plugin loads all deploy scheduler, and sends an execution request to a master
+this plugin charge tous les deploy scheduler, et envoi une demand d'execution a master
 """
 import json
+import logging
 
 plugin = {"VERSION" : "1.0", "NAME" : "scheduling_deploy",  "TYPE" : "scheduled"}
 
 # nb  -1 infinie
-# all 2 minutes
+SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
+#SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
-SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
-#SCHEDULE = { "schedule" : "30 22 * * 2", "nb" : -1 }
 def schedule_main(objectxmpp):
+    logging.getLogger().debug("==============Plugin scheduled==============")
+    logging.getLogger().debug(plugin)
+    logging.getLogger().debug("============================================")
     objectxmpp.Deploybasesched.openbase()
     for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.iteritems():
         obj = json.loads(v)
         obj['data']['fromaction'] = obj['action']
         obj['action'] = "machineexecutionscheduler"
         del obj['data']['descriptor']
-        del obj['data']['packagefile']
-        # send message to master in plugin_machineexecutionscheduler
+        del obj['data']['packagefile']###['descriptor']
+        print json.dumps(obj, indent = 4)
+        # send message to master(plugin_machineexecutionscheduler)
+        #print "SEND", json.dumps(obj, indent = 4)
         objectxmpp.send_message(mto = obj['data']['jidmaster'],
                                     mbody = json.dumps(obj),
                                     mtype = 'chat')
