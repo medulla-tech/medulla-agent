@@ -62,23 +62,26 @@ class manageschedulerdeploy:
             return None
 
     def set_sesionscheduler(self, sessionid, objsession):
+        sessionid = str(sessionid)
         self.openbase()
-        self.dbsessionscheduler['sessionid'] = objsession
+        self.dbsessionscheduler[sessionid] = objsession
         self.dbsessionscheduler.sync()
         self.closebase()
 
     def get_sesionscheduler(self, sessionid):
+        sessionid = str(sessionid)
         data = ""
         self.openbase()
-        if self.dbsessionscheduler.has_key(sessionid):
-            data = self.dbsessionscheduler['sessionid']
+        if self.dbsessionscheduler.has_key(str(sessionid)):
+            data = self.dbsessionscheduler[sessionid]
         self.closebase()
         return data
 
     def del_sesionscheduler(self, sessionid):
+        sessionid = str(sessionid)
         self.openbase()
         if self.dbsessionscheduler.has_key(sessionid):
-            del self.dbsessionscheduler['sessionid']
+            del self.dbsessionscheduler[sessionid]
             self.dbsessionscheduler.sync()
         self.closebase()
 
