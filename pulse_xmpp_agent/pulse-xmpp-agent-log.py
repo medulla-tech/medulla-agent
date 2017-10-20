@@ -302,7 +302,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     jsonbase['otherinfos'].append(jsonautre)
                 dede.result = json.dumps(jsonbase, indent=3)
                 dede.state = state
-                print dede.result
+                #print dede.result
             session.commit()
             session.flush()
             session.close()

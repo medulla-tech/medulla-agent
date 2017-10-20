@@ -394,8 +394,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 touser = ""):
         if who == "":
             who = self.boundjid.bare
-        msgbody = {
-                    'log' : 'xmpplog',
+        msgbody = { 'log' : 'xmpplog',
                     'text' : text,
                     'type': type,
                     'session' : sessionname,
