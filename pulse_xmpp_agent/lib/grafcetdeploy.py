@@ -279,7 +279,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = "",
-                                    module = "Deployment | Error | Descriptor",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -602,7 +602,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Step | Package",
+                                    module = "Deployment | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -621,7 +621,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                     module = "Deployment | Execution | Error",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -653,7 +653,7 @@ class grafcet:
                                                 who = self.objectxmpp.boundjid.bare,
                                                 how = "",
                                                 why = self.data['name'],
-                                                module = "Deployment | Error | Step | Package",
+                                                module = "Deployment | Error | Execution",
                                                 date = None ,
                                                 fromuser = self.data['login'],
                                                 touser = "")
@@ -672,7 +672,7 @@ class grafcet:
                     who = self.objectxmpp.boundjid.bare,
                     how = "",
                     why = self.data['name'],
-                    module = "Deployment | Error | Step | Package",
+                    module = "Deployment | Error | Execution",
                     date = None ,
                     fromuser = self.data['login'],
                     touser = "")
@@ -704,7 +704,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -758,7 +758,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -789,7 +789,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -852,7 +852,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -903,7 +903,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -930,7 +930,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -958,7 +958,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -990,7 +990,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution | Notify",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1108,7 +1108,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1150,7 +1150,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1169,7 +1169,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1206,7 +1206,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1234,7 +1234,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1268,7 +1268,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1286,7 +1286,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1301,7 +1301,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
@@ -1330,7 +1330,7 @@ class grafcet:
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],
-                                        module = "Deployment | Error | Step | Package",
+                                        module = "Deployment | Error | Execution",
                                         date = None ,
                                         fromuser = self.data['login'],
                                         touser = "")
@@ -1349,7 +1349,7 @@ class grafcet:
                                     who = self.objectxmpp.boundjid.bare,
                                     how = "",
                                     why = self.data['name'],
-                                    module = "Deployment | Error | Step | Package",
+                                    module = "Deployment | Error | Execution",
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")

@@ -43,7 +43,7 @@ def schedule_main(objectxmpp):
         del obj['data']['packagefile']###['descriptor']
         print json.dumps(obj, indent = 4)
         # send message to master(plugin_machineexecutionscheduler)
-        #print "SEND", json.dumps(obj, indent = 4)
+        print "SEND", json.dumps(obj, indent = 4)
         objectxmpp.send_message(mto = obj['data']['jidmaster'],
                                     mbody = json.dumps(obj),
                                     mtype = 'chat')

@@ -205,7 +205,7 @@ class manage_event:
                                                                         who = self.objectxmpp.boundjid.bare,
                                                                         how = "",
                                                                         why = "",
-                                                                        module = "Deployment | Exec | Step",
+                                                                        module = "Deployment | Error | Execution",
                                                                         date = None ,
                                                                         fromuser = event['eventMessageraw']['data']['login'],
                                                                         touser = "")
@@ -218,7 +218,7 @@ class manage_event:
                                                                     who = self.objectxmpp.boundjid.bare,
                                                                     how = "",
                                                                     why = "",
-                                                                    module = "Deployment | Exec | Step",
+                                                                    module = "Deployment | Execution",
                                                                     date = None ,
                                                                     fromuser = event['eventMessageraw']['data']['login'],
                                                                     touser = "")
