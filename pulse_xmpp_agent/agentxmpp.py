@@ -313,7 +313,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
-        
+
         self.xmpplog("Start Agent",
                     type = 'info',
                     sessionname = "",
@@ -445,7 +445,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     {},
                     msg,
                     dataerreur)
-
 
     def update_plugin(self):
         # Send plugin and machine informations to Master
