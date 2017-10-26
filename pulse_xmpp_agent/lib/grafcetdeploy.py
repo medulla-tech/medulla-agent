@@ -314,12 +314,30 @@ class grafcet:
         send msg to log sequence
         Clean client disk packages (ie clear)
         """
+        restarmachine = False
+        print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
+        if 'advanced' in self.datasend['data'] \
+            and 'rebootneeded' in self.datasend['data']['advanced'] \
+                and self.datasend['data']['advanced']['rebootneeded'] == True:
+            restarmachine = True
+            self.objectxmpp.xmpplog("Reboot needed Machine after deploy on %s" % (self.datasend['data']['name']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -2,
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment|Terminate|Execution|Restart|Notify",
+                                    date = None ,
+                                    fromuser = self.datasend['data']['login'],
+                                    touser = "")
         try:
             self.__action_completed__(self.workingstep)
             self.objectxmpp.session.clearnoevent(self.sessionid)
             logging.getLogger().debug(
-                "terminate install package %s" %
-                self.datasend['data']['descriptor']['info']['name'])
+                                    "terminate install package %s" %
+                                    self.datasend['data']['descriptor']['info']['name'])
             self.datasend['action'] = "result" + self.datasend['action']
             if not "quitonerror" in self.datasend['data']['descriptor']['info']:
                 quiterror = True
@@ -379,7 +397,6 @@ class grafcet:
                 del datas['data']['transfert']
             except BaseException:
                 pass
-
             self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
                                          mbody=json.dumps(datas),
                                          mtype='chat')
@@ -395,6 +412,30 @@ class grafcet:
                                          mbody=json.dumps(
                                              datapackage, encoding="utf-8"),
                                          mtype='chat')
+            if restarmachine :
+                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -2,
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment | Error | Terminate | Notify",
+                                    date = None ,
+                                    fromuser = datasend['data']['login'],
+                                    touser = "")
+                logging.debug("actionrestartmachine  RESTART MACHINE")
+                if sys.platform.startswith('linux'):
+                    logging.debug("actionrestartmachine  shutdown machine linux")
+                    os.system("shutdown -r now")
+                elif sys.platform.startswith('win'):
+                    logging.debug("actionrestartmachine  shutdown machine windows")
+                    os.system("shutdown /r")
+                elif sys.platform.startswith('darwin'):
+                    logging.debug("actionrestartmachine  shutdown machine MacOS")
+                    os.system("shutdown -r now")
+
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
@@ -793,7 +834,6 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-            
             if 'error' in self.workingstep:
                 self.__search_Next_step_int__(self.workingstep['error'])
                 self.__execstep__()
@@ -950,7 +990,7 @@ class grafcet:
         if 'clear' in self.workingstep:
             if isinstance(self.workingstep['clear'], bool):
                 clear = self.workingstep['clear']
-        self.objectxmpp.xmpplog('[%s]-[%s] :<span style="color: green;"> Terminate deploy SUCCESS <span>' % (self.data['name'], self.workingstep['step']),
+        self.objectxmpp.xmpplog('[%s]-[%s] :<span style="color: green;"> Terminate deploy SUCCESS<span>' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],
