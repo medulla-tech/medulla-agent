@@ -1246,3 +1246,37 @@ if sys.platform.startswith('win'):
             return value
         except WindowsError:
             return None
+
+def shutdown_command(time = 0, msg=''):
+    """
+        This  function allow to shutdown a machine, and if needed
+        to display a message
+
+        Args:
+            time: the delay before the shutdown
+            msg:  the message that will be displayed
+
+    """
+    if sys.platform.startswith('linux'):
+        if int(time) == 0 or msg =='':
+            cmd = "shutdown now"
+        else:
+             cmd = "shutdown -P -f -t %s %s"%(time, msg)
+             logging.debug(cmd)
+             os.system(cmd)
+    elif sys.platform.startswith('win'):
+        if int(time) == 0 or msg =='':
+            cmd = "shutdown /p"
+        else:
+            cmd = "shutdown /s /t %s /c %s"%(time, msg)
+            logging.debug(cmd)
+            os.system(cmd)
+    elif sys.platform.startswith('darwin'):
+        if int(time) == 0 or msg =='':
+            cmd = "shutdown -h now"
+        else:
+            cmd = "shutdown -h +%s \"%s\""(time, msg)
+            logging.debug(cmd)
+            os.system(cmd)
+    return
+

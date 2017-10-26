@@ -446,14 +446,7 @@ class grafcet:
                                     fromuser = login,
                                     touser = "")
             if shutdownmachine:
-                logging.debug("SHUTDOWN REQUIRED MACHINE")
-                if sys.platform.startswith('linux'):
-                    os.system("shutdown now")
-                elif sys.platform.startswith('win'):
-                    os.system("shutdown /p")
-                elif sys.platform.startswith('darwin'):
-                    os.system("shutdown -h now")
-                return
+                shutdown_command()
 
             if restarmachine :
                 logging.debug("RESTART REQUIRED MACHINE")

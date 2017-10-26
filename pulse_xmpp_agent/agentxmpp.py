@@ -601,28 +601,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if 'msg' in dataobj['data'] and dataobj['data']['msg'] != "":
                 msg = '"' + dataobj['data']['msg'] + '"'
 
-            if sys.platform.startswith('linux'):
-                if int(time) == 0:
-                    cmd = "shutdown now"
-                else:
-                    cmd = "shutdown -P -f -t %s %s"%(time, msg)
-                logging.debug(cmd)
-                os.system(cmd)
-            elif sys.platform.startswith('win'):
-                if int(time) == 0:
-                    cmd = "shutdown /p"
-                else:
-                    cmd = "shutdown /s /t %s /c %s"%(time, msg)
-                logging.debug(cmd)
-                os.system(cmd)
-            elif sys.platform.startswith('darwin'):
-                if int(time) == 0:
-                    cmd = "shutdown -h now"
-                else:
-                    cmd = "shutdown -h +%s \"%s\""(time, msg)
-                logging.debug(cmd)
-                os.system(cmd)
-            return
+            shutdown_command(time, msg)
 
         if dataobj['action'] == "installkeymaster":
             # note install publickeymaster
