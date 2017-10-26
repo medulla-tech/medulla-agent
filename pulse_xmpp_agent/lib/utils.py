@@ -1280,3 +1280,16 @@ def shutdown_command(time = 0, msg=''):
             os.system(cmd)
     return
 
+def reboot_command():
+    """
+        This function allow to reboot a machine.
+    """
+    if sys.platform.startswith('linux'):
+        os.system("shutdown -r now")
+    elif sys.platform.startswith('win'):
+        os.system("shutdown /r")
+    elif sys.platform.startswith('darwin'):
+        os.system("shutdown -r now")
+
+    return
+

@@ -449,13 +449,8 @@ class grafcet:
                 shutdown_command()
 
             if restarmachine :
-                logging.debug("RESTART REQUIRED MACHINE")
-                if sys.platform.startswith('linux'):
-                    os.system("shutdown -r now")
-                elif sys.platform.startswith('win'):
-                    os.system("shutdown /r")
-                elif sys.platform.startswith('darwin'):
-                    os.system("shutdown -r now")
+                reboot_command()
+
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)

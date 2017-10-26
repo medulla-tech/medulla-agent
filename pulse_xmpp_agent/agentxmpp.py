@@ -582,16 +582,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
 
         if dataobj['action'] == "restarfrommaster":
-            if sys.platform.startswith('linux'):
-                logging.debug("actionrestartmachine  shutdown machine linux")
-                os.system("shutdown -r now")
-            elif sys.platform.startswith('win'):
-                logging.debug("actionrestartmachine  shutdown machine windows")
-                os.system("shutdown /r")
-            elif sys.platform.startswith('darwin'):
-                logging.debug("actionrestartmachine  shutdown machine MacOS")
-                os.system("shutdown -r now")
-            return
+            reboot_command()
 
         if dataobj['action'] == "shutdownfrommaster":
             msg = "\"Shutdown from administrator\""
