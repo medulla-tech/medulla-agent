@@ -310,17 +310,36 @@ class grafcet:
 
     def terminate(self, ret, clear=True, msgstate=""):
         """
-        use for terminate deploy
-        send msg to log sequence
-        Clean client disk packages (ie clear)
+            use for terminate deploy
+            send msg to log sequence
+            Clean client disk packages (ie clear)
         """
+        login = self.datasend['data']['login']
         restarmachine = False
+        shutdownmachine = False
         print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
         if 'advanced' in self.datasend['data'] \
-            and 'rebootneeded' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['rebootneeded'] == True:
+            and 'shutdownrequired' in self.datasend['data']['advanced'] \
+                and self.datasend['data']['advanced']['shutdownrequired'] == True:
+            shutdownmachine = True
+            self.objectxmpp.xmpplog("shutdown required for Machine after deploy on %s" % (self.datasend['data']['name']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -2,
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment|Terminate|Execution|Restart|Notify",
+                                    date = None ,
+                                    fromuser = self.datasend['data']['login'],
+                                    touser = "")
+
+        if not shutdownmachine and 'advanced' in self.datasend['data'] \
+            and 'rebootrequired' in self.datasend['data']['advanced'] \
+                and self.datasend['data']['advanced']['rebootrequired'] == True:
             restarmachine = True
-            self.objectxmpp.xmpplog("Reboot needed Machine after deploy on %s" % (self.datasend['data']['name']),
+            self.objectxmpp.xmpplog("reboot required for Machine after deploy on %s" % (self.datasend['data']['name']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = -2,
@@ -412,8 +431,9 @@ class grafcet:
                                          mbody=json.dumps(
                                              datapackage, encoding="utf-8"),
                                          mtype='chat')
-            if restarmachine :
-                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+
+            if shutdownmachine or restarmachine:
+                self.objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = -2,
@@ -423,19 +443,26 @@ class grafcet:
                                     why = "",
                                     module = "Deployment | Error | Terminate | Notify",
                                     date = None ,
-                                    fromuser = datasend['data']['login'],
+                                    fromuser = login,
                                     touser = "")
-                logging.debug("actionrestartmachine  RESTART MACHINE")
+            if shutdownmachine:
+                logging.debug("SHUTDOWN REQUIRED MACHINE")
                 if sys.platform.startswith('linux'):
-                    logging.debug("actionrestartmachine  shutdown machine linux")
+                    os.system("shutdown now")
+                elif sys.platform.startswith('win'):
+                    os.system("shutdown /p")
+                elif sys.platform.startswith('darwin'):
+                    os.system("shutdown -h now")
+                return
+
+            if restarmachine :
+                logging.debug("RESTART REQUIRED MACHINE")
+                if sys.platform.startswith('linux'):
                     os.system("shutdown -r now")
                 elif sys.platform.startswith('win'):
-                    logging.debug("actionrestartmachine  shutdown machine windows")
                     os.system("shutdown /r")
                 elif sys.platform.startswith('darwin'):
-                    logging.debug("actionrestartmachine  shutdown machine MacOS")
                     os.system("shutdown -r now")
-
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
