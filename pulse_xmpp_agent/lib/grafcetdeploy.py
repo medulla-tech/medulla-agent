@@ -26,7 +26,7 @@ import platform
 import os.path
 import os
 import json
-from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout
+from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command
 import traceback
 import logging
 import netifaces
