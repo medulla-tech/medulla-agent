@@ -21,9 +21,8 @@
 # MA 02110-1301, USA.
 
 
-import sys, os
-import os.path
-import json
+import sys
+import os
 import logging
 import bsddb
 
