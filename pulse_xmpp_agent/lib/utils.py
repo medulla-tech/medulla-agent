@@ -54,8 +54,10 @@ if sys.platform.startswith('win'):
 
 def Setdirectorytempinfo():
     """
-    function Setdirectorytempinfo
-    : return path directory INFO Temporaly and key RSA
+    This functions create a temporary directory.
+
+    Returns:
+    path directory INFO Temporaly and key RSA
     """
     dirtempinfo = os.path.join(
         os.path.dirname(
