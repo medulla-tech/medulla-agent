@@ -29,9 +29,11 @@ def conffilename(agenttype):
         Function defining where the configuration file is located.
         configuration file for the type of machine and the Operating System
 
-        @param agenttype: type of the agent, relay or machine
+        Args:
+        agenttype: type of the agent, relay or machine
 
-        @rtype: Return the config file path
+        Returns:
+        Return the config file path
 
     """
     if agenttype in ["machine"]:
@@ -65,3 +67,4 @@ def conffilename(agenttype):
         return fileconf
     else:
         return conffilenameparameter
+
