@@ -75,6 +75,14 @@ class constantregisterwindows:
                              }
 
     def is_exist_key(self, key):
+        """
+        this function check if the registry key exist
+        Args:
+        key:  the registry key to check
+
+        Returns:
+        True if the key exist, False otherwise
+        """
         if key in self.keysregister:
             return True
         return False
