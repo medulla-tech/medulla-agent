@@ -1,4 +1,4 @@
 pulse-xmpp-agent 1.8.5
 ======================
 
- * 
+ * Option to shutdown or reboot machine after deployment
