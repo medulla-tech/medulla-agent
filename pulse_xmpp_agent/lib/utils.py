@@ -1282,6 +1282,28 @@ def shutdown_command(time = 0, msg=''):
             os.system(cmd)
     return
 
+def vnc_set_permission(askpermission = 1):
+    """
+    This function allows to change the setting of VNC to ask for
+    permission from user before connecting to Windows machines
+
+    Args:
+        askpermission: 0 or 1
+
+    """
+    if sys.platform.startswith('linux'):
+        pass
+    elif sys.platform.startswith('win'):
+        if askpermission == 0:
+            cmd = 'reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 1 && reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryTimeout /t REG_DWORD /d 1 && net stop tvnserver && net start tvnserver'
+        else:
+            cmd = 'reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 0 && reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryTimeout /t REG_DWORD /d 20 && net stop tvnserver && net start tvnserver'
+        logging.debug(cmd)
+        os.system(cmd)
+    elif sys.platform.startswith('darwin'):
+        pass
+return
+
 def reboot_command():
     """
         This function allow to reboot a machine.
@@ -1294,4 +1316,3 @@ def reboot_command():
         os.system("shutdown -r now")
 
     return
-

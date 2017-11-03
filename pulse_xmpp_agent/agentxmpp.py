@@ -38,7 +38,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         call_plugin, searchippublic, subnetnetwork,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
-                        shutdown_command, reboot_command
+                        shutdown_command, reboot_command, vnc_set_permission
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
@@ -594,6 +594,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 msg = '"' + dataobj['data']['msg'] + '"'
 
             shutdown_command(time, msg)
+
+        if dataobj['action'] == "vncchangepermsfrommaster":
+            askpermission = 1
+            if 'askpermission' in dataobj['data'] and dataobj['data']['askpermission'] == 0:
+                askpermission = 0
+
+            vnc_set_permission(askpermission)
 
         if dataobj['action'] == "installkeymaster":
             # note install publickeymaster
