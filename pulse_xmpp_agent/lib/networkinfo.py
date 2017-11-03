@@ -631,6 +631,6 @@ def getUserName():
     This function allow to obtain the name of the connected users
     """
     if sys.platform.startswith('linux'):
-        obj = simplecommand("who | cut -d" "  -f1 | uniq")
+        obj = simplecommand("who | cut -d" "  -f1 | sort | uniq")
 
     return obj
