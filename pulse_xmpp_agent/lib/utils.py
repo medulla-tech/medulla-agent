@@ -1303,7 +1303,7 @@ def vnc_set_permission(askpermission = 1):
     elif sys.platform.startswith('darwin'):
         pass
     
-   return
+    return
 
 def reboot_command():
     """
