@@ -74,7 +74,7 @@ class constantregisterwindows:
                              'REG_SZ': 'A null-terminated string.'
                              }
 
-    def is_exist_key(self, key):
+    def regkey_exists(self, key):
         """
         this function check if the registry key exist
         Args:
@@ -93,7 +93,7 @@ class constantregisterwindows:
         return False
 
     def descriptionkey(self, key):
-        if self.is_exist_key(key):
+        if self.regkey_exists(key):
             return self.keysregister[key]
         return ""
 
