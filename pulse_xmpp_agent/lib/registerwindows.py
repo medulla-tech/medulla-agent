@@ -19,7 +19,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import sys
+import sys, os, platform
+import logging
 
 if sys.platform.startswith('win'):
     import _winreg
@@ -73,6 +74,11 @@ class constantregisterwindows:
                              'REG_RESOURCE_REQUIREMENTS_LIST': 'A hardware resource list.',
                              'REG_SZ': 'A null-terminated string.'
                              }
+        self.bitness = platform.architecture()[0]
+        if self.bitness == '32bit':
+            self.other_view_flag = _winreg.KEY_WOW64_64KEY
+        elif self.bitness == '64bit':
+            self.other_view_flag = _winreg.KEY_WOW64_32KEY
 
     def regkey_exists(self, key):
         """
@@ -171,3 +177,43 @@ class constantregisterwindows:
             elif key == 'KEY_WOW64_32KEY':
                 return _winreg.KEY_WOW64_32KEY
         raise
+
+    def getother_view_flag():
+        return self.other_view_flag
+
+
+class RegisterWindows():
+
+    def __init__(self):
+        pass
+
+    def readkey(completestrkey):
+        reg_constants = constantregisterwindows()
+        try:
+            hive = completestrkey.split('\\')[0].strip('"')
+            sub_key = completestrkey.split('\\')[-1].strip('"')
+            path = completestrkey.replace(hive+'\\', '').replace('\\'+sub_key, '').strip('"')
+            key = _winreg.OpenKey(reg_constants.getkey(hive),
+                                  path,
+                                  0,
+                                  _winreg.KEY_READ | reg_constants.getother_view_flag())
+            key_value = _winreg.QueryValueEx(key, sub_key)
+            return str(key_value[0])
+        except Exception,e:
+            logging.getLogger().error(str(e))
+            return ""
+
+
+    def readkeyKeyPathVariable(strkey, strpath, strnamevariable):
+        reg_constants = constantregisterwindows()
+        try:
+            key = _winreg.OpenKey(reg_constants.getkey(strkey),
+                                  strpath,
+                                  0,
+                                  _winreg.KEY_READ | reg_constants.getother_view_flag())
+            key_value = _winreg.QueryValueEx( key, strnamevariable )
+            return str(key_value[0])
+        except Exception,e:
+            logging.getLogger().error(str(e))
+            return ""
+
