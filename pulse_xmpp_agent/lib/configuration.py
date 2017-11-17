@@ -177,6 +177,7 @@ class confParameter:
                     logging.getLogger().warning(
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
+                    self.nameplugindir=""
 
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
@@ -302,10 +303,14 @@ class confParameter:
             self.relayserverdeploy = jid.JID(self.agentcommand)
             self.jidchatroomcommand = str(self.agentcommand)
 
-        self.inventory_interval = 3700
+        # we make sure that the temp for the inventories is greater than or equal to 1 hour.
+        # if the time for the inventories is 0, it is left at 0. 
+        # this deactive cycle inventory
+        self.inventory_interval = 0
         if Config.has_option("inventory", "inventory_interval"):
-            self.inventory_interval = Config.getint(
-                "inventory", "inventory_interval")
+            self.inventory_interval = Config.getint("inventory", "inventory_interval")
+            if self.inventory_interval !=0 and self.inventory_interval < 3600:
+                self.inventory_interval = 36000
 
         self.information = {}
         self.PlatformSystem = platform.platform()

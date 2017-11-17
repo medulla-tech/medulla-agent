@@ -18,28 +18,32 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
+# file scheduling_inv.py
+
 """
 this plugin process inventory from crontab descriptor time
 """
 import logging
 from  lib.utils import getRandomName, call_plugin
 # nb  -1 infinie
-###SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
+#SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
 #SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
-plugin={"VERSION": "1.0", "NAME" : "pluging scheduled inventory", "TYPE" : "scheduled"}
+plugin = { "VERSION" : "1.0", "NAME" : "inv", "descrition" : "pluging scheduled inventory", "TYPE" : "scheduled" }
 
 crontabdescriptor = "15 13 * * 4"
 SCHEDULE = { "schedule" : crontabdescriptor, "nb" : -1 }
 
-
 def schedule_main(objectxmpp):
-    #print objectxmpp.config
+    # cycle inventory or scheduled inventory
+    if objectxmpp.config.inventory_interval != 0:
+        return
     logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s ",plugin )
+    logging.getLogger().debug("call : %s ",plugin )
     logging.getLogger().debug("###################################################")
     msg={ 'from' : "master@pulse/MASTER",
-              'to': objectxmpp.boundjid.bare
+            'to': objectxmpp.boundjid.bare
             }
     sessionid = getRandomName(6, "inventory")
     dataerreur = {}

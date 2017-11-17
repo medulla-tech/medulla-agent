@@ -113,7 +113,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
-        self.schedule('event inventory', self.config.inventory_interval, self.handleinventory, repeat=True)
+
+        # we make sure that the temp for the inventories is greater than or equal to 1 hour.
+        # if the time for the inventories is 0, it is left at 0. 
+        # this deactive cycle inventory
+        if self.config.inventory_interval != 0:
+            if self.config.inventory_interval < 3600:
+                self.config.inventory_interval = 3600
+                logging.warning("chang minimun time cyclic inventory : 3600")
+                logging.warning("we make sure that the time for the inventories is greater than or equal to 1 hour.") 
+            self.schedule('event inventory', self.config.inventory_interval, self.handleinventory, repeat=True)
+        else:
+            logging.warning("not enable cyclic inventory")
+
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
             self.schedule('session reload', 15, self.reloadsesssion, repeat=False)

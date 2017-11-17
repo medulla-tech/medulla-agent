@@ -121,17 +121,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
         """
         traitement seulement si MASTER du chatroom configmaster
         """
+        logging.log(DEBUGPULSE,"muc_presenceConf")
+        from xml.dom import minidom
+        reparsed = minidom.parseString(str(presence))
+        logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
         if presence['from'] == self.config.masterchatroom:
             print presence['from']
         #envoi information machine
         pass
 
     def muc_offlineConf(self, presence):
+        logging.log(DEBUGPULSE,"muc_offlineConf")
+        from xml.dom import minidom
+        reparsed = minidom.parseString(str(presence))
+        logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
         if presence['from'] == self.config.masterchatroom:
             print presence['from']
         pass
 
     def muc_onlineConf(self, presence):
+        logging.log(DEBUGPULSE,"muc_onlineConf")
+        from xml.dom import minidom
+        reparsed = minidom.parseString(str(presence))
+        logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
         if presence['muc']['nick'] == self.config.NickName:
             #elimine sa propre presense
             return
@@ -155,7 +167,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         else:
             return
         self.disconnect(wait=5)
-    
+
     def terminate(self):
         self.disconnect()
 
