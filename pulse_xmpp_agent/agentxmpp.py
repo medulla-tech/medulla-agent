@@ -897,8 +897,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-        
-        
+
         if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")

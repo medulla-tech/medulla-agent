@@ -317,7 +317,7 @@ class grafcet:
         login = self.datasend['data']['login']
         restarmachine = False
         shutdownmachine = False
-        print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
+        #print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
         if 'advanced' in self.datasend['data'] \
             and 'shutdownrequired' in self.datasend['data']['advanced'] \
                 and self.datasend['data']['advanced']['shutdownrequired'] == True:
@@ -681,6 +681,56 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
+
+    def action_comment(self):
+        """
+        {
+                "action": "action_comment",
+                "step": n,
+                "comment" : "salut la compagnie"
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            print self.workingstep
+            if 'comment' in self.workingstep :
+                self.workingstep['comment'] = self.replaceTEMPLATE(self.workingstep['comment'] )
+            else:
+                self.workingstep['comment'] = "no comment user"
+            self.objectxmpp.xmpplog('[%s]-[%s]: user comment : %s' % ( self.data['name'], self.workingstep['step'], self.workingstep['comment']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Execution",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_comment step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_comment : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                     module = "Deployment | Execution | Error",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
 
     def action_set_environ(self):
         """
