@@ -1040,6 +1040,177 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
 
+    def actionprocessscriptfile(self):
+        """
+        {
+                "step": intnb,
+                "action": "actionprocessscriptfile",
+                "typescript": "",
+                "script" :  "",
+                "suffix" : "",
+                "bang" : "",
+                "codereturn": "",
+                "timeout": 900,
+                "error": 5,
+                "success": 3,
+                "@resultcommand": ""
+        }
+        bang et suffix sont prioritaire sur ceux trouver depuis le typescript
+        title action is Execute script
+        script is copy in file in temp.
+        execution of temp file
+
+        typescript list python, tcl,
+
+        """
+
+        suffix = None
+        shebang = None
+        commandtype = ""
+
+        if sys.platform.startswith('win'):
+            ### exec for power shell " powershell -executionpolicy bypass -File <ton_script_ps1>"
+            extensionscriptfile={
+                "python" : { 
+                            "suffix" : 'py' ,
+                            "bang" : "#!/usr/bin/python"
+                },
+                "visualbasicscript" : {
+                            "suffix": "vbs",
+                            "bang" : ""
+                },
+                "Batch" : {
+                            "suffix": "bat",
+                            "bang" : ""
+                    },
+                "powershell" : {
+                            "suffix": "ps1",
+                            "bang" : "",
+                            "commandtype" : "powershell -executionpolicy bypass -File "
+                    }
+            }
+        elif sys.platform.startswith('linux'):
+            extensionscriptfile={
+                "python" : { 
+                            "suffix" : 'py' ,
+                            "bang" : "#!/usr/bin/python",
+                            "commandtype" :"python "
+                },
+                "Batch" : {
+                            "suffix": "sh",
+                            "bang" : "#!/bin/bash",
+                            "commandtype" : "./"
+                    },
+                "unixKornshell" : {
+                            "suffix": "ksh",
+                            "bang" : "#!/bin/ksh",
+                            "commandtype" : "./"
+                    },
+                "unixCshell" : {
+                            "suffix": "csh",
+                            "bang" : "#!/bin/csh",
+                            "commandtype" : "./"
+                    }
+            }
+        elif sys.platform.startswith('darwin'):
+            extensionscriptfile={
+                "python" : { 
+                            "suffix" : 'py' ,
+                            "bang" : "#!/usr/bin/python",
+                            "commandtype" : "./"
+                },
+                "Batch" : {
+                            "suffix": "sh",
+                            "bang" : "#!/bin/bash",
+                            "commandtype" : "./"
+                    },
+                "unixKornshell" : {
+                            "suffix": "ksh",
+                            "bang" : "#!/bin/ksh",
+                            "commandtype" : "./"
+                    },
+                "unixCshell" : {
+                            "suffix": "csh",
+                            "bang" : "#!/bin/csh",
+                            "commandtype" : "./"
+                    }
+            }
+
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.workingstep['command'] = self.replaceTEMPLATE(
+                self.workingstep['command'])
+            if not "timeout" in self.workingstep:
+                self.workingstep['timeout'] = 900
+                logging.getLogger().warn("timeout missing : default value 900s")
+
+            # recupere suffix et shebang.
+            if self.workingstep['typescript'] in extensionscriptfile:
+                suffix = extensionscriptfile[self.workingstep['typescript']]['suffix']
+                shebang = extensionscriptfile[self.workingstep['typescript']]['bang']
+                if 'commandtype' in extensionscriptfile[self.workingstep['typescript']]:
+                    commandtype = extensionscriptfile[self.workingstep['typescript']]['commandtype']
+
+
+            if not ("suffix" in self.workingstep and self.workingstep['suffix'] != ""):
+                #search sufix and extension for typescript.
+                suffix = self.workingstep['suffix']
+
+            if not ("bang" in self.workingstep and self.workingstep['bang'] != ""):
+                #search sufix and extension for typescript.
+                shebang = self.workingstep['bang']
+
+            if suffix != None:
+                self.workingstep['suffix'] = suffix
+            else:
+                self.workingstep['suffix'] = ""
+
+            if shebang != None:
+                self.workingstep['bang'] = shebang
+                if shebang != "" and not self.workingstep['script'].startswith(self.workingstep['bang']):
+                    self.workingstep['script'] = self.workingstep['bang'] + os.linesep
+            else:
+                self.workingstep['bang'] = ""
+
+            self.workingstep['script'] = self.replaceTEMPLATE(
+                self.workingstep['script'])
+
+            fd, temp_path = mkstemp( suffix = suffix )
+            print temp_path
+            os.write(fd, self.workingstep['script'])
+            os.close(fd)
+
+            #create command
+            if commandtype != None:
+                command = commandtype + temp_path
+            # working Step recup from process et session
+            self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( command,
+                                                                                 self.datasend,
+                                                                                 self.objectxmpp.boundjid.bare,
+                                                                                 self.objectxmpp.boundjid.bare,
+                                                                                 self.workingstep['timeout'],
+                                                                                 self.workingstep['step'])
+        except Exception as e:
+            self.steplog()
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in actionprocessscriptfile step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscriptfile : %s' % (self.data['name'], self.workingstep['step']),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Execution",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
+
     def actionsuccescompletedend(self):
         """
         descriptor type
