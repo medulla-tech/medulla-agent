@@ -52,7 +52,7 @@ def schedule_main(objectxmpp):
                     msg,
                     dataerreur)
     objectxmpp.xmpplog(
-                "Sent Inventory from agent %s%s"%(objectxmpp.boundjid.bare),
+                "Sent Inventory from agent %s"%(objectxmpp.boundjid.bare),
                 type = 'noset',
                 sessionname = sessionid,
                 priority = 0,
