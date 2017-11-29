@@ -1079,7 +1079,7 @@ class grafcet:
                             "suffix": "vbs",
                             "bang" : ""
                 },
-                "batch" : {
+                "Batch" : {
                             "suffix": "bat",
                             "bang" : ""
                     },
@@ -1096,7 +1096,7 @@ class grafcet:
                             "bang" : "#!/usr/bin/python",
                             "commandtype" :"python "
                 },
-                "bash" : {
+                "Batch" : {
                             "suffix": "sh",
                             "bang" : "#!/bin/bash",
                             "commandtype" : "./"
@@ -1119,7 +1119,7 @@ class grafcet:
                             "bang" : "#!/usr/bin/python",
                             "commandtype" : "./"
                 },
-                "bash" : {
+                "Batch" : {
                             "suffix": "sh",
                             "bang" : "#!/bin/bash",
                             "commandtype" : "./"
