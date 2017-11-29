@@ -2,6 +2,9 @@ pulse-xmpp-agent 1.8.6
 ======================
 
  * Action for changing VNC parameters to toggle user approval request before connecting
+ * Fix reading of registry keys on Windows machines
+ * Improve scheduling of automatic inventories
+ * New actions for packaging
 
 
 pulse-xmpp-agent 1.8.5
