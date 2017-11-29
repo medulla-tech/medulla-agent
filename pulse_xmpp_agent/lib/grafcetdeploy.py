@@ -1099,17 +1099,17 @@ class grafcet:
                 "Batch" : {
                             "suffix": "sh",
                             "bang" : "#!/bin/bash",
-                            "commandtype" : "./"
+                            "commandtype" : "/bin/bash "
                     },
                 "unixKornshell" : {
                             "suffix": "ksh",
                             "bang" : "#!/bin/ksh",
-                            "commandtype" : "./"
+                            "commandtype" : "/bin/ksh "
                     },
                 "unixCshell" : {
                             "suffix": "csh",
                             "bang" : "#!/bin/csh",
-                            "commandtype" : "./"
+                            "commandtype" : "/bin/csh "
                     }
             }
         elif sys.platform.startswith('darwin'):
@@ -1117,30 +1117,30 @@ class grafcet:
                 "python" : { 
                             "suffix" : 'py' ,
                             "bang" : "#!/usr/bin/python",
-                            "commandtype" : "./"
+                            "commandtype" :"python "
                 },
                 "Batch" : {
                             "suffix": "sh",
                             "bang" : "#!/bin/bash",
-                            "commandtype" : "./"
+                            "commandtype" : "/bin/bash "
                     },
                 "unixKornshell" : {
                             "suffix": "ksh",
                             "bang" : "#!/bin/ksh",
-                            "commandtype" : "./"
+                            "commandtype" : "/bin/ksh "
                     },
                 "unixCshell" : {
                             "suffix": "csh",
                             "bang" : "#!/bin/csh",
-                            "commandtype" : "./"
+                            "commandtype" : "/bin/csh "
                     }
             }
 
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.workingstep['command'] = self.replaceTEMPLATE(
-                self.workingstep['command'])
+            self.workingstep['script'] = self.replaceTEMPLATE(
+                self.workingstep['script'])
             if not "timeout" in self.workingstep:
                 self.workingstep['timeout'] = 900
                 logging.getLogger().warn("timeout missing : default value 900s")
@@ -1152,12 +1152,12 @@ class grafcet:
                 if 'commandtype' in extensionscriptfile[self.workingstep['typescript']]:
                     commandtype = extensionscriptfile[self.workingstep['typescript']]['commandtype']
 
-
-            if not ("suffix" in self.workingstep and self.workingstep['suffix'] != ""):
+            if 'suffix' in self.workingstep and self.workingstep['suffix'] != "":
                 #search sufix and extension for typescript.
                 suffix = self.workingstep['suffix']
 
-            if not ("bang" in self.workingstep and self.workingstep['bang'] != ""):
+
+            if "bang" in self.workingstep and self.workingstep['bang'] != "":
                 #search sufix and extension for typescript.
                 shebang = self.workingstep['bang']
 
@@ -1169,28 +1169,30 @@ class grafcet:
             if shebang != None:
                 self.workingstep['bang'] = shebang
                 if shebang != "" and not self.workingstep['script'].startswith(self.workingstep['bang']):
-                    self.workingstep['script'] = self.workingstep['bang'] + os.linesep
+                    self.workingstep['script'] = self.workingstep['bang'] + os.linesep + self.workingstep['script']
             else:
                 self.workingstep['bang'] = ""
 
             self.workingstep['script'] = self.replaceTEMPLATE(
                 self.workingstep['script'])
 
-            fd, temp_path = mkstemp( suffix = suffix )
-            print temp_path
+            fd, temp_path = mkstemp( suffix = '.'+ suffix )
             os.write(fd, self.workingstep['script'])
             os.close(fd)
-
+            self.workingstep['script'] = "script in temp file : %s"%temp_path
             #create command
             if commandtype != None:
                 command = commandtype + temp_path
+
+            
             # working Step recup from process et session
-            self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( command,
-                                                                                 self.datasend,
-                                                                                 self.objectxmpp.boundjid.bare,
-                                                                                 self.objectxmpp.boundjid.bare,
-                                                                                 self.workingstep['timeout'],
-                                                                                 self.workingstep['step'])
+            if command != "":
+                self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( command,
+                                                                                    self.datasend,
+                                                                                    self.objectxmpp.boundjid.bare,
+                                                                                    self.objectxmpp.boundjid.bare,
+                                                                                    self.workingstep['timeout'],
+                                                                                    self.workingstep['step'])
         except Exception as e:
             self.steplog()
             print str(e)
@@ -1209,7 +1211,43 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
     def actionsuccescompletedend(self):
         """
@@ -1630,6 +1668,8 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
 
+ 
+  
   # WIP
     def getpackagemanager(self):
         """

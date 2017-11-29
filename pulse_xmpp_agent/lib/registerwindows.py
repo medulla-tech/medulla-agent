@@ -178,7 +178,7 @@ class constantregisterwindows:
                 return _winreg.KEY_WOW64_32KEY
         raise
 
-    def getother_view_flag():
+    def getother_view_flag(self):
         return self.other_view_flag
 
 
