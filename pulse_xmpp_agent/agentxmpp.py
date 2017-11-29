@@ -339,11 +339,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     date = None ,
                     fromuser = "MASTER",
                     touser = "")
-        try:
-            self.back_to_deploy = load_back_to_deploy()
-        except IOError:
-            self.back_to_deploy = {}
-        cleanbacktodeploy(self)
 
     def send_message_agent( self,
                             mto,
@@ -468,24 +463,31 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype = 'chat')
 
     def reloadsesssion(self):
-        #recupere les sessions existantes
+        # reloadsesssion only for machine
+        # retrieve existing sessions
         self.session.loadsessions()
-        #if  not self.config.agenttype in ['relayserver']:
-            #executer seulement par machine
+        logging.log(DEBUGPULSE,"RELOAD SESSION DEPLOY")
+        try:
+            # load back to deploy after read session
+            self.back_to_deploy = load_back_to_deploy()
+            logging.log(DEBUGPULSE,"RELOAD DEPENDENCY MANAGER")
+        except IOError:
+            self.back_to_deploy = {}
+        cleanbacktodeploy(self)
         for i in self.session.sessiondata:
-            logging.log(DEBUGPULSE,"REPRISE DE DEPLOIEMENT AFTER RESTART OU RESTART BOT")
+            logging.log(DEBUGPULSE,"DEPLOYMENT AFTER RESTART OU RESTART BOT")
             msg={
                 'from' : self.boundjid.bare,
                 'to': self.boundjid.bare
-                }
-
+            }
             call_plugin( i.datasession['action'],
                         self,
                         i.datasession['action'],
                         i.datasession['sessionid'],
                         i.datasession['data'],
                         msg,
-                        {})
+                        {}
+            )
 
     def loginfotomaster(self, msgdata):
         logstruct={
