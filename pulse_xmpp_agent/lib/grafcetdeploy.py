@@ -1494,105 +1494,73 @@ class grafcet:
         {
             "step" : 9,
             "action": "actionrestart"
+            "targetrestart" : "AM" or "MA"
         }
         """
         try:
-            # if step taged completed then end
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.__next_current_step__()  # pointe maintenant sur l tape suivante
-            # update compteur step used
+            self.__next_current_step__()  # prepare action suivante # pointe maintenant sur l tape suivante
             self.__action_completed__(self.workingstep)
             # tag this session [reload session] and [execute etape] newly
             # currente step.
             self.__set_backtoworksession__()
+
+            if not ('targetrestart' in self.workingstep and self.workingstep['targetrestart']=="AM"):
+                self.workingstep['targetrestart'] = "MA"
+
             # rewrite session
             objsession = self.objectxmpp.session.sessionfromsessiondata(
                 self.sessionid)
             objsession.setdatasession(self.datasend)
             # Restart machine based on OS
             self.steplog()
-            self.objectxmpp.xmpplog('[%s]-[%s]: Restart machine' % (self.data['name'], self.workingstep['step']),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
-            logging.debug("actionrestartmachine  RESTART MACHINE")
-            if sys.platform.startswith('linux'):
-                logging.debug("actionrestartmachine  shutdown machine linux")
-                os.system("shutdown -r now")
-            elif sys.platform.startswith('win'):
-                logging.debug("actionrestartmachine  shutdown machine windows")
-                os.system("shutdown /r")
-            elif sys.platform.startswith('darwin'):
-                logging.debug("actionrestartmachine  shutdown machine MacOS")
-                os.system("shutdown -r now")
-            #os.system("pkill -f agentxmpp")
-        except Exception as e:
-            print str(e)
-            traceback.print_exc(file=sys.stdout)
-            self.terminate(-1, False, "end error in actionrestart step %s" %
-                           self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestart : %s' % (self.data['name'], self.workingstep['step']),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
 
-    def actionrestartbot(self):
-        """
-        descriptor type :
-        {
-            "step" : 9,
-            "action": "actionrestartbot"
-        }
-        """
-        try:
-            if self.__terminateifcompleted__(self.workingstep):
-                return
-            self.__next_current_step__()  # prepare action suivante
-            self.__action_completed__(self.workingstep)
-            # tag this session [reload session] and [execute etape] newly
-            # currente step.
-            self.__set_backtoworksession__()
-            # rewrite session
-            objsession = self.objectxmpp.session.sessionfromsessiondata(
-                self.sessionid)
-            objsession.setdatasession(self.datasend)
-            self.steplog()
-            self.objectxmpp.xmpplog('[%s]-[%s]: Restart agent machine' % (self.data['name'], self.workingstep['step']),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
-            self.objectxmpp.restartBot()
+            if self.workingstep['targetrestart']=="AM":
+                #restart Agent Machine
+                self.objectxmpp.xmpplog('[%s]-[%s]: Restart agent machine' % (self.data['name'], self.workingstep['step']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Execution",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+                self.objectxmpp.restartBot()
+            else:
+                #restart Machine
+                self.objectxmpp.xmpplog('[%s]-[%s]: Restart machine' % (self.data['name'], self.workingstep['step']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Execution",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+                logging.debug("actionrestartmachine  RESTART MACHINE")
+                if sys.platform.startswith('linux'):
+                    logging.debug("actionrestartmachine  shutdown machine linux")
+                    os.system("shutdown -r now")
+                elif sys.platform.startswith('win'):
+                    logging.debug("actionrestartmachine  shutdown machine windows")
+                    os.system("shutdown /r")
+                elif sys.platform.startswith('darwin'):
+                    logging.debug("actionrestartmachine  shutdown machine MacOS")
+                    os.system("shutdown -r now")
+                #os.system("pkill -f agentxmpp")
         except Exception as e:
             print str(e)
             traceback.print_exc(file=sys.stdout)
-            self.terminate(-1, False, "end error in actionrestartbot step %s" %
-                           self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestartbot : %s' % (self.data['name'], self.workingstep['step']),
+            self.terminate(-1, False, "end error in actionrestart %s step %s" %(self.workingstep['targetrestart'], self.workingstep['step']))
+            self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestart : %s' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],
