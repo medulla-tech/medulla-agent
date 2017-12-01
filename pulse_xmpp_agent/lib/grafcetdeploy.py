@@ -917,7 +917,8 @@ class grafcet:
                 "timeout": 900,
                 "error": 5,
                 "success": 3,
-                "@resultcommand": ""
+                "@resultcommand": "",
+                "packageuuid" : ""
         }
         """
         try:
@@ -929,6 +930,47 @@ class grafcet:
                 self.workingstep['timeout'] = 900
                 logging.getLogger().warn("timeout missing : default value 15s")
             # working Step recup from process et session
+
+            self.workingstep['pwd'] = ""
+            if 'packageuuid' in self.workingstep:
+                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
+                    self.workingstep['packageuuid'])
+                if os.path.isdir(self.workingstep['packageuuid']):
+                    os.chdir(self.workingstep['packageuuid'])
+                    self.workingstep['pwd'] = os.getcwd()
+                else:
+                    self.workingstep['pwd'] = os.getcwd()
+                    self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
+                                            'directory missing!!!:  %s' % (  self.data['name'], 
+                                                                             self.workingstep['step']),
+                                                                            type = 'deploy',
+                                                                            sessionname = self.sessionid,
+                                                                            priority = self.workingstep['step'],
+                                                                            action = "",
+                                                                            who = self.objectxmpp.boundjid.bare,
+                                                                            how = "",
+                                                                            why = self.data['name'],
+                                                                            module = "Deployment | Execution | Warning",
+                                                                            date = None ,
+                                                                            fromuser = self.data['login'],
+                                                                            touser = "")
+            self.workingstep['pwd'] = os.getcwd()
+
+            self.objectxmpp.xmpplog('[%s]-[%s]: current directory %s' % ( self.data['name'],
+                                                                         self.workingstep['step'], 
+                                                                         self.workingstep['pwd']),
+                                                                        type = 'deploy',
+                                                                        sessionname = self.sessionid,
+                                                                        priority = self.workingstep['step'],
+                                                                        action = "",
+                                                                        who = self.objectxmpp.boundjid.bare,
+                                                                        how = "",
+                                                                        why = self.data['name'],
+                                                                        module = "Deployment | Execution",
+                                                                        date = None ,
+                                                                        fromuser = self.data['login'],
+                                                                        touser = "")
+            
 
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(self.workingstep['command'],
                                                                                 self.datasend,
@@ -1053,7 +1095,8 @@ class grafcet:
                 "timeout": 900,
                 "error": 5,
                 "success": 3,
-                "@resultcommand": ""
+                "@resultcommand": "",
+                "packageuuid" : ""
         }
         bang et suffix sont prioritaire sur ceux trouver depuis le typescript
         title action is Execute script
@@ -1144,6 +1187,46 @@ class grafcet:
             if not "timeout" in self.workingstep:
                 self.workingstep['timeout'] = 900
                 logging.getLogger().warn("timeout missing : default value 900s")
+
+            self.workingstep['pwd'] = ""
+            if 'packageuuid' in self.workingstep:
+                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
+                    self.workingstep['packageuuid'])
+                if os.path.isdir(self.workingstep['packageuuid']):
+                    os.chdir(self.workingstep['packageuuid'])
+                    self.workingstep['pwd'] = os.getcwd()
+                else:
+                    self.workingstep['pwd'] = os.getcwd()
+                    self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
+                                            'directory missing!!!:  %s' % (  self.data['name'], 
+                                                                             self.workingstep['step']),
+                                                                            type = 'deploy',
+                                                                            sessionname = self.sessionid,
+                                                                            priority = self.workingstep['step'],
+                                                                            action = "",
+                                                                            who = self.objectxmpp.boundjid.bare,
+                                                                            how = "",
+                                                                            why = self.data['name'],
+                                                                            module = "Deployment | Execution | Warning",
+                                                                            date = None ,
+                                                                            fromuser = self.data['login'],
+                                                                            touser = "")
+            self.workingstep['pwd'] = os.getcwd()
+
+            self.objectxmpp.xmpplog('[%s]-[%s]: current directory %s' % ( self.data['name'],
+                                                                         self.workingstep['step'], 
+                                                                         self.workingstep['pwd']),
+                                                                        type = 'deploy',
+                                                                        sessionname = self.sessionid,
+                                                                        priority = self.workingstep['step'],
+                                                                        action = "",
+                                                                        who = self.objectxmpp.boundjid.bare,
+                                                                        how = "",
+                                                                        why = self.data['name'],
+                                                                        module = "Deployment | Execution",
+                                                                        date = None ,
+                                                                        fromuser = self.data['login'],
+                                                                        touser = "")
 
             # recupere suffix et shebang.
             if self.workingstep['typescript'] in extensionscriptfile:
