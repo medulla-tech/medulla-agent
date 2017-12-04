@@ -86,6 +86,19 @@ def networkinfoexist():
         return True
     return False
 
+def save_count_start():
+    filecount = os.path.join(Setdirectorytempinfo(), 'countstart')
+    if not os.path.exists(filecount):
+        file_put_contents(filecount, "1")
+        return  1
+    countstart = file_get_contents(filecount)
+    if countstart != "":
+        countstart = int(countstart.strip(countstart))
+        countstart +=1
+    else:
+        countstart = 1
+    file_put_contents(filecount, str(countstart))
+    return countstart
 
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')

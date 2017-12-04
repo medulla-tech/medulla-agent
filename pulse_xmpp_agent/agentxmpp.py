@@ -38,7 +38,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         call_plugin, searchippublic, subnetnetwork,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
-                        shutdown_command, reboot_command, vnc_set_permission
+                        shutdown_command, reboot_command, vnc_set_permission,\
+                        save_count_start
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
@@ -794,7 +795,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'remoteservice' : protoandport(),
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : organizationbymachine(),
-            'adorgbyuser' : ''
+            'adorgbyuser' : '',
+            'countstart' : save_count_start()
         }
 
         lastusersession = powershellgetlastuser()
