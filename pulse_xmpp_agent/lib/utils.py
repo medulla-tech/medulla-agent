@@ -93,7 +93,7 @@ def save_count_start():
         return  1
     countstart = file_get_contents(filecount)
     if countstart != "":
-        countstart = int(countstart.strip(countstart))
+        countstart = int(countstart.strip())
         countstart +=1
     else:
         countstart = 1
