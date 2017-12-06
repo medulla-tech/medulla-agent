@@ -140,7 +140,14 @@ class grafcet:
         # print "__________________________________"
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
-
+        if 'oldresult' in self.datasend['data']:
+            cmd = cmd.replace(
+                '@@@PREC_RESULT@@@',
+                self.datasend['data']['oldresult'])
+        if 'oldreturncode' in self.datasend['data']:
+            cmd = cmd.replace(
+                '@@@PREC_RETURNCODE@@@',
+                self.datasend['data']['oldreturncode'])
         cmd = cmd.replace(
             '@@@JID_MASTER@@@',
             self.datasend['data']['jidmaster'])
@@ -932,6 +939,10 @@ class grafcet:
             # working Step recup from process et session
 
             self.workingstep['pwd'] = ""
+            if os.path.isdir(self.datasend['data']['path']):
+                os.chdir(self.datasend['data']['path'])
+                self.workingstep['pwd'] = os.getcwd()
+
             if 'packageuuid' in self.workingstep:
                 self.workingstep['packageuuid'] = self.replaceTEMPLATE(
                     self.workingstep['packageuuid'])
@@ -939,7 +950,6 @@ class grafcet:
                     os.chdir(self.workingstep['packageuuid'])
                     self.workingstep['pwd'] = os.getcwd()
                 else:
-                    self.workingstep['pwd'] = os.getcwd()
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
                                             'directory missing!!!:  %s' % (  self.data['name'], 
                                                                              self.workingstep['step']),
@@ -970,7 +980,6 @@ class grafcet:
                                                                         date = None ,
                                                                         fromuser = self.data['login'],
                                                                         touser = "")
-            
 
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(self.workingstep['command'],
                                                                                 self.datasend,
@@ -1189,6 +1198,10 @@ class grafcet:
                 logging.getLogger().warn("timeout missing : default value 900s")
 
             self.workingstep['pwd'] = ""
+            if os.path.isdir(self.datasend['data']['path']):
+                os.chdir(self.datasend['data']['path'])
+                self.workingstep['pwd'] = os.getcwd()
+
             if 'packageuuid' in self.workingstep:
                 self.workingstep['packageuuid'] = self.replaceTEMPLATE(
                     self.workingstep['packageuuid'])
@@ -1196,7 +1209,6 @@ class grafcet:
                     os.chdir(self.workingstep['packageuuid'])
                     self.workingstep['pwd'] = os.getcwd()
                 else:
-                    self.workingstep['pwd'] = os.getcwd()
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
                                             'directory missing!!!:  %s' % (  self.data['name'], 
                                                                              self.workingstep['step']),
@@ -1227,7 +1239,6 @@ class grafcet:
                                                                         date = None ,
                                                                         fromuser = self.data['login'],
                                                                         touser = "")
-
             # recupere suffix et shebang.
             if self.workingstep['typescript'] in extensionscriptfile:
                 suffix = extensionscriptfile[self.workingstep['typescript']]['suffix']

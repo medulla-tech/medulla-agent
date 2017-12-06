@@ -97,9 +97,14 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
             logging.getLogger().debug("================================================")
             cmd = cmdx(command, timeout)
             workingstep['codereturn'] = cmd.code_error
+            message['data']['oldreturncode'] = str(cmd.code_error)
             workingstep['completed'] = 1
             result = cmd.stdout.split('\n')
             result  = [x.strip() for x in result if x !='']
+            try:
+                message['data']['oldresult'] = str(result[-1])
+            except :
+                message['data']['oldresult'] = ""
             for t in workingstep:
                 if t == "@resultcommand":
                     workingstep[t] = unicode( os.linesep.join(result), errors='ignore')
