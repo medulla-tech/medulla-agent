@@ -133,13 +133,15 @@ class grafcet:
             else:
                 datajson['completed'] = 1
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
 
     def replaceTEMPLATE(self, cmd):
         # print "__________________________________"
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
+        
+            
         if 'oldresult' in self.datasend['data']:
             cmd = cmd.replace(
                 '@@@PREC_RESULT@@@',
@@ -459,7 +461,7 @@ class grafcet:
                 reboot_command()
 
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.datasend['ret'] = 255
             self.datas['ret'] = 255
@@ -773,7 +775,7 @@ class grafcet:
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in action_set_environ step %s" %
                            self.workingstep['step'])
@@ -805,7 +807,7 @@ class grafcet:
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in action_no_operation step %s" %
                            self.workingstep['step'])
@@ -889,7 +891,7 @@ class grafcet:
                 self.steplog()
         except Exception as e:
             self.workingstep['@resultcommand'] = traceback.format_exc()
-            print str(e)
+            logging.getLogger().error(str(e))
             # traceback.print_exc(file=sys.stdout)
             self.objectxmpp.xmpplog('[%s]-[%s]: error unzip %s to directory %s : %s' % ( self.data['name'],
                                                                                         self.workingstep['step'],
@@ -939,8 +941,8 @@ class grafcet:
             # working Step recup from process et session
 
             self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['path']):
-                os.chdir(self.datasend['data']['path'])
+            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
+                os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
 
             if 'packageuuid' in self.workingstep:
@@ -996,7 +998,7 @@ class grafcet:
             # who=self.objectxmpp.boundjid.bare)
         except Exception as e:
             self.steplog()
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionprocessscript step %s" %
                            self.workingstep['step'])
@@ -1069,7 +1071,7 @@ class grafcet:
             self.__Etape_Next_in__()
             return
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             if re['codereturn'] != 0 and 'error' in self.workingstep:
                 self.__search_Next_step_int__(self.workingstep['succes'])
@@ -1198,8 +1200,8 @@ class grafcet:
                 logging.getLogger().warn("timeout missing : default value 900s")
 
             self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['path']):
-                os.chdir(self.datasend['data']['path'])
+            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
+                os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
 
             if 'packageuuid' in self.workingstep:
@@ -1289,7 +1291,7 @@ class grafcet:
                                                                                     self.workingstep['step'])
         except Exception as e:
             self.steplog()
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionprocessscriptfile step %s" %
                            self.workingstep['step'])
@@ -1305,43 +1307,6 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
 
     def actionsuccescompletedend(self):
         """
@@ -1651,7 +1616,7 @@ class grafcet:
                     os.system("shutdown -r now")
                 #os.system("pkill -f agentxmpp")
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actionrestart %s step %s" %(self.workingstep['targetrestart'], self.workingstep['step']))
             self.objectxmpp.xmpplog('[%s]-[%s]: error actionrestart : %s' % (self.data['name'], self.workingstep['step']),
@@ -1713,7 +1678,7 @@ class grafcet:
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
-            print str(e)
+            logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.terminate(-1, False, "end error in actioncleaning step %s" %
                            self.workingstep['step'])
