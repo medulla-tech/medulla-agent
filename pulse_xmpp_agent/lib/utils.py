@@ -230,6 +230,13 @@ def file_put_contents(filename, data):
     f.close()
 
 
+def file_put_contents_w_a(filename, data, option = "w"):
+    if option == "a" or  option == "w":
+        f = open( filename, option )
+        f.write(data)
+        f.close()
+
+
 def save_obj(obj, name):
     """
     funct save serialised object
