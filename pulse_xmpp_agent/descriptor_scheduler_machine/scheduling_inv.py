@@ -25,8 +25,8 @@ import logging
 import json
 from  lib.utils import getRandomName, call_plugin
 
-plugin = { "VERSION" : "1.0", "NAME" : "pluging scheduled inventory", "TYPE" : "scheduled" }
-SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1} # nb  -1 infinie
+plugin = { "VERSION" : "1.1", "NAME" : "pluging scheduled inventory", "TYPE" : "scheduled" }
+SCHEDULE = { "schedule" : "$[0,59] $[8,17] * * *", "nb" : -1 } # nb  -1 infinie
 def schedule_main(objectxmpp):
     if objectxmpp.config.inventory_interval != 0:
         return
