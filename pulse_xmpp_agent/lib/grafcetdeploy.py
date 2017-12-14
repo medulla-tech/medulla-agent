@@ -833,7 +833,9 @@ class grafcet:
             "action" : "action_unzip_file",
             "filename" : "namefile",
             "pathdirectorytounzip" : "pathdirextract",
-            "@resultcommand" : ""
+            "@resultcommand": "",
+            "packageuuid" : ""
+
         }
         filename if current directory or pathfilename
         optionnel
@@ -850,9 +852,53 @@ class grafcet:
             self.__action_completed__(self.workingstep)
             self.workingstep['filename'] = self.replaceTEMPLATE(
                 self.workingstep['filename'])
+            self.workingstep['pwd'] = ""
+            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
+                os.chdir(self.datasend['data']['pathpackageonmachine'])
+                self.workingstep['pwd'] = os.getcwd()
+
+            if 'packageuuid' in self.workingstep:
+                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
+                    self.workingstep['packageuuid'])
+                if os.path.isdir(self.workingstep['packageuuid']):
+                    os.chdir(self.workingstep['packageuuid'])
+                    self.workingstep['pwd'] = os.getcwd()
+                else:
+                    self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
+                                            'directory missing!!!:  %s' % (  self.data['name'],
+                                                                             self.workingstep['step']),
+                                                                            type = 'deploy',
+                                                                            sessionname = self.sessionid,
+                                                                            priority = self.workingstep['step'],
+                                                                            action = "",
+                                                                            who = self.objectxmpp.boundjid.bare,
+                                                                            how = "",
+                                                                            why = self.data['name'],
+                                                                            module = "Deployment | Execution | Warning",
+                                                                            date = None ,
+                                                                            fromuser = self.data['login'],
+                                                                            touser = "")
+            self.workingstep['pwd'] = os.getcwd()
+
+            self.objectxmpp.xmpplog('[%s]-[%s]: current directory %s' % ( self.data['name'],
+                                                                         self.workingstep['step'],
+                                                                         self.workingstep['pwd']),
+                                                                        type = 'deploy',
+                                                                        sessionname = self.sessionid,
+                                                                        priority = self.workingstep['step'],
+                                                                        action = "",
+                                                                        who = self.objectxmpp.boundjid.bare,
+                                                                        how = "",
+                                                                        why = self.data['name'],
+                                                                        module = "Deployment | Execution",
+                                                                        date = None ,
+                                                                        fromuser = self.data['login'],
+                                                                        touser = "")
+
             zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
             if not 'pathdirectorytounzip' in self.workingstep:
                 #self.datasend['data']['pathpackageonmachine'] = self.replaceTEMPLATE(self.datasend['data']['pathpackageonmachine'])
+                self.workingstep['pathdirectorytounzip'] = self.replaceTEMPLATE('.')
                 zip_ref.extractall(
                     self.datasend['data']['pathpackageonmachine'])
             else:
