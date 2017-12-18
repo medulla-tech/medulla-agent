@@ -809,13 +809,54 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                 reload(mod)
                 module = __import__(element[:-3]).plugin
                 dataobj['plugin'][module['NAME']] = module['VERSION']
+        #add list scheduler plugins
+        dataobj['pluginscheduled'] = self.loadPluginschedulerList()
         return dataobj
+
+
+    def loadPluginschedulerList(self):
+        logger.debug("Verify base plugin scheduler")
+        plugindataseach = {}
+        for element in os.listdir(self.config.pathpluginsscheduled):
+            print element
+            if element.endswith('.py') and element.startswith('scheduling_'):
+                f = open(os.path.join(self.config.pathpluginsscheduled,element),'r')
+                lignes  = f.readlines()
+                f.close()
+                for ligne in lignes:
+                    if 'VERSION' in ligne and 'NAME' in ligne:
+                        l=ligne.split("=")
+                        plugin = eval(l[1])
+                        plugindataseach[plugin['NAME']] = plugin['VERSION']
+                        break;
+        return plugindataseach
+
 
     def muc_onlineMaster(self, presence):
         if presence['muc']['nick'] == self.config.NickName:
             return
         if presence['muc']['nick'] == "MASTER":
             self.update_plugin()
+
+
+
+    def loadPluginschedulerList(self):
+        logger.debug("Verify base plugin scheduler")
+        plugindataseach = {}
+        for element in os.listdir(self.config.pathpluginsscheduled):
+            if element.endswith('.py') and element.startswith('scheduling_'):
+                f = open(os.path.join(self.config.dirschedulerplugins,element),'r')
+                lignes  = f.readlines()
+                f.close()
+                for ligne in lignes:
+                    if 'VERSION' in ligne and 'NAME' in ligne:
+                        l=ligne.split("=")
+                        plugin = eval(l[1])
+                        plugindataseach[plugin['NAME']] = plugin['VERSION']
+                        break;
+        return plugindataseach
+
+
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
@@ -876,8 +917,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
     if optstypemachine.lower() in ["machine"]:
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
     else:
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
 
     while True:
         if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
