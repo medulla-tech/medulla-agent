@@ -775,6 +775,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'platform' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
+            'pluginscheduled' : {},
             'portxmpp' : self.config.Port,
             'serverxmpp' : self.config.Server,
             'agenttype' : self.config.agenttype,
@@ -818,8 +819,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         logger.debug("Verify base plugin scheduler")
         plugindataseach = {}
         for element in os.listdir(self.config.pathpluginsscheduled):
-            print element
             if element.endswith('.py') and element.startswith('scheduling_'):
+                print element
                 f = open(os.path.join(self.config.pathpluginsscheduled,element),'r')
                 lignes  = f.readlines()
                 f.close()
@@ -831,32 +832,11 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                         break;
         return plugindataseach
 
-
     def muc_onlineMaster(self, presence):
         if presence['muc']['nick'] == self.config.NickName:
             return
         if presence['muc']['nick'] == "MASTER":
             self.update_plugin()
-
-
-
-    def loadPluginschedulerList(self):
-        logger.debug("Verify base plugin scheduler")
-        plugindataseach = {}
-        for element in os.listdir(self.config.pathpluginsscheduled):
-            if element.endswith('.py') and element.startswith('scheduling_'):
-                f = open(os.path.join(self.config.dirschedulerplugins,element),'r')
-                lignes  = f.readlines()
-                f.close()
-                for ligne in lignes:
-                    if 'VERSION' in ligne and 'NAME' in ligne:
-                        l=ligne.split("=")
-                        plugin = eval(l[1])
-                        plugindataseach[plugin['NAME']] = plugin['VERSION']
-                        break;
-        return plugindataseach
-
-
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
