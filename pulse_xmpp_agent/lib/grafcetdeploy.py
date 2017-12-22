@@ -1369,6 +1369,10 @@ class grafcet:
         if 'clear' in self.workingstep:
             if isinstance(self.workingstep['clear'], bool):
                 clear = self.workingstep['clear']
+            else:
+                self.workingstep['clear'] = str(self.workingstep['clear'])
+                if self.workingstep['clear'] == "False":
+                    clear = False
         self.objectxmpp.xmpplog('[%s]-[%s] :<span style="color: green;"> Terminate deploy SUCCESS<span>' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
