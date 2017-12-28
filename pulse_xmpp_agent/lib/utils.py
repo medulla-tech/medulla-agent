@@ -912,17 +912,37 @@ def getIpXmppInterface(ipadress1, Port):
             if len(b) != 0:
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
         obj = simplecommand(
             "netstat -an | findstr %s | findstr ESTABLISHED" %
+            Port)
+        logging.log(
+            DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
             Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
             a = "\n".join(obj['result'])
             b = [x for x in a.split(' ') if x != ""]
-
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
+    elif sys.platform.startswith('darwin'):
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
+        obj = simplecommand(
+            "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
+            (Port, ipadress))
+        logging.log(
+            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
+            (Port, ipadress))
+        if len(obj['result']) != 0:
+            for i in range(len(obj['result'])):
+                obj['result'][i] = obj['result'][i].rstrip('\n')
+            a = "\n".join(obj['result'])
+            b = [x for x in a.split(' ') if x != ""]
+            if len(b) != 0:
+                resultip = b[3][:b[3].rfind(".")]
     else:
         obj = simplecommand("netstat -a | grep %s | grep ESTABLISHED" % Port)
         if len(obj['result']) != 0:
