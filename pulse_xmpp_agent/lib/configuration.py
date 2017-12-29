@@ -156,7 +156,7 @@ class confParameter:
                 if self.request_type.lower() == "public" and Config.has_option("type", "public_ip"):
                     self.public_ip_relayserver = ipfromdns(
                         Config.get('type', 'public_ip'))
-                    packageserver["public_ip"] = self.public_ip_relayserver
+                    self.packageserver["public_ip"] = self.public_ip_relayserver
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         # par convention :
         # la liste des plugins definie dans la section plugin avec la clef pluginlist
