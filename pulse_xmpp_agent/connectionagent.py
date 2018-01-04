@@ -30,7 +30,7 @@ import json
 import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
-from lib.configuration import  confParameter, changeconnection
+from lib.configuration import  confParameter, changeconnection, alternativeclusterconnection, nextalternativeclusterconnection
 from lib.agentconffile import conffilename
 from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin
 from optparse import OptionParser
@@ -47,7 +47,6 @@ sys.path.append(pathplugins)
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
 logger = logging.getLogger()
-global restart
 
 
 if sys.version_info < (3, 0):
@@ -161,7 +160,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
             logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'], indent=4, sort_keys=True))
             logging.log(DEBUGPULSE,"write new config")
-            changeconnection(conffilename(opts.typemachine), data['data'][1],data['data'][0],data['data'][2],data['data'][3])
+            try:
+                changeconnection(conffilename(opts.typemachine),
+                                 data['data'][0][1],
+                                 data['data'][0][0],
+                                 data['data'][0][2],
+                                 data['data'][0][3])
+                #write alternative configuration
+                alternativeclusterconnection(conffilename("cluster"),data['data'])
+                #go to next ARS 
+                nextalternativeclusterconnection(conffilename("cluster"))
+            except:
+                # conpatibility version old agent master
+                changeconnection(conffilename(opts.typemachine), data['data'][1], data['data'][0], data['data'][2], data['data'][3])
         elif data['ret'] != 0:
             logging.error("configuration dynamic error")
         else:
@@ -266,7 +277,6 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
-    global restart
     if platform.system()=='Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
@@ -313,6 +323,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         if ipfromdns(tg.confserver) == "" :
             logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.confserver)
         time.sleep(2)
+
+
     if tg.agenttype != "relayserver":
         xmpp = MUCBot(tg)
         xmpp.register_plugin('xep_0030') # Service Discovery
@@ -334,6 +346,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE,"Unable to connect.")
     else:
         logging.log(DEBUGPULSE,"Warning: A relay server holds a Static configuration. Do not run configurator agent on relay servers.")
+
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"

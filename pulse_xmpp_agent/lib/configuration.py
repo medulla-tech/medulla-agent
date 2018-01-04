@@ -57,6 +57,61 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
+def alternativeclusterconnection(conffile, data):
+    # todo del of list the ars without ip 
+    #for arsdataconection in data:
+        #if ipfromdns(str(arsdataconection[0])) != "" and check_exist_ip_port(ipfromdns(str(arsdataconection[0])), str(arsdataconection[1])):
+            #print ipfromdns(str(arsdataconection[0]))
+    with open(conffile, 'w') as configfile:
+        if len(data) != 0:
+            listalternative = [str(x[2]) for x in data]
+            nb_alternativeserver =  len(listalternative)
+            print ",".join(listalternative)
+            configfile.write("[alternativelist]" + os.linesep)
+            configfile.write("listars = %s%s"%(",".join(listalternative), os.linesep))
+            configfile.write("nbserver = %s%s"%(nb_alternativeserver, os.linesep))
+            configfile.write("nextserver = 1%s"%os.linesep)
+            for arsdataconection in data:
+                configfile.write("[%s]%s"%(str(arsdataconection[2]),os.linesep))
+                configfile.write("port = %s%s"%(str(arsdataconection[1]),os.linesep))
+                configfile.write("server = %s%s"%(ipfromdns(str(str(arsdataconection[0]))),os.linesep))
+                configfile.write("guacamole_baseurl = %s%s"%(str(arsdataconection[3]),os.linesep))
+        else:
+            if os.path.isfile(conffile):
+                os.unlink(conffile)
+
+def nextalternativeclusterconnection(conffile):
+    if not os.path.isfile(conffile):
+        return []
+
+    Config = ConfigParser.ConfigParser()
+    Config.read(conffile)
+
+    nextserver          = Config.getint('alternativelist', 'nextserver')
+    nbserver            = Config.getint('alternativelist', 'nbserver')
+    listalternative     = Config.get('alternativelist', 'listars').split(",")
+
+    serverjid = listalternative[nextserver-1]
+
+    port              = Config.get(serverjid, 'port')
+    server            = Config.get(serverjid, 'server')
+    guacamole_baseurl = Config.get(serverjid, 'guacamole_baseurl')
+    try:
+        domain = str(serverjid).split("@")[1].split("/")[0]
+    except:
+        domain = str(serverjid)
+    nextserver = nextserver + 1
+    if nextserver > nbserver:
+        nextserver = 1
+
+    Config.set('alternativelist', 'nextserver', nextserver)
+
+    # Writing our configuration file to 'example.cfg'
+    with open(conffile, 'wb') as configfile:
+        Config.write(configfile)
+
+    return [ serverjid, server, port, guacamole_baseurl, domain ]
+
 
 # Singleton/SingletonDecorator.py
 class SingletonDecorator:

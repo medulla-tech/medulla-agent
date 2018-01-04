@@ -27,10 +27,11 @@ import sleekxmpp
 import platform
 import base64
 import json
+from lib.agentconffile import conffilename
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
-from lib.configuration import confParameter
+from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
 from lib.managesession import session
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
@@ -54,13 +55,15 @@ from multiprocessing.managers import SyncManager
 if sys.platform.startswith('win'):
     import win32api
     import win32con
+else:
+    import signal
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
 
 logger = logging.getLogger()
 global restart
-
+signalint = False
 
 if sys.version_info < (3, 0):
     reload(sys)
@@ -166,6 +169,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 logging.log(DEBUGPULSE,'Set handler for console events.')
                 self.is_set = True
+        elif sys.platform.startswith('linux') :
+            signal.signal(signal.SIGINT, self.signal_handler)
+        elif sys.platform.startswith('darwin'):
+            signal.signal(signal.SIGINT, self.signal_handler)
+
+    def signal_handler(self, signal, frame):
+        logging.log(DEBUGPULSE, "CTRL-C EVENT")
+        global signalint
+        signalint = True
+        msgevt={
+                    "action": "evtfrommachine",
+                    "sessionid" : getRandomName(6, "eventwin"),
+                    "ret" : 0,
+                    "base64" : False,
+                    'data' : { 'machine' : self.boundjid.jid ,
+                               'event'   : "CTRL_C_EVENT" }
+                    }
+        self.send_message_to_master(msgevt)
+        sys.exit(0)
 
     def send_message_to_master(self , msg):
         self.send_message(  mbody = json.dumps(msg),
@@ -173,6 +195,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype ='chat')
 
     def _CtrlHandler(self, evt):
+        global signalint
         if sys.platform.startswith('win'):
             msgevt={
                     "action": "evtfrommachine",
@@ -185,6 +208,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 msgevt['data']['event'] = "SHUTDOWN_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL_SHUTDOWN EVENT")
+                signalint = True
                 return True
             elif evt == win32con.CTRL_LOGOFF_EVENT:
                 msgevt['data']['event'] = "LOGOFF_EVENT"
@@ -205,11 +229,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 msgevt['data']['event'] = "CTRL_C_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL-C EVENT")
+                signalint = True
+                sys.exit(0)
                 return True
             else:
                 return False
         else:
             pass
+
 
     def __sizeout(self, q):
         return q.qsize()
@@ -864,7 +891,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
-    global restart
+    global restart, signalint
     if platform.system()=='Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
@@ -942,7 +969,19 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         else:
             logging.log(DEBUGPULSE,"Unable to connect.")
             restart = False
-        if not restart: break
+        if not restart:
+            # verify if signal stop
+            if not signalint:
+                # verify if alternative connection
+                if os.path.isfile(conffilename("cluster")):
+                    # il y a une configuration alternative
+                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+                    changeconnection( conffilename(xmpp.config.agenttype),
+                                    newparametersconnect[2],
+                                    newparametersconnect[1],
+                                    newparametersconnect[0],
+                                    newparametersconnect[3])
+            break
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
