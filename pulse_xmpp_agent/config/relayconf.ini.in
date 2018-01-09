@@ -16,6 +16,8 @@ guacamole_baseurl = @@GUACAMOLE_BASEURL@@
 # Serve public or private requests
 # request_type = private
 # public_ip = 123.123.123.123
+# use  parameter moderelayserver for VM ARS. "static or dynamic", if dynamic then "relay server reserved for deploie only"
+# moderelayserver = static
 
 [plugin]
 # Plugins configs to be loaded

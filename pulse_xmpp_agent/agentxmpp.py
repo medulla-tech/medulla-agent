@@ -826,6 +826,11 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'adorgbyuser' : '',
             'countstart' : save_count_start()
         }
+        try:
+            if  self.config.agenttype in ['relayserver']:
+                dataobj["moderelayserver"] = self.config.moderelayserver
+        except Exception:
+            dataobj["moderelayserver"] = "static"
 
         lastusersession = powershellgetlastuser()
         if lastusersession != "":

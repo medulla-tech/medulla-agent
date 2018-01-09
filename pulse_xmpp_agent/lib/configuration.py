@@ -180,6 +180,10 @@ class confParameter:
         except BaseException:
             self.agenttype = "machine"
 
+        self.moderelayserver = "static"
+        if Config.has_option("type", "moderelayserver"):
+            self.moderelayserver = Config.get('type', 'moderelayserver')
+
         self.parametersscriptconnection = {}
 
         if self.agenttype == "relayserver":
