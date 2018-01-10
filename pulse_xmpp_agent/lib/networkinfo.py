@@ -234,6 +234,7 @@ class networkagentinfo:
                     partinfo = {}
                     partinfo["dhcpserver"] = ''
                     partinfo["dhcp"] = 'False'
+                    partinfo["macaddress"] = netifaces.ifaddresses(i)[netifaces.AF_LINK][0]['addr']
                     for i in result:
                         i = i.rstrip('\n')
                         colonne = i.split("=")
@@ -241,8 +242,6 @@ class networkagentinfo:
                             colonne = i.split(":")
                         if colonne[0].strip().startswith('yiaddr'):
                             partinfo["ipaddress"] = colonne[1].strip()
-                        elif colonne[0].strip().startswith('chaddr'):
-                            partinfo["macaddress"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('subnet_mask'):
                             partinfo["mask"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('router'):
