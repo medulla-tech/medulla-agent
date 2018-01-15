@@ -1094,13 +1094,18 @@ def protoandport():
             column2 = line[26:][:8].strip()
             if column2 != '':
                 pidrdptmp = column2
-            if line.startswith(" "):
-                if "TermService" in line:
-                    pidrdp = pidrdptmp
+          if line.startswith(" "):
+              if "TermService" in line:
+                  pidrdp = pidrdptmp
+            if line.startswith("svchost"):
+                column = [x for x in line.split(' ') if x != ""]
+                if column[2] == 'TermService':
+                    pidrdp = column[1]
             else:
                 if line.startswith("sshd"):
                     column = [x for x in line.split(' ') if x != ""]
-                    pidssh = None #We do not want to show ssh for Windows machines
+                    if column[2] == 'sshd':
+                        pidssh = column[1]
                 elif line.startswith("tvnserver"):
                     column = [x for x in line.split(' ') if x != ""]
                     if column[2] == 'tvnserver':
