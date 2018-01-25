@@ -28,6 +28,12 @@ import platform
 import base64
 import json
 from lib.agentconffile import conffilename
+
+
+from sleekxmpp import stanza, xmlstream, exceptions
+from sleekxmpp.xmlstream import ET, handler, matcher
+
+
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
@@ -84,6 +90,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 15
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
+
+        self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
@@ -173,6 +181,50 @@ class MUCBot(sleekxmpp.ClientXMPP):
             signal.signal(signal.SIGINT, self.signal_handler)
         elif sys.platform.startswith('darwin'):
             signal.signal(signal.SIGINT, self.signal_handler)
+
+        self.register_handler(handler.Callback(
+                                    'CustomXEP Handler',
+                                    matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
+                                    self._handle_custom_iq))
+
+    def _handle_custom_iq(self, iq):
+        if iq['type'] == 'get':
+            for child in iq.xml:
+                if child.tag.endswith('query'):
+                    for z in child:
+                        data = z.tag[1:-5]
+                        try:
+                            data = base64.b64decode(data)
+                        except Exception as e:
+                            logging.error("_handle_custom_iq : decode base64 : %s"%str(e))
+                            traceback.print_exc(file=sys.stdout)
+                            return
+                        try:
+                            # traitement de la function
+                            # result json str
+                            result = dispach_iq_command(self, data)
+                            try:
+                                result = result.encode("base64")
+                            except Exception as e:
+                                logging.error("_handle_custom_iq : encode base64 : %s"%str(e))
+                                traceback.print_exc(file=sys.stdout)
+                                return ""
+                        except Exception as e:
+                            logging.error("_handle_custom_iq : error function : %s"%str(e))
+                            traceback.print_exc(file=sys.stdout)
+                            return
+            #retourn result iq get
+            for child in iq.xml:
+                if child.tag.endswith('query'):
+                    for z in child:
+                        z.tag = '{%s}data' % result
+            iq['to'] = iq['from']
+            iq.reply(clear=False)
+            iq.send()
+        elif iq['type'] == 'set':
+            pass
+        else:
+            pass
 
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
