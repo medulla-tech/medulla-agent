@@ -43,7 +43,7 @@ class xmppbrowsing:
         self.listfileindir()
 
     def listfileindir(self, path_abs_current = None):
-        if path_abs_current is not None:
+        if path_abs_current is  None:
             pathabs = os.getcwd()
         else:
             pathabs = os.path.abspath(path_abs_current)
@@ -51,9 +51,8 @@ class xmppbrowsing:
             "path_abs_current" : pathabs,
             "list_dirs_current" : os.walk(pathabs).next()[1],
             "list_files_current" : os.walk(pathabs).next()[2],
-            "parentdir" = os.path.abspath(os.path.join(pathabs, os.pardir)),
+            "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
         }
-
 
 
 #dirname(path): retourne le répertoire associé au path ;
