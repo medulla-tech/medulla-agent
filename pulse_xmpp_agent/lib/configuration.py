@@ -198,7 +198,21 @@ class confParameter:
                     'connection', 'portAMscript')
             else:
                 self.parametersscriptconnection['port'] = 5000
-
+        #######configuration bowserfile#######
+        if sys.platform.startswith('win'):
+            self.defaultdir     = os.path.join(os.environ["TEMP"])
+            self.rootfilesystem = os.path.join(os.environ["HOMEPATH"])
+        elif sys.platform.startswith('darwin'):
+            self.defaultdir     = os.path.join("/", "Library", "Application Support")
+            self.rootfilesystem = os.path.join("/", "Library", "Application Support")
+        else:
+            self.defaultdir     = os.path.join(os.environ["HOME"])
+            self.rootfilesystem = os.path.join(os.environ["HOME"])
+        if Config.has_option("bowserfile", "defaultdir"):
+            self.defaultdir = Config.get('Bowserfile', 'defaultdir')
+        if Config.has_option("bowserfile", "rootfilesystem"):
+            self.rootfilesystem = Config.get('Bowserfile', 'defaultdir')
+        #######end configuration bowserfile#######
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
             if packageserver["public_ip"] == '':

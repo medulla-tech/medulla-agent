@@ -53,7 +53,7 @@ class manageschedulerdeploy:
         if sys.platform.startswith('darwin'):
             self.dbcmdscheduler     = plyvel.DB(self.name_basesession, create_if_missing=True)
             self.dbsessionscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
-        else
+        else:
             self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
             self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
 

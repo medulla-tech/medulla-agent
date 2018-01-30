@@ -61,7 +61,7 @@ def dispach_iq_command(xmppobject, jsonin):
     """
     data = json.loads(jsonin)
 
-    listactioncommand = ["xmppbrowsing", "test"]
+    listactioncommand = ["xmppbrowsing", "test", "remotefile"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
         result = callXmppFunctionIq(data['action'],  xmppobject = xmppobject, data = data )
@@ -79,9 +79,19 @@ class functionsynchroxmpp:
     """
     @staticmethod
     def xmppbrowsing(xmppobject , data  ):
-        return data
+        return json.dumps(data)
 
     @staticmethod
     def test( xmppobject, data):
         return json.dumps(data)
 
+    @staticmethod
+    def remotefile( xmppobject, data ):
+        datapath = data['data']
+        print type(datapath)
+        if type(datapath) == unicode or type(datapath) == str:
+            datapath = str(data['data'])
+            filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
+            print filesystem
+            data['data']=filesystem
+        return json.dumps(data)

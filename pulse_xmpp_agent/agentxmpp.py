@@ -27,6 +27,7 @@ import sleekxmpp
 import platform
 import base64
 import json
+import time
 from lib.agentconffile import conffilename
 
 
@@ -47,11 +48,12 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start
+from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
 from optparse import OptionParser
-import time
+
 from multiprocessing import Queue
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
@@ -102,6 +104,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.reversessh = None
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
+        self.xmppbrowsingpath = xmppbrowsing(defaultdir =  self.config.defaultdir, rootfilesystem = self.config.rootfilesystem)
 
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
