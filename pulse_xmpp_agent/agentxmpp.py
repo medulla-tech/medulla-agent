@@ -30,9 +30,9 @@ import json
 import time
 from lib.agentconffile import conffilename
 
-
-from sleekxmpp import stanza, xmlstream, exceptions
-from sleekxmpp.xmlstream import ET, handler, matcher
+from lib.xmppiq import dispach_iq_command
+#from sleekxmpp import stanza, xmlstream, exceptions
+from sleekxmpp.xmlstream import handler, matcher,# ET 
 
 
 from sleekxmpp.exceptions import IqError, IqTimeout

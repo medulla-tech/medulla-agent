@@ -20,36 +20,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import netifaces
 import json
-import subprocess
-import threading
 import sys
-import os
 import logging
-import random
-import re
-import traceback
-from pprint import pprint
-import hashlib
-import base64
-import urllib
-import urllib2
-import pickle
-from agentconffile import conffilename
-import ConfigParser
+#import traceback
 import socket
 
 DEBUGPULSE = 25
-
-
-if sys.platform.startswith('win'):
-    import wmi
-    import pythoncom
-    import _winreg as wr
-    import win32net
-    import win32netcon
-    import win32api
 
 def callXmppFunctionIq(functionname,  *args, **kwargs):
     logging.getLogger().debug("**call function %s %s %s"%(functionname, args, kwargs))

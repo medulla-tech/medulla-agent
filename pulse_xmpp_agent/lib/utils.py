@@ -47,9 +47,9 @@ if sys.platform.startswith('win'):
     import wmi
     import pythoncom
     import _winreg as wr
-    import win32net
-    import win32netcon
-    import win32api
+    #import win32net
+    #import win32netcon
+    #import win32api
 
 
 def Setdirectorytempinfo():

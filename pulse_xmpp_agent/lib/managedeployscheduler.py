@@ -105,5 +105,6 @@ class manageschedulerdeploy:
                 del self.dbsessionscheduler[sessionid]
                 self.dbsessionscheduler.sync()
         self.closebase()
+        return data
 
 
