@@ -21,10 +21,7 @@
 # MA 02110-1301, USA.
 
 import json
-#import sys
 import logging
-#import traceback
-#import socket
 
 DEBUGPULSE = 25
 
