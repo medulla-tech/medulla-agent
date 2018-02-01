@@ -978,21 +978,26 @@ def subnetnetwork(adressmachine, mask):
 
 
 def searchippublic(site=1):
-    return None
-    try:
-        if site == 1:
-            try:
-                page = urllib.urlopen("http://ifconfig.co/json").read()
-                objip = json.loads(page)
-                return objip['ip']
-            except BaseException:
-                return searchippublic(2)
-        else:
+    if site == 1:
+        try:
+            page = urllib.urlopen("http://ifconfig.co/json").read()
+            objip = json.loads(page)
+            return objip['ip']
+        except BaseException:
+            return searchippublic(2)
+    elif site == 2:
+        try:
             page = urllib.urlopen("http://www.monip.org/").read()
             ip = page.split("IP : ")[1].split("<br>")[0]
             return ip
-    except BaseException:
-        return None
+        except Exception:
+            return searchippublic(3)
+    elif site == 3:
+        try:
+            return  urllib.urlopen("http://ip.42.pl/raw").read()
+        except Exception:
+            pass
+    return None
 
 
 # decorateur pour simplifier les plugins

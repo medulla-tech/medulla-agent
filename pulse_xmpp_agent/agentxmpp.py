@@ -121,7 +121,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.config.public_ip = searchippublic()
             except Exception:
                 pass
-        if self.config.public_ip == "":
+        if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
 
         self.md5reseau = refreshfingerprint()
