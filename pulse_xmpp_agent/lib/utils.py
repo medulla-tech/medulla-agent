@@ -982,21 +982,47 @@ def searchippublic(site=1):
         try:
             page = urllib.urlopen("http://ifconfig.co/json").read()
             objip = json.loads(page)
-            return objip['ip']
+            if is_valid_ipv4(objip['ip']):
+                return objip['ip']
+            else:
+                return searchippublic(2)
         except BaseException:
             return searchippublic(2)
     elif site == 2:
         try:
             page = urllib.urlopen("http://www.monip.org/").read()
             ip = page.split("IP : ")[1].split("<br>")[0]
-            return ip
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(3)
         except Exception:
             return searchippublic(3)
     elif site == 3:
         try:
-            return  urllib.urlopen("http://ip.42.pl/raw").read()
+            ip =   urllib.urlopen("http://ip.42.pl/raw").read()
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(4)
         except Exception:
             pass
+    elif site == 4:
+        return find_ip()
+    return find_ip()
+
+def find_ip():
+    candidates =[]
+    for test_ip in ['192.0.2.0',"192.51.100.0","203.0.113.0"]:
+        s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((test_ip,80))
+        ip_adrss = s.getsockname()[0]
+        s.close()
+        if ip_adrss in candidates:
+            return ip_adrss
+        candidates.append(ip_adrss)
+    if len(candidates) >=1:
+        return candidates[0]
     return None
 
 
