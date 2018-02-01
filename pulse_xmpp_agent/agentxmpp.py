@@ -847,7 +847,10 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                              er.messagejson['info']['hostname'],
                              self.boundjid.bare)
             self.loginfotomaster(logreception)
-            sys.exit(0) 
+            sys.exit(0)
+
+        if self.config.public_ip == None:
+            self.config.public_ip = self.config.ipxmpp
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
