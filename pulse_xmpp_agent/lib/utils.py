@@ -92,10 +92,13 @@ def save_count_start():
         file_put_contents(filecount, "1")
         return  1
     countstart = file_get_contents(filecount)
-    if countstart != "":
-        countstart = int(countstart.strip())
-        countstart +=1
-    else:
+    try:
+        if countstart != "":
+            countstart = int(countstart.strip())
+            countstart +=1
+        else:
+            countstart = 1
+    except ValueError:
         countstart = 1
     file_put_contents(filecount, str(countstart))
     return countstart
