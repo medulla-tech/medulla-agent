@@ -60,6 +60,17 @@ class functionsynchroxmpp:
         return json.dumps(data)
 
     @staticmethod
+    def remotefilesimple( xmppobject, data ):
+        datapath = data['data']
+        print type(datapath)
+        if type(datapath) == unicode or type(datapath) == str:
+            datapath = str(data['data'])
+            filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
+            print filesystem
+            data['data']=filesystem
+        return json.dumps(data)
+    
+    @staticmethod
     def remotefile( xmppobject, data ):
         datapath = data['data']
         print type(datapath)
