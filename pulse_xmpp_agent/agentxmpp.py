@@ -103,6 +103,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentmaster = jid.JID("master@pulse")
         self.session = session(self.config.agenttype)
         self.reversessh = None
+        self.reversesshmanage = {}
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
         self.xmppbrowsingpath = xmppbrowsing(defaultdir =  self.config.defaultdir, rootfilesystem = self.config.rootfilesystem)
