@@ -25,11 +25,12 @@ import subprocess
 import sys
 import platform
 import utils
-from lib.utils import simplecommand, windowsservice, powerschellscriptps1
+from lib.utils import simplecommand,  powerschellscriptps1 #,windowsservice,
 import logging
 import os
 from distutils.util import strtobool
 import socket
+import psutil
 
 if sys.platform.startswith('win'):
     import wmi
@@ -63,21 +64,8 @@ class networkagentinfo:
         return mac
 
     def getuser(self):
-        if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-            obj = utils.simplecommandstr("users")
-        else:
-            # todo
-            # Return windows user
-            obj = {}
-            obj['result'] = "inconue"
-            pythoncom.CoInitialize()
-            c = wmi.WMI().Win32_ComputerSystem
-            computer = c()[0]
-            for propertyName in sorted(list(c.properties)):
-                if propertyName == "UserName":
-                    obj['result'] = getattr(computer, propertyName, '').split("\\")[1]
-        dd = [i.strip("\n") for i in obj['result'].split(" ") if i != ""]
-        return list(set(dd))
+        userlist = list(set([users[0]  for users in psutil.users()]))
+        return userlist
 
     def networkobjet(self, sessionid, action):
         self.messagejson = {}
@@ -228,7 +216,6 @@ class networkagentinfo:
         return None
 
     def MacOsNetworkInfo(self):
-        self.messagejson = {}
         self.messagejson["dnshostname"] = platform.node()
         self.messagejson["listipinfo"] = []
         self.messagejson["dhcp"] = 'False'
@@ -247,6 +234,7 @@ class networkagentinfo:
                     partinfo = {}
                     partinfo["dhcpserver"] = ''
                     partinfo["dhcp"] = 'False'
+                    partinfo["macaddress"] = netifaces.ifaddresses(i)[netifaces.AF_LINK][0]['addr']
                     for i in result:
                         i = i.rstrip('\n')
                         colonne = i.split("=")
@@ -254,8 +242,6 @@ class networkagentinfo:
                             colonne = i.split(":")
                         if colonne[0].strip().startswith('yiaddr'):
                             partinfo["ipaddress"] = colonne[1].strip()
-                        elif colonne[0].strip().startswith('chaddr'):
-                            partinfo["macaddress"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('subnet_mask'):
                             partinfo["mask"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('router'):

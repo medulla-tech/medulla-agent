@@ -27,10 +27,19 @@ import sleekxmpp
 import platform
 import base64
 import json
+import time
+from lib.agentconffile import conffilename
+
+from lib.xmppiq import dispach_iq_command
+#from sleekxmpp import stanza, xmlstream, exceptions
+from sleekxmpp.xmlstream import handler, matcher
+# ET 
+
+
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
-from lib.configuration import confParameter
+from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
 from lib.managesession import session
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
@@ -40,11 +49,12 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start
+from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 import traceback
 from optparse import OptionParser
-import time
+
 from multiprocessing import Queue
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
@@ -54,13 +64,15 @@ from multiprocessing.managers import SyncManager
 if sys.platform.startswith('win'):
     import win32api
     import win32con
+else:
+    import signal
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
 
 logger = logging.getLogger()
 global restart
-
+signalint = False
 
 if sys.version_info < (3, 0):
     reload(sys)
@@ -81,6 +93,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 15
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
+
+        self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
@@ -89,8 +103,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentmaster = jid.JID("master@pulse")
         self.session = session(self.config.agenttype)
         self.reversessh = None
+        self.reversesshmanage = {}
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
+        self.xmppbrowsingpath = xmppbrowsing(defaultdir =  self.config.defaultdir, rootfilesystem = self.config.rootfilesystem)
 
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
@@ -106,7 +122,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.config.public_ip = searchippublic()
             except Exception:
                 pass
-        if self.config.public_ip == "":
+        if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
 
         self.md5reseau = refreshfingerprint()
@@ -166,6 +182,69 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 logging.log(DEBUGPULSE,'Set handler for console events.')
                 self.is_set = True
+        elif sys.platform.startswith('linux') :
+            signal.signal(signal.SIGINT, self.signal_handler)
+        elif sys.platform.startswith('darwin'):
+            signal.signal(signal.SIGINT, self.signal_handler)
+
+        self.register_handler(handler.Callback(
+                                    'CustomXEP Handler',
+                                    matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
+                                    self._handle_custom_iq))
+
+    def _handle_custom_iq(self, iq):
+        if iq['type'] == 'get':
+            for child in iq.xml:
+                if child.tag.endswith('query'):
+                    for z in child:
+                        data = z.tag[1:-5]
+                        try:
+                            data = base64.b64decode(data)
+                        except Exception as e:
+                            logging.error("_handle_custom_iq : decode base64 : %s"%str(e))
+                            traceback.print_exc(file=sys.stdout)
+                            return
+                        try:
+                            # traitement de la function
+                            # result json str
+                            result = dispach_iq_command(self, data)
+                            try:
+                                result = result.encode("base64")
+                            except Exception as e:
+                                logging.error("_handle_custom_iq : encode base64 : %s"%str(e))
+                                traceback.print_exc(file=sys.stdout)
+                                return ""
+                        except Exception as e:
+                            logging.error("_handle_custom_iq : error function : %s"%str(e))
+                            traceback.print_exc(file=sys.stdout)
+                            return
+            #retourn result iq get
+            for child in iq.xml:
+                if child.tag.endswith('query'):
+                    for z in child:
+                        z.tag = '{%s}data' % result
+            iq['to'] = iq['from']
+            iq.reply(clear=False)
+            iq.send()
+        elif iq['type'] == 'set':
+            pass
+        else:
+            pass
+
+    def signal_handler(self, signal, frame):
+        logging.log(DEBUGPULSE, "CTRL-C EVENT")
+        global signalint
+        signalint = True
+        msgevt={
+                    "action": "evtfrommachine",
+                    "sessionid" : getRandomName(6, "eventwin"),
+                    "ret" : 0,
+                    "base64" : False,
+                    'data' : { 'machine' : self.boundjid.jid ,
+                               'event'   : "CTRL_C_EVENT" }
+                    }
+        self.send_message_to_master(msgevt)
+        sys.exit(0)
 
     def send_message_to_master(self , msg):
         self.send_message(  mbody = json.dumps(msg),
@@ -173,6 +252,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype ='chat')
 
     def _CtrlHandler(self, evt):
+        global signalint
         if sys.platform.startswith('win'):
             msgevt={
                     "action": "evtfrommachine",
@@ -185,6 +265,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 msgevt['data']['event'] = "SHUTDOWN_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL_SHUTDOWN EVENT")
+                signalint = True
                 return True
             elif evt == win32con.CTRL_LOGOFF_EVENT:
                 msgevt['data']['event'] = "LOGOFF_EVENT"
@@ -205,11 +286,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 msgevt['data']['event'] = "CTRL_C_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL-C EVENT")
+                signalint = True
+                sys.exit(0)
                 return True
             else:
                 return False
         else:
             pass
+
 
     def __sizeout(self, q):
         return q.qsize()
@@ -764,7 +848,10 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                              er.messagejson['info']['hostname'],
                              self.boundjid.bare)
             self.loginfotomaster(logreception)
-            sys.exit(0) 
+            sys.exit(0)
+
+        if self.config.public_ip == None:
+            self.config.public_ip = self.config.ipxmpp
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
@@ -775,6 +862,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'platform' : platform.platform(),
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
+            'pluginscheduled' : {},
             'portxmpp' : self.config.Port,
             'serverxmpp' : self.config.Server,
             'agenttype' : self.config.agenttype,
@@ -798,6 +886,11 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'adorgbyuser' : '',
             'countstart' : save_count_start()
         }
+        try:
+            if  self.config.agenttype in ['relayserver']:
+                dataobj["moderelayserver"] = self.config.moderelayserver
+        except Exception:
+            dataobj["moderelayserver"] = "static"
 
         lastusersession = powershellgetlastuser()
         if lastusersession != "":
@@ -809,7 +902,27 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                 reload(mod)
                 module = __import__(element[:-3]).plugin
                 dataobj['plugin'][module['NAME']] = module['VERSION']
+        #add list scheduler plugins
+        dataobj['pluginscheduled'] = self.loadPluginschedulerList()
         return dataobj
+
+
+    def loadPluginschedulerList(self):
+        logger.debug("Verify base plugin scheduler")
+        plugindataseach = {}
+        for element in os.listdir(self.config.pathpluginsscheduled):
+            if element.endswith('.py') and element.startswith('scheduling_'):
+                print element
+                f = open(os.path.join(self.config.pathpluginsscheduled,element),'r')
+                lignes  = f.readlines()
+                f.close()
+                for ligne in lignes:
+                    if 'VERSION' in ligne and 'NAME' in ligne:
+                        l=ligne.split("=")
+                        plugin = eval(l[1])
+                        plugindataseach[plugin['NAME']] = plugin['VERSION']
+                        break;
+        return plugindataseach
 
     def muc_onlineMaster(self, presence):
         if presence['muc']['nick'] == self.config.NickName:
@@ -843,7 +956,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
-    global restart
+    global restart, signalint
     if platform.system()=='Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
@@ -876,8 +989,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
     if optstypemachine.lower() in ["machine"]:
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
     else:
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
 
     while True:
         if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
@@ -919,7 +1034,19 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         else:
             logging.log(DEBUGPULSE,"Unable to connect.")
             restart = False
-        if not restart: break
+        if not restart:
+            # verify if signal stop
+            if not signalint:
+                # verify if alternative connection
+                if os.path.isfile(conffilename("cluster")):
+                    # il y a une configuration alternative
+                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+                    changeconnection( conffilename(xmpp.config.agenttype),
+                                    newparametersconnect[2],
+                                    newparametersconnect[1],
+                                    newparametersconnect[0],
+                                    newparametersconnect[3])
+            break
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:

@@ -47,9 +47,9 @@ if sys.platform.startswith('win'):
     import wmi
     import pythoncom
     import _winreg as wr
-    import win32net
-    import win32netcon
-    import win32api
+    #import win32net
+    #import win32netcon
+    #import win32api
 
 
 def Setdirectorytempinfo():
@@ -92,10 +92,13 @@ def save_count_start():
         file_put_contents(filecount, "1")
         return  1
     countstart = file_get_contents(filecount)
-    if countstart != "":
-        countstart = int(countstart.strip())
-        countstart +=1
-    else:
+    try:
+        if countstart != "":
+            countstart = int(countstart.strip())
+            countstart +=1
+        else:
+            countstart = 1
+    except ValueError:
         countstart = 1
     file_put_contents(filecount, str(countstart))
     return countstart
@@ -912,17 +915,37 @@ def getIpXmppInterface(ipadress1, Port):
             if len(b) != 0:
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
         obj = simplecommand(
             "netstat -an | findstr %s | findstr ESTABLISHED" %
+            Port)
+        logging.log(
+            DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
             Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
             a = "\n".join(obj['result'])
             b = [x for x in a.split(' ') if x != ""]
-
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
+    elif sys.platform.startswith('darwin'):
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
+        obj = simplecommand(
+            "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
+            (Port, ipadress))
+        logging.log(
+            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
+            (Port, ipadress))
+        if len(obj['result']) != 0:
+            for i in range(len(obj['result'])):
+                obj['result'][i] = obj['result'][i].rstrip('\n')
+            a = "\n".join(obj['result'])
+            b = [x for x in a.split(' ') if x != ""]
+            if len(b) != 0:
+                resultip = b[3][:b[3].rfind(".")]
     else:
         obj = simplecommand("netstat -a | grep %s | grep ESTABLISHED" % Port)
         if len(obj['result']) != 0:
@@ -958,22 +981,56 @@ def subnetnetwork(adressmachine, mask):
 
 
 def searchippublic(site=1):
-    return None
-    try:
-        if site == 1:
-            try:
-                page = urllib.urlopen("http://ifconfig.co/json").read()
-                objip = json.loads(page)
+    if site == 1:
+        try:
+            page = urllib.urlopen("http://ifconfig.co/json").read()
+            objip = json.loads(page)
+            if is_valid_ipv4(objip['ip']):
                 return objip['ip']
-            except BaseException:
+            else:
                 return searchippublic(2)
-        else:
+        except BaseException:
+            return searchippublic(2)
+    elif site == 2:
+        try:
             page = urllib.urlopen("http://www.monip.org/").read()
             ip = page.split("IP : ")[1].split("<br>")[0]
-            return ip
-    except BaseException:
-        return None
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(3)
+        except Exception:
+            return searchippublic(3)
+    elif site == 3:
+        try:
+            ip =   urllib.urlopen("http://ip.42.pl/raw").read()
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(4)
+        except Exception:
+            searchippublic(4)
+    elif site == 4:
+        return find_ip()
+    return None
 
+def find_ip():
+    candidates =[]
+    for test_ip in ['192.0.2.0',"192.51.100.0","203.0.113.0"]:
+        try:
+            s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((test_ip,80))
+            ip_adrss = s.getsockname()[0]
+            if ip_adrss in candidates:
+                return ip_adrss
+            candidates.append(ip_adrss)
+        except Exception:
+            pass
+        finally:
+            s.close()
+    if len(candidates) >=1:
+        return candidates[0]
+    return None
 
 # decorateur pour simplifier les plugins
 # verify session exist.
@@ -1042,6 +1099,66 @@ def portline(result):
     return column[-2:-1][0].split(':')[1]
 
 
+
+
+
+
+
+
+#if sys.platform.startswith('win'):
+        #pidvnc = None
+        #pidssh = None
+        #pidrdp = None
+        #detectionvnc = ""
+        #processwin = simplecommand('tasklist /svc')
+        #for line in processwin['result']:
+            #column2 = line[26:][:8].strip()
+            #if column2 != '':
+                #pidrdptmp = column2
+                #print column2
+            #if line.startswith(" "):
+                #if "TermService" in line:
+                    #pidrdp = pidrdptmp
+            #if line.startswith("svchost"):
+                #column = [x for x in line.split(' ') if x != ""]
+                #if column[2] == 'TermService':
+                    #pidrdp = column[1]
+            #else:
+                #if line.startswith("sshd"):
+                    #column = [x for x in line.split(' ') if x != ""]
+                    #if column[2] == 'sshd':
+                        #pidssh = column[1]
+                #elif line.startswith("tvnserver") or line.startswith("winvnc"):
+                    #if detectionvnc == "" and line.startswith("tvnserver"):
+                        #detectionvnc = "tvnserver"
+                    #elif detectionvnc == "" and line.startswith("winvnc"):
+                        #detectionvnc = "winvnc"
+                    #column = [x for x in line.split(' ') if x != ""]
+                    #if column[2] == detectionvnc:
+                        #pidvnc = column[1]
+                #elif line.startswith("svchost"):
+                    #column = [x for x in line.split(' ') if x != ""]
+        #networkwin = simplecommand(
+            #'netstat -a -n -o | findstr TCP | findstr 0.0.0.0')
+        #for line in networkwin['result']:
+            #if pidvnc != None and pidvnc in line:
+                #column = [x.strip() for x in line.split(' ') if x != ""]
+                #vncporwin = column[1].split(':')[1]
+                #if not 'vnc' in protport:
+                    #protport['vnc'] = vncporwin
+                #else:
+                    #if vncporwin > protport['vnc']:
+                        #protport['vnc'] = vncporwin
+            #if not 'ssh' in protport and pidssh != None and pidssh in line:
+                #column = [x.strip() for x in line.split(' ') if x != ""]
+                #if column[-1] == pidssh:
+                    #protport['ssh'] = column[1].split(':')[1]
+            #if not 'rdp' in protport and pidrdp != None and pidrdp in line:
+                #column = [x.strip() for x in line.split(' ') if x != ""]
+                #if column[-1] == pidrdp:
+                    #protport['rdp'] = column[1].split(':')[1]
+    #return protport
+
 def protoandport():
     protport = {}
     if sys.platform.startswith('linux'):
@@ -1077,10 +1194,15 @@ def protoandport():
             if line.startswith(" "):
                 if "TermService" in line:
                     pidrdp = pidrdptmp
+            if line.startswith("svchost"):
+                column = [x for x in line.split(' ') if x != ""]
+                if column[2] == 'TermService':
+                    pidrdp = column[1]
             else:
                 if line.startswith("sshd"):
                     column = [x for x in line.split(' ') if x != ""]
-                    pidssh = None #We do not want to show ssh for Windows machines
+                    if column[2] == 'sshd':
+                        pidssh = column[1]
                 elif line.startswith("tvnserver"):
                     column = [x for x in line.split(' ') if x != ""]
                     if column[2] == 'tvnserver':

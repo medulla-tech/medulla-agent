@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016 - 2018 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -30,7 +30,7 @@ def conffilename(agenttype):
         configuration file for the type of machine and the Operating System
 
         Args:
-        agenttype: type of the agent, relay or machine
+        agenttype: type of the agent, relay or machine or (cluster for ARS)
 
         Returns:
         Return the config file path
@@ -38,6 +38,8 @@ def conffilename(agenttype):
     """
     if agenttype in ["machine"]:
         conffilenameparameter = "agentconf.ini"
+    elif agenttype in ["cluster"]:
+        conffilenameparameter = "cluster.ini"
     else:
         conffilenameparameter = "relayconf.ini"
     if sys.platform.startswith('linux'):
@@ -62,7 +64,8 @@ def conffilename(agenttype):
             conffilenameparameter)
     else:
         fileconf = conffilenameparameter
-
+    if conffilenameparameter == "cluster.ini":
+        return fileconf
     if os.path.isfile(fileconf):
         return fileconf
     else:

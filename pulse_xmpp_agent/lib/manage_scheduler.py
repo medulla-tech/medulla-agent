@@ -21,9 +21,9 @@
 # MA 02110-1301, USA.
 # file manage_scheduler.py
 
-import sys,os,platform
+import sys,os
 import os.path
-import traceback
+#import traceback
 import logging
 import time
 from datetime import datetime

@@ -1,7 +1,9 @@
 pulse-xmpp-agent 1.8.7
 ======================
 
- *
+ * [Bugfix] Fix unzipping of files in grafcetdeploy
+ * [Bugfix] Fix detection of netmask for MacOS
+ * [Feature] Update scheduler plugins automatically
 
 
 pulse-xmpp-agent 1.8.6

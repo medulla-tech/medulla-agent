@@ -58,6 +58,12 @@ password = @@CHATROOM_PASSWORD@@
 # Domain used for chat messages
 domain = @@CHAT_DOMAIN@@
 
+[browserfile]
+# Parameters used for file-transfer between the agents and Pulse.
+# By default they are set to /tmp for Linux and macOS and %TEMP% for Windows
+# rootfilesystem = 
+# defaultdir = 
+
 # Define a specific jid for the agent. Optional
 # [jid_01]
 # jidname = machine1@localhost/pulse01a

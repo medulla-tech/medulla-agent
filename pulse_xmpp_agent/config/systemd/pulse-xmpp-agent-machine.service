@@ -7,7 +7,7 @@ After=samba.service slapd.service
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/agentxmpp.py -d -t machine
+ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/launcher.py -d -t machine
 
 [Install]
 WantedBy=multi-user.target
