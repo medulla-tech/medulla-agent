@@ -157,7 +157,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data = json.loads(msg['body'])
         except:
             return
-        if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
+        if self.session == data['sessionid'] and \
+            data['action'] == "resultconnectionconf" and \
+            msg['from'].user == "master" and \
+            msg['from'].resource=="MASTER" and data['ret'] == 0:
+            logging.info("Resultat data : %s"%json.dumps(data, indent=4, sort_keys=True))
+            if len(data['data']) == 0 :
+                logging.error("Verify table cluster : has_cluster_ars")
+                sys.exit(0)
+        #if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
             logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'], indent=4, sort_keys=True))
             logging.log(DEBUGPULSE,"write new config")
             try:
