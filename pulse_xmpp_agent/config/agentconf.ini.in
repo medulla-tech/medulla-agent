@@ -41,9 +41,9 @@ pluginlist = inventory, manage_scheduler
 # The server and port below are defined automatically at startup
 # They are the parameters that allow the agent to connect to the XMPP server
 # XMPP server
-server = 192.168.56.2
+server =
 # XMPP port
-port = 5222
+port = 
 # XMPP password
 password = @@XMPP_PASSWORD@@
 # Port for interacting with the machine agent
