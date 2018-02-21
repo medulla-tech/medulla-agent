@@ -22,6 +22,7 @@
 
 import json
 import logging
+from utils import shellcommandtimeout
 
 DEBUGPULSE = 25
 
@@ -35,7 +36,7 @@ def dispach_iq_command(xmppobject, jsonin):
     """
     data = json.loads(jsonin)
 
-    listactioncommand = ["xmppbrowsing", "test", "remotefile"]
+    listactioncommand = ["xmppbrowsing", "test", "remotefile", "remotecommandshell"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
         result = callXmppFunctionIq(data['action'],  xmppobject = xmppobject, data = data )
@@ -69,7 +70,7 @@ class functionsynchroxmpp:
             print filesystem
             data['data']=filesystem
         return json.dumps(data)
-    
+
     @staticmethod
     def remotefile( xmppobject, data ):
         datapath = data['data']
@@ -80,3 +81,8 @@ class functionsynchroxmpp:
             print filesystem
             data['data']=filesystem
         return json.dumps(data)
+
+    @staticmethod
+    def remotecommandshell( xmppobject, data ):
+        result = shellcommandtimeout( data['data'], timeout=data['timeout']).run()
+        return json.dumps(result)

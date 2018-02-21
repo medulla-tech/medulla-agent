@@ -577,6 +577,9 @@ class shellcommandtimeout(object):
         self.obj = {}
         self.obj['timeout'] = timeout
         self.obj['cmd'] = cmd
+        self.obj['result']="result undefined"
+        self.obj['code'] = 255
+        self.obj['separateurline'] = os.linesep
 
     def run(self):
         def target():
@@ -586,6 +589,7 @@ class shellcommandtimeout(object):
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
+            self.obj['code'] = self.process.wait()
             self.process.communicate()
             # print 'Thread finished'
         thread = threading.Thread(target=target)
