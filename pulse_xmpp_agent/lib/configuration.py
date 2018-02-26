@@ -31,7 +31,7 @@ import utils
 import random
 from agentconffile import conffilename
 from sleekxmpp import jid
-
+from agentconffile import directoryconffile
 from utils import ipfromdns
 
 
