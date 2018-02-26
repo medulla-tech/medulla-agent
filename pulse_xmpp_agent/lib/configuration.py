@@ -512,3 +512,40 @@ def listMacAdressLinuxOs():
             t = line.strip().split(' ')
             lst[t[0]] = t[-1]
     return lst
+
+
+def setconfigfile(listdataconfiguration):
+    """
+        This function chang, add or supp config option in fichier configuration
+        eg list data configuration
+            ["add","agentconf","global","langue","fr"]
+            or 
+            ["supp","agentconf","global","langue"]
+        :returns: it return False or True
+    """
+    if len (listdataconfiguration) > 1 and directoryconffile() is not None:
+        fileofconf = os.path.join(directoryconffile(), listdataconfiguration[1])
+    else:
+        return False
+    if listdataconfiguration[0].lower() == "add":
+        if len(listdataconfiguration) != 5:
+            return False
+        if listdataconfiguration[2] != "" and listdataconfiguration[3] != "" and listdataconfiguration[4] != "":
+            fileconf = ConfigParser.ConfigParser()
+            fileconf.read(fileofconf)
+            fileconf.set(listdataconfiguration[2], listdataconfiguration[3], listdataconfiguration[4])
+            with open(fileofconf, 'w') as configfile:
+                fileconf.write(configfile)
+            return True
+    elif listdataconfiguration[0].lower() == "supp":
+        if len(listdataconfiguration) < 4:
+            return False
+        if listdataconfiguration[2] != "" and listdataconfiguration[3] != "":
+            fileconf = ConfigParser.ConfigParser()
+            fileconf.read(fileofconf)
+            fileconf.remove_option(listdataconfiguration[2], listdataconfiguration[3])
+            with open(fileofconf, 'w') as configfile:
+                fileconf.write(configfile)
+            return True
+    else:
+        return False

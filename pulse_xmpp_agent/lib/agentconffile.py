@@ -23,6 +23,28 @@
 import sys
 import os
 
+def directoryconffile():
+    if sys.platform.startswith('linux'):
+        fileconf = os.path.join(
+            "/",
+            "etc",
+            "pulse-xmpp-agent")
+    elif sys.platform.startswith('win'):
+        fileconf = os.path.join(
+            os.environ["ProgramFiles"],
+            "Pulse",
+            "etc")
+    elif sys.platform.startswith('darwin'):
+        fileconf = os.path.join(
+            "/",
+            "Library",
+            "Application Support",
+            "Pulse",
+            "etc")
+    if os.path.isdir(fileconf):
+        return fileconf
+    else:
+        return None
 
 def conffilename(agenttype):
     """
