@@ -798,7 +798,7 @@ class grafcet:
         {
                 "action": "action_set_config_file",
                 "step": 0,
-                "set" : "add@__@agentconf@__@global@__@langue@__@fr" or "supp@__@agentconf@__@global@__@langue@__@fr"
+                "set" : "add@__@agentconf@__@global@__@log_level@__@DEBUG" or "del@__@agentconf@__@global@__@log_level"
         }
         """
         try:
@@ -810,7 +810,7 @@ class grafcet:
                     self.workingstep['set'] = str(self.workingstep['set'])
                     if self.workingstep['set'] != "":
                         dataconfiguration = self.workingstep['set'].split("@__@")
-                        if len(dataconfiguration) > 0 and (dataconfiguration[0].lower() == "add" or dataconfiguration[0].lower() =="supp" ):
+                        if len(dataconfiguration) > 0 and (dataconfiguration[0].lower() == "add" or dataconfiguration[0].lower() =="del" ):
                             # traitement configuration.
                             if not setconfigfile(dataconfiguration):
                                 self.objectxmpp.xmpplog('[%s]-[%s] : Error set option configuration %s' % (self.data['name'], self.workingstep['step'],self.workingstep['set']),
