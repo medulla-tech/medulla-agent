@@ -533,19 +533,36 @@ def setconfigfile(listdataconfiguration):
         if listdataconfiguration[2] != "" and listdataconfiguration[3] != "" and listdataconfiguration[4] != "":
             fileconf = ConfigParser.ConfigParser()
             fileconf.read(fileofconf)
+            # test si section existe.
+            if not listdataconfiguration[2] in fileconf.sections():
+                fileconf.add_section(listdataconfiguration[2])
             fileconf.set(listdataconfiguration[2], listdataconfiguration[3], listdataconfiguration[4])
             with open(fileofconf, 'w') as configfile:
                 fileconf.write(configfile)
             return True
+        else:
+            return False
     elif listdataconfiguration[0].lower() == "del":
         if len(listdataconfiguration) < 4:
             return False
-        if listdataconfiguration[2] != "" and listdataconfiguration[3] != "":
-            fileconf = ConfigParser.ConfigParser()
-            fileconf.read(fileofconf)
-            fileconf.remove_option(listdataconfiguration[2], listdataconfiguration[3])
-            with open(fileofconf, 'w') as configfile:
-                fileconf.write(configfile)
-            return True
+        fileconf = ConfigParser.ConfigParser()
+        fileconf.read(fileofconf)
+        if listdataconfiguration[2] != "" and fileconf.has_section(listdataconfiguration[2]):
+            if len(fileconf.options(listdataconfiguration[2])) == 0:
+                fileconf.remove_section(listdataconfiguration[2])
+                with open(fileofconf, 'w') as configfile:
+                    fileconf.write(configfile)
+                return True
+            if listdataconfiguration[3] != "" and fileconf.has_option(listdataconfiguration[2], listdataconfiguration[3]):
+                fileconf.remove_option(listdataconfiguration[2], listdataconfiguration[3])
+                if len(fileconf.options(listdataconfiguration[2])) == 0:
+                    fileconf.remove_section(listdataconfiguration[2])
+                with open(fileofconf, 'w') as configfile:
+                    fileconf.write(configfile)
+                return True
+            else:
+                return False
+        else:
+            return False
     else:
         return False
