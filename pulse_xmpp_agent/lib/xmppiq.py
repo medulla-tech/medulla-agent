@@ -20,9 +20,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+import os
 import json
 import logging
 from utils import shellcommandtimeout
+from  agentconffile import  directoryconffile
 
 DEBUGPULSE = 25
 
@@ -36,7 +38,7 @@ def dispach_iq_command(xmppobject, jsonin):
     """
     data = json.loads(jsonin)
 
-    listactioncommand = ["xmppbrowsing", "test", "remotefile", "remotecommandshell"]
+    listactioncommand = ["xmppbrowsing", "test", "remotefile", "remotecommandshell", "listremotefileedit"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
         result = callXmppFunctionIq(data['action'],  xmppobject = xmppobject, data = data )
@@ -63,11 +65,9 @@ class functionsynchroxmpp:
     @staticmethod
     def remotefilesimple( xmppobject, data ):
         datapath = data['data']
-        print type(datapath)
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
-            print filesystem
             data['data']=filesystem
         return json.dumps(data)
 
@@ -78,7 +78,6 @@ class functionsynchroxmpp:
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
-            print filesystem
             data['data']=filesystem
         return json.dumps(data)
 
@@ -86,3 +85,10 @@ class functionsynchroxmpp:
     def remotecommandshell( xmppobject, data ):
         result = shellcommandtimeout( data['data'], timeout=data['timeout']).run()
         return json.dumps(result)
+
+    @staticmethod
+    def listremotefileedit( xmppobject, data ):
+        listfileedit = [ x for x in os.listdir(directoryconffile()) if x.endswith(".ini")]
+        data['data']={"result" : listfileedit}
+        return json.dumps(data)
+
