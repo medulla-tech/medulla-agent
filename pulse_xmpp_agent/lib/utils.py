@@ -1102,67 +1102,6 @@ def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
     return column[-2:-1][0].split(':')[1]
 
-
-
-
-
-
-
-
-#if sys.platform.startswith('win'):
-        #pidvnc = None
-        #pidssh = None
-        #pidrdp = None
-        #detectionvnc = ""
-        #processwin = simplecommand('tasklist /svc')
-        #for line in processwin['result']:
-            #column2 = line[26:][:8].strip()
-            #if column2 != '':
-                #pidrdptmp = column2
-                #print column2
-            #if line.startswith(" "):
-                #if "TermService" in line:
-                    #pidrdp = pidrdptmp
-            #if line.startswith("svchost"):
-                #column = [x for x in line.split(' ') if x != ""]
-                #if column[2] == 'TermService':
-                    #pidrdp = column[1]
-            #else:
-                #if line.startswith("sshd"):
-                    #column = [x for x in line.split(' ') if x != ""]
-                    #if column[2] == 'sshd':
-                        #pidssh = column[1]
-                #elif line.startswith("tvnserver") or line.startswith("winvnc"):
-                    #if detectionvnc == "" and line.startswith("tvnserver"):
-                        #detectionvnc = "tvnserver"
-                    #elif detectionvnc == "" and line.startswith("winvnc"):
-                        #detectionvnc = "winvnc"
-                    #column = [x for x in line.split(' ') if x != ""]
-                    #if column[2] == detectionvnc:
-                        #pidvnc = column[1]
-                #elif line.startswith("svchost"):
-                    #column = [x for x in line.split(' ') if x != ""]
-        #networkwin = simplecommand(
-            #'netstat -a -n -o | findstr TCP | findstr 0.0.0.0')
-        #for line in networkwin['result']:
-            #if pidvnc != None and pidvnc in line:
-                #column = [x.strip() for x in line.split(' ') if x != ""]
-                #vncporwin = column[1].split(':')[1]
-                #if not 'vnc' in protport:
-                    #protport['vnc'] = vncporwin
-                #else:
-                    #if vncporwin > protport['vnc']:
-                        #protport['vnc'] = vncporwin
-            #if not 'ssh' in protport and pidssh != None and pidssh in line:
-                #column = [x.strip() for x in line.split(' ') if x != ""]
-                #if column[-1] == pidssh:
-                    #protport['ssh'] = column[1].split(':')[1]
-            #if not 'rdp' in protport and pidrdp != None and pidrdp in line:
-                #column = [x.strip() for x in line.split(' ') if x != ""]
-                #if column[-1] == pidrdp:
-                    #protport['rdp'] = column[1].split(':')[1]
-    #return protport
-
 def protoandport():
     protport = {}
     if sys.platform.startswith('linux'):
