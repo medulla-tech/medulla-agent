@@ -73,19 +73,6 @@ class Deploy(Base):
     # Here we define columns for the table deploy.
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Integer, primary_key=True)
-    #inventoryuuid = Column(String(11), nullable=False)
-    #pathpackage = Column(String(100), nullable=False)
-    #jid_relay = Column(String(45), nullable=False)
-    #jidmachine = Column(String(45), nullable=False)
-    #state = Column(String(45), nullable=False)
-    #sessionid = Column(String(45), nullable=False)
-    #start = Column(DateTime, default=datetime.datetime.utcnow)
-    #result = Column(Text )
-    #host = Column(String(45), nullable=False)
-    #user = Column(String(45), nullable=False,default = "")
-    ##deploycol = Column(String(45), nullable=False,default = "")
-    #login = Column(String(45), nullable=False)
-    #command = Column(Integer)
     title=Column(String(255))
     inventoryuuid = Column(String(11), nullable=False)
     group_uuid = Column(String(11))
@@ -302,7 +289,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     jsonbase['otherinfos'].append(jsonautre)
                 dede.result = json.dumps(jsonbase, indent=3)
                 dede.state = state
-                #print dede.result
             session.commit()
             session.flush()
             session.close()

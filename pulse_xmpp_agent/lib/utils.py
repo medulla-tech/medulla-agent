@@ -1100,6 +1100,9 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
+    print("AAAAAAAAAAAAAAAAAA1")
+    print column
+    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
 
 def protoandport():

@@ -31,9 +31,7 @@ import time
 from lib.agentconffile import conffilename
 
 from lib.xmppiq import dispach_iq_command
-#from sleekxmpp import stanza, xmlstream, exceptions
 from sleekxmpp.xmlstream import handler, matcher
-# ET 
 
 
 from sleekxmpp.exceptions import IqError, IqTimeout
@@ -710,9 +708,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
             return
         try :
-            #if dataobj['action'] == "resultmsginfoerror":
-                #logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
-                #return
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
@@ -941,7 +936,6 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             p.daemon = True
             p.start()
             p.join()
-            #doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         else:
             # Store the Fork PID
             pid = os.fork()
