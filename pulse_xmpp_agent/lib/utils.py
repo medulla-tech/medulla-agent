@@ -39,6 +39,7 @@ import pickle
 from agentconffile import conffilename
 import ConfigParser
 import socket
+import psutil
 
 DEBUGPULSE = 25
 
