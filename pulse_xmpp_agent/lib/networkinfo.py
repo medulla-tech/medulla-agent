@@ -219,6 +219,7 @@ class networkagentinfo:
         self.messagejson["dnshostname"] = platform.node()
         self.messagejson["listipinfo"] = []
         self.messagejson["dhcp"] = 'False'
+
         for i in netifaces.interfaces():
             #addrs = netifaces.ifaddresses(i)
             try:
@@ -235,11 +236,11 @@ class networkagentinfo:
                     partinfo["dhcpserver"] = ''
                     partinfo["dhcp"] = 'False'
                     partinfo["macaddress"] = netifaces.ifaddresses(i)[netifaces.AF_LINK][0]['addr']
-                    for i in result:
-                        i = i.rstrip('\n')
-                        colonne = i.split("=")
+                    for line in result:
+                        line = line.rstrip('\n')
+                        colonne = line.split("=")
                         if len(colonne) != 2:
-                            colonne = i.split(":")
+                            colonne = line.split(":")
                         if colonne[0].strip().startswith('yiaddr'):
                             partinfo["ipaddress"] = colonne[1].strip()
                         elif colonne[0].strip().startswith('subnet_mask'):
