@@ -243,7 +243,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppmacnotshortened' : xmppmacnotshortened,
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic,
-            'adorgbymachine' : organizationbymachine(),
+            'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : ''
         }
         lastusersession = powershellgetlastuser()
