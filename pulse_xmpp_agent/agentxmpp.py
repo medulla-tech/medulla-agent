@@ -877,7 +877,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'ippublic' : self.config.public_ip,
             'remoteservice' : protoandport(),
             'packageserver' : self.config.packageserver,
-            'adorgbymachine' : organizationbymachine(),
+            'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
             'countstart' : save_count_start()
         }
