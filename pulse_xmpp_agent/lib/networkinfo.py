@@ -336,7 +336,7 @@ def powershellfqdnwindowscommand():
         output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
               shell=True)
         output = output.decode('windows-1252').encode('utf8')
-        if re.findall('[^A-Za-z0-9=,-_[[:blank:]]]',output):
+        if re.findall('[^A-Za-z0-9=,-_ ]',output):
             output = ''
         return output
     except subprocess.CalledProcessError, e:
@@ -348,7 +348,7 @@ def powershellfqdnwindowscommandbyuser(user):
         output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user],
               shell=True)
         output = output.decode('windows-1252').encode('utf8')
-        if re.findall('[^A-Za-z0-9=,-_[[:blank:]]]',output):
+        if re.findall('[^A-Za-z0-9=,-_ ]',output):
             output = ''
         return output
     except subprocess.CalledProcessError, e:
