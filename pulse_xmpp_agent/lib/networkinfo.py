@@ -31,6 +31,7 @@ import os
 from distutils.util import strtobool
 import socket
 import psutil
+import re
 
 if sys.platform.startswith('win'):
     import wmi
