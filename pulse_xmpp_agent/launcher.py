@@ -53,7 +53,6 @@ if __name__ == '__main__':
         print "The configuration changed. We need to reconfigure"
         refreshfingerprintconf(opts.typemachine)
 
-    #test if agent conf is configured one
     testagenttype = testagentconf(opts.typemachine)
 
     testspeedagent = networkchanged or configchanged or not testagenttype
