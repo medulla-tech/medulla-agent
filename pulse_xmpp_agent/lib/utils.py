@@ -372,7 +372,7 @@ def call_plugin(name, *args, **kwargs):
     pluginaction.action(*args, **kwargs)
 
 
-def getIpListreduite():
+def getshortenedmacaddress():
     listmacadress = {}
     for i in netifaces.interfaces():
         addrs = netifaces.ifaddresses(i)
@@ -427,7 +427,7 @@ def MacAdressToIp(ip):
 
 
 def name_jid():
-    dd = getIpListreduite()
+    dd = getshortenedmacaddress()
     cc = sorted(dd.keys())
     return dd[cc[0]]
 
