@@ -492,9 +492,9 @@ def isInterfaceToIpadress(interface, ip):
         return True
     return False
 
-def rewriteInterfaceTypeRedhad(file, data, interface):
+def rewriteInterfaceTypeRedhad(configfile, data, interface):
     tab = []
-    inputFile = open(file, 'rb')
+    inputFile = open(configfile, 'rb')
     contenue = inputFile.read()
     inputFile.close()
     tab = contenue.split("\n")
@@ -514,7 +514,7 @@ def rewriteInterfaceTypeRedhad(file, data, interface):
             ll.append("NETMASK=%s" % data['mask'])
             ll.append("GATEWAY=%s" % data['gateway'])
         strr = "\n".join(ll)
-        inputFile = open(file, 'wb')
+        inputFile = open(configfile, 'wb')
         inputFile.write(strr)
         inputFile.close()
     except BaseException:
