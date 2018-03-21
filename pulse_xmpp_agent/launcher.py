@@ -45,12 +45,12 @@ if __name__ == '__main__':
 
     networkchanged = networkchanged()
     if networkchanged:
-        print "network changed reconfiguration"
+        print "The network changed. We need to reconfigure"
         refreshfingerprint()
 
     configchanged = confchanged(opts.typemachine)
     if configchanged:
-        print "conf changed reconfiguration"
+        print "The configuration changed. We need to reconfigure"
         refreshfingerprintconf(opts.typemachine)
 
     #test if agent conf is configured one
