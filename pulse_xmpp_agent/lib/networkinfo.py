@@ -461,9 +461,9 @@ def organizationbyuser(user):
 
 
 def interfacename(mac):
-    for i in netifaces.interfaces():
-        if isInterfaceToMacadress(i, mac):
-            return i
+    for interface in netifaces.interfaces():
+        if isInterfaceToMacadress(interface, mac):
+            return interface
     return ""
 
 
