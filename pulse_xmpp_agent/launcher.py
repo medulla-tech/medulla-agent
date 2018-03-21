@@ -76,8 +76,8 @@ if __name__ == '__main__':
             print "Running", 'agentxmpp.py -t %s'%opts.typemachine
             os.system('agentxmpp.py -t %s'%opts.typemachine)
         elif sys.platform.startswith('darwin'):
-            print "Running", 'agentxmpp.py -t %s'%opts.typemachine
-            os.system('agentxmpp.py -t %s'%opts.typemachine)
+            print "Running", 'python agentxmpp.py -t %s'%opts.typemachine
+            os.system('python agentxmpp.py -t %s'%opts.typemachine)
         else:
             print "Running", 'python agentxmpp.py -d -t %s'%opts.typemachine
             os.system('python agentxmpp.py -d -t %s'%opts.typemachine)
