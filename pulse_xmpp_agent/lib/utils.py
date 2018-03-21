@@ -427,9 +427,9 @@ def MacAdressToIp(ip):
 
 
 def name_jid():
-    dd = getshortenedmacaddress()
-    cc = sorted(dd.keys())
-    return dd[cc[0]]
+    shortmacaddress = getshortenedmacaddress()
+    sorted_macaddress = sorted(shortmacaddress.keys())
+    return shortmacaddress[sorted_macaddress[0]]
 
 
 def reduction_mac(mac):
