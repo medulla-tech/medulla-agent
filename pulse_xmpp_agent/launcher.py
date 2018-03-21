@@ -43,20 +43,20 @@ if __name__ == '__main__':
         print "warning configuration  option missing \neg:   guacamole_baseurl  , connection/port/server' , global/relayserver_agent"
         print "reconfiguration"
 
-    nchanged = networkchanged()
-    if nchanged:
+    networkchanged = networkchanged()
+    if networkchanged:
         print "network changed reconfiguration"
         refreshfingerprint()
 
-    cchanged = confchanged(opts.typemachine)
-    if cchanged:
+    configchanged = confchanged(opts.typemachine)
+    if configchanged:
         print "conf changed reconfiguration"
         refreshfingerprintconf(opts.typemachine)
 
     #test if agent conf is configured one
     testagenttype = testagentconf(opts.typemachine)
 
-    testspeedagent = nchanged or cchanged or not testagenttype
+    testspeedagent = networkchanged or configchanged or not testagenttype
 
     if  testspeedagent:
         print "search configuration from master"
