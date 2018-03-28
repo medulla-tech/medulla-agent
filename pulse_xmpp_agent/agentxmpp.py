@@ -916,7 +916,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                         l=ligne.split("=")
                         plugin = eval(l[1])
                         plugindataseach[plugin['NAME']] = plugin['VERSION']
-                        break;
+                        break
         return plugindataseach
 
     def muc_onlineMaster(self, presence):
