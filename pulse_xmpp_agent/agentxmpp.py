@@ -821,7 +821,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppmacaddress = t['macaddress']
                 xmppmacnotshortened = t['macnotshortened']
                 portconnection = self.config.Port
-                break;
+                break
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
