@@ -337,7 +337,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600,'interval' : 600, 'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
 
