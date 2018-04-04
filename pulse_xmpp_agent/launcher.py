@@ -68,8 +68,8 @@ if __name__ == '__main__':
                     print "Running", 'connectionagent.py -t %s'%opts.typemachine
                     os.system('connectionagent.py -t %s'%opts.typemachine)
                 elif sys.platform.startswith('darwin'):
-                    print "Running", 'python2 connectionagent.py -t %s'%opts.typemachine
-                    os.system('python2 connectionagent.py -t %s'%opts.typemachine)
+                    print "Running", '/usr/local/bin/python2 connectionagent.py -t %s'%opts.typemachine
+                    os.system('/usr/local/bin/python2 connectionagent.py -t %s'%opts.typemachine)
                 else:
                     print "Running", 'python connectionagent.py -t %s'%opts.typemachine
                     os.system('python connectionagent.py -t %s'%opts.typemachine)
@@ -78,8 +78,8 @@ if __name__ == '__main__':
             print "Running", 'agentxmpp.py -t %s'%opts.typemachine
             os.system('agentxmpp.py -t %s'%opts.typemachine)
         elif sys.platform.startswith('darwin'):
-            print "Running", 'python2 agentxmpp.py -t %s'%opts.typemachine
-            os.system('python2 agentxmpp.py -t %s'%opts.typemachine)
+            print "Running", '/usr/local/bin/python2 agentxmpp.py -t %s'%opts.typemachine
+            os.system('/usr/local/bin/python2 agentxmpp.py -t %s'%opts.typemachine)
         else:
             print "Running", 'python agentxmpp.py -d -t %s'%opts.typemachine
             os.system('python agentxmpp.py -d -t %s'%opts.typemachine)
@@ -90,8 +90,8 @@ if __name__ == '__main__':
                     print "Running", 'connectionagent.py -c -t %s'%opts.typemachine
                     os.system('connectionagent.py -c -t %s'%opts.typemachine)
                 elif sys.platform.startswith('darwin'):
-                    print "Running", 'python2 connectionagent.py -c -t %s'%opts.typemachine
-                    os.system('python2 connectionagent.py -c -t %s'%opts.typemachine)
+                    print "Running", '/usr/local/bin/python2 connectionagent.py -c -t %s'%opts.typemachine
+                    os.system('/usr/local/bin/python2 connectionagent.py -c -t %s'%opts.typemachine)
                 else:
                     print "Running", 'python connectionagent.py -c -t %s'%opts.typemachine
                     os.system('python connectionagent.py -c -t %s'%opts.typemachine)
@@ -99,8 +99,8 @@ if __name__ == '__main__':
             print "Running", 'agentxmpp.py -c -t %s'%opts.typemachine
             os.system('agentxmpp.py -c -t %s'%opts.typemachine)
         elif sys.platform.startswith('darwin'):
-            print "Running", 'python2 agentxmpp.py -c -t %s'%opts.typemachine
-            os.system('python2 agentxmpp.py -c -t %s'%opts.typemachine)
+            print "Running", '/usr/local/bin/python2 agentxmpp.py -c -t %s'%opts.typemachine
+            os.system('/usr/local/bin/python2 agentxmpp.py -c -t %s'%opts.typemachine)
         else:
             print "Running", 'python agentxmpp.py -c -t %s'%opts.typemachine
             os.system('python agentxmpp.py -c -t %s'%opts.typemachine)
