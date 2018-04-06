@@ -27,6 +27,7 @@ import os.path
 import os
 import json
 from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command
+from configuration import setconfigfile
 import traceback
 import logging
 import netifaces
@@ -792,6 +793,72 @@ class grafcet:
                     fromuser = self.data['login'],
                     touser = "")
 
+    def action_set_config_file(self):
+        """
+        {
+                "action": "action_set_config_file",
+                "step": 0,
+                "set" : "add@__@agentconf@__@global@__@log_level@__@DEBUG" or "del@__@agentconf@__@global@__@log_level"
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            if 'set' in self.workingstep:
+                if isinstance(self.workingstep['set'], str) or isinstance(self.workingstep['set'], unicode):
+                    self.workingstep['set'] = str(self.workingstep['set'])
+                    if self.workingstep['set'] != "":
+                        dataconfiguration = self.workingstep['set'].split("@__@")
+                        if len(dataconfiguration) > 0 and (dataconfiguration[0].lower() == "add" or dataconfiguration[0].lower() =="del" ):
+                            # traitement configuration.
+                            if not setconfigfile(dataconfiguration):
+                                self.objectxmpp.xmpplog('[%s]-[%s] : Error set option configuration %s' % (self.data['name'], self.workingstep['step'],self.workingstep['set']),
+                                                        type = 'deploy',
+                                                        sessionname = self.sessionid,
+                                                        priority = self.workingstep['step'],
+                                                        action = "",
+                                                        who = self.objectxmpp.boundjid.bare,
+                                                        how = "",
+                                                        why = self.data['name'],
+                                                        module = "Deployment | Error | Configuration",
+                                                        date = None ,
+                                                        fromuser = self.data['login'],
+                                                        touser = "")
+                            else:
+                                self.objectxmpp.xmpplog('[%s]-[%s] : set option configuration %s' % (self.data['name'], self.workingstep['step'],self.workingstep['set']),
+                                                        type = 'deploy',
+                                                        sessionname = self.sessionid,
+                                                        priority = self.workingstep['step'],
+                                                        action = "",
+                                                        who = self.objectxmpp.boundjid.bare,
+                                                        how = "",
+                                                        why = self.data['name'],
+                                                        module = "Deployment | Notify | Configuration",
+                                                        date = None ,
+                                                        fromuser = self.data['login'],
+                                                        touser = "")
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_set_config_file step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: error action_set_config_file ' % (self.data['name'],self.workingstep['step']),
+                    type = 'deploy',
+                    sessionname = self.sessionid,
+                    priority = self.workingstep['step'],
+                    action = "",
+                    who = self.objectxmpp.boundjid.bare,
+                    how = "",
+                    why = self.data['name'],
+                    module = "Deployment | Error | Execution",
+                    date = None ,
+                    fromuser = self.data['login'],
+                    touser = "")
+
+
     def action_no_operation(self):
         """
         {
@@ -1326,7 +1393,6 @@ class grafcet:
             if commandtype != None:
                 command = commandtype + temp_path
 
-            
             # working Step recup from process et session
             if command != "":
                 self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand( command,

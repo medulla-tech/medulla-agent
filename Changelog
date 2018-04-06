@@ -1,3 +1,14 @@
+pulse-xmpp-agent 1.9.0
+======================
+
+* [Feature] Possibility to set options in agent config file from Pulse
+* [Feature] Possibility to edit config file from Pulse
+* [Bugfix] Fix detection of remote protocols using psutil
+* [Bugfix] Check that AD is compliant before using it
+* [Bugfix] Make sure the proper version of python is used on macOS
+* [Bugfix] Fix shutdown command on macOS
+
+
 pulse-xmpp-agent 1.8.7
 ======================
 

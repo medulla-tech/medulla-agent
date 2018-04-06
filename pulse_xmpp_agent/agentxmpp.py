@@ -31,9 +31,7 @@ import time
 from lib.agentconffile import conffilename
 
 from lib.xmppiq import dispach_iq_command
-#from sleekxmpp import stanza, xmlstream, exceptions
 from sleekxmpp.xmlstream import handler, matcher
-# ET 
 
 
 from sleekxmpp.exceptions import IqError, IqTimeout
@@ -710,9 +708,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
             return
         try :
-            #if dataobj['action'] == "resultmsginfoerror":
-                #logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
-                #return
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
@@ -826,7 +821,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppmacaddress = t['macaddress']
                 xmppmacnotshortened = t['macnotshortened']
                 portconnection = self.config.Port
-                break;
+                break
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
@@ -921,7 +916,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                         l=ligne.split("=")
                         plugin = eval(l[1])
                         plugindataseach[plugin['NAME']] = plugin['VERSION']
-                        break;
+                        break
         return plugindataseach
 
     def muc_onlineMaster(self, presence):
@@ -941,7 +936,6 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             p.daemon = True
             p.start()
             p.join()
-            #doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         else:
             # Store the Fork PID
             pid = os.fork()
@@ -1012,7 +1006,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600,'interval' : 600, 'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)

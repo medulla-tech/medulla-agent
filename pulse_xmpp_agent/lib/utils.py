@@ -39,6 +39,7 @@ import pickle
 from agentconffile import conffilename
 import ConfigParser
 import socket
+import psutil
 
 DEBUGPULSE = 25
 
@@ -371,7 +372,7 @@ def call_plugin(name, *args, **kwargs):
     pluginaction.action(*args, **kwargs)
 
 
-def getIpListreduite():
+def getshortenedmacaddress():
     listmacadress = {}
     for i in netifaces.interfaces():
         addrs = netifaces.ifaddresses(i)
@@ -426,9 +427,9 @@ def MacAdressToIp(ip):
 
 
 def name_jid():
-    dd = getIpListreduite()
-    cc = sorted(dd.keys())
-    return dd[cc[0]]
+    shortmacaddress = getshortenedmacaddress()
+    sorted_macaddress = sorted(shortmacaddress.keys())
+    return shortmacaddress[sorted_macaddress[0]]
 
 
 def reduction_mac(mac):
@@ -577,6 +578,9 @@ class shellcommandtimeout(object):
         self.obj = {}
         self.obj['timeout'] = timeout
         self.obj['cmd'] = cmd
+        self.obj['result']="result undefined"
+        self.obj['code'] = 255
+        self.obj['separateurline'] = os.linesep
 
     def run(self):
         def target():
@@ -586,6 +590,7 @@ class shellcommandtimeout(object):
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
+            self.obj['code'] = self.process.wait()
             self.process.communicate()
             # print 'Thread finished'
         thread = threading.Thread(target=target)
@@ -1096,139 +1101,57 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
+    print("AAAAAAAAAAAAAAAAAA1")
+    print column
+    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
 
 
-
-
-
-
-
-
-#if sys.platform.startswith('win'):
-        #pidvnc = None
-        #pidssh = None
-        #pidrdp = None
-        #detectionvnc = ""
-        #processwin = simplecommand('tasklist /svc')
-        #for line in processwin['result']:
-            #column2 = line[26:][:8].strip()
-            #if column2 != '':
-                #pidrdptmp = column2
-                #print column2
-            #if line.startswith(" "):
-                #if "TermService" in line:
-                    #pidrdp = pidrdptmp
-            #if line.startswith("svchost"):
-                #column = [x for x in line.split(' ') if x != ""]
-                #if column[2] == 'TermService':
-                    #pidrdp = column[1]
-            #else:
-                #if line.startswith("sshd"):
-                    #column = [x for x in line.split(' ') if x != ""]
-                    #if column[2] == 'sshd':
-                        #pidssh = column[1]
-                #elif line.startswith("tvnserver") or line.startswith("winvnc"):
-                    #if detectionvnc == "" and line.startswith("tvnserver"):
-                        #detectionvnc = "tvnserver"
-                    #elif detectionvnc == "" and line.startswith("winvnc"):
-                        #detectionvnc = "winvnc"
-                    #column = [x for x in line.split(' ') if x != ""]
-                    #if column[2] == detectionvnc:
-                        #pidvnc = column[1]
-                #elif line.startswith("svchost"):
-                    #column = [x for x in line.split(' ') if x != ""]
-        #networkwin = simplecommand(
-            #'netstat -a -n -o | findstr TCP | findstr 0.0.0.0')
-        #for line in networkwin['result']:
-            #if pidvnc != None and pidvnc in line:
-                #column = [x.strip() for x in line.split(' ') if x != ""]
-                #vncporwin = column[1].split(':')[1]
-                #if not 'vnc' in protport:
-                    #protport['vnc'] = vncporwin
-                #else:
-                    #if vncporwin > protport['vnc']:
-                        #protport['vnc'] = vncporwin
-            #if not 'ssh' in protport and pidssh != None and pidssh in line:
-                #column = [x.strip() for x in line.split(' ') if x != ""]
-                #if column[-1] == pidssh:
-                    #protport['ssh'] = column[1].split(':')[1]
-            #if not 'rdp' in protport and pidrdp != None and pidrdp in line:
-                #column = [x.strip() for x in line.split(' ') if x != ""]
-                #if column[-1] == pidrdp:
-                    #protport['rdp'] = column[1].split(':')[1]
-    #return protport
-
 def protoandport():
     protport = {}
-    if sys.platform.startswith('linux'):
-        vnc = simplecommand(
-            'lsof -n -P -i -sTCP:LISTEN | grep LISTEN | grep IPv4 | grep vnc')
-        if len(vnc['result']) > 0:
-            protport['vnc'] = portline(vnc['result'][0])
-    elif sys.platform.startswith('darwin'):
-        vnc = simplecommand('lsof -n -P -iTCP:rfb -sTCP:LISTEN')
-        if len(vnc['result']) >= 1:
-            protport['vnc'] = portline(vnc['result'][1])
-
-    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-        ssh = simplecommand('lsof -n -P -iTCP:ssh -sTCP:LISTEN')
-        if len(ssh['result']) >= 1:
-            protport['ssh'] = portline(ssh['result'][1])
-            print protport['ssh']
-    if sys.platform.startswith('linux'):
-        rdp = simplecommand(
-            'lsof -n -P -i -sTCP:LISTEN | grep LISTEN | grep IPv4 | grep rdp')
-        if len(rdp['result']) > 0:
-            protport['rdp'] = portline(rdp['result'][0])
-            print protport['rdp']
     if sys.platform.startswith('win'):
-        pidvnc = None
-        pidssh = None
-        pidrdp = None
-        processwin = simplecommand('tasklist /svc')
-        for line in processwin['result']:
-            column2 = line[26:][:8].strip()
-            if column2 != '':
-                pidrdptmp = column2
-            if line.startswith(" "):
-                if "TermService" in line:
-                    pidrdp = pidrdptmp
-            if line.startswith("svchost"):
-                column = [x for x in line.split(' ') if x != ""]
-                if column[2] == 'TermService':
-                    pidrdp = column[1]
-            else:
-                if line.startswith("sshd"):
-                    column = [x for x in line.split(' ') if x != ""]
-                    if column[2] == 'sshd':
-                        pidssh = column[1]
-                elif line.startswith("tvnserver"):
-                    column = [x for x in line.split(' ') if x != ""]
-                    if column[2] == 'tvnserver':
-                        pidvnc = column[1]
-                elif line.startswith("svchost"):
-                    column = [x for x in line.split(' ') if x != ""]
+        for process in psutil.process_iter():
+            if 'tvnserver.exe' in process.name():
+                process_handler = psutil.Process(process.pid)
+                for cux in process_handler.connections():
+                    if cux.status == psutil.CONN_LISTEN:
+                        protport['vnc'] = cux.laddr.port
+            elif 'sshd.exe' in process.name():
+                process_handler = psutil.Process(process.pid)
+                for cux in process_handler.connections():
+                    if cux.status == psutil.CONN_LISTEN:
+                        protport['ssh'] = cux.laddr.port
+        for service in psutil.win_service_iter():
+            if 'TermService' in service.name():
+                service_handler = psutil.win_service_get('TermService')
+                if service_handler.status() == 'running':
+                    pid = service_handler.pid()
+                    process_handler = psutil.Process(pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['rdp'] = cux.laddr.port
 
-        networkwin = simplecommand(
-            'netstat -a -n -o | findstr TCP | findstr 0.0.0.0')
-        for line in networkwin['result']:
-            if pidvnc != None and pidvnc in line:
-                column = [x.strip() for x in line.split(' ') if x != ""]
-                vncporwin = column[1].split(':')[1]
-                if not 'vnc' in protport:
-                    protport['vnc'] = vncporwin
-                else:
-                    if vncporwin > protport['vnc']:
-                        protport['vnc'] = vncporwin
-            if not 'ssh' in protport and pidssh != None and pidssh in line:
-                column = [x.strip() for x in line.split(' ') if x != ""]
-                if column[-1] == pidssh:
-                    protport['ssh'] = column[1].split(':')[1]
-            if not 'rdp' in protport and pidrdp != None and pidrdp in line:
-                column = [x.strip() for x in line.split(' ') if x != ""]
-                if column[-1] == pidrdp:
-                    protport['rdp'] = column[1].split(':')[1]
+    elif sys.platform.startswith('linux'):
+        for process in psutil.process_iter():
+            if 'Xvnc' in process.name():
+                process_handler = psutil.Process(process.pid)
+                for cux in process_handler.connections():
+                    if cux.status == psutil.CONN_LISTEN:
+                        protport['vnc'] = cux.laddr.port
+            elif 'sshd' in process.name():
+                process_handler = psutil.Process(process.pid)
+                for cux in process_handler.connections():
+                    if cux.status == psutil.CONN_LISTEN:
+                        protport['ssh'] = cux.laddr.port
+
+    elif sys.platform.startswith('darwin'):
+        for process in psutil.process_iter():
+            if 'ARDAgent' in process.name():
+                protport['vnc'] = '5900'
+        for cux in psutil.net_connections():
+            if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
+                protport['ssh'] = '22'
+
     return protport
 
 
@@ -1405,9 +1328,9 @@ def shutdown_command(time = 0, msg=''):
         if int(time) == 0 or msg =='':
             cmd = "shutdown now"
         else:
-             cmd = "shutdown -P -f -t %s %s"%(time, msg)
-             logging.debug(cmd)
-             os.system(cmd)
+            cmd = "shutdown -P -f -t %s %s"%(time, msg)
+            logging.debug(cmd)
+            os.system(cmd)
     elif sys.platform.startswith('win'):
         if int(time) == 0 or msg =='':
             cmd = "shutdown /p"
@@ -1419,7 +1342,7 @@ def shutdown_command(time = 0, msg=''):
         if int(time) == 0 or msg =='':
             cmd = "shutdown -h now"
         else:
-            cmd = "shutdown -h +%s \"%s\""(time, msg)
+            cmd = "shutdown -h +%s \"%s\""%(time, msg)
             logging.debug(cmd)
             os.system(cmd)
     return

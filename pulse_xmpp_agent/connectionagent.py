@@ -157,7 +157,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data = json.loads(msg['body'])
         except:
             return
-        if self.session == data['sessionid'] and data['action'] == "resultconnectionconf" and msg['from'].user == "master" and msg['from'].resource=="MASTER" and data['ret'] == 0:
+        if self.session == data['sessionid'] and \
+            data['action'] == "resultconnectionconf" and \
+            msg['from'].user == "master" and \
+            msg['from'].resource=="MASTER" and data['ret'] == 0:
+            logging.info("Resultat data : %s"%json.dumps(data, indent=4, sort_keys=True))
+            if len(data['data']) == 0 :
+                logging.error("Verify table cluster : has_cluster_ars")
+                sys.exit(0)
             logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'], indent=4, sort_keys=True))
             logging.log(DEBUGPULSE,"write new config")
             try:
@@ -262,7 +269,6 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             p.daemon = True
             p.start()
             p.join()
-            #doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         else:
             # Store the Fork PID
             pid = os.fork()
@@ -331,7 +337,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':15})
+        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600,'interval' : 600, 'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
 

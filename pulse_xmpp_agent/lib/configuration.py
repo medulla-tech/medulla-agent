@@ -31,7 +31,7 @@ import utils
 import random
 from agentconffile import conffilename
 from sleekxmpp import jid
-
+from agentconffile import directoryconffile
 from utils import ipfromdns
 
 
@@ -512,3 +512,57 @@ def listMacAdressLinuxOs():
             t = line.strip().split(' ')
             lst[t[0]] = t[-1]
     return lst
+
+
+def setconfigfile(listdataconfiguration):
+    """
+        This function changes, adds or deletes config option in configuration file
+        eg list data configuration
+            ["add","agentconf","global","log_level","DEBUG"]
+            or
+            ["del","agentconf","global","log_level"]
+        :returns: it return False or True
+    """
+    if len (listdataconfiguration) > 1 and directoryconffile() is not None:
+        fileofconf = os.path.join(directoryconffile(), listdataconfiguration[1])
+    else:
+        return False
+    if listdataconfiguration[0].lower() == "add":
+        if len(listdataconfiguration) != 5:
+            return False
+        if listdataconfiguration[2] != "" and listdataconfiguration[3] != "" and listdataconfiguration[4] != "":
+            fileconf = ConfigParser.ConfigParser()
+            fileconf.read(fileofconf)
+            # test si section existe.
+            if not listdataconfiguration[2] in fileconf.sections():
+                fileconf.add_section(listdataconfiguration[2])
+            fileconf.set(listdataconfiguration[2], listdataconfiguration[3], listdataconfiguration[4])
+            with open(fileofconf, 'w') as configfile:
+                fileconf.write(configfile)
+            return True
+        else:
+            return False
+    elif listdataconfiguration[0].lower() == "del":
+        if len(listdataconfiguration) < 4:
+            return False
+        fileconf = ConfigParser.ConfigParser()
+        fileconf.read(fileofconf)
+        if listdataconfiguration[2] != "" and fileconf.has_section(listdataconfiguration[2]):
+            if len(fileconf.options(listdataconfiguration[2])) == 0:
+                fileconf.remove_section(listdataconfiguration[2])
+                with open(fileofconf, 'w') as configfile:
+                    fileconf.write(configfile)
+                return True
+            if listdataconfiguration[3] != "" and fileconf.has_option(listdataconfiguration[2], listdataconfiguration[3]):
+                fileconf.remove_option(listdataconfiguration[2], listdataconfiguration[3])
+                if len(fileconf.options(listdataconfiguration[2])) == 0:
+                    fileconf.remove_section(listdataconfiguration[2])
+                with open(fileofconf, 'w') as configfile:
+                    fileconf.write(configfile)
+                return True
+            else:
+                return False
+        else:
+            return False
+    else:
+        return False
