@@ -1328,9 +1328,9 @@ def shutdown_command(time = 0, msg=''):
         if int(time) == 0 or msg =='':
             cmd = "shutdown now"
         else:
-             cmd = "shutdown -P -f -t %s %s"%(time, msg)
-             logging.debug(cmd)
-             os.system(cmd)
+            cmd = "shutdown -P -f -t %s %s"%(time, msg)
+            logging.debug(cmd)
+            os.system(cmd)
     elif sys.platform.startswith('win'):
         if int(time) == 0 or msg =='':
             cmd = "shutdown /p"
@@ -1342,7 +1342,7 @@ def shutdown_command(time = 0, msg=''):
         if int(time) == 0 or msg =='':
             cmd = "shutdown -h now"
         else:
-            cmd = "shutdown -h +%s \"%s\""(time, msg)
+            cmd = "shutdown -h +%s \"%s\""%(time, msg)
             logging.debug(cmd)
             os.system(cmd)
     return
