@@ -169,6 +169,8 @@ class confParameter:
         Config = ConfigParser.ConfigParser()
         namefileconfig = conffilename(typeconf)
         Config.read(namefileconfig)
+        if os.path.exists(namefileconfig + ".local"):
+            Config.read(namefileconfig + ".local")
         self.packageserver = {}
         self.Port = Config.get('connection', 'port')
         self.Server = ipfromdns(Config.get('connection', 'server'))
