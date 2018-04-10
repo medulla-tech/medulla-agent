@@ -1136,13 +1136,25 @@ def protoandport():
             if 'Xvnc' in process.name():
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['vnc'] = cux.laddr.port
+                    try:
+                        ip = cux.laddr[0]
+                        port = cux.laddr[1]
+                    except Exception:
+                        ip = cux.laddr.ip
+                        port = cux.laddr.port
+                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                        protport['vnc'] = port
             elif 'sshd' in process.name():
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['ssh'] = cux.laddr.port
+                    try:
+                        ip = cux.laddr[0]
+                        port = cux.laddr[1]
+                    except Exception:
+                        ip = cux.laddr.ip
+                        port = cux.laddr.port
+                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                        protport['ssh'] = port
 
     elif sys.platform.startswith('darwin'):
         for process in psutil.process_iter():
