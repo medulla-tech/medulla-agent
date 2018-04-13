@@ -96,6 +96,8 @@ class functionsynchroxmpp:
     @staticmethod
     def remotecommandshell( xmppobject, data ):
         result = shellcommandtimeout( data['data'], timeout=data['timeout']).run()
+        re = [ x.decode('utf-8', 'ignore').strip(os.linesep)+"\n" for x in result['result'] ]
+        result['result'] = re
         return json.dumps(result)
 
     @staticmethod
