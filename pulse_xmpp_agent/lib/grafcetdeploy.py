@@ -1156,15 +1156,6 @@ class grafcet:
             self.__action_completed__(self.workingstep)
             self.workingstep['codereturn'] = re['codereturn']
             result = [x.strip('\n') for x in re['result'] if x != '']
-            #result  = [x for x in a['result'].split(os.linesep) if x !='']
-            # logging.getLogger().debug("================================================")
-            #logging.getLogger().debug( " execution command in thread %s "%self.workingstep['command'])
-            #logging.getLogger().debug( "================================================")
-            #logging.getLogger().debug( "codeerror %s"% self.workingstep['codereturn'])
-            #logging.getLogger().debug( "result \n%s"%os.linesep.join(result))
-            #logging.getLogger().debug( "================================================")
-
-            #reseigne @resultcommand or nb@lastlines or nb@firstlines
             self.__resultinfo__(self.workingstep, result)
             self.objectxmpp.xmpplog('[%s] - [%s]: errorcode %s for command : %s ' % (self.data['name'], self.workingstep['step'], self.workingstep['codereturn'], self.workingstep['command']),
                                     type = 'deploy',
@@ -1354,7 +1345,6 @@ class grafcet:
                                                                         date = None ,
                                                                         fromuser = self.data['login'],
                                                                         touser = "")
-            # recupere suffix et shebang.
             if self.workingstep['typescript'] in extensionscriptfile:
                 suffix = extensionscriptfile[self.workingstep['typescript']]['suffix']
                 shebang = extensionscriptfile[self.workingstep['typescript']]['bang']
@@ -1386,7 +1376,7 @@ class grafcet:
                 self.workingstep['script'])
 
             fd, temp_path = mkstemp( suffix = '.'+ suffix )
-            #todo revoir gestion des \
+            #TODO:  See how we deal with \
             st = self.workingstep['script']
             os.write(fd, st.replace("\\","\\\\"))
             os.close(fd)
