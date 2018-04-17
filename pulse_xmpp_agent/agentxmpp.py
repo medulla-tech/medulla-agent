@@ -89,9 +89,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
+        
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
-
+        # initialise charge relay server
+        if self.config.agenttype in ['relayserver']:
+            self.levelcharge = 0
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
@@ -228,6 +231,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             pass
         else:
             pass
+
+    def checklevelcharge(self):
+        if objectxmpp.session.getcountsession() == 0 :
+            self.levelcharge == 0
+        return self.levelcharge
 
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
