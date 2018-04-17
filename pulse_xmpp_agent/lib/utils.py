@@ -1394,3 +1394,11 @@ def reboot_command():
         os.system("shutdown -r now")
 
     return
+
+def isBase64(s):
+    try:
+        if base64.b64encode(base64.b64decode(s)) == s:
+            return True;
+    except Exception:
+        pass;
+    return False;

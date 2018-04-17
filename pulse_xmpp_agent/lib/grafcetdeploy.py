@@ -26,7 +26,7 @@ import platform
 import os.path
 import os
 import json
-from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command
+from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64
 from configuration import setconfigfile
 import traceback
 import logging
@@ -35,7 +35,7 @@ import re
 from managepackage import managepackage
 from tempfile import mkstemp
 import zipfile
-
+import base64
 
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
@@ -1046,6 +1046,8 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
+            if (isBase64(self.workingstep['command'])):
+                self.workingstep['command'] = base64.b64decode(self.workingstep['command'])
             self.workingstep['command'] = self.replaceTEMPLATE(
                 self.workingstep['command'])
             if not "timeout" in self.workingstep:
@@ -1297,6 +1299,8 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
+            if (isBase64(self.workingstep['script'])):
+                self.workingstep['script'] = base64.b64decode(self.workingstep['script'])
             self.workingstep['script'] = self.replaceTEMPLATE(
                 self.workingstep['script'])
             if not "timeout" in self.workingstep:
