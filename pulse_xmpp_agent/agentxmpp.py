@@ -232,9 +232,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         else:
             pass
 
-    def checklevelcharge(self):
-        if objectxmpp.session.getcountsession() == 0 :
+    def checklevelcharge(self, ressource = 0):
+        if self.session.getcountsession() == 0 :
             self.levelcharge == 0
+        self.levelcharge = self.levelcharge + ressource
+        if self.levelcharge < 0 :
+            self.levelcharge = 0
         return self.levelcharge
 
     def signal_handler(self, signal, frame):
@@ -907,6 +910,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                 dataobj['plugin'][module['NAME']] = module['VERSION']
         #add list scheduler plugins
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
+
         return dataobj
 
 
