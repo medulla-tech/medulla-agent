@@ -9,3 +9,4 @@ usr/lib/python2.*/*-packages/pulse_xmpp_agent/agentversion
 var/log/pulse/
 usr/lib/systemd/system/
 etc/pulse-xmpp-agent/
+var/lib/pulse2/clients/config/relayconf.ini.in
