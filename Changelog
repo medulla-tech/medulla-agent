@@ -1,3 +1,10 @@
+pulse-xmpp-agent 1.9.1
+======================
+* [Bugfix] Fix encoding in remote shell
+* [Bugfix] Fix detection of remote protocols in Linux
+* [Bugfix] Add relayconf.ini.in in pulse-xmpp-agent package
+
+
 pulse-xmpp-agent 1.9.0
 ======================
 
