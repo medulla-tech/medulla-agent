@@ -895,8 +895,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
-                if dataobj['moderelayserver'] == "dynamic":
-                    dataobj['packageserver']['public_ip'] = self.config.ipxmpp
+
         except Exception:
             dataobj["moderelayserver"] = "static"
 
