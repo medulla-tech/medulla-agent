@@ -902,6 +902,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         lastusersession = powershellgetlastuser()
         if lastusersession != "":
             dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
+        dataobj['lastusersession'] = lastusersession
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
             if element.endswith('.py') and element.startswith('plugin_'):
