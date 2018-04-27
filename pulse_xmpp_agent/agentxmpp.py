@@ -234,7 +234,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def checklevelcharge(self, ressource = 0):
         if self.session.getcountsession() == 0 :
-            self.levelcharge == 0
+            self.levelcharge = 0
         self.levelcharge = self.levelcharge + ressource
         if self.levelcharge < 0 :
             self.levelcharge = 0
@@ -895,6 +895,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
+                if dataobj['moderelayserver'] == "dynamic":
+                    dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
 
