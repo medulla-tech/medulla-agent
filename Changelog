@@ -1,3 +1,8 @@
+pulse-xmpp-agent 1.9.2
+======================
+* [Bugfix] Fix encoding of adorgbyuser
+
+
 pulse-xmpp-agent 1.9.1
 ======================
 * [Bugfix] Fix encoding in remote shell
