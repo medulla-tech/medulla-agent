@@ -189,6 +189,23 @@ class confParameter:
         self.parametersscriptconnection = {}
 
         if self.agenttype == "relayserver":
+            self.concurrentdeployments = 10
+            if Config.has_option("global", "concurrentdeployments"):
+                try:
+                    self.concurrentdeployments = Config.getint('global', 'concurrentdeployments')
+                except Exception as e :
+                    logging.getLogger().warning(
+                        "parameter [global]  concurrentdeployments :(%s)" %str(e))
+                    logging.getLogger().warning(
+                        "parameter [global]  concurrentdeployments : parameter set to 10")
+
+            if self.concurrentdeployments < 1:
+                logging.getLogger().warning(
+                        "parameter [global]  concurrentdeployments  : parameter must be greater than or equal to 1")
+                logging.getLogger().warning(
+                        "parameter [global]  concurrentdeployments : parameter set to 10")
+                self.concurrentdeployments = 10
+
             if Config.has_option("connection", "portARSscript"):
                 self.parametersscriptconnection['port'] = Config.get(
                     'connection', 'portARSscript')

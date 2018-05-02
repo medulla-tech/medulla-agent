@@ -33,11 +33,11 @@ from lib.agentconffile import conffilename
 from lib.xmppiq import dispach_iq_command
 from sleekxmpp.xmlstream import handler, matcher
 
-
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
+from lib.managefifo import fifodeploy
 from lib.managesession import session
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
@@ -89,12 +89,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
-        
+
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
-            self.levelcharge = 0
+            self.managefifo = fifodeploy()
+            self.levelcharge = self.managefifo.getcount()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
@@ -233,8 +234,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             pass
 
     def checklevelcharge(self, ressource = 0):
-        if self.session.getcountsession() == 0 :
-            self.levelcharge = 0
         self.levelcharge = self.levelcharge + ressource
         if self.levelcharge < 0 :
             self.levelcharge = 0
