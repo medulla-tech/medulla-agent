@@ -901,7 +901,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
 
         lastusersession = powershellgetlastuser()
         if lastusersession != "":
-            dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
+            dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
         dataobj['lastusersession'] = lastusersession
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):

@@ -261,7 +261,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         }
         lastusersession = powershellgetlastuser()
         if lastusersession != "":
-            dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
+            dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
         return dataobj
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
