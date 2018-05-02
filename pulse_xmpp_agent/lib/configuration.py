@@ -58,24 +58,21 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
         Config.write(configfile)
 
 def alternativeclusterconnection(conffile, data):
-    # todo del of list the ars without ip 
-    #for arsdataconection in data:
-        #if ipfromdns(str(arsdataconection[0])) != "" and check_exist_ip_port(ipfromdns(str(arsdataconection[0])), str(arsdataconection[1])):
-            #print ipfromdns(str(arsdataconection[0]))
+    # fixme: del of list the ars without ip
     with open(conffile, 'w') as configfile:
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]
-            nb_alternativeserver =  len(listalternative)
+            nb_alternativeserver = len(listalternative)
             print ",".join(listalternative)
             configfile.write("[alternativelist]" + os.linesep)
-            configfile.write("listars = %s%s"%(",".join(listalternative), os.linesep))
-            configfile.write("nbserver = %s%s"%(nb_alternativeserver, os.linesep))
-            configfile.write("nextserver = 1%s"%os.linesep)
+            configfile.write("listars = %s%s" % (",".join(listalternative), os.linesep))
+            configfile.write("nbserver = %s%s" % (nb_alternativeserver, os.linesep))
+            configfile.write("nextserver = 1%s" % os.linesep)
             for arsdataconection in data:
-                configfile.write("[%s]%s"%(str(arsdataconection[2]),os.linesep))
-                configfile.write("port = %s%s"%(str(arsdataconection[1]),os.linesep))
-                configfile.write("server = %s%s"%(ipfromdns(str(str(arsdataconection[0]))),os.linesep))
-                configfile.write("guacamole_baseurl = %s%s"%(str(arsdataconection[3]),os.linesep))
+                configfile.write("[%s]%s" % (str(arsdataconection[2]), os.linesep))
+                configfile.write("port = %s%s" % (str(arsdataconection[1]), os.linesep))
+                configfile.write("server = %s%s" % (ipfromdns(str(str(arsdataconection[0]))), os.linesep))
+                configfile.write("guacamole_baseurl = %s%s" % (str(arsdataconection[3]), os.linesep))
         else:
             if os.path.isfile(conffile):
                 os.unlink(conffile)
@@ -87,14 +84,14 @@ def nextalternativeclusterconnection(conffile):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
 
-    nextserver          = Config.getint('alternativelist', 'nextserver')
-    nbserver            = Config.getint('alternativelist', 'nbserver')
-    listalternative     = Config.get('alternativelist', 'listars').split(",")
+    nextserver = Config.getint('alternativelist', 'nextserver')
+    nbserver = Config.getint('alternativelist', 'nbserver')
+    listalternative = Config.get('alternativelist', 'listars').split(",")
 
     serverjid = listalternative[nextserver-1]
 
-    port              = Config.get(serverjid, 'port')
-    server            = Config.get(serverjid, 'server')
+    port = Config.get(serverjid, 'port')
+    server = Config.get(serverjid, 'server')
     guacamole_baseurl = Config.get(serverjid, 'guacamole_baseurl')
     try:
         domain = str(serverjid).split("@")[1].split("/")[0]
@@ -106,11 +103,10 @@ def nextalternativeclusterconnection(conffile):
 
     Config.set('alternativelist', 'nextserver', nextserver)
 
-    # Writing our configuration file to 'example.cfg'
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
-    return [ serverjid, server, port, guacamole_baseurl, domain ]
+    return [serverjid, server, port, guacamole_baseurl, domain]
 
 
 # Singleton/SingletonDecorator.py
@@ -193,7 +189,7 @@ class confParameter:
             if Config.has_option("global", "concurrentdeployments"):
                 try:
                     self.concurrentdeployments = Config.getint('global', 'concurrentdeployments')
-                except Exception as e :
+                except Exception as e:
                     logging.getLogger().warning(
                         "parameter [global]  concurrentdeployments :(%s)" %str(e))
                     logging.getLogger().warning(
@@ -201,9 +197,9 @@ class confParameter:
 
             if self.concurrentdeployments < 1:
                 logging.getLogger().warning(
-                        "parameter [global]  concurrentdeployments  : parameter must be greater than or equal to 1")
+                    "parameter [global]  concurrentdeployments  : parameter must be greater than or equal to 1")
                 logging.getLogger().warning(
-                        "parameter [global]  concurrentdeployments : parameter set to 10")
+                    "parameter [global]  concurrentdeployments : parameter set to 10")
                 self.concurrentdeployments = 10
 
             if Config.has_option("connection", "portARSscript"):
@@ -219,13 +215,13 @@ class confParameter:
                 self.parametersscriptconnection['port'] = 5000
         #######configuration browserfile#######
         if sys.platform.startswith('win'):
-            self.defaultdir     = os.path.join(os.environ["TEMP"])
+            self.defaultdir = os.path.join(os.environ["TEMP"])
             self.rootfilesystem = os.path.join(os.environ["TEMP"])
         elif sys.platform.startswith('darwin'):
-            self.defaultdir     = os.path.join("/", "tmp")
+            self.defaultdir = os.path.join("/", "tmp")
             self.rootfilesystem = os.path.join("/", "tmp")
         else:
-            self.defaultdir     = os.path.join("/", "tmp")
+            self.defaultdir = os.path.join("/", "tmp")
             self.rootfilesystem = os.path.join("/", "tmp")
         if Config.has_option("browserfile", "defaultdir"):
             self.defaultdir = Config.get('browserfile', 'defaultdir')
@@ -269,7 +265,7 @@ class confParameter:
                     logging.getLogger().warning(
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
-                    self.nameplugindir=""
+                    self.nameplugindir = ""
 
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
@@ -327,9 +323,9 @@ class confParameter:
                 self.confjidchatroom = "%s@%s" % (Config.get(
                     'configuration_server',
                     'confmuc_chatroom'),
-                    Config.get(
-                    'configuration_server',
-                    'confmuc_domain'))
+                                                  Config.get(
+                                                      'configuration_server',
+                                                      'confmuc_domain'))
             except BaseException:
                 self.confjidchatroom = "%s@%s" % ("configmaster", Config.get(
                     'configuration_server', 'confmuc_domain'))
@@ -396,12 +392,12 @@ class confParameter:
             self.jidchatroomcommand = str(self.agentcommand)
 
         # we make sure that the temp for the inventories is greater than or equal to 1 hour.
-        # if the time for the inventories is 0, it is left at 0. 
+        # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
         self.inventory_interval = 0
         if Config.has_option("inventory", "inventory_interval"):
             self.inventory_interval = Config.getint("inventory", "inventory_interval")
-            if self.inventory_interval !=0 and self.inventory_interval < 3600:
+            if self.inventory_interval != 0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
 
         self.information = {}
@@ -542,7 +538,7 @@ def setconfigfile(listdataconfiguration):
             ["del","agentconf","global","log_level"]
         :returns: it return False or True
     """
-    if len (listdataconfiguration) > 1 and directoryconffile() is not None:
+    if len(listdataconfiguration) > 1 and directoryconffile() is not None:
         fileofconf = os.path.join(directoryconffile(), listdataconfiguration[1])
     else:
         return False
