@@ -48,7 +48,7 @@ class fifodeploy:
                 os.path.join(
                     self.dirsavedatafifo,
                     "*")) if (
-                        os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
+                os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
         self.FIFOdeploy.sort()
 
     def getcount(self):
@@ -58,23 +58,22 @@ class fifodeploy:
         newfilefifo = str(time.time())+'.fifo'
         pathnamefile = os.path.join(self.dirsavedatafifo, newfilefifo)
         with open(pathnamefile, 'w') as outfilejson:
-            json.dump(datajson, outfilejson, indent=4)
+            json.dump(datajson, outfilejson, indent = 4)
         self.FIFOdeploy.append(newfilefifo)
 
     def getfifo(self):
         if self.getcount() == 0:
             return {}
-        firstfileinput = self.FIFOdeploy.pop(0)
+        firstfileinput  = self.FIFOdeploy.pop(0)
         pathnamefile = os.path.join(self.dirsavedatafifo, firstfileinput)
         try:
-            fichier_json = open(pathnamefile, 'r')
+            fichier_json = open( pathnamefile, 'r')
             with fichier_json as fichier:
                 data = json.load(fichier)      # load décode un fichier json
             os.remove(pathnamefile)
             return data
         except Exception as  e:
-            logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, 
-                                                                                  str(e)))
+            logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
             traceback.print_exc(file=sys.stdout)
             return {}
 
@@ -86,13 +85,12 @@ class fifodeploy:
             logging.getLogger().error("file %s in Manager fifo is missing" % (pathnamefile))
             return {}
         try:
-            fichier_json = open(pathnamefile, 'r')
+            fichier_json = open( pathnamefile, 'r')
             with fichier_json as fichier:
                 data = json.load(fichier)      # load décode un fichier json
             return data
         except Exception as  e:
-            logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile,
-                                                                                  str(e)))
+            logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
             traceback.print_exc(file=sys.stdout)
             return {}
 
