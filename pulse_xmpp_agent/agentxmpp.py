@@ -33,12 +33,14 @@ from lib.agentconffile import conffilename
 from lib.xmppiq import dispach_iq_command
 from sleekxmpp.xmlstream import handler, matcher
 
+
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
-from lib.managefifo import fifodeploy
 from lib.managesession import session
+
+from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
@@ -54,10 +56,11 @@ import traceback
 from optparse import OptionParser
 
 from multiprocessing import Queue
+from multiprocessing.managers import SyncManager
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
-from multiprocessing.managers import SyncManager
+
 
 if sys.platform.startswith('win'):
     import win32api
@@ -89,7 +92,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_update_plugin = 3600
         laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
-
+        self.back_to_deploy = {}
         self.config = conf
         self.manage_scheduler  = manage_scheduler(self)
         # initialise charge relay server
@@ -104,12 +107,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
         self.agentmaster = jid.JID("master@pulse")
         self.session = session(self.config.agenttype)
+        if self.config.agenttype in ['relayserver']:
+            # supp file session start agent.
+            # tant que l'agent RS n'est pas started les files de session dont le deploiement a echoue ne sont pas efface.
+            self.session.clearallfilesession()
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
         self.xmppbrowsingpath = xmppbrowsing(defaultdir =  self.config.defaultdir, rootfilesystem = self.config.rootfilesystem)
-
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
 
@@ -133,6 +139,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
 
+        self.schedule('reloaddeploy', 15, self.reloaddeploy, repeat=True)
         # we make sure that the temp for the inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0. 
         # this deactive cycle inventory
@@ -157,7 +164,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
-        #self.add_event_handler('dedee', self.dede, threaded=True)
 
         self.RSA = MsgsignedRSA(self.config.agenttype)
 
@@ -193,6 +199,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'CustomXEP Handler',
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
+
+    def reloaddeploy(self):
+        while self.managefifo.getcount() != 0 and \
+              self.session.len() < self.config.concurrentdeployments:
+            data = self.managefifo.getfifo()
+            datasend={ "action": data['action'],
+                        "sessionid" : data['sessionid'],
+                        "ret" : 0,
+                        "base64" : False
+                    }
+            del data['action']
+            del data['sessionid']
+            datasend['data'] = data
+            self.levelcharge = self.levelcharge - 1
+            self.send_message(  mto = self.boundjid.bare,
+                                mbody = json.dumps(datasend),
+                                mtype = 'chat')
 
     def _handle_custom_iq(self, iq):
         if iq['type'] == 'get':
@@ -608,7 +631,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def handlemanagesession(self):
         self.session.decrementesessiondatainfo()
-        print self.machinerelayserver
 
     def networkMonitor(self):
         try:
@@ -654,7 +676,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         try :
             dataobj = json.loads(msg['body'])
-           
+
         except Exception as e:
             logging.error("bad struct Message %s %s " %(msg, str(e)))
             dataerreur={
@@ -894,13 +916,14 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
-
+                if dataobj['moderelayserver'] == "dynamic":
+                    dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
 
         lastusersession = powershellgetlastuser()
         if lastusersession != "":
-            dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
+            dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
         dataobj['lastusersession'] = lastusersession
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
@@ -911,9 +934,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                 dataobj['plugin'][module['NAME']] = module['VERSION']
         #add list scheduler plugins
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
+        #persistance info machine
         self.infomain = dataobj
         return dataobj
-
 
     def loadPluginschedulerList(self):
         logger.debug("Verify base plugin scheduler")

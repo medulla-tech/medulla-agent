@@ -138,6 +138,17 @@ class session:
             os.makedirs(self.dirsavesession, mode=0o007)
         logging.getLogger().debug("Manager Session : %s" % self.dirsavesession)
 
+    def clearallfilesession(self):
+        listfilesession = [
+            x for x in glob.glob(
+                os.path.join(
+                    self.dirsavesession,
+                    "*")) if (
+                os.path.isfile(x) and os.path.basename(x).startswith('command'))]
+        for filesession in listfilesession:
+            os.remove(filesession)
+        self.sessiondata = []
+
     def addsessiondatainfo(self, sessiondatainfo):
         if self.isexist(sessiondatainfo.sessionid):
             raise SessionAssertion
