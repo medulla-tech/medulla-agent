@@ -7,6 +7,8 @@ log_level = INFO
 # allow_order = agentsiveo
 # Log file if used with -d (deamonize)
 # logfile = /var/log/pulse/xmpp-agent.log
+# Number of concurrent deployments the relay server must manage
+# concurrentdeployments = 10
 
 [type]
 # The agent type: machine or relayserver
