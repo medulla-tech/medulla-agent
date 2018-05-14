@@ -183,7 +183,7 @@ class confParameter:
         if Config.has_option('kiosk', 'am_local_port'):
             self.am_local_port = Config.getint('kiosk', 'am_local_port')
         if Config.has_option('kiosk', 'kiosk_local_port'):
-            self.am_local_port = Config.getint('kiosk', 'kiosk_local_port')
+            self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
         try:
             self.agenttype = Config.get('type', 'agent_type')

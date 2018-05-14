@@ -28,6 +28,8 @@ import platform
 import base64
 import json
 import time
+import socket
+import threading
 from lib.agentconffile import conffilename
 
 from lib.xmppiq import dispach_iq_command
@@ -94,6 +96,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 15
         self.back_to_deploy = {}
         self.config = conf
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Bind the socket to the port
+        server_address = ('localhost',  self.config.am_local_port)
+        logging.log(DEBUGPULSE,  'starting server tcp kiosk on %s port %s' % server_address)
+        self.sock.bind(server_address)
+        # Listen for incoming connections
+        self.sock.listen(5)
+        #using event eventkill for signal stop thread
+        self.eventkill = threading.Event()
+        client_handlertcp = threading.Thread(target=self.tcpserver)
+        # run server tcpserver for kiosk 
+        client_handlertcp.start()
         self.manage_scheduler  = manage_scheduler(self)
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
@@ -199,6 +213,45 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'CustomXEP Handler',
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
+
+    def handle_client_connection(self, client_socket):
+        """
+        this function handles the message received from kiosk
+        the function must provide a response to an acknowledgment kiosk or a result
+        Args:
+            client_socket: socket for exchanges between AM and Kiosk
+
+        Returns:
+            no return value
+        """
+        try:
+            # request the recv message
+            recv_msg_from_kiosk = client_socket.recv(1024)
+            # print 'Received {}'.format(recv_msg_from_kiosk)
+            # send result or acquit
+            client_socket.send(recv_msg_from_kiosk)
+        finally:
+            client_socket.close()
+
+    def tcpserver(self):
+        """
+        this function is the listening function of the tcp server of the machine agent, to serve the request of the kiosk
+        Args:
+            no arguments
+
+        Returns:
+            no return value
+        """
+        logging.debug("Server Kiosk Start")
+        while not self.eventkill.wait(1):
+            # Wait for a connection
+            logging.debug('waiting for a connection kiosk service')
+            connection, client_address = self.sock.accept()
+            client_handler = threading.Thread(
+                                                target=self.handle_client_connection,
+                                                args=(connection,))
+            client_handler.start()
+        logging.debug("Stopping Kiosk")
 
     def reloaddeploy(self):
         while self.managefifo.getcount() != 0 and \
@@ -1035,7 +1088,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.Server)
         time.sleep(2)
 
-    while True:
+    while True: 
         restart = False
         xmpp = MUCBot(tg)
         xmpp.register_plugin('xep_0030') # Service Discovery
@@ -1050,6 +1103,18 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
+            #event for quit loop server tcpserver for kiosk
+            xmpp.eventkill.set()
+            xmpp.sock.close()
+            #connect server for pass accept for end
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Connect the socket to the port where the server is listening
+            server_address = ('localhost', tg.am_local_port)
+            logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
+            print 'connecting to %s:%s' % server_address
+            sock.connect(server_address)
+            sock.close()
+
             if  xmpp.config.agenttype in ['relayserver']:
                 xmpp.qin.put("quit")
             xmpp.queue_read_event_from_command.put("quit")
