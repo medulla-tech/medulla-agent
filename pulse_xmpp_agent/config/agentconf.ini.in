@@ -72,3 +72,8 @@ domain = @@CHAT_DOMAIN@@
 # Define a specific jid for the agent. Optional
 # [jid_01]
 # jidname = machine1@localhost/pulse01a
+
+[kiosk]
+# Parameters used for local communication between Kiosk and agent
+am_local_port = 8765
+kiosk_local_port = 8766
