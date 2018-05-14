@@ -177,6 +177,14 @@ class confParameter:
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
 
+        #parameters AM and kiosk tcp server
+        self.am_local_port = 8765
+        self.kiosk_local_port = 8766
+        if Config.has_option('kiosk', 'am_local_port'):
+            self.am_local_port = Config.getint('kiosk', 'am_local_port')
+        if Config.has_option('kiosk', 'kiosk_local_port'):
+            self.am_local_port = Config.getint('kiosk', 'kiosk_local_port')
+
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
