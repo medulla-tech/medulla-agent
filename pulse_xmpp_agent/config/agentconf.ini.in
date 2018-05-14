@@ -61,8 +61,13 @@ domain = @@CHAT_DOMAIN@@
 [browserfile]
 # Parameters used for file-transfer between the agents and Pulse.
 # By default they are set to /tmp for Linux and macOS and %TEMP% for Windows
-# rootfilesystem = 
-# defaultdir = 
+# rootfilesystem =
+# defaultdir =
+
+[kiosk]
+# Parameters used for local communication between kiosk and agent
+# am_local_port = 8765
+# kiosk_local_port = 8766
 
 # Define a specific jid for the agent. Optional
 # [jid_01]
