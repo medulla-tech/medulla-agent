@@ -1388,7 +1388,10 @@ class grafcet:
             fd, temp_path = mkstemp( suffix = '.'+ suffix )
             #todo revoir gestion des \
             st = self.workingstep['script']
-            os.write(fd, st.replace("\\","\\\\"))
+            if (suffix == "bat") or (suffix == "ps1"):
+                os.write(fd, st)
+            else:
+                os.write(fd, st.replace("\\","\\\\"))
             os.close(fd)
             self.workingstep['script'] = "script in temp file : %s"%temp_path
             #create command
