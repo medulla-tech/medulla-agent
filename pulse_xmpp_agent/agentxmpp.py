@@ -216,31 +216,51 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def handle_client_connection(self, client_socket):
         """
-        this function handles the message received from kiosk
-        the function must provide a response to an acknowledgment kiosk or a result
-        Args:
-            client_socket: socket for exchanges between AM and Kiosk
+            this function handles the message received from kiosk
+            the function must provide a response to an acknowledgment kiosk or a result
+            Args:
+                client_socket: socket for exchanges between AM and Kiosk
 
-        Returns:
-            no return value
+            Returns:
+                no return value
         """
         try:
             # request the recv message
             recv_msg_from_kiosk = client_socket.recv(1024)
-            # print 'Received {}'.format(recv_msg_from_kiosk)
+            print 'Received {}'.format(recv_msg_from_kiosk)
+            datasend = { 'action' : "resultkiosk",
+                         "sessionid" : getRandomName(6, "kioskGrub"),
+                         "ret" : 0,
+                         "base64" : False,
+                         'data': {}}
+            msg = str(recv_msg_from_kiosk.decode("utf-8"))
+            result = json.loads(msg)
+            if 'action' in result:
+                datasend['data']['uuid'] = result['uuid']
+                if result['action'] == 'kioskinterfaceInstall':
+                   datasend['data']['subaction'] =  'install'
+                elif result['action'] == 'kioskinterfaceLaunch':
+                    datasend['data']['subaction'] =  'launch'
+                elif result['action'] == 'kioskinterfaceDelete':
+                    datasend['data']['subaction'] =  'delete'
+                elif result['action'] == 'kioskinterfaceUpdate':
+                    datasend['data']['subaction'] =  'update'
+
+                self.send_message_to_master(datasend)
             # send result or acquit
-            client_socket.send(recv_msg_from_kiosk)
+            ###client_socket.send(recv_msg_from_kiosk)
         finally:
             client_socket.close()
 
+
     def tcpserver(self):
         """
-        this function is the listening function of the tcp server of the machine agent, to serve the request of the kiosk
-        Args:
-            no arguments
+            this function is the listening function of the tcp server of the machine agent, to serve the request of the kiosk
+            Args:
+                no arguments
 
-        Returns:
-            no return value
+            Returns:
+                no return value
         """
         logging.debug("Server Kiosk Start")
         while not self.eventkill.wait(1):
@@ -252,6 +272,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 args=(connection,))
             client_handler.start()
         logging.debug("Stopping Kiosk")
+
 
     def reloaddeploy(self):
         while self.managefifo.getcount() != 0 and \
