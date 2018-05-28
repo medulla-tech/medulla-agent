@@ -28,7 +28,6 @@ import json
 import logging
 from utils import shellcommandtimeout, file_put_contents, file_get_contents
 from  agentconffile import  directoryconffile
-from shutil import copyfile
 import datetime
 
 DEBUGPULSE = 25
@@ -44,11 +43,11 @@ def dispach_iq_command(xmppobject, jsonin):
     data = json.loads(jsonin)
 
     # functions synch list
-    listactioncommand = ["xmppbrowsing", 
-                         "test", 
-                         "remotefile", 
-                         "remotecommandshell", 
-                         "listremotefileedit", 
+    listactioncommand = ["xmppbrowsing",
+                         "test",
+                         "remotefile",
+                         "remotecommandshell",
+                         "listremotefileedit",
                          "remotefileeditaction"]
 
     if data['action'] in listactioncommand:
@@ -64,7 +63,7 @@ def dispach_iq_command(xmppobject, jsonin):
 
 class functionsynchroxmpp:
     """
-        this function must return json string 
+        this function must return json string
     """
     @staticmethod
     def xmppbrowsing(xmppobject , data  ):
@@ -114,7 +113,7 @@ class functionsynchroxmpp:
             if data['data']['action'] == 'loadfile':
                 if 'file' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
-                    if os.path.isfile(filename): 
+                    if os.path.isfile(filename):
                         filedata = file_get_contents(filename)
                         data['data'] = { "result" : filedata, "error" : False , 'numerror' : 0  }
                         return json.dumps(data)
@@ -135,9 +134,6 @@ class functionsynchroxmpp:
                         and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
-                        datestr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+".ini"
-                        newfilename = filename[:-4] + "_" + datestr
-                        copyfile(filename, newfilename)
                         file_put_contents(filename,  data['data']['content'])
                         data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror' : 0 }
                         return json.dumps(data)
