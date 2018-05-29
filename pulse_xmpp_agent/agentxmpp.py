@@ -216,13 +216,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def handle_client_connection(self, client_socket):
         """
-            this function handles the message received from kiosk
-            the function must provide a response to an acknowledgment kiosk or a result
-            Args:
-                client_socket: socket for exchanges between AM and Kiosk
+        this function handles the message received from kiosk
+        the function must provide a response to an acknowledgment kiosk or a result
+        Args:
+            client_socket: socket for exchanges between AM and Kiosk
 
-            Returns:
-                no return value
+        Returns:
+            no return value
         """
         try:
             # request the recv message
@@ -233,20 +233,27 @@ class MUCBot(sleekxmpp.ClientXMPP):
                          "ret" : 0,
                          "base64" : False,
                          'data': {}}
-            msg = str(recv_msg_from_kiosk.decode("utf-8"))
+            msg = str(recv_msg_from_kiosk.decode("utf-8", 'ignore'))
             result = json.loads(msg)
-            if 'action' in result:
+            if 'uuid' in result:
                 datasend['data']['uuid'] = result['uuid']
-                if result['action'] == 'kioskinterfaceInstall':
-                   datasend['data']['subaction'] =  'install'
+
+            if 'action' in result:
+                if result['action'] == "kioskinterface":
+                    #start kiosk ask initialization
+                    datasend['data']['subaction'] =  result['subaction']
+                elif result['action'] == 'kioskinterfaceInstall':
+                    datasend['data']['subaction'] =  'install'
                 elif result['action'] == 'kioskinterfaceLaunch':
                     datasend['data']['subaction'] =  'launch'
                 elif result['action'] == 'kioskinterfaceDelete':
                     datasend['data']['subaction'] =  'delete'
                 elif result['action'] == 'kioskinterfaceUpdate':
                     datasend['data']['subaction'] =  'update'
-
-                self.send_message_to_master(datasend)
+                
+                self.send_message_to_master(datasend)               
+                    
+            ### Received {'uuid': 45d4-3124c21-3123, 'action': 'kioskinterfaceInstall', 'subaction': 'Install'}
             # send result or acquit
             ###client_socket.send(recv_msg_from_kiosk)
         finally:
