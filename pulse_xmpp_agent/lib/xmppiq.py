@@ -26,7 +26,7 @@
 import os
 import json
 import logging
-from utils import shellcommandtimeout, file_put_contents, file_get_contents
+from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole
 from  agentconffile import  directoryconffile
 import datetime
 
@@ -94,9 +94,9 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotecommandshell( xmppobject, data ):
-        result = shellcommandtimeout( data['data'], timeout=data['timeout']).run()
-        re = [ x.decode('utf-8', 'ignore').strip(os.linesep)+"\n" for x in result['result'] ]
-        result['result'] = re
+        result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
+        resultsend = [ decode_strconsole(x).strip(os.linesep)+"\n" for x in result['result'] ]
+        result['result'] = resultsend
         return json.dumps(result)
 
     @staticmethod
