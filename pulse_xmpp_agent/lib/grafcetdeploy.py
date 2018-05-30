@@ -36,6 +36,7 @@ from managepackage import managepackage
 from tempfile import mkstemp
 import zipfile
 import base64
+import time
 
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
