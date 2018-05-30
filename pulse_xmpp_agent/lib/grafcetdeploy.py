@@ -1425,11 +1425,87 @@ class grafcet:
         {
             "step" : 11,
             "action" : "actionsuccescompletedend",
-            "clear" : True
+            "clear" : "True"
+            "inventory" : "True"
         }
         clear optionnel option
         if clear is not defini then clear = True
+        inventory optionnel option
+        if inventory is not defini then inventory = False
         """
+        inventory = False
+        if 'inventory' in self.workingstep:
+            if isinstance(self.workingstep['inventory'], bool):
+                inventory = self.workingstep['inventory']
+            else:
+                self.workingstep['inventory'] = str(self.workingstep['inventory'])
+                if self.workingstep['inventory'] == "True":
+                    inventory = True
+        inventoryfile = ""
+        if inventory:
+            ### genere inventaire et envoi inventaire
+            #### call plugin inventory pour master.
+            if sys.platform.startswith('linux'):
+                inventoryfile = os.path.join("/","tmp","inventory.txt")
+            elif sys.platform.startswith('win'):
+                inventoryfile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
+            elif sys.platform.startswith('darwin'):
+                inventoryfile = os.path.join("/","tmp","inventory.txt")
+            if inventoryfile != "" and os.path.isfile(inventoryfile):
+                os.remove(inventoryfile)
+            ## call plugin inventory pour master.
+            self.objectxmpp.xmpplog('<span  style="color: #0000ff;">Start Inventory<span>',
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "inventory",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Execution | Inventory",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+            try:
+                self.objectxmpp.handleinventory()
+            except Exception as e:
+                print str(e)
+            #waitting active generated new inventory
+            doinventory = False
+            timeinventory = 0
+            for indextime in range(24):  # waitting max 2 minutes
+                if os.path.isfile(inventoryfile):
+                    doinventory = True
+                    timeinventory = (indextime + 1) * 5
+                    break
+                time.sleep(5)
+            if doinventory:
+                self.objectxmpp.xmpplog('<span  style="color: #0000ff;">new send inventory from %s : (generated in %s s)<span>'%(self.objectxmpp.boundjid.bare, timeinventory),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "inventory",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Execution | Inventory",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+            else:
+                self.objectxmpp.xmpplog('[%s]-[%s] :<span  style="color: Orange;"> Terminate deploy ERROR <span>' % (self.data['name'], self.workingstep['step']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "inventory",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Execution | Inventory | Error",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+
         clear = True
         if 'clear' in self.workingstep:
             if isinstance(self.workingstep['clear'], bool):
