@@ -254,6 +254,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbyuser' : ''
         }
         lastusersession = powershellgetlastuser()
+        if lastusersession == "":
+            lastusersession = os.environ['USERNAME']
         if lastusersession != "":
             dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
         return dataobj

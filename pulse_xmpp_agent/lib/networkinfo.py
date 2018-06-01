@@ -335,10 +335,10 @@ def powershellfqdnwindowscommand():
     try:
         output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
               shell=True)
-        output = output.decode('windows-1252').encode('utf8')
+        output = output.decode('cp850')
         outou=[]
         lou = [ x.replace("OU=","") for x in output.split(",") if "OU=" in x]
-        for y in lou:        
+        for y in lou:
             if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]',y):
                 outou.append(y)
         if len(outou) != 0:
@@ -354,7 +354,7 @@ def powershellfqdnwindowscommand():
 def powershellfqdnwindowscommandbyuser(user):
     try:
         output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user], shell=True)
-        output = output.decode('windows-1252').encode('utf8')
+        output = output.decode('cp850')
         outou=[]
         lou = [ x.replace("OU=","") for x in output.split(",") if "OU=" in x]
         for y in lou:
@@ -369,6 +369,7 @@ def powershellfqdnwindowscommandbyuser(user):
     except subprocess.CalledProcessError, e:
         logging.getLogger().error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
     return ""
+
 def powershellgetlastuser():
     if sys.platform.startswith('win'):
         script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "script", "getlastuser.ps1"))
@@ -385,6 +386,7 @@ def powershellgetlastuser():
                     ret = informationuser[0].split('\\')
                 return ret[1]
     return ""
+
 
 def isMachineInDomain():
     """

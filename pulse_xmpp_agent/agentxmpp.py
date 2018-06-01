@@ -62,7 +62,7 @@ from multiprocessing.managers import SyncManager
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
-
+import psutil
 
 if sys.platform.startswith('win'):
     import win32api
@@ -227,32 +227,37 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             # request the recv message
             recv_msg_from_kiosk = client_socket.recv(1024)
-            print 'Received {}'.format(recv_msg_from_kiosk)
-            datasend = { 'action' : "resultkiosk",
-                         "sessionid" : getRandomName(6, "kioskGrub"),
-                         "ret" : 0,
-                         "base64" : False,
-                         'data': {}}
-            msg = str(recv_msg_from_kiosk.decode("utf-8", 'ignore'))
-            result = json.loads(msg)
-            if 'uuid' in result:
-                datasend['data']['uuid'] = result['uuid']
+            if len(recv_msg_from_kiosk) != 0:
+                print 'Received {}'.format(recv_msg_from_kiosk)
+                datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+                msg = str(recv_msg_from_kiosk.decode("utf-8", 'ignore'))
+                result = json.loads(msg)
+                if 'uuid' in result:
+                    datasend['data']['uuid'] = result['uuid']
 
-            if 'action' in result:
-                if result['action'] == "kioskinterface":
-                    #start kiosk ask initialization
-                    datasend['data']['subaction'] =  result['subaction']
-                elif result['action'] == 'kioskinterfaceInstall':
-                    datasend['data']['subaction'] =  'install'
-                elif result['action'] == 'kioskinterfaceLaunch':
-                    datasend['data']['subaction'] =  'launch'
-                elif result['action'] == 'kioskinterfaceDelete':
-                    datasend['data']['subaction'] =  'delete'
-                elif result['action'] == 'kioskinterfaceUpdate':
-                    datasend['data']['subaction'] =  'update'
-                
-                self.send_message_to_master(datasend)               
-                    
+                if 'action' in result:
+                    if result['action'] == "kioskinterface":
+                        #start kiosk ask initialization
+                        datasend['data']['subaction'] =  result['subaction']
+                        userlist = list(set([users[0]  for users in psutil.users()]))
+                        datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
+                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'])
+                        datasend['data']['oumachine'] = organizationbymachine()
+                    elif result['action'] == 'kioskinterfaceInstall':
+                        datasend['data']['subaction'] =  'install'
+                    elif result['action'] == 'kioskinterfaceLaunch':
+                        datasend['data']['subaction'] =  'launch'
+                    elif result['action'] == 'kioskinterfaceDelete':
+                        datasend['data']['subaction'] =  'delete'
+                    elif result['action'] == 'kioskinterfaceUpdate':
+                        datasend['data']['subaction'] =  'update'
+
+                    self.send_message_to_master(datasend)
+
             ### Received {'uuid': 45d4-3124c21-3123, 'action': 'kioskinterfaceInstall', 'subaction': 'Install'}
             # send result or acquit
             ###client_socket.send(recv_msg_from_kiosk)
@@ -1001,10 +1006,14 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
-
-        lastusersession = powershellgetlastuser()
+        #todo determination lastusersession to review
+        lastusersession = ""
+        userlist = list(set([users[0]  for users in psutil.users()]))
+        if len(userlist) > 0:
+            lastusersession = userlist[0]
         if lastusersession != "":
-            dataobj['adorgbyuser'] = organizationbyuser(lastusersession)
+            dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
+
         dataobj['lastusersession'] = lastusersession
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
