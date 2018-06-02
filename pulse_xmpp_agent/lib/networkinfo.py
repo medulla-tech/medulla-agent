@@ -413,8 +413,8 @@ def organizationbymachine():
         indomain = isMachineInDomain()
         if indomain:
             #powershell fonction
-            dnwindows = powershellfqdnwindowscommand()
-            return dnwindows
+            fqdnwindows = powershellfqdnwindowscommand()
+            return fqdnwindows
         else:
             return ""
     else:
