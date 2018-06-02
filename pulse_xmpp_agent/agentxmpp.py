@@ -243,7 +243,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if result['action'] == "kioskinterface":
                         #start kiosk ask initialization
                         datasend['data']['subaction'] =  result['subaction']
-                        userlist = list(set([users[0]  for users in psutil.users()]))
                         datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
                         datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'])
                         datasend['data']['oumachine'] = organizationbymachine()
