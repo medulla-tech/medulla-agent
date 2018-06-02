@@ -41,6 +41,9 @@ import ConfigParser
 import socket
 import psutil
 
+
+logger = logging.getLogger()
+
 DEBUGPULSE = 25
 
 
