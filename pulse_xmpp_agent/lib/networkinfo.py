@@ -25,7 +25,7 @@ import subprocess
 import sys
 import platform
 import utils
-from lib.utils import simplecommand,  powerschellscriptps1 #,windowsservice,
+from lib.utils import simplecommand,  powerschellscriptps1
 import logging
 import os
 from distutils.util import strtobool
