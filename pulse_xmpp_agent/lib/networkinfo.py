@@ -470,9 +470,9 @@ def isInterfaceToIpadress(interface, ip):
 def rewriteInterfaceTypeRedhad(configfile, data, interface):
     tab = []
     inputFile = open(configfile, 'rb')
-    contenue = inputFile.read()
+    filecontent = inputFile.read()
     inputFile.close()
-    tab = contenue.split("\n")
+    tab = filecontent.split("\n")
     ll = [x for x in tab if
           not x.strip().startswith('IPADDR')
           and not x.strip().startswith('NETMASK')
@@ -502,12 +502,12 @@ def rewriteInterfaceTypeDebian(data, interface):
     z = []
     try:
         inputFile = open("/etc/network/interfaces", 'rb')
-        contenue = inputFile.read()
+        filecontent = inputFile.read()
         inputFile.close()
         inputFile = open("/etc/network/interfacesold", 'wb')
-        inputFile.write(contenue)
+        inputFile.write(filecontent)
         inputFile.close()
-        b = contenue.split("\n")
+        b = filecontent.split("\n")
         ll = [x.strip() for x in b if not x.startswith('auto') and
               not 'auto' in x and not x.startswith('#') and x != '']
         string = "\n".join(ll)
