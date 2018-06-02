@@ -48,7 +48,6 @@ class networkagentinfo:
             d['macnotshortened'] = d['macaddress']
             d['macaddress'] = self.reduction_mac(d['macaddress'])
         if len(param) != 0 and len(self.messagejson['listipinfo']) != 0:
-            # Filter result
             dd = []
             param1 = map(self.reduction_mac, param)
             for d in self.messagejson['listipinfo']:
@@ -269,7 +268,6 @@ class networkagentinfo:
         return self.messagejson
 
     def getLocalIipAddress(self):
-        # renvoi objet reseaux linux.
         dhcpserver = self.IpDhcp()
         ip_addresses = []
         defaultgateway = {}
@@ -412,7 +410,6 @@ def organizationbymachine():
     elif sys.platform.startswith('win'):
         indomain = isMachineInDomain()
         if indomain:
-            #powershell fonction
             fqdnwindows = powershellfqdnwindowscommand()
             return fqdnwindows
         else:
@@ -431,7 +428,6 @@ def organizationbyuser(user):
     elif sys.platform.startswith('win'):
         indomain = isMachineInDomain()
         if indomain:
-            #powershell fonction
             fqdnwindows = powershellfqdnwindowscommandbyuser(user)
             return fqdnwindows
         else:
@@ -508,7 +504,6 @@ def rewriteInterfaceTypeDebian(data, interface):
         inputFile = open("/etc/network/interfaces", 'rb')
         contenue = inputFile.read()
         inputFile.close()
-        # sauve fichier de conf
         inputFile = open("/etc/network/interfacesold", 'wb')
         inputFile.write(contenue)
         inputFile.close()
@@ -582,7 +577,6 @@ def getsystemressource():
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    #code_result= p.wait()
     system = result[0].rstrip('\n')
     return system
 
