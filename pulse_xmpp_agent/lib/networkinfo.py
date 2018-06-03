@@ -331,13 +331,13 @@ def powershellfqdnwindowscommand():
         search fqdn for machine windows from activedirectory
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
-              shell=True)
+        output = subprocess.check_output(["powershell.exe", """([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
+                                         shell=True)
         output = output.decode('cp850')
-        outou=[]
-        lou = [ x.replace("OU=","") for x in output.split(",") if "OU=" in x]
+        outou = []
+        lou = [x.replace("OU=", "") for x in output.split(",") if "OU=" in x]
         for y in lou:
-            if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]',y):
+            if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]', y):
                 outou.append(y)
         if len(outou) != 0:
             outou.reverse()
@@ -351,12 +351,12 @@ def powershellfqdnwindowscommand():
 
 def powershellfqdnwindowscommandbyuser(user):
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user], shell=True)
+        output = subprocess.check_output(["powershell.exe", """([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user], shell=True)
         output = output.decode('cp850')
-        outou=[]
-        lou = [ x.replace("OU=","") for x in output.split(",") if "OU=" in x]
+        outou = []
+        lou = [x.replace("OU=", "") for x in output.split(",") if "OU=" in x]
         for y in lou:
-            if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]',y):
+            if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]', y):
                 outou.append(y)
         if len(outou) != 0:
             outou.reverse()
@@ -374,10 +374,10 @@ def powershellgetlastuser():
         result = powerschellscriptps1(script)
         if result['code'] == 0:
             ret = []
-            line =  [ x.replace("\n",'') for x in result['result'].split("\r\n") if x.replace("\n",'') != ""]
+            line = [x.replace("\n", '') for x in result['result'].split("\r\n") if x.replace("\n", '') != ""]
             if len(line) == 3:
-                descriptor = [x for x in line[0].split(' ') if x !=""]
-                informationuser = [x for x in line[2].split(' ') if x !=""]
+                descriptor = [x for x in line[0].split(' ') if x != ""]
+                informationuser = [x for x in line[2].split(' ') if x != ""]
                 if  descriptor[0].startswith('Last'):
                     ret = informationuser[1].split('\\')
                 if  descriptor[1].startswith('Last'):
@@ -391,8 +391,8 @@ def isMachineInDomain():
         returns if the machine is part of an AD domain or not
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""(gwmi win32_computersystem).partofdomain"""],
-              shell=True)
+        output = subprocess.check_output(["powershell.exe", """(gwmi win32_computersystem).partofdomain"""],
+                                         shell=True)
         return bool(strtobool(output.strip()))
     except subprocess.CalledProcessError, e:
         logging.getLogger().error("subproces isMachineInDomain.output = " + e.output)
