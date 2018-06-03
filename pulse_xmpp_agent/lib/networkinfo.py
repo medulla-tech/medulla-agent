@@ -24,14 +24,14 @@ import netifaces
 import subprocess
 import sys
 import platform
-import utils
-from lib.utils import simplecommand,  powerschellscriptps1
 import logging
-import os
-from distutils.util import strtobool
+import re
 import socket
 import psutil
-import re
+import os
+from distutils.util import strtobool
+from lib.utils import simplecommand, powerschellscriptps1
+import utils
 
 if sys.platform.startswith('win'):
     import wmi
