@@ -1432,16 +1432,16 @@ class grafcet:
         clear optionnel option
         if clear is not defini then clear = True
         inventory optionnel option
-        if inventory is not defini then inventory = False
+        if inventory is not defini then inventory = True
         """
-        inventory = False
+        inventory = True
         if 'inventory' in self.workingstep:
             if isinstance(self.workingstep['inventory'], bool):
                 inventory = self.workingstep['inventory']
             else:
                 self.workingstep['inventory'] = str(self.workingstep['inventory'])
-                if self.workingstep['inventory'] == "True":
-                    inventory = True
+                if self.workingstep['inventory'] == "False":
+                    inventory = False
         inventoryfile = ""
         if inventory:
             ### genere inventaire et envoi inventaire
