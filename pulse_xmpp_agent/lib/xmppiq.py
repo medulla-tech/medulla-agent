@@ -61,7 +61,7 @@ def dispach_iq_command(xmppobject, jsonin):
                          "remotecommandshell", 
                          "listremotefileedit", 
                          "remotefileeditaction",
-                         "remotexmppmonotoring"]
+                         "remotexmppmonitoring"]
 
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
@@ -119,7 +119,7 @@ class functionsynchroxmpp:
         return json.dumps(data)
 
     @staticmethod
-    def remotexmppmonotoring( xmppobject, data ):
+    def remotexmppmonitoring( xmppobject, data ):
         dataresult=[]
         if data['data'] == "battery":
             result = decode_strconsole(sensors_battery())
