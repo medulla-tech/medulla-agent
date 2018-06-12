@@ -1394,3 +1394,25 @@ def reboot_command():
         os.system("shutdown -r now")
 
     return
+
+def decode_strconsole(x):
+    """ imput str decode to default coding python(# -*- coding: utf-8; -*-)"""
+    if sys.platform.startswith('linux'):
+        return x.decode('utf-8','ignore')
+    elif sys.platform.startswith('win'):
+        return x.decode('cp850','ignore')
+    elif sys.platform.startswith('darwin'):
+        return x.decode('utf-8','ignore')
+    else:
+        return x
+
+def encode_strconsole(x):
+    """ output str encode to coding other system """
+    if sys.platform.startswith('linux'):
+        return x.encode('utf-8')
+    elif sys.platform.startswith('win'):
+        return x.encode('cp850')
+    elif sys.platform.startswith('darwin'):
+        return x.encode('utf-8')
+    else:
+        return x
