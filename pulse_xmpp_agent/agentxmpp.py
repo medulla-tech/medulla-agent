@@ -106,7 +106,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #using event eventkill for signal stop thread
         self.eventkill = threading.Event()
         client_handlertcp = threading.Thread(target=self.tcpserver)
-        # run server tcpserver for kiosk 
+        # run server tcpserver for kiosk
         client_handlertcp.start()
         self.manage_scheduler  = manage_scheduler(self)
         # initialise charge relay server
@@ -155,13 +155,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.agenttype in ['relayserver']:
             self.schedule('reloaddeploy', 15, self.reloaddeploy, repeat=True)
         # we make sure that the temp for the inventories is greater than or equal to 1 hour.
-        # if the time for the inventories is 0, it is left at 0. 
+        # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
         if self.config.inventory_interval != 0:
             if self.config.inventory_interval < 3600:
                 self.config.inventory_interval = 3600
                 logging.warning("chang minimun time cyclic inventory : 3600")
-                logging.warning("we make sure that the time for the inventories is greater than or equal to 1 hour.") 
+                logging.warning("we make sure that the time for the inventories is greater than or equal to 1 hour.")
             self.schedule('event inventory', self.config.inventory_interval, self.handleinventory, repeat=True)
         else:
             logging.warning("not enable cyclic inventory")
@@ -255,6 +255,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     elif result['action'] == 'kioskinterfaceUpdate':
                         datasend['data']['subaction'] =  'update'
 
+                    elif result['action'] == 'kioskLog':
+                        if result['type'] != "" and result["message"] != "":
+                            if hasattr(logging, result["type"]):
+                                kiosk_log = getattr(logging, result["type"])
+                                kiosk_log(result["message"])
                     self.send_message_to_master(datasend)
 
             ### Received {'uuid': 45d4-3124c21-3123, 'action': 'kioskinterfaceInstall', 'subaction': 'Install'}
@@ -499,7 +504,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.update_plugin()
         else:
             if self.config.agenttype in ['machine']:
-                if self.boundjid.bare != message['from'].bare : 
+                if self.boundjid.bare != message['from'].bare :
                     try:
                         if message['type'] == 'available':
                             self.machinerelayserver.append(message['from'].bare)
@@ -948,7 +953,7 @@ Check if ip [%s] is correct:
 check if interface exist with ip %s
 
 Warning Configuration machine %s
-[connection] 
+[connection]
 server = It must be expressed in ip notation.
 
 server = 127.0.0.1  correct
@@ -1124,7 +1129,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.Server)
         time.sleep(2)
 
-    while True: 
+    while True:
         restart = False
         xmpp = MUCBot(tg)
         xmpp.register_plugin('xep_0030') # Service Discovery
