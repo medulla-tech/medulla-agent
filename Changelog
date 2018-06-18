@@ -1,3 +1,8 @@
+pulse-xmpp-agent 1.9.5
+======================
+*
+
+
 pulse-xmpp-agent 1.9.3
 ======================
 * [Bugfix] Fix backslash management for bat and ps1 scripts on Windows
