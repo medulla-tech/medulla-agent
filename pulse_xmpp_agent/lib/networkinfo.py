@@ -24,14 +24,14 @@ import netifaces
 import subprocess
 import sys
 import platform
-import utils
-from lib.utils import simplecommand,  powerschellscriptps1 #,windowsservice,
 import logging
-import os
-from distutils.util import strtobool
+import re
 import socket
 import psutil
-import re
+import os
+from distutils.util import strtobool
+from lib.utils import simplecommand, powerschellscriptps1
+import utils
 
 if sys.platform.startswith('win'):
     import wmi
@@ -48,7 +48,6 @@ class networkagentinfo:
             d['macnotshortened'] = d['macaddress']
             d['macaddress'] = self.reduction_mac(d['macaddress'])
         if len(param) != 0 and len(self.messagejson['listipinfo']) != 0:
-            # Filter result
             dd = []
             param1 = map(self.reduction_mac, param)
             for d in self.messagejson['listipinfo']:
@@ -269,7 +268,6 @@ class networkagentinfo:
         return self.messagejson
 
     def getLocalIipAddress(self):
-        # renvoi objet reseaux linux.
         dhcpserver = self.IpDhcp()
         ip_addresses = []
         defaultgateway = {}
@@ -333,24 +331,39 @@ def powershellfqdnwindowscommand():
         search fqdn for machine windows from activedirectory
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
-              shell=True)
-        output = output.decode('windows-1252').encode('utf8')
-        if re.findall('[^A-Za-z0-9=,-_ ]',output):
-            output = ''
-        return output
+        output = subprocess.check_output(["powershell.exe", """([adsisearcher]"(&(objectClass=computer)(name=$env:computername))").findone().path"""],
+                                         shell=True)
+        output = output.decode('cp850')
+        outou = []
+        lou = [x.replace("OU=", "") for x in output.split(",") if "OU=" in x]
+        for y in lou:
+            if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]', y):
+                outou.append(y)
+        if len(outou) != 0:
+            outou.reverse()
+            result = "@@".join(outou)
+            return result
+        else:
+            return ""
     except subprocess.CalledProcessError, e:
         logging.getLogger().error("subproces powershellfqdnwindowscommand.output = " + e.output)
     return ""
 
 def powershellfqdnwindowscommandbyuser(user):
     try:
-        output = subprocess.check_output(["powershell.exe","""([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user],
-              shell=True)
-        output = output.decode('windows-1252').encode('utf8')
-        if re.findall('[^A-Za-z0-9=,-_ ]',output):
-            output = ''
-        return output
+        output = subprocess.check_output(["powershell.exe", """([adsisearcher]"(&(objectClass=user)(samaccountname=%s))").findone().path"""%user], shell=True)
+        output = output.decode('cp850')
+        outou = []
+        lou = [x.replace("OU=", "") for x in output.split(",") if "OU=" in x]
+        for y in lou:
+            if not re.findall('[éèêëÉÈÊËàâäÀÂÄôöÔÖùÙ\(\)]', y):
+                outou.append(y)
+        if len(outou) != 0:
+            outou.reverse()
+            result = "@@".join(outou)
+            return result
+        else:
+            return ""
     except subprocess.CalledProcessError, e:
         logging.getLogger().error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
     return ""
@@ -361,10 +374,10 @@ def powershellgetlastuser():
         result = powerschellscriptps1(script)
         if result['code'] == 0:
             ret = []
-            line =  [ x.replace("\n",'') for x in result['result'].split("\r\n") if x.replace("\n",'') != ""]
+            line = [x.replace("\n", '') for x in result['result'].split("\r\n") if x.replace("\n", '') != ""]
             if len(line) == 3:
-                descriptor = [x for x in line[0].split(' ') if x !=""]
-                informationuser = [x for x in line[2].split(' ') if x !=""]
+                descriptor = [x for x in line[0].split(' ') if x != ""]
+                informationuser = [x for x in line[2].split(' ') if x != ""]
                 if  descriptor[0].startswith('Last'):
                     ret = informationuser[1].split('\\')
                 if  descriptor[1].startswith('Last'):
@@ -372,13 +385,14 @@ def powershellgetlastuser():
                 return ret[1]
     return ""
 
+
 def isMachineInDomain():
     """
         returns if the machine is part of an AD domain or not
     """
     try:
-        output = subprocess.check_output(["powershell.exe","""(gwmi win32_computersystem).partofdomain"""],
-              shell=True)
+        output = subprocess.check_output(["powershell.exe", """(gwmi win32_computersystem).partofdomain"""],
+                                         shell=True)
         return bool(strtobool(output.strip()))
     except subprocess.CalledProcessError, e:
         logging.getLogger().error("subproces isMachineInDomain.output = " + e.output)
@@ -391,34 +405,16 @@ def organizationbymachine():
         search fqdn for machine windows from activedirectory
     """
     fqdnwindows = ""
-    if sys.platform.startswith('linux'):
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
         return ""
     elif sys.platform.startswith('win'):
         indomain = isMachineInDomain()
         if indomain:
-            #powershell fonction
             fqdnwindows = powershellfqdnwindowscommand()
-            if fqdnwindows == "":
-                logging.getLogger().warning("fqdn AD inconue")
-            else:
-                fqdnwindows = fqdnwindows.replace("LDAP://","")
-                elt = fqdnwindows.split(',')
-                list_ou=[]
-                list_dc=[]
-                for t in elt:
-                    if t.startswith('CN'):
-                        cn= t.replace('CN=','')
-                    if t.startswith('OU'):
-                        list_ou.append(t.replace('OU=',''))
-                    if t.startswith('DC'):
-                        list_dc.append(t.replace('DC=',''))
-                ou = ("/").join(list(reversed(list_ou)))
-                dc = (".").join(list_dc)
-                fqdnwindows = cn + "@@"+ ou + "@@" + dc
             return fqdnwindows
         else:
             return ""
-    elif sys.platform.startswith('darwin'):
+    else:
         return ""
 
 def organizationbyuser(user):
@@ -426,39 +422,18 @@ def organizationbyuser(user):
         AD information for user
         search fqdn for machine windows from activedirectory
     """
-    if sys.platform.startswith('linux'):
+    fqdnwindows = ""
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
         return ""
     elif sys.platform.startswith('win'):
-        fqdnwindows = ""
         indomain = isMachineInDomain()
         if indomain:
-            #powershell fonction
             fqdnwindows = powershellfqdnwindowscommandbyuser(user)
-            if fqdnwindows == "":
-                logging.getLogger().warning("fqdn AD inconue")
-            else:
-                fqdnwindows = fqdnwindows.replace("LDAP://","")
-                elt = fqdnwindows.split(',')
-                list_cn = []
-                list_ou = []
-                list_dc = []
-                for t in elt:
-                    if t.startswith('CN'):
-                        list_cn.append( t.replace('CN=',''))
-                    if t.startswith('OU'):
-                        list_ou.append(t.replace('OU=',''))
-                    if t.startswith('DC'):
-                        list_dc.append(t.replace('DC=',''))
-                cn = (".").join(list_cn)
-                ou = ("/").join(list(reversed(list_ou)))
-                dc = (".").join(list_dc)
-                fqdnwindows = cn + "@@"+ ou + "@@" + dc
             return fqdnwindows
         else:
             return ""
-    elif sys.platform.startswith('darwin'):
+    else:
         return ""
-
 
 def interfacename(mac):
     for interface in netifaces.interfaces():
@@ -495,9 +470,9 @@ def isInterfaceToIpadress(interface, ip):
 def rewriteInterfaceTypeRedhad(configfile, data, interface):
     tab = []
     inputFile = open(configfile, 'rb')
-    contenue = inputFile.read()
+    filecontent = inputFile.read()
     inputFile.close()
-    tab = contenue.split("\n")
+    tab = filecontent.split("\n")
     ll = [x for x in tab if
           not x.strip().startswith('IPADDR')
           and not x.strip().startswith('NETMASK')
@@ -527,13 +502,12 @@ def rewriteInterfaceTypeDebian(data, interface):
     z = []
     try:
         inputFile = open("/etc/network/interfaces", 'rb')
-        contenue = inputFile.read()
+        filecontent = inputFile.read()
         inputFile.close()
-        # sauve fichier de conf
         inputFile = open("/etc/network/interfacesold", 'wb')
-        inputFile.write(contenue)
+        inputFile.write(filecontent)
         inputFile.close()
-        b = contenue.split("\n")
+        b = filecontent.split("\n")
         ll = [x.strip() for x in b if not x.startswith('auto') and
               not 'auto' in x and not x.startswith('#') and x != '']
         string = "\n".join(ll)
@@ -603,7 +577,6 @@ def getsystemressource():
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    #code_result= p.wait()
     system = result[0].rstrip('\n')
     return system
 
@@ -625,6 +598,6 @@ def getUserName():
     This function allow to obtain the name of the connected users
     """
     if sys.platform.startswith('linux'):
-        obj = simplecommand("who | cut -d" "  -f1 | sort | uniq")
+        connected_users = simplecommand("who | cut -d" "  -f1 | sort | uniq")
 
-    return obj
+    return connected_users

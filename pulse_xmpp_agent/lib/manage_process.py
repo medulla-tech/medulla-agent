@@ -109,19 +109,19 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                 message['data']['oldresult'] = ""
             for t in workingstep:
                 if t == "@resultcommand":
-                    workingstep[t] = os.linesep.join(result)  #unicode( os.linesep.join(result), errors='ignore')
+                    workingstep[t] = os.linesep.join(result)
                 elif t.endswith('lastlines'):
                     nb = t.split("@")
                     nb1 = -int(nb[0])
                     logging.getLogger().debug( "=======lastlines============%s========"%nb1)
                     tab = result[nb1:]
-                    workingstep[t] = os.linesep.join(result)  #unicode( os.linesep.join(tab), errors='ignore')
+                    workingstep[t] = os.linesep.join(result)
                 elif t.endswith('firstlines'):
                     nb = t.split("@")
                     nb1 = int(nb[0])
                     logging.getLogger().debug( "=======firstlines============%s======="%nb1)
                     tab = result[:nb1]
-                    workingstep[t] = os.linesep.join(result)  #unicode( os.linesep.join(tab), errors='ignore')
+                    workingstep[t] = os.linesep.join(result)
             if 'goto' in workingstep:
                 message['data']['stepcurrent'] = workingstep['goto']
             elif 'success' in workingstep and  workingstep['codereturn'] == 0:
