@@ -256,10 +256,24 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         datasend['data']['subaction'] =  'update'
 
                     elif result['action'] == 'kioskLog':
-                        if result['type'] != "" and result["message"] != "":
-                            if hasattr(logging, result["type"]):
-                                kiosk_log = getattr(logging, result["type"])
-                                kiosk_log(result["message"])
+                        if 'message' in result and result['message'] != "":
+                            self.xmpplog(
+                                        result['message'],
+                                        type = 'noset',
+                                        sessionname = '',
+                                        priority = 0,
+                                        action = "",
+                                        who = self.boundjid.bare,
+                                        how = "Planned",
+                                        why = "",
+                                        module = "Kiosk | Notify",
+                                        fromuser = "",
+                                        touser = "")
+                            if 'type' in result:
+                                if result['type'] == "info":
+                                    logging.getLogger().info(result['message'])
+                                elif result['type'] == "warning":
+                                    logging.getLogger().warning(result['message'])
                     self.send_message_to_master(datasend)
 
             ### Received {'uuid': 45d4-3124c21-3123, 'action': 'kioskinterfaceInstall', 'subaction': 'Install'}
