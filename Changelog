@@ -1,3 +1,9 @@
+pulse-xmpp-agent 1.9.4
+======================
+* [Bugfix] Fix edition of config files
+* [Bugfix] Fix decode cp 850 to utf8 result command windows
+
+
 pulse-xmpp-agent 1.9.3
 ======================
 * [Bugfix] Fix backslash management for bat and ps1 scripts on Windows
