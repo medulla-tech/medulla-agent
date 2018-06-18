@@ -924,6 +924,9 @@ def getIpXmppInterface(ipadress1, Port):
         logging.log(
             DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, ipadress))
+        if obj['code'] != 0:
+            logging.getLogger().error('error command netstat : %s'%obj['result'])
+            logging.getLogger().error('error install package net-tools')
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
