@@ -50,7 +50,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start
+                        save_count_start, test_kiosk_presence
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -1015,6 +1015,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
+            'kiosk_presence' : test_kiosk_presence(),
             'countstart' : save_count_start()
         }
         try:

@@ -598,7 +598,7 @@ class shellcommandtimeout(object):
         def target():
             # print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'],
-                                            shell=True, 
+                                            shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
@@ -1491,3 +1491,24 @@ def save_user_current(name = None):
     return datauseruser['curent']
 
 
+def test_kiosk_presence():
+    """Test if the kiosk is installed in the machine.
+    Returns:
+        string "True" if the directory is founded
+        or
+        string "False" if the directory is not founded"""
+
+    if sys.platform.startswith("win"):
+        path = ['C:\Program Files\Python36\Lib\site-packages\kiosk_interface',
+        'C:\Program Files\Python36-32\Lib\site-packages\kiosk_interface']
+
+    elif sys.platform == "darwin":
+        # TODO : Add kiosk_interface path
+        path = []
+    elif sys.platform == "linux":
+        # TODO : Add kiosk_interface path
+        path = []
+    for element in path:
+        if os.path.isdir(element):
+            return "True"
+    return "False"
