@@ -51,9 +51,14 @@ class grafcet:
         if not os.path.isdir(managepackage.packagedir()):
             os.makedirs(managepackage.packagedir())
         self.datasend = datasend
+        self.parameterdynamic = {}
         self.objectxmpp = objectxmpp
         #logging.getLogger().debug("===========Class grafcet========= %s "%self.objectxmpp.boundjid.bare)
         self.data = datasend['data']
+        if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):
+            # there are  dynamic parameters.
+            for k, v in self.data['advanced']['paramdeploy'].items():
+                self.parameterdynamic[k] = v
         self.sessionid = datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
         if not 'stepcurrent' in self.data:
@@ -143,7 +148,19 @@ class grafcet:
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
         
-            
+        ### remplace all dynamic parameters by values.
+        ### eg :  @@@DYNAMIC_PARAM@@@section@@@ is dynamique parameter "section"
+        ### Si le parameter dynamic section exist, it is replace by value.
+        ### for def a paramater dynamic. "Dynamic parameters Packages" Single advanced launch.
+        ### eg  In Single advanced launch:     "section" : "install", "otherparameter" : "data"
+        ###
+        if "@@@DYNAMIC_PARAM@@@" in cmd:
+            listname = re.findall(r"@@@DYNAMIC_PARAM@@@(.*?)@@@", cmd)
+            for nameparameter in listname:
+                if nameparameter in self.parameterdynamic:
+                    cmd = cmd.replace(
+                    '@@@DYNAMIC_PARAM@@@%s@@@'%nameparameter,
+                    self.parameterdynamic[nameparameter])
         if 'oldresult' in self.datasend['data']:
             cmd = cmd.replace(
                 '@@@PREC_RESULT@@@',
