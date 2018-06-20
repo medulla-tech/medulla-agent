@@ -77,16 +77,19 @@ class grafcet:
                         # attribute section "install" if exists
                         mesg_install = "START SECTION INSTALL"
                         if self.descriptorsection['action_section_install'] != -1:
+                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_install']]) #stage status marked as complete
                             self.data['stepcurrent'] = self.descriptorsection['action_section_install'] + 1
                     elif strsection == "update":
                         # attribute section "update" if exists
                         mesg_install = "START SECTION UPDATE"
                         if "action_section_update" in self.descriptorsection:
+                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_update']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
                     elif strsection == "undinstall":
                         #attribute section "undinstall" if exists
                         mesg_install = "START SECTION UNDINSTALL"
                         if "action_section_undinstall" in self.descriptorsection:
+                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_undinstall']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_undinstall'] + 1
                     self.objectxmpp.xmpplog('[%s]-[%s]: %s' % ( self.data['name'], self.data['stepcurrent'],mesg_install),
                                 type = 'deploy',
@@ -788,7 +791,6 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.__action_completed__(self.workingstep)
             if "section" in self.parameterdynamic:
                 strsection = str(self.parameterdynamic['section']).upper()
                 self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
@@ -834,7 +836,6 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.__action_completed__(self.workingstep)
             if "section" in self.parameterdynamic:
                 strsection = str(self.parameterdynamic['section']).upper()
                 self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
@@ -880,7 +881,6 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.__action_completed__(self.workingstep)
             if "section" in self.parameterdynamic:
                 strsection = str(self.parameterdynamic['section']).upper()
                 self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
