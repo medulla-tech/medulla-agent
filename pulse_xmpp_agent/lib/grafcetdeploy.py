@@ -54,7 +54,6 @@ class grafcet:
         self.parameterdynamic = {}
         self.descriptorsection = { 'action_section_install' : -1 }
         self.objectxmpp = objectxmpp
-        #logging.getLogger().debug("===========Class grafcet========= %s "%self.objectxmpp.boundjid.bare)
         self.data = datasend['data']
         if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):
             # there are  dynamic parameters.
@@ -69,21 +68,23 @@ class grafcet:
         try:
             # search section in sequence
             self.find_step_type()
-            # attribution stepcurent in function section
+            # attribute step curent in function section
             if int(self.data['stepcurrent']) == 0:
                 mesg_install = ""
                 if "section" in self.parameterdynamic:
                     strsection = str(self.parameterdynamic['section']).lower()
                     if strsection == "install":
-                        # attribution section install si existe
+                        # attribute section "install" if exists
                         mesg_install = "START SECTION INSTALL"
                         if self.descriptorsection['action_section_install'] != -1:
                             self.data['stepcurrent'] = self.descriptorsection['action_section_install'] + 1
                     elif strsection == "update":
+                        # attribute section "update" if exists
                         mesg_install = "START SECTION UPDATE"
                         if "action_section_update" in self.descriptorsection:
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
                     elif strsection == "undinstall":
+                        #attribute section "undinstall" if exists
                         mesg_install = "START SECTION UNDINSTALL"
                         if "action_section_undinstall" in self.descriptorsection:
                             self.data['stepcurrent'] = self.descriptorsection['action_section_undinstall'] + 1
@@ -100,13 +101,9 @@ class grafcet:
                                 fromuser = self.data['login'],
                                 touser = "")
             self.workingstep = self.sequence[self.data['stepcurrent']]
-            #logging.getLogger().debug("===========workingstep ========= %s "% json.dumps(self.workingstep, indent=4, sort_keys=True))
-            self.__execstep__()
+            self.__execstep__() #call action workingstep
         except BaseException as e:
             logging.getLogger().error("END DEPLOY ON ERROR INITIALISATION")
-            # step no exist
-            # end deploy
-            # traitement
             self.datasend['ret'] = 255
 
             logging.getLogger().debug(
@@ -117,6 +114,7 @@ class grafcet:
                     sort_keys=True))
 
             if 'jidmaster' in self.datasend['data']:
+                # retourne resultat error to master for end session on master.
                 self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
                                              mbody=json.dumps(self.datasend),
                                              mtype='chat')
@@ -147,8 +145,6 @@ class grafcet:
                                     fromuser = self.datasend['data']['login'],
                                     touser = "")
             self.terminate(-1, True, "end error initialisation deploy")
-            ######
-            # retourne master resultat de deploiement
 
     def find_step_type(self):
         for stepseq in self.sequence:
@@ -762,7 +758,7 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-            
+
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
