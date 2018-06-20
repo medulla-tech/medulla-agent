@@ -1,6 +1,9 @@
 pulse-xmpp-agent 1.9.5
 ======================
-*
+* [FEATURE] Addition of an inventory step after deployment
+* [BUGFIX] Fix edition of config files
+* [BUGFIX] Fix encoding for remote console
+* [BUGFIX] Fix encoding for commands run on Windows
 
 
 pulse-xmpp-agent 1.9.3
