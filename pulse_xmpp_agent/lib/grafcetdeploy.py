@@ -52,6 +52,7 @@ class grafcet:
             os.makedirs(managepackage.packagedir())
         self.datasend = datasend
         self.parameterdynamic = {}
+        self.descriptorsection = { 'action_section_install' : -1 }
         self.objectxmpp = objectxmpp
         #logging.getLogger().debug("===========Class grafcet========= %s "%self.objectxmpp.boundjid.bare)
         self.data = datasend['data']
@@ -59,16 +60,50 @@ class grafcet:
             # there are  dynamic parameters.
             for k, v in self.data['advanced']['paramdeploy'].items():
                 self.parameterdynamic[k] = v
+
         self.sessionid = datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
+
         if not 'stepcurrent' in self.data:
             return
         try:
+            # search section in sequence
+            self.find_step_type()
+            # attribution stepcurent in function section
+            if int(self.data['stepcurrent']) == 0:
+                mesg_install = ""
+                if "section" in self.parameterdynamic:
+                    strsection = str(self.parameterdynamic['section']).lower()
+                    if strsection == "install":
+                        # attribution section install si existe
+                        mesg_install = "START SECTION INSTALL"
+                        if self.descriptorsection['action_section_install'] != -1:
+                            self.data['stepcurrent'] = self.descriptorsection['action_section_install'] + 1
+                    elif strsection == "update":
+                        mesg_install = "START SECTION UPDATE"
+                        if "action_section_update" in self.descriptorsection:
+                            self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
+                    elif strsection == "undinstall":
+                        mesg_install = "START SECTION UNDINSTALL"
+                        if "action_section_undinstall" in self.descriptorsection:
+                            self.data['stepcurrent'] = self.descriptorsection['action_section_undinstall'] + 1
+                    self.objectxmpp.xmpplog('[%s]-[%s]: %s' % ( self.data['name'], self.data['stepcurrent'],mesg_install),
+                                type = 'deploy',
+                                sessionname = self.sessionid,
+                                priority = self.data['stepcurrent'],
+                                action = "",
+                                who = self.objectxmpp.boundjid.bare,
+                                how = "",
+                                why = self.data['name'],
+                                module = "Deployment | Execution",
+                                date = None ,
+                                fromuser = self.data['login'],
+                                touser = "")
             self.workingstep = self.sequence[self.data['stepcurrent']]
             #logging.getLogger().debug("===========workingstep ========= %s "% json.dumps(self.workingstep, indent=4, sort_keys=True))
             self.__execstep__()
-        except BaseException:
-            logging.getLogger().error("END DEPLOY ON ERROR")
+        except BaseException as e:
+            logging.getLogger().error("END DEPLOY ON ERROR INITIALISATION")
             # step no exist
             # end deploy
             # traitement
@@ -87,8 +122,45 @@ class grafcet:
                                              mtype='chat')
             self.objectxmpp.session.clearnoevent(self.sessionid)
 
+            self.objectxmpp.xmpplog('<span style="font-weight: bold; color: red;">ERROR INITIALISATION GRAFCET</span>',
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -1,
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Execution",
+                                    date = None ,
+                                    fromuser = self.datasend['data']['login'],
+                                    touser = "")
+            self.objectxmpp.xmpplog('<span style="font-weight: bold; color: red;">'+str(e)+'</span>',
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -1,
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Error | Execution",
+                                    date = None ,
+                                    fromuser = self.datasend['data']['login'],
+                                    touser = "")
+            self.terminate(-1, True, "end error initialisation deploy")
             ######
             # retourne master resultat de deploiement
+
+    def find_step_type(self):
+        for stepseq in self.sequence:
+            if 'action' in stepseq:
+                if stepseq['action'] == "action_section_install":
+                    self.descriptorsection['action_section_install'] = stepseq['step']
+                elif stepseq['action'] == "action_section_undinstall":
+                    self.descriptorsection['action_section_undinstall'] = stepseq['step']
+                elif stepseq['action'] == "action_section_update":
+                    self.descriptorsection['action_section_update'] = stepseq['step']
+                elif stepseq['action'] == "actionsuccescompletedend":
+                    self.descriptorsection['actionsuccescompletedend'] = stepseq['step']
 
     def __execstep__(self):
         # call function self.workingstep['action']
@@ -147,7 +219,7 @@ class grafcet:
         # print "__________________________________"
         # print  "replaceTEMPLATE in %s"% cmd
         # print "__________________________________"
-        
+
         ### remplace all dynamic parameters by values.
         ### eg :  @@@DYNAMIC_PARAM@@@section@@@ is dynamique parameter "section"
         ### Si le parameter dynamic section exist, it is replace by value.
@@ -709,6 +781,145 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
+
+    def action_section_install(self):
+        """
+        {
+                "action": "action_section_install",
+                "step": 1
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            if "section" in self.parameterdynamic:
+                strsection = str(self.parameterdynamic['section']).upper()
+                self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Execution",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+            # goto succes
+            self.__search_Next_step_int__(self.descriptorsection['actionsuccescompletedend'])
+            self.__execstep__()
+            return
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_section_install step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_install : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                     module = "Deployment | Execution | Error",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
+    def action_section_undinstall(self):
+        """
+        {
+                "action": "action_section_undinstall",
+                "step": 1
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            if "section" in self.parameterdynamic:
+                strsection = str(self.parameterdynamic['section']).upper()
+                self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Execution",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+            # goto succes
+            self.__search_Next_step_int__(self.descriptorsection['actionsuccescompletedend'])
+            self.__execstep__()
+            return
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_section_undinstall step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_undinstall : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                     module = "Deployment | Execution | Error",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
+    def action_section_update(self):
+        """
+        {
+                "action": "action_section_update",
+                "step": 1
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            if "section" in self.parameterdynamic:
+                strsection = str(self.parameterdynamic['section']).upper()
+                self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Execution",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+            # goto succes
+            self.__search_Next_step_int__(self.descriptorsection['actionsuccescompletedend'])
+            self.__execstep__()
+            return
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_section_update step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_update : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                     module = "Deployment | Execution | Error",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
 
     def action_comment(self):
         """
