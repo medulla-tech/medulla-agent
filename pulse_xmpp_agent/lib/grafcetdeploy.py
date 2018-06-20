@@ -71,6 +71,8 @@ class grafcet:
             # attribute step curent in function section
             if int(self.data['stepcurrent']) == 0:
                 mesg_install = ""
+                if not "section" in self.parameterdynamic:
+                    self.parameterdynamic['section'] = "install"
                 if "section" in self.parameterdynamic:
                     strsection = str(self.parameterdynamic['section']).lower()
                     if strsection == "install":
