@@ -1498,17 +1498,25 @@ def test_kiosk_presence():
         or
         string "False" if the directory is not founded"""
 
-    if sys.platform.startswith("win"):
-        path = ['C:\Program Files\Python36\Lib\site-packages\kiosk_interface',
-        'C:\Program Files\Python36-32\Lib\site-packages\kiosk_interface']
+    def _get_kiosk_path():
+        if sys.platform.startswith("win"):
+            list = [
+                os.path.join(os.environ["ProgramFiles"], "Python36", "Lib", "site-packages"),
+                os.path.join(os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages")
+            ]
+        elif sys.platform == "darwin":
+            list = ["usr","local","lib","python3.6","site-packages"]
+        elif sys.platform == "linux":
+            list = ["usr","lib","python3.6","site-packages",
+                    "usr", "lib", "python3.5", "site-packages"]
 
-    elif sys.platform == "darwin":
-        # TODO : Add kiosk_interface path
-        path = []
-    elif sys.platform == "linux":
-        # TODO : Add kiosk_interface path
-        path = []
-    for element in path:
-        if os.path.isdir(element):
-            return "True"
-    return "False"
+        for element in list:
+            if os.path.isdir(element):
+                return element
+        return None
+
+    path = _get_kiosk_path()
+    if path is not None and os.path.isdir(os.path.join(path, 'kiosk_interface')):
+        return "True"
+    else:
+        return "False"
