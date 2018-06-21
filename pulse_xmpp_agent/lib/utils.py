@@ -1499,16 +1499,23 @@ def test_kiosk_presence():
         string "False" if the directory is not founded"""
 
     def _get_kiosk_path():
+        """This private function find the path for the pytho3 install.
+        If no installation is found the the function returns  None.
+        Returns:
+            string: the path of python3/site-packages
+            or
+            None if no path is founded"""
+        list = []
         if sys.platform.startswith("win"):
             list = [
                 os.path.join(os.environ["ProgramFiles"], "Python36", "Lib", "site-packages"),
                 os.path.join(os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages")
             ]
         elif sys.platform == "darwin":
-            list = ["usr","local","lib","python3.6","site-packages"]
+            list = ["usr","local","lib","python3.6","dist-packages"]
         elif sys.platform == "linux":
-            list = ["usr","lib","python3.6","site-packages",
-                    "usr", "lib", "python3.5", "site-packages"]
+            list = ["usr","lib","python3.6","dist-packages",
+                    "usr", "lib", "python3.5", "dist-packages"]
 
         for element in list:
             if os.path.isdir(element):
