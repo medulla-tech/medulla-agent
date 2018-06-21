@@ -120,7 +120,6 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                     nb = t.split("@")
                     nb1 = int(nb[0])
                     logging.getLogger().debug( "=======firstlines============%s======="%nb1)
-                    tab = result[:nb1]
                     workingstep[t] = os.linesep.join(result)
             if 'goto' in workingstep:
                 message['data']['stepcurrent'] = workingstep['goto']
