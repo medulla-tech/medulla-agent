@@ -87,12 +87,12 @@ class grafcet:
                         if "action_section_update" in self.descriptorsection:
                             self.__action_completed__(self.sequence[self.descriptorsection['action_section_update']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
-                    elif strsection == "undinstall":
-                        #attribute section "undinstall" if exists
+                    elif strsection == "uninstall":
+                        #attribute section "uninstall" if exists
                         mesg_install = "START SECTION UNDINSTALL"
-                        if "action_section_undinstall" in self.descriptorsection:
-                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_undinstall']])
-                            self.data['stepcurrent'] = self.descriptorsection['action_section_undinstall'] + 1
+                        if "action_section_uninstall" in self.descriptorsection:
+                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_uninstall']])
+                            self.data['stepcurrent'] = self.descriptorsection['action_section_uninstall'] + 1
                     self.objectxmpp.xmpplog('[%s]-[%s]: %s' % ( self.data['name'], self.data['stepcurrent'],mesg_install),
                                 type = 'deploy',
                                 sessionname = self.sessionid,
@@ -156,8 +156,8 @@ class grafcet:
             if 'action' in stepseq:
                 if stepseq['action'] == "action_section_install":
                     self.descriptorsection['action_section_install'] = stepseq['step']
-                elif stepseq['action'] == "action_section_undinstall":
-                    self.descriptorsection['action_section_undinstall'] = stepseq['step']
+                elif stepseq['action'] == "action_section_uninstall":
+                    self.descriptorsection['action_section_uninstall'] = stepseq['step']
                 elif stepseq['action'] == "action_section_update":
                     self.descriptorsection['action_section_update'] = stepseq['step']
                 elif stepseq['action'] == "actionsuccescompletedend":
@@ -828,10 +828,10 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
 
-    def action_section_undinstall(self):
+    def action_section_uninstall(self):
         """
         {
-                "action": "action_section_undinstall",
+                "action": "action_section_uninstall",
                 "step": 1
         }
         """
@@ -858,9 +858,9 @@ class grafcet:
             return
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
-            self.terminate(-1, False, "end error in action_section_undinstall step %s" %
+            self.terminate(-1, False, "end error in action_section_uninstall step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_undinstall : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_uninstall : %s' % (self.data['name'], self.workingstep['step'], str(e)),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],
