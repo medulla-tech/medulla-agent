@@ -120,7 +120,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotexmppmonitoring( xmppobject, data ):
-        dataresult=[]
+        result = []
         if data['data'] == "battery":
             result = decode_strconsole(sensors_battery())
         elif data['data'] == "winservices":
