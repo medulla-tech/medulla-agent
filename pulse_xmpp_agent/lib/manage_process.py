@@ -114,7 +114,6 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                     nb = t.split("@")
                     nb1 = -int(nb[0])
                     logging.getLogger().debug( "=======lastlines============%s========"%nb1)
-                    tab = result[nb1:]
                     workingstep[t] = os.linesep.join(result)
                 elif t.endswith('firstlines'):
                     nb = t.split("@")
