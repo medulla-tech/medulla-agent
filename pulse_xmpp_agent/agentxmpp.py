@@ -38,7 +38,7 @@ from sleekxmpp.xmlstream import handler, matcher
 
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
+from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
 from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
 from lib.managesession import session
 
