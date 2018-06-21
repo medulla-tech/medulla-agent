@@ -1031,8 +1031,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if len(userlist) > 0:
             lastusersession = userlist[0]
         if xmpp.config.agenttype in ['relayserver']:
-            if element in ['adorgbymachine','adorgbyuser','kiosk_presence']:
-                if dataobj.has_key(element):
+            for element in ['adorgbymachine','adorgbyuser','kiosk_presence']:
+                if element in dataobj:
                     del dataobj[element]
         else:
             if lastusersession != "":
