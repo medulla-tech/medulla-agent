@@ -1030,13 +1030,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         userlist = list(set([users[0]  for users in psutil.users()]))
         if len(userlist) > 0:
             lastusersession = userlist[0]
-        if self.config.agenttype in ['relayserver']:
-            for element in ['adorgbymachine','adorgbyuser','kiosk_presence']:
-                if element in dataobj:
-                    del dataobj[element]
-        else:
-            if lastusersession != "":
-                dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
+
+        if lastusersession != "":
+            dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
 
         dataobj['lastusersession'] = lastusersession
         sys.path.append(self.config.pathplugins)
