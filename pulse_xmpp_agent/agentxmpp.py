@@ -38,7 +38,7 @@ from sleekxmpp.xmlstream import handler, matcher
 
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
+from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
 from lib.managesession import session
 
@@ -1030,7 +1030,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         userlist = list(set([users[0]  for users in psutil.users()]))
         if len(userlist) > 0:
             lastusersession = userlist[0]
-        if xmpp.config.agenttype in ['relayserver']:
+        if self.config.agenttype in ['relayserver']:
             for element in ['adorgbymachine','adorgbyuser','kiosk_presence']:
                 if element in dataobj:
                     del dataobj[element]
