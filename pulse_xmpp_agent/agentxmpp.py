@@ -1053,7 +1053,6 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         plugindataseach = {}
         for element in os.listdir(self.config.pathpluginsscheduled):
             if element.endswith('.py') and element.startswith('scheduling_'):
-                print element
                 f = open(os.path.join(self.config.pathpluginsscheduled,element),'r')
                 lignes  = f.readlines()
                 f.close()
