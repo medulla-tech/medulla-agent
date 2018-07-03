@@ -1277,7 +1277,7 @@ def install_or_uninstall_keypub_authorized_keys(
                 logging.log(DEBUGPULSE, "ERROR %s" % str(e))
                 return False
     else:
-        logging.log(DEBUGPULSE, "undinstall key")
+        logging.log(DEBUGPULSE, "uninstall key")
         filesouce = ""
         source = open(path_authorized_keys, "r")
         for ligne in source:
