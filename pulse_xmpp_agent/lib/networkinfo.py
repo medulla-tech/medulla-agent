@@ -140,7 +140,7 @@ class networkagentinfo:
 
         @param ipaddress: The ip address to test
 
-        @rtype: Boolean. True if the ip adress is valid, False otherwise
+        @rtype: Boolean. True if the ip address is valid, False otherwise
         """
         try:
             socket.inet_aton(ipaddress)

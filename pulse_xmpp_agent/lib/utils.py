@@ -391,7 +391,7 @@ def getshortenedmacaddress():
     return listmacadress
 
 
-def getMacAdressList():
+def getMacAddressList():
     listmacadress = []
     for interfacenet in netifaces.interfaces():
         try:
@@ -404,7 +404,7 @@ def getMacAdressList():
     return listmacadress
 
 
-def getIPAdressList():
+def getIPAddressList():
     ip_list = []
     for interface in netifaces.interfaces():
         try:
@@ -416,7 +416,7 @@ def getIPAdressList():
     return ip_list
 
 
-def MacAdressToIp(ip):
+def MacAddressToIp(ip):
     'Returns a MAC for interfaces that have given IP, returns None if not found'
     for i in netifaces.interfaces():
         addrs = netifaces.ifaddresses(i)
@@ -495,13 +495,13 @@ def is_valid_ipv6(ip):
         (?:(?!:)|:(?=:))            # Colon iff it would be part of a wildcard
         (?:                         # Repeat 6 times:
             [0-9a-f]{0,4}           #   A group of at most four hexadecimal digits
-            (?:(?<=::)|(?<!::):)    #   Colon unless preceeded by wildcard
+            (?:(?<=::)|(?<!::):)    #   Colon unless preceded by wildcard
         ){6}                        #
         (?:                         # Either
             [0-9a-f]{0,4}           #   Another group
-            (?:(?<=::)|(?<!::):)    #   Colon unless preceeded by wildcard
+            (?:(?<=::)|(?<!::):)    #   Colon unless preceded by wildcard
             [0-9a-f]{0,4}           #   Last group
-            (?: (?<=::)             #   Colon iff preceeded by exacly one colon
+            (?: (?<=::)             #   Colon iff preceded by exacly one colon
              |  (?<!:)              #
              |  (?<=:) (?<!::) :    #
              )                      # OR
@@ -916,7 +916,7 @@ def getIpXmppInterface(ipadress1, Port):
     resultip = ''
     ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Address")
         print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
@@ -935,7 +935,7 @@ def getIpXmppInterface(ipadress1, Port):
             if len(b) != 0:
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Address")
         print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
         obj = simplecommand(
             "netstat -an | findstr %s | findstr ESTABLISHED" %
@@ -951,7 +951,7 @@ def getIpXmppInterface(ipadress1, Port):
             if len(b) != 0:
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Address")
         print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
