@@ -1216,10 +1216,10 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
-def install_or_undinstall_keypub_authorized_keys(
+def install_or_uninstall_keypub_authorized_keys(
         install=True, keypub=None, user="pulse"):
     """
-        This function installs or undinstall the public key in the authorized_keys file for user "user"
+        This function installs or uninstall the public key in the authorized_keys file for user "user"
         If keypub is not specified then the function uninstall the key for user "user"
     """
     path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh")
