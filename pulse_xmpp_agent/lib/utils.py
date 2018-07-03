@@ -1216,7 +1216,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
-def install_or_undinstall_keypub_authorized_keys(
+def install_or_uninstall_keypub_authorized_keys(
         install=True, keypub=None, user="pulse"):
     """
         This function installs or undinstall the public key in the authorized_keys file for user "user"
