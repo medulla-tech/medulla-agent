@@ -1044,7 +1044,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                 dataobj['plugin'][module['NAME']] = module['VERSION']
         #add list scheduler plugins
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
-        #persistance info machine
+        #persistence info machine
         self.infomain = dataobj
         return dataobj
 
