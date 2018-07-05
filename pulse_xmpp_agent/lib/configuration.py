@@ -258,11 +258,12 @@ class confParameter:
                         Config.get('type', 'public_ip'))
                     self.packageserver["public_ip"] = self.public_ip_relayserver
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
-
-        # The plugin list is define in the plugin section with the pluginlist key
-        # The ini files have to have to contain a parameter sessuib
-        # The keys will represebt the variable names ( by convention )
-        # usable in the plugins
+        # par convention :
+        # la liste des plugins definie dans la section plugin avec la clef pluginlist
+        # donne les fichiers .ini a chargé.
+        # les fichiers ini des plugins doivent comporter une session parameters.
+        # les clef representeront aussi par convention le nom des variables
+        # utilisable dans le plugins.
         if Config.has_option("plugin", "pluginlist"):
             pluginlist = Config.get('plugin', 'pluginlist').split(",")
             pluginlist = [x.strip() for x in pluginlist]
@@ -488,7 +489,7 @@ def listMacAdressMacOs():
     """
     This function return the mac address on MAC OS
     :returns: it returns the mac address of the MacOS machine
-    :rtype: dictionary
+    :rtype: dictionnary
     """
     lst = {}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
@@ -508,7 +509,7 @@ def listMacAdressWinOs():
     """
     This function return the mac address on MS Windows
     :returns: it returns the mac address of the windows machine
-    :rtype: dictionary
+    :rtype: dictionnary
     """
     lst = {}
     i = 0
@@ -529,7 +530,7 @@ def listMacAdressLinuxOs():
     """
     This function return the mac address on GNU/Linux
     :returns: it returns the mac address of the linux machine
-    :rtype: dictionary
+    :rtype: dictionnary
     """
     lst = {}
     ifconfig = os.popen('/sbin/ifconfig').readlines()

@@ -144,7 +144,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         reparsed = minidom.parseString(str(presence))
         logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
         if presence['muc']['nick'] == self.config.NickName:
-            #elimine sa propre presence
+            #elimine sa propre presense
             return
         if presence['muc']['nick'] == "MASTER":
             self.infos_machine()

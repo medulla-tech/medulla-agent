@@ -322,15 +322,15 @@ class grafcet:
             [x for x in netifaces.interfaces() if x != 'lo']))
 
         cmd = cmd.replace(
-            '@@@LIST_MAC_ADDRESS@@@', " ".join(
+            '@@@LIST_MAC_ADRESS@@@', " ".join(
                 getMacAdressList()))
 
-        cmd = cmd.replace('@@@LIST_IP_ADDRESS@@@', " ".join(getIPAdressList()))
+        cmd = cmd.replace('@@@LIST_IP_ADRESS@@@', " ".join(getIPAdressList()))
 
         cmd = cmd.replace('@@@IP_MACHINE_XMPP@@@', self.data['ipmachine'])
 
         cmd = cmd.replace(
-            '@@@MAC_ADDRESS_MACHINE_XMPP@@@',
+            '@@@MAC_ADRESS_MACHINE_XMPP@@@',
             MacAdressToIp(
                 self.data['ipmachine']))
 
@@ -988,7 +988,7 @@ class grafcet:
                         b = self.replaceTEMPLATE(
                             self.workingstep['environ'][a])
                         os.environ[a] = b
-                        self.objectxmpp.xmpplog('[%s]-[%s] : set variable Environnement %s = %s' % (self.data['name'], self.workingstep['step'], a, b),
+                        self.objectxmpp.xmpplog('[%s]-[%s] : set varaible Environnement %s = %s' % (self.data['name'], self.workingstep['step'], a, b),
                                                 type = 'deploy',
                                                 sessionname = self.sessionid,
                                                 priority = self.workingstep['step'],
