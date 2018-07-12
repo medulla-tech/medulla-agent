@@ -181,7 +181,7 @@ class functionsynchroxmpp:
                         data['data'] = { "result" : "error save config file %s missing"%filename, "error" : True , 'numerror' : 130 }
             elif data['data']['action'] == 'listconfigfile':
                 listfileedit = [ x for x in os.listdir(directoryconffile()) if (x.endswith(".ini") or x.endswith(".ini.local"))]
-                data['data'] = data['data'] = { "result" : listfileedit, "error" : False , 'numerror' : 0 }
+                data['data'] = { "result" : listfileedit, "error" : False , 'numerror' : 0 }
                 return json.dumps(data)
             else:
                 data['data'] = { "result" : "error the action parameter is not correct ", "error" : True , 'numerror' : 131 }
