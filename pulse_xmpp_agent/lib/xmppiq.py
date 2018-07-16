@@ -177,9 +177,9 @@ class functionsynchroxmpp:
                         and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
-                        datestr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+".ini"
-                        newfilename = filename[:-4] + "_" + datestr
-                        copyfile(filename, newfilename)
+                        #datestr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+".ini"
+                        #newfilename = filename[:-4] + "_" + datestr
+                        #copyfile(filename, newfilename)
                         file_put_contents(filename,  data['data']['content'])
                         data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror' : 0 }
                         return json.dumps(data)
