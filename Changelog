@@ -1,3 +1,5 @@
+* [BUGFIX] Fix editing configuration files in client machine
+
 pulse-xmpp-agent 1.9.5
 ======================
 * [FEATURE] Addition of an inventory step after deployment
