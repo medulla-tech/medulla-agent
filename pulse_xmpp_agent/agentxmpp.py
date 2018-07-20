@@ -180,6 +180,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
         self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+        self.schedule('check AGENT INSTALL', 350, self.checkinstallagent, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
         if self.config.agenttype in ['relayserver']:
             self.schedule('reloaddeploy', 15, self.reloaddeploy, repeat=True)
@@ -776,6 +777,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except Exception as e:
             logging.error(" %s " %(str(e)))
             traceback.print_exc(file=sys.stdout)
+
+    def checkinstallagent(self):
+        # verify si boollean existe.
+        if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
+            Update_Remote_Agent = Update_Remote_Agent(self.pathagent, True )
+            Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
+            if Update_Remote_Agent.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
+                #reinstall agent from img_agent
+                if sys.platform.startswith('win'):
+                    for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['program_agent']:
+                        os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
+                                                 os.path.join(self.pathagent, fichier)))
+                        logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
+                                                                        os.path.join(self.pathagent)))
+                    os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
+                                             os.path.join(self.pathagent, "agentversion")))
+                    for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['lib_agent']:
+                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                 os.path.join(self.pathagent, "lib", fichier)))
+                        logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                                    os.path.join(self.pathagent, "lib", fichier)))
+                    for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['script_agent']:
+                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                 os.path.join(self.pathagent, "script", fichier)))
+                        logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                                      os.path.join(self.pathagent, "script", fichier)))
+                    #todo base de reg install version
+                elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                    os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
+                    os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
+                    os.system('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
+                    os.system('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
+                    logger.debug('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
+                    logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
+                    logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
+                    logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
+                else: 
+                    logger.error("reinstall agent copy file error os missing")
 
     def restartBot(self):
         global restart
