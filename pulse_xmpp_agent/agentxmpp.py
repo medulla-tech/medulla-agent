@@ -96,6 +96,35 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 15
         self.back_to_deploy = {}
         self.config = conf
+        ###################Update agent from MAster#############################
+        self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+        self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
+        self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
+        self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
+            #copy agent vers remote agent.
+            if sys.platform.startswith('win'):
+                for fichier in self.descriptorimage.get_md5_descriptor_agent()['program_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent, fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, fichier), os.path.join(self.img_agent, fichier)))
+                if not os.path.isfile(os.path.join(self.img_agent,agentversion )):
+                    os.system('copy  %s %s'%(os.path.join(self.pathagent, agentversion), os.path.join(self.img_agent, agentversion)))
+                for fichier in self.descriptorimage.get_md5_descriptor_agent()['lib_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent,"lib", fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", fichier), os.path.join(self.img_agent,"lib", fichier)))
+                for fichier in self.descriptorimage.get_md5_descriptor_agent()['script_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent, "script", fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", lib_agent)))
+            elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                print "copy file"
+                os.system('cp -u %s/*.py %s'%(self.pathagent,self.img_agent))
+                os.system('cp -u %s/script/* %s/script/'%(self.pathagent,self.img_agent))
+                os.system('cp -u %s/lib/*.py %s/lib/'%(self.pathagent,self.img_agent))
+                os.system('cp -u %s/agentversion %s/agentversion'%(self.pathagent,self.img_agent))
+            else: 
+                logger.error("command copy for os")
+        self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        ###################END Update agent from MAster#############################
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Bind the socket to the port
         server_address = ('localhost',  self.config.am_local_port)
@@ -1025,6 +1054,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
+        ###################Update agent from MAster#############################
+        dataobj['md5agent'] = self.descriptorimage.get_fingerprint_agent_base()
+        ###################End Update agent from MAster#############################
         #todo determination lastusersession to review
         lastusersession = ""
         userlist = list(set([users[0]  for users in psutil.users()]))
