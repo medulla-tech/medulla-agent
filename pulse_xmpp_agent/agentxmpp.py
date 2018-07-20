@@ -104,17 +104,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
             #copy agent vers remote agent.
             if sys.platform.startswith('win'):
-                for fichier in self.descriptorimage.get_md5_descriptor_agent()['program_agent']:
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['program_agent']:
                     if not os.path.isfile(os.path.join(self.img_agent, fichier)):
                         os.system('copy  %s %s'%(os.path.join(self.pathagent, fichier), os.path.join(self.img_agent, fichier)))
-                if not os.path.isfile(os.path.join(self.img_agent,agentversion )):
-                    os.system('copy  %s %s'%(os.path.join(self.pathagent, agentversion), os.path.join(self.img_agent, agentversion)))
-                for fichier in self.descriptorimage.get_md5_descriptor_agent()['lib_agent']:
+                if not os.path.isfile(os.path.join(self.img_agent,'agentversion' )):
+                    os.system('copy  %s %s'%(os.path.join(self.pathagent, 'agentversion'), os.path.join(self.img_agent, 'agentversion')))
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['lib_agent']:
                     if not os.path.isfile(os.path.join(self.img_agent,"lib", fichier)):
                         os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", fichier), os.path.join(self.img_agent,"lib", fichier)))
-                for fichier in self.descriptorimage.get_md5_descriptor_agent()['script_agent']:
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['script_agent']:
                     if not os.path.isfile(os.path.join(self.img_agent, "script", fichier)):
-                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", lib_agent)))
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", 'lib_agent')))
             elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                 print "copy file"
                 os.system('cp -u %s/*.py %s'%(self.pathagent,self.img_agent))
