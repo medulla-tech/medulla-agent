@@ -31,7 +31,7 @@ import time
 import socket
 import threading
 from lib.agentconffile import conffilename
-
+from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from sleekxmpp.xmlstream import handler, matcher
 
