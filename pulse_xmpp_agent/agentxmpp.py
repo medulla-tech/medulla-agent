@@ -92,10 +92,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
-        laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
         self.back_to_deploy = {}
         self.config = conf
+        laps_time_networkMonitor = self.config.detectiontime
+        logging.warning("laps time network changing %s"%laps_time_networkMonitor)
         ###################Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
@@ -179,7 +180,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
-        self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+        if self.config.netchanging == 1:
+            logging.warning("Network Changing enable")
+            self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+        else:
+            logging.warning("Network Changing disable")
         self.schedule('check AGENT INSTALL', 350, self.checkinstallagent, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
         if self.config.agenttype in ['relayserver']:
