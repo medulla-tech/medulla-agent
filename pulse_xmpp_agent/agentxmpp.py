@@ -125,6 +125,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else: 
                 logger.error("command copy for os")
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        if self.config.updating != 1:
+            logging.warning("remote updating disable")
+        if self.descriptorimage.get_fingerprint_agent_base() != self.Update_Remote_Agentlist.get_fingerprint_agent_base():
+            self.agentupdating=True
+            logging.warning("Diff beetween agent is agent image master base")
         ###################END Update agent from MAster#############################
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Bind the socket to the port
@@ -785,42 +790,43 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def checkinstallagent(self):
         # verify si boollean existe.
-        if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
-            Update_Remote_Agent = Update_Remote_Agent(self.pathagent, True )
-            Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
-            if Update_Remote_Agent.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
-                os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
-                #reinstall agent from img_agent
-                if sys.platform.startswith('win'):
-                    for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['program_agent']:
-                        os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
-                                                 os.path.join(self.pathagent, fichier)))
-                        logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
-                                                                        os.path.join(self.pathagent)))
-                    os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
-                                             os.path.join(self.pathagent, "agentversion")))
-                    for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['lib_agent']:
-                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
-                                                 os.path.join(self.pathagent, "lib", fichier)))
-                        logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
-                                                                    os.path.join(self.pathagent, "lib", fichier)))
-                    for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['script_agent']:
-                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
-                                                 os.path.join(self.pathagent, "script", fichier)))
-                        logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
-                                                                      os.path.join(self.pathagent, "script", fichier)))
-                    #todo base de reg install version
-                elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-                    os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
-                    os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
-                    os.system('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
-                    os.system('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                    logger.debug('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
-                    logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
-                    logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
-                    logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                else: 
-                    logger.error("reinstall agent copy file error os missing")
+        if self.config.updating == 1:
+            if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
+                Update_Remote_Agent = Update_Remote_Agent(self.pathagent, True )
+                Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
+                if Update_Remote_Agent.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
+                    os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
+                    #reinstall agent from img_agent
+                    if sys.platform.startswith('win'):
+                        for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['program_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
+                                                    os.path.join(self.pathagent, fichier)))
+                            logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
+                                                                            os.path.join(self.pathagent)))
+                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
+                                                os.path.join(self.pathagent, "agentversion")))
+                        for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['lib_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                    os.path.join(self.pathagent, "lib", fichier)))
+                            logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                                        os.path.join(self.pathagent, "lib", fichier)))
+                        for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['script_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                    os.path.join(self.pathagent, "script", fichier)))
+                            logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                                        os.path.join(self.pathagent, "script", fichier)))
+                        #todo base de reg install version
+                    elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                        os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
+                        os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
+                        os.system('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
+                        os.system('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
+                    else: 
+                        logger.error("reinstall agent copy file error os missing")
 
     def restartBot(self):
         global restart
@@ -1099,7 +1105,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         except Exception:
             dataobj["moderelayserver"] = "static"
         ###################Update agent from MAster#############################
-        dataobj['md5agent'] = self.descriptorimage.get_fingerprint_agent_base()
+        if self.config.updating == 1:
+            dataobj['md5agent'] = self.descriptorimage.get_fingerprint_agent_base()
         ###################End Update agent from MAster#############################
         #todo determination lastusersession to review
         lastusersession = ""
