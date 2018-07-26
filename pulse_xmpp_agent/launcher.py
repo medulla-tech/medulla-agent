@@ -60,7 +60,8 @@ if __name__ == '__main__':
     if  testspeedagent:
         print "search configuration from master"
 
-    os.chdir(os.path.dirname(sys.argv[0]))
+    pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+    os.chdir(os.path.dirname(pathagent))
     if not opts.consoledebug:
         if opts.typemachine.lower() in ["machine"]:
             if  testspeedagent:
