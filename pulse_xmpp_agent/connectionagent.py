@@ -255,7 +255,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         }
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
-            lastusersession = os.environ['USERNAME']
+            try:
+                lastusersession = os.environ['USERNAME']
+            except KeyError as e:
+                lastusersession = ""
+                logging.error(str(e))
         if lastusersession != "":
             dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
         return dataobj
@@ -350,6 +354,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.process(block=True)
             t.cancel()
             logging.log(DEBUGPULSE,"bye bye connecteur")
+            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
+            fichier= open(namefilebool,"w")
+            fichier.close()
         else:
             logging.log(DEBUGPULSE,"Unable to connect.")
     else:
