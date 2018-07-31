@@ -779,9 +779,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
             md5ctl = createfingerprintnetwork()
-            if self.md5reseau != md5ctl:
-                refreshfingerprint()
-                logging.log(DEBUGPULSE,"network changed for %s!\n RESTART AGENT" % self.boundjid.user)
+            force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
+            if self.md5reseau != md5ctl or os.path.isfile(reconfiguration):
+                if not os.path.isfile(force_reconfiguration):
+                    refreshfingerprint()
+                    logging.log(DEBUGPULSE,"by network changed. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
+                else:
+                    logging.log(DEBUGPULSE,"by request. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
+                    os.remove(force_reconfiguration)
+                #### execution de convigurateur.
+                #### timeout 5 minutes.
+                namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
+                nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                if os.path.isfile(namefilebool):
+                    os.remove(namefilebool)
+
+                args = [nameprogconnection, '-t', 'machine']
+                subprocess.call(args)
+
+                for i in range(15):
+                    if os.path.isfile(namefilebool):
+                        break
+                    time.sleep(2)
+                logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
                 self.restartBot()
         except Exception as e:
             logging.error(" %s " %(str(e)))
