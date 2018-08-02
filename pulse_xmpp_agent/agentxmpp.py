@@ -795,7 +795,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if os.path.isfile(namefilebool):
                     os.remove(namefilebool)
 
-                args = [nameprogconnection, '-t', 'machine']
+                args = ['python', nameprogconnection, '-t', 'machine']
                 subprocess.call(args)
 
                 for i in range(15):
