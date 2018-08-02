@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     pythonexec = "C:\\python27\\python.exe"
     #########################################
-    os.chdir(os.path.dirname(pathagent))
+    os.chdir(pathagent)
     if not opts.consoledebug:
         if opts.typemachine.lower() in ["machine"]:
             if  testspeedagent:
