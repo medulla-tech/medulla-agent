@@ -35,7 +35,7 @@ from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from sleekxmpp.xmlstream import handler, matcher
 
-
+import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
@@ -781,7 +781,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
-            if self.md5reseau != md5ctl or os.path.isfile(reconfiguration):
+            if self.md5reseau != md5ctl or os.path.isfile(force_reconfiguration):
                 if not os.path.isfile(force_reconfiguration):
                     refreshfingerprint()
                     logging.log(DEBUGPULSE,"by network changed. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
@@ -812,25 +812,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # verify si boollean existe.
         if self.config.updating == 1:
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
-                Update_Remote_Agent = Update_Remote_Agent(self.pathagent, True )
+                Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
                 Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
-                if Update_Remote_Agent.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
+                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
                     #reinstall agent from img_agent
                     if sys.platform.startswith('win'):
-                        for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['program_agent']:
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
                                                     os.path.join(self.pathagent, fichier)))
                             logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
                                                                             os.path.join(self.pathagent)))
                         os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
                                                 os.path.join(self.pathagent, "agentversion")))
-                        for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['lib_agent']:
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
                                                     os.path.join(self.pathagent, "lib", fichier)))
                             logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
                                                                         os.path.join(self.pathagent, "lib", fichier)))
-                        for fichier in Update_Remote_Agent.get_md5_descriptor_agent()['script_agent']:
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['script_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
                                                     os.path.join(self.pathagent, "script", fichier)))
                             logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
