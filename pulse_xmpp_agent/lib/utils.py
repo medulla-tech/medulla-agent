@@ -40,7 +40,8 @@ from agentconffile import conffilename
 import ConfigParser
 import socket
 import psutil
-
+import time
+from datetime import datetime
 
 logger = logging.getLogger()
 
@@ -1527,3 +1528,16 @@ def test_kiosk_presence():
         return "True"
     else:
         return "False"
+
+def utc2local (utc):
+    """
+    utc2local transform a utc datetime object to local object.
+
+    Param:
+        utc datetime which is not naive (the utc timezone must be precised)
+    Returns:
+        datetime in local timezone
+    """
+    epoch = time.mktime(utc.timetuple())
+    offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
+    return utc + offset
