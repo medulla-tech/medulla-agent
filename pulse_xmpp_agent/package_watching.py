@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
 #
+# file : pulse_xmpp_agent/package_watching.py
 #"""
 #This module is dedicated to analyse inventories sent by a Pulse 2 Client.
 #The original inventory is sent using one line per kind of
@@ -119,9 +120,10 @@ def send_agent_data(datastrdata, conf):
         sock.connect(server_address)
         sock.sendall(EncodedString.encode('ascii'))
         data = sock.recv(4096)
+        logging.getLogger().debug("send to ARS event")
     except Exception as e:
-        print str(e)
-        traceback.print_exc(file=sys.stdout)
+        logging.getLogger().error(str(e))
+        #traceback.print_exc(file=sys.stdout)
     finally:
         sock.close()
 
@@ -168,17 +170,30 @@ class MyEventHandler(pyinotify.ProcessEvent):
 
     def process_IN_MOVED_TO(self, event):
         if event.dir:
-            print "Copie de répertoire :", event.pathname
+            pass
         else:
-            print "Copie de fichier :", event.pathname
-            send_agent_data("Copie de fichier :", self.config)
+            namefile = str(os.path.basename(event.pathname))
+            difffile = []
+            datasend = self.msg_structure()
+            difffile.append(os.path.dirname(event.pathname))
+            datasend['data'] = { "MotifyFile"  : event.pathname,
+                                "notifydir" : difffile ,
+                                "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+            datasendstr = json.dumps(datasend, indent=4)
+            logging.getLogger().debug("Msg : %s"% datasendstr)
+            send_agent_data(datasendstr, self.config)
+            #send_agent_data("Copie de fichier :", self.config)
 
     def process_IN_MODIFY(self, event):
+        namefile = str(os.path.basename(event.pathname))
+        if namefile.startswith(".syncthing"):
+            return
         difffile = []
         datasend = self.msg_structure()
         difffile.append(os.path.dirname(event.pathname))
         datasend['data'] = { "difffile"  : event.pathname,
-                             "notifydir" : difffile }
+                             "notifydir" : difffile ,
+                             "packageid" : os.path.basename(os.path.dirname(event.pathname))}
         datasendstr = json.dumps(datasend, indent=4)
         logging.getLogger().debug("Msg : %s"% datasendstr)
         send_agent_data(datasendstr, self.config)
@@ -189,12 +204,15 @@ class MyEventHandler(pyinotify.ProcessEvent):
         if event.dir:
             disupp.append(os.path.dirname(event.pathname))
             datasend['data'] = { "suppdir" : event.pathname,
-                                 "notifydir" : disupp }
+                                 "notifydir" : disupp,
+                                 "packageid" : os.path.basename(event.pathname)}
             datasendstr = json.dumps(datasend, indent=4)
         else:
+            return
             disupp.append(os.path.dirname(event.pathname))
             datasend['data'] = { "suppfile" : event.pathname,
-                                 "notifydir" : disupp }
+                                 "notifydir" : disupp ,
+                                "packageid" : os.path.basename(os.path.dirname(event.pathname))}
             datasendstr = json.dumps(datasend, indent=4)
         logging.getLogger().debug("Msg : %s"% datasendstr)
         send_agent_data(datasendstr, self.config)
@@ -214,12 +232,15 @@ class MyEventHandler(pyinotify.ProcessEvent):
                     wdd = self.wm.add_watch(z, self.mask, rec=True)
                     diadd.append(z)
             datasend['data'] = { "adddir"    : diadd,
-                                 "notifydir" : diadd }
+                                 "notifydir" : diadd,
+                                 "packageid" : os.path.basename(diadd[0])}
             datasendstr = json.dumps(datasend, indent=4)
         else:
+            return
             diadd.append(os.path.dirname(event.pathname))
             datasend['data'] = { "addfile"    : event.pathname,
-                                 "notifydir" : diadd }
+                                 "notifydir" : diadd,
+                                 "packageid" : os.path.basename(os.path.dirname(event.pathname))}
             datasendstr = json.dumps(datasend, indent=4)
         logging.getLogger().debug("Msg : %s"% datasendstr)
         send_agent_data(datasendstr, self.config)
@@ -236,7 +257,7 @@ class watchingfilepartage:
         self.wm = pyinotify.WatchManager() # Watch Manager
         self.mask = pyinotify.IN_CREATE | \
                         pyinotify.IN_MODIFY | \
-                            pyinotify.IN_DELETE #|  pyinotify.IN_MOVED_TO
+                            pyinotify.IN_DELETE |  pyinotify.IN_MOVED_TO #| pyinotify.IN_CLOSE_WRITE
 
         self.handler = MyEventHandler(self.config, self.wm, self.mask)
         if config['excludelist'] != None:
@@ -302,14 +323,15 @@ if __name__ == '__main__':
             pid = os.fork()
             if pid > 0:
                 # exit from second parent, print eventual PID before
-                print "Daemon PID %d" % pid
-                print "kill -9 $(cat %s"%pidfile
+                #print "Daemon PID %d" % pid
+                #print "kill -9 $(cat %s)"%pidfile
                 logging.getLogger().info("Daemon PID %d" % pid)
                 os.seteuid(0)
                 os.setegid(0)
-                logging.getLogger().info("PID file" + str(pid) + " > " + pidfile)
-                logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
-                os.system("echo " + str(pid) + " > " + pidfile)
+                #logging.getLogger().info("PID file" + str(pid) + " > " + pidfile)
+                #logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
+                #os.system("echo " + str(pid) + " > " + pidfile)
+                #print "echo " + str(pid) + " > " + pidfile
                 sys.exit(0)
         except OSError, e:
             print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
@@ -318,9 +340,23 @@ if __name__ == '__main__':
         logging.getLogger().setLevel(logging.DEBUG)
 
     try:
-        print "----------------------------------------------------------------"
-        print conf
-        print "----------------------------------------------------------------"
+        logging.getLogger().info("start program")
+        logging.getLogger().info("----------------------------------------------------------------")
+        logging.getLogger().info(conf)
+        pidrun = os.getpid()
+        os.system("echo " + str(pidrun) + " > " + pidfile)
+        print "en mode debug stop program CTRL+Z suivi 1 des commandes suivantes"
+        print "kill -9 $(cat %s)"%pidfile
+        print  "or"
+        print "killall -9 package_watching.py"
+        print  "or"
+        print "kill %1"
+        print  "or"
+        print "kill -9 %s"%os.getpid()
+        logging.getLogger().info("PID file : " + str(pidrun) + " in file " + pidfile)
+        logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
+        logging.getLogger().info("killall package_watching.py")
+        logging.getLogger().info("----------------------------------------------------------------")
         a = watchingfilepartage(conf)
         a.run()
     except KeyboardInterrupt:
