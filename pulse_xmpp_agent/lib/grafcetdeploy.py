@@ -87,6 +87,12 @@ class grafcet:
                         if "action_section_update" in self.descriptorsection:
                             self.__action_completed__(self.sequence[self.descriptorsection['action_section_update']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
+                    elif strsection == "launch":
+                        # attribute section "update" if exists
+                        mesg_install = "START SECTION LAUNCH"
+                        if "action_section_launch" in self.descriptorsection:
+                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_launch']])
+                            self.data['stepcurrent'] = self.descriptorsection['action_section_launch'] + 1
                     elif strsection == "uninstall":
                         #attribute section "uninstall" if exists
                         mesg_install = "START SECTION UNDINSTALL"
@@ -160,6 +166,8 @@ class grafcet:
                     self.descriptorsection['action_section_uninstall'] = stepseq['step']
                 elif stepseq['action'] == "action_section_update":
                     self.descriptorsection['action_section_update'] = stepseq['step']
+                elif stepseq['action'] == "action_section_launch":
+                    self.descriptorsection['action_section_launch'] = stepseq['step']
                 elif stepseq['action'] == "actionsuccescompletedend":
                     self.descriptorsection['actionsuccescompletedend'] = stepseq['step']
 
@@ -919,6 +927,51 @@ class grafcet:
                                     touser = "")
 
 
+    def action_section_launch(self):
+        """
+        {
+                "action": "action_section_launch",
+                "step": 1
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            if "section" in self.parameterdynamic:
+                strsection = str(self.parameterdynamic['section']).upper()
+                self.objectxmpp.xmpplog('[%s]-[%s]: FIN SECTION %s' % ( self.data['name'], self.workingstep['step'], strsection),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                    module = "Deployment | Execution",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+            # goto succes
+            self.__search_Next_step_int__(self.descriptorsection['actionsuccescompletedend'])
+            self.__execstep__()
+            return
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_section_launch step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_launch : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = self.workingstep['step'],
+                                    action = "",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = self.data['name'],
+                                     module = "Deployment | Execution | Error",
+                                    date = None ,
+                                    fromuser = self.data['login'],
+                                    touser = "")
+
     def action_comment(self):
         """
         {
@@ -1202,7 +1255,7 @@ class grafcet:
             listname = zip_ref.namelist()
             self.__resultinfo__(self.workingstep, listname)
             zip_ref.close()
-            self.objectxmpp.xmpplog('[%s]-[%s]: unzip %s to directory %s' % (self.data['name'], 
+            self.objectxmpp.xmpplog('[%s]-[%s]: unzip %s to directory %s' % (self.data['name'],
                                                                              self.workingstep['step'],
                                                                              self.workingstep['filename'],
                                                                              self.workingstep['pathdirectorytounzip']),
@@ -1295,7 +1348,7 @@ class grafcet:
                     self.workingstep['pwd'] = os.getcwd()
                 else:
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
-                                            'directory missing!!!:  %s' % (  self.data['name'], 
+                                            'directory missing!!!:  %s' % (  self.data['name'],
                                                                              self.workingstep['step']),
                                                                             type = 'deploy',
                                                                             sessionname = self.sessionid,
@@ -1311,7 +1364,7 @@ class grafcet:
             self.workingstep['pwd'] = os.getcwd()
 
             self.objectxmpp.xmpplog('[%s]-[%s]: current directory %s' % ( self.data['name'],
-                                                                         self.workingstep['step'], 
+                                                                         self.workingstep['step'],
                                                                          self.workingstep['pwd']),
                                                                         type = 'deploy',
                                                                         sessionname = self.sessionid,
@@ -1458,7 +1511,7 @@ class grafcet:
         if sys.platform.startswith('win'):
             ### exec for power shell " powershell -executionpolicy bypass -File <ton_script_ps1>"
             extensionscriptfile={
-                "python" : { 
+                "python" : {
                             "suffix" : 'py' ,
                             "bang" : "#!/usr/bin/python"
                 },
@@ -1478,7 +1531,7 @@ class grafcet:
             }
         elif sys.platform.startswith('linux'):
             extensionscriptfile={
-                "python" : { 
+                "python" : {
                             "suffix" : 'py' ,
                             "bang" : "#!/usr/bin/python",
                             "commandtype" :"python "
@@ -1501,7 +1554,7 @@ class grafcet:
             }
         elif sys.platform.startswith('darwin'):
             extensionscriptfile={
-                "python" : { 
+                "python" : {
                             "suffix" : 'py' ,
                             "bang" : "#!/usr/bin/python",
                             "commandtype" :"python "
@@ -1547,7 +1600,7 @@ class grafcet:
                     self.workingstep['pwd'] = os.getcwd()
                 else:
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
-                                            'directory missing!!!:  %s' % (  self.data['name'], 
+                                            'directory missing!!!:  %s' % (  self.data['name'],
                                                                              self.workingstep['step']),
                                                                             type = 'deploy',
                                                                             sessionname = self.sessionid,
@@ -1563,7 +1616,7 @@ class grafcet:
             self.workingstep['pwd'] = os.getcwd()
 
             self.objectxmpp.xmpplog('[%s]-[%s]: current directory %s' % ( self.data['name'],
-                                                                         self.workingstep['step'], 
+                                                                         self.workingstep['step'],
                                                                          self.workingstep['pwd']),
                                                                         type = 'deploy',
                                                                         sessionname = self.sessionid,
@@ -2113,8 +2166,8 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
 
- 
-  
+
+
   # WIP
     def getpackagemanager(self):
         """
