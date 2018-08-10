@@ -149,7 +149,7 @@ def createfingerprintnetwork():
         obj = simplecommandstr("ipconfig")
         md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('linux'):
-        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
+        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
         md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('darwin'):
         obj = simplecommandstr("ipconfig")
