@@ -345,7 +345,8 @@ if __name__ == '__main__':
         logging.getLogger().info(conf)
         pidrun = os.getpid()
         os.system("echo " + str(pidrun) + " > " + pidfile)
-        print "en mode debug stop program CTRL+Z suivi 1 des commandes suivantes"
+        print "If in debug mode, you can stop the program by ussing CTRL+Z then one of"
+        print "the following commands"
         print "kill -9 $(cat %s)"%pidfile
         print  "or"
         print "killall -9 package_watching.py"
