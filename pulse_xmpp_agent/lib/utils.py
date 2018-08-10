@@ -1529,6 +1529,7 @@ def test_kiosk_presence():
     else:
         return "False"
 
+
 def utc2local (utc):
     """
     utc2local transform a utc datetime object to local object.
@@ -1541,3 +1542,25 @@ def utc2local (utc):
     epoch = time.mktime(utc.timetuple())
     offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
     return utc + offset
+
+
+def send_data_tcp(datastrdata, hostaddress = "localhost", port = 8766):
+    """Send tcp message throught a web socket
+    Params:
+        datastrdata string of datas sent
+        hostaddress string of the destination addresse
+        port int is the port on which the data are sent
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = (hostaddress, port)
+    data = None
+    try:
+        sock.connect(server_address)
+        sock.sendall(datastrdata.encode('ascii'))
+        data = sock.recv(2048)
+    except Exception as e:
+        logger.error("[%s]"%(str(e)))
+        data = None
+    finally:
+        sock.close()
+        return data

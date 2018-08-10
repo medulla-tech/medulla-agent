@@ -26,7 +26,7 @@ import platform
 import os.path
 import os
 import json
-from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64, send_data_tcp
 from configuration import setconfigfile
 import traceback
 import logging
@@ -62,7 +62,13 @@ class grafcet:
 
         self.sessionid = datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
-
+        self.msg_kiosk ={ "action" : "logdeploy",
+                          "sessionid" :   self.sessionid,
+                          "data" : { "name" : self.datasend['data']['name'],
+                                     "msg"  : "",
+                                     "path": self.datasend['data']['path'],
+                                     "pathpackageonmachine": self.datasend['data']['pathpackageonmachine']},
+                          "ret" : 0}
         if not 'stepcurrent' in self.data:
             return
         try:
@@ -95,10 +101,13 @@ class grafcet:
                             self.data['stepcurrent'] = self.descriptorsection['action_section_launch'] + 1
                     elif strsection == "uninstall":
                         #attribute section "uninstall" if exists
-                        mesg_install = "START SECTION UNDINSTALL"
+                        mesg_install = "START SECTION UNINSTALL"
                         if "action_section_uninstall" in self.descriptorsection:
                             self.__action_completed__(self.sequence[self.descriptorsection['action_section_uninstall']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_uninstall'] + 1
+                    self.msg_kiosk ["data"]["msg"] = '[%s]-[%s]: %s' % ( self.data['name'], self.data['stepcurrent'],mesg_install)
+                    self.msg_kiosk ["ret"] = 0
+                    send_data_tcp ( self.msg_kiosk, hostadress = "localhost", port = self.objectxmpp.config.kiosk_local_port)
                     self.objectxmpp.xmpplog('[%s]-[%s]: %s' % ( self.data['name'], self.data['stepcurrent'],mesg_install),
                                 type = 'deploy',
                                 sessionname = self.sessionid,
