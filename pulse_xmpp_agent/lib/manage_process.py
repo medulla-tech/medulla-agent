@@ -29,7 +29,7 @@ import logging
 import subprocess
 from threading import Timer
 logger = logging.getLogger()
-
+from utils import decode_strconsole, encode_strconsole
 
 def processcommand(command , queue_out_session, messagestr, timeout):
     logging.error("########processcommand")
@@ -49,8 +49,9 @@ def processcommand(command , queue_out_session, messagestr, timeout):
         logging.debug("command : \n%s"%command)
         logging.debug("================================================")
         cmd = cmdx(command,timeout)
+        cmddecode = decode_strconsole(cmd.stdout)
         msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
-        msgoutsucces['eventMessageraw']['data']['result'] = cmd.stdout
+        msgoutsucces['eventMessageraw']['data']['result'] = cmddecode
         logging.debug("code error  %s"% cmd.code_error)
         logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
         queue_out_session.put(msgoutsucces)
@@ -85,7 +86,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
             if i['step'] == step:
                 workingstep = i
                 break
-
+        ###
         if len (workingstep) != 0:
             #logging.debug("dddd###################\n#######################\n#######################\n#################")
             #logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
@@ -99,7 +100,8 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
             workingstep['codereturn'] = cmd.code_error
             message['data']['oldreturncode'] = str(cmd.code_error)
             workingstep['completed'] = 1
-            result = cmd.stdout.split('\n')
+            cmddecode = decode_strconsole(cmd.stdout)
+            result = cmddecode.split('\n')
             result  = [x.strip() for x in result if x !='']
             try:
                 message['data']['oldresult'] = str(result[-1])
@@ -107,19 +109,19 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                 message['data']['oldresult'] = ""
             for t in workingstep:
                 if t == "@resultcommand":
-                    workingstep[t] = unicode( os.linesep.join(result), errors='ignore')
+                    workingstep[t] = os.linesep.join(result)
                 elif t.endswith('lastlines'):
                     nb = t.split("@")
                     nb1 = -int(nb[0])
                     logging.getLogger().debug( "=======lastlines============%s========"%nb1)
                     tab = result[nb1:]
-                    workingstep[t] = unicode( os.linesep.join(tab), errors='ignore')
+                    workingstep[t] = os.linesep.join(result)
                 elif t.endswith('firstlines'):
                     nb = t.split("@")
                     nb1 = int(nb[0])
                     logging.getLogger().debug( "=======firstlines============%s======="%nb1)
                     tab = result[:nb1]
-                    workingstep[t] = unicode( os.linesep.join(tab), errors='ignore')
+                    workingstep[t] = os.linesep.join(result)
             if 'goto' in workingstep:
                 message['data']['stepcurrent'] = workingstep['goto']
             elif 'success' in workingstep and  workingstep['codereturn'] == 0:
@@ -221,7 +223,9 @@ class process_on_end_send_message_xmpp:
                 cmd = cmdx(command, timeout)
                 workingstep['codereturn'] = cmd.code_error
                 workingstep['completed'] = 1
-                result = cmd.stdout.split('\n')
+                
+                cmddecode = decode_strconsole(cmd.stdout)
+                result = cmddecode.split('\n')
                 result  = [x.strip() for x in result if x !='']
 
                 #print result
@@ -291,7 +295,8 @@ class process_on_end_send_message_xmpp:
             logging.debug("================================================")
             cmd = cmdx(command,timeout)
             msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
-            msgoutsucces['eventMessageraw']['data']['result'] = cmd.stdout
+            cmddecode = decode_strconsole(cmd.stdout)
+            msgoutsucces['eventMessageraw']['data']['result'] = cmddecode
             logging.debug("code error  %s"% cmd.code_error)
             logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
             queue_out_session.put(msgoutsucces)
@@ -348,6 +353,7 @@ class mannageprocess:
                 else:
                     queue_out_session.put(eventstart)
             cmd = cmdx(command,timeout)
+            cmddecode = decode_strconsole(cmd.stdout)
             if cmd.code_error == 0 and eventfinish != False:
                 ev = eventfinish
             elif cmd.code_error != 0 and eventfinish != False:
@@ -359,7 +365,7 @@ class mannageprocess:
             print " execution command in process"
             print "================================================"
             print cmd.code_error
-            print cmd.stdout
+            print cmddecode
             print "================================================"
 
             if ev != False:
@@ -367,7 +373,7 @@ class mannageprocess:
                     #ecrit dans queue_out_session le TEVENT
                     msgout['event'] = ev
                     #msgout['result']['resultcommand'] = cmd['result']
-                    msgout['result']['resultcommand'] = cmd.stdout
+                    msgout['result']['resultcommand'] = cmddecode
                     msgout['result']['codeerror'] = cmd.code_error
                     queue_out_session.put(msgout)
                 else:

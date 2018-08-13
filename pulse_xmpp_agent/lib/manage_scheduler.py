@@ -67,6 +67,7 @@ class manage_scheduler:
                     "and declare the configuration of the scheduler in agentconf.ini"\
                     "[Plugin]"\
                     "pluginlist = manage_scheduler")
+            objcromtabconf = {}
             logging.getLogger().warning(str(e))
 
         self.taches = []

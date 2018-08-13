@@ -26,11 +26,22 @@
 import os
 import json
 import logging
-from utils import shellcommandtimeout, file_put_contents, file_get_contents
+from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole
 from  agentconffile import  directoryconffile
 from shutil import copyfile
 import datetime
-
+import zlib
+import re
+import base64
+#from utils_psutil import sensors_battery,\
+                         #winservices,\
+                         #clone_ps_aux,\
+                         #disk_usage,\
+                         #sensors_fans,\
+                         #mmemory,\
+                         #ifconfig,\
+                         #cpu_num,\
+                         #netstat
 DEBUGPULSE = 25
 
 def callXmppFunctionIq(functionname,  *args, **kwargs):
@@ -44,12 +55,19 @@ def dispach_iq_command(xmppobject, jsonin):
     data = json.loads(jsonin)
 
     # functions synch list
+    #listactioncommand = ["xmppbrowsing", 
+                         #"test", 
+                         #"remotefile", 
+                         #"remotecommandshell", 
+                         #"listremotefileedit", 
+                         #"remotefileeditaction",
+                         #"remotexmppmonitoring"]
     listactioncommand = ["xmppbrowsing", 
                          "test", 
                          "remotefile", 
                          "remotecommandshell", 
                          "listremotefileedit", 
-                         "remotefileeditaction"]
+                         "remotefileeditaction",]
 
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
@@ -95,8 +113,8 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotecommandshell( xmppobject, data ):
-        result = shellcommandtimeout( data['data'], timeout=data['timeout']).run()
-        re = [ x.decode('utf-8', 'ignore').strip(os.linesep)+"\n" for x in result['result'] ]
+        result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
+        re = [ decode_strconsole(x).strip(os.linesep)+"\n" for x in result['result'] ]
         result['result'] = re
         return json.dumps(result)
 
@@ -106,7 +124,31 @@ class functionsynchroxmpp:
         data['data']={"result" : listfileedit}
         return json.dumps(data)
 
-
+    #@staticmethod
+    #def remotexmppmonitoring( xmppobject, data ):
+        #dataresult=[]
+        #if data['data'] == "battery":
+            #result = decode_strconsole(sensors_battery())
+        #elif data['data'] == "winservices":
+            #result = decode_strconsole(winservices())
+        #elif data['data'] == "clone_ps_aux":
+            #result = decode_strconsole(clone_ps_aux())
+        #elif data['data'] == "disk_usage":
+            #result = decode_strconsole(disk_usage())
+        #elif data['data'] == "sensors_fans":
+            #result = decode_strconsole(sensors_fans())
+        #elif data['data'] == "mmemory":
+            #result = decode_strconsole(mmemory())
+        #elif data['data'] == "ifconfig":
+            #result = decode_strconsole(ifconfig())
+        #elif data['data'] == "cpu_num":
+            #result = decode_strconsole(cpu_num())
+        #elif data['data'] == "netstat":
+            #result = decode_strconsole(netstat())
+            #result = re.sub("[ ]{2,}", "@", result)
+        #result = base64.b64encode(zlib.compress(result, 9))
+        #data['result'] = result
+        #return json.dumps(data)
 
     @staticmethod
     def remotefileeditaction( xmppobject, data ):
@@ -135,9 +177,9 @@ class functionsynchroxmpp:
                         and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
-                        datestr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+".ini"
-                        newfilename = filename[:-4] + "_" + datestr
-                        copyfile(filename, newfilename)
+                        #datestr = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+".ini"
+                        #newfilename = filename[:-4] + "_" + datestr
+                        #copyfile(filename, newfilename)
                         file_put_contents(filename,  data['data']['content'])
                         data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror' : 0 }
                         return json.dumps(data)

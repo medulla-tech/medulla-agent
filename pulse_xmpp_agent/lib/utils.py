@@ -41,6 +41,9 @@ import ConfigParser
 import socket
 import psutil
 
+
+logger = logging.getLogger()
+
 DEBUGPULSE = 25
 
 
@@ -104,6 +107,7 @@ def save_count_start():
     file_put_contents(filecount, str(countstart))
     return countstart
 
+
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     save_obj(obj, fileback_to_deploy)
@@ -145,7 +149,7 @@ def createfingerprintnetwork():
         obj = simplecommandstr("ipconfig")
         md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('linux'):
-        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*'")
+        obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
         md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('darwin'):
         obj = simplecommandstr("ipconfig")
@@ -567,10 +571,18 @@ def simplecommandstr(cmd):
     obj['result'] = "\n".join(result)
     return obj
 
+def windowspath(namescript):
+    if sys.platform.startswith('win'):
+        return '"' + namescript + '"'
+    else:
+        return namescript
+
 def powerschellscriptps1(namescript):
+    namescript = windowspath(namescript)
     print "powershell -ExecutionPolicy Bypass -File  %s"%namescript
-    obj = simplecommandstr("powershell -ExecutionPolicy Bypass -File %s"%namescript)
+    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s"%namescript))
     return obj
+
 
 class shellcommandtimeout(object):
     def __init__(self, cmd, timeout=15):
@@ -586,7 +598,7 @@ class shellcommandtimeout(object):
         def target():
             # print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'],
-                                            shell=True,
+                                            shell=True, 
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
@@ -912,6 +924,9 @@ def getIpXmppInterface(ipadress1, Port):
         logging.log(
             DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, ipadress))
+        if obj['code'] != 0:
+            logging.getLogger().error('error command netstat : %s'%obj['result'])
+            logging.getLogger().error('error install package net-tools')
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
@@ -1201,10 +1216,10 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
-def install_or_undinstall_keypub_authorized_keys(
+def install_or_uninstall_keypub_authorized_keys(
         install=True, keypub=None, user="pulse"):
     """
-        This function installs or undinstall the public key in the authorized_keys file for user "user"
+        This function installs or uninstall the public key in the authorized_keys file for user "user"
         If keypub is not specified then the function uninstall the key for user "user"
     """
     path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh")
@@ -1262,7 +1277,7 @@ def install_or_undinstall_keypub_authorized_keys(
                 logging.log(DEBUGPULSE, "ERROR %s" % str(e))
                 return False
     else:
-        logging.log(DEBUGPULSE, "undinstall key")
+        logging.log(DEBUGPULSE, "uninstall key")
         filesouce = ""
         source = open(path_authorized_keys, "r")
         for ligne in source:
@@ -1394,3 +1409,85 @@ def reboot_command():
         os.system("shutdown -r now")
 
     return
+
+def isBase64(s):
+    try:
+        if base64.b64encode(base64.b64decode(s)) == s:
+            return True;
+    except Exception:
+        pass;
+    return False;
+
+def decode_strconsole(x):
+    """ imput str decode to default coding python(# -*- coding: utf-8; -*-)"""
+    if sys.platform.startswith('linux'):
+        return x.decode('utf-8','ignore')
+    elif sys.platform.startswith('win'):
+        return x.decode('cp850','ignore')
+    elif sys.platform.startswith('darwin'):
+        return x.decode('utf-8','ignore')
+    else:
+        return x
+
+def encode_strconsole(x):
+    """ output str encode to coding other system """
+    if sys.platform.startswith('linux'):
+        return x.encode('utf-8')
+    elif sys.platform.startswith('win'):
+        return x.encode('cp850')
+    elif sys.platform.startswith('darwin'):
+        return x.encode('utf-8')
+    else:
+        return x
+
+
+def savejsonfile(filename, data, indent = 4):
+    with open(filename, 'w') as outfile:
+        json.dump(data, outfile)
+
+def loadjsonfile(filename):
+    if os.path.isfile(filename ):
+        with open(filename,'r') as info:
+            dd = info.read()
+        try:
+            return json.loads(decode_strconsole(dd))
+        except Exception as e:
+            logger.error("filename %s error decodage [%s]"%(filename ,str(e)))
+    return None
+
+def save_user_current(name = None):
+    loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
+    if name is None:
+        userlist = list(set([users[0]  for users in psutil.users()]))
+        if len(userlist) > 0:
+            name = userlist[0]
+    else:
+        name = "system"
+
+    if not os.path.exists(loginuser):
+        result = { name : 1,
+                  'suite' : [name],
+                  'curent' : name}
+        savejsonfile(loginuser,result)
+        return  result['curent']
+
+    datauseruser = loadjsonfile(loginuser)
+    if name in datauseruser:
+        datauseruser[name] = datauseruser[name] + 1
+        datauseruser['suite'].insert(0, name)
+    else:
+        datauseruser[name] = 1
+
+    datauseruser['suite'].insert(0, name)
+    datauseruser['suite'] = datauseruser['suite'][0:15]
+
+    element = set(datauseruser['suite'])
+    max = 0
+    for t in element:
+        valcount = datauseruser['suite'].count(t)
+        if valcount > max :
+            datauseruser['curent'] = t
+    savejsonfile(loginuser, datauseruser)
+    return datauseruser['curent']
+
+
