@@ -44,6 +44,7 @@ from lib.managesession import session
 
 from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
+from lib.managedbkiosk import manageskioskdb
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, searchippublic, subnetnetwork,\
@@ -169,6 +170,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.lapstimebansessionid = 900     # ban session id 900 secondes
 
         self.Deploybasesched = manageschedulerdeploy()
+        self.infolauncherkiook =  manageskioskdb()
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
