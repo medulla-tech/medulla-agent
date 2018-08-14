@@ -87,12 +87,6 @@ class grafcet:
                         if "action_section_update" in self.descriptorsection:
                             self.__action_completed__(self.sequence[self.descriptorsection['action_section_update']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
-                    elif strsection == "launch":
-                        # attribute section "update" if exists
-                        mesg_install = "START SECTION LAUNCH"
-                        if "action_section_launch" in self.descriptorsection:
-                            self.__action_completed__(self.sequence[self.descriptorsection['action_section_launch']])
-                            self.data['stepcurrent'] = self.descriptorsection['action_section_launch'] + 1
                     elif strsection == "uninstall":
                         #attribute section "uninstall" if exists
                         mesg_install = "START SECTION UNDINSTALL"
