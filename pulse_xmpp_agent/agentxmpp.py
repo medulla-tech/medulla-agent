@@ -54,6 +54,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
+from lib.syncthingapirest import syncthing
+
 import traceback
 from optparse import OptionParser
 
@@ -169,6 +171,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.lapstimebansessionid = 900     # ban session id 900 secondes
 
         self.Deploybasesched = manageschedulerdeploy()
+        ################################### initialise syncthing###################################
+        # todo
+        # different initialization for window, mac os
+        # and add a syncthing section in the configuration
+        # fichier de conf dans fichier de configuration.
+        self.syncthing = syncthing(configfile="/home/syncthing/.config/syncthing/config.xml" )
+        if logger.level == 10:
+            self.syncthing.save_conf_to_file("/tmp/confsyncting.txt")
+        else:
+            try:
+                os.remove("/tmp/confsyncting.txt")
+            except :
+                pass
+        logging.debug("device local syncthing : [%s]"%self.syncthing.get_id_device_local())
+        ################################### syncthing ###################################
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
