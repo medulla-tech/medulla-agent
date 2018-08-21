@@ -240,7 +240,7 @@ class syncthing():
         """
         return  self.__postAPIREST__("/system/ping")
 
-    def post_reset(self, param = {}):
+    def post_reset(self, deviceid=None):
         """
             Post with empty body to erase the current index database and 
             restart Syncthing. With no query parameters, the entire database is
