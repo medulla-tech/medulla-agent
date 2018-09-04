@@ -1,0 +1,8 @@
+/var/log/pulse/xmpp-agent.log /var/log/pulse/xmpp-agent-log.log
+{
+    missingok
+    daily
+    copytruncate
+    rotate 7
+    create 0644 root root
+}
