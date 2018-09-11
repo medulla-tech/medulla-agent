@@ -103,8 +103,8 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefile( xmppobject, data ):
+        print data
         datapath = data['data']
-        print type(datapath)
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
