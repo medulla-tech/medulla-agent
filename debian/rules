@@ -32,7 +32,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/relayconf.ini.in $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/package_watching.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	mkdir -p $(CURDIR)/debian/tmp/etc/logrotate.d/
-	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/
+	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/pulse-xmpp-agent-relay
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/agentxmpp.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/package_watching.py
