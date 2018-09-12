@@ -51,7 +51,7 @@ conf ={}
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
-                    filename='/var/log/mmc/waychingfile.log',
+                    filename='/var/log/pulse/pulse-package-watching.log',
                     filemode='a')
 
 
