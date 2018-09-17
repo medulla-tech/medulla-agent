@@ -53,7 +53,7 @@ class Logs(Base):
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Integer, primary_key=True)
     type = Column(String(6), nullable=False,default = "noset")
-    date = Column(DateTime, default=datetime.datetime.utcnow)
+    date = Column(DateTime, default=datetime.datetime)
     text = Column(String(255), nullable=False)
     sessionname = Column(String(20), nullable=False, default = "")
     priority = Column(Integer, default = 0)
@@ -81,7 +81,7 @@ class Deploy(Base):
     jidmachine = Column(String(45), nullable=False)
     state = Column(String(45), nullable=False)
     sessionid = Column(String(45), nullable=False)
-    start = Column(DateTime, default=datetime.datetime.utcnow)
+    start = Column(DateTime, default=datetime.datetime)
     startcmd = Column(DateTime, default=None)
     endcmd = Column(DateTime, default=None)
     result = Column(Text )
