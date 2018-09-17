@@ -44,6 +44,9 @@ from lib.logcolor import  add_coloring_to_emit_ansi
 
 
 Base = declarative_base()
+
+VERSIONLOG = 1.0
+
 #jfkjfk
 class Logs(Base):
     # ====== Table name =========================
@@ -489,8 +492,18 @@ if __name__ == '__main__':
                     default = False,
                     help = "console debug")
 
+    optp.add_option("-v",
+                    "--version",
+                    action = "store_true",
+                    dest = "version",
+                    default = False,
+                    help = "version programme")
+
     opts, args = optp.parse_args()
 
+    if opts.version == True:
+        print VERSIONLOG
+        sys.exit(0)
     # Setup the command line arguments.
     conf  = configuration()
     if not opts.deamon :
