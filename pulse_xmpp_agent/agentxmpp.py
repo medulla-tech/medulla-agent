@@ -124,7 +124,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 os.system('cp -u %s/script/* %s/script/'%(self.pathagent,self.img_agent))
                 os.system('cp -u %s/lib/*.py %s/lib/'%(self.pathagent,self.img_agent))
                 os.system('cp -u %s/agentversion %s/agentversion'%(self.pathagent,self.img_agent))
-            else:
+            else: 
                 logger.error("command copy for os")
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         if self.config.updating != 1:
@@ -874,7 +874,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
                         logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
                         logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                    else:
+                    else: 
                         logger.error("reinstall agent copy file error os missing")
 
     def restartBot(self):
