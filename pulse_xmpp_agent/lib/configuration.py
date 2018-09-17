@@ -194,6 +194,20 @@ class confParameter:
         if Config.has_option("type", "moderelayserver"):
             self.moderelayserver = Config.get('type', 'moderelayserver')
 
+        if Config.has_option("updateagent", "updating"):
+            self.updating = Config.getint('updateagent', 'updating')
+        else:
+            self.updating = 1
+            
+        if Config.has_option("networkstatus", "netchanging"):
+            self.netchanging = Config.getint('networkstatus', 'netchanging')
+        else:
+            self.netchanging = 1
+        if Config.has_option("networkstatus", "detectiontime"):
+            self.detectiontime = Config.getint('networkstatus', 'detectiontime')
+        else:
+            self.detectiontime = 300
+
         self.parametersscriptconnection = {}
 
         if self.agenttype == "relayserver":

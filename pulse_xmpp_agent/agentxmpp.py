@@ -35,7 +35,7 @@ from lib.agentconffile import conffilename
 from lib.xmppiq import dispach_iq_command
 from sleekxmpp.xmlstream import handler, matcher
 
-
+import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
@@ -92,10 +92,45 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
-        laps_time_networkMonitor = 300
         laps_time_handlemanagesession = 15
         self.back_to_deploy = {}
         self.config = conf
+        laps_time_networkMonitor = self.config.detectiontime
+        logging.warning("laps time network changing %s"%laps_time_networkMonitor)
+        ###################Update agent from MAster#############################
+        self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+        self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
+        self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
+        self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
+            #copy agent vers remote agent.
+            if sys.platform.startswith('win'):
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['program_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent, fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, fichier), os.path.join(self.img_agent, fichier)))
+                if not os.path.isfile(os.path.join(self.img_agent,'agentversion' )):
+                    os.system('copy  %s %s'%(os.path.join(self.pathagent, 'agentversion'), os.path.join(self.img_agent, 'agentversion')))
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['lib_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent,"lib", fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", fichier), os.path.join(self.img_agent,"lib", fichier)))
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['script_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent, "script", fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", 'lib_agent')))
+            elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                print "copy file"
+                os.system('cp -u %s/*.py %s'%(self.pathagent,self.img_agent))
+                os.system('cp -u %s/script/* %s/script/'%(self.pathagent,self.img_agent))
+                os.system('cp -u %s/lib/*.py %s/lib/'%(self.pathagent,self.img_agent))
+                os.system('cp -u %s/agentversion %s/agentversion'%(self.pathagent,self.img_agent))
+            else: 
+                logger.error("command copy for os")
+        self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        if self.config.updating != 1:
+            logging.warning("remote updating disable")
+        if self.descriptorimage.get_fingerprint_agent_base() != self.Update_Remote_Agentlist.get_fingerprint_agent_base():
+            self.agentupdating=True
+            logging.warning("Diff beetween agent is agent image master base")
+        ###################END Update agent from MAster#############################
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Bind the socket to the port
         server_address = ('localhost',  self.config.am_local_port)
@@ -150,7 +185,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
         self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
-        self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+        if self.config.netchanging == 1:
+            logging.warning("Network Changing enable")
+            self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+        else:
+            logging.warning("Network Changing disable")
+        self.schedule('check AGENT INSTALL', 350, self.checkinstallagent, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
         if self.config.agenttype in ['relayserver']:
             self.schedule('reloaddeploy', 15, self.reloaddeploy, repeat=True)
@@ -740,13 +780,73 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
             md5ctl = createfingerprintnetwork()
-            if self.md5reseau != md5ctl:
-                refreshfingerprint()
-                logging.log(DEBUGPULSE,"network changed for %s!\n RESTART AGENT" % self.boundjid.user)
+            force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
+            if self.md5reseau != md5ctl or os.path.isfile(force_reconfiguration):
+                if not os.path.isfile(force_reconfiguration):
+                    refreshfingerprint()
+                    logging.log(DEBUGPULSE,"by network changed. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
+                else:
+                    logging.log(DEBUGPULSE,"by request. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
+                    os.remove(force_reconfiguration)
+                #### execution de convigurateur.
+                #### timeout 5 minutes.
+                namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
+                nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                if os.path.isfile(namefilebool):
+                    os.remove(namefilebool)
+
+                args = ['python', nameprogconnection, '-t', 'machine']
+                subprocess.call(args)
+
+                for i in range(15):
+                    if os.path.isfile(namefilebool):
+                        break
+                    time.sleep(2)
+                logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
                 self.restartBot()
         except Exception as e:
             logging.error(" %s " %(str(e)))
             traceback.print_exc(file=sys.stdout)
+
+    def checkinstallagent(self):
+        # verify si boollean existe.
+        if self.config.updating == 1:
+            if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
+                Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
+                Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
+                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
+                    os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
+                    #reinstall agent from img_agent
+                    if sys.platform.startswith('win'):
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
+                                                    os.path.join(self.pathagent, fichier)))
+                            logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
+                                                                            os.path.join(self.pathagent)))
+                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
+                                                os.path.join(self.pathagent, "agentversion")))
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                    os.path.join(self.pathagent, "lib", fichier)))
+                            logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                                        os.path.join(self.pathagent, "lib", fichier)))
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['script_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                    os.path.join(self.pathagent, "script", fichier)))
+                            logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                                        os.path.join(self.pathagent, "script", fichier)))
+                        #todo base de reg install version
+                    elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                        os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
+                        os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
+                        os.system('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
+                        os.system('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
+                        logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
+                    else: 
+                        logger.error("reinstall agent copy file error os missing")
 
     def restartBot(self):
         global restart
@@ -1024,6 +1124,10 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
+        ###################Update agent from MAster#############################
+        if self.config.updating == 1:
+            dataobj['md5agent'] = self.descriptorimage.get_fingerprint_agent_base()
+        ###################End Update agent from MAster#############################
         #todo determination lastusersession to review
         lastusersession = ""
         userlist = list(set([users[0]  for users in psutil.users()]))
