@@ -94,6 +94,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_handlemanagesession = 15
+        laps_time_send_ping_to_kiosk = 350
         self.back_to_deploy = {}
         self.config = conf
         laps_time_networkMonitor = self.config.detectiontime
@@ -123,7 +124,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 os.system('cp -u %s/script/* %s/script/'%(self.pathagent,self.img_agent))
                 os.system('cp -u %s/lib/*.py %s/lib/'%(self.pathagent,self.img_agent))
                 os.system('cp -u %s/agentversion %s/agentversion'%(self.pathagent,self.img_agent))
-            else: 
+            else:
                 logger.error("command copy for os")
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         if self.config.updating != 1:
@@ -192,6 +193,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
         else:
             logging.warning("Network Changing disable")
+        self.schedule('send_ping', laps_time_send_ping_to_kiosk, self.send_ping_to_kiosk, repeat=True)
         self.schedule('check AGENT INSTALL', 350, self.checkinstallagent, repeat=True)
         self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
         if self.config.agenttype in ['relayserver']:
@@ -255,6 +257,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'CustomXEP Handler',
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
+
+    def send_ping_to_kiosk(self):
+        """Send a ping to the kiosk  to ask it's presence"""
+        # TODO
+       pass
 
     def handle_client_connection(self, client_socket):
         """
@@ -602,6 +609,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     date = None ,
                     fromuser = "MASTER",
                     touser = "")
+        self.send_ping_to_kiosk()
 
     def send_message_agent( self,
                             mto,
@@ -848,7 +856,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
                         logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
                         logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                    else: 
+                    else:
                         logger.error("reinstall agent copy file error os missing")
 
     def restartBot(self):
