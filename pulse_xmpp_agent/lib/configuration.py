@@ -278,15 +278,22 @@ class confParameter:
         # les fichiers ini des plugins doivent comporter une session parameters.
         # les clef representeront aussi par convention le nom des variables
         # utilisable dans le plugins.
+        # Si un fichier de configuration .ini a un fichier de meme nom suffixé de .local, 
+        # alors le .local est appliqué aprés le .ini 
         if Config.has_option("plugin", "pluginlist"):
             pluginlist = Config.get('plugin', 'pluginlist').split(",")
             pluginlist = [x.strip() for x in pluginlist]
             for z in pluginlist:
                 namefile = "%s.ini" % os.path.join(self.nameplugindir, z)
+                namefilelocal = "%s.ini.local" % os.path.join(self.nameplugindir, z)
                 if os.path.isfile(namefile):
                     liststuple = self.loadparametersplugins(namefile)
                     for keyparameter, valueparameter in liststuple:
                         setattr(self, keyparameter, valueparameter)
+                    if os.path.isfile(namefilelocal):
+                        liststuple = self.loadparametersplugins(namefilelocal)
+                        for keyparameter, valueparameter in liststuple:
+                            setattr(self, keyparameter, valueparameter)
                 else:
                     logging.getLogger().warning(
                         "parameter File plugin %s : missing" %
