@@ -1,4 +1,5 @@
-* [BUGFIX]  Fix deploy advance for group. resumption of deployment after a break.
+* [ FEATURE] Add .local for plugins file configuration.
+* [BUGFIX]   Fix deploy advance for group. resumption of deployment after a break.
 
 pulse-xmpp-agent 1.9.6
 ======================
