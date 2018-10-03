@@ -1,4 +1,6 @@
+* [FEATURE] Add .local for plugins file configuration
 * [BUGFIX]  Fix deploy advance for group. resumption of deployment after a break.
+* [BUGFIX]  Fix VNC permissions change via quick action
 
 pulse-xmpp-agent 1.9.6
 ======================
