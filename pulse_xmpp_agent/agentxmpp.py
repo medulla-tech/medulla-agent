@@ -941,7 +941,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if dataobj['action'] == "vncchangepermsfrommaster":
             askpermission = 1
-            if 'askpermission' in dataobj['data'] and dataobj['data']['askpermission'] == 0:
+            if 'askpermission' in dataobj['data'] and dataobj['data']['askpermission'] == '0':
                 askpermission = 0
 
             vnc_set_permission(askpermission)

@@ -23,7 +23,7 @@
 # file pulse_xmpp_agent/lib/xmppiq.py
 #
 
-import os
+import os, sys
 import json
 import logging
 from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole
@@ -33,15 +33,17 @@ import datetime
 import zlib
 import re
 import base64
-#from utils_psutil import sensors_battery,\
-                         #winservices,\
-                         #clone_ps_aux,\
-                         #disk_usage,\
-                         #sensors_fans,\
-                         #mmemory,\
-                         #ifconfig,\
-                         #cpu_num,\
-                         #netstat
+import traceback
+from utils_psutil import sensors_battery,\
+                         winservices,\
+                         clone_ps_aux,\
+                         disk_usage,\
+                         sensors_fans,\
+                         mmemory,\
+                         ifconfig,\
+                         cpu_num,\
+                         netstat,\
+                         cputimes
 DEBUGPULSE = 25
 
 def callXmppFunctionIq(functionname,  *args, **kwargs):
@@ -67,7 +69,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "remotefile", 
                          "remotecommandshell", 
                          "listremotefileedit", 
-                         "remotefileeditaction",]
+                         "remotefileeditaction",
+                         "remotexmppmonitoring"]
 
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
@@ -103,8 +106,8 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefile( xmppobject, data ):
+        print data
         datapath = data['data']
-        print type(datapath)
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
@@ -124,31 +127,50 @@ class functionsynchroxmpp:
         data['data']={"result" : listfileedit}
         return json.dumps(data)
 
-    #@staticmethod
-    #def remotexmppmonitoring( xmppobject, data ):
-        #dataresult=[]
-        #if data['data'] == "battery":
-            #result = decode_strconsole(sensors_battery())
-        #elif data['data'] == "winservices":
-            #result = decode_strconsole(winservices())
-        #elif data['data'] == "clone_ps_aux":
-            #result = decode_strconsole(clone_ps_aux())
-        #elif data['data'] == "disk_usage":
-            #result = decode_strconsole(disk_usage())
-        #elif data['data'] == "sensors_fans":
-            #result = decode_strconsole(sensors_fans())
-        #elif data['data'] == "mmemory":
-            #result = decode_strconsole(mmemory())
-        #elif data['data'] == "ifconfig":
-            #result = decode_strconsole(ifconfig())
-        #elif data['data'] == "cpu_num":
-            #result = decode_strconsole(cpu_num())
-        #elif data['data'] == "netstat":
-            #result = decode_strconsole(netstat())
-            #result = re.sub("[ ]{2,}", "@", result)
-        #result = base64.b64encode(zlib.compress(result, 9))
-        #data['result'] = result
-        #return json.dumps(data)
+    @staticmethod
+    def remotexmppmonitoring( xmppobject, data ):
+        result = ""
+        if data['data'] == "battery":
+            result = decode_strconsole(sensors_battery())
+        elif data['data'] == "winservices":
+            result = decode_strconsole(winservices())
+        elif data['data'] == "clone_ps_aux":
+            result = decode_strconsole(clone_ps_aux())
+        elif data['data'] == "disk_usage":
+            result = decode_strconsole(disk_usage())
+        elif data['data'] == "sensors_fans":
+            result = decode_strconsole(sensors_fans())
+        elif data['data'] == "mmemory":
+            result = decode_strconsole(mmemory())
+        elif data['data'] == "ifconfig":
+            result = decode_strconsole(ifconfig())
+        elif data['data'] == "cpu_num":
+            result = decode_strconsole(cpu_num())
+        elif data['data'] == "netstat":
+            result = decode_strconsole(netstat())
+            result = re.sub("[ ]{2,}", "@", result)
+        else:
+            datastruct = json.loads(data['data'])
+            if 'subaction' in datastruct:
+                result = functionsynchroxmpp.__execfunctionmonitoringparameter(datastruct)
+        result = base64.b64encode(zlib.compress(result, 9))
+        data['result'] = result
+        return json.dumps(data)
+
+    @staticmethod
+    def __execfunctionmonitoringparameter(data):
+        result=""
+        try:
+            if  data['subaction'] == "cputimes":
+                func = getattr(sys.modules[__name__], data['subaction'])
+                result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
+                return result
+            else:
+                return ""
+        except Exception as e:
+            print str(e)
+            traceback.print_exc(file=sys.stdout)
+            return ""
 
     @staticmethod
     def remotefileeditaction( xmppobject, data ):

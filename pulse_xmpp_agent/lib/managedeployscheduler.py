@@ -98,6 +98,7 @@ class manageschedulerdeploy:
         return data
 
     def del_sesionscheduler(self, sessionid):
+        data = ""
         sessionid = str(sessionid)
         self.openbase()
         if sys.platform.startswith('darwin'):

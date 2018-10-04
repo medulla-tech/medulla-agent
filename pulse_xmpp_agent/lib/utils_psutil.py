@@ -463,3 +463,27 @@ def netstat():
             proc_names.get(c.pid, '?')[:15],
         )
     return result
+
+def __dictdata(datatuple):
+    result = {}
+    # key du tuple
+    keyattribut = datatuple.__dict__.keys()
+    for keyc in keyattribut:
+        #attribut du tuple vers key du dict
+        result[keyc]= getattr(datatuple,keyc)
+    return result
+
+def cputimes (percpu = False ):
+    result = {}
+    infocpu =  psutil.cpu_times( percpu = False)
+    result['allcpu'] = __dictdata(infocpu)
+    if percpu == False:
+        #global time (all cpu)
+        result['allcpu'] = __dictdata(infocpu)
+    elif percpu == True:
+        infocpu =  psutil.cpu_times( percpu = percpu)
+        nbcpu = len(infocpu)
+        result['nbcpu'] = nbcpu
+        for cpu_nb in range(0,nbcpu):
+            result['cpu%s'% cpu_nb] = __dictdata(infocpu[cpu_nb])
+    return result
