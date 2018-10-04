@@ -261,7 +261,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def send_ping_to_kiosk(self):
         """Send a ping to the kiosk  to ask it's presence"""
         # TODO
-       pass
+        pass
 
     def handle_client_connection(self, client_socket):
         """
