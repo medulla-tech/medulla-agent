@@ -51,7 +51,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start, test_kiosk_presence
+                        save_count_start
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -172,6 +172,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.Deploybasesched = manageschedulerdeploy()
         self.infolauncherkiook =  manageskioskdb()
+        self.kiosk_presence = "False"
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -260,8 +261,37 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def send_ping_to_kiosk(self):
         """Send a ping to the kiosk  to ask it's presence"""
-        # TODO
-        pass
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"ping"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+
+    def send_pong_to_kiosk(self):
+        """Send a pong to the kiosk  to answer to ping presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"pong"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
 
     def handle_client_connection(self, client_socket):
         """
@@ -304,7 +334,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         datasend['data']['subaction'] =  'delete'
                     elif result['action'] == 'kioskinterfaceUpdate':
                         datasend['data']['subaction'] =  'update'
+                    elif result['action'] == 'presence':
+                        if result['type'] == "ping":
+                            # Send pong message
+                            self.kiosk_presence = "True"
+                            self.send_pong_to_kiosk()
+                            logging.getLogger().info("Sendback pong message to kiosk")
+                        elif result['type'] == 'pong':
+                            # Set the kiosk_presence variable to True
+                            logging.getLogger().info("Receive pong message from kiosk")
+                            self.kiosk_presence = "True"
 
+                        else:
+                            # Ignore the others messages
+                            pass
                     elif result['action'] == 'kioskLog':
                         if 'message' in result and result['message'] != "":
                             self.xmpplog(
@@ -1126,7 +1169,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
-            'kiosk_presence' : test_kiosk_presence(),
+            'kiosk_presence' : self.kiosk_presence,
             'countstart' : save_count_start()
         }
         try:
