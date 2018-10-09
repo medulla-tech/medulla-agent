@@ -275,6 +275,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.kiosk_presence = "False"
         finally:
             sock.close()
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
 
     def send_pong_to_kiosk(self):
         """Send a pong to the kiosk  to answer to ping presence"""
@@ -292,6 +301,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.kiosk_presence = "False"
         finally:
             sock.close()
+
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
 
     def handle_client_connection(self, client_socket):
         """
@@ -348,6 +366,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         else:
                             # Ignore the others messages
                             pass
+                        datasend['data']['subaction'] = "presence"
+                        datasend['data']['value'] = self.kiosk_presence
+
                     elif result['action'] == 'kioskLog':
                         if 'message' in result and result['message'] != "":
                             self.xmpplog(
