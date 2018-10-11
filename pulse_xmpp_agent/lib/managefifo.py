@@ -30,6 +30,7 @@ class fifodeploy:
     def __init__(self):
         #creation de la fifo en fonction des fichiers trouver dans le repertoire fifo
         self.FIFOdeploy = []
+        self.SESSIONdeploy = {} # liste des sessions deploy mis en file
         self.dirsavedatafifo = os.path.abspath(os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
@@ -42,6 +43,12 @@ class fifodeploy:
         # parcoure le repertoire fifo, et charge les fifo dans FIFOdeploy
         self.loadfifo()
 
+    def _InitSessiondeploy(self):
+        self.SESSIONdeploy = {}
+        for fifodata in self.FIFOdeploy:
+            data = self.readfifo(fifodata)
+            self.SESSIONdeploy[data["sessionid"]] = fifodata
+
     def loadfifo(self):
         self.FIFOdeploy = [
             os.path.basename(x) for x in glob.glob(
@@ -50,22 +57,37 @@ class fifodeploy:
                     "*")) if (
                 os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
         self.FIFOdeploy.sort()
+        self._InitSessiondeploy()
 
     def getcount(self):
         return len(self.FIFOdeploy)
 
-    def setfifo(self, datajson):
+    def setfifo(self, datajson, priority = None):
         newfilefifo = str(time.time())+'.fifo'
         pathnamefile = os.path.join(self.dirsavedatafifo, newfilefifo)
         with open(pathnamefile, 'w') as outfilejson:
             json.dump(datajson, outfilejson, indent = 4)
-        self.FIFOdeploy.append(newfilefifo)
+        if priority is not None and priority == "high":
+            self.FIFOdeploy.insert(0, newfilefifo)
+        else:
+            self.FIFOdeploy.append(newfilefifo)
+        self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
 
     def getfifo(self):
+        """ 
+        fifo shift
+            unstacking at the top of the list
+            return descriptor déployement
+            rq: le deploy descriptor file is deleted
+        """
         if self.getcount() == 0:
             return {}
         firstfileinput  = self.FIFOdeploy.pop(0)
         pathnamefile = os.path.join(self.dirsavedatafifo, firstfileinput)
+        try:
+            del self.SESSIONdeploy[firstfileinput]
+        except Exception as  e:
+            logging.getLogger().warning("del session in FIFO : %s"%str(e))
         try:
             fichier_json = open( pathnamefile, 'r')
             with fichier_json as fichier:
@@ -78,6 +100,9 @@ class fifodeploy:
             return {}
 
     def readfifo(self, namefifo):
+        """
+            return deploy descriptor data from file descriptor
+        """
         if self.getcount() == 0:
             return {}
         pathnamefile = os.path.join(self.dirsavedatafifo, namefifo)
@@ -97,3 +122,17 @@ class fifodeploy:
     def displayfifo(self):
         for fifodata in self.FIFOdeploy:
             print self.readfifo(fifodata)
+
+    def prioritydeploy(self, sessionid):
+        """
+            an id session is passed in parameter.
+            This function passes the deployment of this priority session.
+        """
+        #search dans la liste si cette id existe.
+        if sessionid in self.SESSIONdeploy:
+            filefifo = self.SESSIONdeploy[sessionid]
+            self.FIFOdeploy.remove(filefifo)
+            self.FIFOdeploy.insert(0, filefifo)
+            return True
+        else:
+            return False
