@@ -122,6 +122,8 @@ class sessiondatainfo:
 class session:
     def __init__(self, typemachine=None):
         self.sessiondata = []
+        self.resource = set() # ensemble de session pour spooling
+        self.currentresource = set()
         if(typemachine == "relayserver"):
             self.dirsavesession = os.path.join(
                 os.path.dirname(
@@ -170,6 +172,7 @@ class session:
         self.sessiondata.append(obj)
         if len(datasession) != 0:
             obj.sauvesession()
+        self.resource.add(sessionid)
         return obj
 
     def removefilesessionifnotsignal(self, namefilesession):
@@ -277,6 +280,8 @@ class session:
                 self.sessiondata[i].callend()
                 self.sessiondata[i].removesessionfile()
                 self.sessiondata.remove(self.sessiondata[i])
+                self.resource.discard(sessionid)
+                self.currentresource.discard(sessionid)
                 break
         if objectxmpp != None:
             objectxmpp.eventmanage.clear(sessionid)
@@ -286,6 +291,8 @@ class session:
             if sessionid == self.sessiondata[i].sessionid:
                 self.sessiondata[i].removesessionfile()
                 self.sessiondata.remove(self.sessiondata[i])
+                self.resource.discard(sessionid)
+                self.currentresource.discard(sessionid)
                 break
 
     def isexist(self, sessionid):

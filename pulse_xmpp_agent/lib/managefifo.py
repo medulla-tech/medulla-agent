@@ -58,6 +58,7 @@ class fifodeploy:
                 os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
         self.FIFOdeploy.sort()
         self._InitSessiondeploy()
+        return self.SESSIONdeploy
 
     def getcount(self):
         return len(self.FIFOdeploy)
@@ -69,9 +70,14 @@ class fifodeploy:
             json.dump(datajson, outfilejson, indent = 4)
         if priority is not None and priority == "high":
             self.FIFOdeploy.insert(0, newfilefifo)
+            
+            logging.getLogger().error("set fifo high file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
+
         else:
             self.FIFOdeploy.append(newfilefifo)
+            logging.getLogger().error("set fifo low file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
         self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
+
 
     def getfifo(self):
         """ 
@@ -92,6 +98,8 @@ class fifodeploy:
             fichier_json = open( pathnamefile, 'r')
             with fichier_json as fichier:
                 data = json.load(fichier)      # load décode un fichier json
+            #add dans ressource ce transfert.
+            #self.currentresource.add(data['sessionid'])
             os.remove(pathnamefile)
             return data
         except Exception as  e:

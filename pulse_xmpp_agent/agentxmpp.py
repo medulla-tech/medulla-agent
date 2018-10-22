@@ -144,9 +144,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # run server tcpserver for kiosk
         client_handlertcp.start()
         self.manage_scheduler  = manage_scheduler(self)
+        self.session = session(self.config.agenttype)
+        
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
+            self.session.resource=s = set(list(self.managefifo.SESSIONdeploy))
             self.levelcharge = self.managefifo.getcount()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
@@ -155,7 +158,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentcommand = jid.JID(self.config.agentcommand)
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
         self.agentmaster = jid.JID("master@pulse")
-        self.session = session(self.config.agenttype)
+        
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files de session dont le deploiement a echoue ne sont pas efface.
@@ -346,18 +349,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def reloaddeploy(self):
-        while self.managefifo.getcount() != 0 and \
-              self.session.len() < self.config.concurrentdeployments:
+        while (self.managefifo.getcount() != 0 and\
+            len(self.session.currentresource) < self.config.concurrentdeployments):
+
             data = self.managefifo.getfifo()
-            datasend={ "action": data['action'],
+            logging.debug("GET fifo %s"%self.session.resource)
+            datasend = { "action": data['action'],
                         "sessionid" : data['sessionid'],
                         "ret" : 0,
                         "base64" : False
                     }
+            self.session.currentresource.add(data['sessionid'])
             del data['action']
             del data['sessionid']
-            datasend['data'] = data
             self.levelcharge = self.levelcharge - 1
+            datasend['data'] = data
             self.send_message(  mto = self.boundjid.bare,
                                 mbody = json.dumps(datasend),
                                 mtype = 'chat')
