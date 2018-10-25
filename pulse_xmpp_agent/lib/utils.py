@@ -1559,7 +1559,7 @@ def utc2local(utc):
     return utc + offset
 
 
-def send_data_tcp(datastrdata, hostaddress="localhost", port=8766):
+def send_data_tcp(datastrdata, hostaddress="127.0.0.1", port=8766):
     """Send tcp message throught a web socket
     Params:
         datastrdata string of datas sent
