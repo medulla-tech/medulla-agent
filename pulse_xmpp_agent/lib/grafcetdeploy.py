@@ -470,7 +470,6 @@ class grafcet:
                                     fromuser=self.datasend['data']['login'],
                                     touser="")
         try:
-            self.__action_completed__(self.workingstep)
             self.objectxmpp.session.clearnoevent(self.sessionid)
             logging.getLogger().debug(
                 "terminate install package %s" %
@@ -573,12 +572,8 @@ class grafcet:
             logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             self.datasend['ret'] = 255
-            self.datas['ret'] = 255
             self.objectxmpp.send_message(mto='log@pulse',
                                          mbody=json.dumps(self.datasend),
-                                         mtype='chat')
-            self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
-                                         mbody=json.dumps(datas),
                                          mtype='chat')
 
     def steplog(self):
@@ -833,6 +828,100 @@ class grafcet:
             self.terminate(-1, False, "end error in action_section_install step %s" %
                            self.workingstep['step'])
             self.objectxmpp.xmpplog('[%s] - [%s]: Error action_section_install : %s' % (self.data['name'], self.workingstep['step'], str(e)),
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="",
+                                    why=self.data['name'],
+                                    module="Deployment | Execution | Error",
+                                    date=None,
+                                    fromuser=self.data['login'],
+                                    touser="")
+
+    def action_notification(self):
+        """
+        Step notification msg for kiosk or system agent
+
+        nota notif for  kiosk
+        {
+            "status": "Install",
+            "stat": 20,
+            "actionlabel": "d72f10ae",
+            "step": 0,
+            "action": "action_notification",
+            "message": "totoot",
+            "type": "kiosk"
+        }
+        or
+        {
+            "status": "Install",
+            "stat": 20,
+            "actionlabel": "bd6720ca",
+            "step": 0,
+            "action": "action_notification",
+            "message": "",
+            "type": "kiosk"
+        }
+        or
+        {
+            "action": "action_notification",
+            "step": 0,
+            "actionlabel": "bd6720ca",
+            "type": "kiosk",
+            "message": ""
+        }
+        nota notif for agent
+        {
+            "status": "Install",
+            "stat": 20,
+            "actionlabel": "d72f10ae",
+            "step": 0,
+            "action": "action_notification",
+            "message": "totoot",
+            "type": "user"
+        }
+        or
+        {
+            "status": "Install",
+            "stat": 20,
+            "actionlabel": "d72f10ae",
+            "step": 0,
+            "action": "action_notification",
+            "message": "totoot",
+            "type": "machine"
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            self.workingstep["pathpackageonmachine"] = self.datasend['data']['pathpackageonmachine']
+            self.workingstep["name"] = self.datasend['data']['name']
+            self.workingstep["path"] = self.datasend['data']['path']
+            msgxmpp = {
+                'action': "action_notification",
+                'sessionid': self.sessionid,
+                'data':  self.workingstep,
+                'ret': 0,
+                'base64': False}
+            if 'type' in self.workingstep:
+                if self.workingstep['type'] == "kiosk":
+                    send_data_tcp(json.dumps(msgxmpp))
+                elif self.workingstep['type'] == "user":
+                    pass
+                elif self.workingstep['type'] == "machine":
+                    pass
+                else:
+                    pass
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in action_notification step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s] - [%s]: Error action_notification : %s' % (self.data['name'], self.workingstep['step'], str(e)),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
