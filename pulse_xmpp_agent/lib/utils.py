@@ -91,16 +91,17 @@ def networkinfoexist():
         return True
     return False
 
+
 def save_count_start():
     filecount = os.path.join(Setdirectorytempinfo(), 'countstart')
     if not os.path.exists(filecount):
         file_put_contents(filecount, "1")
-        return  1
+        return 1
     countstart = file_get_contents(filecount)
     try:
         if countstart != "":
             countstart = int(countstart.strip())
-            countstart +=1
+            countstart += 1
         else:
             countstart = 1
     except ValueError:
@@ -239,9 +240,9 @@ def file_put_contents(filename, data):
     f.close()
 
 
-def file_put_contents_w_a(filename, data, option = "w"):
-    if option == "a" or  option == "w":
-        f = open( filename, option )
+def file_put_contents_w_a(filename, data, option="w"):
+    if option == "a" or option == "w":
+        f = open(filename, option)
         f.write(data)
         f.close()
 
@@ -572,16 +573,19 @@ def simplecommandstr(cmd):
     obj['result'] = "\n".join(result)
     return obj
 
+
 def windowspath(namescript):
     if sys.platform.startswith('win'):
         return '"' + namescript + '"'
     else:
         return namescript
 
+
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
-    print "powershell -ExecutionPolicy Bypass -File  %s"%namescript
-    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s"%namescript))
+    print "powershell -ExecutionPolicy Bypass -File  %s" % namescript
+    obj = simplecommandstr(encode_strconsole(
+        "powershell -ExecutionPolicy Bypass -File %s" % namescript))
     return obj
 
 
@@ -591,7 +595,7 @@ class shellcommandtimeout(object):
         self.obj = {}
         self.obj['timeout'] = timeout
         self.obj['cmd'] = cmd
-        self.obj['result']="result undefined"
+        self.obj['result'] = "result undefined"
         self.obj['code'] = 255
         self.obj['separateurline'] = os.linesep
 
@@ -926,7 +930,7 @@ def getIpXmppInterface(ipadress1, Port):
             DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, ipadress))
         if obj['code'] != 0:
-            logging.getLogger().error('error command netstat : %s'%obj['result'])
+            logging.getLogger().error('error command netstat : %s' % obj['result'])
             logging.getLogger().error('error install package net-tools')
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1024,7 +1028,7 @@ def searchippublic(site=1):
             return searchippublic(3)
     elif site == 3:
         try:
-            ip =   urllib.urlopen("http://ip.42.pl/raw").read()
+            ip = urllib.urlopen("http://ip.42.pl/raw").read()
             if is_valid_ipv4(ip):
                 return ip
             else:
@@ -1035,12 +1039,13 @@ def searchippublic(site=1):
         return find_ip()
     return None
 
+
 def find_ip():
-    candidates =[]
-    for test_ip in ['192.0.2.0',"192.51.100.0","203.0.113.0"]:
+    candidates = []
+    for test_ip in ['192.0.2.0', "192.51.100.0", "203.0.113.0"]:
         try:
-            s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect((test_ip,80))
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((test_ip, 80))
             ip_adrss = s.getsockname()[0]
             if ip_adrss in candidates:
                 return ip_adrss
@@ -1049,13 +1054,15 @@ def find_ip():
             pass
         finally:
             s.close()
-    if len(candidates) >=1:
+    if len(candidates) >= 1:
         return candidates[0]
     return None
 
 # decorateur pour simplifier les plugins
 # verify session exist.
 # pas de session end
+
+
 def pulginmaster(func):
     def wrapper(objetxmpp, action, sessionid, data, message, ret):
         if action.startswith("result"):
@@ -1342,7 +1349,8 @@ if sys.platform.startswith('win'):
         except WindowsError:
             return None
 
-def shutdown_command(time = 0, msg=''):
+
+def shutdown_command(time=0, msg=''):
     """
         This  function allow to shutdown a machine, and if needed
         to display a message
@@ -1353,29 +1361,30 @@ def shutdown_command(time = 0, msg=''):
 
     """
     if sys.platform.startswith('linux'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown now"
         else:
-            cmd = "shutdown -P -f -t %s %s"%(time, msg)
+            cmd = "shutdown -P -f -t %s %s" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     elif sys.platform.startswith('win'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown /p"
         else:
-            cmd = "shutdown /s /t %s /c %s"%(time, msg)
+            cmd = "shutdown /s /t %s /c %s" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     elif sys.platform.startswith('darwin'):
-        if int(time) == 0 or msg =='':
+        if int(time) == 0 or msg == '':
             cmd = "shutdown -h now"
         else:
-            cmd = "shutdown -h +%s \"%s\""%(time, msg)
+            cmd = "shutdown -h +%s \"%s\"" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     return
 
-def vnc_set_permission(askpermission = 1):
+
+def vnc_set_permission(askpermission=1):
     """
     This function allows to change the setting of VNC to ask for
     permission from user before connecting to Windows machines
@@ -1398,6 +1407,7 @@ def vnc_set_permission(askpermission = 1):
 
     return
 
+
 def reboot_command():
     """
         This function allow to reboot a machine.
@@ -1411,24 +1421,27 @@ def reboot_command():
 
     return
 
+
 def isBase64(s):
     try:
         if base64.b64encode(base64.b64decode(s)) == s:
-            return True;
+            return True
     except Exception:
-        pass;
-    return False;
+        pass
+    return False
+
 
 def decode_strconsole(x):
     """ imput str decode to default coding python(# -*- coding: utf-8; -*-)"""
     if sys.platform.startswith('linux'):
-        return x.decode('utf-8','ignore')
+        return x.decode('utf-8', 'ignore')
     elif sys.platform.startswith('win'):
-        return x.decode('cp850','ignore')
+        return x.decode('cp850', 'ignore')
     elif sys.platform.startswith('darwin'):
-        return x.decode('utf-8','ignore')
+        return x.decode('utf-8', 'ignore')
     else:
         return x
+
 
 def encode_strconsole(x):
     """ output str encode to coding other system """
@@ -1442,35 +1455,37 @@ def encode_strconsole(x):
         return x
 
 
-def savejsonfile(filename, data, indent = 4):
+def savejsonfile(filename, data, indent=4):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
 
+
 def loadjsonfile(filename):
-    if os.path.isfile(filename ):
-        with open(filename,'r') as info:
+    if os.path.isfile(filename):
+        with open(filename, 'r') as info:
             dd = info.read()
         try:
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error("filename %s error decodage [%s]"%(filename ,str(e)))
+            logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
-def save_user_current(name = None):
+
+def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
     if name is None:
-        userlist = list(set([users[0]  for users in psutil.users()]))
+        userlist = list(set([users[0] for users in psutil.users()]))
         if len(userlist) > 0:
             name = userlist[0]
     else:
         name = "system"
 
     if not os.path.exists(loginuser):
-        result = { name : 1,
-                  'suite' : [name],
-                  'curent' : name}
-        savejsonfile(loginuser,result)
-        return  result['curent']
+        result = {name: 1,
+                  'suite': [name],
+                  'curent': name}
+        savejsonfile(loginuser, result)
+        return result['curent']
 
     datauseruser = loadjsonfile(loginuser)
     if name in datauseruser:
@@ -1486,7 +1501,7 @@ def save_user_current(name = None):
     max = 0
     for t in element:
         valcount = datauseruser['suite'].count(t)
-        if valcount > max :
+        if valcount > max:
             datauseruser['curent'] = t
     savejsonfile(loginuser, datauseruser)
     return datauseruser['curent']
@@ -1513,9 +1528,9 @@ def test_kiosk_presence():
                 os.path.join(os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages")
             ]
         elif sys.platform == "darwin":
-            list = ["usr","local","lib","python3.6","dist-packages"]
+            list = ["usr", "local", "lib", "python3.6", "dist-packages"]
         elif sys.platform == "linux":
-            list = ["usr","lib","python3.6","dist-packages",
+            list = ["usr", "lib", "python3.6", "dist-packages",
                     "usr", "lib", "python3.5", "dist-packages"]
 
         for element in list:
@@ -1530,7 +1545,7 @@ def test_kiosk_presence():
         return "False"
 
 
-def utc2local (utc):
+def utc2local(utc):
     """
     utc2local transform a utc datetime object to local object.
 
@@ -1540,11 +1555,11 @@ def utc2local (utc):
         datetime in local timezone
     """
     epoch = time.mktime(utc.timetuple())
-    offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
     return utc + offset
 
 
-def send_data_tcp(datastrdata, hostaddress = "localhost", port = 8766):
+def send_data_tcp(datastrdata, hostaddress="localhost", port=8766):
     """Send tcp message throught a web socket
     Params:
         datastrdata string of datas sent
@@ -1559,7 +1574,7 @@ def send_data_tcp(datastrdata, hostaddress = "localhost", port = 8766):
         sock.sendall(datastrdata.encode('ascii'))
         data = sock.recv(2048)
     except Exception as e:
-        logger.error("[%s]"%(str(e)))
+        logger.error("[%s]" % (str(e)))
         data = None
     finally:
         sock.close()
