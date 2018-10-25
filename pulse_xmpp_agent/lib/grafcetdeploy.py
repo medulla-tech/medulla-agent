@@ -106,8 +106,8 @@ class grafcet:
                     self.msg_kiosk["data"]["msg"] = '[%s]-[%s]: %s' % (
                         self.data['name'], self.data['stepcurrent'], mesg_install)
                     self.msg_kiosk["ret"] = 0
-                    send_data_tcp(self.msg_kiosk, hostadress="localhost",
-                                  port=self.objectxmpp.config.kiosk_local_port)
+                    send_data_tcp(self.msg_kiosk, "127.0.0.1",
+                                  self.objectxmpp.config.kiosk_local_port)
                     self.objectxmpp.xmpplog('[%s]-[%s]: %s' % (self.data['name'], self.data['stepcurrent'], mesg_install),
                                             type='deploy',
                                             sessionname=self.sessionid,
