@@ -92,7 +92,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
-        laps_time_handlemanagesession = 15
+        laps_time_handlemanagesession = 20
         self.back_to_deploy = {}
         self.config = conf
         laps_time_networkMonitor = self.config.detectiontime
