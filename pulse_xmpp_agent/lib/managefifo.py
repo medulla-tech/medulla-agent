@@ -29,7 +29,7 @@ import traceback
 class fifodeploy:
     def __init__(self):
         #creation de la fifo en fonction des fichiers trouver dans le repertoire fifo
-        self.FIFOdeploy = []
+        self.FIFOdeploy = [] # name des file fifo
         self.SESSIONdeploy = {} # liste des sessions deploy mis en file
         self.dirsavedatafifo = os.path.abspath(os.path.join(
             os.path.dirname(
@@ -70,12 +70,10 @@ class fifodeploy:
             json.dump(datajson, outfilejson, indent = 4)
         if priority is not None and priority == "high":
             self.FIFOdeploy.insert(0, newfilefifo)
-            
-            logging.getLogger().error("set fifo high file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
-
+            logging.getLogger().debug("set fifo high file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
         else:
             self.FIFOdeploy.append(newfilefifo)
-            logging.getLogger().error("set fifo low file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
+            logging.getLogger().debug("set fifo low file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
         self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
 
 
@@ -91,19 +89,20 @@ class fifodeploy:
         firstfileinput  = self.FIFOdeploy.pop(0)
         pathnamefile = os.path.join(self.dirsavedatafifo, firstfileinput)
         try:
-            del self.SESSIONdeploy[firstfileinput]
-        except Exception as  e:
-            logging.getLogger().warning("del session in FIFO : %s"%str(e))
-        try:
             fichier_json = open( pathnamefile, 'r')
             with fichier_json as fichier:
                 data = json.load(fichier)      # load décode un fichier json
             #add dans ressource ce transfert.
             #self.currentresource.add(data['sessionid'])
             os.remove(pathnamefile)
+            try:
+                del self.SESSIONdeploy[data['sessionid']]
+            except Exception as  e:
+                logging.getLogger().error("del session in FIFO : %s"%str(e))
+                sessionid
             return data
         except Exception as  e:
-            logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
+            logging.getLogger().error("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
             traceback.print_exc(file=sys.stdout)
             return {}
 
@@ -123,7 +122,7 @@ class fifodeploy:
                 data = json.load(fichier)      # load décode un fichier json
             return data
         except Exception as  e:
-            logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
+            logging.getLogger().error("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
             traceback.print_exc(file=sys.stdout)
             return {}
 

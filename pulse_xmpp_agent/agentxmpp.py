@@ -149,7 +149,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
-            self.session.resource=s = set(list(self.managefifo.SESSIONdeploy))
+            self.session.resources = set(list(self.managefifo.SESSIONdeploy))
             self.levelcharge = self.managefifo.getcount()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
@@ -354,6 +354,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
             data = self.managefifo.getfifo()
             logging.debug("GET fifo %s"%self.session.resource)
+
             datasend = { "action": data['action'],
                         "sessionid" : data['sessionid'],
                         "ret" : 0,
