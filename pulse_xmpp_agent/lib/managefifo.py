@@ -99,7 +99,6 @@ class fifodeploy:
                 del self.SESSIONdeploy[data['sessionid']]
             except Exception as  e:
                 logging.getLogger().error("del session in FIFO : %s"%str(e))
-                sessionid
             return data
         except Exception as  e:
             logging.getLogger().error("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
