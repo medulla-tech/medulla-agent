@@ -2,9 +2,9 @@ pulse-xmpp-agent 1.9.6
 ======================
 * [FEATURE] Autoupdate of agent
 * [FEATURE] Force reconfiguration of agent
-* [BUGFIX] Fix editing configuration files in client machine
-* [BUGFIX] Fix detection of network changes
-
+* [BUGFIX]  Fix editing configuration files in client machine
+* [BUGFIX]  Fix detection of network changes
+* [BUGFIX]  Fix spooling deployment 
 
 pulse-xmpp-agent 1.9.5
 ======================
