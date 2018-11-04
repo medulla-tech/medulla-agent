@@ -1,6 +1,7 @@
 * [FEATURE] Add .local for plugins file configuration
 * [BUGFIX]  Fix deploy advance for group. resumption of deployment after a break.
 * [BUGFIX]  Fix VNC permissions change via quick action
+* [BUGFIX]  Fix spooling deployment
 
 pulse-xmpp-agent 1.9.6
 ======================
@@ -8,7 +9,6 @@ pulse-xmpp-agent 1.9.6
 * [FEATURE] Force reconfiguration of agent
 * [BUGFIX]  Fix editing configuration files in client machine
 * [BUGFIX]  Fix detection of network changes
-
 
 pulse-xmpp-agent 1.9.5
 ======================
