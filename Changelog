@@ -1,3 +1,5 @@
+pulse-xmpp-agent UNRELASED
+======================
 * [FEATURE] Add .local for plugins file configuration
 * [BUGFIX]  Fix deploy advance for group. resumption of deployment after a break.
 * [BUGFIX]  Fix VNC permissions change via quick action
