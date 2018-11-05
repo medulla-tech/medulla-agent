@@ -198,7 +198,13 @@ class confParameter:
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
-            
+
+        ##parameter for deploy default timeout
+        if Config.has_option("default_timeout", "parameters"):
+            self.default_timeout = Config.getint('default_timeout', 'parameters')
+        else:
+            self.default_timeout = 800
+
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:

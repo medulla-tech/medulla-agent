@@ -441,7 +441,11 @@ class mannageprocess:
 class cmdx(object):
     def __init__(self, cmd, timeout):
         self.cmd=cmd
-        self.timeout = timeout
+        try:
+            self.timeout = int(timeout)
+        except:
+            logging.warning("parameter timeout error. timeout 800s")
+            self.timeout = 800
         self.timeoutbool = False
         self.code_error = 0
         self.run()
