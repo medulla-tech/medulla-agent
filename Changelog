@@ -1,9 +1,10 @@
-pulse-xmpp-agent UNRELASED
+pulse-xmpp-agent 1.9.7
 ======================
-* [FEATURE] Add .local for plugins file configuration
-* [BUGFIX]  Fix deploy advance for group. resumption of deployment after a break.
-* [BUGFIX]  Fix VNC permissions change via quick action
-* [BUGFIX]  Fix spooling deployment
+* [FEATURE] Allow a deployment to be spooled in priority
+* [FEATURE] Allow the use of a .local config file
+* [BUGFIX]  Fix time in logs
+* [BUGFIX]  Fix advanced deployment on groups
+* [BUGFIX]  Fix VNC permissions via quick action
 
 pulse-xmpp-agent 1.9.6
 ======================
