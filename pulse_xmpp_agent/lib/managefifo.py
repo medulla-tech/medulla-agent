@@ -105,6 +105,16 @@ class fifodeploy:
             traceback.print_exc(file=sys.stdout)
             return {}
 
+    def delsessionfifo(self, sessionid ):
+        logging.getLogger().debug("del session id : %s" % sessionid)
+        try:
+            namefile =  self.SESSIONdeploy[sessionid]
+            del self.SESSIONdeploy[sessionid]
+            pathnamefile = os.path.join(self.dirsavedatafifo, namefile)
+            os.remove(pathnamefile)
+        except:
+            pass
+
     def readfifo(self, namefifo):
         """
             return deploy descriptor data from file descriptor
