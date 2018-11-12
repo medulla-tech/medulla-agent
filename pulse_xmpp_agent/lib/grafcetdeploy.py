@@ -1426,8 +1426,18 @@ class grafcet:
             self.workingstep['command'] = self.replaceTEMPLATE(
                 self.workingstep['command'])
             if not "timeout" in self.workingstep:
-                self.workingstep['timeout'] = 900
-                logging.getLogger().warn("timeout missing : default value 15s")
+                ###
+                try:
+                    self.workingstep['timeout'] = int(self.objectxmpp.config.default_timeout)
+                except:
+                    self.workingstep['timeout'] = 800
+                logging.getLogger().warn("timeout missing : default value %ss"%self.workingstep['timeout'])
+            else:
+                try:
+                    self.workingstep['timeout'] = int(self.workingstep['timeout'])
+                except:
+                    self.workingstep['timeout'] = 800
+                    logging.getLogger().warn("timeout integer error : default value %ss"%self.workingstep['timeout'])
             # working Step recup from process et session
 
             self.workingstep['pwd'] = ""
