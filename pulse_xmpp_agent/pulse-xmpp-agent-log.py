@@ -56,7 +56,7 @@ class Logs(Base):
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Integer, primary_key=True)
     type = Column(String(6), nullable=False,default = "noset")
-    date = Column(DateTime, default=datetime.datetime.now())
+    date = Column(DateTime, default=datetime.datetime.now)
     text = Column(String(255), nullable=False)
     sessionname = Column(String(20), nullable=False, default = "")
     priority = Column(Integer, default = 0)
