@@ -349,6 +349,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def reloaddeploy(self):
+        for sessionidban in self.ban_deploy_sessionid_list:
+            self.managefifo.delsessionfifo(sessionidban)
+            self.session.currentresource.discard(sessionidban)
         while (self.managefifo.getcount() != 0 and\
             len(self.session.currentresource) < self.config.concurrentdeployments):
 
