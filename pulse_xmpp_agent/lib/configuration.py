@@ -235,7 +235,7 @@ class confParameter:
                 self.concurrentdeployments = 10
 
             #PUSH METHOD TRANSFERT
-            self.pushmethod="rsyn"
+            self.pushmethod="rsync"
             if Config.has_option("global", "pushmethod"):
                 try:
                     self.pushmethod = Config.getint('global', 'pushmethod')
@@ -244,7 +244,7 @@ class confParameter:
                         "parameter [global]  pushmethod :(%s)" %str(e))
                     logging.getLogger().warning(
                         "parameter [global]  pushmethod : parameter set to rsync")
-                    self.pushmethod="rsyn"
+                    self.pushmethod="rsync"
             if not self.pushmethod in ["rsync", "scp"]:
                 self.pushmethod="rsync"
 
