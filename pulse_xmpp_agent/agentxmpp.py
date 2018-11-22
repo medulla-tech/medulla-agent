@@ -147,7 +147,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         client_handlertcp.start()
         self.manage_scheduler  = manage_scheduler(self)
         self.session = session(self.config.agenttype)
-        
+
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
@@ -160,7 +160,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentcommand = jid.JID(self.config.agentcommand)
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
         self.agentmaster = jid.JID("master@pulse")
-        
+
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files de session dont le deploiement a echoue ne sont pas efface.
@@ -345,8 +345,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         #start kiosk ask initialization
                         datasend['data']['subaction'] =  result['subaction']
                         datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
-                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'])
-                        datasend['data']['oumachine'] = organizationbymachine()
+                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'][0])
+
+                        # datasend['data']['oumachine'] = organizationbymachine()
                     elif result['action'] == 'kioskinterfaceInstall':
                         datasend['data']['subaction'] =  'install'
                     elif result['action'] == 'kioskinterfaceLaunch':
