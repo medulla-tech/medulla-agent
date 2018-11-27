@@ -346,8 +346,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         datasend['data']['subaction'] =  result['subaction']
                         datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
                         datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'][0])
-
-                        # datasend['data']['oumachine'] = organizationbymachine()
+                        datasend['data']['oumachine'] = organizationbymachine()
                     elif result['action'] == 'kioskinterfaceInstall':
                         datasend['data']['subaction'] =  'install'
                     elif result['action'] == 'kioskinterfaceLaunch':
