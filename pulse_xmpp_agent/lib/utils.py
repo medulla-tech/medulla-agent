@@ -1149,7 +1149,7 @@ def protoandport():
 
     elif sys.platform.startswith('linux'):
         for process in psutil.process_iter():
-            if 'Xvnc' in process.name():
+            if 'x11vnc' in process.name():
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
                     try:
