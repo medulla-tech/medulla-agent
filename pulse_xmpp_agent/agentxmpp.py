@@ -170,7 +170,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.xmppbrowsingpath = xmppbrowsing(defaultdir =  self.config.defaultdir, rootfilesystem = self.config.rootfilesystem)
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
-
+        self.banterminate = { } # used for clear id session banned
+        self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
@@ -550,14 +551,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
     ##################
 
-    def remove_sessionid_in_ban_deploy_sessionid_list(self, sessionid):
+    def remove_sessionid_in_ban_deploy_sessionid_list(self):
         """
             this function remove sessionid banned
         """
-        try:
-            self.ban_deploy_sessionid_list.remove(sessionid)
-        except Exception as e:
-            logger.error(str(e))
+        # renove if timestamp is 10000 millis seconds.
+        d = time.time()
+        for sessionidban, timeban in self.banterminate.items():
+            if (d - self.banterminate[sessionidban]) > 60:
+                del self.banterminate[sessionidban]
+                try:
+                    self.ban_deploy_sessionid_list.remove(sessionidban)
+                except Exception as e:
+                    logger.warning(str(e))
 
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
