@@ -1974,53 +1974,55 @@ class grafcet:
 
     def actionwaitandgoto(self):
         """
-        descriptor type
-         {
-                       "step" : 8,
-                       "action": "actionwaitandgoto",
-                       "waiting" : 60,
-                       "goto" : 7
-        }
-
+            descriptor type
+            {
+                        "step" : 8,
+                        "action": "actionwaitandgoto",
+                        "waiting" : 60,
+                        "goto" : 7
+            }
         """
-        # todo si action deja faite return
-        self.steplog()
-        if not "waiting" in self.workingstep:
-            self.workingstep['waiting'] = 180
-            logging.getLogger().warn("waiting missing : default value 180s")
-        timewaiting = int(self.workingstep['waiting']) + 60
-        logging.getLogger().warn("timeout  waiting : %s" % timewaiting)
-        self.objectxmpp.xmpplog('[%s]-[%s]: Waitting %s s for continue' % (self.data['name'],self.workingstep['step'], timewaiting),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
-        comdbool = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand("sleep " + str(self.workingstep['waiting']),
-                                                                                       self.datasend,
-                                                                                       self.objectxmpp.boundjid.bare,
-                                                                                       self.objectxmpp.boundjid.bare,
-                                                                                       timewaiting,
-                                                                                       self.workingstep['step'])
-        if not comdbool:
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error descriptor for action waitandgoto ' % (self.data['name'], self.workingstep['step'], timewaiting),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            # todo si action deja faite return
+            if not "waiting" in self.workingstep:
+                self.workingstep['waiting'] = '10'
+                logging.getLogger().warn("waiting missing : default value 180s")
+            timewaiting = int(self.workingstep['waiting']) + 180
+            logging.getLogger().warn("timeout  waiting : %s" %  self.workingstep['waiting'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Waitting %s s for continue' % (self.data['name'],self.workingstep['step'],  self.workingstep['waiting']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Execution",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+
+            time.sleep(int(self.workingstep['waiting']))
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in actionwaitandgoto step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error descriptor for action waitandgoto ' % (self.data['name'], self.workingstep['step']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Execution",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
 
     def actionrestart(self):
         """
