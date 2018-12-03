@@ -198,7 +198,13 @@ class confParameter:
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
-            
+
+        ##parameter for deploy default timeout
+        if Config.has_option("default_timeout", "parameters"):
+            self.default_timeout = Config.getint('default_timeout', 'parameters')
+        else:
+            self.default_timeout = 800
+
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
@@ -227,6 +233,20 @@ class confParameter:
                 logging.getLogger().warning(
                         "parameter [global]  concurrentdeployments : parameter set to 10")
                 self.concurrentdeployments = 10
+
+            #PUSH METHOD TRANSFERT
+            self.pushmethod="rsync"
+            if Config.has_option("global", "pushmethod"):
+                try:
+                    self.pushmethod = Config.getint('global', 'pushmethod')
+                except Exception as e :
+                    logging.getLogger().warning(
+                        "parameter [global]  pushmethod :(%s)" %str(e))
+                    logging.getLogger().warning(
+                        "parameter [global]  pushmethod : parameter set to rsync")
+                    self.pushmethod="rsync"
+            if not self.pushmethod in ["rsync", "scp"]:
+                self.pushmethod="rsync"
 
             if Config.has_option("connection", "portARSscript"):
                 self.parametersscriptconnection['port'] = Config.get(

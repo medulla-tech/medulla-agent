@@ -114,13 +114,11 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                     nb = t.split("@")
                     nb1 = -int(nb[0])
                     logging.getLogger().debug( "=======lastlines============%s========"%nb1)
-                    tab = result[nb1:]
                     workingstep[t] = os.linesep.join(result)
                 elif t.endswith('firstlines'):
                     nb = t.split("@")
                     nb1 = int(nb[0])
                     logging.getLogger().debug( "=======firstlines============%s======="%nb1)
-                    tab = result[:nb1]
                     workingstep[t] = os.linesep.join(result)
             if 'goto' in workingstep:
                 message['data']['stepcurrent'] = workingstep['goto']
@@ -443,7 +441,11 @@ class mannageprocess:
 class cmdx(object):
     def __init__(self, cmd, timeout):
         self.cmd=cmd
-        self.timeout = timeout
+        try:
+            self.timeout = int(timeout)
+        except:
+            logging.warning("parameter timeout error. timeout 800s")
+            self.timeout = 800
         self.timeoutbool = False
         self.code_error = 0
         self.run()

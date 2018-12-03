@@ -38,7 +38,7 @@ from sleekxmpp.xmlstream import handler, matcher
 import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
+from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
 from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
 from lib.managesession import session
 
@@ -50,7 +50,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start
+                        save_count_start, test_kiosk_presence
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -92,7 +92,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
-        laps_time_handlemanagesession = 15
+        laps_time_handlemanagesession = 20
         self.back_to_deploy = {}
         self.config = conf
         laps_time_networkMonitor = self.config.detectiontime
@@ -144,9 +144,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # run server tcpserver for kiosk
         client_handlertcp.start()
         self.manage_scheduler  = manage_scheduler(self)
+        self.session = session(self.config.agenttype)
+        
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
+            self.session.resources = set(list(self.managefifo.SESSIONdeploy))
             self.levelcharge = self.managefifo.getcount()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
@@ -155,7 +158,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentcommand = jid.JID(self.config.agentcommand)
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
         self.agentmaster = jid.JID("master@pulse")
-        self.session = session(self.config.agenttype)
+        
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files de session dont le deploiement a echoue ne sont pas efface.
@@ -167,7 +170,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.xmppbrowsingpath = xmppbrowsing(defaultdir =  self.config.defaultdir, rootfilesystem = self.config.rootfilesystem)
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
-
+        self.banterminate = { } # used for clear id session banned
+        self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
@@ -278,7 +282,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 result = json.loads(msg)
                 if 'uuid' in result:
                     datasend['data']['uuid'] = result['uuid']
-
+                if 'utcdatetime' in result:
+                    datasend['data']['utcdatetime'] = result['utcdatetime']
                 if 'action' in result:
                     if result['action'] == "kioskinterface":
                         #start kiosk ask initialization
@@ -345,18 +350,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def reloaddeploy(self):
-        while self.managefifo.getcount() != 0 and \
-              self.session.len() < self.config.concurrentdeployments:
+        for sessionidban in self.ban_deploy_sessionid_list:
+            self.managefifo.delsessionfifo(sessionidban)
+            self.session.currentresource.discard(sessionidban)
+        while (self.managefifo.getcount() != 0 and\
+            len(self.session.currentresource) < self.config.concurrentdeployments):
+
             data = self.managefifo.getfifo()
-            datasend={ "action": data['action'],
+            logging.debug("GET fifo %s"%self.session.resource)
+
+            datasend = { "action": data['action'],
                         "sessionid" : data['sessionid'],
                         "ret" : 0,
                         "base64" : False
                     }
+            self.session.currentresource.add(data['sessionid'])
             del data['action']
             del data['sessionid']
-            datasend['data'] = data
             self.levelcharge = self.levelcharge - 1
+            datasend['data'] = data
             self.send_message(  mto = self.boundjid.bare,
                                 mbody = json.dumps(datasend),
                                 mtype = 'chat')
@@ -539,14 +551,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
     ##################
 
-    def remove_sessionid_in_ban_deploy_sessionid_list(self, sessionid):
+    def remove_sessionid_in_ban_deploy_sessionid_list(self):
         """
             this function remove sessionid banned
         """
-        try:
-            self.ban_deploy_sessionid_list.remove(sessionid)
-        except Exception as e:
-            logger.error(str(e))
+        # renove if timestamp is 10000 millis seconds.
+        d = time.time()
+        for sessionidban, timeban in self.banterminate.items():
+            if (d - self.banterminate[sessionidban]) > 60:
+                del self.banterminate[sessionidban]
+                try:
+                    self.ban_deploy_sessionid_list.remove(sessionidban)
+                except Exception as e:
+                    logger.warning(str(e))
 
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
@@ -1115,6 +1132,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
+            'kiosk_presence' : test_kiosk_presence(),
             'countstart' : save_count_start()
         }
         try:
@@ -1133,6 +1151,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         userlist = list(set([users[0]  for users in psutil.users()]))
         if len(userlist) > 0:
             lastusersession = userlist[0]
+
         if lastusersession != "":
             dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
 
@@ -1155,7 +1174,6 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         plugindataseach = {}
         for element in os.listdir(self.config.pathpluginsscheduled):
             if element.endswith('.py') and element.startswith('scheduling_'):
-                print element
                 f = open(os.path.join(self.config.pathpluginsscheduled,element),'r')
                 lignes  = f.readlines()
                 f.close()

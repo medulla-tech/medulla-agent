@@ -40,7 +40,8 @@ from agentconffile import conffilename
 import ConfigParser
 import socket
 import psutil
-
+import time
+from datetime import datetime
 
 logger = logging.getLogger()
 
@@ -598,7 +599,7 @@ class shellcommandtimeout(object):
         def target():
             # print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'],
-                                            shell=True, 
+                                            shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
             self.obj['result'] = self.process.stdout.readlines()
@@ -1116,9 +1117,7 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
-    print("AAAAAAAAAAAAAAAAAA1")
     print column
-    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
 
 
@@ -1148,7 +1147,7 @@ def protoandport():
 
     elif sys.platform.startswith('linux'):
         for process in psutil.process_iter():
-            if 'Xvnc' in process.name():
+            if 'x11vnc' in process.name():
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
                     try:
@@ -1170,6 +1169,17 @@ def protoandport():
                         port = cux.laddr.port
                     if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                         protport['ssh'] = port
+            elif 'xrdp' in process.name():
+                process_handler = psutil.Process(process.pid)
+                for cux in process_handler.connections():
+                    try:
+                        ip = cux.laddr[0]
+                        port = cux.laddr[1]
+                    except Exception:
+                        ip = cux.laddr.ip
+                        port = cux.laddr.port
+                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                        protport['rdp'] = port
 
     elif sys.platform.startswith('darwin'):
         for process in psutil.process_iter():
@@ -1491,3 +1501,52 @@ def save_user_current(name = None):
     return datauseruser['curent']
 
 
+def test_kiosk_presence():
+    """Test if the kiosk is installed in the machine.
+    Returns:
+        string "True" if the directory is founded
+        or
+        string "False" if the directory is not founded"""
+
+    def _get_kiosk_path():
+        """This private function find the path for the pytho3 install.
+        If no installation is found the the function returns  None.
+        Returns:
+            string: the path of python3/site-packages
+            or
+            None if no path is founded"""
+        list = []
+        if sys.platform.startswith("win"):
+            list = [
+                os.path.join(os.environ["ProgramFiles"], "Python36", "Lib", "site-packages"),
+                os.path.join(os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages")
+            ]
+        elif sys.platform == "darwin":
+            list = ["usr","local","lib","python3.6","dist-packages"]
+        elif sys.platform == "linux":
+            list = ["usr","lib","python3.6","dist-packages",
+                    "usr", "lib", "python3.5", "dist-packages"]
+
+        for element in list:
+            if os.path.isdir(element):
+                return element
+        return None
+
+    path = _get_kiosk_path()
+    if path is not None and os.path.isdir(os.path.join(path, 'kiosk_interface')):
+        return "True"
+    else:
+        return "False"
+
+def utc2local (utc):
+    """
+    utc2local transform a utc datetime object to local object.
+
+    Param:
+        utc datetime which is not naive (the utc timezone must be precised)
+    Returns:
+        datetime in local timezone
+    """
+    epoch = time.mktime(utc.timetuple())
+    offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
+    return utc + offset
