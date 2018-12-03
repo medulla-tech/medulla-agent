@@ -26,4 +26,4 @@ Package: pulse-xmpp-agent-scheduler-machine
 Architecture: all
 Provides: ${python:Provides}
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, pulse-xmpp-agent
-Description: Machine Scheduler for Pulse Xmpp Agent
+Description: Machine Scheduler for Pulse Xmpp Agent 
