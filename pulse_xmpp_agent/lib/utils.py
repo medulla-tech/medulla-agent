@@ -1179,7 +1179,7 @@ def protoandport():
                         ip = cux.laddr.ip
                         port = cux.laddr.port
                     if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['ssh'] = port
+                        protport['rdp'] = port
 
     elif sys.platform.startswith('darwin'):
         for process in psutil.process_iter():
