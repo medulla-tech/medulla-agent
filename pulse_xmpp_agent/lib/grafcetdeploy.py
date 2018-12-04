@@ -387,7 +387,7 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
             return 5
-        elif isinstance(val, str):
+        elif isinstance(val,  basestring):
             if val == 'next':
                 self.data['stepcurrent'] = self.data['stepcurrent'] + 1
                 self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -395,7 +395,7 @@ class grafcet:
             elif val == 'end':
                 for step_in_sequence in self.sequence:
                     if self.sequence['action'] == 'actiondeploymentcomplete':
-                        self.data['stepcurrent'] = valstep
+                        self.data['stepcurrent'] = int(step_in_sequence['step'])
                         self.workingstep = self.sequence[self.data['stepcurrent']]
                         return 0
                     valstep = valstep + 1
@@ -404,12 +404,26 @@ class grafcet:
             elif val == 'error':
                 for step_in_sequence in self.sequence:
                     if self.sequence['action'] == 'actionerrordeployment':
-                        self.data['stepcurrent'] = valstep
+                        self.data['stepcurrent'] = int(step_in_sequence['step'])
                         self.workingstep = self.sequence[self.data['stepcurrent']]
                         return 0
                     valstep = valstep + 1
                     logging.getLogger().error("inconsistency in descriptor")
                 return 5
+            else:
+                for step_in_sequence in self.sequence:
+                    if step_in_sequence['actionlabel'] == val:
+                        self.data['stepcurrent'] = int(step_in_sequence['step'])
+                        logging.getLogger().debug("goto step %s"%self.data['stepcurrent'])
+                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                        return 0
+                valstep = valstep + 1
+                logging.getLogger().error("inconsistency in descriptor")
+                return 5
+        else:
+            logging.getLogger().error("label error")
+            self.data['stepcurrent'] = self.data['stepcurrent'] +1
+            return 5
 
     def terminate(self, ret, clear=True, msgstate=""):
         """
@@ -2005,6 +2019,10 @@ class grafcet:
                                         touser = "")
 
             time.sleep(int(self.workingstep['waiting']))
+            if 'goto' in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep['goto'])
+                self.__execstep__()
+                return True
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
