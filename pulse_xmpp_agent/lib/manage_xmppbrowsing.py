@@ -23,6 +23,11 @@
 
 import os, sys
 import json, re
+import logging
+
+
+logger = logging.getLogger()
+
 
 class FileSystem():
     """
@@ -120,6 +125,8 @@ class xmppbrowsing:
         self.rootfilesystem = None
         self.dirinfos       = {}
         self.hierarchy = []
+        self.initialisation = 0
+        self.hierarchystring = ""
         if defaultdir is not None:
             self.defaultdir = defaultdir
         if rootfilesystem is not None:
@@ -148,6 +155,75 @@ class xmppbrowsing:
         result.sort()
         return result
 
+    def clean_json(self, string):
+        string = re.sub(",[ \t\r\n]+}", "}", string)
+        string = re.sub(",[ \t\r\n]+\]", "]", string)
+        return string
+
+    def listfileindir(self, path_abs_current = None):
+        logging.getLogger().debug("list file next path %s"%path_abs_current)
+        boolhierarchy = False;
+        if path_abs_current is  None or path_abs_current == "":
+            self.initialisation = 0
+            self.hierarchystring = ""
+            boolhierarchy = True;
+            pathabs = self.rootfilesystem
+        elif path_abs_current == "@":
+            self.initialisation += 1
+            pathabs = self.defaultdir
+            boolhierarchy = True;
+        else:
+            self.hierarchystring = ""
+            self.initialisation = 0
+            pathabs = os.path.join(self.rootfilesystem, path_abs_current)
+        list_files_current = os.walk(pathabs).next();
+        ff =[]
+        for t in list_files_current[2]:
+            fii = os.path.join(pathabs,t)
+            ff.append((t, os.path.getsize(fii)))
+        self.dirinfos = {
+            "path_abs_current" : pathabs,
+            "list_dirs_current" : list_files_current[1],,
+            "list_files_current" : ff,
+            "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
+            "rootfilesystem" : self.rootfilesystem,
+            "defaultdir" : self.defaultdir
+        }
+        if boolhierarchy:
+            if self.initialisation == 2:
+                logging.getLogger().debug("tree view in cache")
+                self.dirinfos["strjsonhierarchy"] = self.hierarchystring
+                return self.dirinfos
+            logging.getLogger().debug("Geration tree view")
+            self.hierarchy = self.search_hierarchy(self.rootfilesystem)
+            myFiles = FileSystem(self.hierarchy[0])
+            for record in self.hierarchy[1:]:
+                myFiles.addChild(record)
+            #print myFiles.makeDict()
+            pp = myFiles.struct_all_children()
+            eee = eval (pp)
+            if "children" in eee[0]:
+                self.deldoublon(eee[0])
+            pp = json.dumps(eee[0])
+            self.dirinfos["strjsonhierarchy"] = pp
+            if self.initialisation == 1:
+                self.hierarchystring = pp
+        return self.dirinfos
+
+    def deldoublon(self, obj):
+        pass
+        result=[]
+        zz=[]
+        if "children" in obj:
+            k1 = list(obj['children'])
+            for y in k1:
+                if not y['text'] in zz:
+                    zz.append(y['text'])
+                    result.append(y)
+        obj['children']= result
+        for t in obj['children']:
+            self.deldoublon(t)
+
     def listfileindir1(self, path_abs_current = None):
         if path_abs_current is  None or path_abs_current == "":
             if self.defaultdir is None:
@@ -168,57 +244,3 @@ class xmppbrowsing:
             "defaultdir" : self.defaultdir
         }
         return self.dirinfos
-
-    def clean_json(self, string):
-        string = re.sub(",[ \t\r\n]+}", "}", string)
-        string = re.sub(",[ \t\r\n]+\]", "]", string)
-        return string
-
-    def listfileindir(self, path_abs_current = None):
-        self.hierarchy = self.search_hierarchy(self.rootfilesystem)
-        boolhierarchy = False;
-        if path_abs_current is  None or path_abs_current == "":
-            boolhierarchy = True;
-            pathabs = self.rootfilesystem
-        else:
-            pathabs = os.path.join(self.rootfilesystem,path_abs_current)
-        list_files_current = os.walk(pathabs).next()[2];
-        ff =[]
-        for t in list_files_current:
-            fii = os.path.join(pathabs,t)
-            ff.append((t, os.path.getsize(fii)))
-        self.dirinfos = {
-            "path_abs_current" : pathabs,
-            "list_dirs_current" : os.walk(pathabs).next()[1],
-            "list_files_current" : ff,
-            "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
-            "rootfilesystem" : self.rootfilesystem,
-            "defaultdir" : self.defaultdir
-        }
-        if boolhierarchy:
-            myFiles = FileSystem(self.hierarchy[0])
-            for record in self.hierarchy[1:]:
-                myFiles.addChild(record)
-            #print myFiles.makeDict()
-            pp = myFiles.struct_all_children()
-            eee = eval (pp)
-            if "children" in eee[0]:
-                self.deldoublon(eee[0])
-            pp = json.dumps(eee[0])
-            self.dirinfos["strjsonhierarchy"] = pp
-            print json.dumps(eee[0], indent = 4)
-        return self.dirinfos
-
-    def deldoublon(self, obj):
-        pass
-        result=[]
-        zz=[]
-        if "children" in obj:
-            k1 = list(obj['children'])
-            for y in k1:
-                if not y['text'] in zz:
-                    zz.append(y['text'])
-                    result.append(y)
-        obj['children']= result
-        for t in obj['children']:
-            self.deldoublon(t)

@@ -273,6 +273,10 @@ class confParameter:
             self.defaultdir = Config.get('browserfile', 'defaultdir')
         if Config.has_option("browserfile", "rootfilesystem"):
             self.rootfilesystem = Config.get('browserfile', 'rootfilesystem')
+        if self.rootfilesystem[-1] == '\\' or self.rootfilesystem[-1] == "/":
+            self.rootfilesystem = self.rootfilesystem[:-1]
+        if self.defaultdir[-1] == '\\' or self.defaultdir[-1] == "/":
+            self.defaultdir = self.defaultdir[:-1]
         #######end configuration browserfile#######
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
