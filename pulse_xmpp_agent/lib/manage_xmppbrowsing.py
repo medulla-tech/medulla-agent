@@ -183,7 +183,7 @@ class xmppbrowsing:
             ff.append((t, os.path.getsize(fii)))
         self.dirinfos = {
             "path_abs_current" : pathabs,
-            "list_dirs_current" : list_files_current[1],,
+            "list_dirs_current" : list_files_current[1],
             "list_files_current" : ff,
             "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
             "rootfilesystem" : self.rootfilesystem,
