@@ -177,17 +177,17 @@ class xmppbrowsing:
             self.initialisation = 0
             pathabs = os.path.join(self.rootfilesystem, path_abs_current)
         if  not os.path.isdir(pathabs):
-            logger.error("Error in configuration : folder not exit\n[browserfile]\ndefaultdir = %s\nrootfilesystem = %s"%(self.defaultdir, self.rootfilesystem))
+            logger.error("Configuration error : folder does not exist\n[browserfile]\ndefaultdir = %s\nrootfilesystem = %s"%(self.defaultdir, self.rootfilesystem))
             return {}
         list_files_current = os.walk(pathabs).next();
-        ff =[]
-        for t in list_files_current[2]:
-            fii = os.path.join(pathabs,t)
-            ff.append((t, os.path.getsize(fii)))
+        listfileinfolder =[]
+        for namefile in list_files_current[2]:
+            fichier_and_size = os.path.join(pathabs, namefile)
+            listfileinfolder.append((namefile, os.path.getsize(fichier_and_size)))
         self.dirinfos = {
             "path_abs_current" : pathabs,
             "list_dirs_current" : list_files_current[1],
-            "list_files_current" : ff,
+            "list_files_current" : listfileinfolder,
             "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
             "rootfilesystem" : self.rootfilesystem,
             "defaultdir" : self.defaultdir
