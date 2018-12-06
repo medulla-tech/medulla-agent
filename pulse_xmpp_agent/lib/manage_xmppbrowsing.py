@@ -176,6 +176,9 @@ class xmppbrowsing:
             self.hierarchystring = ""
             self.initialisation = 0
             pathabs = os.path.join(self.rootfilesystem, path_abs_current)
+        if  not os.path.isdir(pathabs):
+            logger.error("Error in configuration : folder not exit\n[browserfile]\ndefaultdir = %s\nrootfilesystem = %s"%(self.defaultdir, self.rootfilesystem))
+            return {}
         list_files_current = os.walk(pathabs).next();
         ff =[]
         for t in list_files_current[2]:
