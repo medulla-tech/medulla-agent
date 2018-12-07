@@ -742,7 +742,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def reloadsesssion(self):
         # reloadsesssion only for machine
         # retrieve existing sessions
-        self.session.loadsessions()
+        if not self.session.loadsessions():
+            return
         logging.log(DEBUGPULSE,"RELOAD SESSION DEPLOY")
         try:
             # load back to deploy after read session
