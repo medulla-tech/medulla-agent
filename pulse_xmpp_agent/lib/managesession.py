@@ -259,7 +259,7 @@ class session:
 
     def __decr__(self, x):
         if not x.decrementation():
-            self.clear(sessionid)
+            self.clear(x.sessionid)
 
     def decrementesessiondatainfo(self):
         filter(self.__decr__, self.sessiondata)
