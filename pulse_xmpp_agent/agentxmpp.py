@@ -616,6 +616,31 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     date = None ,
                     fromuser = "MASTER",
                     touser = "")
+        #notify master conf error in AM
+        dataerrornotify = {
+                            'to' : self.boundjid.bare,
+                            'action': "notify",
+                            "sessionid" : getRandomName(6, "notify"),
+                            'data' : { 'msg' : "",
+                                       'type': 'error'
+                                      },
+                            'ret' : 0,
+                            'base64' : False
+                    }
+
+        if not os.path.isdir(self.config.defaultdir):
+            dataerrornotify['data']['msg'] =  "Configurateur error browserfile on machine %s: defaultdir %s does not exit\n"%(self.boundjid.bare, self.config.defaultdir)
+            self.send_message(  mto = self.agentmaster,
+                                mbody = json.dumps(dataerrornotify),
+                                mtype = 'chat')
+
+        if not os.path.isdir(self.config.rootfilesystem):
+            dataerrornotify['data']['msg'] += "Configurateur error browserfile on machine %s: rootfilesystem %s does not exit"%(self.boundjid.bare, self.config.rootfilesystem)
+        #send notify
+        if dataerrornotify['data']['msg'] !="":
+            self.send_message(  mto = self.agentmaster,
+                                    mbody = json.dumps(dataerrornotify),
+                                    mtype = 'chat')
 
     def send_message_agent( self,
                             mto,
