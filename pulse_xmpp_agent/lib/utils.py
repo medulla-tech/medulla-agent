@@ -1117,9 +1117,7 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
-    print("AAAAAAAAAAAAAAAAAA1")
     print column
-    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
 
 
@@ -1149,7 +1147,7 @@ def protoandport():
 
     elif sys.platform.startswith('linux'):
         for process in psutil.process_iter():
-            if 'Xvnc' in process.name():
+            if 'x11vnc' in process.name():
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
                     try:
@@ -1171,6 +1169,17 @@ def protoandport():
                         port = cux.laddr.port
                     if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                         protport['ssh'] = port
+            elif 'xrdp' in process.name():
+                process_handler = psutil.Process(process.pid)
+                for cux in process_handler.connections():
+                    try:
+                        ip = cux.laddr[0]
+                        port = cux.laddr[1]
+                    except Exception:
+                        ip = cux.laddr.ip
+                        port = cux.laddr.port
+                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                        protport['rdp'] = port
 
     elif sys.platform.startswith('darwin'):
         for process in psutil.process_iter():

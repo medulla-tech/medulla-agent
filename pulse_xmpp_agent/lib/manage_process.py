@@ -55,7 +55,6 @@ def processcommand(command , queue_out_session, messagestr, timeout):
         logging.debug("code error  %s"% cmd.code_error)
         logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
         queue_out_session.put(msgoutsucces)
-        #logging.debug("code error  %s"% cmd.code_error)
         #logging.debug("result  %s"% cmd.stdout) 
         logging.debug("================================================")
 
@@ -66,13 +65,14 @@ def processcommand(command , queue_out_session, messagestr, timeout):
         sys.exit(0)
     except :
         traceback.print_exc(file=sys.stdout)
-        logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
+        logging.error("error execution process %s sessionid : %s"%(command, message['sessionid']))
         sys.exit(0)
 
 
 def processstepcommand ( command , queue_out_session, messagestr, timeout, step):
+    command = decode_strconsole(command)
     try:
-        message = json.loads(messagestr)
+        message = json.loads(decode_strconsole(messagestr))
     except:
         traceback.print_exc(file=sys.stdout)
         logging.getLogger().error("error json")
@@ -80,7 +80,6 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
 
     try:
         workingstep = {}
-        #logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'], indent=4, sort_keys=True))
         sequence = message['data']['descriptor']['sequence']
         for i in sequence:
             if i['step'] == step:
@@ -88,13 +87,10 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
                 break
         ###
         if len (workingstep) != 0:
-            #logging.debug("dddd###################\n#######################\n#######################\n#################")
-            #logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
-            #logging.debug("dddd###################\n#######################\n#######################\n#################")
             #structure message for msgout
             logging.getLogger().debug("================================================")
             logging.getLogger().debug(" execution command in process")
-            logging.getLogger().debug("command : \n%s"%command)
+            logging.getLogger().debug("command : %s"%command)
             logging.getLogger().debug("================================================")
             cmd = cmdx(command, timeout)
             workingstep['codereturn'] = cmd.code_error
@@ -104,7 +100,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
             result = cmddecode.split('\n')
             result  = [x.strip() for x in result if x !='']
             try:
-                message['data']['oldresult'] = str(result[-1])
+                message['data']['oldresult'] = decode_strconsole(str(result[-1]))
             except :
                 message['data']['oldresult'] = ""
             for t in workingstep:
@@ -202,7 +198,6 @@ class process_on_end_send_message_xmpp:
 
         try:
             workingstep = {}
-            #logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'], indent=4, sort_keys=True))
             sequence = message['data']['descriptor']['sequence']
             for i in sequence:
                 if i['step'] == step:
@@ -210,23 +205,17 @@ class process_on_end_send_message_xmpp:
                     break
 
             if len (workingstep) != 0:
-                #logging.debug("dddd###################\n#######################\n#######################\n#################")
-                #logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
-                #logging.debug("dddd###################\n#######################\n#######################\n#################")
                 #structure message for msgout
                 logging.getLogger().debug("================================================")
                 logging.getLogger().debug(" execution command in process")
-                logging.getLogger().debug("command : \n%s"%command)
+                logging.getLogger().debug("command : %s"%command)
                 logging.getLogger().debug("================================================")
                 cmd = cmdx(command, timeout)
                 workingstep['codereturn'] = cmd.code_error
                 workingstep['completed'] = 1
-                
                 cmddecode = decode_strconsole(cmd.stdout)
                 result = cmddecode.split('\n')
                 result  = [x.strip() for x in result if x !='']
-
-                #print result
                 for t in workingstep:
                     if t == "@resultcommand":
                         workingstep[t] = os.linesep.join(result)
@@ -277,7 +266,7 @@ class process_on_end_send_message_xmpp:
     def processcommand( self,  command , queue_out_session, messagestr, timeout):
         logging.error("########processcommand")
         try:
-            message = json.loads(messagestr)
+            message = json.loads(decode_strconsole(messagestr))
         except:
             traceback.print_exc(file=sys.stdout)
             logging.getLogger().error("error json")
@@ -289,7 +278,7 @@ class process_on_end_send_message_xmpp:
             }
             logging.debug("================================================")
             logging.debug(" execution command in process")
-            logging.debug("command : \n%s"%command)
+            logging.debug("command : %s"%command)
             logging.debug("================================================")
             cmd = cmdx(command,timeout)
             msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
@@ -341,7 +330,7 @@ class mannageprocess:
             msgout = {
                         'event': "",
                         'sessionid': sessionid,
-                        'result' : { 'codeerror' : 0, 'resultcommand' : '','command' : command },
+                        'result' : { 'codeerror' : 0, 'resultcommand' : '','command' : decode_strconsole(command) },
             }
             if eventstart != False:
                 #ecrit dans queue_out_session l'evenement eventstart
@@ -350,7 +339,7 @@ class mannageprocess:
                     queue_out_session.put(msgout)
                 else:
                     queue_out_session.put(eventstart)
-            cmd = cmdx(command,timeout)
+            cmd = cmdx(command, timeout)
             cmddecode = decode_strconsole(cmd.stdout)
             if cmd.code_error == 0 and eventfinish != False:
                 ev = eventfinish
@@ -358,14 +347,10 @@ class mannageprocess:
                 ev = eventerror
             else:
                 ev = False
-
-            print "================================================"
-            print " execution command in process"
-            print "================================================"
-            print cmd.code_error
-            print cmddecode
-            print "================================================"
-
+            logging.debug("================================================")
+            logging.debug(" execution command in process")
+            logging.debug("================================================")
+           
             if ev != False:
                 if '_eventype' in ev and '_eventype' == 'TEVENT':
                     #ecrit dans queue_out_session le TEVENT
@@ -400,34 +385,6 @@ class mannageprocess:
                             tab = tab[:nb1]
                             ev['data']['result'][t] = os.linesep.join(tab)
                     queue_out_session.put(ev)
-
-            #cmd = simplecommandstr(command)
-
-            #if cmd['code'] == 0 and eventfinish != False:
-                #ev = eventfinish
-            #elif cmd['code'] != 0 and eventfinish != False:
-                #ev = eventerror
-            #else:
-                #ev = False
-
-            #print "================================================"
-            #print " execution command in process"
-            #print "================================================"
-            #print cmd['code']
-            #print cmd['result']
-            #print "================================================"
-
-            #if ev != False:
-                #if '_eventype' in ev and '_eventype' == 'TEVENT':
-                    ##ecrit dans queue_out_session le TEVENT
-                    #msgout['event'] = ev
-                    #msgout['result']['resultcommand'] = cmd['result']
-                    #msgout['result']['codeerror'] = cmd['code']
-                    #queue_out_session.put(msgout)
-                #else:
-                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand' : cmd['result'],'command' : command  }
-                    #queue_out_session.put(ev)
-
         except TimeoutError:
             logging.error("TimeoutError process  %s sessionid : %s"%(command,sessionid))
         except KeyboardInterrupt:
@@ -440,8 +397,12 @@ class mannageprocess:
 
 class cmdx(object):
     def __init__(self, cmd, timeout):
-        self.cmd=cmd
-        self.timeout = timeout
+        self.cmd=encode_strconsole(cmd)
+        try:
+            self.timeout = int(timeout)
+        except:
+            logging.warning("parameter timeout error. timeout 800s")
+            self.timeout = 800
         self.timeoutbool = False
         self.code_error = 0
         self.run()
@@ -460,14 +421,8 @@ class cmdx(object):
         finally:
             timer.cancel()
         #self.stderr = stderr
-        self.stdout = stdout
+        self.stdout = decode_strconsole(stdout)
 
         self.code_error = self.proc.returncode
         if self.timeoutbool:
             self.stdout = "error : timeout %s"%self.timeout
-            #self.code_error = 150
-#ff = cmdx ("echo 'Process started';echo; echo; sleep 2; echo 'Process finished';ls;",3)
-
-#print "stdout",ff.stdout
-
-#print "code_error" ,ff.code_error
