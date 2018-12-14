@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# AGENT log
+# pulse_xmpp_agent/pulse-xmpp-agent-log.py
 # MA 02110-1301, USA.
 import sys, os
 import logging
@@ -56,8 +58,8 @@ class Logs(Base):
     # Notice that each column is also a normal Python instance attribute.
     id = Column(Integer, primary_key=True)
     type = Column(String(6), nullable=False,default = "noset")
-    date = Column(DateTime, default=datetime.datetime.now)
-    text = Column(String(255), nullable=False)
+    date = Column(DateTime, default=datetime.datetime.now())
+    text = Column(Text, nullable=False)
     sessionname = Column(String(20), nullable=False, default = "")
     priority = Column(Integer, default = 0)
     who = Column(String(45), nullable=False, default = "")
@@ -225,15 +227,29 @@ if sys.version_info < (3, 0):
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
+    
 
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
         sleekxmpp.ClientXMPP.__init__(self, conf.Jid, conf.Password)
+        self.engine = None
         self.config = conf
+        self.dbpoolrecycle = 60
+        self.dbpoolsize = 5
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message)
+        self.engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
+                                                                self.config.dbuser,
+                                                                self.config.dbpasswd,
+                                                                self.config.dbhost,
+                                                                self.config.dbname),
+                                    pool_recycle = self.dbpoolrecycle, 
+                                    pool_size = self.dbpoolsize
+        )
+        self.Session = sessionmaker(bind=self.engine)
+
 
     def start(self, event):
         self.get_roster()
@@ -260,13 +276,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def updatedeployresultandstate(self, sessionid, state, result ):
-        engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                                self.config.dbuser,
-                                                                self.config.dbpasswd,
-                                                                self.config.dbhost,
-                                                                self.config.dbname))
-        Session = sessionmaker(bind=engine)
-        session = Session()
+        #engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
+                                                                #self.config.dbuser,
+                                                                #self.config.dbpasswd,
+                                                                #self.config.dbhost,
+                                                                #self.config.dbname))
+        #Session = sessionmaker(bind=engine)
+        session = self.Session()
         jsonresult = json.loads(result)
         jsonautre = copy.deepcopy(jsonresult)
         del (jsonautre['descriptor'])
@@ -351,14 +367,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             this function for creating log in base
         """
         #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
-        engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                    self.config.dbuser,
-                                                    self.config.dbpasswd,
-                                                    self.config.dbhost,
-                                                    self.config.dbname
-                                                        ))
-        Session = sessionmaker(bind=engine)
-        session = Session()
+        #engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
+                                                    #self.config.dbuser,
+                                                    #self.config.dbpasswd,
+                                                    #self.config.dbhost,
+                                                    #self.config.dbname
+                                                        #))
+        #Session = sessionmaker(bind=engine)
+        session = self.Session()
         log = Logs(text = text,
                    type = type,
                    sessionname = sessionname,
