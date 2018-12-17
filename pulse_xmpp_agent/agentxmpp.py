@@ -1291,7 +1291,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                               tg.Server))
         logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
         if ipfromdns(tg.Server) == "" :
-            logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.Server)
+            logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.Server)
+
         time.sleep(2)
 
     while True:
