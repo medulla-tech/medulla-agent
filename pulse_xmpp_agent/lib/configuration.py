@@ -238,7 +238,7 @@ class confParameter:
             self.pushmethod="rsync"
             if Config.has_option("global", "pushmethod"):
                 try:
-                    self.pushmethod = Config.getint('global', 'pushmethod')
+                    self.pushmethod = Config.get('global', 'pushmethod')
                 except Exception as e :
                     logging.getLogger().warning(
                         "parameter [global]  pushmethod :(%s)" %str(e))

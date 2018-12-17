@@ -9,6 +9,8 @@ log_level = INFO
 # logfile = /var/log/pulse/xmpp-agent.log
 # Number of concurrent deployments the relay server must manage
 # concurrentdeployments = 10
+# Method used for deployments in push mode: rsync or scp
+# pushmethod = rsync
 
 [type]
 # The agent type: machine or relayserver
