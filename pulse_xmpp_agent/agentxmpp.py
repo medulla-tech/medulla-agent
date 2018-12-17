@@ -129,7 +129,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("remote updating disable")
         if self.descriptorimage.get_fingerprint_agent_base() != self.Update_Remote_Agentlist.get_fingerprint_agent_base():
             self.agentupdating=True
-            logging.warning("Diff beetween agent is agent image master base")
+            logging.warning("Agent installed is different from agent on master.")
         ###################END Update agent from MAster#############################
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Bind the socket to the port
