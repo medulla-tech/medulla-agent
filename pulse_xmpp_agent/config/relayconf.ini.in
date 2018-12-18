@@ -10,7 +10,7 @@ log_level = INFO
 # Number of concurrent deployments the relay server must manage
 # concurrentdeployments = 10
 # Method used for deployments in push mode: rsync or scp
-# pushmethod = rsync
+# pushmethod = scp
 
 [type]
 # The agent type: machine or relayserver
