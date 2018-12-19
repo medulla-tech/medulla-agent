@@ -181,12 +181,20 @@ def clone_ps_aux():
     result = result + "\n"     
     return result
 
+
 def bytes2human(n):
-    # http://code.activestate.com/recipes/578019
-    # >>> bytes2human(10000)
-    # '9.8K'
-    # >>> bytes2human(100001221)
-    # '95.4M'
+    """
+
+    Convert n bytes into a human readable string based on format.
+    see: http://goo.gl/kTQMs
+    see: http://code.activestate.com/recipes/578019
+
+    >>> bytes2human(10000)
+    '9.8 K'
+    >>> bytes2human(100001221)
+    '95.4 M'
+
+    """
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     prefix = {}
     for i, s in enumerate(symbols):
@@ -194,8 +202,8 @@ def bytes2human(n):
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
-            return '%.1f%s' % (value, s)
-    return "%sB" % n
+            return '%.2f%s' % (value, s)
+    return '%.2fB' % (n)
 
 
 def disk_usage():
@@ -291,24 +299,6 @@ duplex_map = {
     psutil.NIC_DUPLEX_HALF: "half",
     psutil.NIC_DUPLEX_UNKNOWN: "?",
 }
-
-
-def bytes2human(n):
-    """
-    >>> bytes2human(10000)
-    '9.8 K'
-    >>> bytes2human(100001221)
-    '95.4 M'
-    """
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = float(n) / prefix[s]
-            return '%.2f%s' % (value, s)
-    return '%.2fB' % (n)
 
 
 def ifconfig():
@@ -472,4 +462,28 @@ def netstat():
             c.pid or AD,
             proc_names.get(c.pid, '?')[:15],
         )
+    return result
+
+def __dictdata(datatuple):
+    result = {}
+    # key du tuple
+    keyattribut = datatuple.__dict__.keys()
+    for keyc in keyattribut:
+        #attribut du tuple vers key du dict
+        result[keyc]= getattr(datatuple,keyc)
+    return result
+
+def cputimes (percpu = False ):
+    result = {}
+    infocpu =  psutil.cpu_times( percpu = False)
+    result['allcpu'] = __dictdata(infocpu)
+    if percpu == False:
+        #global time (all cpu)
+        result['allcpu'] = __dictdata(infocpu)
+    elif percpu == True:
+        infocpu =  psutil.cpu_times( percpu = percpu)
+        nbcpu = len(infocpu)
+        result['nbcpu'] = nbcpu
+        for cpu_nb in range(0,nbcpu):
+            result['cpu%s'% cpu_nb] = __dictdata(infocpu[cpu_nb])
     return result
