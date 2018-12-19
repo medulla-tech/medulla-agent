@@ -238,7 +238,7 @@ class confParameter:
             self.pushmethod="rsync"
             if Config.has_option("global", "pushmethod"):
                 try:
-                    self.pushmethod = Config.getint('global', 'pushmethod')
+                    self.pushmethod = Config.get('global', 'pushmethod')
                 except Exception as e :
                     logging.getLogger().warning(
                         "parameter [global]  pushmethod :(%s)" %str(e))
@@ -273,6 +273,10 @@ class confParameter:
             self.defaultdir = Config.get('browserfile', 'defaultdir')
         if Config.has_option("browserfile", "rootfilesystem"):
             self.rootfilesystem = Config.get('browserfile', 'rootfilesystem')
+        if self.rootfilesystem[-1] == '\\' or self.rootfilesystem[-1] == "/":
+            self.rootfilesystem = self.rootfilesystem[:-1]
+        if self.defaultdir[-1] == '\\' or self.defaultdir[-1] == "/":
+            self.defaultdir = self.defaultdir[:-1]
         #######end configuration browserfile#######
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()

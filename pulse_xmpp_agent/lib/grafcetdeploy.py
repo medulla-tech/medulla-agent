@@ -387,7 +387,7 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
             return 5
-        elif isinstance(val, str):
+        elif isinstance(val,  basestring):
             if val == 'next':
                 self.data['stepcurrent'] = self.data['stepcurrent'] + 1
                 self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -395,7 +395,7 @@ class grafcet:
             elif val == 'end':
                 for step_in_sequence in self.sequence:
                     if self.sequence['action'] == 'actiondeploymentcomplete':
-                        self.data['stepcurrent'] = valstep
+                        self.data['stepcurrent'] = int(step_in_sequence['step'])
                         self.workingstep = self.sequence[self.data['stepcurrent']]
                         return 0
                     valstep = valstep + 1
@@ -404,12 +404,26 @@ class grafcet:
             elif val == 'error':
                 for step_in_sequence in self.sequence:
                     if self.sequence['action'] == 'actionerrordeployment':
-                        self.data['stepcurrent'] = valstep
+                        self.data['stepcurrent'] = int(step_in_sequence['step'])
                         self.workingstep = self.sequence[self.data['stepcurrent']]
                         return 0
                     valstep = valstep + 1
                     logging.getLogger().error("inconsistency in descriptor")
                 return 5
+            else:
+                for step_in_sequence in self.sequence:
+                    if step_in_sequence['actionlabel'] == val:
+                        self.data['stepcurrent'] = int(step_in_sequence['step'])
+                        logging.getLogger().debug("goto step %s"%self.data['stepcurrent'])
+                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                        return 0
+                valstep = valstep + 1
+                logging.getLogger().error("inconsistency in descriptor")
+                return 5
+        else:
+            logging.getLogger().error("label error")
+            self.data['stepcurrent'] = self.data['stepcurrent'] +1
+            return 5
 
     def terminate(self, ret, clear=True, msgstate=""):
         """
@@ -1974,53 +1988,59 @@ class grafcet:
 
     def actionwaitandgoto(self):
         """
-        descriptor type
-         {
-                       "step" : 8,
-                       "action": "actionwaitandgoto",
-                       "waiting" : 60,
-                       "goto" : 7
-        }
-
+            descriptor type
+            {
+                        "step" : 8,
+                        "action": "actionwaitandgoto",
+                        "waiting" : 60,
+                        "goto" : 7
+            }
         """
-        # todo si action deja faite return
-        self.steplog()
-        if not "waiting" in self.workingstep:
-            self.workingstep['waiting'] = 180
-            logging.getLogger().warn("waiting missing : default value 180s")
-        timewaiting = int(self.workingstep['waiting']) + 60
-        logging.getLogger().warn("timeout  waiting : %s" % timewaiting)
-        self.objectxmpp.xmpplog('[%s]-[%s]: Waitting %s s for continue' % (self.data['name'],self.workingstep['step'], timewaiting),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
-        comdbool = self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand("sleep " + str(self.workingstep['waiting']),
-                                                                                       self.datasend,
-                                                                                       self.objectxmpp.boundjid.bare,
-                                                                                       self.objectxmpp.boundjid.bare,
-                                                                                       timewaiting,
-                                                                                       self.workingstep['step'])
-        if not comdbool:
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error descriptor for action waitandgoto ' % (self.data['name'], self.workingstep['step'], timewaiting),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Error | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            # todo si action deja faite return
+            if not "waiting" in self.workingstep:
+                self.workingstep['waiting'] = '10'
+                logging.getLogger().warn("waiting missing : default value 180s")
+            timewaiting = int(self.workingstep['waiting']) + 180
+            logging.getLogger().warn("timeout  waiting : %s" %  self.workingstep['waiting'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Waitting %s s for continue' % (self.data['name'],self.workingstep['step'],  self.workingstep['waiting']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Execution",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+
+            time.sleep(int(self.workingstep['waiting']))
+            if 'goto' in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep['goto'])
+                self.__execstep__()
+                return True
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            self.terminate(-1, False, "end error in actionwaitandgoto step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error descriptor for action waitandgoto ' % (self.data['name'], self.workingstep['step']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Error | Execution",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
 
     def actionrestart(self):
         """
