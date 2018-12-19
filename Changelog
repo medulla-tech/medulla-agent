@@ -1,6 +1,11 @@
 pulse-xmpp-agent 1.9.8
 ======================
-
+* [FEATURE] Push method (scp or rsync) can be configured in relay server
+* [BUGFIX]  Fix cleaning of deployments which have been aborted
+* [BUGFIX]  Fix detection of VNC configuration
+* [BUGFIX]  Fix management of default directory in file transfer
+* [BUGFIX]  Fix decoding of command string
+* [BUGFIX]  Fix management of sessions
 
 pulse-xmpp-agent 1.9.7
 ======================
