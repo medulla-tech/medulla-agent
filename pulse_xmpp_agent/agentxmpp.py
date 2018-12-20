@@ -891,7 +891,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                     os.path.join(self.pathagent, "script", fichier)))
                             logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
                                                                         os.path.join(self.pathagent, "script", fichier)))
-                        #todo base de reg install version
+
                     elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                         os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
                         os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
