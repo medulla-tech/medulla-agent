@@ -861,6 +861,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
                     #reinstall agent from img_agent
                     if sys.platform.startswith('win'):
+                        import _winreg
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
                                                     os.path.join(self.pathagent, fichier)))
@@ -868,6 +869,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                             os.path.join(self.pathagent)))
                         os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
                                                 os.path.join(self.pathagent, "agentversion")))
+                        agentversion = os.path.join(self.pathagent, "agentversion")
+                        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                                             "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
+                                             0 ,
+                                             _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
+                        _winreg.SetValueEx ( key,
+                                           'DisplayVersion'  ,
+                                           0,
+                                           _winreg.REG_SZ,
+                                           file_get_contents(os.path.join(self.img_agent, "agentversion")).strip())
+                        _winreg.CloseKey(key)
+
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
                                                     os.path.join(self.pathagent, "lib", fichier)))
