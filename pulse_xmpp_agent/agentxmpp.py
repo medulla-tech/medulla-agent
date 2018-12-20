@@ -50,7 +50,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start, test_kiosk_presence
+                        save_count_start, test_kiosk_presence, file_get_contents
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -869,7 +869,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                             os.path.join(self.pathagent)))
                         os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
                                                 os.path.join(self.pathagent, "agentversion")))
-                        agentversion = os.path.join(self.pathagent, "agentversion")
                         key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
                                              "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
                                              0 ,
@@ -878,7 +877,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                            'DisplayVersion'  ,
                                            0,
                                            _winreg.REG_SZ,
-                                           file_get_contents(os.path.join(self.img_agent, "agentversion")).strip())
+                                           file_get_contents(os.path.join(self.pathagent, "agentversion")).strip())
                         _winreg.CloseKey(key)
 
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
