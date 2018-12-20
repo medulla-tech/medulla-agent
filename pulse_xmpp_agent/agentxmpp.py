@@ -1252,6 +1252,30 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
 
+def tgconf(optstypemachine):
+    tg = confParameter(optstypemachine)
+
+    if optstypemachine.lower() in ["machine"]:
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
+    else:
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
+
+    while True:
+        if tg.Server == "" or tg.Port == "":
+            logger.error("Error config ; Parameter Connection missing")
+            sys.exit(1)
+        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
+            " Check that %s can be resolved"%(tg.Server,
+                                              tg.Port,
+                                              tg.Server))
+        logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
+        if ipfromdns(tg.Server) == "" :
+            logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.Server)
+        time.sleep(2)
+    return tg
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     global restart, signalint
@@ -1283,45 +1307,53 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     else:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
     # Setup the command line arguments.
-    tg = confParameter(optstypemachine)
+    #tg = confParameter(optstypemachine)
 
-    if optstypemachine.lower() in ["machine"]:
-        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
-        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
-    else:
-        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
-        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
+    #if optstypemachine.lower() in ["machine"]:
+        #tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        #tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
+    #else:
+        #tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        #tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
 
+    #while True:
+        #if tg.Server == "" or tg.Port == "":
+            #logger.error("Error config ; Parameter Connection missing")
+            #sys.exit(1)
+        #if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        #logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
+            #" Check that %s can be resolved"%(tg.Server,
+                                              #tg.Port,
+                                              #tg.Server))
+        #logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
+        #if ipfromdns(tg.Server) == "" :
+            #logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.Server)
+
+        #time.sleep(2)
     while True:
-        if tg.Server == "" or tg.Port == "":
-            logger.error("Error config ; Parameter Connection missing")
-            sys.exit(1)
-        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
-        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
-            " Check that %s can be resolved"%(tg.Server,
-                                              tg.Port,
-                                              tg.Server))
-        logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
-        if ipfromdns(tg.Server) == "" :
-            logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.Server)
-
-        time.sleep(2)
-
-    while True:
+        tg = tgconf(optstypemachine)
         restart = False
         xmpp = MUCBot(tg)
+        xmpp.auto_reconnect = False
         xmpp.register_plugin('xep_0030') # Service Discovery
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600,'interval' : 600, 'timeout' : 500  })
+        xmpp.register_plugin('xep_0199', {'keepalive': True,
+                                          'frequency':600,
+                                          'interval' : 600,
+                                          'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-
-        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
+        if xmpp.config.agenttype in ['relayserver']:
+            attempt = True
+        else:
+            attempt = False
+        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
+            logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
             #event for quit loop server tcpserver for kiosk
             xmpp.eventkill.set()
             xmpp.sock.close()
@@ -1330,7 +1362,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             # Connect the socket to the port where the server is listening
             server_address = ('localhost', tg.am_local_port)
             logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
-            print 'connecting to %s:%s' % server_address
             sock.connect(server_address)
             sock.close()
 
@@ -1346,21 +1377,27 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.scheduler.quit()
             logging.log(DEBUGPULSE,"bye bye Agent")
         else:
-            logging.log(DEBUGPULSE,"Unable to connect.")
+            logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
-        if not restart:
-            # verify if signal stop
-            if not signalint:
-                # verify if alternative connection
-                if os.path.isfile(conffilename("cluster")):
-                    # il y a une configuration alternative
-                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
-                    changeconnection( conffilename(xmpp.config.agenttype),
-                                    newparametersconnect[2],
-                                    newparametersconnect[1],
-                                    newparametersconnect[0],
-                                    newparametersconnect[3])
+        if signalint:
+            logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
             break
+        logging.log(DEBUGPULSE,"analyse alternative")
+        if not restart:
+            logging.log(DEBUGPULSE,"not restart")
+            # verify if signal stop
+            # verify if alternative connection
+            logging.log(DEBUGPULSE,"alternative connection")
+            logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
+            if os.path.isfile(conffilename("cluster")):
+                # il y a une configuration alternative
+                logging.log(DEBUGPULSE, "alternative configuration")
+                newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+                changeconnection( conffilename(xmpp.config.agenttype),
+                                newparametersconnect[2],
+                                newparametersconnect[1],
+                                newparametersconnect[0],
+                                newparametersconnect[3])
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
