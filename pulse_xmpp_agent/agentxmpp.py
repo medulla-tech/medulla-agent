@@ -641,6 +641,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto = self.agentmaster,
                                     mbody = json.dumps(dataerrornotify),
                                     mtype = 'chat')
+        #call plugin start
+        startparameter={
+            "action": "start",
+            "sessionid" : getRandomName(6, "start"),
+            "ret" : 0,
+            "base64" : False,
+            "data" : {}}
+        dataerreur={ "action" : "result" + startparameter["action"],
+                     "data" : { "msg" : "error plugin : "+ startparameter["action"]},
+                     'sessionid' : startparameter['sessionid'],
+                     'ret' : 255,
+                     'base64' : False}
+        msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
+        if not 'data' in startparameter:
+            startparameter['data'] = {}
+        call_plugin(startparameter["action"],
+            self,
+            startparameter["action"],
+            startparameter['sessionid'],
+            startparameter['data'],
+            msg,
+            dataerreur)
+
 
     def send_message_agent( self,
                             mto,
