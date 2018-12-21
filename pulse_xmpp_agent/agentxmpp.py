@@ -641,6 +641,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto = self.agentmaster,
                                     mbody = json.dumps(dataerrornotify),
                                     mtype = 'chat')
+        #call plugin start
+        startparameter={
+            "action": "start",
+            "sessionid" : getRandomName(6, "start"),
+            "ret" : 0,
+            "base64" : False,
+            "data" : {}}
+        dataerreur={ "action" : "result" + startparameter["action"],
+                     "data" : { "msg" : "error plugin : "+ startparameter["action"]},
+                     'sessionid' : startparameter['sessionid'],
+                     'ret' : 255,
+                     'base64' : False}
+        msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
+        if not 'data' in startparameter:
+            startparameter['data'] = {}
+        call_plugin(startparameter["action"],
+            self,
+            startparameter["action"],
+            startparameter['sessionid'],
+            startparameter['data'],
+            msg,
+            dataerreur)
+
 
     def send_message_agent( self,
                             mto,
@@ -1306,30 +1329,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
     else:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
-    # Setup the command line arguments.
-    #tg = confParameter(optstypemachine)
-
-    #if optstypemachine.lower() in ["machine"]:
-        #tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
-        #tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
-    #else:
-        #tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
-        #tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
-
-    #while True:
-        #if tg.Server == "" or tg.Port == "":
-            #logger.error("Error config ; Parameter Connection missing")
-            #sys.exit(1)
-        #if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
-        #logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
-            #" Check that %s can be resolved"%(tg.Server,
-                                              #tg.Port,
-                                              #tg.Server))
-        #logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
-        #if ipfromdns(tg.Server) == "" :
-            #logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.Server)
-
-        #time.sleep(2)
     while True:
         tg = tgconf(optstypemachine)
         restart = False
