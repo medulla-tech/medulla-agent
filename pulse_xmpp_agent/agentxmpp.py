@@ -1329,30 +1329,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
     else:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
-    # Setup the command line arguments.
-    #tg = confParameter(optstypemachine)
-
-    #if optstypemachine.lower() in ["machine"]:
-        #tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
-        #tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
-    #else:
-        #tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
-        #tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
-
-    #while True:
-        #if tg.Server == "" or tg.Port == "":
-            #logger.error("Error config ; Parameter Connection missing")
-            #sys.exit(1)
-        #if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
-        #logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
-            #" Check that %s can be resolved"%(tg.Server,
-                                              #tg.Port,
-                                              #tg.Server))
-        #logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
-        #if ipfromdns(tg.Server) == "" :
-            #logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.Server)
-
-        #time.sleep(2)
     while True:
         tg = tgconf(optstypemachine)
         restart = False
