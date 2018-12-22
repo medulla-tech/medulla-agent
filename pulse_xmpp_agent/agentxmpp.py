@@ -105,17 +105,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
             #copy agent vers remote agent.
             if sys.platform.startswith('win'):
-                for file in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['program_agent']:
-                    if not os.path.isfile(os.path.join(self.img_agent, file)):
-                        os.system('copy  %s %s'%(os.path.join(self.pathagent, file), os.path.join(self.img_agent, file)))
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['program_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent, fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, fichier), os.path.join(self.img_agent, fichier)))
                 if not os.path.isfile(os.path.join(self.img_agent,'agentversion' )):
                     os.system('copy  %s %s'%(os.path.join(self.pathagent, 'agentversion'), os.path.join(self.img_agent, 'agentversion')))
-                for file in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['lib_agent']:
-                    if not os.path.isfile(os.path.join(self.img_agent,"lib", file)):
-                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", file), os.path.join(self.img_agent,"lib", file)))
-                for file in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['script_agent']:
-                    if not os.path.isfile(os.path.join(self.img_agent, "script", file)):
-                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", file), os.path.join(self.img_agent,"script", 'lib_agent')))
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['lib_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent,"lib", fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", fichier), os.path.join(self.img_agent,"lib", fichier)))
+                for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['script_agent']:
+                    if not os.path.isfile(os.path.join(self.img_agent, "script", fichier)):
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", 'lib_agent')))
             elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                 print "copy file"
                 os.system('cp -u %s/*.py %s'%(self.pathagent,self.img_agent))
@@ -885,10 +885,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     #reinstall agent from img_agent
                     if sys.platform.startswith('win'):
                         import _winreg
-                        for file in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
-                            os.system('copy  %s %s'%(os.path.join(self.img_agent, file),
-                                                    os.path.join(self.pathagent, file)))
-                            logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, file),
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
+                                                    os.path.join(self.pathagent, fichier)))
+                            logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
                                                                             os.path.join(self.pathagent)))
                         os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
                                                 os.path.join(self.pathagent, "agentversion")))
@@ -903,16 +903,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                            file_get_contents(os.path.join(self.pathagent, "agentversion")).strip())
                         _winreg.CloseKey(key)
 
-                        for file in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
-                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", file),
-                                                    os.path.join(self.pathagent, "lib", file)))
-                            logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", file),
-                                                                        os.path.join(self.pathagent, "lib", file)))
-                        for file in Update_Remote_Img.get_md5_descriptor_agent()['script_agent']:
-                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", file),
-                                                    os.path.join(self.pathagent, "script", file)))
-                            logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", file),
-                                                                        os.path.join(self.pathagent, "script", file)))
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                    os.path.join(self.pathagent, "lib", fichier)))
+                            logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
+                                                                        os.path.join(self.pathagent, "lib", fichier)))
+                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['script_agent']:
+                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                    os.path.join(self.pathagent, "script", fichier)))
+                            logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
+                                                                        os.path.join(self.pathagent, "script", fichier)))
 
                     elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                         os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
