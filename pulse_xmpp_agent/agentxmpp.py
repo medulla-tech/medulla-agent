@@ -50,7 +50,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start, test_kiosk_presence
+                        save_count_start, test_kiosk_presence, file_get_contents
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -641,6 +641,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto = self.agentmaster,
                                     mbody = json.dumps(dataerrornotify),
                                     mtype = 'chat')
+        #call plugin start
+        startparameter={
+            "action": "start",
+            "sessionid" : getRandomName(6, "start"),
+            "ret" : 0,
+            "base64" : False,
+            "data" : {}}
+        dataerreur={ "action" : "result" + startparameter["action"],
+                     "data" : { "msg" : "error plugin : "+ startparameter["action"]},
+                     'sessionid' : startparameter['sessionid'],
+                     'ret' : 255,
+                     'base64' : False}
+        msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
+        if not 'data' in startparameter:
+            startparameter['data'] = {}
+        call_plugin(startparameter["action"],
+            self,
+            startparameter["action"],
+            startparameter['sessionid'],
+            startparameter['data'],
+            msg,
+            dataerreur)
+
 
     def send_message_agent( self,
                             mto,
@@ -861,6 +884,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
                     #reinstall agent from img_agent
                     if sys.platform.startswith('win'):
+                        import _winreg
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
                                                     os.path.join(self.pathagent, fichier)))
@@ -868,6 +892,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                             os.path.join(self.pathagent)))
                         os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
                                                 os.path.join(self.pathagent, "agentversion")))
+                        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                                             "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
+                                             0 ,
+                                             _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
+                        _winreg.SetValueEx ( key,
+                                           'DisplayVersion'  ,
+                                           0,
+                                           _winreg.REG_SZ,
+                                           file_get_contents(os.path.join(self.pathagent, "agentversion")).strip())
+                        _winreg.CloseKey(key)
+
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
                                                     os.path.join(self.pathagent, "lib", fichier)))
@@ -878,7 +913,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                     os.path.join(self.pathagent, "script", fichier)))
                             logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
                                                                         os.path.join(self.pathagent, "script", fichier)))
-                        #todo base de reg install version
+
                     elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                         os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
                         os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
@@ -1240,6 +1275,30 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
 
+def tgconf(optstypemachine):
+    tg = confParameter(optstypemachine)
+
+    if optstypemachine.lower() in ["machine"]:
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
+    else:
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
+
+    while True:
+        if tg.Server == "" or tg.Port == "":
+            logger.error("Error config ; Parameter Connection missing")
+            sys.exit(1)
+        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
+            " Check that %s can be resolved"%(tg.Server,
+                                              tg.Port,
+                                              tg.Server))
+        logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
+        if ipfromdns(tg.Server) == "" :
+            logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.Server)
+        time.sleep(2)
+    return tg
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     global restart, signalint
@@ -1270,46 +1329,30 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine"))
     else:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
-    # Setup the command line arguments.
-    tg = confParameter(optstypemachine)
-
-    if optstypemachine.lower() in ["machine"]:
-        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
-        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_machine")
-    else:
-        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
-        tg.pathpluginsscheduled = os.path.join(os.path.dirname(os.path.realpath(__file__)), "descriptor_scheduler_relay")
-
     while True:
-        if tg.Server == "" or tg.Port == "":
-            logger.error("Error config ; Parameter Connection missing")
-            sys.exit(1)
-        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
-        logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
-            " Check that %s can be resolved"%(tg.Server,
-                                              tg.Port,
-                                              tg.Server))
-        logging.log(DEBUGPULSE,"verify a information ip or dns for connection AM")
-        if ipfromdns(tg.Server) == "" :
-            logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.Server)
-
-        time.sleep(2)
-
-    while True:
+        tg = tgconf(optstypemachine)
         restart = False
         xmpp = MUCBot(tg)
+        xmpp.auto_reconnect = False
         xmpp.register_plugin('xep_0030') # Service Discovery
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600,'interval' : 600, 'timeout' : 500  })
+        xmpp.register_plugin('xep_0199', {'keepalive': True,
+                                          'frequency':600,
+                                          'interval' : 600,
+                                          'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-
-        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
+        if xmpp.config.agenttype in ['relayserver']:
+            attempt = True
+        else:
+            attempt = False
+        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
+            logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
             #event for quit loop server tcpserver for kiosk
             xmpp.eventkill.set()
             xmpp.sock.close()
@@ -1318,7 +1361,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             # Connect the socket to the port where the server is listening
             server_address = ('localhost', tg.am_local_port)
             logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
-            print 'connecting to %s:%s' % server_address
             sock.connect(server_address)
             sock.close()
 
@@ -1334,21 +1376,27 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.scheduler.quit()
             logging.log(DEBUGPULSE,"bye bye Agent")
         else:
-            logging.log(DEBUGPULSE,"Unable to connect.")
+            logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
-        if not restart:
-            # verify if signal stop
-            if not signalint:
-                # verify if alternative connection
-                if os.path.isfile(conffilename("cluster")):
-                    # il y a une configuration alternative
-                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
-                    changeconnection( conffilename(xmpp.config.agenttype),
-                                    newparametersconnect[2],
-                                    newparametersconnect[1],
-                                    newparametersconnect[0],
-                                    newparametersconnect[3])
+        if signalint:
+            logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
             break
+        logging.log(DEBUGPULSE,"analyse alternative")
+        if not restart:
+            logging.log(DEBUGPULSE,"not restart")
+            # verify if signal stop
+            # verify if alternative connection
+            logging.log(DEBUGPULSE,"alternative connection")
+            logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
+            if os.path.isfile(conffilename("cluster")):
+                # il y a une configuration alternative
+                logging.log(DEBUGPULSE, "alternative configuration")
+                newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+                changeconnection( conffilename(xmpp.config.agenttype),
+                                newparametersconnect[2],
+                                newparametersconnect[1],
+                                newparametersconnect[0],
+                                newparametersconnect[3])
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:

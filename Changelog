@@ -6,6 +6,7 @@ pulse-xmpp-agent 1.9.8
 * [BUGFIX]  Fix management of default directory in file transfer
 * [BUGFIX]  Fix decoding of command string
 * [BUGFIX]  Fix management of sessions
+* [BUGFIX]  Fix alternative connection when a server of the cluster goes down
 
 pulse-xmpp-agent 1.9.7
 ======================
