@@ -1565,3 +1565,12 @@ def utc2local (utc):
     epoch = time.mktime(utc.timetuple())
     offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
     return utc + offset
+
+def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
+    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+        sessionid = action.strip().replace(" ", "")
+    return { 'action' : action,
+             'data' : data,
+             'ret' : 0, 
+             "base64" : False,
+             "sessionid" : getRandomName(4,sessionid)}
