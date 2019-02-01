@@ -33,7 +33,7 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 import subprocess
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns
+from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns###, Setdirectorytempinfo
 from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 import traceback
@@ -42,8 +42,7 @@ from multiprocessing import Queue
 from multiprocessing.managers import SyncManager
 import psutil
 import signal
-from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, DateTime, Text
+from sqlalchemy import Column, String, Integer, DateTime, Text, create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import imp
@@ -51,7 +50,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from bin.agent import MUCBot
-import imp
+
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
@@ -113,12 +112,15 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     # activate module.
 
     if "glpi" in tg.plugins_list:
-            Glpi().activate()
+        logger.info("activate GLPI")
+        Glpi().activate()
 
     if "xmpp" in tg.plugins_list:
+        logger.info("activate XMPP")
         XmppMasterDatabase().activate()
 
     if "kiosk" in tg.plugins_list:
+        logger.info("activate KIOSK")
         KioskDatabase().activate()
 
     xmpp = MUCBot( )
@@ -137,8 +139,6 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
         tg = confParameter(optfileconf)
         xmpp.config = tg
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-        print os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmasterinv")
-        print os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
         if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port)):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")

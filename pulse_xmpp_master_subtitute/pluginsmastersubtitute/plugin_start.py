@@ -25,7 +25,7 @@ import json
 import sys, os
 import logging
 import platform
-from lib.utils import file_get_contents, getRandomName
+from lib.utils import file_get_contents, getRandomName, call_plugin, data_struct_message
 import traceback
 from sleekxmpp import jid
 
@@ -40,43 +40,36 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
+    
+    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
     #send demande module mmc actif sur master
     objectxmpp.send_message( mto=objectxmpp.agentmaster,
                              mbody=json.dumps(data_struct_message("enable_mmc_module")),
                              mtype='chat')
-
-    #Setdirectorytempinfo() #create directory pour install key public master.
-    ## in starting agent ask public key of master.
-    #ask_key_master_public(objectxmpp)
-    
-#def ask_key_master_public(objectxmpp):
-    #"""
-        #ask public key on master
-    #"""
-    #datasend = {
-        #"action": "ask_key_public_master",
-        #"data": {},
-        #'ret': 0,
-        #'sessionid': getRandomName(5, "ask_key_public_master"),
-    #}
-    #objectxmpp.send_message(mto=msg['from'],
-                        #mbody=json.dumps(datasend),
-                        #mtype='chat')
-
-#def Setdirectorytempinfo():
-    #"""
-        #create directory
-    #"""
-    #dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "INFOSTMP")
-    #if not os.path.exists(dirtempinfo):
-        #os.makedirs(dirtempinfo, mode=0700)
-    #return dirtempinfo
-
-def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
-        sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0, 
-             "base64" : False,
-             "sessionid" : getRandomName(4,sessionid)}
+    # dirplugin =os.path.dirname(os.path.realpath(__file__))
+    for nameplugin in objectxmpp.config.pluginliststart:
+        try:
+            plugindescriptorparameter = data_struct_message(nameplugin, sessionid = getRandomName(6, nameplugin))
+            plugindescriptorparametererreur = data_struct_message( "resultmsginfoerror",
+                                                                   data = { "msg" : "error plugin : " + plugindescriptorparameter["action"]},
+                                                                   ret = 255,
+                                                                   sessionid =  plugindescriptorparameter['sessionid'])
+            #call plugin start
+            msgt = {'from' : objectxmpp.boundjid.bare, "to" : objectxmpp.boundjid.bare, 'type' : 'chat' }
+            module = "%s/plugin_%s.py"%(objectxmpp.modulepath,  plugindescriptorparameter["action"])
+            #verify si attribut compteur existe.
+            #try:
+                #getattr(objectxmpp, "num_call%s"%plugindescriptorparameter["action"])
+            #except AttributeError:
+                #setattr(objectxmpp, "num_call%s"%plugindescriptorparameter["action"], 0)
+            call_plugin( module,
+                        objectxmpp,
+                        plugindescriptorparameter["action"],
+                        plugindescriptorparameter['sessionid'],
+                        plugindescriptorparameter['data'],
+                        msgt,
+                        plugindescriptorparametererreur)
+        except Exception as e:
+            print str(e)
+            #traceback.print_exc(file=sys.stdout)
+    logger.debug("========= end plugin %s ========="%plugin['NAME'])

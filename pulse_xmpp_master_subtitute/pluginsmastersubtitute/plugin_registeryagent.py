@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 #
 # (c) 2016 siveo, http://www.siveo.net
-# file : /pulse_xmpp_master_subtitute/pluginsmastersubtitute/plugin_registeryagent.py
-#
 # plugin register machine dans presence table xmpp.
 # file pulse_xmpp_master_subtitute/pluginsmastersubtitute/plugin_registeryagent.py
 #
@@ -33,7 +31,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("=====================================================")
         logger.debug("call %s from %s"%(plugin, msg['from']))
         logger.debug("=====================================================")
-
+        compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
         if 'action' in data and data['action'] == 'infomachine':
             logger.debug(
                 "** Processing machine %s that sends this information (nini inventory)" % msg['from'].bare)
@@ -232,15 +230,17 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     # Update the machine uuid : for consistency with inventory
                     # call Guacamole config
                     # or add inventory
-                    logger.debug(
-                        "** Machine type : Update the machine uuid : for consistency with inventory\ncall Guacamole config\nor add inventory")
+                    #logger.debug(
+                        #"** Update the machine uuid : for consistency with inventory\ncall Guacamole config\nor add inventory")
                     result = XmppMasterDatabase().listMacAdressforMachine(idmachine)
                     results = result[0].split(",")
 
-                    logging.getLogger().debug("List mac adress for machine   %s" % results)
+                    logger.debug("List mac adress for machine   %s" % results)
                     uuid = ''
                     for t in results:
+                        print "llll"
                         computer = getComputerByMac(t)
+                        print "llll"
                         if computer != None:
                             jidrs = str(jid.JID(data['deployment']).user)
                             jidm = jid.JID(data['from']).domain
@@ -296,7 +296,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             break
 
                         else:
-                            logging.getLogger().debug("No computer found")
+                            logger.debug("No computer found")
                             pass
                     else:
                         # Register machine at inventory creation
@@ -317,10 +317,87 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.error("** Database registration error")
                 return
 
+            pluginfunction = ['plugin_autoupdate', 
+                              'pulgin_loadpluginlistversion', 
+                              'plugin_loadpluginschedulerlistversion', 
+                              'plugin_loadpluginschedulerlistversion',
+                              'plugin_showregistration']
+
+            for function_plugin in pluginfunction:
+                try:
+                    if hasattr(xmppobject, function_plugin):
+                        if function_plugin == 'plugin_showregistration':
+                            if logger.level == logging.DEBUG:
+                                
+                                getattr(xmppobject, function_plugin)(msg, data)
+                    else:
+                        getattr(xmppobject, function_plugin)(msg, data)
+                except:
+                    logger.error("\n%s"%(traceback.format_exc()))
+
+            ########################################
+            #### rmote update plugin
+            ########################################
+            #try:
+                #xmppobject.plugin_autoupdate(msg, data)
+            #except AttributeError:
+                #pass
+            ########################################
+            #### rmote update plugin
+            ########################################
+
+            ########################################
+            #### install plugin
+            ########################################
+            #restartAgent = False
+            #try:
+                #xmppobject.pulgin_loadpluginlistversion(msg, data)
+            #except AttributeError:
+                #pass
+            ########################################
+            #### install plugin
+            ########################################
+
+            ########################################
+            #### install plugin scheduled
+            ########################################
+            #try:
+                #xmppobject.plugin_loadpluginschedulerlistversion(msg, data)
+            #except AttributeError:
+                #pass
+            ########################################
+            #### install plugin scheduled
+            ########################################
+
+            ########################################
+            #### install plugin scheduled
+            ########################################
+            #try:
+                #if hasattr(xmppobject, "plugin_showregistration"):
+                    #xmppobject.plugin_loadpluginschedulerlistversion(msg, data)
+            #except:
+                #logger.error("\n%s"%(traceback.format_exc()))
+            ########################################
+            #### install plugin scheduled
+            ########################################
+
+            ########################################
+            #### showregistration
+            ########################################
+            #try:
+                #if hasattr(xmppobject, "plugin_showregistration"):
+                    #del data['completedatamachine']
+                    #del data['plugin']
+                    #del data['pluginscheduled']
+                    #xmppobject.plugin_showregistration(msg, data)
+            #except:
+                #logger.error("\n%s"%(traceback.format_exc()))
+                ##logger.debug( "Unexpected error plugin_showregistration: %s"%sys.exc_info()[0])
+            #######################################
+            ### showregistration
+            #######################################
     except Exception as e:
-        logging.getLogger().error("machine info %s" % (str(e)))
-        traceback.print_exc(file=sys.stdout)
-        #return False
+        logger.error("machine info %s\n%s" % (str(e),traceback.format_exc()))
 
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
@@ -340,7 +417,7 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data):
                             mbody=json.dumps(body),
                             mtype='chat')
     except:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
 
 def callinventory(xmppobject,  to):
     try:
@@ -351,7 +428,8 @@ def callinventory(xmppobject,  to):
                             mbody=json.dumps(body),
                             mtype='chat')
     except:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
+
 
 def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
     if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):

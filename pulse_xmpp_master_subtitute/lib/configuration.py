@@ -77,7 +77,8 @@ class confParameter:
     #}
 
     def __init__(self, namefileconfig):
-        print namefileconfig
+        #self.pathdirconffile = os.path.dirname(os.path.realpath(__file__))
+        self.pathdirconffile =  os.path.dirname(os.path.realpath(namefileconfig))
         Config = ConfigParser.ConfigParser()
         #namefileconfig = os.path.join( '/',
                                        #'etc',
@@ -128,7 +129,16 @@ class confParameter:
         if Config.has_option("global", "log_file"):
             self.logfile = Config.get('global', 'log_file')
 
+        ################################################################
+        # list des noms des plugins start executer au demarage.
+        # le code de ces plugins est executé au démarage. il commence par start
 
+        #pluginlist = 'load_plugins_base, load_plugin_base_scheduled,autoupdateagent'
+        self.pluginliststart = 'loadpluginlistversion, loadpluginschedulerlistversion, autoupdate, showregistration'
+        if Config.has_option("plugins", "pluginliststart"):
+            self.pluginliststart = Config.get('plugins', 'pluginliststart')
+        self.pluginliststart = [x.strip() for x in self.pluginliststart.split(",") if x.strip() != ""]
+        ################################################################
         self.dbpoolrecycle = 60
         self.dbpoolsize = 5
         if Config.has_option("main", "dbpoolrecycle"):
@@ -140,7 +150,7 @@ class confParameter:
         self.plugins_list = ["xmpp","glpi", "kiosk"]
         if Config.has_option("global", "activate_plugin"):
             listplugsql = Config.get('global', 'activate_plugin')
-            self.plugins_list = [x for x in listplugsql.split(",") if x.strip() != ""]
+            self.plugins_list = [x.strip().lower() for x in listplugsql.split(",") if x.strip() != ""]
 
         if "glpi" in self.plugins_list:
             self.readConfglpi(Config)
@@ -317,11 +327,6 @@ class confParameter:
         except Exception, e:
             logging.getLogger().warn("Parsing on filter_on failed: %s" % str(e))
             return None
-
-
-
-
-
 
     def getRandomName(self, nb, pref=""):
         a = "abcdefghijklnmopqrstuvwxyz"

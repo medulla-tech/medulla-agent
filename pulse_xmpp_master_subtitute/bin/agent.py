@@ -59,8 +59,6 @@ if sys.version_info < (3, 0):
 else:
     raw_input = input
 
-
-
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
@@ -94,6 +92,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         #self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         #self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
+        self.add_event_handler("restartmachineasynchrone",
+                               self.restartmachineasynchrone, threaded=True)
 
         #self.register_handler(handler.Callback(
                                     #'CustomXEP Handler',
@@ -154,7 +154,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
 
-
+        #self.schedule('updatelistplugin', 20, self.loadPluginList, repeat=True)
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
         msgevt={
@@ -169,6 +169,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.shutdown = True
         logging.log(DEBUGPULSE,"shutdown xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
+
+    def restartAgent(self, to):
+        self.send_message(mto=to,
+                          mbody=json.dumps({'action': 'restartbot',
+                                        'data': ''}),
+                          mtype='chat')
+
+    def restartAgent(self, to):
+        self.send_message(mto=to,
+                          mbody=json.dumps({'action': 'restartbotrandom',
+                                        'data': ''}),
+                          mtype='chat')
+
+    def restartmachineasynchrone(self, jid):
+        waittingrestart = random.randint(10, 20)
+        # TODO : Replace print by log
+        # print "Restart Machine jid %s after %s secondes" % (jid, waittingrestart)
+        sleep(waittingrestart)
+        # TODO : Replace print by log
+        # print "Restart Machine jid %s fait" % jid
+        # Check if restartAgent is not called from a plugin or a lib.
+        self.restartAgent(jid)
 
     def xmpplog(self,
                 text,
@@ -282,8 +304,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 #traite plugin
                 try:
                     msg['body'] = dataobj
-                    logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
-                    
+                    #logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
+
                     dataerreur={ "action" : "result" + dataobj['action'],
                      "data" : { "msg" : "error plugin : " + dataobj['action']},
                      'sessionid' : getRandomName(6, "misssingid"),

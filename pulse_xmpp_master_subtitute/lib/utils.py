@@ -43,7 +43,7 @@ import psutil
 import time
 from datetime import datetime
 import imp
-
+from functools import wraps # This convenience func preserves name and docstring
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
@@ -376,14 +376,13 @@ def loadModule(filename):
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
     #filename = "plugin_%s" % filename
-    print "Loading module %s" % (filename)
+    #logger.debug("Loading module %s" % (filename))
     searchPath, file = os.path.split(filename)
     if not searchPath in sys.path:
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath+"/../"))
     moduleName, ext = os.path.splitext(file)
     fp, pathName, description = imp.find_module(moduleName, [searchPath,])
-
     try:
         module = imp.load_module(moduleName, fp, pathName, description)
     finally:
@@ -391,15 +390,17 @@ def loadModule(filename):
             fp.close()
     return module
 
-
 def call_plugin(name, *args, **kwargs):
+    #add compteur appel plugins
+    count = 0
+    try:
+        count = getattr(args[0], "num_call%s"%args[1])
+    except AttributeError:
+        count = 0
+        setattr(args[0], "num_call%s"%args[1], count)
     pluginaction = loadModule(name)
     pluginaction.action(*args, **kwargs)
-
-#def call_plugin(name, *args, **kwargs):
-    #pluginaction = load_plugin(name)
-    #pluginaction.action(*args, **kwargs)
-
+    setattr(args[0], "num_call%s"%args[1], count +1)
 
 def getshortenedmacaddress():
     listmacadress = {}
@@ -1574,3 +1575,15 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
              'ret' : 0, 
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
+
+
+def add_method(cls):
+    """ decorateur a utiliser pour ajouter une methode a un object """
+    def decorator(func):
+        @wraps(func) 
+        def wrapper(self, *args, **kwargs): 
+            return func(*args, **kwargs)
+        setattr(cls, func.__name__, wrapper)
+        # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
+        return func # returning func means func can still be used normally
+    return decorator

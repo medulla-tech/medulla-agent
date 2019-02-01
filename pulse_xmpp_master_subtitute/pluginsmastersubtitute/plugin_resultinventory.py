@@ -32,7 +32,7 @@ def XmppUpdateInventoried(jid, machine):
         logging.getLogger().debug("listMacAdressforMachine   %s" % results)
         uuid = ''
         for t in results:
-            print "TRAITEMENT POUR MAC ADRESS"
+            logger.debug("TRAITEMENT POUR MAC ADRESS")
             computer = getComputerByMac(t)
             if computer != None:
                 uuid = 'UUID' + str(computer.id)
@@ -45,8 +45,7 @@ def XmppUpdateInventoried(jid, machine):
                 XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
                 return True
     except Exception:
-        logger.error("** Update error on inventory %s" % (jid))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("** Update error on inventory %s\n%s" % (jid, traceback.format_exc()))
     return False
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -160,11 +159,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     "Master")
                     Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
                 except Exception, e:
-                    logging.getLogger().debug("Error getting key: %s" % reg_key)
+                    logger.error("getting key: %s\n%s" %(str(e),traceback.format_exc()))
                     pass
         time.sleep(25)
         # restart agent
         # xmppobject.restartAgent(msg['from'])
     except Exception, e:
-        print str(e)
-        traceback.print_exc(file=sys.stdout)
+        logger.error("%s\n%s"%(str(e), traceback.format_exc()))

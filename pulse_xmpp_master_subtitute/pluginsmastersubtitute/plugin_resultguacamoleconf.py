@@ -26,7 +26,7 @@ import traceback
 import sys
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-
+logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "resultguacamoleconf", "TYPE": "subtitute"}
 
 
@@ -35,6 +35,4 @@ def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
     try:
         XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], data['connection'])
     except Exception, e:
-        logging.getLogger().error("Error: %s" % str(e))
-        traceback.print_exc(file=sys.stdout)
-        pass
+        Logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))
