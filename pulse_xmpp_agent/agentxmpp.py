@@ -157,7 +157,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
+
         self.agentmaster = jid.JID("master@pulse")
+        if self.config.sub_inventory == "":
+            self.sub_inventory = self.agentmaster
+        else:
+            self.sub_inventory = jid.JID(self.config.sub_inventory)
+
+        if self.config.sub_registration == "":
+            self.sub_registration = self.agentmaster
+        else:
+            self.sub_registration = jid.JID(self.config.sub_registration)
+
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files de session dont le deploiement a echoue ne sont pas efface.
@@ -758,17 +769,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataerreur['base64'] = False
 
         self.xmpplog(
-                "Sent Inventory from agent %s (Interval : %s)"%(self.boundjid.bare,self.config.inventory_interval),
-                type = 'noset',
-                sessionname = '',
-                priority = 0,
-                action = "",
-                who = self.boundjid.bare,
-                how = "Planned",
-                why = "",
-                module = "Inventory | Inventory reception | Planned",
-                fromuser = "",
-                touser = "")
+                "Sent Inventory from agent"\
+                    " %s (Interval : %s)"%( self.boundjid.bare,
+                                            self.config.inventory_interval),
+                                            type = 'noset',
+                                            sessionname = '',
+                                            priority = 0,
+                                            action = "",
+                                            who = self.boundjid.bare,
+                                            how = "Planned",
+                                            why = "",
+                                            module = "Inventory | Inventory reception | Planned",
+                                            fromuser = "",
+                                            touser = "")
 
         call_plugin("inventory",
                     self,
@@ -781,10 +794,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def update_plugin(self):
         # Send plugin and machine informations to Master
         dataobj  = self.seachInfoMachine()
-        logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%(self.agentmaster, json.dumps(dataobj, indent=4, sort_keys=True)))
-        self.send_message(  mto = self.agentmaster,
+        logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%(self.sub_registration,
+                                                                    json.dumps(dataobj,
+                                                                               indent=4)))
+
+        self.send_message(  mto=self.sub_registration,
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
+
 
     def reloadsesssion(self):
         # reloadsesssion only for machine
