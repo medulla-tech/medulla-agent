@@ -257,7 +257,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("** Call inventory on PXE machine")
                                 callinventory(xmppobject, data['from'])
                                 return
-                            if "kiosk" in xmppobject.listmodulemmc:
+                            if "kiosk" in xmppobject.listmodulemmc and kiosk_presence:
                                 ## send a data message to kiosk when an inventory is registered
                                 handlerkioskpresence( xmppobject,
                                                     data['from'],
