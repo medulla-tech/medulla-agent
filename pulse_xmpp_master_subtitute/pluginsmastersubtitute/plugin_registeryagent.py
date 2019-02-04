@@ -259,19 +259,17 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("** Call inventory on PXE machine")
                                 callinventory(xmppobject, data['from'])
                                 return
-                            ####if "kiosk" in self.listmodulemmc:
-                            #if PluginManager().isEnabled("kiosk"):
-                                #from mmc.plugins.kiosk import handlerkioskpresence
+                            if "kiosk" in xmppobject.listmodulemmc:
                                 ## send a data message to kiosk when an inventory is registered
-                            handlerkioskpresence( xmppobject,
-                                                  data['from'],
-                                                  idmachine,
-                                                  data['platform'],
-                                                  data['information']['info']['hostname'],
-                                                  uuid,
-                                                  data['agenttype'],
-                                                  classutil=data['classutil'],
-                                                  fromplugin = True )
+                                handlerkioskpresence( xmppobject,
+                                                    data['from'],
+                                                    idmachine,
+                                                    data['platform'],
+                                                    data['information']['info']['hostname'],
+                                                    uuid,
+                                                    data['agenttype'],
+                                                    classutil=data['classutil'],
+                                                    fromplugin = True )
                             XmppMasterDatabase().setlogxmpp("Remote Service <b>%s</b> : for [machine : %s][RS : %s]" % (data['remoteservice'],
                                                                                                                         data['information']['info']['hostname'],
                                                                                                                         jidrs,),
@@ -328,7 +326,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     if hasattr(xmppobject, function_plugin):
                         if function_plugin == 'plugin_showregistration':
                             if logger.level == logging.DEBUG:
-                                
                                 getattr(xmppobject, function_plugin)(msg, data)
                     else:
                         getattr(xmppobject, function_plugin)(msg, data)

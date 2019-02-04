@@ -145,7 +145,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         client_handlertcp.start()
         self.manage_scheduler  = manage_scheduler(self)
         self.session = session(self.config.agenttype)
-        
+
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
@@ -768,9 +768,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataerreur['ret'] = 255
         dataerreur['base64'] = False
 
-        self.xmpplog(
-                "Sent Inventory from agent"\
-                    " %s (Interval : %s)"%( self.boundjid.bare,
+        self.xmpplog("Sent Inventory from agent"\
+                     " %s (Interval : %s)"%( self.boundjid.bare,
                                             self.config.inventory_interval),
                                             type = 'noset',
                                             sessionname = '',
