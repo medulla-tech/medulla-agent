@@ -238,9 +238,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.debug("List mac adress for machine   %s" % results)
                     uuid = ''
                     for t in results:
-                        print "llll"
                         computer = getComputerByMac(t)
-                        print "llll"
                         if computer != None:
                             jidrs = str(jid.JID(data['deployment']).user)
                             jidm = jid.JID(data['from']).domain
