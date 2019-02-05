@@ -56,8 +56,8 @@ class xmppbrowsing:
             self.jsonfile = "/tmp/treejson.json"
             self.programmetreejson = os.path.join("/","usr","sbin","pulse-filetree-generator")
         elif sys.platform.startswith('win'):
-            self. jsonfile = 'C:\\\\"Program Files"\\Pulse\\tmp\\treejson.json'
-            self. programmetreejson = 'C:\\\\"Program Files"\\Pulse\\bin\\pulse-filetree-generator.exe'
+            self.jsonfile = 'C:\\\\"Program Files"\\Pulse\\tmp\\treejson.json'
+            self.programmetreejson = 'C:\\\\"Program Files"\\Pulse\\bin\\pulse-filetree-generator.exe'
         elif sys.platform.startswith('darwin'):
             self.jsonfile =  "/tmp/treejson.json"
             self.programmetreejson = "/Library/Application Support/Pulse/bin/pulse-filetree-generator"
