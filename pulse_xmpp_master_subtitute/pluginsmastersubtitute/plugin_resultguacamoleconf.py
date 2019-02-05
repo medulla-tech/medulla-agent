@@ -27,12 +27,18 @@ import sys
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
+
 plugin = {"VERSION": "1.0", "NAME": "resultguacamoleconf", "TYPE": "subtitute"}
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
-    logging.getLogger().debug(plugin)
+    logger.debug("=====================================================")
+    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("=====================================================")
     try:
         XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], data['connection'])
     except Exception, e:
-        Logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))
+        if 'msg' in data:
+            logger.error("recv error from %s : %s\n"%(msg['from'],data['msg']))
+        logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))
+
