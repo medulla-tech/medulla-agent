@@ -470,6 +470,8 @@ class confParameter:
     def loadparametersplugins(self, namefile):
         Config = ConfigParser.ConfigParser()
         Config.read(namefile)
+        if os.path.isfile(namefile+".local"):
+            Config.read(namefile+".local")
         return Config.items("parameters")
 
     def getRandomName(self, nb, pref=""):
