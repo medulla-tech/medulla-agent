@@ -53,14 +53,14 @@ class xmppbrowsing:
             self.excludelist =  objectxmpp.config.excludelist
         #determination programme et fichier generé pour la hierarchi des dossiers
         if sys.platform.startswith('linux'):
-            self.jsonfile = "/tmp/treejson.json"
+            self.jsonfile = os.path.join("/","tmp","treejson.json")
             self.programmetreejson = os.path.join("/","usr","sbin","pulse-filetree-generator")
         elif sys.platform.startswith('win'):
-            self. jsonfile = 'C:\\\\"Program Files"\\Pulse\\tmp\\treejson.json'
-            self. programmetreejson = 'C:\\\\"Program Files"\\Pulse\\bin\\pulse-filetree-generator.exe'
+            self.jsonfile = os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json")
+            self.programmetreejson = os.path.join(os.environ["ProgramFiles"],"Pulse","bin","pulse-filetree-generator.exe")
         elif sys.platform.startswith('darwin'):
-            self.jsonfile =  "/tmp/treejson.json"
-            self.programmetreejson = "/Library/Application Support/Pulse/bin/pulse-filetree-generator"
+            self.jsonfile = os.path.join("/","tmp","treejson.json")
+            self.programmetreejson = os.path.join("/","Library","Application Support","Pulse","bin","pulse-filetree-generator")
 
         if defaultdir is not None:
             self.defaultdir = defaultdir
