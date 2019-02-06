@@ -64,7 +64,7 @@ from lib.plugins.utils.database_utils import  DbTOA # pyflakes.ignore
 #from mmc.plugins.dyngroup.config import DGConfig
 from distutils.version import LooseVersion, StrictVersion
 from lib.configuration import confParameter
-#from mmc.agent import PluginManager
+from lib.plugins.xmpp import XmppMasterDatabase
 
 class Singleton(object):
 
@@ -793,22 +793,21 @@ class Glpi(DatabaseHelper):
             else:
                 query = query.select_from(join_query).filter(query_filter)
             query = query.filter(self.machine.c.is_deleted == 0).filter(self.machine.c.is_template == 0)
-            if PluginManager().isEnabled("xmppmaster"):
-                if ret:
-                    if "Online computer" in ret:
-                        if ret["Online computer"][2] == "True":
-                            query = query.filter(Machine.id.in_(ret["Online computer"][3]))
-                        else:
-                            query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
-                    if "OU user" in ret:
-                        query = query.filter(Machine.id.in_(ret["OU user"][3]))
-                    if "OU machine" in ret:
-                        query = query.filter(Machine.id.in_(ret["OU machine"][3]))
-                    if "computerpresence" in ret:
-                        if ret["computerpresence"][2] == "presence":
-                            query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
-                        else:
-                            query = query.filter(Machine.id.notin_(ret["computerpresence"][3]))
+            if ret:
+                if "Online computer" in ret:
+                    if ret["Online computer"][2] == "True":
+                        query = query.filter(Machine.id.in_(ret["Online computer"][3]))
+                    else:
+                        query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
+                if "OU user" in ret:
+                    query = query.filter(Machine.id.in_(ret["OU user"][3]))
+                if "OU machine" in ret:
+                    query = query.filter(Machine.id.in_(ret["OU machine"][3]))
+                if "computerpresence" in ret:
+                    if ret["computerpresence"][2] == "presence":
+                        query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
+                    else:
+                        query = query.filter(Machine.id.notin_(ret["computerpresence"][3]))
             query = self.__filter_on(query)
             query = self.__filter_on_entity(query, ctx)
 
@@ -1494,7 +1493,7 @@ class Glpi(DatabaseHelper):
                 if 'type' in self.config.summary:
                     type = l.pop()
                 if 'os' in self.config.summary:
-                    os = l.pop()
+                    oslocal = l.pop()
 
                 m = l.pop()
             owner_login, owner_firstname, owner_realname = self.getMachineOwner(m)
@@ -1524,24 +1523,24 @@ class Glpi(DatabaseHelper):
                 if 'type' in self.config.summary:
                     datas['type'] = type
                 if 'os' in self.config.summary:
-                    datas['os'] = os
+                    datas['os'] = oslocal
                 if 'owner' in self.config.summary:
                     datas['owner'] = owner_login
                 if 'owner_firstname' in self.config.summary:
                     datas['owner_firstname'] = owner_firstname
                 if 'owner_realname' in self.config.summary:
                     datas['owner_realname'] = owner_realname
-                master_config = xmppMasterConfig()
-                regvalue = []
-                r=re.compile(r'reg_key_.*')
-                regs=filter(r.search, self.config.summary)
-                for regkey in regs:
-                    regkeyconf = getattr( master_config, regkey).split("|")[0].split("\\")[-1]
-                    try:
-                        keyname, keyvalue = self.getMachineRegistryKey(m,regkeyconf)
-                        datas[regkey] = keyvalue
-                    except TypeError:
-                        pass
+                #master_config = xmppMasterConfig()
+                #regvalue = []
+                #r=re.compile(r'reg_key_.*')
+                #regs=filter(r.search, self.config.summary)
+                #for regkey in regs:
+                    #regkeyconf = getattr( master_config, regkey).split("|")[0].split("\\")[-1]
+                    #try:
+                        #keyname, keyvalue = self.getMachineRegistryKey(m,regkeyconf)
+                        #datas[regkey] = keyvalue
+                    #except TypeError:
+                        #pass
 
             ret[m.getUUID()] = [None, datas]
 
@@ -2393,7 +2392,7 @@ class Glpi(DatabaseHelper):
             ret = query.count()
         else:
             ret = []
-            for machine, infocoms, entity, location, os, manufacturer, type, model, servicepack, version, architecture, domain, state, last_contact in query:
+            for machine, infocoms, entity, location, oslocal, manufacturer, type, model, servicepack, version, architecture, domain, state, last_contact in query:
                 endDate = ''
                 if infocoms is not None:
                     endDate = self.getWarrantyEndDate(infocoms)
@@ -2452,7 +2451,7 @@ class Glpi(DatabaseHelper):
                     ['Owner', owner_login],
                     ['Owner Firstname', owner_firstname],
                     ['Owner Realname', owner_realname],
-                    ['OS', os],
+                    ['OS', oslocal],
                     ['Service Pack', servicepack],
                     ['Version', version],
                     ['Architecture', architecture],
@@ -4210,54 +4209,54 @@ class Glpi(DatabaseHelper):
     def isComputerNameAvailable(self, ctx, locationUUID, name):
         raise Exception("need to be implemented when we would be able to add computers")
 
-    def _killsession(self,sessionwebservice):
-        """
-        Destroy a session identified by a session token.
+    #def _killsession(self,sessionwebservice):
+        #"""
+        #Destroy a session identified by a session token.
 
-        @param sessionwebservice: session var provided by initSession endpoint.
-        @type sessionwebservice: str
+        #@param sessionwebservice: session var provided by initSession endpoint.
+        #@type sessionwebservice: str
 
-        """
-        headers = {'content-type': 'application/json',
-                   'Session-Token': sessionwebservice
-                   }
-        url = GlpiConfig.webservices['glpi_base_url'] + "killSession"
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200 :
-            self.logger.debug("Kill session REST: %s"%sessionwebservice)
+        #"""
+        #headers = {'content-type': 'application/json',
+                   #'Session-Token': sessionwebservice
+                   #}
+        #url = GlpiConfig.webservices['glpi_base_url'] + "killSession"
+        #r = requests.get(url, headers=headers)
+        #if r.status_code == 200 :
+            #self.logger.debug("Kill session REST: %s"%sessionwebservice)
 
-    def delMachine(self, uuid):
-        """
-        Deleting a machine in GLPI (only the flag 'is_deleted' updated)
+    #def delMachine(self, uuid):
+        #"""
+        #Deleting a machine in GLPI (only the flag 'is_deleted' updated)
 
-        @param uuid: UUID of machine
-        @type uuid: str
+        #@param uuid: UUID of machine
+        #@type uuid: str
 
-        @return: True if the machine successfully deleted
-        @rtype: bool
-        """
-        authtoken =  base64.b64encode(GlpiConfig.webservices['glpi_username']+":"+GlpiConfig.webservices['glpi_password'])
-        headers = {'content-type': 'application/json',
-                   'Authorization': "Basic " + authtoken
-                   }
-        url = GlpiConfig.webservices['glpi_base_url'] + "initSession"
-        self.logger.debug("Create session REST")
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200 :
-            sessionwebservice =  str(json.loads(r.text)['session_token'])
-            self.logger.debug("session %s"%sessionwebservice)
-            url = GlpiConfig.webservices['glpi_base_url'] + "Computer/" + str(fromUUID(uuid))
-            headers = {'content-type': 'application/json',
-                        'Session-Token': sessionwebservice
-            }
-            parameters = {'force_purge': '1'}
-            r = requests.delete(url, headers=headers, params=parameters)
-            if r.status_code == 200 :
-                self.logger.debug("Machine %s deleted"%str(fromUUID(uuid)))
-                self._killsession(sessionwebservice)
-                return True
-        self._killsession(sessionwebservice)
-        return False
+        #@return: True if the machine successfully deleted
+        #@rtype: bool
+        #"""
+        #authtoken =  base64.b64encode(GlpiConfig.webservices['glpi_username']+":"+GlpiConfig.webservices['glpi_password'])
+        #headers = {'content-type': 'application/json',
+                   #'Authorization': "Basic " + authtoken
+                   #}
+        #url = GlpiConfig.webservices['glpi_base_url'] + "initSession"
+        #self.logger.debug("Create session REST")
+        #r = requests.get(url, headers=headers)
+        #if r.status_code == 200 :
+            #sessionwebservice =  str(json.loads(r.text)['session_token'])
+            #self.logger.debug("session %s"%sessionwebservice)
+            #url = GlpiConfig.webservices['glpi_base_url'] + "Computer/" + str(fromUUID(uuid))
+            #headers = {'content-type': 'application/json',
+                        #'Session-Token': sessionwebservice
+            #}
+            #parameters = {'force_purge': '1'}
+            #r = requests.delete(url, headers=headers, params=parameters)
+            #if r.status_code == 200 :
+                #self.logger.debug("Machine %s deleted"%str(fromUUID(uuid)))
+                #self._killsession(sessionwebservice)
+                #return True
+        #self._killsession(sessionwebservice)
+        #return False
 
     @DatabaseHelper._sessionm
     def addUser(self, session, username, password, entity_rights=None):
@@ -4894,10 +4893,10 @@ ON
         return final_list
 
     @DatabaseHelper._sessionm
-    def get_machines_with_os_and_version(self, session, os, version = ''):
+    def get_machines_with_os_and_version(self, session, oslocal, version = ''):
         """This function returns a list of id of selected OS for dashboard
         Params:
-            os: string which contains the searched OS
+            oslocal: string which contains the searched OS
             version: string which contains the searched version
         Returns:
             list of all the machines with specified OS and specified version
@@ -4927,7 +4926,7 @@ WHERE
   glpi.glpi_operatingsystems.name LIKE "%%%s%%"
 AND
   %s
-;""" % (os, criterion)
+;""" % (oslocal, criterion)
 
         res = session.execute(sql)
         result = [{'id':a, 'hostname':b} for a,b in res]
@@ -4942,7 +4941,7 @@ class Machine(object):
     def toH(self):
         return { 'hostname':self.name, 'uuid':toUUID(self.id) }
     def to_a(self):
-        owner_login, owner_firstname, owner_realname = Glpi92().getMachineOwner(self)
+        owner_login, owner_firstname, owner_realname = Glpi().getMachineOwner(self)
         return [
             ['name',self.name],
             ['comments',self.comment],
@@ -4966,7 +4965,7 @@ class Machine(object):
             ['model',self.computermodels_id],
             ['type',self.computertypes_id],
             ['entity',self.entities_id],
-            ['uuid',Glpi92().getMachineUUID(self)]
+            ['uuid',Glpi().getMachineUUID(self)]
         ]
 
 class Entities(object):
@@ -5215,19 +5214,6 @@ def unique(s):
             u.append(x)
     return u
 
-
-def same_network(ip1, ip2, netmask):
-    try:
-        ip1 = map(lambda x: int(x), ip1.split('.'))
-        ip2 = map(lambda x: int(x), ip2.split('.'))
-        netmask = map(lambda x: int(x), netmask.split('.'))
-        for i in range(4):
-            if ip1[i].__and__(netmask[i]) != ip2[i].__and__(netmask[i]):
-                return False
-    except ValueError:
-        return False
-    return True
-
 def same_network(ip1, ip2, netmask):
     try:
         ip1 = map(lambda x: int(x), ip1.split('.'))
@@ -5300,3 +5286,34 @@ class ComputerGroupManager(Singleton):
     def result_group_by_name(self, ctx, name, min = 0, max = -1, filter = ''):
         klass = self.components[self.main]
         return klass().result_group_by_name(ctx, name, min, max, filter)
+
+# new Class to remplace current DBObject
+class DBObj(object):
+    # Function to convert mapped object to Dict
+    # TODO : Do the same for relations [convert relations to subdicts]
+    def toDict(self, relations=True):
+        d = self.__dict__
+        # Convert relations to dict, if 'relations'
+        for k in d.keys():
+            if isinstance(d[k], DBObj):
+                if relations:
+                    d[k] = d[k].toDict()
+                else:
+                    del d[k]
+        # Delete Sqlachemy instance state
+        if '_sa_instance_state' in d:
+            del d['_sa_instance_state']
+        return d
+
+    def fromDict(self, d, relations=False):
+        #TODO: Test if d is dict
+        if '_sa_instance_state' in d:
+            del d['_sa_instance_state']
+        # Actually we don't support relations
+        for key, value in d.iteritems():
+            if key and type(value) not in [type({}), type([])]:
+                setattr(self, key, value)
+
+    def __str__(self):
+        return str(self.toDict())
+

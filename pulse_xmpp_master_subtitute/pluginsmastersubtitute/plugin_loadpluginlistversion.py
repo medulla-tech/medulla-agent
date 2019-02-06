@@ -152,7 +152,7 @@ def deployPlugin(self, jid, plugin):
             content = fileplugin.read()
             fileplugin.close()
         except:
-            Logger.error("File read error\n%s"%(traceback.format_exc()))
+            logger.error("File read error\n%s"%(traceback.format_exc()))
             return
         fichierdata['action'] = 'installplugin'
         fichierdata['data'] = {}
@@ -167,7 +167,7 @@ def deployPlugin(self, jid, plugin):
                               mbody=json.dumps(fichierdata),
                               mtype='chat')
         except:
-            Logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("\n%s"%(traceback.format_exc()))
 
 def pulgin_loadpluginlistversion(self, msg, data):
     #function de rappel dans boucle de message.

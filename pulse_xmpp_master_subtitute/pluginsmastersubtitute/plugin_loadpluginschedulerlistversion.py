@@ -116,7 +116,7 @@ def deployPluginscheduled(self, msg, plugin):
         data = fileplugin.read()
         fileplugin.close()
     except:
-        Logger.error("File read error\n%s"%(traceback.format_exc()))
+        logger.error("File read error\n%s"%(traceback.format_exc()))
         return
     fichierdata['action'] = 'installpluginscheduled'
     fichierdata['data'] = {}
@@ -131,7 +131,7 @@ def deployPluginscheduled(self, msg, plugin):
                             mbody=json.dumps(fichierdata),
                             mtype='chat')
     except:
-        Logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s"%(traceback.format_exc()))
 
 def loadPluginschedulerList(self):
     logger.debug("Verify base plugin scheduler")

@@ -51,6 +51,9 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 
+import random
+import sleep
+
 logger = logging.getLogger()
 
 if sys.version_info < (3, 0):

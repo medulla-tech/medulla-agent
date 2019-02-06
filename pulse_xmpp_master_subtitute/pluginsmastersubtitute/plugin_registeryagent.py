@@ -20,7 +20,8 @@ from lib.localisation import Localisation
 from lib.manageRSAsigned import MsgsignedRSA
 from sleekxmpp import jid
 from lib.utils import getRandomName
-
+import re
+from distutils.version import LooseVersion, StrictVersion
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "registeryagent", "TYPE": "subtitute"}
@@ -491,3 +492,37 @@ def get_packages_for_machine(machine):
     logger.debug("* initialisation kiosk on machine %s"%(machine['hostname']))
     return structuredatakiosk
 
+def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatakiosk):
+    structuredatakioskelement={ 'name': packageprofile[0],
+                                "action" : [],
+                                'uuid':  packageprofile[6],
+                                'description': packageprofile[2],
+                                "version" : packageprofile[3]
+                               }
+    patternname = re.compile("(?i)" + packageprofile[0])
+    for soft_glpi in list_software_glpi:
+        #TODO
+        # Into the pulse package provide Vendor information for the software name
+        # For now we use the package name which must match with glpi name
+        if patternname.match(str(soft_glpi[0])) or patternname.match(str(soft_glpi[1])):
+            # Process with this package which is installed on the machine
+            # The package could be deleted
+            structuredatakioskelement['icon'] =  'kiosk.png'
+            structuredatakioskelement['action'].append('Delete')
+            structuredatakioskelement['action'].append('Launch')
+            # verification if update
+            # compare the version
+            #TODO
+            # For now we use the package version. Later the software version will be needed into the pulse package
+            if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
+                structuredatakioskelement['action'].append('Update')
+                logger.debug("the software version is superior "\
+                    "to that installed on the machine %s : %s < %s"%(packageprofile[0],soft_glpi[2],LooseVersion(packageprofile[3])))
+            break
+    if len(structuredatakioskelement['action']) == 0:
+        # The package defined for this profile is absent from the machine:
+        if packageprofile[8] == "allowed":
+            structuredatakioskelement['action'].append('Install')
+        else:
+            structuredatakioskelement['action'].append('Ask')
+    return structuredatakioskelement
