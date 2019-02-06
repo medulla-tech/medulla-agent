@@ -1,7 +1,6 @@
 pulse-xmpp-agent 1.9.9 UNRELEASED
 ======================
 
-
 pulse-xmpp-agent 1.9.8
 ======================
 * [FEATURE] Push method (scp or rsync) can be configured in relay server
