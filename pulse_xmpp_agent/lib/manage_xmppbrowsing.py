@@ -24,226 +24,174 @@
 import os, sys
 import json, re
 import logging
-
+from utils import shellcommandtimeout, file_get_content, simplecommand, decode_strconsole, encode_strconsole
+import zlib
+import base64
+import math
 
 logger = logging.getLogger()
-
-
-class FileSystem():
-    """
-        cette class transforme une liste de fichiers en une hierarchie de fichier.
-        la function : struct_all_children renvoi une chaine json utilisable avec jstree. plugin jquery.
-    """
-    def __init__(self, filePath=None, keyfile = "text", keychild = "children"):
-        self.children = []
-        self.keyfile = keyfile
-        self.keychild = keychild
-        if filePath != None:
-            try:
-                if sys.platform.startswith('win'):
-                    self.name, child = filePath.split("\\", 1)
-                else: #'linux' and 'darwin' separator is /
-                    self.name, child = filePath.split("/", 1)
-                self.children.append(FileSystem(child))
-            except (ValueError):
-                self.name = filePath
-
-    def addChild(self, filePath):
-        try:
-            if sys.platform.startswith('win'): 
-                thisLevel, nextLevel = filePath.split("\\", 1)
-            else:
-                thisLevel, nextLevel = filePath.split("/", 1)
-            try:
-                if thisLevel == self.name:
-                    if sys.platform.startswith('win'): 
-                        thisLevel, nextLevel = nextLevel.split("\\", 1)
-                    else:
-                        thisLevel, nextLevel = nextLevel.split("/", 1)
-            except (ValueError):
-                self.children.append(FileSystem(nextLevel))
-                return
-            #for child in self.children:
-                #if thisLevel == child.name:
-                    #child.addChild(nextLevel)
-                    #return
-            self.children.append(FileSystem(thisLevel))
-            for child in self.children:
-                if thisLevel == child.name:
-                    child.addChild(nextLevel)
-                    return
-            #self.children.append(FileSystem(nextLevel))
-        except (ValueError):
-            self.children.append(FileSystem(filePath))
-
-    def getChildren(self):
-        return self.children
-
-    def printAllChildren(self, depth = -1):
-        depth += 1
-        print "\t"*depth + '"' + self.keyfile + '"' + " : "+ self.name
-        if len(self.children) > 0:
-            print "\t"*depth +"{ "+'"' + self.keychild +'"' + ":"
-            for child in self.children:
-                child.printAllChildren(depth)
-            print "\t"*depth + "}"
-
-    def struct_all_children(self, depth = -1, a = ""):
-        depth += 1
-        a = a + "\t"*depth + "{ \"" +self.keyfile + "\" : \""+ self.name + "\","
-        if len(self.children) > 0:
-            a = a + "\n\t"*depth +"  \"" + self.keychild + "\" : [" + "\n"
-            for child in self.children:
-                a = child.struct_all_children(depth, a = a)
-            a = a + "\t"*depth + "  ]"
-        #a = a + "\t"*(depth) + "},\n"
-        a = a + "},\n"
-        return a
-
-    def makeDict(self):
-        if len(self.children) > 0:
-            dictionary = {self.name:[]}
-            for child in self.children:
-                print child
-                dictionary[self.name].append(child.makeDict())
-            return dictionary
-        else:
-            return self.name
 
 class xmppbrowsing:
     """
         Cette class repond au demande faite par mmc sur le file systeme
     """
-    def __init__(self, defaultdir = None, rootfilesystem = None):
+    def __init__(self, defaultdir = None, rootfilesystem = None, objectxmpp = None):
         """
             :param type: Uses this parameter to give a path abs
             :type defaultdir: string
             :type rootfilesystem :string
             :return: Function init has no return
         """
+        self.objectxmpp = objectxmpp
         self.defaultdir     = None
         self.rootfilesystem = None
         self.dirinfos       = {}
-        self.hierarchy = []
         self.initialisation = 0
-        self.hierarchystring = ""
+        self.hierarchystring = "" # use cache hierarchy
+        self.jsonfile=""
+        if objectxmpp != None:
+            self.excludelist =  objectxmpp.config.excludelist
+        #determination programme et fichier generé pour la hierarchi des dossiers
+        if sys.platform.startswith('linux'):
+            self.jsonfile = os.path.join("/","tmp","treejson.json")
+            self.programmetreejson = os.path.join("/","usr","sbin","pulse-filetree-generator")
+        elif sys.platform.startswith('win'):
+            self.jsonfile = os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json")
+            self.programmetreejson = os.path.join(os.environ["ProgramFiles"],"Pulse","bin","pulse-filetree-generator.exe")
+        elif sys.platform.startswith('darwin'):
+            self.jsonfile = os.path.join("/","tmp","treejson.json")
+            self.programmetreejson = os.path.join("/","Library","Application Support","Pulse","bin","pulse-filetree-generator")
+
         if defaultdir is not None:
             self.defaultdir = defaultdir
         if rootfilesystem is not None:
             self.rootfilesystem = rootfilesystem
-            self.hierarchy = self.search_hierarchy(self.rootfilesystem)
-        self.listfileindir()
 
+    def strjsontree(self):
+        try:
+            self.jsonfile = self.jsonfile.replace("/","\\");
+            self.jsonfile = self.jsonfile.replace("\\\\","\\");
+            self.jsonfile = self.jsonfile.replace("\"","");
+            if os.path.isfile(self.jsonfile):
+                cont = file_get_content(self.jsonfile)
+                l = decode_strconsole(cont)
+                return l
+            else:
+                self.createjsontree()
+            l = decode_strconsole(file_get_content(self.jsonfile))
+            return l
+        except Exception as e:            logger.error("strjsontree %s"%str(e))
+        return  {}
 
-    def search_hierarchy(self, dossiername):
-        result = []
-        for dossier, sous_dossiers, fichiers in os.walk(dossiername):
-            #firstcaractere = ord(dossier[0])
-            #if firstcaractere in range(65, 91) or firstcaractere in range(97, 123):
-                #dossier = dossier[2:]
-            if dossier[1] == ":":
-                dossier = dossier[2:]
-            #dossier = dossier.replace("C:","")
-            dossier = dossier.replace("\\\\","\\")
-            if dossier.startswith("\\") or dossier.startswith("/"):
-                dossier = dossier[1:]
-            result.append(dossier)
-            for fichier in fichiers:
-                result.append(os.path.join(dossier))
-        result=set(result)
-        result=list(result)
-        result.sort()
-        return result
+    def createjsontree(self):
+        logging.getLogger().debug("Creation hierarchi file")
+        if sys.platform.startswith('win'):
+            cmd ='%s %s %s'%(self.programmetreejson,self.rootfilesystem, self.jsonfile)
+        else:
+            cmd ='%s -r \'%s\' -o "%s"'%(self.programmetreejson, self.rootfilesystem, self.jsonfile)
+        msg = "Generation tree.json command : [%s] "%cmd
+        logging.getLogger().debug("%s : "%cmd)
+        obj = simplecommand(cmd)
+        if obj['code'] != 0 :
+            logger.error(obj['result'])
+            if self.objectxmpp != None:
+                self.objectxmpp.xmpplog("error generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
+                                                                                        cmd),
+                                        type = 'noset',
+                                        sessionname = '',
+                                        priority = 0,
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "Remote",
+                                        why = "",
+                                        module = "Error| Notify | browsing",
+                                        fromuser = "",
+                                        touser = "")
+            return
+        if self.objectxmpp != None:
+                self.objectxmpp.xmpplog("generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
+                                                                                  cmd),
+                                        type = 'noset',
+                                        sessionname = '',
+                                        priority = 0,
+                                        action = "",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "Remote",
+                                        why = "",
+                                        module = "Error| Notify | browsing",
+                                        fromuser = "",
+                                        touser = "")
+        logger.debug(msg)
 
-    def clean_json(self, string):
-        string = re.sub(",[ \t\r\n]+}", "}", string)
-        string = re.sub(",[ \t\r\n]+\]", "]", string)
-        return string
+    def _convert_size(self, size_bytes):
+        if size_bytes == 0:
+            return "0B"
+        size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+        i = int(math.floor(math.log(size_bytes, 1024)))
+        p = math.pow(1024, i)
+        s = round(size_bytes / p, 2)
+        return "%s %s" % (s, size_name[i])
+
+    def _listdirfile(self, path):
+        filesinfolder = []
+        foldersinfloder = []
+        if sys.platform.startswith('win'):
+            path = path.replace("/","\\");
+            path = path.replace("\\\\","\\");
+            path = path.replace("\"","");
+        for x in os.listdir(path):
+            name = os.path.join(path, x)
+            if os.path.isfile(name):
+                filesinfolder.append((x, self._convert_size(os.path.getsize(name))))
+            else:
+                foldersinfloder.append(x)
+        return foldersinfloder, filesinfolder
 
     def listfileindir(self, path_abs_current = None):
-        logging.getLogger().debug("list file next path %s"%path_abs_current)
-        boolhierarchy = False;
+        ###path_abs_current
+        logging.getLogger().debug("---------------------------------------------------------")
+        logging.getLogger().debug("search files and folders list for %s : "%path_abs_current)
+        logging.getLogger().debug("---------------------------------------------------------")        
+        boolhierarchy = False
         if path_abs_current is  None or path_abs_current == "":
             self.initialisation = 0
             self.hierarchystring = ""
-            boolhierarchy = True;
+            boolhierarchy = True
             pathabs = self.rootfilesystem
-        elif path_abs_current == "@":
+            path_abs_current = self.rootfilesystem
+        elif path_abs_current.startswith('@'):
+            boolhierarchy = True
+            self.createjsontree()
             self.initialisation += 1
             pathabs = self.defaultdir
-            boolhierarchy = True;
         else:
+            dd = path_abs_current.split("/")
+            rr=dd[0]
+            del dd[0]
+            path_abs_current = "/".join(dd)
             self.hierarchystring = ""
             self.initialisation = 0
+            if path_abs_current.startswith('/'):
+                path_abs_current = path_abs_current[1:]
             pathabs = os.path.join(self.rootfilesystem, path_abs_current)
-        if  not os.path.isdir(pathabs):
-            logger.error("Configuration error : folder does not exist\n[browserfile]\ndefaultdir = %s\nrootfilesystem = %s"%(self.defaultdir, self.rootfilesystem))
-            return {}
-        list_files_current = os.walk(pathabs).next();
-        listfileinfolder =[]
-        for namefile in list_files_current[2]:
-            fichier_and_size = os.path.join(pathabs, namefile)
-            listfileinfolder.append((namefile, os.path.getsize(fichier_and_size)))
+            pathabs = pathabs.replace("C:", "c:");
+        try:
+            list_files_current_dirs, list_files_current_files = self._listdirfile(pathabs)
+        except Exception as e:
+            list_files_current_dirs = []
+            list_files_current_files = []
+        display_only_folder_no_nexclude = []
+        for k in list_files_current_dirs:
+            if not (os.path.join(pathabs, k) in self.excludelist):
+                display_only_folder_no_nexclude.append(k)
         self.dirinfos = {
             "path_abs_current" : pathabs,
-            "list_dirs_current" : list_files_current[1],
-            "list_files_current" : listfileinfolder,
+            "list_dirs_current" : display_only_folder_no_nexclude,
+            "list_files_current" : list_files_current_files,
             "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
             "rootfilesystem" : self.rootfilesystem,
             "defaultdir" : self.defaultdir
         }
         if boolhierarchy:
-            if self.initialisation == 2:
-                logging.getLogger().debug("tree view in cache")
-                self.dirinfos["strjsonhierarchy"] = self.hierarchystring
-                return self.dirinfos
-            logging.getLogger().debug("Geration tree view")
-            self.hierarchy = self.search_hierarchy(self.rootfilesystem)
-            myFiles = FileSystem(self.hierarchy[0])
-            for record in self.hierarchy[1:]:
-                myFiles.addChild(record)
-            #print myFiles.makeDict()
-            pp = myFiles.struct_all_children()
-            eee = eval (pp)
-            if "children" in eee[0]:
-                self.deldoublon(eee[0])
-            pp = json.dumps(eee[0])
-            self.dirinfos["strjsonhierarchy"] = pp
-            if self.initialisation == 1:
-                self.hierarchystring = pp
-        return self.dirinfos
-
-    def deldoublon(self, obj):
-        pass
-        result=[]
-        zz=[]
-        if "children" in obj:
-            k1 = list(obj['children'])
-            for y in k1:
-                if not y['text'] in zz:
-                    zz.append(y['text'])
-                    result.append(y)
-        obj['children']= result
-        for t in obj['children']:
-            self.deldoublon(t)
-
-    def listfileindir1(self, path_abs_current = None):
-        if path_abs_current is  None or path_abs_current == "":
-            if self.defaultdir is None:
-                pathabs = os.getcwd()
-            else:
-                pathabs = self.defaultdir
-        else:
-            if self.rootfilesystem in path_abs_current:
-                pathabs = os.path.abspath(path_abs_current)
-            else:
-                pathabs = self.rootfilesystem
-        self.dirinfos = {
-            "path_abs_current" : pathabs,
-            "list_dirs_current" : os.walk(pathabs).next()[1],
-            "list_files_current" : os.walk(pathabs).next()[2],
-            "parentdir" : os.path.abspath(os.path.join(pathabs, os.pardir)),
-            "rootfilesystem" : self.rootfilesystem,
-            "defaultdir" : self.defaultdir
-        }
+            self.dirinfos["strjsonhierarchy"] = self.strjsontree()
         return self.dirinfos

@@ -106,13 +106,23 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefile( xmppobject, data ):
-        print data
         datapath = data['data']
-        if type(datapath) == unicode or type(datapath) == str:
+        if isinstance(datapath, basestring):
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
             data['data']=filesystem
-        return json.dumps(data)
+            try:
+                datastr = json.dumps(data)
+            except Exception as e:
+                logging.getLogger().error("synchro xmpp function remotefile : %s"%str(e))
+                return ""
+        else:
+            return ""
+        try:
+            result = base64.b64encode( zlib.compress(datastr, 9))
+        except Exception as e:
+            logging.getLogger().error("synchro xmpp function remotefile  encodage: %s"%str(e))
+        return result
 
     @staticmethod
     def remotecommandshell( xmppobject, data ):
