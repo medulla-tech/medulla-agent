@@ -333,7 +333,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                               tg.confserver))
         logging.log(DEBUGPULSE,"verify a information ip or dns for connection configurator")
         if ipfromdns(tg.confserver) == "" :
-            logging.log(DEBUGPULSE, "not resolution adresse : %s "%tg.confserver)
+            logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.confserver)
+
         time.sleep(2)
 
 

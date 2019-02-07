@@ -96,7 +96,7 @@ class xmppbrowsing:
             logger.error(obj['result'])
             if self.objectxmpp != None:
                 self.objectxmpp.xmpplog("error generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
-                                                                                        cmd),
+                                                                                         cmd),
                                         type = 'noset',
                                         sessionname = '',
                                         priority = 0,

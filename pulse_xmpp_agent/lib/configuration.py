@@ -185,6 +185,16 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
+        if Config.has_option('subtitute', 'inventory'):
+            self.sub_inventory = Config.get('subtitute', 'inventory')
+        else:
+            self.sub_inventory = ""
+
+        if Config.has_option('subtitute', 'registration'):
+            self.sub_registration = Config.get('subtitute', 'registration')
+        else:
+            self.sub_registration = ""
+
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
@@ -198,13 +208,7 @@ class confParameter:
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
-
-        ##parameter for deploy default timeout
-        if Config.has_option("default_timeout", "parameters"):
-            self.default_timeout = Config.getint('default_timeout', 'parameters')
-        else:
-            self.default_timeout = 800
-
+            
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
@@ -234,20 +238,6 @@ class confParameter:
                         "parameter [global]  concurrentdeployments : parameter set to 10")
                 self.concurrentdeployments = 10
 
-            #PUSH METHOD TRANSFERT
-            self.pushmethod="rsync"
-            if Config.has_option("global", "pushmethod"):
-                try:
-                    self.pushmethod = Config.getint('global', 'pushmethod')
-                except Exception as e :
-                    logging.getLogger().warning(
-                        "parameter [global]  pushmethod :(%s)" %str(e))
-                    logging.getLogger().warning(
-                        "parameter [global]  pushmethod : parameter set to rsync")
-                    self.pushmethod="rsync"
-            if not self.pushmethod in ["rsync", "scp"]:
-                self.pushmethod="rsync"
-
             if Config.has_option("connection", "portARSscript"):
                 self.parametersscriptconnection['port'] = Config.get(
                     'connection', 'portARSscript')
@@ -273,10 +263,17 @@ class confParameter:
             self.defaultdir = Config.get('browserfile', 'defaultdir')
         if Config.has_option("browserfile", "rootfilesystem"):
             self.rootfilesystem = Config.get('browserfile', 'rootfilesystem')
-        if self.rootfilesystem[-1] == '\\' or self.rootfilesystem[-1] == "/":
+        if self.rootfilesystem[-1] == '\\' :
+            self.rootfilesystem = self.rootfilesystem[:-1]
+        if self.rootfilesystem[-1] == "/" and len(self.rootfilesystem) > 1:
             self.rootfilesystem = self.rootfilesystem[:-1]
         if self.defaultdir[-1] == '\\' or self.defaultdir[-1] == "/":
             self.defaultdir = self.defaultdir[:-1]
+        self.listexclude = ""
+        if Config.has_option("browserfile", "listexclude"):
+        # listexclude=/usr,/etc,/var,/lib,/boot,/run,/proc,/lib64,/bin,/sbin,/dev,/lost+found,/media,/mnt,/opt,/root,/srv,/sys,/vagrant
+            self.listexclude = Config.get('browserfile', 'listexclude')
+        self.excludelist = [ x.strip() for x in self.listexclude.split(",") if x.strip() != "" ]
         #######end configuration browserfile#######
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
@@ -302,22 +299,15 @@ class confParameter:
         # les fichiers ini des plugins doivent comporter une session parameters.
         # les clef representeront aussi par convention le nom des variables
         # utilisable dans le plugins.
-        # Si un fichier de configuration .ini a un fichier de meme nom suffixé de .local, 
-        # alors le .local est appliqué aprés le .ini 
         if Config.has_option("plugin", "pluginlist"):
             pluginlist = Config.get('plugin', 'pluginlist').split(",")
             pluginlist = [x.strip() for x in pluginlist]
             for z in pluginlist:
                 namefile = "%s.ini" % os.path.join(self.nameplugindir, z)
-                namefilelocal = "%s.ini.local" % os.path.join(self.nameplugindir, z)
                 if os.path.isfile(namefile):
                     liststuple = self.loadparametersplugins(namefile)
                     for keyparameter, valueparameter in liststuple:
                         setattr(self, keyparameter, valueparameter)
-                    if os.path.isfile(namefilelocal):
-                        liststuple = self.loadparametersplugins(namefilelocal)
-                        for keyparameter, valueparameter in liststuple:
-                            setattr(self, keyparameter, valueparameter)
                 else:
                     logging.getLogger().warning(
                         "parameter File plugin %s : missing" %
@@ -480,6 +470,8 @@ class confParameter:
     def loadparametersplugins(self, namefile):
         Config = ConfigParser.ConfigParser()
         Config.read(namefile)
+        if os.path.isfile(namefile+".local"):
+            Config.read(namefile+".local")
         return Config.items("parameters")
 
     def getRandomName(self, nb, pref=""):
