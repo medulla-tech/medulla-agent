@@ -167,9 +167,13 @@ class xmppbrowsing:
             boolhierarchy = True
             pathabs = self.rootfilesystem
             path_abs_current = self.rootfilesystem
-        elif path_abs_current.startswith('@'):
+        elif path_abs_current.startswith("@0@"):
             boolhierarchy = True
             self.createjsontree()
+            self.initialisation += 1
+            pathabs = self.defaultdir
+        elif path_abs_current.startswith('@1@'):
+            boolhierarchy = True
             self.initialisation += 1
             pathabs = self.defaultdir
         else:
