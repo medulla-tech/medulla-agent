@@ -28,6 +28,7 @@ from utils import shellcommandtimeout, file_get_content, simplecommand, decode_s
 import zlib
 import base64
 import math
+import traceback
 
 logger = logging.getLogger()
 
@@ -56,8 +57,10 @@ class xmppbrowsing:
             self.jsonfile = os.path.join("/","tmp","treejson.json")
             self.programmetreejson = os.path.join("/","usr","sbin","pulse-filetree-generator")
         elif sys.platform.startswith('win'):
-            self.jsonfile = os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json")
-            self.programmetreejson = os.path.join(os.environ["ProgramFiles"],"Pulse","bin","pulse-filetree-generator.exe")
+            self.jsonfile = r'C:\\"Program Files"\Pulse\tmp\treejson.json'
+            self.programmetreejson = r'C:\\"Program Files"\Pulse\bin\pulse-filetree-generator.exe'
+            #self.jsonfile = os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json")
+            #self.programmetreejson = os.path.join(os.environ["ProgramFiles"],"Pulse","bin","pulse-filetree-generator.exe")
         elif sys.platform.startswith('darwin'):
             self.jsonfile = os.path.join("/","tmp","treejson.json")
             self.programmetreejson = os.path.join("/","Library","Application Support","Pulse","bin","pulse-filetree-generator")
@@ -69,18 +72,23 @@ class xmppbrowsing:
 
     def strjsontree(self):
         try:
-            self.jsonfile = self.jsonfile.replace("/","\\");
-            self.jsonfile = self.jsonfile.replace("\\\\","\\");
-            self.jsonfile = self.jsonfile.replace("\"","");
-            if os.path.isfile(self.jsonfile):
-                cont = file_get_content(self.jsonfile)
-                l = decode_strconsole(cont)
-                return l
-            else:
-                self.createjsontree()
-            l = decode_strconsole(file_get_content(self.jsonfile))
+            cont = file_get_content(os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json"))
+            l = decode_strconsole(cont)
             return l
-        except Exception as e:            logger.error("strjsontree %s"%str(e))
+            #self.jsonfile = self.jsonfile.replace("/","\\");
+            #self.jsonfile = self.jsonfile.replace("\\\\","\\");
+            #self.jsonfile = self.jsonfile.replace("\"","");
+            #if os.path.isfile(self.jsonfile):
+                #cont = file_get_content(self.jsonfile)
+                #l = decode_strconsole(cont)
+                #return l
+            #else:
+                #self.createjsontree()
+            #l = decode_strconsole(file_get_content(self.jsonfile))
+            #return l
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            logger.error("strjsontree %s"%str(e))
         return  {}
 
     def createjsontree(self):
@@ -159,9 +167,13 @@ class xmppbrowsing:
             boolhierarchy = True
             pathabs = self.rootfilesystem
             path_abs_current = self.rootfilesystem
-        elif path_abs_current.startswith('@'):
+        elif path_abs_current.startswith("@0@"):
             boolhierarchy = True
             self.createjsontree()
+            self.initialisation += 1
+            pathabs = self.defaultdir
+        elif path_abs_current.startswith('@1@'):
+            boolhierarchy = True
             self.initialisation += 1
             pathabs = self.defaultdir
         else:
