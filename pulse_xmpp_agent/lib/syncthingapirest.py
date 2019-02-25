@@ -250,7 +250,7 @@ class syncthing():
             $ curl -X POST -H "X-API-Key: abc123" http://localhost:8384/rest/system/reset?folder=default
         """
         if len(param) != 0 :
-            params = { "device" : deviceid }
+            params = { "device" : param[deviceid] }
             re = self.__postAPIREST__("/system/rest", paramsurl = params)
         else:
             re = self.__postAPIREST__("/system/reset")
