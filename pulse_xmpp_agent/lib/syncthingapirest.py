@@ -36,7 +36,7 @@
 
     shared folders, and corresponding machines.
 """
-import os, requests, json, subprocess
+import requests, json
 from lxml import etree
 import urllib
 import socket
@@ -216,9 +216,9 @@ class syncthing():
         """
         posturl = "%s%s"%(self.urlbaserest, "/system/error")
         header = self.headers.copy()
-        header['Content-Type']="text/plain" 
+        header['Content-Type']="text/plain"
         print header
-        r = requests.post(posturl, headers = header, data = error_text )
+        requests.post(posturl, headers = header, data = error_text )
 
 
     def post_pause(self, deviceid=None):
@@ -230,9 +230,9 @@ class syncthing():
         """
         if deviceid != None:
             params = { "device" : deviceid }
-            re = self.__postAPIREST__("/system/pause", paramsurl = params)
+            self.__postAPIREST__("/system/pause", paramsurl = params)
         else:
-            re = self.__postAPIREST__("/system/pause")
+            self.__postAPIREST__("/system/pause")
 
     def post_ping(self):
         """
@@ -240,7 +240,7 @@ class syncthing():
         """
         return  self.__postAPIREST__("/system/ping")
 
-    def post_reset(self, param = {}):
+    def post_reset(self, deviceid=None):
         """
             Post with empty body to erase the current index database and 
             restart Syncthing. With no query parameters, the entire database is
@@ -272,23 +272,23 @@ class syncthing():
         """
         if deviceid != None:
             params = { "device" : deviceid }
-            re = self.__postAPIREST__("/system/resume", paramsurl = params)
+            self.__postAPIREST__("/system/resume", paramsurl = params)
         else:
-            re = self.__postAPIREST__("/system/resume")
+            self.__postAPIREST__("/system/resume")
 
 
     def post_shutdown(self):
         """
             Post with empty body to cause Syncthing to exit and not restart.
         """
-        re = self.__postAPIREST__("/system/shutdown")
+        self.__postAPIREST__("/system/shutdown")
 
     def post_upgrade(self):
         """
             Perform an upgrade to the newest released version and restart.
             Does nothing if there is no newer version than currently running.
         """
-        re = self.__postAPIREST__("/system/upgrade")
+        self.__postAPIREST__("/system/upgrade")
 
 
     def get_db_browse(self, folder, labeldepth = None, prefix = None):
@@ -369,7 +369,7 @@ class syncthing():
             curl -X POST http://127.0.0.1:8384/rest/db/override?folder=default
         """
         params = { "folder" : folder}
-        re = self.__postAPIREST__("/db/override",  paramsurl = params )
+        self.__postAPIREST__("/db/override",  paramsurl = params )
 
 
     def get_db_need(self, folder, page = None, perpage = None ):

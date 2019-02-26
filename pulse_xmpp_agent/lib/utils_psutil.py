@@ -23,10 +23,9 @@
 """
 function for monitoring
 """
-import sys, os
+import os
 import psutil
 import datetime, time
-import collections
 import socket
 from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM
 
