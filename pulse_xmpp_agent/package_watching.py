@@ -26,24 +26,16 @@
 #"""
 
 # API information http://seb.dbzteam.org/pyinotify/
-import select
 import socket
 import pyinotify
-import time
-import gzip
 import os
-import re
 import json
-import datetime
 import random
 import sys
 import ConfigParser
 import logging
 import getopt
-import xml.etree.cElementTree as ET
-import traceback
 import base64
-import signal
 
 conf ={}
 
@@ -119,7 +111,7 @@ def send_agent_data(datastrdata, conf):
     try:
         sock.connect(server_address)
         sock.sendall(EncodedString.encode('ascii'))
-        data = sock.recv(4096)
+        sock.recv(4096)
         logging.getLogger().debug("send to ARS event")
     except Exception as e:
         logging.getLogger().error(str(e))
@@ -172,7 +164,6 @@ class MyEventHandler(pyinotify.ProcessEvent):
         if event.dir:
             pass
         else:
-            namefile = str(os.path.basename(event.pathname))
             difffile = []
             datasend = self.msg_structure()
             difffile.append(os.path.dirname(event.pathname))
@@ -229,7 +220,7 @@ class MyEventHandler(pyinotify.ProcessEvent):
             listexistwatch = pathlist(self.wm.watches)
             for z in listdirectory:
                 if not z in listexistwatch:
-                    wdd = self.wm.add_watch(z, self.mask, rec=True)
+                    self.wm.add_watch(z, self.mask, rec=True)
                     diadd.append(z)
             datasend['data'] = { "adddir"    : diadd,
                                  "notifydir" : diadd,
@@ -262,9 +253,9 @@ class watchingfilepartage:
         self.handler = MyEventHandler(self.config, self.wm, self.mask)
         if config['excludelist'] != None:
             excl = pyinotify.ExcludeFilter(config['excludelist'])
-            wdd = self.wm.add_watch(listdirectory, self.mask, rec=True, exclude_filter=excl)
+            self.wm.add_watch(listdirectory, self.mask, rec=True, exclude_filter=excl)
         else:
-            wdd = self.wm.add_watch(listdirectory, self.mask, rec=True)
+            self.wm.add_watch(listdirectory, self.mask, rec=True)
 
     def run(self):
         self.notifier = pyinotify.ThreadedNotifier(self.wm, self.handler)
@@ -364,4 +355,3 @@ if __name__ == '__main__':
         print "interruption"
         a.stop()
         sys.exit(3)
-
