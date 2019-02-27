@@ -53,6 +53,7 @@ class syncthing():
         self.port = port
         self.urlbase = "%s:%s/"%(self.urlweb,port )
         self.urlbaserest = "%srest"%(self.urlbase)
+        self.device_id = None
         if idapirest is None:
             self.tree = etree.parse(configfile)
             self.idapirest = self.tree.xpath('/configuration/gui/apikey')[0].text
