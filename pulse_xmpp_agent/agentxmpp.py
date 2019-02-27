@@ -190,7 +190,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # different initialization for window, mac os
         # and add a syncthing section in the configuration
         # fichier de conf dans fichier de configuration.
-        self.syncthing = syncthing(configfile="/home/syncthing/.config/syncthing/config.xml" )
+        self.syncthing = syncthing(configfile="/var/lib/syncthing/.config/syncthing/config.xml" )
         if logger.level == 10:
             self.syncthing.save_conf_to_file("/tmp/confsyncting.txt")
         else:
