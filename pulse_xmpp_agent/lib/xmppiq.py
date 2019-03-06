@@ -26,7 +26,7 @@
 import os, sys
 import json
 import logging
-from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole
+from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole, keypub
 from  agentconffile import  directoryconffile
 from shutil import copyfile
 import datetime
@@ -70,7 +70,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "remotecommandshell", 
                          "listremotefileedit", 
                          "remotefileeditaction",
-                         "remotexmppmonitoring"]
+                         "remotexmppmonitoring",
+                         "keypub"]
 
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
@@ -129,6 +130,15 @@ class functionsynchroxmpp:
         result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
         re = [ decode_strconsole(x).strip(os.linesep)+"\n" for x in result['result'] ]
         result['result'] = re
+        return json.dumps(result)
+
+    @staticmethod
+    def keypub( xmppobject, data ):
+        # verify relayserver
+        try:
+            result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror' : 0 }
+        except:
+            result =  { "result" : { "key" : "" }, "error" : True , 'numerror' : 2 }
         return json.dumps(result)
 
     @staticmethod

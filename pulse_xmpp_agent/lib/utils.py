@@ -1550,3 +1550,30 @@ def utc2local (utc):
     epoch = time.mktime(utc.timetuple())
     offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
     return utc + offset
+
+def keypub():
+    keypubstring = ""
+    if sys.platform.startswith('linux'):
+        if not os.path.isfile("/root/.ssh/id_rsa"):
+            obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""')
+        return file_get_contents("/root/.ssh/id_rsa.pub")
+    elif sys.platform.startswith('win'):
+        pathkey = os.path.join(os.environ['ProgramFiles'], "Pulse", ".ssh")
+        if not os.path.isfile(os.path.join(pathkey , "id_rsa")):
+            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join(os.environ['ProgramFiles'], "Pulse", ".ssh", "id_rsa"))
+        return file_get_contents(os.path.join(os.environ['ProgramFiles'], "Pulse", ".ssh", "id_rsa.pub"))
+    elif sys.platform.startswith('darwin'):
+        if not os.path.isfile("/var/root/.ssh/id_rsa"):
+            obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /var/root/.ssh/id_rsa -q -N ""')
+        return file_get_contents("/var/root/.ssh/id_rsa.pub")
+
+#use function for relayserver
+def deletekey(file, key, back = True):
+    if back:
+        simplecommand("sed -i.bak '/%s/d' %s"%( key, file))
+    else:
+        simplecommand("sed -i '/%s/d' %s"%( key, file))
+
+def installkey(file, key, back = True):
+    deletekey(file, key, back = back)
+    simplecommand('echo "%s" >> %s'%( key, file))
