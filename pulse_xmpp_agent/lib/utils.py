@@ -1569,10 +1569,11 @@ def keypub():
 
 #use function for relayserver
 def deletekey(file, key, back = True):
-    if back:
-        simplecommand("sed -i.bak '/%s/d' %s"%( key, file))
-    else:
-        simplecommand("sed -i '/%s/d' %s"%( key, file))
+    if os.path.isfile(file):
+        if back:
+            simplecommand("sed -i.bak '/%s/d' %s"%( key, file))
+        else:
+            simplecommand("sed -i '/%s/d' %s"%( key, file))
 
 def installkey(file, key, back = True):
     deletekey(file, key, back = back)
