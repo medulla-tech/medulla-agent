@@ -45,9 +45,9 @@ from utils_psutil import sensors_battery,\
                          netstat,\
                          cputimes
 DEBUGPULSE = 25
-
+logger = logging.getLogger()
 def callXmppFunctionIq(functionname,  *args, **kwargs):
-    logging.getLogger().debug("**call function %s %s %s"%(functionname, args, kwargs))
+    logger.debug("**call function %s %s %s"%(functionname, args, kwargs))
     return getattr(functionsynchroxmpp,functionname)(*args, **kwargs)
 
 def dispach_iq_command(xmppobject, jsonin):
@@ -90,14 +90,17 @@ class functionsynchroxmpp:
     """
     @staticmethod
     def xmppbrowsing(xmppobject , data  ):
+        logger.debug("iq xmppbrowsing")
         return json.dumps(data)
 
     @staticmethod
     def test( xmppobject, data):
+        logger.debug("iq test")
         return json.dumps(data)
 
     @staticmethod
     def remotefilesimple( xmppobject, data ):
+        logger.debug("iq remotefilesimple")
         datapath = data['data']
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
@@ -107,6 +110,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefile( xmppobject, data ):
+        logger.debug("iq remotefile")
         datapath = data['data']
         if isinstance(datapath, basestring):
             datapath = str(data['data'])
@@ -127,6 +131,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotecommandshell( xmppobject, data ):
+        logger.debug("iq remotecommandshell")
         result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
         re = [ decode_strconsole(x).strip(os.linesep)+"\n" for x in result['result'] ]
         result['result'] = re
@@ -134,6 +139,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def keypub( xmppobject, data ):
+        logger.debug("iq keypub")
         # verify relayserver
         try:
             result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror' : 0 }
@@ -143,12 +149,14 @@ class functionsynchroxmpp:
 
     @staticmethod
     def listremotefileedit( xmppobject, data ):
+        logger.debug("iq listremotefileedit")
         listfileedit = [ x for x in os.listdir(directoryconffile()) if x.endswith(".ini")]
         data['data']={"result" : listfileedit}
         return json.dumps(data)
 
     @staticmethod
     def remotexmppmonitoring( xmppobject, data ):
+        logger.debug("iq remotexmppmonitoring")
         result = ""
         if data['data'] == "battery":
             result = decode_strconsole(sensors_battery())
@@ -194,6 +202,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefileeditaction( xmppobject, data ):
+        logger.debug("iq remotefileeditaction")
         if 'data' in data and 'action' in data['data']:
             if data['data']['action'] == 'loadfile':
                 if 'file' in data['data']:
