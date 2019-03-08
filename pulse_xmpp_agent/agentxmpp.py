@@ -67,6 +67,7 @@ from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 import psutil
+from modulefinder import ModuleFinder
 
 if sys.platform.startswith('win'):
     import win32api
@@ -1008,7 +1009,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
                 Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
                 Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
-                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
+                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and module_needed(self) == False:
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
                     #reinstall agent from img_agent
                     if sys.platform.startswith('win'):
@@ -1385,6 +1386,37 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             return
         if presence['muc']['nick'] == "MASTER":
             self.update_plugin()
+
+    def module_needed(self):
+        finder = ModuleFinder()
+        newdescriptorimage = Update_Remote_Agent(objectxmpp.img_agent)
+        for file in newdescriptorimage.get_md5_descriptor_agent()['program_agent']:
+            finder.run_script(os.path.join(objectxmpp.img_agent, file))
+            for name, mod in finder.modules.iteritems():
+                try:
+                    import name
+                except ImportError:
+                    logger.warning('The following python module needs to be instaled first: %s'%(name))
+                    return True
+        for file in newdescriptorimage.get_md5_descriptor_agent()['lib_agent']:
+            finder.run_script(os.path.join(objectxmpp.img_agent, "lib", file))
+            for name, mod in finder.modules.iteritems():
+                try:
+                    import name
+                except ImportError:
+                    logger.warning('The following python module needs to be instaled first: %s'%(name))
+                    return True
+        for file in newdescriptorimage.get_md5_descriptor_agent()['script_agent']:
+            finder.run_script(os.path.join(objectxmpp.img_agent, "script", file))
+            for name, mod in finder.modules.iteritems():
+                try:
+                    import name
+                except ImportError:
+                    logger.warning('The following python module needs to be instaled first: %s'%(name))
+                    return True
+        return False
+
+
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
