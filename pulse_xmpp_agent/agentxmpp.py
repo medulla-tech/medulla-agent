@@ -1368,7 +1368,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-            
+
         else:
             logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
