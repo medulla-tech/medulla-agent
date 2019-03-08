@@ -1579,7 +1579,7 @@ def installkey(file, key, back = True):
     deletekey(file, key, back = back)
     simplecommand('echo "%s" >> %s'%( key, file))
 
-def connection_etablish(Port):
+def connection_established(Port):
     """ verify connection etablish
         return true if etablish
     """

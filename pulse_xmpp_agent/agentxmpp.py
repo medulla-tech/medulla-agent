@@ -52,7 +52,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
-                        isBase64,connection_etablish
+                        isBase64, connection_established
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -98,8 +98,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_handlemanagesession = 20
-        laps_time_check_etablish_connection = 900
-        logging.warning("check connexion xmpp %ss"%laps_time_check_etablish_connection)
+        laps_time_check_established_connection = 900
+        logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
         laps_time_networkMonitor = self.config.detectiontime
@@ -129,7 +129,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 os.system('cp -u %s/script/* %s/script/'%(self.pathagent,self.img_agent))
                 os.system('cp -u %s/lib/*.py %s/lib/'%(self.pathagent,self.img_agent))
                 os.system('cp -u %s/agentversion %s/agentversion'%(self.pathagent,self.img_agent))
-            else: 
+            else:
                 logger.error("command copy for os")
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         if self.config.updating != 1:
@@ -208,9 +208,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
-        self.schedule('check etablish connection', 
-                      laps_time_check_etablish_connection, 
-                      self.etablish_connection, 
+        self.schedule('check established connection',
+                      laps_time_check_established_connection,
+                      self.established_connection,
                       repeat=True)
 
         # use public_ip for localisation
@@ -442,9 +442,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         finally:
             client_socket.close()
 
-    def etablish_connection(self):
+    def established_connection(self):
         """ check connection xmppmaster """
-        if not connection_etablish(self.config.Port):
+        if not connection_established(self.config.Port):
             #restart restartBot
             logger.info("RESTART AGENT lost Connection")
             self.restartBot()
@@ -1052,7 +1052,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
                         logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
                         logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                    else: 
+                    else:
                         logger.error("reinstall agent copy file error os missing")
 
     def restartBot(self):
@@ -1519,7 +1519,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-            
+
         else:
             logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
