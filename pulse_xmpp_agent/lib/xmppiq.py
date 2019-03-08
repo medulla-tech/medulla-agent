@@ -148,6 +148,44 @@ class functionsynchroxmpp:
         return json.dumps(result)
 
     @staticmethod
+    def information( xmppobject, data ):
+        logger.debug("iq information")
+        result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
+        for info_ask in data['listinformation']:
+            try:
+                if info_ask == "keypub":
+                    result['result']['informationresult'] [info_ask] = keypub()
+                if info_ask == "os":
+                    result['result']['informationresult'] [info_ask] = sys.platform
+                if info_ask == "os_version":
+                    result['result']['informationresult'] [info_ask] = platform.platform()
+                if info_ask == "folders_packages":
+                    result['result']['informationresult'] [info_ask] = managepackage.packagedir()
+                if info_ask == "invent_xmpp":
+                    result['result']['informationresult'] [info_ask] = xmppobject.seachInfoMachine()
+                if info_ask == "battery":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(sensors_battery())
+                if info_ask == "winservices":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(winservices())
+                if info_ask == "clone_ps_aux":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(clone_ps_aux())
+                if info_ask == "disk_usage":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(disk_usage())
+                if info_ask == "sensors_fans":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(sensors_fans())
+                if info_ask == "mmemory":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(mmemory())
+                if info_ask == "ifconfig":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(ifconfig())
+                if info_ask == "cpu_num":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(cpu_num())
+                if info_ask == "netstat":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(netstat())
+            except:
+                result['result']['informationresult'] [info_ask] = ""
+        return json.dumps(result)
+
+    @staticmethod
     def listremotefileedit( xmppobject, data ):
         logger.debug("iq listremotefileedit")
         listfileedit = [ x for x in os.listdir(directoryconffile()) if x.endswith(".ini")]
