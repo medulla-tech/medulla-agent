@@ -1578,3 +1578,19 @@ def deletekey(file, key, back = True):
 def installkey(file, key, back = True):
     deletekey(file, key, back = back)
     simplecommand('echo "%s" >> %s'%( key, file))
+
+def connection_etablish(Port):
+    """ verify connection etablish
+        return true if etablish
+    """
+    if sys.platform.startswith('linux'):
+        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED | grep -v tcp6" %(Port))
+    elif sys.platform.startswith('win'):
+        obj = simplecommandstr("netstat -an | findstr %s | findstr ESTABLISHED"%Port)
+    elif sys.platform.startswith('darwin'):
+        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED" %(Port))
+    if "ESTABLISHED" in obj['result']:
+        return True
+    else:
+        logger.warning("connection xmpp low")
+        return False

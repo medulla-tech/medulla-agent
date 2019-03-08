@@ -50,7 +50,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         protoandport, createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start, test_kiosk_presence, file_get_contents, isBase64
+                        save_count_start, test_kiosk_presence, file_get_contents,\
+                        isBase64,connection_etablish
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -95,6 +96,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_handlemanagesession = 20
+        laps_time_check_etablish_connection = 900
+        logging.warning("check connexion xmpp %ss"%laps_time_check_etablish_connection)
         self.back_to_deploy = {}
         self.config = conf
         laps_time_networkMonitor = self.config.detectiontime
@@ -203,6 +206,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
+        self.schedule('check etablish connection', 
+                      laps_time_check_etablish_connection, 
+                      self.etablish_connection, 
+                      repeat=True)
 
         # use public_ip for localisation
         if self.config.public_ip == "":
@@ -425,6 +432,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         finally:
             client_socket.close()
 
+    def etablish_connection(self):
+        """ check connection xmppmaster """
+        if not connection_etablish(self.config.Port):
+            #restart restartBot
+            logger.info("RESTART AGENT lost Connection")
+            self.restartBot()
 
     def tcpserver(self):
         """
