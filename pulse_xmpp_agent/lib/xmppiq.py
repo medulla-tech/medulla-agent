@@ -23,7 +23,7 @@
 # file pulse_xmpp_agent/lib/xmppiq.py
 #
 
-import os, sys
+import os, sys, platform
 import json
 import logging
 from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole, keypub
@@ -34,6 +34,7 @@ import zlib
 import re
 import base64
 import traceback
+from lib.managepackage import managepackage
 from utils_psutil import sensors_battery,\
                          winservices,\
                          clone_ps_aux,\

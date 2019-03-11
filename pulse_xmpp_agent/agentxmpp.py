@@ -37,6 +37,7 @@ from sleekxmpp.xmlstream import handler, matcher
 
 import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
 from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
 from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
