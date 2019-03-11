@@ -451,6 +451,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype ='chat')
 
     def _CtrlHandler(self, evt):
+        """## todo intercep message in console program
+        win32con.WM_QUERYENDSESSION win32con.WM_POWERBROADCAS(PBT_APMSUSPEND
+        """
         global signalint
         if sys.platform.startswith('win'):
             msgevt={
@@ -1365,28 +1368,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-            #event for quit loop server tcpserver for kiosk
-            xmpp.eventkill.set()
-            xmpp.sock.close()
-            #connect server for pass accept for end
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # Connect the socket to the port where the server is listening
-            server_address = ('localhost', tg.am_local_port)
-            logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
-            sock.connect(server_address)
-            sock.close()
-
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.qin.put("quit")
-            xmpp.queue_read_event_from_command.put("quit")
-            logging.log(DEBUGPULSE,"wait 2s end thread event loop")
-            logging.log(DEBUGPULSE,"terminate manage data sharing")
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.managerQueue.shutdown()
-            time.sleep(2)
-            logging.log(DEBUGPULSE,"terminate scheduler")
-            xmpp.scheduler.quit()
-            logging.log(DEBUGPULSE,"bye bye Agent")
+            
         else:
             logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
@@ -1409,6 +1391,28 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                 newparametersconnect[1],
                                 newparametersconnect[0],
                                 newparametersconnect[3])
+            #event for quit loop server tcpserver for kiosk
+            xmpp.eventkill.set()
+            xmpp.sock.close()
+            #connect server for pass accept for end
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Connect the socket to the port where the server is listening
+            server_address = ('localhost', tg.am_local_port)
+            logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
+            sock.connect(server_address)
+            sock.close()
+
+            if  xmpp.config.agenttype in ['relayserver']:
+                xmpp.qin.put("quit")
+            xmpp.queue_read_event_from_command.put("quit")
+            logging.log(DEBUGPULSE,"wait 2s end thread event loop")
+            logging.log(DEBUGPULSE,"terminate manage data sharing")
+            if  xmpp.config.agenttype in ['relayserver']:
+                xmpp.managerQueue.shutdown()
+            time.sleep(2)
+            logging.log(DEBUGPULSE,"terminate scheduler")
+            xmpp.scheduler.quit()
+            logging.log(DEBUGPULSE,"bye bye Agent")
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
