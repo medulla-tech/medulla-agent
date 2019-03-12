@@ -1,6 +1,10 @@
-pulse-xmpp-agent 1.9.9 UNRELEASED
+pulse-xmpp-agent 2.0.0
 ======================
- 
+* [FEATURE] Use scp and rsync instead of http in Pull mode
+* [FEATURE] Peer deployment
+* [BUGFIX]  Reconnect to XMPP server on lost connection
+
+
 pulse-xmpp-agent 1.9.8
 ======================
 * [FEATURE] Push method (scp or rsync) can be configured in relay server
