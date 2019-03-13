@@ -1389,9 +1389,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
 
     def module_needed(self):
         finder = ModuleFinder()
-        newdescriptorimage = Update_Remote_Agent(objectxmpp.img_agent)
+        newdescriptorimage = Update_Remote_Agent(self.img_agent)
         for file in newdescriptorimage.get_md5_descriptor_agent()['program_agent']:
-            finder.run_script(os.path.join(objectxmpp.img_agent, file))
+            finder.run_script(os.path.join(self.img_agent, file))
             for name, mod in finder.modules.iteritems():
                 try:
                     __import__(name)
@@ -1399,7 +1399,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     logger.warning('The following python module needs to be instaled first: %s'%(name))
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['lib_agent']:
-            finder.run_script(os.path.join(objectxmpp.img_agent, "lib", file))
+            finder.run_script(os.path.join(self.img_agent, "lib", file))
             for name, mod in finder.modules.iteritems():
                 try:
                     __import__(name)
@@ -1407,7 +1407,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     logger.warning('The following python module needs to be instaled first: %s'%(name))
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['script_agent']:
-            finder.run_script(os.path.join(objectxmpp.img_agent, "script", file))
+            finder.run_script(os.path.join(self.img_agent, "script", file))
             for name, mod in finder.modules.iteritems():
                 try:
                     __import__(name)
