@@ -1017,7 +1017,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
                                                     os.path.join(self.pathagent, fichier)))
-                            logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
+                            logger.debug('agent install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
                                                                             os.path.join(self.pathagent)))
                         os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
                                                 os.path.join(self.pathagent, "agentversion")))
@@ -1035,12 +1035,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
                                                     os.path.join(self.pathagent, "lib", fichier)))
-                            logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
+                            logger.debug('agent install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
                                                                         os.path.join(self.pathagent, "lib", fichier)))
                         for fichier in Update_Remote_Img.get_md5_descriptor_agent()['script_agent']:
                             os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
                                                     os.path.join(self.pathagent, "script", fichier)))
-                            logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
+                            logger.debug('agent install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
                                                                         os.path.join(self.pathagent, "script", fichier)))
 
                     elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
