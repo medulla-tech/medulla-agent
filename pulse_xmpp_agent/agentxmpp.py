@@ -1009,7 +1009,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
                 Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
                 Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
-                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and module_needed(self) == False:
+                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and self.module_needed() == False:
                     os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
                     #reinstall agent from img_agent
                     if sys.platform.startswith('win'):
