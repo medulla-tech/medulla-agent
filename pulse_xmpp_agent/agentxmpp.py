@@ -1394,25 +1394,25 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             finder.run_script(os.path.join(self.img_agent, file))
             for name, mod in finder.modules.iteritems():
                 try:
-                    __import__(name)
+                    __import__(name.split('.', 1)[0])
                 except ImportError:
-                    logging.warning('The following python module needs to be instaled first: %s'%(name))
+                    logging.warning('The following python module needs to be installed first: %s'%(name))
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['lib_agent']:
             finder.run_script(os.path.join(self.img_agent, "lib", file))
             for name, mod in finder.modules.iteritems():
                 try:
-                    __import__(name)
+                    __import__(name.split('.', 1)[0])
                 except ImportError:
-                    logging.warning('The following python module needs to be instaled first: %s'%(name))
+                    logging.warning('The following python module needs to be installed first: %s'%(name))
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['script_agent']:
             finder.run_script(os.path.join(self.img_agent, "script", file))
             for name, mod in finder.modules.iteritems():
                 try:
-                    __import__(name)
+                    __import__(name.split('.', 1)[0])
                 except ImportError:
-                    logging.warning('The following python module needs to be instaled first: %s'%(name))
+                    logging.warning('The following python module needs to be installed first: %s'%(name))
                     return True
         return False
 
