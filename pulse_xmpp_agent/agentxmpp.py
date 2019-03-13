@@ -239,7 +239,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler('changed_status', self.changed_status)
 
         self.RSA = MsgsignedRSA(self.config.agenttype)
-
+        logger.info("VERSION AGENT IS %s"%self.version_agent())
         #### manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
         if  self.config.agenttype in ['relayserver']:
@@ -1279,6 +1279,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
             'pluginscheduled' : {},
+            'versionagent' : self.version_agent(),
             'portxmpp' : self.config.Port,
             'serverxmpp' : self.config.Server,
             'agenttype' : self.config.agenttype,
