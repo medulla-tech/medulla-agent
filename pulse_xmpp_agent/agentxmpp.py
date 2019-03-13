@@ -52,7 +52,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
-                        isBase64,connection_etablish
+                        isBase64,connection_etablish, file_get_contents
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -259,7 +259,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler('changed_status', self.changed_status)
 
         self.RSA = MsgsignedRSA(self.config.agenttype)
-
+        logger.info("VERSION AGENT IS %s"%self.version_agent())
         #### manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
         if  self.config.agenttype in ['relayserver']:
@@ -292,6 +292,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'CustomXEP Handler',
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
+
+    def version_agent(self):
+        pathversion = os.path.join(self.pathagent, "agentversion")
+        if os.path.isfile(pathversion):
+            self.versionagent = file_get_contents(pathversion).strip()
+        else :
+            self.versionagent = 0.0
+        return self.versionagent
 
     def iqsendpulse(self, to, datain, timeout):
         # send iq synchronous message
@@ -1297,6 +1305,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
             'plugin' : {},
             'pluginscheduled' : {},
+            'versionagent' : self.version_agent(),
             'portxmpp' : self.config.Port,
             'serverxmpp' : self.config.Server,
             'agenttype' : self.config.agenttype,
