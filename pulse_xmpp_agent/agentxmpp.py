@@ -1394,7 +1394,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             finder.run_script(os.path.join(objectxmpp.img_agent, file))
             for name, mod in finder.modules.iteritems():
                 try:
-                    import name
+                    __import__(name)
                 except ImportError:
                     logger.warning('The following python module needs to be instaled first: %s'%(name))
                     return True
