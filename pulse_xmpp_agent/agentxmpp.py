@@ -29,6 +29,7 @@ import base64
 import json
 import time
 import socket
+import select
 import threading
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -98,6 +99,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        self.quitserverkiosk = False
         laps_time_networkMonitor = self.config.detectiontime
         logging.warning("laps time network changing %s"%laps_time_networkMonitor)
         ###################Update agent from MAster#############################
@@ -180,7 +182,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.reversesshmanage = {}
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
-        self.xmppbrowsingpath = xmppbrowsing(defaultdir = self.config.defaultdir, rootfilesystem = self.config.rootfilesystem, objectxmpp = self)
+        if self.config.agenttype in ['machine']:
+            self.xmppbrowsingpath = xmppbrowsing(defaultdir = self.config.defaultdir, rootfilesystem = self.config.rootfilesystem, objectxmpp = self)
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
         self.banterminate = { } # used for clear id session banned
@@ -361,16 +364,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 no return value
         """
         logging.debug("Server Kiosk Start")
-        while not self.eventkill.wait(1):
-            # Wait for a connection
-            logging.debug('waiting for a connection kiosk service')
-            connection, client_address = self.sock.accept()
-            client_handler = threading.Thread(
-                                                target=self.handle_client_connection,
-                                                args=(connection,))
-            client_handler.start()
-        logging.debug("Stopping Kiosk")
 
+        while not self.eventkill.wait(1):
+            try:
+                rr,rw,err = select.select([self.sock],[],[self.sock], 20)
+            except Exception as e:
+                logging.error("kiosk server : %s" % str(e))
+                self.sock.close()
+                # connection error event here, maybe reconnect
+                logging.error('Quit connection kiosk')
+                break
+            if rr:
+                clientsocket, client_address = self.sock.accept()
+                logging.debug('connection kiosk')
+                client_handler = threading.Thread(
+                                                    target=self.handle_client_connection,
+                                                    args=(clientsocket,)).start()
+            if err:
+                self.sock.close()
+                logging.error('Quit connection kiosk')
+                break;
+        self.quitserverkiosk = True
+        logging.debug("Stopping Kiosk")
 
     def reloaddeploy(self):
         for sessionidban in self.ban_deploy_sessionid_list:
@@ -1361,8 +1376,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     else:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
     while True:
-        tg = tgconf(optstypemachine)
         restart = False
+        tg = tgconf(optstypemachine)
         xmpp = MUCBot(tg)
         xmpp.auto_reconnect = False
         xmpp.register_plugin('xep_0030') # Service Discovery
@@ -1370,12 +1385,11 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
         xmpp.register_plugin('xep_0199', {'keepalive': True,
-                                          'frequency':600,
-                                          'interval' : 600,
-                                          'timeout' : 500  })
+                                            'frequency':600,
+                                            'interval' : 600,
+                                            'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
-        # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
         if xmpp.config.agenttype in ['relayserver']:
             attempt = True
         else:
@@ -1384,12 +1398,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-            
         else:
             logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
         if signalint:
             logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
+            terminateserver(xmpp)
             break
         logging.log(DEBUGPULSE,"analyse alternative")
         if not restart:
@@ -1407,28 +1421,28 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                 newparametersconnect[1],
                                 newparametersconnect[0],
                                 newparametersconnect[3])
-            #event for quit loop server tcpserver for kiosk
-            xmpp.eventkill.set()
-            xmpp.sock.close()
-            #connect server for pass accept for end
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # Connect the socket to the port where the server is listening
-            server_address = ('localhost', tg.am_local_port)
-            logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
-            sock.connect(server_address)
-            sock.close()
+        terminateserver(xmpp)
 
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.qin.put("quit")
-            xmpp.queue_read_event_from_command.put("quit")
-            logging.log(DEBUGPULSE,"wait 2s end thread event loop")
-            logging.log(DEBUGPULSE,"terminate manage data sharing")
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.managerQueue.shutdown()
-            time.sleep(2)
-            logging.log(DEBUGPULSE,"terminate scheduler")
-            xmpp.scheduler.quit()
-            logging.log(DEBUGPULSE,"bye bye Agent")
+
+def terminateserver(xmpp):
+    #event for quit loop server tcpserver for kiosk
+    xmpp.eventkill.set()
+    xmpp.sock.close()
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+    logging.log(DEBUGPULSE,"wait 2s end thread event loop")
+    logging.log(DEBUGPULSE,"terminate manage data sharing")
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.managerQueue.shutdown()
+    time.sleep(2)
+    logging.log(DEBUGPULSE,"terminate scheduler")
+    xmpp.scheduler.quit()
+    logging.log(DEBUGPULSE,"waitting stop server kiosk")
+    while not xmpp.quitserverkiosk:
+        time.sleep(1)
+    logging.log(DEBUGPULSE,"bye bye Agent")
+
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
