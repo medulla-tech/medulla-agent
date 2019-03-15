@@ -214,14 +214,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       self.established_connection,
                       repeat=True)
 
+        if not hasattr(self.config, 'geolocalisation'):
+            self.config.geolocalisation = True
         # use public_ip for localisation
         if self.config.public_ip == "":
             try:
-                self.config.public_ip = searchippublic()
+                if self.config.agenttype in ['relayserver']:
+                    if self.config.geolocalisation:
+                        self.config.public_ip = searchippublic()
+                else:
+                    self.config.public_ip = searchippublic()
             except Exception:
                 pass
         if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
+
 
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
