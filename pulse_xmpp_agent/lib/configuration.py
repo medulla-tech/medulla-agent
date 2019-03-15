@@ -275,6 +275,7 @@ class confParameter:
                 self.packageserver["port"] = int(packageserver["port"])
         self.public_ip = ""
         self.public_ip_relayserver = ""
+        self.geolocalisation = True
         if self.agenttype == "relayserver":
             if Config.has_option("type", "request_type"):
                 self.request_type = Config.get('type', 'request_type')
@@ -282,6 +283,9 @@ class confParameter:
                     self.public_ip_relayserver = ipfromdns(
                         Config.get('type', 'public_ip'))
                     self.packageserver["public_ip"] = self.public_ip_relayserver
+            if Config.has_option("type", "geolocalisation"):
+                self.geolocalisation = Config.getboolean("type", "geolocalisation")
+
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         # par convention :
         # la liste des plugins definie dans la section plugin avec la clef pluginlist
