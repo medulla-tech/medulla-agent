@@ -29,6 +29,7 @@ import base64
 import json
 import time
 import socket
+import select
 import threading
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -344,13 +345,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         return data
                                     except Exception as e:
                                         logging.error("iqsendpulse : %s" % str(e))
-                                        traceback.print_exc(file=sys.stdout)
+                                        logger.error("\n%s"%(traceback.format_exc()))
                                         return '{"err" : "%s"}' % str(e).replace('"', "'")
                                     return "{}"
             except IqError as e:
                 err_resp = e.iq
                 logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-                traceback.print_exc(file=sys.stdout)
+                logger.error("\n%s"%(traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
@@ -358,7 +359,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 return '{"err" : "Timeout Error"}'
         except Exception as e:
             logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
 
@@ -439,6 +440,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         return
                     #call plugin on master
                     self.send_message_to_master(datasend)
+        except Exception as e:
+            logging.error("message to kiosk server : %s" % str(e))
+            logger.error("\n%s"%(traceback.format_exc()))
         finally:
             client_socket.close()
 
@@ -460,13 +464,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
         """
         logging.debug("Server Kiosk Start")
         while not self.eventkill.wait(1):
-            # Wait for a connection
-            logging.debug('waiting for a connection kiosk service')
-            connection, client_address = self.sock.accept()
-            client_handler = threading.Thread(
-                                                target=self.handle_client_connection,
-                                                args=(connection,))
-            client_handler.start()
+            try:
+                rr, rw, err = select.select([self.sock],[],[self.sock], 5)
+            except Exception as e:
+                logging.error("kiosk server : %s" % str(e))
+                #self.sock.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
+                self.sock.close()
+                # connection error event here, maybe reconnect
+                logging.error('Quit connection kiosk')
+                break
+            if self.sock in rr:
+                clientsocket, client_address = self.sock.accept()
+                if client_address[0] == "127.0.0.1":
+                    client_handler = threading.Thread(
+                                                        target=self.handle_client_connection,
+                                                        args=(clientsocket,)).start()
+                else:
+                    logging.info("Connection refused from : %s" % client_address)
+                    clientsocket.close()
+            if self.sock in err:
+                self.sock.close()
+                logging.error('Quit connection kiosk')
+                break;
+        self.quitserverkiosk = True
         logging.debug("Stopping Kiosk")
 
 
@@ -504,7 +524,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             data = base64.b64decode(data)
                         except Exception as e:
                             logging.error("_handle_custom_iq : decode base64 : %s"%str(e))
-                            traceback.print_exc(file=sys.stdout)
+                            logger.error("\n%s"%(traceback.format_exc()))
                             return
                         try:
                             # traitement de la function
@@ -514,11 +534,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 result = result.encode("base64")
                             except Exception as e:
                                 logging.error("_handle_custom_iq : encode base64 : %s"%str(e))
-                                traceback.print_exc(file=sys.stdout)
+                                logger.error("\n%s"%(traceback.format_exc()))
                                 return ""
                         except Exception as e:
                             logging.error("_handle_custom_iq : error function : %s"%str(e))
-                            traceback.print_exc(file=sys.stdout)
+                            logger.error("\n%s"%(traceback.format_exc()))
                             return
             #retourn result iq get
             for child in iq.xml:
@@ -957,7 +977,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mtype ='chat')
         except Exception as e:
             logging.error("message log to '%s/MASTER' : %s " %  ( self.agentmaster,str(e)))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return
 
     def handlereprise_evenement(self):
@@ -1001,7 +1021,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.restartBot()
         except Exception as e:
             logging.error(" %s " %(str(e)))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
 
     def checkinstallagent(self):
         # verify si boollean existe.
@@ -1080,7 +1100,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     e.iq['error']['text'])
         except IqTimeout:
             logging.error("No response from server.")
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             self.disconnect()
 
     def filtre_message(self, msg):
@@ -1105,7 +1125,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto=msg['from'],
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return
 
         if not msg['from'].user in possibleclient:
@@ -1222,7 +1242,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             mbody=json.dumps(dataerreur),
                                             mtype='chat')
                     logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
-                    traceback.print_exc(file=sys.stdout)
+                    logger.error("\n%s"%(traceback.format_exc()))
 
                 except Exception as e:
                     logging.error("execution plugin [%s]  : %s " % (dataobj['action'],str(e)))
@@ -1234,7 +1254,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.send_message(  mto=msg['from'],
                                             mbody=json.dumps(dataerreur),
                                             mtype='chat')
-                    traceback.print_exc(file=sys.stdout)
+                    logger.error("\n%s"%(traceback.format_exc()))
             else:
                 dataerreur['data']['msg'] = "ERROR : Action ignored"
                 self.send_message(  mto=msg['from'],
@@ -1246,7 +1266,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto=msg['from'],
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
 
     def seachInfoMachine(self):
         er = networkagentinfo("master", "infomachine")
@@ -1438,7 +1458,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
-        traceback.print_exc(file=sys.stdout)
+        logging.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
 
 def tgconf(optstypemachine):
@@ -1496,20 +1516,23 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     else:
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
     while True:
-        tg = tgconf(optstypemachine)
         restart = False
+        tg = tgconf(optstypemachine)
         xmpp = MUCBot(tg)
         xmpp.auto_reconnect = False
         xmpp.register_plugin('xep_0030') # Service Discovery
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True,
-                                          'frequency':600,
+        xmpp.register_plugin('xep_0199', {'keepalive' : True,
+                                          'frequency' : 600,
                                           'interval' : 600,
                                           'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
+
+        #tg = tgconf(optstypemachine)
+        #xmpp.config.__dict__.update(tg.__dict__)
         # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
         if xmpp.config.agenttype in ['relayserver']:
             attempt = True
@@ -1519,12 +1542,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-
         else:
             logging.log(DEBUGPULSE,"Unable to connect. search alternative")
             restart = False
         if signalint:
             logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
+            terminateserver(xmpp)
             break
         logging.log(DEBUGPULSE,"analyse alternative")
         if not restart:
@@ -1542,28 +1565,27 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                 newparametersconnect[1],
                                 newparametersconnect[0],
                                 newparametersconnect[3])
-            #event for quit loop server tcpserver for kiosk
-            xmpp.eventkill.set()
-            xmpp.sock.close()
-            #connect server for pass accept for end
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # Connect the socket to the port where the server is listening
-            server_address = ('localhost', tg.am_local_port)
-            logging.log(DEBUGPULSE, 'deconnecting to %s:%s' % server_address)
-            sock.connect(server_address)
-            sock.close()
+        terminateserver(xmpp)
 
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.qin.put("quit")
-            xmpp.queue_read_event_from_command.put("quit")
-            logging.log(DEBUGPULSE,"wait 2s end thread event loop")
-            logging.log(DEBUGPULSE,"terminate manage data sharing")
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.managerQueue.shutdown()
-            time.sleep(2)
-            logging.log(DEBUGPULSE,"terminate scheduler")
-            xmpp.scheduler.quit()
-            logging.log(DEBUGPULSE,"bye bye Agent")
+
+def terminateserver(xmpp):
+    #event for quit loop server tcpserver for kiosk
+    xmpp.eventkill.set()
+    xmpp.sock.close()
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+    logging.log(DEBUGPULSE,"wait 2s end thread event loop")
+    logging.log(DEBUGPULSE,"terminate manage data sharing")
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.managerQueue.shutdown()
+    time.sleep(2)
+    logging.log(DEBUGPULSE,"terminate scheduler")
+    xmpp.scheduler.quit()
+    logging.log(DEBUGPULSE,"waitting stop server kiosk")
+    while not xmpp.quitserverkiosk:
+        time.sleep(1)
+    logging.log(DEBUGPULSE,"bye bye Agent")
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
