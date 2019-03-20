@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 # Attention, ce programme doit ce trouver dans le même répertoire que l'agent
-# file : le replicator
+# file : pulse_xmpp_agent/replicator.py
 
 # fait une copy  de l'agent actuel.
 import os
@@ -239,8 +239,8 @@ if __name__ == "__main__":
 
     # return  0 rien a faire agent deja installe
     # return  1 agent installe correctement et injection de la key de registre windows
-    # return -1 agent non installer discriptor rétablie agent par rollback
-    # return -2 agent installer mais pas reussi a installer la key de registre pour windows.
+    # return 120 agent non installer discriptor rétablie agent par rollback
+    # return 121 agent installer mais pas reussi a installer la key de registre pour windows.
     parser = OptionParser()
 
     parser.add_option("-v", "--verbose",
@@ -286,7 +286,7 @@ if __name__ == "__main__":
                                         "version_agent"]:
                     continue
                 # search les differences.
-                diff, supp = search_action_on_agent_cp_and_del(  descriptorimage[directory_agent],
+                diff, supp = search_action_on_agent_cp_and_del( descriptorimage[directory_agent],
                                                                 descriptoragent[directory_agent])
                 if directory_agent == "program_agent":
                     dirname = ""
@@ -309,17 +309,19 @@ if __name__ == "__main__":
                 if not options.info:
                     for delfile in supp2:
                         os.remove(delfile)
+            if options.info:
+                sys.exit(5)
         except:
             boolinstalldirect = False
         if not options.info:
             if boolinstalldirect:
                 if not install_direct(img_agent,  pathagent):
                     restorationfolder(rollback_pulse_xmpp_agent, pathagent)
-                    sys.exit(-1)
+                    sys.exit(120)
                 version = file_get_contents(os.path.join(img_agent, "agentversion")).strip()
                 if not install_key_register_windows(version):
-                    sys.exit(-2)
+                    sys.exit(121)
                 sys.exit(1)
             else:
                 restorationfolder(rollback_pulse_xmpp_agent, pathagent)
-                sys.exit(-1)
+                sys.exit(120)
