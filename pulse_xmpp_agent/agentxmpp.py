@@ -53,7 +53,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
-                        isBase64, connection_established
+                        isBase64, connection_established, file_put_contents, \
+                        simplecommand
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -981,57 +982,46 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.error(" %s " %(str(e)))
             logger.error("\n%s"%(traceback.format_exc()))
 
+    def reinstall_agent(self):
+        file_put_contents(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"),
+                        "use file boolean update. enable verify update.")
+        logger.debug("RE_INSTALL AGENT VERSION %s to %s"%(file_get_contents(os.path.join(self.img_agent,
+                                                                                        "agentversion")),
+                                                        self.boundjid.bare ))
+        agentversion = os.path.join(self.pathagent, "agentversion")
+        versiondata = file_get_contents(os.path.join(self.img_agent, "agentversion")).strip()
+        try:
+            os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
+        except:
+            pass
+        cmd = "%s"%(os.path.join(self.pathagent, "replicator.py"))
+        logger.debug("cmd : %s"%(cmd))
+        result = simplecommand(cmd)
+        if result['code'] == 0:
+            logger.warning("the agent is already installed for version  %s"%(versiondata))
+        elif result['code'] == 1:
+            logger.info("installed success agent version %s"%(versiondata))
+        elif result['code'] == 120:
+            logger.error("installed default agent version %s (rollback previous version.)"%(versiondata))
+        elif result['code'] == 121:
+            logger.warning("installed success agent version %s (unable to update the version in the registry.)"%(versiondata))
+        elif result['code'] == 5:
+            logger.warning("mode replicator non permit dans pluging, ni installation agent")
+        else:
+            logger.error("installed agent version %s (indefinie operation)"%(versiondata))
+
     def checkinstallagent(self):
         # verify si boollean existe.
         if self.config.updating == 1:
             if os.path.isfile(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT")):
-                Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
-                Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
-                if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base():
-                    os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
-                    #reinstall agent from img_agent
-                    if sys.platform.startswith('win'):
-                        import _winreg
-                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['program_agent']:
-                            os.system('copy  %s %s'%(os.path.join(self.img_agent, fichier),
-                                                    os.path.join(self.pathagent, fichier)))
-                            logger.debug('install program agent  %s to %s'%(os.path.join(self.img_agent, fichier),
-                                                                            os.path.join(self.pathagent)))
-                        os.system('copy  %s %s'%(os.path.join(self.img_agent, "agentversion"),
-                                                os.path.join(self.pathagent, "agentversion")))
-                        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                             "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
-                                             0 ,
-                                             _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-                        _winreg.SetValueEx ( key,
-                                           'DisplayVersion'  ,
-                                           0,
-                                           _winreg.REG_SZ,
-                                           file_get_contents(os.path.join(self.pathagent, "agentversion")).strip())
-                        _winreg.CloseKey(key)
-
-                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['lib_agent']:
-                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "lib", fichier),
-                                                    os.path.join(self.pathagent, "lib", fichier)))
-                            logger.debug('install lib agent  %s to %s'%(os.path.join(self.img_agent, "lib", fichier),
-                                                                        os.path.join(self.pathagent, "lib", fichier)))
-                        for fichier in Update_Remote_Img.get_md5_descriptor_agent()['script_agent']:
-                            os.system('copy  %s %s'%(os.path.join(self.img_agent, "script", fichier),
-                                                    os.path.join(self.pathagent, "script", fichier)))
-                            logger.debug('install script agent %s to %s'%(os.path.join(self.img_agent, "script", fichier),
-                                                                        os.path.join(self.pathagent, "script", fichier)))
-
-                    elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-                        os.system('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
-                        os.system('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
-                        os.system('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
-                        os.system('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                        logger.debug('cp  %s/*.py %s'%(self.img_agent, self.pathagent))
-                        logger.debug('cp  %s/script/* %s/script/'%(self.img_agent, self.pathagent))
-                        logger.debug('cp  %s/lib/*.py %s/lib/'%(self.img_agent, self.pathagent))
-                        logger.debug('cp  %s/agentversion %s/agentversion'%(self.img_agent, self.pathagent))
-                    else:
-                        logger.error("reinstall agent copy file error os missing")
+                if self.descriptor_master is not None:
+                    Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
+                    Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
+                    if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and \
+                    Update_Remote_Img.get_fingerprint_agent_base() ==  self.descriptor_master['fingerprint']:
+                        self.reinstall_agent()
+                else:
+                    logger.warning("ask update but descriptor_agent base missing.")
 
     def restartBot(self):
         global restart
