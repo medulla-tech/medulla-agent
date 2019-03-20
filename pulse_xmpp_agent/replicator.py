@@ -33,6 +33,8 @@ import traceback
 import random
 import hashlib
 import shutil
+import urllib2
+
 from optparse import OptionParser
 
 if sys.platform.startswith('win'):
@@ -63,7 +65,7 @@ def copytree2(src, dst, symlinks=False):
                 linkto = os.readlink(srcname)
                 os.symlink(linkto, dstname)
             elif os.path.isdir(srcname):
-                copytree2(srcname, dstname, symlinks, ignore)
+                copytree2(srcname, dstname, symlinks)
             else:
                 if not srcname.endswith(".pyc"):
                     shutil.copy2(srcname, dstname)
