@@ -317,7 +317,6 @@ class confParameter:
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
                     self.nameplugindir=""
-
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
         except BaseException:
