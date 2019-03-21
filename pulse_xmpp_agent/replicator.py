@@ -34,6 +34,7 @@ import random
 import hashlib
 import shutil
 import urllib2
+import importlib
 
 from optparse import OptionParser
 
@@ -233,6 +234,28 @@ def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
     shutil.rmtree(rollback_pulse_xmpp_agent)
     copytree2 ( agent_folder , rollback_pulse_xmpp_agent)
 
+def module_needed(agent_image):
+    list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py']
+    for filename in list_script_python_for_update:
+        try:
+            importlib.import_module('img_agent.%s'%filename[-3:])
+        except ImportError:
+            print('Some python modules needed for running %s are missing. We will not switch to new agent' % (filename))
+            return True
+    for filename in [ x for x in os.listdir(os.path.join(agent_image, 'lib')) if x[-3:]== ".py"]:
+        try:
+            importlib.import_module('img_agent.lib.%s'%filename[-3:])
+        except ImportError:
+            print('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename))
+            return True
+    for filename in [ x for x in os.listdir(os.path.join(agent_image, 'script')) if x[-3:]== ".py"]:
+        try:
+            importlib.import_module('img_agent.script.%s'%filename[-3:])
+        except ImportError:
+            print('Some python modules needed for running script/%s are missing. We will not switch to new agent' % (filename))
+            return True
+    return False
+
 if __name__ == "__main__":
     # execute only if run as a script
     # ce programme doit repliquer un agent image to l'emplacement de l'agent.
@@ -255,6 +278,11 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
     pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
     img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
+
+    # First check if machine has all necessary python modules to load image
+    if module_needed(img_agent):
+        sys.exit(122)
+
     # folder for save file supp
     rollback_pulse_xmpp_agent = os.path.abspath( os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                  "..",
