@@ -109,6 +109,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
         self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        self.descriptor_master = None
         if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
             #copy agent vers remote agent.
             if sys.platform.startswith('win'):
