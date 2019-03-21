@@ -322,6 +322,13 @@ class confParameter:
             self.agentcommand = Config.get('global', 'relayserver_agent')
         except BaseException:
             self.agentcommand = ""
+
+        if self.agenttype == "relayserver":
+            if Config.has_option("global", "diragentbase"):
+                self.diragentbase = Config.get('global', 'diragentbase')
+            else:
+                self.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
+                
         #########chatroom############
         self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
