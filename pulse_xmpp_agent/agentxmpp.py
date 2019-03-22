@@ -905,7 +905,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except:
             pass
-        cmd = "%s"%(os.path.join(self.pathagent, "replicator.py"))
+        cmd = "python %s"%(os.path.join(self.pathagent, "replicator.py"))
         logger.debug("cmd : %s"%(cmd))
         result = simplecommand(cmd)
         if result['code'] == 0:
@@ -913,13 +913,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         elif result['code'] == 1:
             logger.info("installed success agent version %s"%(versiondata))
         elif result['code'] == 120:
-            logger.error("installed default agent version %s (rollback previous version.)"%(versiondata))
+            logger.error("installed default agent version %s (rollback previous version.). We will not switch to new agent."%(versiondata))
         elif result['code'] == 121:
             logger.warning("installed success agent version %s (unable to update the version in the registry.)"%(versiondata))
+        elif result['code'] == 122:
+            logger.warning("Some python modules needed for running lib are missing. We will not switch to new agent)")
         elif result['code'] == 5:
-            logger.warning("mode replicator non permit dans pluging, ni installation agent")
+            logger.warning("mode replicator non permit dans pluging, ni installation agent. We will not switch to new agent.")
         else:
-            logger.error("installed agent version %s (indefinie operation)"%(versiondata))
+            logger.error("installed agent version %s (indefinie operation). We will not switch to new agent."%(versiondata))
+            logger.error("return code is : %s"%(result['code']))
 
     def checkinstallagent(self):
         # verify si boollean existe.
