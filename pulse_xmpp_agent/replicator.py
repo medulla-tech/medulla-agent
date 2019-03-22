@@ -43,8 +43,6 @@ if sys.platform.startswith('win'):
 
 
 
-                
-                
 def copytree2(src, dst, symlinks=False):
     names = os.listdir(src)
     try:
@@ -243,6 +241,7 @@ def module_needed(agent_image, verbose = False):
     #sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__))))
     # create file __init.py si non exist
     boolfichier = False
+    error  = False
     if not os.path.isfile("__init__.py"):
         boolfichier = True
         open("__init__.py", "w").close()
@@ -250,23 +249,18 @@ def module_needed(agent_image, verbose = False):
     for filename in list_script_python_for_update:
         try:
             importlib.import_module('img_agent.%s'%filename[:-3])
-        except ImportError:
+        except Exception as e:
             if verbose:
                 print('Some python modules needed for running "%s" are missing. We will not switch to new agent' % (filename))
-                if  boolfichier:
-                    try:
-                        os.remove("__init__.py")
-                    except:
-                        if verbose:
-                            print "Error while deleting file __init__.py"
-                        pass
-            return False
-        finally:
-            if  boolfichier:
-                try:
-                    os.remove("__init__.py")
-                except:
-                    print "Error while deleting file __init__.py"
+                error = True
+            pass
+    if  boolfichier:
+        try:
+            os.remove("__init__.py")
+        except:
+            print "Error while deleting file __init__.py"
+    if error:
+        return False
 
     for filename in [ x[:-3] for x in os.listdir(os.path.join(agent_image, 'lib'))  if x.endswith(".py")]:
         try:
@@ -301,7 +295,7 @@ if __name__ == "__main__":
                   help="print status messages to stdout")
     parser.add_option("-i", "--info",
                   action="store_true", dest="info", default=False,
-                  help="print information to stdout")
+                  help="print information to stdout ('not replicator')")
 
     (options, args) = parser.parse_args()
     pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
@@ -309,7 +303,10 @@ if __name__ == "__main__":
 
     # First check if machine has all necessary python modules to load image
     if not module_needed(img_agent, verbose = (options.verbose or options.info)):
-        sys.exit(122)
+        if options.verbose or options.info:
+            print 'KO: missing modules in image'
+        else:
+            sys.exit(122)
     elif options.verbose or options.info:
         print 'OK: no missing modules in image'
 
@@ -326,6 +323,17 @@ if __name__ == "__main__":
     descriptoragent         = objdescriptoragent.get_md5_descriptor_agent()
     descriptorimage         = objdescriptorimage.get_md5_descriptor_agent()
     if options.verbose or options.info:
+        print "--------------------------------------------"
+        if descriptoragent['fingerprint'] != descriptorimage['fingerprint']:
+            print "the fingerprint are different between the agent and the image"
+        else:
+            print "the fingerprint are the same between the agent and the image"
+        print "--------------------------------------------"
+        if descriptoragent['version'] != descriptorimage['version']:
+            print "the version are different between the agent and the image"
+        else:
+            print "the version are the same between the agent and the image"
+        print "--------------------------------------------"
         print objdescriptoragent.dir_agent_base
         print json.dumps(descriptoragent, indent = 4)
         print "--------------------------------------------"
@@ -370,6 +378,7 @@ if __name__ == "__main__":
                     for delfile in supp2:
                         os.remove(delfile)
             if options.info:
+                #info information sans replicator
                 sys.exit(5)
         except:
             boolinstalldirect = False
