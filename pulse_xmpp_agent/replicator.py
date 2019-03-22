@@ -242,9 +242,9 @@ def module_needed(agent_image, verbose = False):
     # create file __init.py si non exist
     boolfichier = False
     error  = False
-    if not os.path.isfile("__init__.py"):
+    if not os.path.isfile("img_agent/__init__.py"):
         boolfichier = True
-        open("__init__.py", "w").close()
+        open("img_agent/__init__.py", "w").close()
     list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py']
     for filename in list_script_python_for_update:
         try:
@@ -256,7 +256,7 @@ def module_needed(agent_image, verbose = False):
             pass
     if  boolfichier:
         try:
-            os.remove("__init__.py")
+            os.remove("img_agent/__init__.py")
         except:
             print "Error while deleting file __init__.py"
     if error:
