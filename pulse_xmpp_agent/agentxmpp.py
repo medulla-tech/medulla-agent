@@ -279,7 +279,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def version_agent(self):
         pathversion = os.path.join(self.pathagent, "agentversion")
         if os.path.isfile(pathversion):
-            self.versionagent = file_get_contents(pathversion).strip()
+            self.versionagent = file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
         else :
             self.versionagent = 0.0
         return self.versionagent
@@ -991,7 +991,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                                         "agentversion")),
                                                         self.boundjid.bare ))
         agentversion = os.path.join(self.pathagent, "agentversion")
-        versiondata = file_get_contents(os.path.join(self.img_agent, "agentversion")).strip()
+        versiondata = file_get_contents(os.path.join(self.img_agent, "agentversion")).replace("\n","").replace("\r","").strip()
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except:
