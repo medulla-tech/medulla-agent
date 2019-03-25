@@ -46,7 +46,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         if data['subaction'] == "update_me":
             # load version agent agentversion
             version = file_get_contents(os.path.join(
-                xmppobject.diragentbase, "agentversion"))
+                xmppobject.diragentbase, "agentversion")).replace("\n","").replace("\r","").strip()
             if 'descriptoragent' in data:
                 if 'program_agent' in data['descriptoragent'] and len(data['descriptoragent']['program_agent']) != 0:
                     logger.debug("Update program script in remote agent [%s]" % message['from'])
