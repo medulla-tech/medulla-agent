@@ -484,6 +484,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.error('Quit connection kiosk')
                 break
             if self.sock in rr:
+                try:
+                    clientsocket, client_address = self.sock.accept()
+                except Exception as e:
+                    logger.warning("\n%s"%(traceback.format_exc()))
+                    break
                 clientsocket, client_address = self.sock.accept()
                 if client_address[0] == "127.0.0.1":
                     client_handler = threading.Thread(
