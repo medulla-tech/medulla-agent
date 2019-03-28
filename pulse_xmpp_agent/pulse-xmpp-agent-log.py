@@ -156,19 +156,19 @@ class configuration:
             self.dbpasswd=Config.get('database', 'dbpasswd')
 
         if  Configlocal.has_option("database", "dbpoolrecycle"):
-            self.dbpoolrecycle=Configlocal.get('database', 'dbpoolrecycle')
+            self.dbpasswd=Configlocal.get('database', 'dbpoolrecycle')
         else:
-            self.dbpoolrecycle=Config.get('database', 'dbpoolrecycle')
+            self.dbpasswd=Config.get('database', 'dbpoolrecycle')
 
         if  Configlocal.has_option("database", "dbpoolsize"):
-            self.dbpoolsize=Configlocal.get('database', 'dbpoolsize')
+            self.dbpasswd=Configlocal.get('database', 'dbpoolsize')
         else:
-            self.dbpoolsize=Config.get('database', 'dbpoolsize')
+            self.dbpasswd=Config.get('database', 'dbpoolsize')
 
         if  Configlocal.has_option("database", "dbpooltimeout"):
-            self.dbpooltimeout=Configlocal.get('database', 'dbpooltimeout')
+            self.dbpasswd=Configlocal.get('database', 'dbpooltimeout')
         else:
-            self.dbpooltimeout=Config.get('database', 'dbpooltimeout')
+            self.dbpasswd=Config.get('database', 'dbpooltimeout')
 
 
         if  Configlocal.has_option("global", "log_level"):
