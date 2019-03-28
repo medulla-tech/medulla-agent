@@ -438,9 +438,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 except Exception as e:
                     break
                 if client_address[0] == "127.0.0.1":
-            client_handler = threading.Thread(
-                                                target=self.handle_client_connection,
-                                                        args=(clientsocket,)).start()
+                    client_handler = threading.Thread(
+                        target=self.handle_client_connection,
+                        args=(clientsocket,)).start()
                 else:
                     logging.info("Connection refused from : %s" % client_address)
                     clientsocket.close()
