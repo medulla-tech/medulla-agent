@@ -137,17 +137,17 @@ class configuration:
             self.dbpasswd=Config.get('database', 'dbpasswd')
 
         if  Config.has_option("database", "pool_recycle"):
-            self.dbpoolrecycle=Config.getint('database', 'pool_recycle')
+            self.dbpoolrecycle=Config.getint('database', 'dbpoolrecycle')
         else:
             self.dbpoolrecycle=5
 
         if  Config.has_option("database", "pool_size"):
-            self.dbpoolsize=Config.getint('database', 'pool_size')
+            self.dbpoolsize=Config.getint('database', 'dbpoolsize')
         else:
             self.dbpoolsize=60
 
         if  Config.has_option("database", "pool_timeout"):
-            self.dbpooltimeout=Config.getint('database', 'pool_timeout')
+            self.dbpooltimeout=Config.getint('database', 'dbpooltimeout')
         else:
             self.dbpooltimeout=30
 
