@@ -1496,7 +1496,7 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"waitting stop server kiosk")
     while not xmpp.quitserverkiosk:
         time.sleep(1)
-            logging.log(DEBUGPULSE,"bye bye Agent")
+        logging.log(DEBUGPULSE,"bye bye Agent")
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
