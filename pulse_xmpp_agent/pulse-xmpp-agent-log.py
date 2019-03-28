@@ -155,6 +155,21 @@ class configuration:
         else:
             self.dbpasswd=Config.get('database', 'dbpasswd')
 
+        if  Configlocal.has_option("database", "dbpoolrecycle"):
+            self.dbpasswd=Configlocal.get('database', 'dbpoolrecycle')
+        else:
+            self.dbpasswd=Config.get('database', 'dbpoolrecycle')
+
+        if  Configlocal.has_option("database", "dbpoolsize"):
+            self.dbpasswd=Configlocal.get('database', 'dbpoolsize')
+        else:
+            self.dbpasswd=Config.get('database', 'dbpoolsize')
+
+        if  Configlocal.has_option("database", "dbpooltimeout"):
+            self.dbpasswd=Configlocal.get('database', 'dbpooltimeout')
+        else:
+            self.dbpasswd=Config.get('database', 'dbpooltimeout')
+
 
         if  Configlocal.has_option("global", "log_level"):
             self.log_level=Configlocal.get('global', 'log_level')
@@ -227,7 +242,7 @@ if sys.version_info < (3, 0):
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
-    
+
 
 
 class MUCBot(sleekxmpp.ClientXMPP):
@@ -235,8 +250,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, conf.Jid, conf.Password)
         self.engine = None
         self.config = conf
-        self.dbpoolrecycle = 60
-        self.dbpoolsize = 5
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message)
@@ -245,8 +258,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                 self.config.dbpasswd,
                                                                 self.config.dbhost,
                                                                 self.config.dbname),
-                                    pool_recycle = self.dbpoolrecycle, 
-                                    pool_size = self.dbpoolsize
+                                    pool_recycle = self.config.dbpoolrecycle,
+                                    pool_size = self.config.dbpoolsize,
+                                    pool_timeout = self.config.dbpooltimeout
         )
         self.Session = sessionmaker(bind=self.engine)
 
