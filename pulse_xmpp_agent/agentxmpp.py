@@ -437,6 +437,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     clientsocket, client_address = self.sock.accept()
                 except Exception as e:
                     break
+
                 if client_address[0] == "127.0.0.1":
                     client_handler = threading.Thread(
                         target=self.handle_client_connection,
@@ -1479,19 +1480,19 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
 
 def terminateserver(xmpp):
-            #event for quit loop server tcpserver for kiosk
-            xmpp.eventkill.set()
-            xmpp.sock.close()
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.qin.put("quit")
-            xmpp.queue_read_event_from_command.put("quit")
-            logging.log(DEBUGPULSE,"wait 2s end thread event loop")
-            logging.log(DEBUGPULSE,"terminate manage data sharing")
-            if  xmpp.config.agenttype in ['relayserver']:
-                xmpp.managerQueue.shutdown()
-            time.sleep(2)
-            logging.log(DEBUGPULSE,"terminate scheduler")
-            xmpp.scheduler.quit()
+    #event for quit loop server tcpserver for kiosk
+    xmpp.eventkill.set()
+    xmpp.sock.close()
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+    logging.log(DEBUGPULSE,"wait 2s end thread event loop")
+    logging.log(DEBUGPULSE,"terminate manage data sharing")
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.managerQueue.shutdown()
+    time.sleep(2)
+    logging.log(DEBUGPULSE,"terminate scheduler")
+    xmpp.scheduler.quit()
     logging.log(DEBUGPULSE,"waitting stop server kiosk")
     while not xmpp.quitserverkiosk:
         time.sleep(1)
