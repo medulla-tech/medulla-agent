@@ -99,65 +99,65 @@ class Deploy(Base):
 class configuration:
     def __init__(self):
         Config = ConfigParser.ConfigParser()
-        Configlocal= ConfigParser.ConfigParser()
         Config.read("/etc/mmc/plugins/xmppmaster.ini")
-        Configlocal.read("/etc/mmc/plugins/xmppmaster.ini.local")
+        if os.path.exists("/etc/mmc/plugins/xmppmaster.ini.local"):
+            Config.read("/etc/mmc/plugins/xmppmaster.ini.local")
 
-        if  Configlocal.has_option("connection", "password"):
-            self.Password=Configlocal.get('connection', 'password')
-        else:
+        if  Config.has_option("connection", "password"):
             self.Password=Config.get('connection', 'password')
 
-        if  Configlocal.has_option("connection", "port"):
-            self.Port=Configlocal.get('connection', 'port')
-        else:
+        if  Config.has_option("connection", "port"):
             self.Port=Config.get('connection', 'port')
 
-        if  Configlocal.has_option("connection", "Server"):
-            self.Server=Configlocal.get('connection', 'Server')
-        else:
+        if  Config.has_option("connection", "Server"):
             self.Server=Config.get('connection', 'Server')
 
-        if  Configlocal.has_option("chat", "domain"):
-            self.Chatadress=Configlocal.get('chat', 'domain')
-        else:
+        if  Config.has_option("chat", "domain"):
             self.Chatadress=Config.get('chat', 'domain')
+
         self.Jid="log@%s/log"% self.Chatadress
         self.master="master@%s/MASTER"%self.Chatadress
 # database
-        if  Configlocal.has_option("database", "dbport"):
-            self.dbport=Configlocal.get('database', 'dbport')
-        else:
+        if  Config.has_option("database", "dbport"):
             self.dbport=Config.get('database', 'dbport')
 
-        if  Configlocal.has_option("database", "dbdriver"):
-            self.dbdriver=Configlocal.get('database', 'dbdriver')
-        else:
+        if  Config.has_option("database", "dbdriver"):
             self.dbdriver=Config.get('database', 'dbdriver')
 
-        if  Configlocal.has_option("database", "dbhost"):
-            self.dbhost=Configlocal.get('database', 'dbhost')
-        else:
+        if  Config.has_option("database", "dbhost"):
             self.dbhost=Config.get('database', 'dbhost')
 
-        if  Configlocal.has_option("database", "dbname"):
-            self.dbname=Configlocal.get('database', 'dbname')
-        else:
+        if  Config.has_option("database", "dbname"):
             self.dbname=Config.get('database', 'dbname')
 
-        if  Configlocal.has_option("database", "dbuser"):
-            self.dbuser=Configlocal.get('database', 'dbuser')
-        else:
+        if  Config.has_option("database", "dbuser"):
             self.dbuser=Config.get('database', 'dbuser')
 
-        if  Configlocal.has_option("database", "dbpasswd"):
-            self.dbpasswd=Configlocal.get('database', 'dbpasswd')
-        else:
+        if  Config.has_option("database", "dbpasswd"):
             self.dbpasswd=Config.get('database', 'dbpasswd')
 
+        if  Config.has_option("database", "pool_recycle"):
+            self.dbpoolrecycle=Config.getint('database', 'pool_recycle')
+        else:
+            self.dbpoolrecycle=5
 
-        if  Configlocal.has_option("global", "log_level"):
-            self.log_level=Configlocal.get('global', 'log_level')
+        if  Config.has_option("database", "pool_size"):
+            self.dbpoolsize=Config.getint('database', 'pool_size')
+        else:
+            self.dbpoolsize=60
+
+        if  Config.has_option("database", "pool_timeout"):
+            self.dbpooltimeout=Config.getint('database', 'pool_timeout')
+        else:
+            self.dbpooltimeout=30
+
+        if  Config.has_option("global", "log_level"):
+            self.log_level=Config.get('global', 'log_level')
+        else:
+            self.log_level=Config.get('global', 'log_level')
+
+        if  Config.has_option("global", "log_level"):
+            self.log_level=Config.get('global', 'log_level')
         else:
             self.log_level=Config.get('global', 'log_level')
 
@@ -170,7 +170,6 @@ class configuration:
             self.debug = logging.ERROR
         else:
             self.debug = 5
-
 
     def getRandomName(self, nb, pref=""):
         a="abcdefghijklnmopqrstuvwxyz"
@@ -227,7 +226,6 @@ if sys.version_info < (3, 0):
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
-    
 
 
 class MUCBot(sleekxmpp.ClientXMPP):
@@ -245,8 +243,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                 self.config.dbpasswd,
                                                                 self.config.dbhost,
                                                                 self.config.dbname),
-                                    pool_recycle = self.dbpoolrecycle, 
-                                    pool_size = self.dbpoolsize
+                                    pool_recycle = self.config.dbpoolrecycle,
+                                    pool_size = self.config.dbpoolsize,
+                                    pool_timeout = self.config.dbpooltimeout
         )
         self.Session = sessionmaker(bind=self.engine)
 
