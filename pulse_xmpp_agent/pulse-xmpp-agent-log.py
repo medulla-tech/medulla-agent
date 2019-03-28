@@ -233,8 +233,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, conf.Jid, conf.Password)
         self.engine = None
         self.config = conf
-        self.dbpoolrecycle = 60
-        self.dbpoolsize = 5
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message)
