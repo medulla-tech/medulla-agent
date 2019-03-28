@@ -1,4 +1,11 @@
-pulse-xmpp-agent 1.9.8 
+pulse-xmpp-agent 1.9.9
+======================
+* [FEATURE] Make use of external program to update agent
+* [BUGFIX]  Fix use of parameters in .ini.local files
+* [BUGFIX]  Use connection pool for connecting to database
+* [BUGFIX]  Fix reconnection of agent when connection is lost
+
+pulse-xmpp-agent 1.9.8
 ======================
 * [FEATURE] Push method (scp or rsync) can be configured in relay server
 * [BUGFIX]  Fix cleaning of deployments which have been aborted
