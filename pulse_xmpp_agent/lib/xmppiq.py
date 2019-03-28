@@ -45,6 +45,8 @@ from utils_psutil import sensors_battery,\
                          cpu_num,\
                          netstat,\
                          cputimes
+from lib.update_remote_agent import agentinfoversion
+
 DEBUGPULSE = 25
 logger = logging.getLogger()
 def callXmppFunctionIq(functionname,  *args, **kwargs):
@@ -213,6 +215,8 @@ class functionsynchroxmpp:
             result = decode_strconsole(ifconfig())
         elif data['data'] == "cpu_num":
             result = decode_strconsole(cpu_num())
+        elif data['data'] == "agentinfos":
+            result = decode_strconsole(agentinfoversion(xmppobject))
         elif data['data'] == "netstat":
             result = decode_strconsole(netstat())
             result = re.sub("[ ]{2,}", "@", result)
