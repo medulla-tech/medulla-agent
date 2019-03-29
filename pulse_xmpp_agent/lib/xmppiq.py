@@ -26,7 +26,13 @@
 import os, sys, platform
 import json
 import logging
-from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole, keypub
+from utils import   shellcommandtimeout, \
+                    file_put_contents, \
+                    file_get_contents, \
+                    decode_strconsole, \
+                    encode_strconsole, \
+                    keypub, \
+                    showlinelog
 from  agentconffile import  directoryconffile
 from shutil import copyfile
 import datetime
@@ -234,6 +240,10 @@ class functionsynchroxmpp:
         try:
             if  data['subaction'] == "cputimes":
                 func = getattr(sys.modules[__name__], data['subaction'])
+                result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
+                return result
+            elif data['subaction'] == "litlog":
+                func = getattr(sys.modules[__name__], "showlinelog")
                 result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
                 return result
             else:
