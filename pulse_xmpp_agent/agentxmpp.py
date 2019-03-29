@@ -1388,6 +1388,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
         #persistance info machine
         self.infomain = dataobj
+        self.dataplugininstall = {"plu" : dataobj['plugin'],
+                                  "schedule" : dataobj['pluginscheduled'] }
         return dataobj
 
     def loadPluginschedulerList(self):
