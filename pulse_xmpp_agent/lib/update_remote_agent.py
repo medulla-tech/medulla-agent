@@ -23,8 +23,10 @@
 import hashlib
 import os
 import logging
-from utils import file_get_contents
+from utils import file_get_contents, simplecommand
 import json
+
+logger = logging.getLogger()
 
 class Update_Remote_Agent:
     """
@@ -69,7 +71,7 @@ class Update_Remote_Agent:
                             "lib_agent" : {},
                             "script_agent" : {},
                             "fingerprint" : ""}
-        self.directory["version"] = file_get_contents( os.path.join(self.dir_agent_base,'agentversion'))
+        self.directory["version"] = file_get_contents( os.path.join(self.dir_agent_base,'agentversion')).replace("\n","").replace("\r","").strip()
         self.directory["version_agent"] = hashlib.md5(self.directory["version"]).hexdigest()
         listmd5.append(self.directory["version_agent"])
         list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py']
@@ -86,3 +88,50 @@ class Update_Remote_Agent:
             listmd5.append(self.directory["script_agent"][fichiername])
         listmd5.sort()
         self.directory["fingerprint"]=hashlib.md5(json.dumps(listmd5)).hexdigest()
+
+def agentinfoversion(xmppobject):
+    """
+        return information on agent.
+    """
+    #creation Repport on agent
+    cmd = "python %s -i -v"%(os.path.join(xmppobject.pathagent, "replicator.py"))
+    logger.debug("cmd : %s"%(cmd))
+    result = simplecommand(cmd)
+    resultobj={}
+    rr = [ x.rstrip() for x in result['result'] ]
+    val= ['testmodule', 'pathagent', 'agentdescriptor', 'pathimg', 'imgdescriptor', 'action', 'other1', 'other2']
+    boottrap = 0
+    for t in rr:
+        if t.startswith('--') or t.startswith('__'):
+            continue
+        if t.endswith('pulse_xmpp_agent'):
+            boottrap = boottrap + 1
+        if t.startswith('{'):
+            boottrap = boottrap + 1
+        if t.startswith('}'):
+            resultobj[val[boottrap]].append(t.strip())
+            boottrap = boottrap + 1
+            continue
+
+        if not val[boottrap] in resultobj:
+            resultobj[val[boottrap]] = []
+        resultobj[val[boottrap]].append(t.strip())
+
+    testmodule = resultobj['testmodule'][0]
+    information = "".join(resultobj['testmodule'][1:])
+    agentdescriptor = "".join(resultobj['agentdescriptor'])
+    imgdescriptor   = "".join(resultobj['imgdescriptor'])
+    pathimg = resultobj['pathimg'][0]
+    pathagent = resultobj['pathagent'][0]
+    actiontxt = ",".join(resultobj['action'])
+    res={ 'testmodule' : testmodule,
+          'information' : information,
+          'pathagent' : pathagent,
+          'agentdescriptor' : agentdescriptor,
+          'pathimg' : pathimg,
+          'imgdescriptor' : imgdescriptor,
+          'actiontxt' : actiontxt,
+          "conf": xmppobject.config.updating,
+          "plugins" : xmppobject.dataplugininstall}
+    l = json.dumps(res, indent=4)
+    return l
