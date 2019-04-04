@@ -36,10 +36,24 @@
 
     shared folders, and corresponding machines.
 """
+
 import requests, json
 from lxml import etree
 import urllib
 import socket
+
+from utils import Program
+import logging
+import traceback
+
+import time
+import os
+import sys
+#if sys.platform.startswith('win'):
+    #import win32api
+    #import win32con
+
+logger = logging.getLogger()
 
 """ class use for xmpp on each server syncthing in local """
 
@@ -49,6 +63,7 @@ class syncthing():
                     port = 8384, 
                     configfile = "/var/lib/syncthing/.config/syncthing/config.xml",
                     idapirest = None):
+        self.readingconf = 0
         self.urlweb = urlweb
         self.port = port
         self.urlbase = "%s:%s/"%(self.urlweb,port )
@@ -59,33 +74,34 @@ class syncthing():
             self.idapirest = self.tree.xpath('/configuration/gui/apikey')[0].text
         else:
             self.idapirest = idapirest
+
         self.headers = { 'X-API-KEY': "%s"% self.idapirest }
         self.reload_config()
         # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
 
-
     def reload_config(self):
         self.config = self.get_config() # content all config
-        self.folders = self.config['folders']
-        self.devices = self.config['devices']
-        self.version = self.config['version']
-        self.guiinformation = self.config['gui']
-        try:
-            self.ignoredFolders = self.config['ignoredFolders']
-        except:
-            self.ignoredFolders = []
-        try:
-            self.ignoredDevices = self.config['ignoredDevice']
-        except:
-            self.ignoredDevices = []
+        if len(self.config) != 0:
+            self.folders = self.config['folders']
+            self.devices = self.config['devices']
+            self.version = self.config['version']
+            self.guiinformation = self.config['gui']
+            try:
+                self.ignoredFolders = self.config['ignoredFolders']
+            except:
+                self.ignoredFolders = []
+            try:
+                self.ignoredDevices = self.config['ignoredDevice']
+            except:
+                self.ignoredDevices = []
 
-        self.options  = self.config['options']
+            self.options  = self.config['options']
 
-        hostname = socket.gethostname()
-        for device in self.devices:
-            if device['name'] == hostname:
-                self.device_id = device['deviceID']
-                break
+            hostname = socket.gethostname()
+            for device in self.devices:
+                if device['name'] == hostname:
+                    self.device_id = device['deviceID']
+                    break
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, 'w') as outfile:
@@ -96,8 +112,20 @@ class syncthing():
             Returns the current configuration.
             dict python
         """
-        re = self.__getAPIREST__("/system/config")
-        return json.loads(re.content)
+        try:
+            re = self.__getAPIREST__("/system/config")
+            res = json.loads(re.content)
+            self.readingconf = 0
+            return res
+        except Exception as e:
+            logger.error("impossible for read config syncthing Rest")
+            if self.readingconf == 0:
+                self.readingconf = self.readingconf + 1
+                nbwaitting = 4
+                logger.info("try again after %s seconds of waiting."%nbwaitting)
+                time.sleep(3)
+                return self.get_config()
+        return {}
 
 
     def post_config(self):
@@ -144,17 +172,16 @@ class syncthing():
         tablekey = ["folders", "gui", "devices", "options", "version", "ignoredDevices", "summary"]
         tabeventtype =["ConfigSaved", "DeviceConnected", "DeviceDisconnected", "DeviceDiscovered", "DevicePaused", "DeviceRejected", "DeviceResumed", "DownloadProgress", "FolderCompletion", "FolderErrors", "FolderRejected", "Folder Scan Progress", "FolderSummary", "ItemFinished", "ItemStarted", "Listen Addresses Changed", "LocalChangeDetected", "LocalIndexUpdated", "Login Attempt"," RemoteChangeDetected", "Remote Download Progress", "RemoteIndexUpdated", "Starting", "StartupComplete", "StateChanged"]
         re = [eventdata for eventdata in datas_event if eventdata['type'] in type]
-        print len(re)
         if datasection is not None:
             if isinstance(datasection, basestring):
                 datasection =[datasection]
             for section in datasection:
                 if section not in tablekey:
-                    print "Warning la section %s n'existe pas dans la structure Event"%section
+                    logger.warning("session  %s no exist in Event struct"%section)
 
             for typename in type:
                 if typename not in tabeventtype:
-                    print "Warning la type event %s n'existe pas dans la structure Event"%typename
+                    logger.warning("event type %s no exist; Event struct missing"%typename)
 
             kk = Diff(tablekey, datasection)
             for e in re:
@@ -205,7 +232,7 @@ class syncthing():
             Post with empty to body to remove all recent errors.
         """
         re = self.__postAPIREST__("/system/error/clear")
-        print re
+        
 
     def post_error(self, error_text):
         """
@@ -218,7 +245,6 @@ class syncthing():
         posturl = "%s%s"%(self.urlbaserest, "/system/error")
         header = self.headers.copy()
         header['Content-Type']="text/plain"
-        print header
         requests.post(posturl, headers = header, data = error_text )
 
 
@@ -261,7 +287,8 @@ class syncthing():
             Post with empty body to immediately restart Syncthing.
         """
         re = self.__postAPIREST__("/system/restart")
-        print re
+        logger.info("%s"%re)
+        return re
 
     def post_resume(self, deviceid=None):
         """
@@ -402,7 +429,7 @@ class syncthing():
             params['page'] = page
         if perpage != None:
             params['perpage'] = perpage
-        
+
         re = self.__getAPIREST__("/db/need", paramsurl = params)
         return json.loads(re.content)
 
@@ -431,7 +458,8 @@ class syncthing():
         if pathfile != None:
             params['file']=pathfile
         re = self.__postAPIREST__("/db/prio", paramsurl = params )
-        print re
+        logger.info("%s"%re)
+        return re
 
 
     def post_db_scan(self, folder = None, sub = None, next = None):
@@ -457,7 +485,8 @@ class syncthing():
         if next != None and isinstance(next , ( int ) ):
             params['next'] = next
         re = self.__postAPIREST__("/db/scan", paramsurl = params )
-        print re
+        logger.info("%s"%re)
+        return re
 
     def post_db_ignores(self, folder, python_ignores ):
         """
@@ -468,7 +497,8 @@ class syncthing():
         """
         params = { "folder" : folder}
         re = self.__postAPIREST__("/db/ignores", dictpython = python_ignores, paramsurl = params )
-        print re
+        logger.info("%s"%re)
+        return re
 
 
     def get_debug(self):
@@ -513,7 +543,7 @@ class syncthing():
                         "running": "v0.10.27+5-g36c93b7" }
         """
         re = self.__getAPIREST__("/system/upgrade")
-        
+
         return json.loads(re.content)
 
     def get_status(self):
@@ -521,7 +551,7 @@ class syncthing():
             Returns information about current system status and resource usage.
         """
         re = self.__getAPIREST__("/system/status")
-        
+
         return json.loads(re.content)
 
 
@@ -533,7 +563,6 @@ class syncthing():
             }
         """
         re = self.__getAPIREST__("/system/ping")
-        
         return json.loads(re.content)
 
 
@@ -602,7 +631,9 @@ class syncthing():
         """ 
         affiche json format
         """
-        print  self.json_string(pythondict)
+        rest = self.json_string(pythondict)
+        logger.info("%s"%rest)
+        return rest
 
     def nb_folders(self):
         """
@@ -657,11 +688,15 @@ class syncthing():
 
     #private function
     def __getAPIREST__(self, cmd, paramsurl = {}):
-        geturl = "%s%s"%(self.urlbaserest, cmd)
-        if len(paramsurl) != 0:
-            string_param_url = urllib.urlencode(paramsurl)
-            geturl = geturl+"?"+string_param_url
-        rest = requests.get(geturl,headers=self.headers)
+        try:
+            geturl = "%s%s"%(self.urlbaserest, cmd)
+            if len(paramsurl) != 0:
+                string_param_url = urllib.urlencode(paramsurl)
+                geturl = geturl+"?"+string_param_url
+            rest = requests.get(geturl,headers=self.headers)
+        except Exception as e:
+            logger.error("syncthingapirest.py __getAPIREST__ verify syncthing running and ready")
+            return {}
         return rest
 
     def __postAPIREST__(self, cmd, dictpython = {}, paramsurl = {}, RestCurl=False):
@@ -692,13 +727,13 @@ class syncthing():
         if len(dictpython) == 0:
             if RestCurl:
                 cmddate  = """command curl curl -X POST --header "X-API-Key: %s"  %s"""%(self.headers['X-API-KEY'], posturl)
-                print cmddate
+                logger.info("%s"%cmddate)
             r = requests.post(posturl, headers = self.headers)
             return analyseresult(r)
         else:
             if RestCurl:
                 cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython)) 
-                print cmddate
+                logger.info("%s"%cmddate)
             r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython))
             return analyseresult(r)
 
@@ -768,5 +803,39 @@ class syncthing():
                 "type": ""
             }
         }
+
+class syncthingprogram(Program):
+
+    def  __init__(self):
+        Program.__init__(self)
+
+    def start_syncthing(self):
+        if sys.platform.startswith('linux'):
+            os.system("systemctl restart syncthing@syncthing.service")
+            time.sleep(4)
+        elif sys.platform.startswith('win'):
+            self.stop_syncthing()
+            cmd = ['%s\\Pulse\\bin\\syncthing.exe'%os.environ['programfiles'],
+                    "-home=%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles'],
+                    "-logfile=%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles'],
+                    '-no-console',
+                    '-no-browser']
+            #win32api.WinExec(cmd)
+            self.startprogram(cmd, "syncthing")
+        elif sys.platform.startswith('darwin'):
+            pass
+
+    def stop_syncthing(self):
+        if "syncthing" in self.programlist:
+            del self.programlist["syncthing"]
+
+        if sys.platform.startswith('win'):
+            os.system("taskkill /f /im syncthing.exe")
+        elif sys.platform.startswith('linux'):
+            #os.system("kill -9  `ps -aux|grep syncthing | grep -v grep | awk -F ' ' '{print $2}'`")
+            os.system("systemctl stop syncthing@syncthing.service")
+        elif sys.platform.startswith('darwin'):
+            pass
+
 if __name__ == '__main__':
     pass

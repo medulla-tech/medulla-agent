@@ -1606,3 +1606,32 @@ def showlinelog(nbline = 200):
         if os.path.isfile(na):
             obj = simplecommandstr("cat %s | tail -n %s"%(na, nbline))
     return obj['result']
+
+
+
+class Program:
+    def __init__(self):
+        self.programlist = {}
+
+    def startprogram(self, pathprogram, uniqexecutablename):
+        #['/bin/vikings', '-input', 'eggs.txt', '-output', 'spam spam.txt', '-cmd', "echo '$MONEY'"]
+        #p = subprocess.Popen(args) # Success!
+        #flag windows -> https://docs.microsoft.com/fr-fr/windows/desktop/ProcThread/process-creation-flags
+
+        CREATE_NEW_PROCESS_GROUP=0x00000200
+        DETACHED_PROCESS=0x00000008
+
+        progrm = subprocess.Popen(pathprogram,
+                                  shell=False,
+                                  creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+                                  close_fds=True)
+        self.programlist[uniqexecutablename]=progrm
+
+    def stopprogram(self, uniqexecutablename):
+        subprocess.Popen.kill(self.programlist[uniqexecutablename])
+        del self.programlist[uniqexecutablename]
+
+    def stopallprogram(self):
+        for prog in self.programlist:
+            subprocess.Popen.kill(self.programlist[prog])
+        self.programlist.clear()

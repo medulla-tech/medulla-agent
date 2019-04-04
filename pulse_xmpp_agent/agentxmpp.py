@@ -23,6 +23,7 @@
 import sys
 import os
 import logging
+import traceback
 import sleekxmpp
 import platform
 import base64
@@ -58,9 +59,9 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
-from lib.syncthingapirest import syncthing
+from lib.syncthingapirest import syncthing, syncthingprogram
 
-import traceback
+
 from optparse import OptionParser
 
 from multiprocessing import Queue
@@ -194,21 +195,39 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.banterminate = { } # used for clear id session banned
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
-        ################################### initialise syncthing###################################
-        # todo
-        # different initialization for window, mac os
-        # and add a syncthing section in the configuration
-        # fichier de conf dans fichier de configuration.
-        self.syncthing = syncthing(configfile="/var/lib/syncthing/.config/syncthing/config.xml" )
-        if logger.level == 10:
-            self.syncthing.save_conf_to_file("/tmp/confsyncting.txt")
-        else:
-            try:
-                os.remove("/tmp/confsyncting.txt")
-            except :
-                pass
-        logging.debug("device local syncthing : [%s]"%self.syncthing.get_id_device_local())
-        ################################### syncthing ###################################
+        ################################### initialise syncthing ###################################
+        if logger.level <= 10:
+            console = False
+            browser = True
+        self.Ctrlsyncthingprogram = syncthingprogram( console = console, browser = browser )
+        self.Ctrlsyncthingprogram.start_syncthing()
+
+        # if self.config.agenttype in ['relayserver']:
+
+        if sys.platform.startswith('linux'):
+            fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            tmpfile = "/tmp/confsyncting.txt"
+        elif sys.platform.startswith('win'):
+            fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
+            tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
+        elif sys.platform.startswith('darwing'):
+            pass
+        try:
+            self.syncthing = syncthing(configfile = fichierconfsyncthing)
+            if logger.level <= 10:
+                self.syncthing.save_conf_to_file(tmpfile)
+            else:
+                try:
+                    os.remove(tmpfile)
+                except :
+                    pass
+            logging.debug("device local syncthing : [%s]"%self.syncthing.get_id_device_local())
+        except Exception as e:
+            logging.error("syncthing initialisation : %s" % str(e))
+            logger.error("\n%s"%(traceback.format_exc()))
+            logging.error("functioning of the degraded agent. impossible to use syncthing")
+        #self.syncthing = syncthing(configfile = fichierconfsyncthing)
+        ################################### syncthing ###################################  
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -1577,6 +1596,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
+    #xmpp.Ctrlsyncthingprogram.stop_syncthing()
     xmpp.eventkill.set()
     xmpp.sock.close()
     if  xmpp.config.agenttype in ['relayserver']:
