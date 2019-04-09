@@ -31,6 +31,7 @@ class fifodeploy:
         #creation de la fifo en fonction des fichiers trouver dans le repertoire fifo
         self.FIFOdeploy = [] # name des file fifo
         self.SESSIONdeploy = {} # liste des sessions deploy mis en file
+        self.listmachine = []
         self.dirsavedatafifo = os.path.abspath(os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
@@ -45,9 +46,17 @@ class fifodeploy:
 
     def _InitSessiondeploy(self):
         self.SESSIONdeploy = {}
+        self.listmachine=[]
         for fifodata in self.FIFOdeploy:
             data = self.readfifo(fifodata)
             self.SESSIONdeploy[data["sessionid"]] = fifodata
+            self.listmachine.append(data['data']['jidmachine'])
+
+    def _listmachine(self):
+        self.listmachine=[]
+        for fifodata in self.FIFOdeploy:
+            data = self.readfifo(fifodata)
+            self.listmachine.append(data['data']['jidmachine'])
 
     def loadfifo(self):
         self.FIFOdeploy = [
@@ -63,6 +72,9 @@ class fifodeploy:
     def getcount(self):
         return len(self.FIFOdeploy)
 
+    def getlistmachine(self):
+        return self.listmachine
+
     def setfifo(self, datajson, priority = None):
         newfilefifo = str(time.time())+'.fifo'
         pathnamefile = os.path.join(self.dirsavedatafifo, newfilefifo)
@@ -75,10 +87,10 @@ class fifodeploy:
             self.FIFOdeploy.append(newfilefifo)
             logging.getLogger().debug("set fifo low file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
         self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
-
+        self.listmachine.append(data['data']['jidmachine'])
 
     def getfifo(self):
-        """ 
+        """
         fifo shift
             unstacking at the top of the list
             return descriptor déployement
@@ -97,6 +109,7 @@ class fifodeploy:
             os.remove(pathnamefile)
             try:
                 del self.SESSIONdeploy[data['sessionid']]
+                del self.listmachine[data['data']['jidmachine']]
             except Exception as  e:
                 logging.getLogger().error("del session in FIFO : %s"%str(e))
             return data

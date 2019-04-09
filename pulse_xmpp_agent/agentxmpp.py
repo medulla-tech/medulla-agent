@@ -162,7 +162,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
             self.session.resources = set(list(self.managefifo.SESSIONdeploy))
-            self.levelcharge = self.managefifo.getcount()
+            self.levelcharge = {}
+            self.levelcharge['machinelist'] = self.managefifo.getlistmachine()
+            self.levelcharge['charge'] = len(self.levelcharge['machinelist'])
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
@@ -540,7 +542,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.session.currentresource.add(data['sessionid'])
             del data['action']
             del data['sessionid']
-            self.levelcharge = self.levelcharge - 1
+            #self.levelcharge = self.levelcharge - 1
+            self.checklevelcharge(ressource = -1)
             datasend['data'] = data
             self.send_message(  mto = self.boundjid.bare,
                                 mbody = json.dumps(datasend),
@@ -585,11 +588,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         else:
             pass
 
+    ########################################################
+    ################## manage levelcharge ##################
     def checklevelcharge(self, ressource = 0):
-        self.levelcharge = self.levelcharge + ressource
-        if self.levelcharge < 0 :
-            self.levelcharge = 0
-        return self.levelcharge
+        self.levelcharge['charge'] = self.levelcharge['charge'] + ressource
+        if self.levelcharge['charge'] < 0 :
+            self.levelcharge['charge'] = 0
+        return self.levelcharge['charge']
+
+    def getlevelmachinelist(self, jidmachine = ""):
+        return self.levelcharge['machinelist']
+
+    def addmachineinlevelmachinelist(self, jidmachine):
+        self.levelcharge['machinelist'].append(jidmachine)
+        self.levelcharge['charge'] = len(self.levelcharge['machinelist'])
+
+    def delmachineinlevelmachinelist(self, jidmachine):
+        for index, elt in enumerate(self.levelcharge['machinelist'][:]):
+            if elt == jidmachine:
+                del self.levelcharge['machinelist'][index]
+                #self.checklevelcharge(ressource = -1)
+        self.levelcharge['charge'] = len(self.levelcharge['machinelist'])
+    ########################################################
 
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
