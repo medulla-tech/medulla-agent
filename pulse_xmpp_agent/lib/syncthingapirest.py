@@ -806,8 +806,10 @@ class syncthing():
 
 class syncthingprogram(Program):
 
-    def  __init__(self):
+    def  __init__(self, console=False, browser=False):
         Program.__init__(self)
+        self.console = console
+        self.browser = browser
 
     def start_syncthing(self):
         if sys.platform.startswith('linux'):
@@ -816,10 +818,12 @@ class syncthingprogram(Program):
         elif sys.platform.startswith('win'):
             self.stop_syncthing()
             cmd = ['%s\\Pulse\\bin\\syncthing.exe'%os.environ['programfiles'],
-                    "-home=%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles'],
-                    "-logfile=%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles'],
-                    '-no-console',
-                    '-no-browser']
+                   "-home=%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles'],
+                   "-logfile=%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']]
+            if not self.console:
+                cmd.append('-no-console')
+            if not self.browser:
+                cmd.append('-no-browser')
             #win32api.WinExec(cmd)
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('darwin'):
@@ -836,6 +840,7 @@ class syncthingprogram(Program):
             os.system("systemctl stop syncthing@syncthing.service")
         elif sys.platform.startswith('darwin'):
             pass
+
 
 if __name__ == '__main__':
     pass
