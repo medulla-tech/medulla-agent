@@ -87,7 +87,7 @@ class fifodeploy:
             self.FIFOdeploy.append(newfilefifo)
             logging.getLogger().debug("set fifo low file %s  fifo %s"%(newfilefifo,self.FIFOdeploy))
         self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
-        self.listmachine.append(data['data']['jidmachine'])
+        self.listmachine.append(datajson['data']['jidmachine'])
 
     def getfifo(self):
         """
