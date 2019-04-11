@@ -105,6 +105,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        self.sessionaccumulator = {}
         laps_time_networkMonitor = self.config.detectiontime
         logging.warning("laps time network changing %s"%laps_time_networkMonitor)
         self.quitserverkiosk = False
@@ -159,12 +160,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.session = session(self.config.agenttype)
 
         # initialise charge relay server
+        self.machinerelayserver = []
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
-            self.session.resources = set(list(self.managefifo.SESSIONdeploy))
+            #self.session.resources = set(list(self.managefifo.SESSIONdeploy))
             self.levelcharge = {}
-            self.levelcharge['machinelist'] = self.managefifo.getlistmachine()
-            self.levelcharge['charge'] = len(self.levelcharge['machinelist'])
+            self.levelcharge['machinelist'] = []
+            self.levelcharge['charge'] = 0
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
@@ -523,31 +525,34 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.quitserverkiosk = True
         logging.debug("Stopping Kiosk")
 
-
     def reloaddeploy(self):
+        if self.managefifo.getcount() != 0:
+            logger.debug("FIFO DEPLOY %s level charge %s"\
+                " concurent deploy max %s"%(self.managefifo.getcount(),
+                                            self.levelcharge['charge'],
+                                            self.config.concurrentdeployments))
         for sessionidban in self.ban_deploy_sessionid_list:
             self.managefifo.delsessionfifo(sessionidban)
-            self.session.currentresource.discard(sessionidban)
-        while (self.managefifo.getcount() != 0 and\
-            len(self.session.currentresource) < self.config.concurrentdeployments):
 
-            data = self.managefifo.getfifo()
-            logging.debug("GET fifo %s"%self.session.resource)
-
-            datasend = { "action": data['action'],
-                        "sessionid" : data['sessionid'],
-                        "ret" : 0,
-                        "base64" : False
+        if (self.managefifo.getcount() != 0 and\
+            self.levelcharge['charge'] < self.config.concurrentdeployments):
+            nbresource = self.config.concurrentdeployments - self.levelcharge['charge']
+            logger.debug("Possible Slot deploy %s"%nbresource)
+            for Slot in range(nbresource):
+                if self.managefifo.getcount() != 0:
+                    data = self.managefifo.getfifo()
+                    datasend = { "action": data['action'],
+                                "sessionid" : data['sessionid'],
+                                "ret" : 0,
+                                "base64" : False
                     }
-            self.session.currentresource.add(data['sessionid'])
-            del data['action']
-            del data['sessionid']
-            #self.levelcharge = self.levelcharge - 1
-            self.checklevelcharge(ressource = -1)
-            datasend['data'] = data
-            self.send_message(  mto = self.boundjid.bare,
-                                mbody = json.dumps(datasend),
-                                mtype = 'chat')
+                    del data['action']
+                    del data['sessionid']
+                    datasend['data'] = data
+                    self.send_message(  mto = self.boundjid.bare,
+                                        mbody = json.dumps(datasend),
+                                        mtype = 'chat')
+
 
     def _handle_custom_iq(self, iq):
         if iq['type'] == 'get':
