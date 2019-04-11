@@ -604,10 +604,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.levelcharge['charge'] = len(self.levelcharge['machinelist'])
 
     def delmachineinlevelmachinelist(self, jidmachine):
-        for index, elt in enumerate(self.levelcharge['machinelist'][:]):
-            if elt == jidmachine:
-                del self.levelcharge['machinelist'][index]
-                #self.checklevelcharge(ressource = -1)
+        machinetmp=[]
+        for elt in self.levelcharge['machinelist']:
+            if elt != jidmachine:
+                machinetmp.append(elt)
+        self.levelcharge['machinelist'] = machinetmp
         self.levelcharge['charge'] = len(self.levelcharge['machinelist'])
     ########################################################
 
