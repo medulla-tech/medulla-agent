@@ -106,6 +106,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.back_to_deploy = {}
         self.config = conf
         self.sessionaccumulator = {}
+        self.charge_apparente_cluster = {}
         laps_time_networkMonitor = self.config.detectiontime
         logging.warning("laps time network changing %s"%laps_time_networkMonitor)
         self.quitserverkiosk = False
