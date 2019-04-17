@@ -41,7 +41,9 @@ class fifodeploy:
         logging.getLogger().debug("Manager fifo : %s" % self.dirsavedatafifo)
         # load les sessions fifos
         # parcoure le repertoire fifo, et charge les fifo dans FIFOdeploy
-        self.loadfifo()
+        #self.loadfifo() rejout les fifo  commente line ci apres.
+        # supprime les fifo au redémarage
+        self.cleardirfifo()
 
     def _InitSessiondeploy(self):
         self.SESSIONdeploy = {}
@@ -59,6 +61,20 @@ class fifodeploy:
         self.FIFOdeploy.sort()
         self._InitSessiondeploy()
         return self.SESSIONdeploy
+
+    def cleardirfifo(self):
+        self.FIFOdeploy = [
+            os.path.basename(x) for x in glob.glob(
+                os.path.join(
+                    self.dirsavedatafifo,
+                    "*")) if (
+                os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
+        for fifodata in self.FIFOdeploy:
+            pathnamefile = os.path.join(self.dirsavedatafifo, fifodata)
+            if os.path.isfile(pathnamefile):
+                os.remove(pathnamefile)
+                logging.getLogger().debug("file %s in Manager fifo is cleanned" % (pathnamefile))
+        self.FIFOdeploy = []
 
     def getcount(self):
         return len(self.FIFOdeploy)
