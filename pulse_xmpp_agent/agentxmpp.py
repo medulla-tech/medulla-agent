@@ -105,8 +105,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        # totalise les sessions persistance de 10 secondes
         self.sessionaccumulator = {}
         self.charge_apparente_cluster = {}
+
         laps_time_networkMonitor = self.config.detectiontime
         logging.warning("laps time network changing %s"%laps_time_networkMonitor)
         self.quitserverkiosk = False
@@ -161,7 +163,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.session = session(self.config.agenttype)
 
         # initialise charge relay server
-        self.machinerelayserver = []
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
             #self.session.resources = set(list(self.managefifo.SESSIONdeploy))
@@ -527,30 +528,84 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.debug("Stopping Kiosk")
 
     def reloaddeploy(self):
+        for sessionidban in self.ban_deploy_sessionid_list:
+            self.managefifo.delsessionfifo(sessionidban)
+
+        list_session_terminate_fifo = self.managefifo.checking_deploy_slot_outdoor()
+
+        for sessionid in list_session_terminate_fifo:
+            # on supprime cette session des fifo
+            # le deploiement est treminée pour cette session.
+            self.managefifo.delsessionfifo(sessionid )
+            logging.warning("stop deploy session %s "\
+                "(deployment slot has passed)"%sessionid)
+            self.xmpplog('<span style="font-weight: bold;color : red;">'\
+                'STOP DEPLOY ON ERROR : fifo '\
+                    'deployment slot has passed(sessionid %s)</span>'%(sessionid),
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "",
+                        who = self.boundjid.bare,
+                        how = "",
+                        why = "",
+                        module = "Deployment | Download | Transfert | Notify | Error",
+                        date = None ,
+                        fromuser = self.boundjid.bare,
+                        touser = "")
+            self.xmpplog('DEPLOYMENT TERMINATE',
+                         type = 'deploy',
+                         sessionname = sessionid,
+                         priority = -1,
+                         action = "",
+                         who = self.boundjid.bare,
+                         how = "",
+                         why = "",
+                         module = "Deployment | Error | Terminate | Notify",
+                         date = None ,
+                         fromuser = self.boundjid.bare,
+                         touser = "")
+        if len(list_session_terminate_fifo) > 0:
+            dataerreur = { "action" : "resultcluster",
+                               "data" : { "msg" : "error plugin : plugin"
+                               },
+                               'sessionid' : list_session_terminate_fifo[0],
+                               'ret' : 255,
+                               'base64' : False
+            }
+            ###send "envoi message pour signaler ressource level"
+            msg = { "from" : self.boundjid.bare,
+                    "to" : self.boundjid.bare, 
+                    "type" : "chat" }
+            call_plugin("cluster",
+                        self,
+                        "cluster",
+                        list_session_terminate_fifo[0],
+                        {"subaction" : "refresh"},
+                        msg,
+                        dataerreur)
+
         if self.managefifo.getcount() != 0:
             logger.debug("FIFO DEPLOY %s level charge %s"\
                 " concurent deploy max %s"%(self.managefifo.getcount(),
                                             self.levelcharge['charge'],
                                             self.config.concurrentdeployments))
-        for sessionidban in self.ban_deploy_sessionid_list:
-            self.managefifo.delsessionfifo(sessionidban)
 
-        if (self.managefifo.getcount() != 0 and\
-            self.levelcharge['charge'] < self.config.concurrentdeployments):
-            nbresource = self.config.concurrentdeployments - self.levelcharge['charge']
-            logger.debug("Possible Slot deploy %s"%nbresource)
-            for Slot in range(nbresource):
-                if self.managefifo.getcount() != 0:
-                    data = self.managefifo.getfifo()
-                    datasend = { "action": data['action'],
+            if self.levelcharge['charge'] < self.config.concurrentdeployments:
+                nbresource = self.config.concurrentdeployments - self.levelcharge['charge']
+                logger.debug("Possible Slot deploy %s"%nbresource)
+                for Slot in range(nbresource):
+                    if self.managefifo.getcount() != 0:
+                        data = self.managefifo.getfifo()
+                        datasend = { "action": data['action'],
                                 "sessionid" : data['sessionid'],
                                 "ret" : 0,
                                 "base64" : False
-                    }
-                    del data['action']
-                    del data['sessionid']
-                    datasend['data'] = data
-                    self.send_message(  mto = self.boundjid.bare,
+                            }
+                        del data['action']
+                        del data['sessionid']
+                        datasend['data'] = data
+                        self.send_message(  mto = self.boundjid.bare,
                                         mbody = json.dumps(datasend),
                                         mtype = 'chat')
 
