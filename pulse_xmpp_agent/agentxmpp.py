@@ -1072,8 +1072,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" %\
-                    e.iq['error']['text'])
+            if e.iq['error']['code'] == "409":
+                logging.info("Could not register account: User already exists")
+            else:
+                logging.error("Could not register account: %s" %\
+                        e.iq['error']['text'])
         except IqTimeout:
             logging.error("No response from server.")
             logger.error("\n%s"%(traceback.format_exc()))
