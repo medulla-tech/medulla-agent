@@ -22,6 +22,8 @@ guacamole_baseurl = @@GUACAMOLE_BASEURL@@
 # public_ip = 123.123.123.123
 # use  parameter moderelayserver for VM ARS. "static or dynamic", if dynamic then "relay server reserved for deploie only"
 # moderelayserver = static
+# Enable geolocalisation for relayservers. Set to False to disable geolocalisation
+# geolocalisation = True
 
 [plugin]
 # Plugins configs to be loaded
