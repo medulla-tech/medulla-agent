@@ -52,7 +52,6 @@ from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 
 import random
-import sleep
 
 logger = logging.getLogger()
 
@@ -189,7 +188,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         waittingrestart = random.randint(10, 20)
         # TODO : Replace print by log
         # print "Restart Machine jid %s after %s secondes" % (jid, waittingrestart)
-        sleep(waittingrestart)
+        time.sleep(waittingrestart)
         # TODO : Replace print by log
         # print "Restart Machine jid %s fait" % jid
         # Check if restartAgent is not called from a plugin or a lib.
