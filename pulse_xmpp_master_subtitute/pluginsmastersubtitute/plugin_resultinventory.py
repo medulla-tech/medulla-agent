@@ -37,7 +37,8 @@ def XmppUpdateInventoried(jid, machine):
             if computer != None:
                 uuid = 'UUID' + str(computer.id)
                 logger.debug("** Update uuid %s for machine %s " % (uuid, machine['jid']))
-                if machine['uuid_inventorymachine'] != "":
+                if machine['uuid_inventorymachine'] != "" and \
+                            machine['uuid_inventorymachine'] != None:
                     logger.debug("** Update in Organization_ad uuid %s to %s " % (machine['uuid_inventorymachine'],
                                                                                     uuid))
                     XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
