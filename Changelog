@@ -1,9 +1,14 @@
-=======
 pulse-xmpp-agent 2.0.0
 ======================
-* [FEATURE] Use scp and rsync instead of http in Pull mode
+* [FEATURE] Allow scp and rsync transfers in Pull mode
 * [FEATURE] Peer deployment
+* [FEATURE] Allow install of plugin if a specific version of client is met
+* [FEATURE] Remove all deployments on restart of relay agent
 * [BUGFIX]  Reconnect to XMPP server on lost connection
+* [BUGFIX]  Check if all necessary python modules are installed before loading agent image
+* [BUGFIX]  Use database connections pool to reduce load on database
+* [BUGFIX]  Fix the release of resources after a deployment
+* [BUGFIX]  Fix generation of random deployment session names
 
 pulse-xmpp-agent 1.9.8
 ======================
