@@ -57,7 +57,7 @@ def read_conf_remote_update(objectxmpp):
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file :" \
             "\n\t%s missing" \
-        "\neg conf:\n[global]\n" \
+        "\neg conf:\n[parameters]\n" \
             "diragentbase = /var/lib/pulse2/xmpp_baseremoteagent/\n" \
                 "autoupdate = True"%(plugin['NAME'], pathfileconf))
         logger.warning("default value for diragentbase " \
@@ -70,12 +70,12 @@ def read_conf_remote_update(objectxmpp):
         Config.read(pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-        if Config.has_option("global", "diragentbase"):
-            objectxmpp.diragentbase = Config.get('global', 'diragentbase')
+        if Config.has_option("parameters", "diragentbase"):
+            objectxmpp.diragentbase = Config.get('parameters', 'diragentbase')
         else:
             objectxmpp.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
-        if Config.has_option("global", "autoupdate"):
-            objectxmpp.autoupdate = Config.getboolean('global', 'autoupdate')
+        if Config.has_option("parameters", "autoupdate"):
+            objectxmpp.autoupdate = Config.getboolean('parameters', 'autoupdate')
         else:
             objectxmpp.autoupdate = True
     objectxmpp.senddescriptormd5 = types.MethodType(senddescriptormd5, objectxmpp)

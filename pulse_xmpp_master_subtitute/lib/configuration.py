@@ -48,7 +48,7 @@ class SingletonDecorator:
 
 @SingletonDecorator
 class confParameter:
-    
+
     #dbport = None
     #dbsslenable = False
 
@@ -97,7 +97,7 @@ class confParameter:
         if Config.has_option("connection", "server"):
             self.Server = ipfromdns(Config.get('connection', 'server'))
 
-        self.passwordconnection = "ahsy94heQErA12"
+        self.passwordconnection = "secret"
         if Config.has_option("connection", "password"):
             self.passwordconnection = Config.get('connection', 'password')
 
@@ -147,7 +147,7 @@ class confParameter:
             self.dbpoolsize = Config.getint('main', 'dbpoolsize')
         #PLUGIN LIST
         # activate connection to base module
-        self.plugins_list = ["xmpp","glpi", "kiosk"]
+        self.plugins_list = ["xmpp", "glpi", "kiosk"]
         if Config.has_option("global", "activate_plugin"):
             listplugsql = Config.get('global', 'activate_plugin')
             self.plugins_list = [x.strip().lower() for x in listplugsql.split(",") if x.strip() != ""]
@@ -191,11 +191,11 @@ class confParameter:
         if confiobject.has_option("kioskdatabase", "kiosk_dbname"):
             self.kiosk_dbname = confiobject.get('kioskdatabase', 'kiosk_dbname')
 
-        self.kiosk_dbuser = "root"
+        self.kiosk_dbuser = "mmc"
         if confiobject.has_option("kioskdatabase", "kiosk_dbuser"):
             self.kiosk_dbuser = confiobject.get('kioskdatabase', 'kiosk_dbuser')
 
-        self.kiosk_dbpasswd = "siveo"
+        self.kiosk_dbpasswd = "mmc"
         if confiobject.has_option("kioskdatabase", "kiosk_dbpasswd"):
             self.kiosk_dbpasswd = confiobject.get('kioskdatabase', 'kiosk_dbpasswd')
 
@@ -212,22 +212,18 @@ class confParameter:
         if confiobject.has_option("xmppdatabase", "xmpp_dbname"):
             self.xmpp_dbname = confiobject.get('xmppdatabase', 'xmpp_dbname')
 
-        self.xmpp_dbuser = "root"
+        self.xmpp_dbuser = "mmc"
         if confiobject.has_option("xmppdatabase", "xmpp_dbuser"):
             self.xmpp_dbuser = confiobject.get('xmppdatabase', 'xmpp_dbuser')
 
-        self.xmpp_dbpasswd = "siveo"
+        self.xmpp_dbpasswd = "mmc"
         if confiobject.has_option("xmppdatabase", "xmpp_dbpasswd"):
             self.xmpp_dbpasswd = confiobject.get('xmppdatabase', 'xmpp_dbpasswd')
 
     def readConfglpi(self, confiobject):
         self.inventory_url = "http://localhost:9999/"
-        if confiobject.has_option("glpi", "urlglpi"):
-            self.inventory_url = confiobject.get('glpi', 'urlglpi')
-
-        self.glpi_computer_uri = "http://pulse01/glpi//front/computer.form.php?id="
-        if confiobject.has_option("glpi", "glpi_computer_uri"):
-            self.glpi_computer_uri = confiobject.get('glpi', 'glpi_computer_uri')
+        if confiobject.has_option("glpi", "inventory_server_url"):
+            self.inventory_url = confiobject.get('glpi', 'inventory_server_url')
 
         #Configuration sql
         #configuration glpi
@@ -243,11 +239,11 @@ class confParameter:
         if confiobject.has_option("glpidatabase", "glpi_dbname"):
             self.glpi_dbname = confiobject.get('glpidatabase', 'glpi_dbname')
 
-        self.glpi_dbuser = "glpi"
+        self.glpi_dbuser = "mmc"
         if confiobject.has_option("glpidatabase", "glpi_dbuser"):
             self.glpi_dbuser = confiobject.get('glpidatabase', 'glpi_dbuser')
 
-        self.glpi_dbpasswd = "siveo"
+        self.glpi_dbpasswd = "mmc"
         if confiobject.has_option("glpidatabase", "glpi_dbpasswd"):
             self.glpi_dbpasswd = confiobject.get('glpidatabase', 'glpi_dbpasswd')
 
@@ -257,7 +253,7 @@ class confParameter:
             # put the GLPI default values for actives profiles
             self.activeProfiles = ['Super-Admin', 'Admin', 'Supervisor', 'Technician']
 
-        self.ordered = 1 
+        self.ordered = 1
         if confiobject.has_option("computer_list", "ordered"):
             self.ordered = confiobject.getint("computer_list", "ordered")
 
