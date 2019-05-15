@@ -28,7 +28,9 @@ Requires:       python-croniter
 Pulse XMPP Agent
 
 %files
-%_prefix/lib/systemd/system/*
+%_prefix/lib/systemd/system/pulse-xmpp-agent-log.service  
+%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service  
+%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_sysconfdir/pulse-xmpp-agent
 %_var/lib/pulse2/clients/config/*
 %_var/log/pulse
@@ -48,6 +50,8 @@ Pulse master agent substitute
 %files -n pulse-xmpp-master-substitute
 %{python2_sitelib}/pulse_xmpp_master_substitute/
 %_prefix/pulse-xmpp-agent-substitute/
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 
 #--------------------------------------------------------------------
 
@@ -83,3 +87,6 @@ cp -r pulse_xmpp_master_substitute/pluginsmastersubtitute/ %buildroot%{python2_s
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%_prefix/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/* %buildroot%_prefix/pulse-xmpp-agent-substitute/
+
+cp pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system/
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
