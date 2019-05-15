@@ -52,7 +52,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     ask_key_master_public(objectxmpp)
 
 
-def ask_key_master_public(objectxmpp):
+def ask_key_master_public(self, objectxmpp):
     """
         ask public key on master
     """
@@ -60,7 +60,7 @@ def ask_key_master_public(objectxmpp):
         "action": "ask_key_public_master",
         "data": {},
         'ret': 0,
-        'sessionid': name_random(5, "ask_key_public_master")}
+        'sessionid': setRandomName(5, "ask_key_public_master")}
     self.send_message(mto = self.agentmaster,
                         mbody=json.dumps(datasend),
                         mtype='chat')
