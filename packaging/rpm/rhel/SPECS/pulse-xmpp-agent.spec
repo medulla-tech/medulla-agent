@@ -47,6 +47,7 @@ Pulse master agent substitute
 
 %files -n pulse-xmpp-master-substitute
 %{python2_sitelib}/pulse_xmpp_master_substitute/
+%_prefix/pulse-xmpp-agent-substitute/
 
 #--------------------------------------------------------------------
 
@@ -80,3 +81,5 @@ cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_
 cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/pluginsmastersubtitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+mkdir -p %buildroot%_prefix/pulse-xmpp-agent-substitute/
+cp pulse_xmpp_master_substitute/config/* %buildroot%_prefix/pulse-xmpp-agent-substitute/
