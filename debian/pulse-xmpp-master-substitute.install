@@ -1,5 +1,4 @@
 usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
-usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute-*.egg-info/
 usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/script
 usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/agentversion
 usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/bin
