@@ -37,6 +37,19 @@ Pulse XMPP Agent
 
 #--------------------------------------------------------------------
 
+%package -n     pulse-xmpp-master-substitute
+Summary:        Pulse 2 common files
+Group:          System/Servers
+
+
+%description -n pulse-xmpp-master-substitute
+Pulse master agent substitute
+
+%files -n pulse-xmpp-master-substitute
+%{python2_sitelib}/pulse_xmpp_master_substitute/
+
+#--------------------------------------------------------------------
+
 %prep
 %setup -q
 
@@ -60,3 +73,10 @@ chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini.in %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini %buildroot%_var/lib/pulse2/clients/config/
+
+cp pulse_xmpp_master_substitute/agentmastersubstitute.py %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/pluginsmastersubtitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
