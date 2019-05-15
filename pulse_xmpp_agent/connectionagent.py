@@ -176,6 +176,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                  data['data'][0][3])
                 #write alternative configuration
                 alternativeclusterconnection(conffilename("cluster"),data['data'])
+                confaccountclear={
+                                    "action": "resultcleanconfaccount",
+                                    "sessionid" : getRandomName(6, "delconf"),
+                                    "ret" : 0,
+                                    "base64" : False,
+                                    "data":  { 'useraccount' : str(self.boundjid.user)}}
+                self.send_message(mto =  msg['from'],
+                                  mbody = json.dumps(confaccountclear),
+                                  mtype = 'chat')
                 #go to next ARS
                 nextalternativeclusterconnection(conffilename("cluster"))
             except:
