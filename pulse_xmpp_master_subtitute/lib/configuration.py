@@ -248,9 +248,10 @@ class confParameter:
             self.glpi_dbpasswd = confiobject.get('glpidatabase', 'glpi_dbpasswd')
 
         try:
-            self.activeProfiles = confiobject.get('main', 'active_profiles').split(' ')
-        except NoOptionError:
+            self.activeProfiles = confiobject.get('glpi', 'active_profiles').split(' ')
+        except:
             # put the GLPI default values for actives profiles
+            logging.getLogger().Warning("Apply default parameters %s",self.activeProfiles)
             self.activeProfiles = ['Super-Admin', 'Admin', 'Supervisor', 'Technician']
 
         self.ordered = 1
