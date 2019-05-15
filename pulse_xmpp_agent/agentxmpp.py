@@ -521,7 +521,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             }
             ###send "envoi message pour signaler ressource level"
             msg = { "from" : self.boundjid.bare,
-                    "to" : self.boundjid.bare, 
+                    "to" : self.boundjid.bare,
                     "type" : "chat" }
             call_plugin("cluster",
                         self,
@@ -1507,6 +1507,17 @@ def tgconf(optstypemachine):
     return tg
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidagent"), "%s"%os.getpid())
+    if sys.platform.startswith('win'):
+        try:
+            result = subprocess.check_output(["icacls",
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidagent"),
+                                    "/setowner",
+                                    "pulse",
+                                    "/t"], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            pass
+
     global restart, signalint
     if platform.system()=='Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
