@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pluginsmastersubtitute/plugin_showregistration.py
+# file pluginsmastersubstitute/plugin_showregistration.py
 
 import base64
 import json
@@ -37,7 +37,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "showregistration", "TYPE" : "subtitute"}
+plugin = {"VERSION" : "1.0", "NAME" : "showregistration", "TYPE" : "substitute"}
 
 
 

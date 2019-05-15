@@ -73,7 +73,7 @@ def getComputerByMac( mac):
 #### faire singeton
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self):#jid, password, room, nick):
-        self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubtitute"))
+        self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubstitute"))
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter()
         logging.log(DEBUGPULSE, "start Master sub (%s)" %(self.config.jidmastersubstitute))

@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pulse_xmpp_master_subtitute/pluginsmastersubtitute/plugin_autoupdate.py
+# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_autoupdate.py
 
 import base64
 import json
@@ -37,7 +37,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "autoupdate", "TYPE" : "subtitute"}
+plugin = {"VERSION" : "1.0", "NAME" : "autoupdate", "TYPE" : "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")

@@ -2,7 +2,7 @@
 #
 # (c) 2016 siveo, http://www.siveo.net
 # plugin register machine dans presence table xmpp.
-# file pulse_xmpp_master_subtitute/pluginsmastersubtitute/plugin_registeryagent.py
+# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_registeryagent.py
 #
 import zlib
 import base64
@@ -24,7 +24,7 @@ import re
 from distutils.version import LooseVersion, StrictVersion
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "registeryagent", "TYPE": "subtitute"}
+plugin = {"VERSION": "1.0", "NAME": "registeryagent", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

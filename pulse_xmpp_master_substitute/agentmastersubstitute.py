@@ -55,7 +55,7 @@ from bin.agent import MUCBot
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "bin"))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmastersubtitute"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmastersubstitute"))
 
 logger = logging.getLogger()
 

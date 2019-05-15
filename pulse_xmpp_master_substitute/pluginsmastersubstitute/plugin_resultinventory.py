@@ -13,7 +13,7 @@ from lib.plugins.glpi import Glpi
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "resultinventory", "TYPE": "subtitute"}
+plugin = {"VERSION": "1.0", "NAME": "resultinventory", "TYPE": "substitute"}
 
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
