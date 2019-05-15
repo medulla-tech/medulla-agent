@@ -175,7 +175,7 @@ if __name__ == '__main__':
                 dest="consoledebug", default = False,
                   help="console debug")
 
-    optp.add_option("-f", "--configfile",action="store_true",
+    optp.add_option("-f", "--configfile",
                 dest="namefileconfig", default = namefileconfigdefault,
                   help = "configuration file")
 
