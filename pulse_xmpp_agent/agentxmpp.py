@@ -105,8 +105,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.sessionaccumulator = {}
         self.charge_apparente_cluster = {}
 
-        laps_time_networkMonitor = self.config.detectiontime
-        logging.warning("laps time network changing %s"%laps_time_networkMonitor)
+        self.laps_time_networkMonitor = self.config.detectiontime
+        logging.warning("laps time network changing %s"%self.laps_time_networkMonitor)
         self.quitserverkiosk = False
         ###################Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
@@ -212,17 +212,34 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
         self.md5reseau = refreshfingerprint()
-        self.schedule('schedulerfunction', 10 , self.schedulerfunction, repeat=True)
-        self.schedule('update plugin', laps_time_update_plugin, self.update_plugin, repeat=True)
+        self.schedule('schedulerfunction',
+                      10 ,
+                      self.schedulerfunction,
+                      repeat=True)
+        self.schedule('update plugin',
+                      laps_time_update_plugin,
+                      self.update_plugin,
+                      repeat=True)
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
-            self.schedule('check network', laps_time_networkMonitor, self.networkMonitor, repeat=True)
+            self.schedule('check network',
+                          self.laps_time_networkMonitor,
+                          self.networkMonitor,
+                          repeat=True)
         else:
             logging.warning("Network Changing disable")
-        self.schedule('check AGENT INSTALL', 350, self.checkinstallagent, repeat=True)
-        self.schedule('manage session', laps_time_handlemanagesession, self.handlemanagesession, repeat=True)
+        self.schedule('check AGENT INSTALL', 350,
+                      self.checkinstallagent,
+                      repeat=True)
+        self.schedule('manage session',
+                      laps_time_handlemanagesession,
+                      self.handlemanagesession,
+                      repeat=True)
         if self.config.agenttype in ['relayserver']:
-            self.schedule('reloaddeploy', 15, self.reloaddeploy, repeat=True)
+            self.schedule('reloaddeploy',
+                          15,
+                          self.reloaddeploy,
+                          repeat=True)
 
             # ######################Update remote agent#########################
             self.diragentbase = os.path.join('/', 'var', 'lib', 'pulse2', 'xmpp_baseremoteagent')
@@ -237,21 +254,32 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if self.config.inventory_interval < 3600:
                 self.config.inventory_interval = 3600
                 logging.warning("chang minimun time cyclic inventory : 3600")
-                logging.warning("we make sure that the time for the inventories is greater than or equal to 1 hour.")
-            self.schedule('event inventory', self.config.inventory_interval, self.handleinventory, repeat=True)
+                logging.warning("we make sure that the time for "\
+                    " the inventories is greater than or equal to 1 hour.")
+            self.schedule('event inventory',
+                          self.config.inventory_interval,
+                          self.handleinventory,
+                          repeat=True)
         else:
             logging.warning("not enable cyclic inventory")
 
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if  not self.config.agenttype in ['relayserver']:
-            self.schedule('session reload', 15, self.reloadsesssion, repeat=False)
+            self.schedule('session reload',
+                          15,
+                          self.reloadsesssion,
+                          repeat=False)
 
-        self.schedule('reprise_evenement', 10, self.handlereprise_evenement, repeat=True)
+        self.schedule('reprise_evenement',
+                      10,
+                      self.handlereprise_evenement,
+                      repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message, threaded=True)
-        self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
+        self.add_event_handler("signalsessioneventrestart",
+                               self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
 
@@ -1052,7 +1080,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def networkMonitor(self):
         try:
-            logging.log(DEBUGPULSE,"network monitor time 180s %s!" % self.boundjid.user)
+            logging.log(DEBUGPULSE,"network monitor time  "\
+                "%ss %s!" % (self.laps_time_networkMonitor,
+                             self.boundjid.user))
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
             if self.md5reseau != md5ctl or os.path.isfile(force_reconfiguration):
