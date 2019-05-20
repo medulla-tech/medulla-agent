@@ -251,7 +251,7 @@ class confParameter:
             self.activeProfiles = confiobject.get('glpi', 'active_profiles').split(' ')
         except:
             # put the GLPI default values for actives profiles
-            logging.getLogger().Warning("Apply default parameters %s",self.activeProfiles)
+            logging.getLogger().warn("Apply default parameters for GLPI active profiles")
             self.activeProfiles = ['Super-Admin', 'Admin', 'Supervisor', 'Technician']
 
         self.ordered = 1
