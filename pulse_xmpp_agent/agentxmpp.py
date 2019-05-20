@@ -173,6 +173,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentsiveo = jid.JID(self.config.jidagentsiveo)
 
         self.agentmaster = jid.JID("master@pulse")
+
+        if self.config.sub_inventory == "":
+            self.sub_inventory = self.agentmaster
+        else:
+            self.sub_inventory = jid.JID(self.config.sub_inventory)
+
+        if self.config.sub_registration == "":
+            self.sub_registration = self.agentmaster
+        else:
+            self.sub_registration = jid.JID(self.config.sub_registration)
+
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files de session dont le deploiement a echoue ne sont pas efface.
