@@ -126,8 +126,8 @@ class confParameter:
             self.debug = Config.get('global', 'log_level')
 
         self.logfile = "/var/log/mmc/master_inv.log"
-        if Config.has_option("global", "log_file"):
-            self.logfile = Config.get('global', 'log_file')
+        if Config.has_option("global", "logfile"):
+            self.logfile = Config.get('global', 'logfile')
 
         ################################################################
         # list des noms des plugins start executer au demarage.
