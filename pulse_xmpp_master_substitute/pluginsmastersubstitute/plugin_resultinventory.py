@@ -58,6 +58,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logging.getLogger().debug("=====================================================")
         logging.getLogger().debug(plugin)
         logging.getLogger().debug("=====================================================")
+        logger.debug("Reveived inventory from %s in substitut inventory" % (msg['from']))
         try:
             url = xmppobject.config.inventory_url
         except:
