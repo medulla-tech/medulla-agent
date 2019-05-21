@@ -13,7 +13,7 @@ from lib.plugins.glpi import Glpi
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "resultinventory", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "resultinventory", "TYPE": "substitute"}
 
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
@@ -32,7 +32,7 @@ def XmppUpdateInventoried(jid, machine):
         logging.getLogger().debug("listMacAdressforMachine   %s" % results)
         uuid = ''
         for t in results:
-            logger.debug("TRAITEMENT POUR MAC ADRESS")
+            logger.debug("Processing mac address")
             computer = getComputerByMac(t)
             if computer != None:
                 uuid = 'UUID' + str(computer.id)
@@ -58,7 +58,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logging.getLogger().debug("=====================================================")
         logging.getLogger().debug(plugin)
         logging.getLogger().debug("=====================================================")
-        logger.debug("Reveived inventory from %s in substitut inventory" % (msg['from']))
+        logger.info("Reveived inventory from %s in inventory substitute agent" % (msg['from']))
         try:
             url = xmppobject.config.inventory_url
         except:
@@ -111,7 +111,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         except:
             reginventory = False
         # send inventory to inventory server
-        
+
         XmppMasterDatabase().setlogxmpp("inject inventory to Glpi",
                                         "Master",
                                         "",
