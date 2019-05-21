@@ -316,7 +316,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
             pluginfunction = ['plugin_autoupdate', 
                               'pulgin_loadpluginlistversion', 
-                              'plugin_loadpluginschedulerlistversion', 
                               'plugin_loadpluginschedulerlistversion',
                               'plugin_showregistration']
 
@@ -326,8 +325,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         if function_plugin == 'plugin_showregistration':
                             if logger.level == logging.DEBUG:
                                 getattr(xmppobject, function_plugin)(msg, data)
-                    else:
-                        getattr(xmppobject, function_plugin)(msg, data)
+                        else:
+                            getattr(xmppobject, function_plugin)(msg, data)
                 except:
                     logger.error("\n%s"%(traceback.format_exc()))
 
