@@ -102,6 +102,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        #definition path directory plugin
+        namelibplugins = "pluginsmachine"
+        if self.config.agenttype in ['relayserver']:
+            namelibplugins = "pluginsrelay"
+        self.modulepath = os.path.abspath(\
+                os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                             namelibplugins))
         # totalise les sessions persistance de 10 secondes
         self.sessionaccumulator = {}
         self.charge_apparente_cluster = {}

@@ -367,14 +367,43 @@ def md5(fname):
     return hash.hexdigest()
 
 
-def load_plugin(name):
-    mod = __import__("plugin_%s" % name)
-    return mod
-
+def loadModule(filename):
+    if filename == '':
+        raise RuntimeError, 'Empty filename cannot be loaded'
+    searchPath, file = os.path.split(filename)
+    if not searchPath in sys.path:
+        sys.path.append(searchPath)
+        sys.path.append(os.path.normpath(searchPath+"/../"))
+    moduleName, ext = os.path.splitext(file)
+    fp, pathName, description = imp.find_module(moduleName, [searchPath,])
+    try:
+        module = imp.load_module(moduleName, fp, pathName, description)
+    finally:
+        if fp:
+            fp.close()
+    return module
 
 def call_plugin(name, *args, **kwargs):
-    pluginaction = load_plugin(name)
+    nameplugin = os.path.join(args[0].modulepath, "plugin_%s"%args[1])
+    #add compteur appel plugins
+    count = 0
+    try:
+        count = getattr(args[0], "num_call%s"%args[1])
+    except AttributeError:
+        count = 0
+        setattr(args[0], "num_call%s"%args[1], count)
+    pluginaction = loadModule(nameplugin)
     pluginaction.action(*args, **kwargs)
+    setattr(args[0], "num_call%s"%args[1], count +1)
+
+#def load_plugin(name):
+    #mod = __import__("plugin_%s" % name)
+    #return mod
+
+
+#def call_plugin(name, *args, **kwargs):
+    #pluginaction = load_plugin(name)
+    #pluginaction.action(*args, **kwargs)
 
 
 def getshortenedmacaddress():
