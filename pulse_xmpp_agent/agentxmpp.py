@@ -96,6 +96,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
+        laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
@@ -328,6 +329,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'CustomXEP Handler',
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
+        self.schedule('execcmdfile',
+                      laps_time_action_extern, 
+                      self.execcmdfile, 
+                      repeat=True)
+
+    def execcmdfile(self):
+        """
+           lit fichier avec demande de commande
+        """
+        fileextern = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cmdexterne")
+        if os.path.isfile(fileextern):
+            aa = file_get_contents(fileextern).strip()
+            logging.info("cmd externe : %s " %aa)
+            if aa.startswith('inventory'):
+                logging.info("send inventory")
+                self.handleinventory()
+            os.remove(fileextern)
 
     def version_agent(self):
         pathversion = os.path.join(self.pathagent, "agentversion")
