@@ -6,9 +6,10 @@ usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/lib
 usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/pluginsmastersubstitute
 usr/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
-/etc/pulse-xmpp-agent-substitute/agent_master_substitute_inv.ini  
-/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini  
-/etc/pulse-xmpp-agent-substitute/autoupdate.ini  
-/etc/pulse-xmpp-agent-substitute/loadpluginlistversion.ini  
-/etc/pulse-xmpp-agent-substitute/loadpluginschedulerlistversion.ini  
+/etc/pulse-xmpp-agent-substitute/agent_master_substitute_inv.ini
+/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini
+/etc/pulse-xmpp-agent-substitute/autoupdate.ini
+/etc/pulse-xmpp-agent-substitute/loadpluginlistversion.ini
+/etc/pulse-xmpp-agent-substitute/loadpluginschedulerlistversion.ini
 /etc/pulse-xmpp-agent-substitute/showregistration.ini
+/etc/pulse-xmpp-agent-substitute/logsrotation.ini
