@@ -22,30 +22,13 @@
 import sys
 import os
 import logging
-import platform
-import base64
-import json
-import time
-import threading
-import sleekxmpp
-from sleekxmpp.xmlstream import handler, matcher
-from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp import jid
-import subprocess
+from sleekxmpp.exceptions import IqError
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns###, Setdirectorytempinfo
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.utils import DEBUGPULSE, ipfromdns
+from lib.logcolor import add_coloring_to_emit_ansi
 
 import traceback
 from optparse import OptionParser
-from multiprocessing import Queue
-from multiprocessing.managers import SyncManager
-import psutil
-import signal
-from sqlalchemy import Column, String, Integer, DateTime, Text, create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-import imp
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
