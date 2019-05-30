@@ -22,10 +22,12 @@ guacamole_baseurl = @@GUACAMOLE_BASEURL@@
 # public_ip = 123.123.123.123
 # use  parameter moderelayserver for VM ARS. "static or dynamic", if dynamic then "relay server reserved for deploie only"
 # moderelayserver = static
+# Enable geolocalisation for relayservers. Set to False to disable geolocalisation
+# geolocalisation = True
 
 [plugin]
 # Plugins configs to be loaded
-pluginlist =
+pluginlist = manage_scheduler
 
 [connection]
 # The server and port below allow the agent to connect to the XMPP server
@@ -46,12 +48,6 @@ password = @@CHATROOM_PASSWORD@@
 [chat]
 # Domain used for chat messages
 domain = @@CHAT_DOMAIN@@
-
-[browserfile]
-# Parameters used for file-transfer between the agents and Pulse.
-# By default they are set to /tmp for Linux and macOS and %TEMP% for Windows
-# rootfilesystem = 
-# defaultdir = 
 
 # Define a specific jid for the agent. Optional
 # [jid_01]

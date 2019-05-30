@@ -21,11 +21,21 @@
 # MA 02110-1301, USA.
 
 from optparse import OptionParser
-import os, sys
+import os, sys, subprocess
 
-from lib.utils import testagentconf, networkchanged, confchanged, refreshfingerprintconf, refreshfingerprint
+from lib.utils import testagentconf, networkchanged, confchanged, refreshfingerprintconf, refreshfingerprint, file_put_contents
 
 if __name__ == '__main__':
+    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidlauncher"), "%s"%os.getpid())
+    if sys.platform.startswith('win'):
+        try:
+            result = subprocess.check_output(["icacls",
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidlauncher"),
+                                    "/setowner",
+                                    "pulse",
+                                    "/t"], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            pass
     optp = OptionParser()
     optp.add_option("-t", "--type",
                 dest="typemachine", default=False,

@@ -33,4 +33,16 @@ override_dh_auto_install:
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/agentxmpp.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py
 	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
-
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp pulse_xmpp_master_substitute/agentmastersubstitute.py $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp pulse_xmpp_master_substitute/agentversion $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/bin/ $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/lib/  $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/script/ $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent-substitute/
+	cp pulse_xmpp_master_substitute/config/*.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent-substitute/
+	cp -fr pulse_xmpp_master_substitute/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
+	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
+	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
+	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py

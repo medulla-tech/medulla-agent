@@ -1,9 +1,14 @@
-pulse-xmpp-agent 1.9.9
+pulse-xmpp-agent 2.0.0
 ======================
-* [FEATURE] Make use of external program to update agent
-* [BUGFIX]  Fix use of parameters in .ini.local files
-* [BUGFIX]  Use connection pool for connecting to database
-* [BUGFIX]  Fix reconnection of agent when connection is lost
+* [FEATURE] Allow scp and rsync transfers in Pull mode
+* [FEATURE] Peer deployment
+* [FEATURE] Allow install of plugin if a specific version of client is met
+* [FEATURE] Remove all deployments on restart of relay agent
+* [BUGFIX]  Reconnect to XMPP server on lost connection
+* [BUGFIX]  Check if all necessary python modules are installed before loading agent image
+* [BUGFIX]  Use database connections pool to reduce load on database
+* [BUGFIX]  Fix the release of resources after a deployment
+* [BUGFIX]  Fix generation of random deployment session names
 
 pulse-xmpp-agent 1.9.8
 ======================
@@ -14,6 +19,7 @@ pulse-xmpp-agent 1.9.8
 * [BUGFIX]  Fix decoding of command string
 * [BUGFIX]  Fix management of sessions
 * [BUGFIX]  Fix alternative connection when a server of the cluster goes down
+* [BUGFIX]  Make use of an external program for generating the filetree
 
 pulse-xmpp-agent 1.9.7
 ======================
