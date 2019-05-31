@@ -42,6 +42,7 @@ import socket
 import psutil
 import time
 from datetime import datetime
+import imp
 
 logger = logging.getLogger()
 
@@ -367,14 +368,43 @@ def md5(fname):
     return hash.hexdigest()
 
 
-def load_plugin(name):
-    mod = __import__("plugin_%s" % name)
-    return mod
-
+def loadModule(filename):
+    if filename == '':
+        raise RuntimeError, 'Empty filename cannot be loaded'
+    searchPath, file = os.path.split(filename)
+    if not searchPath in sys.path:
+        sys.path.append(searchPath)
+        sys.path.append(os.path.normpath(searchPath+"/../"))
+    moduleName, ext = os.path.splitext(file)
+    fp, pathName, description = imp.find_module(moduleName, [searchPath,])
+    try:
+        module = imp.load_module(moduleName, fp, pathName, description)
+    finally:
+        if fp:
+            fp.close()
+    return module
 
 def call_plugin(name, *args, **kwargs):
-    pluginaction = load_plugin(name)
+    nameplugin = os.path.join(args[0].modulepath, "plugin_%s"%args[1])
+    #add compteur appel plugins
+    count = 0
+    try:
+        count = getattr(args[0], "num_call%s"%args[1])
+    except AttributeError:
+        count = 0
+        setattr(args[0], "num_call%s"%args[1], count)
+    pluginaction = loadModule(nameplugin)
     pluginaction.action(*args, **kwargs)
+    setattr(args[0], "num_call%s"%args[1], count +1)
+
+#def load_plugin(name):
+    #mod = __import__("plugin_%s" % name)
+    #return mod
+
+
+#def call_plugin(name, *args, **kwargs):
+    #pluginaction = load_plugin(name)
+    #pluginaction.action(*args, **kwargs)
 
 
 def getshortenedmacaddress():
@@ -1558,10 +1588,10 @@ def keypub():
             obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""')
         return file_get_contents("/root/.ssh/id_rsa.pub")
     elif sys.platform.startswith('win'):
-        pathkey = os.path.join(os.environ['ProgramFiles'], "Pulse", ".ssh")
+        pathkey = os.path.join("C:/", "Users", "pulseuser", ".ssh")
         if not os.path.isfile(os.path.join(pathkey , "id_rsa")):
-            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join(os.environ['ProgramFiles'], "Pulse", ".ssh", "id_rsa"))
-        return file_get_contents(os.path.join(os.environ['ProgramFiles'], "Pulse", ".ssh", "id_rsa.pub"))
+            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join("C:/", "Users", "pulseuser", ".ssh", "id_rsa"))
+        return file_get_contents(os.path.join("C:/", "Users", "pulseuser", ".ssh", "id_rsa.pub"))
     elif sys.platform.startswith('darwin'):
         if not os.path.isfile("/var/root/.ssh/id_rsa"):
             obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /var/root/.ssh/id_rsa -q -N ""')

@@ -1,6 +1,7 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2017 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -18,36 +19,26 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file /pluginsmastersubtitute/plugin_resultenablemmcmodul.py
+#
+# file pluginsmaster/plugin_resultguacamoleconf.py
 
-import base64
-import json
-import sys, os
-import logging
-import platform
-from lib.utils import file_get_contents, getRandomName
 import traceback
-from sleekxmpp import jid
-
+import sys
+import logging
+from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
-DEBUGPULSEPLUGIN = 25
 
-# this plugin calling to starting agent
+plugin = {"VERSION": "1.0", "NAME": "resultguacamoleconf", "TYPE": "substitute"}
 
-plugin = { "VERSION" : "1.0", "NAME" : "resultenablemmcmodul", "TYPE" : "subtitute" }
 
-def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
+def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
-    # send demande module mmc actif sur master
-    xmppobject.listmodulemmc = data
+    try:
+        XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], data['connection'])
+    except Exception, e:
+        if 'msg' in data:
+            logger.error("recv error from %s : %s\n"%(msg['from'],data['msg']))
+        logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))
 
-def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
-        sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0, 
-             "base64" : False,
-             "sessionid" : getRandomName(4,sessionid)}

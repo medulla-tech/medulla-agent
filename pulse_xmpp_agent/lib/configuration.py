@@ -185,13 +185,13 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
-        if Config.has_option('subtitute', 'inventory'):
-            self.sub_inventory = Config.get('subtitute', 'inventory')
+        if Config.has_option('substitute', 'inventory'):
+            self.sub_inventory = Config.get('substitute', 'inventory')
         else:
             self.sub_inventory = ""
 
-        if Config.has_option('subtitute', 'registration'):
-            self.sub_registration = Config.get('subtitute', 'registration')
+        if Config.has_option('substitute', 'registration'):
+            self.sub_registration = Config.get('substitute', 'registration')
         else:
             self.sub_registration = ""
 

@@ -20,25 +20,16 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file pluginsmaster/plugin_resultguacamoleconf.py
+# file /pluginsmastersubstitute/plugin_resultmsginfoerror.py
 
-import traceback
-import sys
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "resultguacamoleconf", "TYPE": "subtitute"}
+DEBUGPULSEPLUGIN = 25
+plugin = {"VERSION": "1.0", "NAME": "resultmsginfoerror", "TYPE": "substitute"}
 
 
-def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
-    logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
-    logger.debug("=====================================================")
-    try:
-        XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], data['connection'])
-    except Exception, e:
-        if 'msg' in data:
-            logger.error("recv error from %s : %s\n"%(msg['from'],data['msg']))
-        logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))
-
+def action(xmppobject, action, sessionid, data, message, ret, dataobj):
+    logging.getLogger().debug(plugin)
+    if 'msg' in data:
+        logging.getLogger().error("Error plugin : %s" % data['msg'])
+    pass

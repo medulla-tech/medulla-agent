@@ -28,12 +28,30 @@ Requires:       python-croniter
 Pulse XMPP Agent
 
 %files
-%_prefix/lib/systemd/system/*
+%_prefix/lib/systemd/system/pulse-xmpp-agent-log.service  
+%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service  
+%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_sysconfdir/pulse-xmpp-agent
 %_var/lib/pulse2/clients/config/*
 %_var/log/pulse
 %{python2_sitelib}/pulse_xmpp_agent
 %{python2_sitelib}/pulse_xmpp_agent-%{version}-py%{python2_version}.egg-info
+
+#--------------------------------------------------------------------
+
+%package -n     pulse-xmpp-master-substitute
+Summary:        Pulse 2 common files
+Group:          System/Servers
+
+
+%description -n pulse-xmpp-master-substitute
+Pulse master agent substitute
+
+%files -n pulse-xmpp-master-substitute
+%{python2_sitelib}/pulse_xmpp_master_substitute/
+%_prefix/pulse-xmpp-agent-substitute/
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 
 #--------------------------------------------------------------------
 
@@ -60,3 +78,15 @@ chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini.in %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini %buildroot%_var/lib/pulse2/clients/config/
+
+cp pulse_xmpp_master_substitute/agentmastersubstitute.py %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+mkdir -p %buildroot%_prefix/pulse-xmpp-agent-substitute/
+cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_prefix/pulse-xmpp-agent-substitute/
+
+cp pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system/
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py

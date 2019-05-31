@@ -73,9 +73,17 @@ kiosk_local_port = 8766
 # [jid_01]
 # jidname = machine1@localhost/pulse01a
 
-#[networkstatus]
-#netchanging =1
-#detectiontime = 300
+[networkstatus]
+# Check if the machine's network has changed
+# netchanging = 1
+# detectiontime = 300
 
-#[updateagent]
-#updating =1
+[updateagent]
+# Automatically update agent
+# updating = 1
+
+[substitute]
+# Registration and Inventory JIDs
+# Must be changed to substitute agent JIDs if used
+# registration = master_reg@pulse
+# inventory = master_inv@pulse

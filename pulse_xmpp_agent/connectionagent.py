@@ -24,6 +24,7 @@ import sys,os
 import logging
 import sleekxmpp
 import platform
+import subprocess
 import base64
 import time
 import json
@@ -32,7 +33,7 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
 from lib.configuration import  confParameter, changeconnection, alternativeclusterconnection, nextalternativeclusterconnection
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin
+from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin, file_put_contents
 from optparse import OptionParser
 
 from threading import Timer
@@ -175,7 +176,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                  data['data'][0][3])
                 #write alternative configuration
                 alternativeclusterconnection(conffilename("cluster"),data['data'])
-                #go to next ARS 
+                confaccountclear={
+                                    "action": "resultcleanconfaccount",
+                                    "sessionid" : getRandomName(6, "delconf"),
+                                    "ret" : 0,
+                                    "base64" : False,
+                                    "data":  { 'useraccount' : str(self.boundjid.user)}}
+                self.send_message(mto =  msg['from'],
+                                  mbody = json.dumps(confaccountclear),
+                                  mtype = 'chat')
+                #go to next ARS
                 nextalternativeclusterconnection(conffilename("cluster"))
             except:
                 # conpatibility version old agent master
@@ -289,6 +299,18 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidconnection"), "%s"%os.getpid())
+    if sys.platform.startswith('win'):
+        try:
+            # knokno
+            result = subprocess.check_output(["icacls",
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidconnection"),
+                                    "/setowner",
+                                    "pulse",
+                                    "/t"], stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            pass
+
     if platform.system()=='Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)

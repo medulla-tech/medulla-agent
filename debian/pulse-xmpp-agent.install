@@ -7,7 +7,9 @@ usr/lib/python2.*/*-packages/pulse_xmpp_agent/pluginsmachine
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/getlastuser.ps1
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/agentversion
 var/log/pulse/
-usr/lib/systemd/system/
+usr/lib/systemd/system/pulse-xmpp-agent-log.service  
+usr/lib/systemd/system/pulse-xmpp-agent-machine.service  
+usr/lib/systemd/system/pulse-xmpp-agent-relay.service
 etc/pulse-xmpp-agent/
 var/lib/pulse2/clients/config/relayconf.ini.in
 var/lib/pulse2/clients/config/package_watching.ini

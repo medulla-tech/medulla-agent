@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pulse_xmpp_master_subtitute/pluginsmastersubtitute/plugin_loadpluginschedulerlistversion.py
+# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadpluginschedulerlistversion.py
 
 import base64
 import json
@@ -35,7 +35,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadpluginschedulerlistversion", "TYPE" : "subtitute"}
+plugin = {"VERSION" : "1.0", "NAME" : "loadpluginschedulerlistversion", "TYPE" : "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -57,7 +57,7 @@ def read_conf_load_plugin_scheduler_list_version(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file missing\n  %s\neg conf:" \
-            "\n[plugins]\ndirpluginlistscheduled = /var/lib/pulse2/xmpp_basepluginscheduler/"%(plugin['NAME'], pathfileconf))
+            "\n[parameters]\ndirpluginlistscheduled = /var/lib/pulse2/xmpp_basepluginscheduler/"%(plugin['NAME'], pathfileconf))
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_basepluginscheduler")
         objectxmpp.dirpluginlistscheduled = "/var/lib/pulse2/xmpp_basepluginscheduler"
     else:
@@ -66,8 +66,8 @@ def read_conf_load_plugin_scheduler_list_version(objectxmpp):
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
         objectxmpp.dirpluginlistscheduled = "/var/lib/pulse2/xmpp_basepluginscheduler"
-        if Config.has_option("plugins", "dirpluginlistscheduled"):
-            objectxmpp.dirpluginlistscheduled = Config.get('plugins', 'dirpluginlistscheduled')
+        if Config.has_option("parameters", "dirpluginlistscheduled"):
+            objectxmpp.dirpluginlistscheduled = Config.get('parameters', 'dirpluginlistscheduled')
     # function definie dynamiquement
     objectxmpp.plugin_loadpluginschedulerlistversion = types.MethodType(plugin_loadpluginschedulerlistversion, objectxmpp)
     objectxmpp.deployPluginscheduled = types.MethodType(deployPluginscheduled, objectxmpp)
@@ -152,5 +152,3 @@ def loadPluginschedulerList(self):
                     except:
                         self.plugintypescheduler[plugin['NAME']] = "machine"
                     break
-
-

@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pluginsmastersubtitute/plugin_showregistration.py
+# file pluginsmastersubstitute/plugin_showregistration.py
 
 import base64
 import json
@@ -37,7 +37,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "showregistration", "TYPE" : "subtitute"}
+plugin = {"VERSION" : "1.0", "NAME" : "showregistration", "TYPE" : "substitute"}
 
 
 
@@ -62,7 +62,7 @@ def read_conf_showregistration(objectxmpp):
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file :\n" \
                      "\t%s missing\n" \
-                     "eg conf:\n[global]\n" \
+                     "eg conf:\n[parameters]\n" \
                      "showinfo = False\n" \
                      "showplugins = False\n" \
                      "showinventoryxmpp = False\n"%(plugin['NAME'],
@@ -78,18 +78,18 @@ def read_conf_showregistration(objectxmpp):
         Config.read(pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-        if Config.has_option("global", "showinfo"):
-            objectxmpp.showinfo = Config.getboolean('global', 'showinfo')
+        if Config.has_option("parameters", "showinfo"):
+            objectxmpp.showinfo = Config.getboolean('parameters', 'showinfo')
         else:
             objectxmpp.showinfo = False
 
-        if Config.has_option("global", "showplugins"):
-            objectxmpp.showplugins = Config.getboolean('global', 'showplugins')
+        if Config.has_option("parameters", "showplugins"):
+            objectxmpp.showplugins = Config.getboolean('parameters', 'showplugins')
         else:
             objectxmpp.showplugins = False
 
-        if Config.has_option("global", "showinventoryxmpp"):
-            objectxmpp.showinventoryxmpp = Config.getboolean('global', 'showinventoryxmpp')
+        if Config.has_option("parameters", "showinventoryxmpp"):
+            objectxmpp.showinventoryxmpp = Config.getboolean('parameters', 'showinventoryxmpp')
         else:
             objectxmpp.showinventoryxmpp = False
 
@@ -97,7 +97,7 @@ def read_conf_showregistration(objectxmpp):
 
 def plugin_showregistration(self, msg, data):
     if logger.level == logging.DEBUG:
-        
+
 
         if self.showinfo:
             self.presencedeployment = {}

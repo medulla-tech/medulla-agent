@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pulse_xmpp_master_subtitute/pluginsmastersubtitute/plugin_loadpluginlistversion.py
+# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadpluginlistversion.py
 
 import base64
 import json
@@ -41,7 +41,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadpluginlistversion", "TYPE" : "subtitute", "LOAD" : "START" }
+plugin = {"VERSION" : "1.0", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -68,7 +68,7 @@ def read_conf_load_plugin_list_version(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file  missing\n  %s" \
-            "\neg conf:\n[plugins]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"%(plugin['NAME'], pathfileconf))
+            "\neg conf:\n[parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"%(plugin['NAME'], pathfileconf))
 
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
@@ -78,8 +78,8 @@ def read_conf_load_plugin_list_version(objectxmpp):
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
-        if Config.has_option("plugins", "dirpluginlist"):
-            objectxmpp.dirpluginlist = Config.get('plugins', 'dirpluginlist')
+        if Config.has_option("parameters", "dirpluginlist"):
+            objectxmpp.dirpluginlist = Config.get('parameters', 'dirpluginlist')
     # loadPluginList function definie dynamiquement
     objectxmpp.file_deploy_plugin = []
     objectxmpp.loadPluginList = types.MethodType(loadPluginList, objectxmpp)
@@ -90,7 +90,7 @@ def read_conf_load_plugin_list_version(objectxmpp):
     objectxmpp.pulgin_loadpluginlistversion = types.MethodType(pulgin_loadpluginlistversion, objectxmpp)
 
 def loadPluginList(self):
-    """ charges les informations des plugins 'nom plugins et version' pour 
+    """ charges les informations des plugins 'nom plugins et version' pour
         faire la comparaison avec les plugin sur les machines.
     """
     logger.debug("Load and Verify base plugin")
