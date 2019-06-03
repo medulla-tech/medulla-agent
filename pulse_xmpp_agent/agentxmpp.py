@@ -158,7 +158,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Bind the socket to the port
         server_address = ('localhost',  self.config.am_local_port)
-        logging.log(DEBUGPULSE,  'starting server tcp kiosk on %s port %s' % server_address)
         self.sock.bind(server_address)
         # Listen for incoming connections
         self.sock.listen(5)
@@ -242,7 +241,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s"%(traceback.format_exc()))
             logging.error("functioning of the degraded agent. impossible to use syncthing")
         #self.syncthing = syncthing(configfile = fichierconfsyncthing)
-        ################################### syncthing ###################################  
+        ################################### syncthing ###################################
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -374,8 +373,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
         self.schedule('execcmdfile',
-                      laps_time_action_extern, 
-                      self.execcmdfile, 
+                      laps_time_action_extern,
+                      self.execcmdfile,
                       repeat=True)
 
     def execcmdfile(self):
