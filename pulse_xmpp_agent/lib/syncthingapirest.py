@@ -79,6 +79,9 @@ class syncthing():
         self.reload_config()
         # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
 
+    def getidapi(self):
+        return self.idapirest
+
     def reload_config(self):
         self.config = self.get_config() # content all config
         if len(self.config) != 0:
@@ -99,7 +102,7 @@ class syncthing():
 
             hostname = socket.gethostname()
             for device in self.devices:
-                if device['name'] == hostname:
+                if device['name'] == hostname or device['name'] == "pulse":
                     self.device_id = device['deviceID']
                     break
 

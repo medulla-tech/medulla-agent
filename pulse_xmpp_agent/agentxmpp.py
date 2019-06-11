@@ -209,6 +209,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.banterminate = { } # used for clear id session banned
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
+        self.deviceid=""
         ################################### initialise syncthing ###################################
         if logger.level <= 10:
             console = False
@@ -219,7 +220,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # if self.config.agenttype in ['relayserver']:
 
         if sys.platform.startswith('linux'):
-            fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            #fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            fichierconfsyncthing = "/etc/pulse-xmpp-agent/config.xml"
             tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith('win'):
             fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
@@ -235,7 +237,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     os.remove(tmpfile)
                 except :
                     pass
-            logging.debug("device local syncthing : [%s]"%self.syncthing.get_id_device_local())
+            self.deviceid = self.syncthing.get_id_device_local()
+            logging.debug("device local syncthing : [%s]"%self.deviceid)
         except Exception as e:
             logging.error("syncthing initialisation : %s" % str(e))
             logger.error("\n%s"%(traceback.format_exc()))
@@ -1583,7 +1586,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
             'kiosk_presence' : test_kiosk_presence(),
-            'countstart' : save_count_start()
+            'countstart' : save_count_start(),
+            'keysyncthing' : self.deviceid
         }
         try:
             if  self.config.agenttype in ['relayserver']:
