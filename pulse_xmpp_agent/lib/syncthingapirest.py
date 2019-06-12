@@ -808,34 +808,37 @@ class syncthing():
         }
 
 class syncthingprogram(Program):
-    def __init__(self, console=False, browser=False):
+    def __init__(self, console=False, browser=False, home="", logfile="", agenttype='relayserver'):
         Program.__init__(self)
         self.console = console
         self.browser = browser
+        self.home = home
+        self.logfile = logfile
+        self.agenttype = agenttype
 
-    def start_syncthing(self, home="", logfile=""):
-        print("start syncthing")
+    def start_syncthing(self):
+        #print("start syncthing")
         if sys.platform.startswith('linux'):
-            if home == "":
-                home = "/etc/pulse-xmpp-agent"
-            if logfile == "":
-                logfile = "/var/log/pulse"
-            #os.system("systemctl restart syncthing@syncthing.service")
-            #os.system("/usr/bin/syncthing& -home=\"%s\" -logfile=\"%s\" -no-browser"%(home, logfile))
-            #time.sleep(4)
-            cmd = 'nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(home, logfile)
-            self.startprogram(cmd, "syncthing")
+            if self.agenttype == "relayserver":
+                os.system("systemctl restart syncthing@syncthing.service")
+            else:
+                if self.home == "":
+                    self.home = "/etc/pulse-xmpp-agent"
+                if self.logfile == "":
+                    self.logfile = "/var/log/pulse"
+                cmd = 'nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(self.home, self.logfile)
+                self.startprogram(cmd, "syncthing")
             time.sleep(4)
         elif sys.platform.startswith('win'):
-            if home == "":
-                home = "%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles']
-            if logfile == "":
-                logfile = "%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']
+            if self.home == "":
+                self.home = "%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles']
+            if self.logfile == "":
+                self.logfile = "%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']
 
             self.stop_syncthing()
             cmd = ['%s\\Pulse\\bin\\syncthing.exe'%os.environ['programfiles'],
-                   "-home=%s"%home,
-                   "-logfile=%s"%logfile]
+                   "-home=%s"%self.home,
+                   "-logfile=%s"%self.logfile]
             if not self.console:
                 cmd.append('-no-console')
             if not self.browser:
@@ -843,30 +846,35 @@ class syncthingprogram(Program):
             #win32api.WinExec(cmd)
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('darwin'):
-            if home == "":
-                home = "/Library/Application Support/Pulse/etc/"
-            if logfile == "":
-                logfile = "/Library/Application\ Support/Pulse/var/log/"
+            if self.home == "":
+                self.home = "/Library/Application Support/Pulse/etc/"
+            if self.logfile == "":
+                self.logfile = "/Library/Application\ Support/Pulse/var/log/"
 
-            os.system("/Applications/Syncthing.app/Contents/MacOS/Syncthing& -home=\"%s\" -logfile=\"%s\" -no-browser"%(home,logfile))
+            os.system("/Applications/Syncthing.app/Contents/MacOS/Syncthing& -home=\"%s\" -logfile=\"%s\" -no-browser"%(self.home,self.logfile))
 
     def stop_syncthing(self):
-        print("stop syncthing")
+        #print("stop syncthing")
         if "syncthing" in self.programlist:
             del self.programlist["syncthing"]
 
         if sys.platform.startswith('win'):
             os.system("taskkill /f /im syncthing.exe")
         elif sys.platform.startswith('linux'):
-            os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
-            #os.system("systemctl stop syncthing@syncthing.service")
+            if self.agenttype == "relayserver":
+                os.system("systemctl stop syncthing@syncthing.service")
+            else:
+                os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
         elif sys.platform.startswith('darwin'):
             os.system("kill -9 `ps -A|grep Syncthing| awk -F ' ' '{print $1}'`")
 
-    def restart_syncthing(self, home="", logfile=""):
-        print("restart syncthing")
-        self.stop_syncthing()
-        self.start_syncthing(home, logfile)
+    def restart_syncthing(self):
+        #print("restart syncthing")
+        if sys.platform.startswith('linux') and self.agenttype == "relayserver":
+            os.system("systemctl restart syncthing@syncthing.service")
+        else:
+            self.stop_syncthing()
+            self.start_syncthing()
 
 if __name__ == '__main__':
     pass

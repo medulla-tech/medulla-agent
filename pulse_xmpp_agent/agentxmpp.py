@@ -214,13 +214,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if logger.level <= 10:
             console = False
             browser = True
-        self.Ctrlsyncthingprogram = syncthingprogram()
+        self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
         self.Ctrlsyncthingprogram.restart_syncthing()
-        # if self.config.agenttype in ['relayserver']:
 
         if sys.platform.startswith('linux'):
-            #fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-            fichierconfsyncthing = "/etc/pulse-xmpp-agent/config.xml"
+            if self.config.agenttype in ['relayserver']:
+                fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            else:
+                fichierconfsyncthing = "/etc/pulse-xmpp-agent/config.xml"
             tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith('win'):
             fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
