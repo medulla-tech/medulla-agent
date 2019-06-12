@@ -214,9 +214,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if logger.level <= 10:
             console = False
             browser = True
-        self.Ctrlsyncthingprogram = syncthingprogram( console = console, browser = browser )
-        self.Ctrlsyncthingprogram.start_syncthing()
-
+        self.Ctrlsyncthingprogram = syncthingprogram()
+        self.Ctrlsyncthingprogram.restart_syncthing()
         # if self.config.agenttype in ['relayserver']:
 
         if sys.platform.startswith('linux'):

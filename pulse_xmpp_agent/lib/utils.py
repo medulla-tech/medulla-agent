@@ -1638,7 +1638,6 @@ def showlinelog(nbline = 200):
     return obj['result']
 
 
-
 class Program:
     def __init__(self):
         self.programlist = {}
@@ -1648,14 +1647,26 @@ class Program:
         #p = subprocess.Popen(args) # Success!
         #flag windows -> https://docs.microsoft.com/fr-fr/windows/desktop/ProcThread/process-creation-flags
 
-        CREATE_NEW_PROCESS_GROUP=0x00000200
-        DETACHED_PROCESS=0x00000008
 
-        progrm = subprocess.Popen(pathprogram,
-                                  shell=False,
-                                  creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
-                                  close_fds=True)
-        self.programlist[uniqexecutablename]=progrm
+        if sys.platform.startswith('win'):
+            CREATE_NEW_PROCESS_GROUP=0x00000200
+            DETACHED_PROCESS=0x00000008
+            progrm = subprocess.Popen(pathprogram,
+                                    shell=False,
+                                    creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+                                    close_fds=True)
+            self.programlist[uniqexecutablename]=progrm
+        elif sys.platform.startswith('linux'):
+            progrm = subprocess.Popen(pathprogram,
+                                      shell=True,
+                                      stdout=None,
+                                      stderr=None,
+                                      close_fds=True)
+            self.programlist[uniqexecutablename]=progrm
+
+        elif sys.platform.startswith('darwing'):
+            pass
+
 
     def stopprogram(self, uniqexecutablename):
         subprocess.Popen.kill(self.programlist[uniqexecutablename])

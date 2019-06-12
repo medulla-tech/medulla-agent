@@ -808,21 +808,34 @@ class syncthing():
         }
 
 class syncthingprogram(Program):
-
-    def  __init__(self, console=False, browser=False):
+    def __init__(self, console=False, browser=False):
         Program.__init__(self)
         self.console = console
         self.browser = browser
 
-    def start_syncthing(self):
+    def start_syncthing(self, home="", logfile=""):
+        print("start syncthing")
         if sys.platform.startswith('linux'):
-            os.system("systemctl restart syncthing@syncthing.service")
+            if home == "":
+                home = "/etc/pulse-xmpp-agent"
+            if logfile == "":
+                logfile = "/var/log/pulse"
+            #os.system("systemctl restart syncthing@syncthing.service")
+            #os.system("/usr/bin/syncthing& -home=\"%s\" -logfile=\"%s\" -no-browser"%(home, logfile))
+            #time.sleep(4)
+            cmd = 'nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(home, logfile)
+            self.startprogram(cmd, "syncthing")
             time.sleep(4)
         elif sys.platform.startswith('win'):
+            if home == "":
+                home = "%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles']
+            if logfile == "":
+                logfile = "%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']
+
             self.stop_syncthing()
             cmd = ['%s\\Pulse\\bin\\syncthing.exe'%os.environ['programfiles'],
-                   "-home=%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles'],
-                   "-logfile=%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']]
+                   "-home=%s"%home,
+                   "-logfile=%s"%logfile]
             if not self.console:
                 cmd.append('-no-console')
             if not self.browser:
@@ -830,20 +843,30 @@ class syncthingprogram(Program):
             #win32api.WinExec(cmd)
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('darwin'):
-            pass
+            if home == "":
+                home = "/Library/Application Support/Pulse/etc/"
+            if logfile == "":
+                logfile = "/Library/Application\ Support/Pulse/var/log/"
+
+            os.system("/Applications/Syncthing.app/Contents/MacOS/Syncthing& -home=\"%s\" -logfile=\"%s\" -no-browser"%(home,logfile))
 
     def stop_syncthing(self):
+        print("stop syncthing")
         if "syncthing" in self.programlist:
             del self.programlist["syncthing"]
 
         if sys.platform.startswith('win'):
             os.system("taskkill /f /im syncthing.exe")
         elif sys.platform.startswith('linux'):
-            #os.system("kill -9  `ps -aux|grep syncthing | grep -v grep | awk -F ' ' '{print $2}'`")
-            os.system("systemctl stop syncthing@syncthing.service")
+            os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
+            #os.system("systemctl stop syncthing@syncthing.service")
         elif sys.platform.startswith('darwin'):
-            pass
+            os.system("kill -9 `ps -A|grep Syncthing| awk -F ' ' '{print $1}'`")
 
+    def restart_syncthing(self, home="", logfile=""):
+        print("restart syncthing")
+        self.stop_syncthing()
+        self.start_syncthing(home, logfile)
 
 if __name__ == '__main__':
     pass
