@@ -19,7 +19,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# 
+#
 # file : lib/syncthingapirest.py
 
 """
@@ -58,9 +58,9 @@ logger = logging.getLogger()
 """ class use for xmpp on each server syncthing in local """
 
 class syncthing():
-    def __init__(   self, 
-                    urlweb = 'http://localhost', 
-                    port = 8384, 
+    def __init__(   self,
+                    urlweb = 'http://localhost',
+                    port = 8384,
                     configfile = "/var/lib/syncthing/.config/syncthing/config.xml",
                     idapirest = None):
         self.readingconf = 0
@@ -153,8 +153,8 @@ class syncthing():
             To disable debugging of the beacon and discovery packages,
             and enable it for config and db:
             $ curl -H X-API-Key:abc123 -X POST 'http://localhost:8384/rest/system/debug?disable=beacon,discovery&enable=config,db'
- 
-            e.g 
+
+            e.g
             objetApirest.post_debug(eneablelist = config, db, disablelist = "beacon,discovery")
         """
         params = { "disable" : disablelist, "enable"  : eneablelist}
@@ -206,18 +206,18 @@ class syncthing():
                 ConfigSaved, DeviceConnected, DeviceDisconnected, DeviceDiscovered, DevicePaused, DeviceRejected, DeviceResumed, DownloadProgress, FolderCompletion, FolderErrors, FolderRejected, Folder Scan Progress, FolderSummary, ItemFinished, ItemStarted, Listen Addresses Changed, LocalChangeDetected, LocalIndexUpdated, Login Attempt, RemoteChangeDetected, Remote Download Progress, RemoteIndexUpdated, Starting, StartupComplete, StateChanged
 
             The optional parameter since=<lastSeenID> sets the ID of the last event you’ve already seen.
-            Syncthing returns a JSON encoded array of event objects, 
-            starting at the event just after the one with this last seen ID. 
-            The default value is 0, which returns all events. There is a limit to the number of events buffered, 
-            so if the rate of events is high or the time between polling calls is long some events might be missed. 
+            Syncthing returns a JSON encoded array of event objects,
+            starting at the event just after the one with this last seen ID.
+            The default value is 0, which returns all events. There is a limit to the number of events buffered,
+            so if the rate of events is high or the time between polling calls is long some events might be missed.
             This can be detected by noting a discontinuity in the event IDs.
 
-            If no new events are produced since <lastSeenID>, 
-            the HTTP call blocks and waits for new events to happen before returning. 
-            By default it times out after 60 seconds returning an empty array. 
+            If no new events are produced since <lastSeenID>,
+            the HTTP call blocks and waits for new events to happen before returning.
+            By default it times out after 60 seconds returning an empty array.
             The time out duration can be customized with the optional parameter timeout=seconds.
 
-            To receive only a limited number of events, add the limit=n parameter with a suitable value for n and only the last n events will be returned. 
+            To receive only a limited number of events, add the limit=n parameter with a suitable value for n and only the last n events will be returned.
             This can be used to catch up with the latest event ID after a disconnection for example: /rest/events?since=0&limit=1.
         """
         params = {}
@@ -235,12 +235,12 @@ class syncthing():
             Post with empty to body to remove all recent errors.
         """
         re = self.__postAPIREST__("/system/error/clear")
-        
+
 
     def post_error(self, error_text):
         """
             Poster un message d'erreur dans le corps (texte brut)
-            pour enregistrer une nouvelle erreur. 
+            pour enregistrer une nouvelle erreur.
             La nouvelle erreur sera affiché sur tous les clients de l'interface graphique active.
 
             curl -X POST -d 'who=world' -H "Content-Type : text/plain" http://localhost:8106/hello
@@ -272,7 +272,7 @@ class syncthing():
 
     def post_reset(self, deviceid=None):
         """
-            Post with empty body to erase the current index database and 
+            Post with empty body to erase the current index database and
             restart Syncthing. With no query parameters, the entire database is
             erased from disk. By specifying the folder parameter
             with a valid folder ID, only information for that folder will be erased:
@@ -346,9 +346,9 @@ class syncthing():
 
     def get_db_completion(self, folder, device ):
         """
-            Returns the completion percentage (0 to 100) 
+            Returns the completion percentage (0 to 100)
             for a given device and folder. Takes device and folder parameters.
-            return 
+            return
             {
                 "completion": 0
             }
@@ -371,13 +371,13 @@ class syncthing():
         """
             Takes one parameter, folder, and returns the content of
             the .stignore as the ignore field. A second field, expanded,
-            provides a list of strings which represent globbing patterns described 
-            by gobwas/glob (based on standard wildcards) that match the patterns 
-            in .stignore and all the includes. If appropriate these globs are 
-            prepended by the following modifiers: ! to negate the glob, (?i) 
+            provides a list of strings which represent globbing patterns described
+            by gobwas/glob (based on standard wildcards) that match the patterns
+            in .stignore and all the includes. If appropriate these globs are
+            prepended by the following modifiers: ! to negate the glob, (?i)
             to do case insensitive matching and (?d)
             to enable removing of ignored files in an otherwise empty directory.
-            return 
+            return
             {
                 "ignore": [
                     "(?i)/Backups"
@@ -415,7 +415,7 @@ class syncthing():
                 queued has 3 items
                 rest has 12 items
 
-            If you issue a query with page=1 and perpage=10, 
+            If you issue a query with page=1 and perpage=10,
             only the progress section in the response will have 10 items.
             If you issue a request query with page=2 and perpage=10,
             progress section will have the last 5 items,
@@ -423,7 +423,7 @@ class syncthing():
             If you issue a query for page=3 and perpage=10,
             you will only have the last 10 items of the rest section.
 
-            In all these calls, 
+            In all these calls,
                 total will be 30 to indicate the total number of available items.
         """
         params = { "folder" : folder}
@@ -471,11 +471,11 @@ class syncthing():
             Takes the optional parameters folder (folder ID), sub (path relative to the folder root)
             and next (time in seconds). If folder is omitted or empty all folders are scanned.
             If sub is given, only this path (and children, in case it’s a directory)
-            is scanned. The next argument delays Syncthing’s automated rescan interval 
+            is scanned. The next argument delays Syncthing’s automated rescan interval
             for a given amount of seconds.
             Requesting scan of a path that no longer exists, but previously did,
             is valid and will result in Syncthing noticing the deletion of the path in question.
-            Returns status 200 and no content upon success, 
+            Returns status 200 and no content upon success,
             or status 500 and a plain text error if an error occurred during scanning.
 
             curl -X POST http://127.0.0.1:8384/rest/db/scan?folder=default&sub=foo/bar
@@ -515,11 +515,11 @@ class syncthing():
         """
             Renvoie les informations de la version actuelle de Syncthing.
 
-            { 
-                "Arc" :  "amd64" , 
-                "longVersion" :  "syncthing v0.10.27 + 3 gea8c3de (go1.4 darwin-amd64 par défaut) jb @ syno 16/03/2015 11:01:29 UTC" , 
-                "os" :  "darwin" , 
-                "version" :  "v0.10.27 + 3 gea8c3de" 
+            {
+                "Arc" :  "amd64" ,
+                "longVersion" :  "syncthing v0.10.27 + 3 gea8c3de (go1.4 darwin-amd64 par défaut) jb @ syno 16/03/2015 11:01:29 UTC" ,
+                "os" :  "darwin" ,
+                "version" :  "v0.10.27 + 3 gea8c3de"
             }
 
         """
@@ -538,7 +538,7 @@ class syncthing():
 
     def get_upgrade(self):
         """
-            Checks for a possible upgrade and returns an object 
+            Checks for a possible upgrade and returns an object
             describing the newest version and upgrade possibility.
             return {
                         "latest": "v0.10.27",
@@ -582,7 +582,7 @@ class syncthing():
             }
         """
         re = self.__getAPIREST__("/system/log")
-        
+
         return json.loads(re.content)
 
 
@@ -599,7 +599,7 @@ class syncthing():
             }
         """
         re = self.__getAPIREST__("/system/error")
-        
+
         return json.loads(re.content)
 
 
@@ -625,13 +625,13 @@ class syncthing():
         return json.loads(re)['configInSync']
 
     def json_string(self, pythondict):
-        """ 
+        """
             converti python dict to json string
         """
         return json.dumps(pythondict, indent = 4)
 
     def show_rest(self, pythondict):
-        """ 
+        """
         affiche json format
         """
         rest = self.json_string(pythondict)
@@ -735,7 +735,7 @@ class syncthing():
             return analyseresult(r)
         else:
             if RestCurl:
-                cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython)) 
+                cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
                 logger.info("%s"%cmddate)
             r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython))
             return analyseresult(r)
@@ -743,23 +743,23 @@ class syncthing():
     def add_device_to_folder(self, strlabel, id_device ):
         for folder in self.folders:
             if folder['label'] == strlabel:
-                folder['devices'].append({  "deviceID": id_device, 
+                folder['devices'].append({  "deviceID": id_device,
                                             "introducedBy": ""})
 
     def  create_template_struct_device(self, str_name, id_device):
         return{
-                "compression": "metadata", 
-                "skipIntroductionRemovals": False, 
-                "maxRecvKbps": 0, 
-                "allowedNetworks": [], 
-                "certName": "", 
-                "introducer": False, 
-                "name": str_name, 
-                "paused": False, 
-                "deviceID": id_device, 
-                "maxSendKbps": 0, 
-                "introducedBy": "", 
-                "autoAcceptFolders": False, 
+                "compression": "metadata",
+                "skipIntroductionRemovals": False,
+                "maxRecvKbps": 0,
+                "allowedNetworks": [],
+                "certName": "",
+                "introducer": False,
+                "name": str_name,
+                "paused": False,
+                "deviceID": id_device,
+                "maxSendKbps": 0,
+                "introducedBy": "",
+                "autoAcceptFolders": False,
                 "addresses": [
                     "dynamic"
                 ]
@@ -767,42 +767,42 @@ class syncthing():
 
     def create_template_struct_folder(self, str_name, path_folder):
         return {
-            "useLargeBlocks": False,                                                                                                                                                
-            "rescanIntervalS": 3600,                                                                                                                                                
-            "copiers": 0,                                                                                                                                                           
-            "paused": False, 
-            "pullerPauseS": 0, 
-            "autoNormalize": True, 
-            "id": "", 
-            "scanProgressIntervalS": 0, 
-            "hashers": 0, 
-            "filesystemType": "basic", 
-            "label": str_name, 
-            "disableTempIndexes": False, 
-            "pullerMaxPendingKiB": 0, 
+            "useLargeBlocks": False,
+            "rescanIntervalS": 3600,
+            "copiers": 0,
+            "paused": False,
+            "pullerPauseS": 0,
+            "autoNormalize": True,
+            "id": "",
+            "scanProgressIntervalS": 0,
+            "hashers": 0,
+            "filesystemType": "basic",
+            "label": str_name,
+            "disableTempIndexes": False,
+            "pullerMaxPendingKiB": 0,
             "ignorePerms": False,
-            "markerName": ".stfolder", 
-            "disableSparseFiles": False, 
-            "fsWatcherDelayS": 10, 
-            "path": path_folder, 
-            "fsWatcherEnabled": True, 
+            "markerName": ".stfolder",
+            "disableSparseFiles": False,
+            "fsWatcherDelayS": 10,
+            "path": path_folder,
+            "fsWatcherEnabled": True,
             "minDiskFree": {
-                "unit": "%", 
+                "unit": "%",
                 "value": 1
-            }, 
-            "ignoreDelete": False, 
-            "weakHashThresholdPct": 25, 
-            "type": "sendreceive", 
+            },
+            "ignoreDelete": False,
+            "weakHashThresholdPct": 25,
+            "type": "sendreceive",
             "devices": [
                 {
-                    "deviceID": self.device_id, 
+                    "deviceID": self.device_id,
                     "introducedBy": ""
                 }
-            ], 
-            "maxConflicts": -1, 
-            "order": "random", 
+            ],
+            "maxConflicts": -1,
+            "order": "random",
             "versioning": {
-                "params": {}, 
+                "params": {},
                 "type": ""
             }
         }
@@ -828,7 +828,6 @@ class syncthingprogram(Program):
                     self.logfile = "/var/log/pulse"
                 cmd = 'nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(self.home, self.logfile)
                 self.startprogram(cmd, "syncthing")
-            time.sleep(4)
         elif sys.platform.startswith('win'):
             if self.home == "":
                 self.home = "%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles']
@@ -847,11 +846,14 @@ class syncthingprogram(Program):
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('darwin'):
             if self.home == "":
-                self.home = "/Library/Application Support/Pulse/etc/"
+                self.home = "/Library/Application\ Support/Pulse/etc/"
             if self.logfile == "":
                 self.logfile = "/Library/Application\ Support/Pulse/var/log/"
 
-            os.system("/Applications/Syncthing.app/Contents/MacOS/Syncthing& -home=\"%s\" -logfile=\"%s\" -no-browser"%(self.home,self.logfile))
+            cmd ="""nohup /Library/Application\ Support/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &"""%(self.home, self.logfile)
+            self.startprogram(cmd, 'syncthing')
+
+        time.sleep(4)
 
     def stop_syncthing(self):
         #print("stop syncthing")

@@ -1641,6 +1641,7 @@ def showlinelog(nbline = 200):
 class Program:
     def __init__(self):
         self.programlist = {}
+        self.logger = logging.getLogger()
 
     def startprogram(self, pathprogram, uniqexecutablename):
         #['/bin/vikings', '-input', 'eggs.txt', '-output', 'spam spam.txt', '-cmd', "echo '$MONEY'"]
@@ -1656,17 +1657,15 @@ class Program:
                                     creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
                                     close_fds=True)
             self.programlist[uniqexecutablename]=progrm
-        elif sys.platform.startswith('linux'):
+        elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
             progrm = subprocess.Popen(pathprogram,
                                       shell=True,
                                       stdout=None,
                                       stderr=None,
                                       close_fds=True)
             self.programlist[uniqexecutablename]=progrm
-
-        elif sys.platform.startswith('darwing'):
-            pass
-
+        else:
+            self.logger.error("The launch command for syncthing is not implemented for this OS")
 
     def stopprogram(self, uniqexecutablename):
         subprocess.Popen.kill(self.programlist[uniqexecutablename])
