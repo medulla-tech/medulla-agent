@@ -101,10 +101,16 @@ class syncthing():
             self.options  = self.config['options']
 
             hostname = socket.gethostname()
+            device_id_tmp = None
             for device in self.devices:
-                if device['name'] == hostname or device['name'] == "pulse":
+                if device['name'] == hostname:
                     self.device_id = device['deviceID']
                     break
+                elif device['name'] == "pulse":
+                    device_id_tmp  = device['deviceID']
+            if self.device_id is None and device_id_tmp is not None:
+                self.device_id = device_id_tmp
+
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, 'w') as outfile:
