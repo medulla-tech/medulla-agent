@@ -23,6 +23,8 @@ BuildRequires:	python-sphinx
 Requires:       python-netifaces
 Requires:       python-sleekxmpp
 Requires:       python-croniter
+Requires:       python-requests
+Requires:       python2-pysftp
 
 %description
 Pulse XMPP Agent
