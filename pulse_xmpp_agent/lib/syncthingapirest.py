@@ -864,12 +864,13 @@ class syncthingprogram(Program):
             if self.agenttype == "relayserver":
                 os.system("systemctl restart syncthing@syncthing.service")
             else:
-                if self.home == "":
-                    self.home = "/etc/pulse-xmpp-agent"
-                if self.logfile == "":
-                    self.logfile = "/var/log/pulse"
-                cmd = 'export STNODEFAULTFOLDER=1;nohup /usr/bin/syncthing -home="%s" -logfile="%s" -no-browser &'%(self.home, self.logfile)
-                self.startprogram(cmd, "syncthing")
+                #if self.home == "":
+                    #self.home = "/etc/pulse-xmpp-agent"
+                #if self.logfile == "":
+                    #self.logfile = "/var/log/pulse"
+                #cmd = 'export STNODEFAULTFOLDER=1;nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(self.home, self.logfile)
+                #self.startprogram(cmd, "syncthing")
+                os.system('systemctl restart syncthing@pulseuser.service')
         elif sys.platform.startswith('win'):
             if self.home == "":
                 self.home = "%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles']
@@ -908,13 +909,14 @@ class syncthingprogram(Program):
             if self.agenttype == "relayserver":
                 os.system("systemctl stop syncthing@syncthing.service")
             else:
-                os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
+                #os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
+                os.system('systemctl stop syncthing@pulseuser.service')
         elif sys.platform.startswith('darwin'):
             os.system("kill -9 `ps -A|grep Syncthing| awk -F ' ' '{print $1}'`")
 
     def restart_syncthing(self):
         #print("restart syncthing")
-        if sys.platform.startswith('linux') and self.agenttype == "relayserver":
+        if sys.platform.startswith('linux'): # and self.agenttype == "relayserver":
             os.system("systemctl restart syncthing@syncthing.service")
         else:
             self.stop_syncthing()
