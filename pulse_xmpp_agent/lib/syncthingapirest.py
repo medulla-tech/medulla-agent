@@ -832,7 +832,7 @@ class syncthingprogram(Program):
                     self.home = "/etc/pulse-xmpp-agent"
                 if self.logfile == "":
                     self.logfile = "/var/log/pulse"
-                cmd = 'nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(self.home, self.logfile)
+                cmd = 'export STNODEFAULTFOLDER=1;nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(self.home, self.logfile)
                 self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('win'):
             if self.home == "":
@@ -856,7 +856,7 @@ class syncthingprogram(Program):
             if self.logfile == "":
                 self.logfile = "/Library/Application\ Support/Pulse/var/log/"
 
-            cmd ="""nohup /Library/Application\ Support/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &"""%(self.home, self.logfile)
+            cmd ="""export STNODEFAULTFOLDER=1;nohup /Library/Application\ Support/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &"""%(self.home, self.logfile)
             self.startprogram(cmd, 'syncthing')
 
         time.sleep(4)
