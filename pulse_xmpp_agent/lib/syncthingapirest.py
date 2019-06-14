@@ -752,36 +752,36 @@ class syncthing():
                 folder['devices'].append({  "deviceID": id_device,
                                             "introducedBy": ""})
 
-    def  create_template_struct_device(self, 
+    def  create_template_struct_device(self,
                                        str_name,
                                        id_device,
                                        introducer = False,
                                        autoAcceptFolders=False
                                        ):
         return{
-                "pendingFolders": [], 
-                "compression": "metadata", 
-                "skipIntroductionRemovals": false, 
-                "maxRecvKbps": 0, 
-                "allowedNetworks": [], 
-                "certName": "", 
-                "maxRequestKiB": 0, 
+                "pendingFolders": [],
+                "compression": "metadata",
+                "skipIntroductionRemovals": false,
+                "maxRecvKbps": 0,
+                "allowedNetworks": [],
+                "certName": "",
+                "maxRequestKiB": 0,
                 "introducer": introducer,
-                "name": str_name, 
-                "paused": false, 
-                "deviceID": id_device, 
-                "ignoredFolders": [], 
-                "maxSendKbps": 0, 
-                "introducedBy": "", 
-                "autoAcceptFolders": autoAcceptFolders, 
+                "name": str_name,
+                "paused": false,
+                "deviceID": id_device,
+                "ignoredFolders": [],
+                "maxSendKbps": 0,
+                "introducedBy": "",
+                "autoAcceptFolders": autoAcceptFolders,
                 "addresses": [
                     "dynamic"
                 ]
             }
 
     def create_template_struct_folder(self,
-                                      str_name, 
-                                      path_folder, 
+                                      str_name,
+                                      path_folder,
                                       id = None,
                                       type = "slave"):
         if id  is None:
@@ -832,12 +832,24 @@ class syncthing():
             }
         }
 
+    def del_device_from_folder(self, folderid, deviceid):
+        """Dissociate the device from the folder.
+        Params:
+            folderid: str of the folder id
+            deviceid : str of the device id"""
+
+        for folder in self.config['folders']:
+            if folder['id'] == folderid:
+                for device in folder['devices']:
+                    if device['deviceID'] == deviceid:
+                        folder["devices"].remove(device)
+
 class syncthingprogram(Program):
-    def __init__(self, 
-                 console=False, 
-                 browser=False, 
-                 home="", 
-                 logfile="", 
+    def __init__(self,
+                 console=False,
+                 browser=False,
+                 home="",
+                 logfile="",
                  agenttype='relayserver'):
         Program.__init__(self)
         self.console = console
