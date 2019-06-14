@@ -910,7 +910,7 @@ class syncthingprogram(Program):
 
     def restart_syncthing(self):
         #print("restart syncthing")
-        if sys.platform.startswith('linux'): # and self.agenttype == "relayserver":
+        if sys.platform.startswith('linux') and self.agenttype == "relayserver":
             os.system("systemctl restart syncthing@syncthing.service")
         else:
             self.stop_syncthing()
