@@ -221,9 +221,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if self.config.agenttype in ['relayserver']:
                 fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
             else:
-                fichierconfsyncthing = "/etc/pulse-xmpp-agent/config.xml"
-                
-                fichierconfsyncthing = "~pulseuser/.config/syncthing"
+                fichierconfsyncthing = "~pulseuser/.config/syncthing/config.xml"
                 # /var/lib/pulse2/.config/syncthing
 
             tmpfile = "/tmp/confsyncting.txt"

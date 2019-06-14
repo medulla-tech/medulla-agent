@@ -864,12 +864,6 @@ class syncthingprogram(Program):
             if self.agenttype == "relayserver":
                 os.system("systemctl restart syncthing@syncthing.service")
             else:
-                #if self.home == "":
-                    #self.home = "/etc/pulse-xmpp-agent"
-                #if self.logfile == "":
-                    #self.logfile = "/var/log/pulse"
-                #cmd = 'export STNODEFAULTFOLDER=1;nohup /usr/bin/syncthing -home="%s" -logfile="%s"&'%(self.home, self.logfile)
-                #self.startprogram(cmd, "syncthing")
                 os.system('systemctl restart syncthing@pulseuser.service')
         elif sys.platform.startswith('win'):
             if self.home == "":
