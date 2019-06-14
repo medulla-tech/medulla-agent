@@ -752,34 +752,53 @@ class syncthing():
                 folder['devices'].append({  "deviceID": id_device,
                                             "introducedBy": ""})
 
-    def  create_template_struct_device(self, str_name, id_device):
+    def  create_template_struct_device(self, 
+                                       str_name,
+                                       id_device,
+                                       introducer = False,
+                                       autoAcceptFolders=False
+                                       ):
         return{
-                "compression": "metadata",
-                "skipIntroductionRemovals": False,
-                "maxRecvKbps": 0,
-                "allowedNetworks": [],
-                "certName": "",
-                "introducer": False,
-                "name": str_name,
-                "paused": False,
-                "deviceID": id_device,
-                "maxSendKbps": 0,
-                "introducedBy": "",
-                "autoAcceptFolders": False,
+                "pendingFolders": [], 
+                "compression": "metadata", 
+                "skipIntroductionRemovals": false, 
+                "maxRecvKbps": 0, 
+                "allowedNetworks": [], 
+                "certName": "", 
+                "maxRequestKiB": 0, 
+                "introducer": introducer,
+                "name": str_name, 
+                "paused": false, 
+                "deviceID": id_device, 
+                "ignoredFolders": [], 
+                "maxSendKbps": 0, 
+                "introducedBy": "", 
+                "autoAcceptFolders": autoAcceptFolders, 
                 "addresses": [
                     "dynamic"
                 ]
             }
 
-    def create_template_struct_folder(self, str_name, path_folder):
+    def create_template_struct_folder(self,
+                                      str_name, 
+                                      path_folder, 
+                                      id = None,
+                                      type = "slave"):
+        if id  is None:
+            id = getRandomName(15, pref="auto_")
+        if type.lower() == "slave":
+            type = "sendreceive"
+        elif type.lower() == "master":
+            type = "sendonly"
         return {
+            "copyOwnershipFromParent": false,
             "useLargeBlocks": False,
             "rescanIntervalS": 3600,
             "copiers": 0,
             "paused": False,
             "pullerPauseS": 0,
             "autoNormalize": True,
-            "id": "",
+            "id": id,
             "scanProgressIntervalS": 0,
             "hashers": 0,
             "filesystemType": "basic",
@@ -798,7 +817,7 @@ class syncthing():
             },
             "ignoreDelete": False,
             "weakHashThresholdPct": 25,
-            "type": "sendreceive",
+            "type": type,
             "devices": [
                 {
                     "deviceID": self.device_id,
@@ -814,7 +833,12 @@ class syncthing():
         }
 
 class syncthingprogram(Program):
-    def __init__(self, console=False, browser=False, home="", logfile="", agenttype='relayserver'):
+    def __init__(self, 
+                 console=False, 
+                 browser=False, 
+                 home="", 
+                 logfile="", 
+                 agenttype='relayserver'):
         Program.__init__(self)
         self.console = console
         self.browser = browser
