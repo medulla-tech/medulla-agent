@@ -783,15 +783,15 @@ class syncthing():
                                       str_name,
                                       path_folder,
                                       id = None,
-                                      type = "slave"):
+                                      typefolder = "slave"):
         if id  is None:
             id = getRandomName(15, pref="auto_")
-        if type.lower() == "slave":
-            type = "sendreceive"
-        elif type.lower() == "master":
-            type = "sendonly"
+        if typefolder.lower() == "slave":
+            typefolder = "sendreceive"
+        elif typefolder.lower() == "master":
+            typefolder = "sendonly"
         return {
-            "copyOwnershipFromParent": false,
+            "copyOwnershipFromParent": False,
             "useLargeBlocks": False,
             "rescanIntervalS": 3600,
             "copiers": 0,
@@ -817,7 +817,7 @@ class syncthing():
             },
             "ignoreDelete": False,
             "weakHashThresholdPct": 25,
-            "type": type,
+            "type": typefolder,
             "devices": [
                 {
                     "deviceID": self.device_id,
