@@ -226,7 +226,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         elif sys.platform.startswith('win'):
             fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
             tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
-        elif sys.platform.startswith('darwing'):
+        elif sys.platform.startswith('darwin'):
             pass
         try:
             self.syncthing = syncthing(configfile = fichierconfsyncthing)
