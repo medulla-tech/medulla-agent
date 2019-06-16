@@ -169,6 +169,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'], indent=4, sort_keys=True))
             logging.log(DEBUGPULSE,"write new config")
             try:
+                #TODO
+                # suite a ce TODO les machines auront les device syncthing des ARS configure.
+                # Variable Modification = False
+                # restart syncthing
+                # lit configuration json
+                # if len(data['data'][0]) == 6:
+                    # """il faut que sa reste compatible avec l'ancien"""
+                    # ==6 la device syncthing est bien transmise
+                    # for x in data['data']:
+                        # if str(x[5]) != "":
+                            # """  on verify que str(x[5]) != "": """
+                            # if device not exist dans conf json syncthing:
+                                 # """ on verify si device str(x[5]) exist dans configuration json syncthing """
+                                 # on  ajoute le device str(x[5]) dans la conf json syncthing.
+                                 # Variable Modification = Truen
+                    #if Variable Modification == True:
+                        # """on applique la configuration json a syncthing"""
+                        # post config to syncthing
+                        # resynchro la conf json syncthing
+
                 changeconnection(conffilename(opts.typemachine),
                                  data['data'][0][1],
                                  data['data'][0][0],
