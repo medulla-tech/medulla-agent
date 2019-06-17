@@ -28,17 +28,23 @@ import subprocess
 import base64
 import time
 import json
+from sleekxmpp import jid
 import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
-from lib.configuration import  confParameter, changeconnection, alternativeclusterconnection, nextalternativeclusterconnection
+from lib.networkinfo import networkagentinfo, organizationbymachine,\
+    organizationbyuser, powershellgetlastuser
+from lib.configuration import  confParameter, changeconnection,\
+    alternativeclusterconnection, nextalternativeclusterconnection
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin, file_put_contents
+from lib.utils import getRandomName,\
+    DEBUGPULSE, searchippublic, getIpXmppInterface,\
+        subnetnetwork, check_exist_ip_port, ipfromdns,\
+            isWinUserAdmin, isMacOsUserAdmin, file_put_contents
 from optparse import OptionParser
 
 from threading import Timer
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
-
+from lib.syncthingapirest import syncthing, syncthingprogram
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
@@ -87,6 +93,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
+        logger.info("---initialisation syncthing---")
+        self.deviceid=""
+        ################################### initialise syncthing ###################################
+        if logger.level <= 10:
+            console = False
+            browser = True
+        self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
+        self.Ctrlsyncthingprogram.restart_syncthing()
+
+        if sys.platform.startswith('linux'):
+            if self.config.agenttype in ['relayserver']:
+                fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            else:
+                fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                                                    ".config","syncthing","config.xml")
+
+            tmpfile = "/tmp/confsyncting.txt"
+        elif sys.platform.startswith('win'):
+            fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
+            tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
+        elif sys.platform.startswith('darwin'):
+            pass
+        try:
+            self.syncthing = syncthing(configfile = fichierconfsyncthing)
+            if logger.level <= 10:
+                self.syncthing.save_conf_to_file(tmpfile)
+            else:
+                try:
+                    os.remove(tmpfile)
+                except :
+                    pass
+            self.deviceid = self.syncthing.get_id_device_local()
+            logger.debug("device local syncthing : [%s]"%self.deviceid)
+        except Exception as e:
+            logger.error("syncthing initialisation : %s" % str(e))
+            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("functioning of the degraded agent. impossible to use syncthing")
+        ################################### syncthing ###################################
 
     def start(self, event):
         self.get_roster()
@@ -150,10 +194,54 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if presence['muc']['nick'] == "MASTER":
             self.infos_machine()
 
+    def adddevicesyncthing(self, keydevicesyncthing, namerelay):
+        resource = jid.JID(namerelay).resource
+        if resource == "dev-mmc":
+            resource = "pulse"
+        if resource=="":
+            resource = namerelay
+        if not self.is_exist_device_in_config(keydevicesyncthing):
+            logger.debug("add device syncthing %s"%keydevicesyncthing)
+            dsyncthing_tmp = self.syncthing.\
+                create_template_struct_device( resource,
+                                               str(keydevicesyncthing),
+                                               introducer = False,
+                                               autoAcceptFolders=True)
+            logger.debug("add device [%s]syncthing to ars %s\n"%(keydevicesyncthing,
+                                                                 namerelay,
+                                                                 json.dumps(dsyncthing_tmp,
+                                                                            indent = 4)))
+            self.syncthing.config['devices'].append(dsyncthing_tmp)
+            logger.debug("synchro config %s"%self.syncthing.is_config_sync())
+            self.syncthing.post_config()
+            self.syncthing.post_restart()
+            time.sleep(5)
+            self.syncthing.reload_config()
+
+    def is_exist_device_in_config(self, keydevicesyncthing):
+        for device in self.syncthing.devices:
+            if device['deviceID'] == keydevicesyncthing:
+                return True
+        return False
+
+    def is_format_key_device(self, keydevicesyncthing):
+        if len(str(keydevicesyncthing)) != 63:
+            logger.warning("size key device diff of 63")
+        listtest = keydevicesyncthing.split("-")
+        if len(listtest) != 8:
+            logger.error("group key diff of 8")
+            return False
+        for z in listtest:
+            index = 1
+            if len(z) != 7:
+                logger.error("size group key diff of 7")
+                return False
+            index+=1
+        return True
+
     def message(self, msg):
         if msg['body']=="This room is not anonymous" or msg['subject']=="Welcome!":
             return
-        print msg
         try :
             data = json.loads(msg['body'])
         except:
@@ -162,33 +250,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data['action'] == "resultconnectionconf" and \
             msg['from'].user == "master" and \
             msg['from'].resource=="MASTER" and data['ret'] == 0:
-            logging.info("Resultat data : %s"%json.dumps(data, indent=4, sort_keys=True))
+            logging.info("Resultat data : %s"%json.dumps(data,
+                                                         indent=4,
+                                                         sort_keys=True))
             if len(data['data']) == 0 :
                 logging.error("Verify table cluster : has_cluster_ars")
                 sys.exit(0)
-            logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'], indent=4, sort_keys=True))
+            logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'],
+                                                                                 indent=4,
+                                                                                 sort_keys=True))
             logging.log(DEBUGPULSE,"write new config")
             try:
-                #TODO
-                # suite a ce TODO les machines auront les device syncthing des ARS configure.
-                # Variable Modification = False
-                # restart syncthing
-                # lit configuration json
-                # if len(data['data'][0]) == 6:
-                    # """il faut que sa reste compatible avec l'ancien"""
-                    # ==6 la device syncthing est bien transmise
-                    # for x in data['data']:
-                        # if str(x[5]) != "":
-                            # """  on verify que str(x[5]) != "": """
-                            # if device not exist dans conf json syncthing:
-                                 # """ on verify si device str(x[5]) exist dans configuration json syncthing """
-                                 # on  ajoute le device str(x[5]) dans la conf json syncthing.
-                                 # Variable Modification = Truen
-                    #if Variable Modification == True:
-                        # """on applique la configuration json a syncthing"""
-                        # post config to syncthing
-                        # resynchro la conf json syncthing
-
+                if self.deviceid != "":
+                    if len(data['data'][0]) == 6:
+                        for x in data['data']:
+                            if self.is_format_key_device(str(x[5])):
+                                self.adddevicesyncthing(str(x[5]), str(x[2]))
                 changeconnection(conffilename(opts.typemachine),
                                  data['data'][0][1],
                                  data['data'][0][0],
@@ -209,7 +286,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 nextalternativeclusterconnection(conffilename("cluster"))
             except:
                 # conpatibility version old agent master
-                changeconnection(conffilename(opts.typemachine), data['data'][1], data['data'][0], data['data'][2], data['data'][3])
+                changeconnection(conffilename(opts.typemachine),
+                                 data['data'][1],
+                                 data['data'][0],
+                                 data['data'][2],
+                                 data['data'][3])
         elif data['ret'] != 0:
             logging.error("configuration dynamic error")
         else:
@@ -301,7 +382,13 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
     try:
         if sys.platform.startswith('win'):
             import multiprocessing
-            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
+            p = multiprocessing.Process(name='xmppagent',
+                                        target=doTask, 
+                                        args=(optstypemachine,
+                                              optsconsoledebug,
+                                              optsdeamon,
+                                              tglevellog,
+                                              tglogfile,))
             p.daemon = True
             p.start()
             p.join()
@@ -319,12 +406,14 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
-    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidconnection"), "%s"%os.getpid())
+    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "pidconnection"), "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             # knokno
             result = subprocess.check_output(["icacls",
-                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidconnection"),
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                 "pidconnection"),
                                     "/setowner",
                                     "pulse",
                                     "/t"], stderr=subprocess.STDOUT)
@@ -364,10 +453,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     if optstypemachine.lower() in ["machine"]:
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
     else:
-        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay")
+        tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                      "pluginsrelay")
 
     while True:
-        if ipfromdns(tg.confserver) != "" and  check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
+        if ipfromdns(tg.confserver) != "" and \
+            check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
         logging.log(DEBUGPULSE,"ERROR CONNECTOR")
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.confserver,
@@ -386,24 +477,30 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0045') # Multi-User Chat
         xmpp.register_plugin('xep_0004') # Data Forms
         xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600,'interval' : 600, 'timeout' : 500  })
+        xmpp.register_plugin('xep_0199', {'keepalive': True,
+                                          'frequency':600,
+                                          'interval' : 600,
+                                          'timeout' : 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
 
-        # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
+        # Connect to the XMPP server and start processing XMPP
+        # stanzas.address=(args.host, args.port)
         if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
             t = Timer(300, xmpp.terminate)
             t.start()
             xmpp.process(block=True)
             t.cancel()
             logging.log(DEBUGPULSE,"bye bye connecteur")
-            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
+            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                        "BOOLCONNECTOR")
             fichier= open(namefilebool,"w")
             fichier.close()
         else:
             logging.log(DEBUGPULSE,"Unable to connect.")
     else:
-        logging.log(DEBUGPULSE,"Warning: A relay server holds a Static configuration. Do not run configurator agent on relay servers.")
+        logging.log(DEBUGPULSE,"Warning: A relay server holds a Static "\
+            "configuration. Do not run configurator agent on relay servers.")
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:

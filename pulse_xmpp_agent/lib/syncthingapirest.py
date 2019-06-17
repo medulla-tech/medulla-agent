@@ -752,23 +752,22 @@ class syncthing():
                 folder['devices'].append({  "deviceID": id_device,
                                             "introducedBy": ""})
 
-    def  create_template_struct_device(self,
+    def create_template_struct_device(self,
                                        str_name,
                                        id_device,
                                        introducer = False,
-                                       autoAcceptFolders=False
-                                       ):
+                                       autoAcceptFolders=False):
         return{
                 "pendingFolders": [],
                 "compression": "metadata",
-                "skipIntroductionRemovals": false,
+                "skipIntroductionRemovals": False,
                 "maxRecvKbps": 0,
                 "allowedNetworks": [],
                 "certName": "",
                 "maxRequestKiB": 0,
                 "introducer": introducer,
                 "name": str_name,
-                "paused": false,
+                "paused": False,
                 "deviceID": id_device,
                 "ignoredFolders": [],
                 "maxSendKbps": 0,
@@ -776,8 +775,7 @@ class syncthing():
                 "autoAcceptFolders": autoAcceptFolders,
                 "addresses": [
                     "dynamic"
-                ]
-            }
+                ]}
 
     def create_template_struct_folder(self,
                                       str_name,
