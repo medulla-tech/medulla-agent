@@ -777,6 +777,58 @@ class syncthing():
                     "dynamic"
                 ]}
 
+    def is_exist_folder_id(self, idfolder):
+        for folder in self.folders:
+            if folder['id'] == idfolder:
+             return True
+        return False 
+
+    def add_folder_dict_if_not_exist_id(self, dictaddfolder):
+        if not self.is_exist_folder_id(dictaddfolder['id']):
+            self.folders.append(dictaddfolder)
+            return True
+        return False
+
+    def add_device_in_folder_if_not_exist(self, folderid, keydevice, introducedBy = ""):
+        for folder in self.folders:
+            if folderid == folder['id']:
+                #folder trouve
+                for device in folder['devices']:
+                    if device['deviceID'] == keydevice:
+                        #device existe
+                        return False
+                new_device={"deviceID": keydevice, 
+                            "introducedBy": introducedBy}
+                folder['devices'].append(new_device)
+                return True
+        return False
+
+    def validate_chang_config(self):
+        self.post_config()
+        self.post_restart()
+        self.reload_config()
+
+    def is_format_key_device(self, keydevicesyncthing):
+        if len(str(keydevicesyncthing)) != 63:
+            logger.warning("size key device diff of 63")
+        listtest = keydevicesyncthing.split("-")
+        if len(listtest) != 8:
+            logger.error("group key diff of 8")
+            return False
+        for z in listtest:
+            index = 1
+            if len(z) != 7:
+                logger.error("size group key diff of 7")
+                return False
+            index+=1
+        return True
+
+    def is_exist_device_in_config(self, keydevicesyncthing):
+        for device in self.devices:
+            if device['deviceID'] == keydevicesyncthing:
+                return True
+        return False
+
     def create_template_struct_folder(self,
                                       str_name,
                                       path_folder,

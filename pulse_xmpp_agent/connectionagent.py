@@ -207,16 +207,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                str(keydevicesyncthing),
                                                introducer = False,
                                                autoAcceptFolders=True)
-            logger.debug("add device [%s]syncthing to ars %s\n"%(keydevicesyncthing,
+            logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
                                                                  namerelay,
                                                                  json.dumps(dsyncthing_tmp,
                                                                             indent = 4)))
             self.syncthing.config['devices'].append(dsyncthing_tmp)
-            logger.debug("synchro config %s"%self.syncthing.is_config_sync())
-            self.syncthing.post_config()
-            self.syncthing.post_restart()
-            time.sleep(5)
-            self.syncthing.reload_config()
 
     def is_exist_device_in_config(self, keydevicesyncthing):
         for device in self.syncthing.devices:
@@ -259,13 +254,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'],
                                                                                  indent=4,
                                                                                  sort_keys=True))
-            logging.log(DEBUGPULSE,"write new config")
+            logging.log(DEBUGPULSE, "write new config")
             try:
+                if "syncthing" in data:
+                    self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
                 if self.deviceid != "":
                     if len(data['data'][0]) == 6:
                         for x in data['data']:
                             if self.is_format_key_device(str(x[5])):
                                 self.adddevicesyncthing(str(x[5]), str(x[2]))
+                logger.debug("synchro config %s"%self.syncthing.is_config_sync())
+                self.syncthing.post_config()
+                self.syncthing.post_restart()
+                time.sleep(10)
+                self.syncthing.reload_config()
                 changeconnection(conffilename(opts.typemachine),
                                  data['data'][0][1],
                                  data['data'][0][0],
