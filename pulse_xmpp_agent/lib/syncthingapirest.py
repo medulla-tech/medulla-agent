@@ -803,6 +803,16 @@ class syncthing():
                 return True
         return False
 
+    def add_device_in_folder(self, folderjson, keydevice, introducedBy = ""):
+        for device in folderjson['devices']:
+            if device['deviceID'] == keydevice:
+                #device existe
+                return False
+        new_device={"deviceID": keydevice, 
+                    "introducedBy": introducedBy}
+        folderjson['devices'].append(new_device)
+        return True
+
     def validate_chang_config(self):
         self.post_config()
         self.post_restart()

@@ -19,6 +19,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+# file  : pulse_xmpp_agent/connectionagent.py
 
 import sys,os
 import logging
@@ -205,7 +206,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             dsyncthing_tmp = self.syncthing.\
                 create_template_struct_device( resource,
                                                str(keydevicesyncthing),
-                                               introducer = False,
+                                               introducer = True,
                                                autoAcceptFolders=True)
             logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
                                                                  namerelay,
@@ -263,11 +264,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         for x in data['data']:
                             if self.is_format_key_device(str(x[5])):
                                 self.adddevicesyncthing(str(x[5]), str(x[2]))
-                logger.debug("synchro config %s"%self.syncthing.is_config_sync())
-                self.syncthing.post_config()
-                self.syncthing.post_restart()
-                time.sleep(10)
-                self.syncthing.reload_config()
+                    logger.debug("synchro config %s"%self.syncthing.is_config_sync())
+                    self.syncthing.validate_chang_config()
+                    time.sleep(3)
+                    logger.debug(json.dumps(self.syncthing.config, indent =4))
                 changeconnection(conffilename(opts.typemachine),
                                  data['data'][0][1],
                                  data['data'][0][0],
