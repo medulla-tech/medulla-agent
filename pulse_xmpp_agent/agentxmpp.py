@@ -97,6 +97,10 @@ class QueueManager(SyncManager):
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self, conf):#jid, password, room, nick):
         logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
+        #create dir for descriptor syncthing deploy
+        self.dirsyncthing =  os.path.join(os.path.dirname(os.path.realpath(__file__)), "syncthingdescriptor")
+        if not os.path.isdir(self.dirsyncthing):
+            os.makedirs( self.dirsyncthing, 0755 );
         logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
         laps_time_update_plugin = 3600
@@ -208,6 +212,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.lapstimebansessionid = 900     # ban session id 900 secondes
         self.banterminate = { } # used for clear id session banned
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
+        self.schedule('scan_syncthing_deploy"', 15, self.scan_syncthing_deploy, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.deviceid=""
         ################################### initialise syncthing ###################################
@@ -385,6 +390,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_action_extern,
                       self.execcmdfile,
                       repeat=True)
+    def scan_syncthing_deploy(self):
+        # voir pour windows.
+        listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
+            for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
+        for filears in listfilearssyncthing:
+            syncthingonj = managepackage.loadjsonfile(filears)
+            namesearch = os.path.join( "/var/lib/pulse2" , syncthingonj['id_deploy'])
+            ##verify le contenue de namesearch
+            if os.path.isdir(namesearch):
+                # on deploy
+                filedescriptorpour_deploy = os.path.join("%s.descriptor"%filears[:-4])
+                pass
+            else:
+                pass
+                # pas encore partage
+            #listffichierrecu =  [os.path.join(namesearch, x)\
+                #for x in os.listdir(namesearch) )
+            #if len(listffichierrecu) > 1 :
+                    ## recu le partage
+                    ## on deploie
 
     def execcmdfile(self):
         """
