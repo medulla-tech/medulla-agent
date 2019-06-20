@@ -42,7 +42,7 @@ from lxml import etree
 import urllib
 import socket
 
-from utils import Program
+from utils import Program, getRandomName
 import logging
 import traceback
 
