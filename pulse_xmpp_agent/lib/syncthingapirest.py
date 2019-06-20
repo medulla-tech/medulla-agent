@@ -970,11 +970,8 @@ class syncthingprogram(Program):
 
     def restart_syncthing(self):
         #print("restart syncthing")
-        if sys.platform.startswith('linux') and self.agenttype == "relayserver":
-            os.system("systemctl restart syncthing@syncthing.service")
-        else:
-            self.stop_syncthing()
-            self.start_syncthing()
+        self.stop_syncthing()
+        self.start_syncthing()
 
 if __name__ == '__main__':
     pass
