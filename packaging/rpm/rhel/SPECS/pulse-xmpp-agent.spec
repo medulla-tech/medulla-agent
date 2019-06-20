@@ -33,6 +33,7 @@ Pulse XMPP Agent
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service  
 %_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service  
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
+%_prefix/lib/systemd/system/pulse-package-watching.service
 %_sysconfdir/pulse-xmpp-agent
 %_var/lib/pulse2/clients/config/*
 %_var/log/pulse
