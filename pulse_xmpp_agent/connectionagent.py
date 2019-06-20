@@ -115,7 +115,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
             tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
         elif sys.platform.startswith('darwin'):
-            pass
+            fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
+                                                "etc", "syncthing", "config.xml")
+            tmpfile = "/tmp/confsyncting.txt"
         try:
             self.syncthing = syncthing(configfile = fichierconfsyncthing)
             if logger.level <= 10:
@@ -260,6 +262,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if "syncthing" in data:
                     self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
                     self.syncthing.config['options']['relaysEnabled'] = False
+                    if sys.platform.startswith('win'):
+                        self.syncthing.config['options']['defaultFolderPath'] = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
+                    elif sys.platform.startswith('linux'):
+                        self.syncthing.config['options']['defaultFolderPath'] = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
+                    elif sys.platform.startswith('darwin'):
+                        self.syncthing.config['options']['defaultFolderPath'] = os.path.join("/", "Library", "Application Support", "Pulse",
+                                                                                             "var", "syncthing")
                 if self.deviceid != "":
                     if len(data['data'][0]) == 6:
                         for x in data['data']:

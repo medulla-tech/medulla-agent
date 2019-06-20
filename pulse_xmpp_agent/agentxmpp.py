@@ -228,19 +228,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if self.config.agenttype in ['relayserver']:
                 fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
             else:
-                
+
                 fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                     ".config","syncthing","config.xml")
-                #/var/lib/pulse2/.config/syncthing/config.xml
-                
-                # /var/lib/pulse2/.config/syncthing
-
             tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith('win'):
             fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
             tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
         elif sys.platform.startswith('darwin'):
-            pass
+            fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
+                                                "etc", "syncthing", "config.xml")
+            tmpfile = "/tmp/confsyncting.txt"
         try:
             self.syncthing = syncthing(configfile = fichierconfsyncthing)
             if logger.level <= 10:

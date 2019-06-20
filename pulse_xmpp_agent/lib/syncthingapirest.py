@@ -943,10 +943,11 @@ class syncthingprogram(Program):
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('darwin'):
             if self.home == "":
-                self.home = "/Library/Application\ Support/Pulse/etc/"
+                self.home = "/Library/Application\ Support/Pulse/etc/syncthing/"
             if self.logfile == "":
-                self.logfile = "/Library/Application\ Support/Pulse/var/log/"
+                self.logfile = "/Library/Application\ Support/Pulse/var/log/syncthing.log"
 
+            self.stop_syncthing()
             cmd ="""export STNODEFAULTFOLDER=1;nohup /Library/Application\ Support/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &"""%(self.home, self.logfile)
             self.startprogram(cmd, 'syncthing')
 
