@@ -259,6 +259,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             try:
                 if "syncthing" in data:
                     self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
+                    self.syncthing.config['options']['relaysEnabled'] = False
                 if self.deviceid != "":
                     if len(data['data'][0]) == 6:
                         for x in data['data']:
@@ -385,7 +386,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
         if sys.platform.startswith('win'):
             import multiprocessing
             p = multiprocessing.Process(name='xmppagent',
-                                        target=doTask, 
+                                        target=doTask,
                                         args=(optstypemachine,
                                               optsconsoledebug,
                                               optsdeamon,
