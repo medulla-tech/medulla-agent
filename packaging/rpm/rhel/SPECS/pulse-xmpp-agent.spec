@@ -80,6 +80,7 @@ chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini.in %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini %buildroot%_var/lib/pulse2/clients/config/
+rm -fv %buildroot%_var//lib/pulse2/clients/config/agentconf.ini.in
 
 cp pulse_xmpp_master_substitute/agentmastersubstitute.py %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
@@ -92,3 +93,4 @@ cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_prefix/pulse-xmpp-agent
 
 cp pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system/
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
+
