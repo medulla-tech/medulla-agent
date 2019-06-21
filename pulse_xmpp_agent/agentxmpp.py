@@ -72,7 +72,7 @@ from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 import psutil
 from modulefinder import ModuleFinder
 
-from managepackage import managepackage 
+from lib.managepackage import managepackage
 
 if sys.platform.startswith('win'):
     import win32api
