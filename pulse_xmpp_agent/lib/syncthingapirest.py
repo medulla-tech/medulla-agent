@@ -781,7 +781,7 @@ class syncthing():
         for folder in self.folders:
             if folder['id'] == idfolder:
              return True
-        return False 
+        return False
 
     def add_folder_dict_if_not_exist_id(self, dictaddfolder):
         if not self.is_exist_folder_id(dictaddfolder['id']):
@@ -797,7 +797,7 @@ class syncthing():
                     if device['deviceID'] == keydevice:
                         #device existe
                         return False
-                new_device={"deviceID": keydevice, 
+                new_device={"deviceID": keydevice,
                             "introducedBy": introducedBy}
                 folder['devices'].append(new_device)
                 return True
@@ -808,7 +808,7 @@ class syncthing():
             if device['deviceID'] == keydevice:
                 #device existe
                 return False
-        new_device={"deviceID": keydevice, 
+        new_device={"deviceID": keydevice,
                     "introducedBy": introducedBy}
         folderjson['devices'].append(new_device)
         return True
@@ -903,6 +903,15 @@ class syncthing():
                 for device in folder['devices']:
                     if device['deviceID'] == deviceid:
                         folder["devices"].remove(device)
+
+    def del_folder(self, folderid):
+        """Dissociate the device from the folder.
+        Params:
+            folderid: str of the folder id"""
+
+        for folder in self.config['folders']:
+            if folder['id'] == folderid:
+                self.config['folders'].remove(folder)
 
 class syncthingprogram(Program):
     def __init__(self,
