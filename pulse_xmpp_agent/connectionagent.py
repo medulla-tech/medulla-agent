@@ -263,12 +263,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
                     self.syncthing.config['options']['relaysEnabled'] = False
                     if sys.platform.startswith('win'):
-                        self.syncthing.config['options']['defaultFolderPath'] = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
+                        defaultFolderPath = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
                     elif sys.platform.startswith('linux'):
-                        self.syncthing.config['options']['defaultFolderPath'] = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
+                        defaultFolderPath = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
                     elif sys.platform.startswith('darwin'):
-                        self.syncthing.config['options']['defaultFolderPath'] = os.path.join("/", "Library", "Application Support", "Pulse",
-                                                                                             "var", "syncthing")
+                        defaultFolderPath = os.path.join("/", "Library", "Application Support", "Pulse",
+                                                         "var", "syncthing")
+                    if not os.path.exists(defaultFolderPath):
+                        os.mkdir(defaultFolderPath)
+                        os.chmod(defaultFolderPath, 0o777)
+                    self.syncthing.config['options']['defaultFolderPath'] = defaultFolderPath
+
                 if self.deviceid != "":
                     if len(data['data'][0]) == 6:
                         for x in data['data']:
