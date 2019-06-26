@@ -37,6 +37,7 @@ from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from sleekxmpp.xmlstream import handler, matcher
 
+import shutil
 import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
@@ -228,7 +229,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if self.config.agenttype in ['relayserver']:
                 fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
             else:
-
                 fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                     ".config","syncthing","config.xml")
             tmpfile = "/tmp/confsyncting.txt"
@@ -391,25 +391,80 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       self.execcmdfile,
                       repeat=True)
     def scan_syncthing_deploy(self):
-        # voir pour windows.
+        # syncthing root descriptor in agent when a deployment is running
+        rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)), "syncthingdescriptor")
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
             for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
+        # get the root for the sync folders
+        syncthingroot = ""
+        if sys.platform.startswith('win'):
+            syncthingroot = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
+        elif sys.platform.startswith('linux'):
+            syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
+        elif sys.platform.startswith('darwin'):
+            syncthingroot = os.path.join("/", "Library", "Application Support", "Pulse", "var", "syncthing")
+
         for filears in listfilearssyncthing:
-            syncthingonj = managepackage.loadjsonfile(filears)
-            namesearch = os.path.join( "/var/lib/pulse2" , syncthingonj['id_deploy'])
+            syncthingtojson = managepackage.loadjsonfile(filears)
+            namesearch = os.path.join( syncthingroot , syncthingtojson['id_deploy'])
+
             ##verify le contenue de namesearch
             if os.path.isdir(namesearch):
-                # on deploy
-                filedescriptorpour_deploy = os.path.join("%s.descriptor"%filears[:-4])
-                pass
+                # Get the deploy json
+                filedeploy = os.path.join("%s.descriptor"%filears[:-4])
+                deploytojson = managepackage.loadjsonfile(filedeploy)
+
+                # Now we have :
+                #   - the .ars file root in filears
+                #   - it's json in syncthingtojson
+                #   - the .descriptor file root in filedeploy
+                #   - it's json in deploytojson
+
+                # We need to copy the content of namesearch into the tmp package dir
+                packagedir = managepackage.packagedir()
+                for dirname in os.listdir(namesearch):
+                    if dirname != ".stfolder":
+                        try:
+                            res = shutil.copytree(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname))
+                            logging.debug("copy %s to %s"%(dirname, packagedir))
+                            # Delete filears and filedeploy
+                            os.remove(filears)
+                            logging.debug("delete %s"%filears)
+                            os.remove(filedeploy)
+                            logging.debug("delete %s"%filedeploy)
+
+                            senddata = deploytojson
+                            senddata['cluster'] = syncthingtojson['ARS']
+                            senddata['transfert'] = 'pushrsync'
+                            senddata['pathpackageonmachine'] = os.path.join(packagedir,dirname)
+
+                            dataerreur={
+                                "action": "resultapplicationdeploymentjson",
+                                "sessionid" : syncthingtojson['sessionid'],
+                                "ret" : 255,
+                                "base64" : False,
+                                "data": {"msg" : "error deployement"}
+                            }
+
+                            transfertdeploy = {
+                                'action': "applicationdeploymentjson",
+                                'sessionid': syncthingtojson['sessionid'],
+                                'data' : deploytojson,
+                                'ret' : 0,
+                                'base64' : False }
+                            msg = {'from' : syncthingtojson['ARS'], "to" : self.boundjid.bare, 'type' : 'chat' }
+                            call_plugin(transfertdeploy["action"],
+                                        self,
+                                        transfertdeploy["action"],
+                                        transfertdeploy['sessionid'],
+                                        transfertdeploy['data'],
+                                        msg,
+                                        dataerreur)
+                        except:
+                            logging.error("The package's copy %s to %s failed"%(dirname, packagedir))
             else:
+                # The directory folder is not shared yet
                 pass
-                # pas encore partage
-            #listffichierrecu =  [os.path.join(namesearch, x)\
-                #for x in os.listdir(namesearch) )
-            #if len(listffichierrecu) > 1 :
-                    ## recu le partage
-                    ## on deploie
 
     def execcmdfile(self):
         """
