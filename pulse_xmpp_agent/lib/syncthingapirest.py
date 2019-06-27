@@ -63,6 +63,7 @@ class syncthing():
                     port = 8384,
                     configfile = "/var/lib/syncthing/.config/syncthing/config.xml",
                     idapirest = None):
+        self.configfile = configfile
         self.readingconf = 0
         self.urlweb = urlweb
         self.port = port
@@ -76,8 +77,20 @@ class syncthing():
             self.idapirest = idapirest
 
         self.headers = { 'X-API-KEY': "%s"% self.idapirest }
+        time.sleep(5)
         self.reload_config()
+        try:
+            logger.info("___________________________________")
+            logger.info("Syncthing  Version %s"%self.version)
+            logger.info("Device id %s"%self.device_id)
+            logger.info("config file %s"%configfile)
+            logger.info("___________________________________")
+        except:
+            logger.error("Syncthing configuration")
         # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
+
+    def getpathconfigfile(self):
+        return self.configfile
 
     def getidapi(self):
         return self.idapirest
@@ -814,9 +827,11 @@ class syncthing():
         return True
 
     def validate_chang_config(self):
+        time.sleep(1)
         self.post_config()
+        time.sleep(2)
         self.post_restart()
-        self.reload_config()
+        time.sleep(2)
 
     def is_format_key_device(self, keydevicesyncthing):
         if len(str(keydevicesyncthing)) != 63:
