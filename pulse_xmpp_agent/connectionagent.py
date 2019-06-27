@@ -261,7 +261,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             try:
                 if "syncthing" in data:
                     self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
-                    self.syncthing.config['options']['relaysEnabled'] = False
+                    self.syncthing.config['options']['relaysEnabled'] = True
                     self.syncthing.del_folder("default")
                     if sys.platform.startswith('win'):
                         defaultFolderPath = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
