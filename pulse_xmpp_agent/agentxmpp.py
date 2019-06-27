@@ -20,6 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+# file : pulse_xmpp_agent/agentxmpp.py
+
 import sys
 import os
 import logging
@@ -215,7 +217,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.lapstimebansessionid = 900     # ban session id 900 secondes
         self.banterminate = { } # used for clear id session banned
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
-        self.schedule('scan_syncthing_deploy"', 15, self.scan_syncthing_deploy, repeat=True)
+        if  not self.config.agenttype in ['relayserver']:
+            self.schedule('scan_syncthing_deploy"', 15, self.scan_syncthing_deploy, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.deviceid=""
         ################################### initialise syncthing ###################################
