@@ -1,3 +1,6 @@
+pulse-xmpp-agent 2.0.1
+======================
+
 pulse-xmpp-agent 2.0.0
 ======================
 * [FEATURE] Allow scp and rsync transfers in Pull mode

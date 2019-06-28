@@ -4,7 +4,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.0.0
+Version:	2.0.1
 %if ! %use_git
 Release:        1%{?dist}
 %else
