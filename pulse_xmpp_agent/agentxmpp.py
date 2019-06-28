@@ -428,6 +428,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 for dirname in os.listdir(namesearch):
                     if dirname != ".stfolder":
                         try:
+                            shutil.rmtree(os.path.join(packagedir,dirname))
+                        except:
+                            pass
+                        try:
                             res = shutil.copytree(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname))
                             logging.debug("copy %s to %s"%(dirname, packagedir))
                             # Delete filears and filedeploy
