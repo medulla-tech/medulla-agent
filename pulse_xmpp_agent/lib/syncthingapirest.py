@@ -763,10 +763,15 @@ class syncthing():
             return analyseresult(r)
 
     def add_device_to_folder(self, strlabel, id_device ):
-        for folder in self.folders:
-            if folder['label'] == strlabel:
-                folder['devices'].append({  "deviceID": id_device,
-                                            "introducedBy": ""})
+        self.mutex.acquire()
+        try:
+            for folder in self.folders:
+                if folder['label'] == strlabel:
+                    folder['devices'].append({  "deviceID": id_device,
+                                                "introducedBy": ""})
+                    self.synchro = False
+        finally:
+            self.mutex.release()
 
     def create_template_struct_device(self,
                                        str_name,
@@ -840,9 +845,9 @@ class syncthing():
             self.mutex.release()
         return False
 
-    def add_device_in_folder_if_not_exist(self,
-                                          folderid,
-                                          keydevice,
+    def add_device_in_folder_if_not_exist(self, 
+                                          folderid, 
+                                          keydevice, 
                                           introducedBy = ""):
         result = False
         self.mutex.acquire()
@@ -978,21 +983,30 @@ class syncthing():
         Params:
             folderid: str of the folder id
             deviceid : str of the device id"""
-
-        for folder in self.config['folders']:
-            if folder['id'] == folderid:
-                for device in folder['devices']:
-                    if device['deviceID'] == deviceid:
-                        folder["devices"].remove(device)
+        self.mutex.acquire()
+        try:
+            for folder in self.config['folders']:
+                if folder['id'] == folderid:
+                    for device in folder['devices']:
+                        if device['deviceID'] == deviceid:
+                            folder["devices"].remove(device)
+                            self.synchro = False
+        finally:
+            self.mutex.release()
 
     def del_folder(self, folderid):
         """Dissociate the device from the folder.
         Params:
             folderid: str of the folder id"""
 
-        for folder in self.config['folders']:
-            if folder['id'] == folderid:
-                self.config['folders'].remove(folder)
+        self.mutex.acquire()
+        try:
+            for folder in self.config['folders']:
+                if folder['id'] == folderid:
+                    self.config['folders'].remove(folder)
+                    self.synchro = False
+        finally:
+            self.mutex.release()
 
 class syncthingprogram(Program):
     def __init__(self,
