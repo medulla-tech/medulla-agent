@@ -41,7 +41,7 @@ import requests, json
 from lxml import etree
 import urllib
 import socket
-
+from threading import Lock
 from utils import Program, getRandomName
 import logging
 import traceback
@@ -64,6 +64,8 @@ class syncthing():
                     configfile = "/var/lib/syncthing/.config/syncthing/config.xml",
                     idapirest = None):
         self.configfile = configfile
+        self.synchro = False
+        self.mutex = Lock()
         self.readingconf = 0
         self.urlweb = urlweb
         self.port = port
@@ -97,6 +99,7 @@ class syncthing():
 
     def reload_config(self):
         self.config = self.get_config() # content all config
+        self.synchro = True
         if len(self.config) != 0:
             self.folders = self.config['folders']
             self.devices = self.config['devices']
@@ -790,6 +793,36 @@ class syncthing():
                     "dynamic"
                 ]}
 
+
+    def add_device_syncthing( self,
+                            keydevicesyncthing,
+                            namerelay,
+                            introducer = False):
+        result = False
+        self.mutex.acquire()
+        try:
+            # test si device existe
+            for device in self.devices:
+                if device['deviceID'] == keydevicesyncthing:
+                    #la devise existe deja
+                    result = False
+            logger.debug("add device syncthing %s"%keydevicesyncthing)
+            dsyncthing_tmp = self.create_template_struct_device(namerelay,
+                                                                str(keydevicesyncthing),
+                                                                introducer = introducer)
+
+            logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
+                                                                   namerelay,
+                                                                   json.dumps(dsyncthing_tmp,
+                                                                              indent = 4)))
+            self.config['devices'].append(dsyncthing_tmp)
+            self.synchro = False
+            result = True
+        finally:
+            self.mutex.release()
+            return result
+        return False
+
     def is_exist_folder_id(self, idfolder):
         for folder in self.folders:
             if folder['id'] == idfolder:
@@ -797,41 +830,74 @@ class syncthing():
         return False
 
     def add_folder_dict_if_not_exist_id(self, dictaddfolder):
-        if not self.is_exist_folder_id(dictaddfolder['id']):
-            self.folders.append(dictaddfolder)
-            return True
-        return False
-
-    def add_device_in_folder_if_not_exist(self, folderid, keydevice, introducedBy = ""):
-        for folder in self.folders:
-            if folderid == folder['id']:
-                #folder trouve
-                for device in folder['devices']:
-                    if device['deviceID'] == keydevice:
-                        #device existe
-                        return False
-                new_device={"deviceID": keydevice,
-                            "introducedBy": introducedBy}
-                folder['devices'].append(new_device)
+        self.mutex.acquire()
+        try:
+            if not self.is_exist_folder_id(dictaddfolder['id']):
+                self.folders.append(dictaddfolder)
+                self.synchro = False
                 return True
+        finally:
+            self.mutex.release()
         return False
 
-    def add_device_in_folder(self, folderjson, keydevice, introducedBy = ""):
-        for device in folderjson['devices']:
-            if device['deviceID'] == keydevice:
-                #device existe
-                return False
-        new_device={"deviceID": keydevice,
-                    "introducedBy": introducedBy}
-        folderjson['devices'].append(new_device)
-        return True
+    def add_device_in_folder_if_not_exist(self,
+                                          folderid,
+                                          keydevice,
+                                          introducedBy = ""):
+        result = False
+        self.mutex.acquire()
+        try:
+            for folder in self.folders:
+                if folderid == folder['id']:
+                    #folder trouve
+                    for device in folder['devices']:
+                        if device['deviceID'] == keydevice:
+                            #device existe
+                            result = False
+                    new_device = {"deviceID": keydevice, 
+                                  "introducedBy": introducedBy}
+                    folder['devices'].append(new_device)
+                    self.synchro = False
+                    result =  True
+        finally:
+            self.mutex.release()
+            return result
+        return False
+
+    def add_device_in_folder(self, 
+                             folderjson, 
+                             keydevice, 
+                             introducedBy = ""):
+        """add device sur structure folder """
+        result = False
+        self.mutex.acquire()
+        try:
+            for device in folderjson['devices']:
+                if device['deviceID'] == keydevice:
+                    #device existe
+                    return False
+            new_device={"deviceID": keydevice,
+                        "introducedBy": introducedBy}
+            folderjson['devices'].append(new_device)
+            result =  True
+        finally:
+            self.mutex.release()
+            return result
+        return False
 
     def validate_chang_config(self):
-        time.sleep(1)
-        self.post_config()
-        time.sleep(2)
-        self.post_restart()
-        time.sleep(2)
+        self.mutex.acquire()
+        try:
+            if not self.synchro:
+                time.sleep(1)
+                self.post_config()
+                time.sleep(2)
+                self.post_restart()
+                time.sleep(2)
+                self.synchro = True
+        finally:
+            self.mutex.release()
+
 
     def is_format_key_device(self, keydevicesyncthing):
         if len(str(keydevicesyncthing)) != 63:

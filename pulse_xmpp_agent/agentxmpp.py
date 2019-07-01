@@ -217,11 +217,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.lapstimebansessionid = 900     # ban session id 900 secondes
         self.banterminate = { } # used for clear id session banned
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
-        if  not self.config.agenttype in ['relayserver']:
-            self.schedule('scan_syncthing_deploy"', 15, self.scan_syncthing_deploy, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.deviceid=""
         ################################### initialise syncthing ###################################
+        if  not self.config.agenttype in ['relayserver']:
+            self.schedule('scan_syncthing_deploy"', 15, self.scan_syncthing_deploy, repeat=True)
+        self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
         if logger.level <= 10:
             console = False
             browser = True
@@ -393,6 +394,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_action_extern,
                       self.execcmdfile,
                       repeat=True)
+
+    def synchro_synthing(self):
+        # update syncthing
+        self.syncthing.validate_chang_config()
+
     def scan_syncthing_deploy(self):
         # syncthing root descriptor in agent when a deployment is running
         rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)), "syncthingdescriptor")
