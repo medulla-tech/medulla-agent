@@ -280,9 +280,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         del (jsonautre['packagefile'])
         #DEPLOYMENT START
         try:
-            dede = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
-            if dede:
-                if dede.result is None or \
+            deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+            if deploysession:
+                if deploysession.result is None or \
                     ("advanced" in jsonresult and \
                         'syncthing' in jsonresult['advanced'] and \
                             jsonresult['advanced']['syncthing'] == 1):
@@ -290,18 +290,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 "infoslist": [jsonresult['descriptor']['info']],
                                 "descriptorslist": [jsonresult['descriptor']['sequence']],
                                 "otherinfos" : [jsonautre],
-                                "title" : dede.title,
-                                "session" : dede.sessionid,
-                                "macadress" : dede.macadress,
-                                "user" : dede.login
+                                "title" : deploysession.title,
+                                "session" : deploysession.sessionid,
+                                "macadress" : deploysession.macadress,
+                                "user" : deploysession.login
                     }
                 else:
-                    jsonbase = json.loads(dede.result)
+                    jsonbase = json.loads(deploysession.result)
                     jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
                     jsonbase['otherinfos'].append(jsonautre)
-                dede.result = json.dumps(jsonbase, indent=3)
-                dede.state = state
+                deploysession.result = json.dumps(jsonbase, indent=3)
+                deploysession.state = state
             session.commit()
             session.flush()
             session.close()
