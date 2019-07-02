@@ -273,22 +273,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def updatedeployresultandstate(self, sessionid, state, result ):
-        #engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                                #self.config.dbuser,
-                                                                #self.config.dbpasswd,
-                                                                #self.config.dbhost,
-                                                                #self.config.dbname))
-        #Session = sessionmaker(bind=engine)
         session = self.Session()
         jsonresult = json.loads(result)
         jsonautre = copy.deepcopy(jsonresult)
         del (jsonautre['descriptor'])
         del (jsonautre['packagefile'])
-        #DEPLOYMENT STAR T
+        #DEPLOYMENT START
         try:
             dede = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
             if dede:
-                if dede.result is None:
+                if dede.result is None or \
+                    ("advanced" in jsonresult and \
+                        'syncthing' in jsonresult['advanced'] and \
+                            jsonresult['advanced']['syncthing'] == 1):
                     jsonbase = {
                                 "infoslist": [jsonresult['descriptor']['info']],
                                 "descriptorslist": [jsonresult['descriptor']['sequence']],
@@ -311,6 +308,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return 1
         except Exception, e:
             logging.getLogger().error(str(e))
+            traceback.print_exc(file=sys.stdout)
             return -1
 
     def createlog(self, dataobj):
