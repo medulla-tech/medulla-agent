@@ -441,7 +441,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.xmpplog("Partage complet on Mach %s\n " \
                                 "Start Deployement"%self.boundjid.bare,
                                         type='deploy',
-                                        sessionname=sessionid,
+                                        sessionname= syncthingtojson["sessionid"],
                                         priority=-1,
                                         action="",
                                         who="",
@@ -449,7 +449,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         why=self.boundjid.bare,
                                         module="Deployment | Syncthing",
                                         date=None,
-                                        fromuser=data['login'],
+                                        fromuser="",
                                         touser="")
                             res = shutil.copytree(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname))
                             logging.debug("copy %s to %s"%(dirname, packagedir))
