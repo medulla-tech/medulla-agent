@@ -1604,7 +1604,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             mtype='chat')
                     logger.error("\n%s"%(traceback.format_exc()))
             else:
-                dataerreur['data']['msg'] = "ERROR : Action ignored"
+                if not 'data' in dataobj:
+                    msgerr = "data section missing;  msg : %s"%(msg['body'])
+                if 'action' in dataobj:
+                    act = dataobj['action']
+                else:
+                    act = ""
+                dataerreur['data']['msg'] = "ERROR : Action ignored : %s\n " \
+                    "structure msg\n%s"%(act, msgerr)
                 self.send_message(  mto=msg['from'],
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
