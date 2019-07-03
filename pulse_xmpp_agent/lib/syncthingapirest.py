@@ -57,7 +57,7 @@ logger = logging.getLogger()
 
 """ class use for xmpp on each server syncthing in local """
 
-class syncthing():
+class syncthingapi():
     def __init__(   self,
                     urlweb = 'http://localhost',
                     port = 8384,
@@ -978,6 +978,9 @@ class syncthing():
             }
         }
 
+    
+
+
     def del_device_from_folder(self, folderid, deviceid):
         """Dissociate the device from the folder.
         Params:
@@ -1005,6 +1008,56 @@ class syncthing():
                 if folder['id'] == folderid:
                     self.config['folders'].remove(folder)
                     self.synchro = False
+        finally:
+            self.mutex.release()
+
+class syncthing(syncthingapi):
+
+    def delete_folder_id_pulsedeploy(self, id):
+        self.mutex.acquire()
+        try:
+            #id des partages utilisé pour les menus et les packages dans pulse.
+            idpermanent = ["pulsemaster_bootmenus", "pulsemaster_packages"]
+
+            listfolderid=[x['id'] for x in self.config['folders'] if x['id'] not in idpermanent]
+            if len(listfolderid) == 0 :
+                logger.debug("folder id %s not exist"%id)
+                return
+
+            if id in listfolderid:
+                indexfolderid = listfolderid.index(id)
+            else:
+                logger.debug("folder id %s not exist in folder list %s"%(id,listfolderid))
+                return
+
+            #recuper les devices utiliser dans le folder a supprimer
+            listedevicedel = [x['deviceID'] for x in  self.config['folders'][indexfolderid]['devices']]
+            #recherche si device utiliser dans 1 autre folder.
+            for indexfolder in range(len(self.config['folders'])):
+                if self.config['folders'][indexfolder]['id'] in idpermanent or \
+                    self.config['folders'][indexfolder]['id']== id :
+                    continue
+                list_device_folder_data = [x['deviceID'] for x in  \
+                    self.config['folders'][indexfolder]['devices']]
+                for t in list_device_folder_data:
+                    listdevicecopy = list(listedevicedel)
+                    if t in listdevicecopy:
+                        listedevicedel.remove(t)
+            devices = [x['deviceID'] for x in  self.config['devices']]
+            listdelindex=[]
+            for indexdd in range(len(devices)):
+                if devices[indexdd] in listedevicedel:
+                    listdelindex.append(indexdd)
+            listdelindex.reverse();
+            # on supprime le folder
+            del self.config['folders'][indexfolderid]
+            self.synchro = False
+            # on supprime les device.
+            for indexsupp in listdelindex:
+                del self.config['devices'][indexsupp]
+                self.synchro = False
+        except:
+            logger.error("\n%s"%(traceback.format_exc()))
         finally:
             self.mutex.release()
 
