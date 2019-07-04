@@ -126,6 +126,8 @@ class syncthingapi():
                     device_id_tmp  = device['deviceID']
             if self.device_id is None and device_id_tmp is not None:
                 self.device_id = device_id_tmp
+        self.clean_pending()
+        self.clean_remoteIgnoredDevices()
 
 
     def save_conf_to_file(self, filedatajson):
@@ -978,9 +980,6 @@ class syncthingapi():
             }
         }
 
-    
-
-
     def del_device_from_folder(self, folderid, deviceid):
         """Dissociate the device from the folder.
         Params:
@@ -1011,9 +1010,30 @@ class syncthingapi():
         finally:
             self.mutex.release()
 
+    def clean_pending(self):
+        self.mutex.acquire()
+        try:
+            if 'pendingDevices' in self.config and len(self.config['pendingDevices']) !=0:
+                self.config['pendingDevices'] = []
+                self.synchro = False
+        finally:
+            self.mutex.release()
+
+    def clean_remoteIgnoredDevices(self):
+        self.mutex.acquire()
+        try:
+            if 'remoteIgnoredDevices' in self.config and len(self.config['remoteIgnoredDevices']) !=0:
+                self.config['remoteIgnoredDevices'] = []
+                self.synchro = False
+        finally:
+            self.mutex.release()
+
+
 class syncthing(syncthingapi):
 
     def delete_folder_id_pulsedeploy(self, id):
+        self.clean_pending()
+        self.clean_remoteIgnoredDevices()
         self.mutex.acquire()
         try:
             #id des partages utilisé pour les menus et les packages dans pulse.
@@ -1060,6 +1080,7 @@ class syncthing(syncthingapi):
             logger.error("\n%s"%(traceback.format_exc()))
         finally:
             self.mutex.release()
+
 
 class syncthingprogram(Program):
     def __init__(self,
