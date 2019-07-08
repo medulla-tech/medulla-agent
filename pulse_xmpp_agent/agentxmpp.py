@@ -414,81 +414,102 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         for filears in listfilearssyncthing:
             syncthingtojson = managepackage.loadjsonfile(filears)
-            namesearch = os.path.join( syncthingroot , syncthingtojson['id_deploy'])
+            if syncthingtojson != None:
+                namesearch = os.path.join( syncthingroot , syncthingtojson['id_deploy'])
 
-            ##verify le contenue de namesearch
-            if os.path.isdir(namesearch):
-                # Get the deploy json
-                filedeploy = os.path.join("%s.descriptor"%filears[:-4])
-                deploytojson = managepackage.loadjsonfile(filedeploy)
+                ##verify le contenue de namesearch
+                if os.path.isdir(namesearch):
+                    # Get the deploy json
+                    filedeploy = os.path.join("%s.descriptor"%filears[:-4])
+                    deploytojson = managepackage.loadjsonfile(filedeploy)
 
-                # Now we have :
-                #   - the .ars file root in filears
-                #   - it's json in syncthingtojson
-                #   - the .descriptor file root in filedeploy
-                #   - it's json in deploytojson
+                    # Now we have :
+                    #   - the .ars file root in filears
+                    #   - it's json in syncthingtojson
+                    #   - the .descriptor file root in filedeploy
+                    #   - it's json in deploytojson
 
-                # We need to copy the content of namesearch into the tmp package dir
-                packagedir = managepackage.packagedir()
-                for dirname in os.listdir(namesearch):
-                    if dirname != ".stfolder":
-                        try:
-                            shutil.rmtree(os.path.join(packagedir,dirname))
-                        except:
-                            pass
-                        try:
-                            self.xmpplog("Partage complet on Mach %s\n " \
-                                "Start Deployement"%self.boundjid.bare,
-                                        type='deploy',
-                                        sessionname= syncthingtojson["sessionid"],
-                                        priority=-1,
-                                        action="",
-                                        who="",
-                                        how="",
-                                        why=self.boundjid.bare,
-                                        module="Deployment | Syncthing",
-                                        date=None,
-                                        fromuser="",
-                                        touser="")
-                            res = shutil.copytree(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname))
-                            logging.debug("copy %s to %s"%(dirname, packagedir))
-                            # Delete filears and filedeploy
-                            os.remove(filears)
-                            logging.debug("delete %s"%filears)
-                            os.remove(filedeploy)
-                            logging.debug("delete %s"%filedeploy)
+                    # We need to copy the content of namesearch into the tmp package dir
+                    packagedir = managepackage.packagedir()
+                    for dirname in os.listdir(namesearch):
+                        if dirname != ".stfolder":
+                            try:
+                                shutil.rmtree(os.path.join(packagedir,dirname))
+                            except:
+                                pass
+                            try:
+                                self.xmpplog("Partage complet on Mach %s\n " \
+                                    "Start Deployement"%self.boundjid.bare,
+                                            type='deploy',
+                                            sessionname= syncthingtojson["sessionid"],
+                                            priority=-1,
+                                            action="",
+                                            who="",
+                                            how="",
+                                            why=self.boundjid.bare,
+                                            module="Deployment | Syncthing",
+                                            date=None,
+                                            fromuser="",
+                                            touser="")
+                                res = shutil.copytree(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname))
+                                logging.debug("copy %s to %s"%(dirname, packagedir))
+                                # Delete filears and filedeploy
+                                os.remove(filears)
+                                logging.debug("delete %s"%filears)
+                                os.remove(filedeploy)
+                                logging.debug("delete %s"%filedeploy)
 
-                            senddata = deploytojson
-                            senddata['cluster'] = syncthingtojson['ARS']
-                            senddata['transfert'] = 'pushrsync'
-                            senddata['pathpackageonmachine'] = os.path.join(packagedir,dirname)
+                                senddata = deploytojson
+                                senddata['cluster'] = syncthingtojson['ARS']
+                                senddata['transfert'] = 'pushrsync'
+                                senddata['pathpackageonmachine'] = os.path.join(packagedir,dirname)
 
-                            dataerreur={
-                                "action": "resultapplicationdeploymentjson",
-                                "sessionid" : syncthingtojson['sessionid'],
-                                "ret" : 255,
-                                "base64" : False,
-                                "data": {"msg" : "error deployement"}
-                            }
+                                dataerreur={
+                                    "action": "resultapplicationdeploymentjson",
+                                    "sessionid" : syncthingtojson['sessionid'],
+                                    "ret" : 255,
+                                    "base64" : False,
+                                    "data": {"msg" : "error deployement"}
+                                }
 
-                            transfertdeploy = {
-                                'action': "applicationdeploymentjson",
-                                'sessionid': syncthingtojson['sessionid'],
-                                'data' : deploytojson,
-                                'ret' : 0,
-                                'base64' : False }
-                            msg = {'from' : syncthingtojson['ARS'], "to" : self.boundjid.bare, 'type' : 'chat' }
-                            call_plugin(transfertdeploy["action"],
-                                        self,
-                                        transfertdeploy["action"],
-                                        transfertdeploy['sessionid'],
-                                        transfertdeploy['data'],
-                                        msg,
-                                        dataerreur)
-                        except:
-                            logging.error("The package's copy %s to %s failed"%(dirname, packagedir))
+                                transfertdeploy = {
+                                    'action': "applicationdeploymentjson",
+                                    'sessionid': syncthingtojson['sessionid'],
+                                    'data' : deploytojson,
+                                    'ret' : 0,
+                                    'base64' : False }
+                                msg = {'from' : syncthingtojson['ARS'], "to" : self.boundjid.bare, 'type' : 'chat' }
+                                call_plugin(transfertdeploy["action"],
+                                            self,
+                                            transfertdeploy["action"],
+                                            transfertdeploy['sessionid'],
+                                            transfertdeploy['data'],
+                                            msg,
+                                            dataerreur)
+                                #### send message transfer tdeploy terminate to substitute plugin syncthing terminate
+                                logging.warning("SEND MASTER")
+                                datasend={
+                                    'action': "deploysyncthing",
+                                    'sessionid': syncthingtojson['sessionid'],
+                                    'data' : {
+                                                "subaction" : "counttransfertterminate",
+                                                "iddeploybase" : syncthingtojson["iddeploybase"]
+                                        },
+                                    'ret' : 0,
+                                    'base64' : False }
+                                strr = json.dumps(datasend)
+                                logging.warning("SEND MASTER %s : "%strr)
+                                self.send_message(  mto = self.agentmaster,
+                                                    mbody = strr,
+                                                    mtype = 'chat')
+                            except:
+                                logging.error("The package's copy %s to %s failed"%(dirname, packagedir))
+                else:
+                    # The directory folder is not shared yet
+                    pass
             else:
-                # The directory folder is not shared yet
+                #todo supprimer le fichier ars et ddescriptor.
+                #signaler l'erreur de decodage du fichier json.
                 pass
 
     def execcmdfile(self):
