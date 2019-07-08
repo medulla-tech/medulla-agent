@@ -97,11 +97,18 @@ class Deploy(Base):
     macadress=Column(String(255))
 
 class configuration:
-    def __init__(self):
+    def __init__(self, configfile=""):
         Config = ConfigParser.ConfigParser()
         Config.read("/etc/mmc/plugins/xmppmaster.ini")
-        if os.path.exists("/etc/mmc/plugins/xmppmaster.ini.local"):
+        if configfile != "" and os.path.exists(configfile):
+            Config.read(configfile)
+        elif os.path.exists("/etc/mmc/plugins/xmppmaster.ini.local"):
             Config.read("/etc/mmc/plugins/xmppmaster.ini.local")
+
+        if Config.has_option("main", "jid"):
+            self.jid = Config.get("main", "jid")
+        else:
+            self.jid = "log@pulse"
 
         if  Config.has_option("connection", "password"):
             self.Password=Config.get('connection', 'password')
@@ -510,13 +517,22 @@ if __name__ == '__main__':
                     default = False,
                     help = "version programme")
 
+    optp.add_option("-f",
+                    "--file",
+                    metavar="FILE",
+                    dest = "configfile",
+                    help = "specify the config file")
+
     opts, args = optp.parse_args()
 
+    configfile = ""
+    if opts.configfile:
+        configfile = opts.configfile
     if opts.version == True:
         print VERSIONLOG
         sys.exit(0)
     # Setup the command line arguments.
-    conf  = configuration()
+    conf  = configuration(configfile)
     if not opts.deamon :
         doTask(opts, conf)
     else:
