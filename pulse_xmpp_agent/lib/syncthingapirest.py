@@ -45,7 +45,7 @@ from threading import Lock
 from utils import Program, getRandomName
 import logging
 import traceback
-
+import shutil
 import time
 import os
 import sys
@@ -64,6 +64,7 @@ class syncthingapi():
                     configfile = "/var/lib/syncthing/.config/syncthing/config.xml",
                     idapirest = None):
         self.configfile = configfile
+        self.home = os.path.basename(self.configfile)
         self.synchro = False
         self.mutex = Lock()
         self.readingconf = 0
@@ -127,8 +128,8 @@ class syncthingapi():
             if self.device_id is None and device_id_tmp is not None:
                 self.device_id = device_id_tmp
         self.clean_pending()
+        self.clean_pendingFolders_ignoredFolders_in_devices()
         self.clean_remoteIgnoredDevices()
-
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, 'w') as outfile:
@@ -221,7 +222,7 @@ class syncthingapi():
 
 
 
-    def get_events(self, since = None, limit = None, eventslist = None):
+    def get_events(self, since = None, limit = None, eventslist = None, timeout=1):
         """
             To receive events, perform a HTTP GET of /rest/events.
 
@@ -251,6 +252,7 @@ class syncthingapi():
             params['limit'] = limit
         if eventslist is not None:
             params['events'] = eventslist
+        params['timeout'] = timeout
         re = self.__getAPIREST__("/events", paramsurl=params)
         return json.loads(re.content)
 
@@ -1010,6 +1012,19 @@ class syncthingapi():
         finally:
             self.mutex.release()
 
+    def clean_pendingFolders_ignoredFolders_in_devices(self):
+        self.mutex.acquire()
+        try:
+            for device in self.config['devices']:
+                if "pendingFolders" in device:
+                    del device["pendingFolders"]
+                    self.synchro = False
+                if "ignoredFolders" in device:
+                    del device["ignoredFolders"]
+                    self.synchro = False
+        finally:
+            self.mutex.release()
+
     def clean_pending(self):
         self.mutex.acquire()
         try:
@@ -1027,6 +1042,40 @@ class syncthingapi():
                 self.synchro = False
         finally:
             self.mutex.release()
+
+    def set_pause_folder(self, folderid, paused = False):
+        self.mutex.acquire()
+        try:
+            for folder in self.config['folders']:
+                if folder['id'] == folderid:
+                    if "paused" in folder:
+                        if folder["paused"] == paused:
+                            return
+                        else:
+                            folder["paused"] = paused
+                            self.synchro = False
+                            return
+                    else:
+                        folder["paused"] = paused
+                        self.synchro = False
+                        return
+        finally:
+            self.mutex.release()
+
+    def get_list_device_used_in_folder(self):
+        devicelist=set()
+        for folder in self.config['folders']:
+            for device in folder['devices']:
+                devicelist.add(device["deviceID"])
+        return list(devicelist)
+
+    def display_list_id_folder(self):
+        for folder in self.config['folders']:
+            print folder["id"]
+
+    def display_list_id_device(self):
+        for device in self.config['devices']:
+            print device["deviceID"]
 
 
 class syncthing(syncthingapi):
@@ -1081,6 +1130,22 @@ class syncthing(syncthingapi):
         finally:
             self.mutex.release()
 
+    def delete_device_is_not_list(self, listdeviceutil):
+        to_delete = []
+        for i, elem in enumerate(self.devices):
+            if elem["name"] == "pulse": continue
+            if not elem["deviceID"] in listdeviceutil:
+                to_delete.append(i)
+        to_delete.reverse()
+        for i in to_delete:
+            del self.devices[i]
+
+    def delete_folder_pulse_deploy(self, id, reload = True):
+        if reload:
+            self.reload_config()
+        self.del_folder(id)
+        listdeviceutil = self.get_list_device_used_in_folder()
+        self.delete_device_is_not_list(listdeviceutil)
 
 class syncthingprogram(Program):
     def __init__(self,

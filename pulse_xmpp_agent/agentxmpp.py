@@ -43,8 +43,12 @@ import subprocess
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
 from sleekxmpp import jid
-from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
-from lib.configuration import confParameter, nextalternativeclusterconnection, changeconnection
+from lib.networkinfo import networkagentinfo,\
+                            organizationbymachine,\
+                            organizationbyuser
+from lib.configuration import confParameter,\
+                              nextalternativeclusterconnection,\
+                              changeconnection
 from lib.managesession import session
 
 from lib.managefifo import fifodeploy
@@ -100,13 +104,16 @@ class QueueManager(SyncManager):
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self, conf):#jid, password, room, nick):
-        logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
+        logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent,
+                                                               conf.agenttype))
         #create dir for descriptor syncthing deploy
         self.dirsyncthing =  os.path.join(os.path.dirname(os.path.realpath(__file__)), "syncthingdescriptor")
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs( self.dirsyncthing, 0755 );
-        logger.info("start machine1  %s Type %s" %(conf.jidagent, conf.agenttype))
-        sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), conf.passwordconnection)
+        logger.info("start machine1  %s Type %s" %(conf.jidagent, 
+                                                   conf.agenttype))
+        sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), 
+                                      conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
@@ -130,7 +137,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.quitserverkiosk = False
         ###################Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-        self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
+        self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+                                      "img_agent")
         self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         self.descriptor_master = None
@@ -233,14 +241,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
             else:
                 fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
-                                                    ".config","syncthing","config.xml")
+                                                    ".config",
+                                                    "syncthing",
+                                                    "config.xml")
             tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith('win'):
             fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
             tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
         elif sys.platform.startswith('darwin'):
-            fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
-                                                "etc", "syncthing", "config.xml")
+            fichierconfsyncthing = os.path.join("/",
+                                                "Library",
+                                                "Application Support",
+                                                "Pulse",
+                                                "etc", 
+                                                "syncthing", 
+                                                "config.xml")
             tmpfile = "/tmp/confsyncting.txt"
         try:
             self.syncthing = syncthing(configfile = fichierconfsyncthing)
@@ -314,7 +329,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                           repeat=True)
 
             # ######################Update remote agent#########################
-            self.diragentbase = os.path.join('/', 'var', 'lib', 'pulse2', 'xmpp_baseremoteagent')
+            self.diragentbase = os.path.join('/', 
+                                             'var', 
+                                             'lib', 
+                                             'pulse2', 
+                                             'xmpp_baseremoteagent')
             self.Update_Remote_Agentlist = Update_Remote_Agent(
                 self.diragentbase, True)
             # ######################Update remote agent#########################
@@ -387,7 +406,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.register_handler(handler.Callback(
                                     'CustomXEP Handler',
-                                    matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
+                                    matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,
+                                                                             "custom_xep")),
                                     self._handle_custom_iq))
         self.schedule('execcmdfile',
                       laps_time_action_extern,
@@ -396,43 +416,104 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def synchro_synthing(self):
         # update syncthing
+        if self.config.agenttype in ['relayserver']:
+            self.clean_old_partage_syncting()
         self.syncthing.validate_chang_config()
 
+    def clean_old_partage_syncting(self):
+        """use for agent machine """
+        duration = 3. # durée de vie max d'un partage 3 heures
+        syncthingroot = self.getsyncthingroot()
+        partagefolder = [ x for x in os.listdir(syncthingroot)]
+        listflo=[]
+        for folder in partagefolder:
+            # on regarde si le partage a plus de trois heure
+            folderpart = os.path.join( syncthingroot, folder )
+            exist = self.syncthing.is_exist_folder_id(folder)
+            if not exist:
+                # pas de folder existe, on supprime les fichiers du partage inutile
+                listflo.append(folderpart)
+            if ((time.time() - os.stat(folderpart).st_mtime) / 3600) > duration:
+                if exist:
+                    # les partages existant > a 3 heure doivent etre supprimer.
+                    # self.syncthing.del_folder(folder)
+                    # on ne doit pas relire la conf car on fait plusieurs nettoyage sur meme config
+                    self.syncthing.delete_folder_pulse_deploy(folder, reload = False)
+                    listflo.append(folderpart)
+        self.syncthing.validate_chang_config()
+        for dellfolder in listflo:
+            if os.path.isdir(dellfolder):
+                try:
+                    logger.debug("del folder partage file%s"%dellfolder)
+                    shutil.rmtree(dellfolder)
+                except:
+                    logger.error("del folder partage %s"%(dellfolder))
+                    logger.error("\n%s"%(traceback.format_exc()))
+
+    def getsyncthingroot(self):
+        syncthingroot = ""
+        if self.config.agenttype in ['relayserver']:
+            return os.path.join("/", 
+                                "var", 
+                                "lib", 
+                                "syncthing", 
+                                "partagedeploy")
+        else:
+            if sys.platform.startswith('win'):
+                syncthingroot = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
+            elif sys.platform.startswith('linux'):
+                syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
+            elif sys.platform.startswith('darwin'):
+                syncthingroot = os.path.join("/", 
+                                            "Library", 
+                                            "Application Support", 
+                                            "Pulse", 
+                                            "var", 
+                                            "syncthing")
+        return syncthingroot
+
     def scan_syncthing_deploy(self):
-        # syncthing root descriptor in agent when a deployment is running
-        rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)), "syncthingdescriptor")
+        self.clean_old_partage_syncting()
+        rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               "syncthingdescriptor")
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
             for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
+        # Here we get all the syncthingdescriptor/*.ars files.
+        #listfilearssyncthing = 
+        #[/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/syncthingdescriptor/
+        #commandf79b0750a13c4de09a.ars']
         # get the root for the sync folders
-        syncthingroot = ""
-        if sys.platform.startswith('win'):
-            syncthingroot = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
-        elif sys.platform.startswith('linux'):
-            syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
-        elif sys.platform.startswith('darwin'):
-            syncthingroot = os.path.join("/", "Library", "Application Support", "Pulse", "var", "syncthing")
-
+        syncthingroot = self.getsyncthingroot()
         for filears in listfilearssyncthing:
-            syncthingtojson = managepackage.loadjsonfile(filears)
+            try:
+                syncthingtojson = managepackage.loadjsonfile(filears)
+            except:
+                syncthingtojson = None
+            #print self.syncthing.get_db_completion(syncthingtojson['id_deploy'],
+            #                                       self.syncthing.device_id )
             if syncthingtojson != None:
-                namesearch = os.path.join( syncthingroot , syncthingtojson['id_deploy'])
-
-                ##verify le contenue de namesearch
+                namesearch = os.path.join( syncthingroot ,
+                                           syncthingtojson['id_deploy'])
+                print "search namesearch"
+                print namesearch
+                #verify le contenue de namesearch
                 if os.path.isdir(namesearch):
+                    logging.debug("start deploy transfert syncthing")
                     # Get the deploy json
                     filedeploy = os.path.join("%s.descriptor"%filears[:-4])
                     deploytojson = managepackage.loadjsonfile(filedeploy)
-
                     # Now we have :
                     #   - the .ars file root in filears
                     #   - it's json in syncthingtojson
                     #   - the .descriptor file root in filedeploy
                     #   - it's json in deploytojson
-
-                    # We need to copy the content of namesearch into the tmp package dir
+                    #
+                    # We need to copy the content of namesearch into the tmp package dirl
                     packagedir = managepackage.packagedir()
+                    logging.warning(packagedir)
                     for dirname in os.listdir(namesearch):
                         if dirname != ".stfolder":
+                            #clean the dest package to be sure
                             try:
                                 shutil.rmtree(os.path.join(packagedir,dirname))
                             except:
@@ -462,7 +543,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 senddata = deploytojson
                                 senddata['cluster'] = syncthingtojson['ARS']
                                 senddata['transfert'] = 'pushrsync'
-                                senddata['pathpackageonmachine'] = os.path.join(packagedir,dirname)
+                                senddata['pathpackageonmachine']= os.path.join(packagedir,
+                                                                               dirname)
 
                                 dataerreur={
                                     "action": "resultapplicationdeploymentjson",
@@ -478,7 +560,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'data' : deploytojson,
                                     'ret' : 0,
                                     'base64' : False }
-                                msg = {'from' : syncthingtojson['ARS'], "to" : self.boundjid.bare, 'type' : 'chat' }
+                                msg = {'from' : syncthingtojson['ARS'], 
+                                       "to" : self.boundjid.bare, 
+                                       'type' : 'chat' }
+
                                 call_plugin(transfertdeploy["action"],
                                             self,
                                             transfertdeploy["action"],
@@ -486,17 +571,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             transfertdeploy['data'],
                                             msg,
                                             dataerreur)
-                                #### send message transfer tdeploy terminate to substitute plugin syncthing terminate
+                                #### send message transfer tdeploy terminate to substitute plugin syncthing terminate 
+                                # self.agentmaster
+                                #####"iddeploybase": 39,
                                 logging.warning("SEND MASTER")
-                                datasend={
-                                    'action': "deploysyncthing",
-                                    'sessionid': syncthingtojson['sessionid'],
-                                    'data' : {
-                                                "subaction" : "counttransfertterminate",
-                                                "iddeploybase" : syncthingtojson["iddeploybase"]
-                                        },
-                                    'ret' : 0,
-                                    'base64' : False }
+                                datasend={ 'action': "deploysyncthing",
+                                           'sessionid': syncthingtojson['sessionid'],
+                                           'data' : { "subaction" : "counttransfertterminate",
+                                                      "iddeploybase" : syncthingtojson["iddeploybase"]},
+                                           'ret' : 0,
+                                           'base64' : False }
                                 strr = json.dumps(datasend)
                                 logging.warning("SEND MASTER %s : "%strr)
                                 self.send_message(  mto = self.agentmaster,
@@ -505,11 +589,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             except:
                                 logging.error("The package's copy %s to %s failed"%(dirname, packagedir))
                 else:
-                    # The directory folder is not shared yet
-                    pass
+                    # on cherche si on a des informations sur ce transfert
+                    #print self.syncthing.get_db_status(syncthingtojson['id_deploy'])
+                    result = self.syncthing.get_db_completion(syncthingtojson['id_deploy'],
+                                                              self.syncthing.device_id )
+                    if 'id_deploy' in syncthingtojson and len(self.syncthing.device_id ) > 40:
+                        if 'completion' in result and result['completion'] != 0:
+                            datasend={ 'action': "deploysyncthing",
+                                       'sessionid': syncthingtojson['sessionid'],
+                                       'data' : { "subaction" : "completion",
+                                                  "iddeploybase" : syncthingtojson["iddeploybase"],
+                                                  "iddeploy" : syncthingtojson['id_deploy'],
+                                                  "jidfull" : self.boundjid.full },
+                                       'ret' : 0,
+                                       'base64' : False }
+                            strr = json.dumps(datasend)
+                            self.send_message( mto = self.agentmaster,
+                                               mbody = strr,
+                                               mtype = 'chat')
             else:
                 #todo supprimer le fichier ars et ddescriptor.
                 #signaler l'erreur de decodage du fichier json.
+                logger.error("\n%s"%(traceback.format_exc()))
                 pass
 
     def execcmdfile(self):
