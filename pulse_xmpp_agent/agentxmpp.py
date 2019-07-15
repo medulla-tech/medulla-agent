@@ -441,7 +441,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             exist = self.syncthing.is_exist_folder_id(folder)
             if not exist:
                 # pas de folder existe, on supprime les fichiers du partage inutile
-                listflo.append(folderpart)
+                #listflo.append(folderpart)
+                pass
             if ((time.time() - os.stat(folderpart).st_mtime) / 3600) > duration:
                 if exist:
                     # les partages existant > a 3 heure doivent etre supprimer.
