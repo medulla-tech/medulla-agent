@@ -420,6 +420,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.clean_old_partage_syncting()
         self.syncthing.validate_chang_config()
 
+    def clean_old_descriptor_syncting(self, pathdescriptor):
+        duration = 3
+        onlyfiles = [os.path.join(pathdescriptor, f) \
+            for f in os.listdir(pathdescriptor) if os.path.isfile(os.path.join(pathdescriptor, f))]
+        timestampnew = time.time()
+        for f in onlyfiles:
+            if ((timestampnew - os.stat(f).st_mtime) / 3600) > duration:
+                os.remove(f)
+
     def clean_old_partage_syncting(self):
         """use for agent machine """
         duration = 3. # durée de vie max d'un partage 3 heures
@@ -476,6 +485,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.clean_old_partage_syncting()
         rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "syncthingdescriptor")
+        self.clean_old_descriptor_syncting(rootsyncthingdescriptor)
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
             for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
         # Here we get all the syncthingdescriptor/*.ars files.
