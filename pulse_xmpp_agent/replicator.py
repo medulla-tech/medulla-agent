@@ -245,7 +245,7 @@ def module_needed(agent_image, verbose = False):
     if not os.path.isfile("img_agent/__init__.py"):
         boolfichier = True
         open("img_agent/__init__.py", "w").close()
-    list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py']
+    list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
     for filename in list_script_python_for_update:
         try:
             importlib.import_module('img_agent.%s'%filename[:-3])
