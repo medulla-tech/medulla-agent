@@ -269,13 +269,6 @@ def module_needed(agent_image, verbose = False):
             if verbose:
                 print('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename))
             return False
-    for filename in [ x[:-3] for x in os.listdir(os.path.join(agent_image, 'script')) if x.endswith(".py")]:
-        try:
-            importlib.import_module('img_agent.script.%s'%filename)
-        except ImportError:
-            if verbose:
-                print('Some python modules needed for running script/%s are missing. We will not switch to new agent' % (filename))
-            return False
     return True
 
 if __name__ == "__main__":
