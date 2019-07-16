@@ -4,8 +4,8 @@ usr/lib/python2.*/*-packages/pulse_xmpp_agent/*.py*
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/script
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/pluginsrelay
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/pluginsmachine
-usr/lib/python2.*/*-packages/pulse_xmpp_agent/getlastuser.ps1
-usr/lib/python2.*/*-packages/pulse_xmpp_agent/create-profile.ps1
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/script/getlastuser.ps1
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/script/create-profile.ps1
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/agentversion
 var/log/pulse/
 usr/lib/systemd/system/pulse-xmpp-agent-log.service  
