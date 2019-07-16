@@ -155,7 +155,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", fichier), os.path.join(self.img_agent,"lib", fichier)))
                 for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['script_agent']:
                     if not os.path.isfile(os.path.join(self.img_agent, "script", fichier)):
-                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", 'lib_agent')))
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", fichier)))
             elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                 print "copy file"
                 os.system('cp -u %s/*.py %s'%(self.pathagent,self.img_agent))
@@ -1911,14 +1911,6 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['lib_agent']:
             finder.run_script(os.path.join(self.img_agent, "lib", file))
-            for name, mod in finder.modules.iteritems():
-                try:
-                    __import__(name.split('.', 1)[0])
-                except ImportError:
-                    logging.warning('The following python module needs to be installed first: %s'%(name))
-                    return True
-        for file in newdescriptorimage.get_md5_descriptor_agent()['script_agent']:
-            finder.run_script(os.path.join(self.img_agent, "script", file))
             for name, mod in finder.modules.iteritems():
                 try:
                     __import__(name.split('.', 1)[0])
