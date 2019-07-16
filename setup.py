@@ -53,7 +53,7 @@ setup(
     url='https://www.siveo.net/',
     packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
     data_files=[('script', ['pulse_xmpp_agent/script/getlastuser.ps1', 'pulse_xmpp_agent/script/create-profile.ps1']),
-                  ('', ['pulse_xmpp_agent/agentversion'']),
+                  ('', ['pulse_xmpp_agent/agentversion']),
     test_suite='',
     package_data={},
     entry_points={},
