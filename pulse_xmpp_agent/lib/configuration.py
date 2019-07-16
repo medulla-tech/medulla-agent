@@ -188,12 +188,12 @@ class confParameter:
         if Config.has_option('substitute', 'inventory'):
             self.sub_inventory = Config.get('substitute', 'inventory')
         else:
-            self.sub_inventory = ""
+            self.sub_inventory = "master@pulse"
 
         if Config.has_option('substitute', 'registration'):
             self.sub_registration = Config.get('substitute', 'registration')
         else:
-            self.sub_registration = ""
+            self.sub_registration = "master@pulse"
 
         try:
             self.agenttype = Config.get('type', 'agent_type')
