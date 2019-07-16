@@ -1254,6 +1254,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if self.descriptor_master is not None:
                     Update_Remote_Agenttest = Update_Remote_Agent(self.pathagent, True )
                     Update_Remote_Img   = Update_Remote_Agent(self.img_agent, True )
+                    logger.debug("Fingerprint of Remote Agenttest: %s" % Update_Remote_Agenttest.get_fingerprint_agent_base() )
+                    logger.debug("Fingerprint of Remote Image: %s" % Update_Remote_Img.get_fingerprint_agent_base() )
+                    logger.debug("Fingerprint of Master Image: %s" % self.descriptor_master['fingerprint'] )
                     if Update_Remote_Agenttest.get_fingerprint_agent_base() != Update_Remote_Img.get_fingerprint_agent_base() and \
                     Update_Remote_Img.get_fingerprint_agent_base() ==  self.descriptor_master['fingerprint']:
                         self.reinstall_agent()
