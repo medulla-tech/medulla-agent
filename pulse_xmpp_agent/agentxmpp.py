@@ -201,12 +201,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.agentmaster = jid.JID("master@pulse")
 
-        if self.config.sub_inventory == "":
+        if not hasattr(self.config, 'sub_inventory'):
             self.sub_inventory = self.agentmaster
         else:
             self.sub_inventory = jid.JID(self.config.sub_inventory)
 
-        if self.config.sub_registration == "":
+        if not hasattr(self.config, 'sub_registration'):
             self.sub_registration = self.agentmaster
         else:
             self.sub_registration = jid.JID(self.config.sub_registration)
