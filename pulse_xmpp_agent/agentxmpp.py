@@ -135,7 +135,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         os.system('copy  %s %s'%(os.path.join(self.pathagent, "lib", fichier), os.path.join(self.img_agent,"lib", fichier)))
                 for fichier in self.Update_Remote_Agentlist.get_md5_descriptor_agent()['script_agent']:
                     if not os.path.isfile(os.path.join(self.img_agent, "script", fichier)):
-                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", 'lib_agent')))
+                        os.system('copy  %s %s'%(os.path.join(self.pathagent, "script", fichier), os.path.join(self.img_agent,"script", fichier)))
             elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
                 print "copy file"
                 os.system('cp -u %s/*.py %s'%(self.pathagent,self.img_agent))
@@ -337,8 +337,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
                                     self._handle_custom_iq))
         self.schedule('execcmdfile',
-                      laps_time_action_extern, 
-                      self.execcmdfile, 
+                      laps_time_action_extern,
+                      self.execcmdfile,
                       repeat=True)
 
     def execcmdfile(self):
