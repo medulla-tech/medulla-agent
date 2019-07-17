@@ -1167,7 +1167,74 @@ class XmppMasterDatabase(DatabaseHelper):
         result = session.execute(sql)
         session.commit()
         session.flush()
-        return [x for x in result][0]
+        return [x for x in result]
+
+    @DatabaseHelper._sessionm
+    def deploy_mach_exist_in_deploy(self,
+                                    session,
+                                    jidmachine,
+                                    namepackage):
+        pass
+
+    @DatabaseHelper._sessionm
+    def stat_syncthing_transfert(self,
+                                 session,
+                                 idgrp,
+                                 idcmd):
+        sql = """SELECT 
+                    pathpackage,
+                    COUNT(*) AS nb,
+                    CAST((SUM(xmppmaster.syncthing_machine.progress) / COUNT(*)) AS CHAR) AS progress
+                FROM
+                    xmppmaster.syncthing_machine
+                WHERE
+                    xmppmaster.syncthing_machine.group_uuid = %s
+                        AND xmppmaster.syncthing_machine.command = %s;
+                        """%(idgrp, idcmd)
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        re = [x for x in result]
+        re = re[0]
+        if re[0] is None:
+            return {'package' : "",
+                    'nbmachine' : 0,
+                    'progresstransfert' : 0}
+        try:
+            progress = int(float(re[2]))
+        except exceptions.ValueError:
+            progress = 0
+
+        return { 'package' : re[0],
+                 'nbmachine' : re[1],
+                 'progresstransfert' : progress }
+
+    @DatabaseHelper._sessionm
+    def stat_syncthing_transfert(self,
+                                 session,
+                                 idgrp,
+                                 idcmd):
+        sql = """SELECT 
+                    pathpackage,
+                    COUNT(*) AS nb,
+                    (SUM(xmppmaster.syncthing_machine.progress) / COUNT(*)) AS progress
+                FROM
+                    xmppmaster.syncthing_machine
+                WHERE
+                    xmppmaster.syncthing_machine.group_uuid = %s
+                        AND xmppmaster.syncthing_machine.command = %s;
+                        """%(idgrp, idcmd)
+        print "stat_syncthing_transfert", sql
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        if result is not None:
+            return { 'package' : result[0],
+                     'nbmachine' : result[1],
+                     'progresstransfert' : result[2]}
+        else:
+            return {}
+
 
     @DatabaseHelper._sessionm
     def getnumcluster_for_ars(self,
