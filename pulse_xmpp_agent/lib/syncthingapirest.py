@@ -736,8 +736,10 @@ class syncthingapi():
                 return  r.text
             elif r.status_code == 301  or  r.status_code == 302:
                 return {"error" : "redirection, respectivement permanente et temporaire"}
+            elif r.status_code == 400:
+                return {"error" : "Bad Request", "msg" : r.text}
             elif r.status_code == 401:
-                return {"error" : "utilisateur non authentifié"}
+                return {"error" : "utilisateur non authentifie", "msg" : r.text}
             elif r.status_code == 403:
                 return {"error" : "accès refusé "}
             elif r.status_code == 404 :
@@ -758,13 +760,15 @@ class syncthingapi():
                 cmddate  = """command curl curl -X POST --header "X-API-Key: %s"  %s"""%(self.headers['X-API-KEY'], posturl)
                 logger.info("%s"%cmddate)
             r = requests.post(posturl, headers = self.headers)
-            return analyseresult(r)
         else:
             if RestCurl:
                 cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
                 logger.info("%s"%cmddate)
             r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython))
-            return analyseresult(r)
+        result = analyseresult(r)
+        if isinstance(result, basestring) and "error" in result:
+            logger.error("%s"%result)
+        return result
 
     def add_device_to_folder(self, strlabel, id_device ):
         self.mutex.acquire()
