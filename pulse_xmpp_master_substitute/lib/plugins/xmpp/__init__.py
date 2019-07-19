@@ -1202,7 +1202,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     'progresstransfert' : 0}
         try:
             progress = int(float(re[2]))
-        except exceptions.ValueError:
+        except ValueError:
             progress = 0
 
         return { 'package' : re[0],
