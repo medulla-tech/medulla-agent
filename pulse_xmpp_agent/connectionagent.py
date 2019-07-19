@@ -199,9 +199,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
     def adddevicesyncthing(self, keydevicesyncthing, namerelay):
         resource = jid.JID(namerelay).resource
-        #if self.boundjid.bare == "rspulse@pulse":
         if jid.JID(namerelay).bare == "rspulse@pulse":
-        #if resource == "dev-mmc":
             resource = "pulse"
         if resource=="":
             resource = namerelay
