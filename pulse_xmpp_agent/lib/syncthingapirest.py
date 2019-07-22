@@ -98,6 +98,7 @@ class syncthingapi():
     def getidapi(self):
         return self.idapirest
 
+
     def reload_config(self):
         self.config = self.get_config() # content all config
         self.synchro = True
@@ -114,6 +115,10 @@ class syncthingapi():
                 self.ignoredDevices = self.config['ignoredDevice']
             except:
                 self.ignoredDevices = []
+            try:
+                self.pendingDevices = self.config['pendingDevices']
+            except:
+                self.pendingDevices = []
 
             self.options  = self.config['options']
 
@@ -127,9 +132,28 @@ class syncthingapi():
                     device_id_tmp  = device['deviceID']
             if self.device_id is None and device_id_tmp is not None:
                 self.device_id = device_id_tmp
-        self.clean_pending()
+        #self.clean_pending()
+        self.pendingdevice_accept()
         self.clean_pendingFolders_ignoredFolders_in_devices()
         self.clean_remoteIgnoredDevices()
+        self.validate_chang_config()
+
+    def pendingdevice_accept(self):
+        if 'pendingDevices' in self.config and \
+            len(self.config['pendingDevices']) != 0:
+            for pendingdevice in self.config['pendingDevices']:
+                logger.info("_ pendingdevice %s"%pendingdevice)
+                # exist device?
+                if not self.is_exist_device_in_config(pendingdevice['deviceID']):
+                    # add device
+                    self.add_device_syncthing( pendingdevice['deviceID'],
+                                                pendingdevice['name'],
+                                                introducer = False,
+                                                autoAcceptFolders=False,
+                                                address = ["dynamic"])
+                else:
+                    pass
+        self.clean_pending()
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, 'w') as outfile:
@@ -785,7 +809,8 @@ class syncthingapi():
                                        str_name,
                                        id_device,
                                        introducer = False,
-                                       autoAcceptFolders=False):
+                                       autoAcceptFolders=False,
+                                       address = ["dynamic"]):
         return{
                 "pendingFolders": [],
                 "compression": "metadata",
@@ -802,15 +827,15 @@ class syncthingapi():
                 "maxSendKbps": 0,
                 "introducedBy": "",
                 "autoAcceptFolders": autoAcceptFolders,
-                "addresses": [
-                    "dynamic"
-                ]}
+                "addresses": address}
 
 
     def add_device_syncthing( self,
                             keydevicesyncthing,
                             namerelay,
-                            introducer = False):
+                            introducer = False,
+                            autoAcceptFolders=False,
+                            address = ["dynamic"]):
         result = False
         self.mutex.acquire()
         try:
@@ -822,7 +847,9 @@ class syncthingapi():
             logger.debug("add device syncthing %s"%keydevicesyncthing)
             dsyncthing_tmp = self.create_template_struct_device(namerelay,
                                                                 str(keydevicesyncthing),
-                                                                introducer = introducer)
+                                                                introducer = introducer,
+                                                                autoAcceptFolders=autoAcceptFolders,
+                                                                address = address)
 
             logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
                                                                    namerelay,
