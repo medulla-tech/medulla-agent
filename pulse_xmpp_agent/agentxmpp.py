@@ -419,6 +419,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.agenttype in ['relayserver']:
             self.clean_old_partage_syncting()
         self.syncthing.validate_chang_config()
+        ta = self.syncthing.taille_config_xml()
+        if self.syncthing.tailleconf != ta:
+            self.syncthing.reload_config()
+            #self.post_restart()
+            #time.sleep(2)
+            #self.syncthing.validate_chang_config()
 
     def clean_old_descriptor_syncting(self, pathdescriptor):
         duration = 3

@@ -73,6 +73,7 @@ class syncthingapi():
         self.urlbase = "%s:%s/"%(self.urlweb,port )
         self.urlbaserest = "%srest"%(self.urlbase)
         self.device_id = None
+        self.tailleconf = self.taille_config_xml()
         if idapirest is None:
             self.tree = etree.parse(configfile)
             self.idapirest = self.tree.xpath('/configuration/gui/apikey')[0].text
@@ -92,6 +93,9 @@ class syncthingapi():
             logger.error("Syncthing configuration")
         # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
 
+    def taille_config_xml(self):
+        return os.path.getsize (self.configfile)
+
     def getpathconfigfile(self):
         return self.configfile
 
@@ -99,8 +103,9 @@ class syncthingapi():
         return self.idapirest
 
 
-    def reload_config(self):
+    def reload_config(self, clean = True):
         self.config = self.get_config() # content all config
+        self.tailleconf = self.taille_config_xml()
         self.synchro = True
         if len(self.config) != 0:
             self.folders = self.config['folders']
@@ -133,10 +138,11 @@ class syncthingapi():
             if self.device_id is None and device_id_tmp is not None:
                 self.device_id = device_id_tmp
         #self.clean_pending()
-        self.pendingdevice_accept()
-        self.clean_pendingFolders_ignoredFolders_in_devices()
-        self.clean_remoteIgnoredDevices()
-        self.validate_chang_config()
+        if clean:
+            self.pendingdevice_accept()
+            self.clean_pendingFolders_ignoredFolders_in_devices()
+            self.clean_remoteIgnoredDevices()
+            self.validate_chang_config()
 
     def pendingdevice_accept(self):
         if 'pendingDevices' in self.config and \
@@ -154,6 +160,7 @@ class syncthingapi():
                 else:
                     pass
         self.clean_pending()
+        #validate_chang_config()
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, 'w') as outfile:
@@ -934,10 +941,12 @@ class syncthingapi():
                 time.sleep(2)
                 self.post_restart()
                 time.sleep(2)
+                #self.reload_config(clean = False)
                 self.synchro = True
+        except Exception as e:
+            logger.error("%s"%str(e))
         finally:
             self.mutex.release()
-
 
     def is_format_key_device(self, keydevicesyncthing):
         if len(str(keydevicesyncthing)) != 63:
