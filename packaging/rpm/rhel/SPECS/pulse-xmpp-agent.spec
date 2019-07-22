@@ -25,6 +25,7 @@ Requires:       python-sleekxmpp
 Requires:       python-croniter
 Requires:       python-requests
 Requires:       python2-pysftp
+Requires:       python-inotify
 
 %description
 Pulse XMPP Agent
