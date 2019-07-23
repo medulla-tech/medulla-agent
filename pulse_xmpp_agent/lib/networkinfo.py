@@ -370,7 +370,7 @@ def powershellfqdnwindowscommandbyuser(user):
 
 def powershellgetlastuser():
     if sys.platform.startswith('win'):
-        script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "script", "getlastuser.ps1"))
+        script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "script", "getlastuser.ps1"))
         result = powerschellscriptps1(script)
         if result['code'] == 0:
             ret = []
