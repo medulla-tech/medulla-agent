@@ -439,6 +439,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         """use for agent machine """
         duration = 3. # durée de vie max d'un partage 3 heures
         syncthingroot = self.getsyncthingroot()
+        if not os.path.exists(syncthingroot):
+            os.makedirs(syncthingroot)
         partagefolder = [ x for x in os.listdir(syncthingroot)]
         listflo=[]
         for folder in partagefolder:
