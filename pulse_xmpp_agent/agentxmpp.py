@@ -526,7 +526,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             #self.syncthing.reload_config(config=config)
             #config = self.syncthing.get_config() # content all config
         if 'remoteIgnoredDevices' in config:
-            self.config['remoteIgnoredDevices'] = []
+            config['remoteIgnoredDevices'] = []
 
         #pas de pathfolder definie. warning.
         defaultFolderPath =  config['options']['defaultFolderPath']
