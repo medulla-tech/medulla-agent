@@ -538,7 +538,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             except:
                                 pass
                             try:
-                                self.xmpplog("Partage complet on Mach %s\n " \
+                                self.xmpplog("Transfer completed on Mach %s\n " \
                                     "Start Deployement"%self.boundjid.bare,
                                             type='deploy',
                                             sessionname= syncthingtojson["sessionid"],
