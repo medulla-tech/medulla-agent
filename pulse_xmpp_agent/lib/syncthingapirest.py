@@ -186,15 +186,16 @@ class syncthingapi():
                 return self.get_config()
         return {}
 
-
-    def post_config(self):
+    def post_config(self, config = None):
         """
             Post the full contents of the configuration,
             in the same format as returned by the corresponding GET request.
             The configuration will be saved to disk and the configInSync flag
             set to false. Restart Syncthing to activate.
         """
-        re = self.__postAPIREST__("/system/config", dictpython = self.config)
+        if config is None:
+            config = self.config
+        re = self.__postAPIREST__("/system/config", dictpython = config)
         return re
 
     def post_discovery(self, deviceid, adress, port=22000):

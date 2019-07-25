@@ -413,18 +413,151 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_action_extern,
                       self.execcmdfile,
                       repeat=True)
+    ###############################################################
+    # syncthing function
+    ###############################################################
+    # syncthing function
+    def is_exist_folder_id(self, idfolder, config):
+        for folder in config['folders']:
+            if folder['id'] == idfolder:
+             return True
+        return False
+
+    def add_folder_dict_if_not_exist_id(self, dictaddfolder, config):
+        if not self.is_exist_folder_id(dictaddfolder['id'], config):
+            config['folders'].append(dictaddfolder)
+            return True
+        return False
+
+    def add_device_in_folder_if_not_exist(self, 
+                                          folderid, 
+                                          keydevice, 
+                                          config,
+                                          introducedBy = ""):
+        result = False
+        for folder in config['folders']:
+            if folderid == folder['id']:
+                #folder trouve
+                for device in folder['devices']:
+                    if device['deviceID'] == keydevice:
+                        #device existe
+                        result = False
+                new_device = {"deviceID": keydevice, 
+                                "introducedBy": introducedBy}
+                folder['devices'].append(new_device)
+                result =  True
+        return result
+
+    def is_exist_device_in_config(self, keydevicesyncthing, config):
+        for device in config['devices']:
+            if device['deviceID'] == keydevicesyncthing:
+                return True
+        return False
+
+    def add_device_syncthing( self,
+                            keydevicesyncthing,
+                            namerelay,
+                            config,
+                            introducer = False,
+                            autoAcceptFolders=False,
+                            address = ["dynamic"]):
+        # test si device existe
+        for device in config['devices']:
+            if device['deviceID'] == keydevicesyncthing:
+                result = False
+        logger.debug("add device syncthing %s"%keydevicesyncthing)
+        dsyncthing_tmp = self.syncthing.create_template_struct_device(namerelay,
+                                                            str(keydevicesyncthing),
+                                                            introducer = introducer,
+                                                            autoAcceptFolders=autoAcceptFolders,
+                                                            address = address)
+
+        logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
+                                                                namerelay,
+                                                                json.dumps(dsyncthing_tmp,
+                                                                            indent = 4)))
+
+        config['devices'].append(dsyncthing_tmp)
+        return dsyncthing_tmp
+
+    def clean_pendingFolders_ignoredFolders_in_devices(self, config):
+        for device in config['devices']:
+            if "pendingFolders" in device:
+                del device["pendingFolders"]
+            if "ignoredFolders" in device:
+                del device["ignoredFolders"]
+
+    def pendingdevice_accept(self, config):
+        modif=False
+        if 'pendingDevices' in config and \
+            len(config['pendingDevices']) != 0:
+            print "device trouve" 
+            for pendingdevice in config['pendingDevices']:
+                logger.info("pendingdevice %s"%pendingdevice)
+                # exist device?
+                if not self.is_exist_device_in_config(pendingdevice['deviceID'], config):
+                    # add device
+                    if pendingdevice['name'] == "":
+                        continue
+                    self.add_device_syncthing( pendingdevice['deviceID'],
+                                                pendingdevice['name'],
+                                                config,
+                                                introducer = False,
+                                                autoAcceptFolders=False,
+                                                address = ["dynamic"])
+                    modif = True
+                else:
+                    pass
+        #self.clean_pending(config)
+        return modif
 
     def synchro_synthing(self):
+        self.syncthingreconfigure = False;
+        logger.info("synchro_synthing")
         # update syncthing
         if self.config.agenttype in ['relayserver']:
             self.clean_old_partage_syncting()
-        self.syncthing.validate_chang_config()
-        ta = self.syncthing.taille_config_xml()
-        if self.syncthing.tailleconf != ta:
-            self.syncthing.reload_config()
-            #self.post_restart()
-            #time.sleep(2)
-            #self.syncthing.validate_chang_config()
+        config = self.syncthing.get_config() # content all config
+
+        if len(config['pendingDevices']) > 0:
+            if self.pendingdevice_accept(config):
+                self.syncthingreconfigure = True;
+            config['pendingDevices']=[]
+            #self.syncthing.reload_config(config=config)
+            #config = self.syncthing.get_config() # content all config
+        if 'remoteIgnoredDevices' in config:
+            self.config['remoteIgnoredDevices'] = []
+
+        #pas de pathfolder definie. warning.
+        defaultFolderPath =  config['options']['defaultFolderPath']
+
+
+        if 'defaultFolderPath' in config['options']:
+            for de in  config['devices']:
+                if 'pendingFolders' in de and len(de['pendingFolders']) > 0:
+                    #add folder
+                    for devicefolder in de['pendingFolders']:
+                        path_folder = os.path.join(defaultFolderPath,devicefolder['id'])
+                        newfolder = self.syncthing.\
+                                create_template_struct_folder(devicefolder['label'],
+                                                              path_folder,
+                                                              id=devicefolder['id'])
+                        logging.debug("add shared folder %s"%path_folder)
+                        logger.info("add device in folder %s"%devicefolder['id'])
+                        self.add_folder_dict_if_not_exist_id(newfolder, config)
+                        self.add_device_in_folder_if_not_exist( devicefolder['id'],
+                                                                de['deviceID'],
+                                                                config,
+                                                                config['folders'])
+                        self.syncthingreconfigure = True;
+            if self.syncthingreconfigure:
+                self.syncthing.post_config(config)
+                time.sleep(1)
+                self.syncthing.post_restart()
+                time.sleep(1)
+                self.syncthing.reload_config()
+            else:
+                self.syncthing.validate_chang_config()
 
     def clean_old_descriptor_syncting(self, pathdescriptor):
         duration = 3
@@ -631,6 +764,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 #signaler l'erreur de decodage du fichier json.
                 logger.error("\n%s"%(traceback.format_exc()))
                 pass
+
+    ###############################################################
+    # end syncthing function
+    ###############################################################
 
     def execcmdfile(self):
         """
