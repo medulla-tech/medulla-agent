@@ -552,7 +552,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.syncthingreconfigure = True;
             if self.syncthingreconfigure:
                 self.syncthing.post_config(config)
-                time.sleep(1)
+                time.sleep(3)
                 self.syncthing.post_restart()
                 time.sleep(1)
                 self.syncthing.reload_config()

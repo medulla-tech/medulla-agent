@@ -1023,6 +1023,8 @@ class syncthingapi():
             }
         }
 
+    
+
     def del_device_from_folder(self, folderid, deviceid):
         """Dissociate the device from the folder.
         Params:
@@ -1102,6 +1104,42 @@ class syncthingapi():
                         return
         finally:
             self.mutex.release()
+
+    def maxRecvKbps(self, kb=0, config=None):
+        if kb == 0:
+            logger.info("Syncthing: RECV rate limit is False")
+        else:
+            logger.info("Syncthing: RECV limit rade is %d Kb"%kb)
+        if config is None:
+            self.mutex.acquire()
+            try:
+                config = self.config
+                if "options" in config:
+                    config['options']['maxRecvKbps'] = kb
+            finally:
+                self.mutex.release()
+        else:
+            if "options" in config:
+                config['options']['maxRecvKbps'] = kb
+
+    def maxSendKbps(self, kb=0, config=None):
+        if kb == 0:
+            logger.info("Syncthing: SEND  rate limit is False")
+        else:
+            logger.info("Syncthing: SEND limit rate is %d Kb"%kb)
+
+        if config is None:
+            self.mutex.acquire()
+            try:
+                config = self.config
+                if "options" in config:
+                    config['options']['maxSendKbps'] = kb
+            finally:
+                self.mutex.release()
+        else:
+            if "options" in config:
+                config['options']['maxSendKbps'] = kb
+
 
     def get_list_device_used_in_folder(self):
         devicelist=set()
