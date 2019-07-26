@@ -1115,7 +1115,9 @@ class syncthingapi():
             try:
                 config = self.config
                 if "options" in config:
-                    config['options']['maxRecvKbps'] = kb
+                    if config['options']['maxRecvKbps'] != kb:
+                        config['options']['maxRecvKbps'] = kb
+                        self.synchro = False
             finally:
                 self.mutex.release()
         else:
@@ -1133,7 +1135,9 @@ class syncthingapi():
             try:
                 config = self.config
                 if "options" in config:
-                    config['options']['maxSendKbps'] = kb
+                    if config['options']['maxSendKbps'] != kb:
+                        config['options']['maxSendKbps'] = kb
+                        self.synchro = False
             finally:
                 self.mutex.release()
         else:
