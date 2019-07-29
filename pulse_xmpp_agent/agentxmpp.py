@@ -228,7 +228,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.deviceid=""
         ################################### initialise syncthing ###################################
         if  not self.config.agenttype in ['relayserver']:
-            self.schedule('scan_syncthing_deploy"', 55, self.scan_syncthing_deploy, repeat=True)
+            self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
         self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
         if logger.level <= 10:
             console = False
