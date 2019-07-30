@@ -232,6 +232,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                  json.dumps(dsyncthing_tmp,
                                                                             indent = 4)))
             self.syncthing.config['devices'].append(dsyncthing_tmp)
+        
+        
+        
+        
         else:
             #chang conf for introducer and autoAcceptFolders
             for dev in self.syncthing.config['devices']:
@@ -319,11 +323,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.syncthing.validate_chang_config()
                     time.sleep(2)
                     logger.debug("%s"%json.dumps(self.syncthing.config, indent =4))
+                    if logging.getLogger().level == logging.DEBUG:
+                        dataconf = json.dumps(self.syncthing.config, indent =4)
+                    else:
+                        dataconf = 're-setup syncthing ok'
+
                     confsyncthing = { "action": "resultconfsyncthing",
                                       "sessionid" : getRandomName(6, "confsyncthing"),
                                       "ret" : 0,
                                       "base64" : False,
-                                      "data":  { 'syncthingconf' : json.dumps(self.syncthing.config)}}
+                                      "data":  { 'syncthingconf' : 're-setup syncthing ok\n%s'%dataconf}}
+
                     self.send_message(mto =  msg['from'],
                                       mbody = json.dumps(confsyncthing),
                                       mtype = 'chat')
