@@ -519,7 +519,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.clean_old_partage_syncting()
         try:
             config = self.syncthing.get_config() # content all config
+            # logger.debug("\n%s"%(json.dumps(config, indent=4 )))
         except:
+            #logger.error("\n%s"%(traceback.format_exc()))
             return
         if len(config) == 0:
             return
@@ -551,8 +553,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.add_folder_dict_if_not_exist_id(newfolder, config)
                         self.add_device_in_folder_if_not_exist( devicefolder['id'],
                                                                 de['deviceID'],
-                                                                config,
-                                                                config['folders'])
+                                                                config)
                         self.syncthingreconfigure = True;
             if self.syncthingreconfigure:
                 self.syncthing.post_config(config)
