@@ -70,7 +70,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resourcejid[0]=conf.confdomain
         newjidconf[0] = getRandomName(10,"conf")
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+getRandomName(10,"conf")
-
+        
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
 
@@ -100,8 +100,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if logger.level <= 10:
             console = False
             browser = True
-        self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
-        self.Ctrlsyncthingprogram.restart_syncthing()
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
@@ -118,6 +116,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
                                                 "etc", "syncthing", "config.xml")
             tmpfile = "/tmp/confsyncting.txt"
+
+        #avant reinitialisation on supprime le fichier config.xml
+        try:
+            os.remove(fichierconfsyncthing)
+        except :
+            pass
+        self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
+        self.Ctrlsyncthingprogram.restart_syncthing()
+        time.sleep(4)
         try:
             self.syncthing = syncthing(configfile = fichierconfsyncthing)
             if logger.level <= 10:
@@ -127,12 +134,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     os.remove(tmpfile)
                 except :
                     pass
+            time.sleep(1)
             self.deviceid = self.syncthing.get_id_device_local()
             logger.debug("device local syncthing : [%s]"%self.deviceid)
         except Exception as e:
             logger.error("syncthing initialisation : %s" % str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            informationerror = traceback.format_exc()
+            logger.error("\n%s"%(informationerror))
             logger.error("functioning of the degraded agent. impossible to use syncthing")
+            confsyncthing = {"action": "resultconfsyncthing",
+                             "sessionid" : getRandomName(6, "confsyncthing"),
+                             "ret" : 255,
+                             "data":  { 'errorsyncthingconf' : informationerror}}
+            self.send_message(mto =  "master@%s"%self.config.confdomain,
+                                mbody = json.dumps(confsyncthing),
+                                mtype = 'chat')
         ################################### syncthing ###################################
 
     def start(self, event):
@@ -204,17 +220,30 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if resource=="":
             resource = namerelay
         if not self.is_exist_device_in_config(keydevicesyncthing):
-            logger.debug("add device syncthing %s"%keydevicesyncthing)
+            logger.info("add device syncthing name : %s key: %s"%(namerelay ,
+                                                                  keydevicesyncthing))
             dsyncthing_tmp = self.syncthing.\
                 create_template_struct_device( resource,
                                                str(keydevicesyncthing),
                                                introducer = True,
                                                autoAcceptFolders=True)
-            logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
+            logger.info("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
                                                                  namerelay,
                                                                  json.dumps(dsyncthing_tmp,
                                                                             indent = 4)))
             self.syncthing.config['devices'].append(dsyncthing_tmp)
+        else:
+            #chang conf for introducer and autoAcceptFolders
+            for dev in self.syncthing.config['devices']:
+                if dev['name'] == namerelay or dev['deviceID'] == keydevicesyncthing:
+                    dev["introducer"] = True
+                    dev["autoAcceptFolders"] = True
+                if dev['name'] == jid.JID(namerelay).user:
+                    dev['name'] = "pulse"
+                logger.info("Device [%s] syncthing to ars %s\n%s"%( dev['deviceID'],
+                                                                    dev['name'],
+                                                                    json.dumps( dev,
+                                                                                indent = 4)))
 
     def is_exist_device_in_config(self, keydevicesyncthing):
         for device in self.syncthing.devices:
@@ -244,6 +273,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data = json.loads(msg['body'])
         except:
             return
+
         if self.session == data['sessionid'] and \
             data['action'] == "resultconnectionconf" and \
             msg['from'].user == "master" and \
@@ -266,9 +296,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if sys.platform.startswith('win'):
                         defaultFolderPath = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
                     elif sys.platform.startswith('linux'):
-                        defaultFolderPath = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
+                        defaultFolderPath = os.path.join(os.path.expanduser('~pulseuser'),
+                                                         "syncthing")
                     elif sys.platform.startswith('darwin'):
-                        defaultFolderPath = os.path.join("/", "Library", "Application Support", "Pulse",
+                        defaultFolderPath = os.path.join("/",
+                                                         "Library",
+                                                         "Application Support",
+                                                         "Pulse",
                                                          "var", "syncthing")
                     if not os.path.exists(defaultFolderPath):
                         os.mkdir(defaultFolderPath)
@@ -281,9 +315,31 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             if self.is_format_key_device(str(x[5])):
                                 self.adddevicesyncthing(str(x[5]), str(x[2]))
                     logger.debug("synchro config %s"%self.syncthing.is_config_sync())
+                    logging.log(DEBUGPULSE, "write new config syncthing")
                     self.syncthing.validate_chang_config()
-                    time.sleep(3)
-                    logger.debug(json.dumps(self.syncthing.config, indent =4))
+                    time.sleep(2)
+                    logger.debug("%s"%json.dumps(self.syncthing.config, indent =4))
+                    confsyncthing = { "action": "resultconfsyncthing",
+                                      "sessionid" : getRandomName(6, "confsyncthing"),
+                                      "ret" : 0,
+                                      "base64" : False,
+                                      "data":  { 'syncthingconf' : json.dumps(self.syncthing.config)}}
+                    self.send_message(mto =  msg['from'],
+                                      mbody = json.dumps(confsyncthing),
+                                      mtype = 'chat')
+            except:
+                confsyncthing = {"action": "resultconfsyncthing",
+                                 "sessionid" : getRandomName(6, "confsyncthing"),
+                                 "ret" : 255,
+                                 "data":  { 'errorsyncthingconf' : "%s"%traceback.format_exc()}
+                                    }
+                self.send_message(mto =  msg['from'],
+                                    mbody = json.dumps(confsyncthing),
+                                    mtype = 'chat')
+            try:
+                #else:
+                    #logging.info("Start relay server
+
                 changeconnection(conffilename(opts.typemachine),
                                  data['data'][0][1],
                                  data['data'][0][0],
@@ -291,8 +347,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                  data['data'][0][3])
                 #write alternative configuration
                 alternativeclusterconnection(conffilename("cluster"),data['data'])
-                confaccountclear={
-                                    "action": "resultcleanconfaccount",
+                confaccountclear={  "action": "resultcleanconfaccount",
                                     "sessionid" : getRandomName(6, "delconf"),
                                     "ret" : 0,
                                     "base64" : False,

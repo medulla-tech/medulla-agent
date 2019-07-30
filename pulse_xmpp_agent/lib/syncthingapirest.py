@@ -195,7 +195,11 @@ class syncthingapi():
         """
         if config is None:
             config = self.config
-        re = self.__postAPIREST__("/system/config", dictpython = config)
+        try:
+            re = self.__postAPIREST__("/system/config", dictpython = config)
+        except:
+            logger.error("\n%s"%(traceback.format_exc()))
+            return ""
         return re
 
     def post_discovery(self, deviceid, adress, port=22000):
