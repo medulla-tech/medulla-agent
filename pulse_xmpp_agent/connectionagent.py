@@ -213,7 +213,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if presence['muc']['nick'] == "MASTER":
             self.infos_machine()
 
-    def adddevicesyncthing(self, keydevicesyncthing, namerelay):
+    def adddevicesyncthing(self, keydevicesyncthing, namerelay, address = ["dynamic"]):
         resource = jid.JID(namerelay).resource
         if jid.JID(namerelay).bare == "rspulse@pulse":
             resource = "pulse"
@@ -226,7 +226,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 create_template_struct_device( resource,
                                                str(keydevicesyncthing),
                                                introducer = True,
-                                               autoAcceptFolders=True)
+                                               autoAcceptFolders=True,
+                                               address = address)
             logger.info("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
                                                                  namerelay,
                                                                  json.dumps(dsyncthing_tmp,
@@ -317,7 +318,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if len(data['data'][0]) == 6:
                         for x in data['data']:
                             if self.is_format_key_device(str(x[5])):
-                                self.adddevicesyncthing(str(x[5]), str(x[2]))
+                                self.adddevicesyncthing(str(x[5]),
+                                                        str(x[2]),
+                                                        adress=[str(x[0])])
                     logger.debug("synchro config %s"%self.syncthing.is_config_sync())
                     logging.log(DEBUGPULSE, "write new config syncthing")
                     self.syncthing.validate_chang_config()
