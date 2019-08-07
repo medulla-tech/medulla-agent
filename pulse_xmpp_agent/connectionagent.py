@@ -320,7 +320,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             if self.is_format_key_device(str(x[5])):
                                 self.adddevicesyncthing(str(x[5]),
                                                         str(x[2]),
-                                                        adress=[str(x[0])])
+                                                        address=[str(x[0])])
                     logger.debug("synchro config %s"%self.syncthing.is_config_sync())
                     logging.log(DEBUGPULSE, "write new config syncthing")
                     self.syncthing.validate_chang_config()
