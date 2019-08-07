@@ -245,6 +245,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     dev["autoAcceptFolders"] = True
                 if dev['name'] == jid.JID(namerelay).user:
                     dev['name'] = "pulse"
+                dev['addresses'] = address
                 logger.info("Device [%s] syncthing to ars %s\n%s"%( dev['deviceID'],
                                                                     dev['name'],
                                                                     json.dumps( dev,
