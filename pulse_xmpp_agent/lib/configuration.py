@@ -259,6 +259,11 @@ class confParameter:
         else:
             self.defaultdir     = os.path.join("/", "tmp")
             self.rootfilesystem = os.path.join("/", "tmp")
+
+        self.pushsubstitutionmethod = "pullrsync"
+        if Config.has_option("deploy", "pushsubstitutionmethod"):
+            self.pushsubstitutionmethod = Config.get('deploy', 'pushsubstitutionmethod')
+
         if Config.has_option("browserfile", "defaultdir"):
             self.defaultdir = Config.get('browserfile', 'defaultdir')
         if Config.has_option("browserfile", "rootfilesystem"):
