@@ -85,5 +85,5 @@ kiosk_local_port = 8766
 [substitute]
 # Registration and Inventory JIDs
 # Must be changed to substitute agent JIDs if used
-# registration = master_reg@pulse
-# inventory = master_inv@pulse
+registration = master_reg@pulse
+inventory = master_inv@pulse
