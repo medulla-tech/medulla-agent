@@ -53,7 +53,7 @@ Pulse master agent substitute
 
 %files -n pulse-xmpp-master-substitute
 %{python2_sitelib}/pulse_xmpp_master_substitute/
-%_sysconfdir/pulse-xmpp-agent-substitute/
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent-substitute/
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 
