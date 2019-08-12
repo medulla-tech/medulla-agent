@@ -58,3 +58,6 @@ class Glpi(DatabaseHelper):
 
     def getTableName(self, name):
         return ''.join(map(lambda x:x.capitalize(), name.split('_')))
+
+    def __getattr__(self, attr_name):
+        return getattr(self.database, attr_name)
