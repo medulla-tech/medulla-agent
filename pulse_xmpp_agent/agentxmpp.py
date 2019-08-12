@@ -2257,6 +2257,17 @@ if __name__ == '__main__':
 
     opts, args = optp.parse_args()
     tg = confParameter(opts.typemachine)
+    # termine ssh reverse
+    if sys.platform.startswith('win'):
+        searchreversesshprocess = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        for f in [ os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", x) \
+                    for x in os.listdir(searchreversesshprocess) if x[-4:]== ".pid"]:
+            pid= file_get_contents(f).strip(" \n\r\t")
+            cmd = "taskkill /F /PID %s"%str(pid)
+            logger.info(cmd)
+            simplecommand(cmd)
+            os.remove(f)
+
     if not opts.deamon :
         doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
     else:
