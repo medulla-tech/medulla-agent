@@ -9,7 +9,7 @@ import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
+from lib.plugins.glpi.database import Glpi
 
 logger = logging.getLogger()
 

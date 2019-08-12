@@ -30,7 +30,7 @@ from lib.logcolor import add_coloring_to_emit_ansi
 import traceback
 from optparse import OptionParser
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
+from lib.plugins.glpi.database import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from bin.agent import MUCBot
 
@@ -113,7 +113,7 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     xmpp.register_plugin('xep_0050') # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True,
                                       'frequency': 600,
-                                      'interval' : 600, 
+                                      'interval' : 600,
                                       'timeout'  : 500  })
     xmpp.register_plugin('xep_0077') # In-band Registration
     xmpp['xep_0077'].force_registration = True

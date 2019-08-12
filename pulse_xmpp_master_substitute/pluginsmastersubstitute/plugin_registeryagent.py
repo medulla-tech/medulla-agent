@@ -14,7 +14,7 @@ import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
+from lib.plugins.glpi.database import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.localisation import Localisation
 from lib.manageRSAsigned import MsgsignedRSA
@@ -282,8 +282,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                             '',
                                                             '',
                                                             "Master")
-                            callInstallConfGuacamole(xmppobject,   
-                                                     jidrs, 
+                            callInstallConfGuacamole(xmppobject,
+                                                     jidrs,
                                                      {  'hostname': data['information']['info']['hostname'],
                                                         'machine_ip': data['xmppip'],
                                                         'uuid': str(computer.id),
@@ -314,8 +314,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.error("** Database registration error")
                 return
 
-            pluginfunction = ['plugin_autoupdate', 
-                              'pulgin_loadpluginlistversion', 
+            pluginfunction = ['plugin_autoupdate',
+                              'pulgin_loadpluginlistversion',
                               'plugin_loadpluginschedulerlistversion',
                               'plugin_showregistration']
 
@@ -431,7 +431,7 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
         sessionid = action.strip().replace(" ", "")
     return { 'action' : action,
              'data' : data,
-             'ret' : 0, 
+             'ret' : 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid) }
 
@@ -446,10 +446,10 @@ def handlerkioskpresence(xmppobject, jid, id, os, hostname, uuid_inventorymachin
     structuredatakiosk = get_packages_for_machine(machine)
     datas = { 'subaction':'initialisation_kiosk',
               'data' : structuredatakiosk }
-    message_to_machine = data_struct_message("kiosk", 
-                                             data = datas, 
-                                             ret = 0, 
-                                             base64 = False, 
+    message_to_machine = data_struct_message("kiosk",
+                                             data = datas,
+                                             ret = 0,
+                                             base64 = False,
                                              sessionid = getRandomName(6, "initialisation_kiosk"))
     xmppobject.send_message(mto = jid,
                             mbody = json.dumps(message_to_machine),
