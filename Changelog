@@ -2,9 +2,11 @@ pulse-xmpp-agent 2.0.1
 ======================
 * [Feature] Enable substitute agents by default
 * [Feature] Allow to limite transfert rate when using syncthing
+* [Feature] Add Glpi substitute support
+* [Feature] Allow to use pullrsync without package server
 * [BUGFIX]  Improve syncthing support and API
-* [BUGFIX]  Fix default creation of syncthing config.xml file
-* 
+* [BUGFIX]  Fix default creation of syncthing config.xml file 
+
 pulse-xmpp-agent 2.0.0
 ======================
 * [FEATURE] Allow scp and rsync transfers in Pull mode
