@@ -42,7 +42,7 @@ from lxml import etree
 import urllib
 import socket
 from threading import Lock
-from utils import Program, getRandomName
+from utils import Program, getRandomName, simplecommand
 import logging
 import traceback
 import shutil
@@ -1304,6 +1304,19 @@ class syncthingprogram(Program):
         #print("restart syncthing")
         self.stop_syncthing()
         self.start_syncthing()
+
+    def syncthing_on(self):
+        if sys.platform.startswith('win'):
+            cmd='asklist | findstr "syncthing.exe"'
+            result = simplecommand(cmd)
+            if len(result['result']) > 4:
+                return True
+        else:
+            cmd='ps ax |  grep syncthing | grep -v grep'
+            result = simplecommand(cmd)
+            if len(result['result']) > 4:
+                return True
+        return False
 
 if __name__ == '__main__':
     pass

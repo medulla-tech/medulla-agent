@@ -56,7 +56,9 @@ if sys.platform.startswith('win'):
     #import win32net
     #import win32netcon
     #import win32api
-
+    import win32security
+    import ntsecuritycon
+    import win32net
 
 def Setdirectorytempinfo():
     """
@@ -1588,10 +1590,14 @@ def keypub():
             obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""')
         return file_get_contents("/root/.ssh/id_rsa.pub")
     elif sys.platform.startswith('win'):
-        pathkey = os.path.join("C:/", "Users", "pulseuser", ".ssh")
+        try:
+            win32net.NetUserGetInfo('','pulse',0)
+            pathkey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
+        except:
+            pathkey = os.path.join("c:\Users\pulseuser", ".ssh")
         if not os.path.isfile(os.path.join(pathkey , "id_rsa")):
-            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join("C:/", "Users", "pulseuser", ".ssh", "id_rsa"))
-        return file_get_contents(os.path.join("C:/", "Users", "pulseuser", ".ssh", "id_rsa.pub"))
+            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join(pathkey, "id_rsa"))
+        return file_get_contents(os.path.join(pathkey, "id_rsa.pub"))
     elif sys.platform.startswith('darwin'):
         if not os.path.isfile("/var/root/.ssh/id_rsa"):
             obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /var/root/.ssh/id_rsa -q -N ""')
