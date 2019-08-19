@@ -64,8 +64,118 @@ from lib.plugins.utils.database_utils import  DbTOA # pyflakes.ignore
 #from mmc.plugins.dyngroup.config import DGConfig
 from distutils.version import LooseVersion, StrictVersion
 from lib.configuration import confParameter
-from lib.plugins.glpi import *
 from lib.plugins.xmpp import XmppMasterDatabase
+
+class Singleton(object):
+
+    def __new__(type, *args):
+        if not '_the_instance' in type.__dict__:
+            type._the_instance = object.__new__(type)
+        return type._the_instance
+
+class DatabaseHelper(Singleton):
+        ## Session decorator to create and close session automatically
+    @classmethod
+    def _sessionxmpp(self, func):
+        @functools.wraps(func)
+        def __session(self, *args, **kw):
+            created = False
+            if not self.sessionxmpp:
+                self.sessionxmpp = sessionmaker(bind=self.engine_glpi)
+                created = True
+            result = func(self, self.session, *args, **kw)
+            if created:
+                self.sessionxmpp.close()
+                self.sessionxmpp = None
+            return result
+        return __session
+
+    ## Session decorator to create and close session automatically
+    @classmethod
+    def _sessionm(self, func):
+        @functools.wraps(func)
+        def __sessionm(self, *args, **kw):
+            session_factory  = sessionmaker(bind=self.engine_glpi)
+            sessionmultithread = scoped_session(session_factory)
+            result = func(self, sessionmultithread , *args, **kw)
+            sessionmultithread.remove()
+            return result
+        return __sessionm
+
+    # listinfo decorator to handle offsets, limits and output serialization
+    # for XMLRPC, can handle multiple entities queries, multiple columns
+    # and mapped relationships
+    @classmethod
+    def _listinfo(self, func_):
+        @functools.wraps(func_)
+        def __listinfo(self, params, *args, **kw):
+            query = func_(self, params, *args, **kw)
+
+            # Testing if result is a Query statement
+            if not isinstance(query, Query):
+                logging.getLogger().error('@_listinfo methods must return a Query object, got %s', query.__class__.__name__)
+                return {'count': 0, 'data': [], 'listinfo': 1}
+
+            # Applying filters on primary entity
+            # Exact filters
+            if 'filters' in params and params['filters']:
+                clauses = [_entity_descriptor(query._mapper_zero(), key) == value
+                    for key, value in params['filters'].iteritems()]
+                if clauses:
+                    query = query.filter(*clauses)
+            # Like filters
+            if 'like_filters' in params and params['like_filters']:
+                clauses = [_entity_descriptor(query._mapper_zero(), key).like('%' + value + '%')
+                    for key, value in params['like_filters'].iteritems()]
+                if clauses:
+                    query = query.filter(*clauses)
+
+            # Calculating count without limit and offset on primary entity id
+            primary_id = _entity_descriptor(query._mapper_zero(), "id")
+            count = query.with_entities(func.count(primary_id))
+            # Scalar doesn't work if multiple entities are selected
+            count = sum([c[0] for c in count.all()])
+
+            # Applying limit and offset
+            if 'max' in params and 'min' in params:
+                query = query.limit(int(params['max']) - int(params['min'])).offset(int(params['min']))
+
+            columns = query.column_descriptions
+
+            data = []
+
+            # Serializing query output
+            for line in query:
+                if isinstance(line, DBObj):
+                    data.append(line.toDict())
+                elif isinstance(line, tuple):
+                    # Fetching all tuple items
+                    line_ = {}
+                    for i in xrange(len(line)):
+                        item = line[i]
+                        if isinstance(item, DBObj):
+                            line_.update(item.toDict())
+                        else:
+                            if item.__class__.__name__ == 'Decimal':
+                                item = int(item)
+                            line_.update({columns[i]['name'].encode('ascii', 'ignore') : item})
+                    data.append(line_)
+                else:
+                    if line.__class__.__name__ == 'Decimal':
+                        line = int(line)
+                    elif hasattr(line, '_sa_instance_state'):
+                        # SA object, try to do a dict conversion
+                        line = line.__dict__
+                        del line['_sa_instance_state']
+                    # Base types
+                    data.append(line)
+
+            # Ensure that session will be closed
+            query.session.close()
+
+            return {'count': count, 'data': data, 'listinfo': 1}
+
+        return __listinfo
 
 class Glpi92(DatabaseHelper):
     """
@@ -88,46 +198,31 @@ class Glpi92(DatabaseHelper):
 
         #utilisation glpi base
         self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.glpi_dbuser,
-            self.config.glpi_dbpasswd,
-            self.config.glpi_dbhost,
-            self.config.glpi_dbport,
-            self.config.glpi_dbname),
-            pool_recycle = self.config.dbpoolrecycle,
-            pool_size = self.config.dbpoolsize
+                                                                self.config.glpi_dbpasswd,
+                                                                self.config.glpi_dbhost,
+                                                                self.config.glpi_dbport,
+                                                                self.config.glpi_dbname),
+                                    pool_recycle = self.config.dbpoolrecycle,
+                                    pool_size = self.config.dbpoolsize
         )
+
+        try:
+            self._glpi_version = self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
+        except OperationalError:
+            self._glpi_version = self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
+
+        if LooseVersion(self._glpi_version) >=  LooseVersion("9.1") and LooseVersion(self._glpi_version) <=  LooseVersion("9.1.7"):
+            logging.getLogger().debug('GLPI version %s found !' % self._glpi_version)
+        else:
+            logging.getLogger().debug('GLPI higher than version 9.1 was not detected')
+        self.Session = sessionmaker(bind=self.engine_glpi)
         self.metadata = MetaData(self.engine_glpi)
         self.initMappers()
         self.logger.info("Glpi is in version %s" % (self.glpi_version))
         self.metadata.create_all()
-        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.2')
+        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.1')
         self.is_activated = True
         self.logger.debug("Glpi finish activation")
-
-    def try_activation(self, config):
-        """
-        function to see if that glpi database backend is the one we need to use
-        """
-        self.config = config
-        self.db = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.glpi_dbuser,
-            self.config.glpi_dbpasswd,
-            self.config.glpi_dbhost,
-            self.config.glpi_dbport,
-            self.config.glpi_dbname),
-            pool_recycle = self.config.dbpoolrecycle,
-            pool_size = self.config.dbpoolsize)
-
-        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.2')
-        try:
-            self._glpi_version = self.db.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
-            return True
-        except OperationalError:
-            self._glpi_version = self.db.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
-            if LooseVersion(self._glpi_version) >= LooseVersion('9.2') and LooseVersion(self._glpi_version) <  LooseVersion("0.85"):
-                logging.getLogger().debug('GLPI version %s found !' % self._glpi_version)
-                return True
-            else:
-                logging.getLogger().debug('GLPI higher than version 9.2 was not detected')
-                return False
 
     @property
     def glpi_version(self):

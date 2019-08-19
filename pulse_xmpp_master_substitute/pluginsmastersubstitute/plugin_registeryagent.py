@@ -14,7 +14,7 @@ import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi.database import Glpi
+from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.localisation import Localisation
 from lib.manageRSAsigned import MsgsignedRSA

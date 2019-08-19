@@ -48,7 +48,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import imp
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi.database import Glpi
+from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 
 import random

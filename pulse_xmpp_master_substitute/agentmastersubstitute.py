@@ -30,7 +30,7 @@ from lib.logcolor import add_coloring_to_emit_ansi
 import traceback
 from optparse import OptionParser
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi.database import Glpi
+from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from bin.agent import MUCBot
 
