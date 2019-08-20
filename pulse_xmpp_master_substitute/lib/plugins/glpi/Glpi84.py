@@ -1490,17 +1490,6 @@ class Glpi84(DatabaseHelper):
                     datas['owner_firstname'] = owner_firstname
                 if 'owner_realname' in self.config.summary:
                     datas['owner_realname'] = owner_realname
-                master_config = xmppMasterConfig()
-                regvalue = []
-                r=re.compile(r'reg_key_.*')
-                regs=filter(r.search, self.config.summary)
-                for regkey in regs:
-                    regkeyconf = getattr( master_config, regkey).split("|")[0].split("\\")[-1]
-                    try:
-                        keyname, keyvalue = self.getMachineRegistryKey(m,regkeyconf)
-                        datas[regkey] = keyvalue
-                    except TypeError:
-                        pass
 
             ret[m.getUUID()] = [None, datas]
 
@@ -1724,21 +1713,7 @@ class Glpi84(DatabaseHelper):
 
         return self.getLocation(uuid).name
 
-    def getLocationsList(self, ctx, filt = None):
-        """
-        Get the list of all entities that user can access
-        """
-        ret = []
-        complete_ctx(ctx)
-        filtr = re.compile(filt)
-        for loc in ctx.locations:
-            if filt:
-                if filtr.search(loc.name):
-                    ret.append(loc.name)
-            else:
-                ret.append(loc.name)
 
-        return ret
 
     def getLocationsCount(self):
         """
@@ -2916,25 +2891,6 @@ class Glpi84(DatabaseHelper):
         else:
             return [[q.id, q.name] for q in query]
 
-    def getAllEntities(self, ctx, filt = ''):
-        """
-        @return: all entities defined in the GLPI database
-        """
-        session = create_session()
-        query = session.query(Entities)
-        if filter != '':
-            query = query.filter(self.entities.c.name.like('%'+filt+'%'))
-
-        # Request only entites current user can access
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        query = query.filter(self.entities.c.id.in_(ctx.locationsid))
-
-        query = query.order_by(self.entities.c.name)
-        ret = query.all()
-        session.close()
-        return ret
-
     def getMachineByEntity(self, ctx, enname):
         """
         @return: all machines that are in this entity
@@ -2980,91 +2936,6 @@ class Glpi84(DatabaseHelper):
                 t.append(p)
                 p = __getParent(p)
             ret[i] = t
-        return ret
-
-    @DatabaseHelper._sessionm
-    def getAllVersion4Software(self, session, ctx, softname, version = ''):
-        """
-        @return: all softwares defined in the GLPI database
-        """
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        query = session.query(distinct(SoftwareVersion.name)) \
-                .select_from(self.softwareversions.join(self.software))
-
-        my_parents_ids = self.getEntitiesParentsAsList(ctx.locationsid)
-        query = query.filter(
-            or_(
-                Software.entities_id.in_(ctx.locationsid),
-                and_(
-                    Software.is_recursive == 1,
-                    Software.entities_id.in_(my_parents_ids)
-                )
-            )
-        )
-
-        query = query.filter(Software.name.like('%' + softname + '%'))
-
-        if version:
-            query = query.filter(SoftwareVersion.name.like('%' + version + '%'))
-
-        # Last softwareversion entries first
-        query = query.order_by(desc(SoftwareVersion.id))
-
-        ret = query.all()
-        return ret
-
-    @DatabaseHelper._sessionm
-    def getAllSoftwares(self, session, ctx, softname='', vendor=None, limit=None):
-        """
-        @return: all softwares defined in the GLPI database
-        """
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-
-        query = session.query(distinct(Software.name))
-        query = query.select_from(
-            self.software \
-            .join(self.softwareversions) \
-            .join(self.inst_software) \
-            .join(self.manufacturers, isouter=True)
-        )
-        my_parents_ids = self.getEntitiesParentsAsList(ctx.locationsid)
-        query = query.filter(
-            or_(
-                Software.entities_id.in_(ctx.locationsid),
-                and_(
-                    Software.is_recursive == 1,
-                    Software.entities_id.in_(my_parents_ids)
-                )
-            )
-        )
-        if vendor is not None:
-            query = query.filter(Manufacturers.name.like(vendor))
-
-        if softname != '':
-            query = query.filter(Software.name.like('%' + softname + '%'))
-
-        # Last software entries first
-        query = query.order_by(desc(Software.id))
-
-        if limit is None:
-            ret = query.all()
-        else:
-            ret = query.limit(limit).all()
-        return ret
-
-    @DatabaseHelper._sessionm
-    def getAllSoftwaresByManufacturer(self, session, ctx, vendor):
-        """
-        Return all softwares of a vendor
-        """
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        query = session.query(Software)
-        query = query.join(Manufacturers)
-        query = query.filter(Manufacturers.name.like(vendor))
-        ret = query.group_by(Software.name).order_by(Software.name).all()
         return ret
 
     @DatabaseHelper._sessionm
@@ -3532,35 +3403,6 @@ class Glpi84(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllLocations(self, ctx, filt = ''):
-        """ @return: all hostnames defined in the GLPI database """
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        session = create_session()
-        query = session.query(Locations).select_from(self.locations.join(self.machine))
-        query = self.__filter_on(query.filter(self.machine.c.is_deleted == 0).filter(self.machine.c.is_template == 0))
-        my_parents_ids = self.getEntitiesParentsAsList(ctx.locationsid)
-        query = self.__filter_on_entity(query, ctx, my_parents_ids)
-        query = query.filter(or_(self.locations.c.entities_id.in_(ctx.locationsid), and_(self.locations.c.is_recursive == 1, self.locations.c.entities_id.in_(my_parents_ids))))
-        if filter != '':
-            query = query.filter(self.locations.c.completename.like('%'+filt+'%'))
-        ret = query.group_by(self.locations.c.completename).all()
-        session.close()
-        return ret
-
-    def getAllLocations1(self, ctx, filt = ''):
-        """ @return: all hostnames defined in the GLPI database """
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        session = create_session()
-        query = session.query(Locations)
-        if filter != '':
-            query = query.filter(self.locations.c.completename.like('%'+filt+'%'))
-        ret = query.group_by(self.locations.c.completename)
-        ret=ret.all()
-        session.close()
-        return ret
-
     def getAllRegistryKey(self, ctx, filt = ''):
         """
         Returns the registry keys name.
@@ -3607,22 +3449,6 @@ class Glpi84(DatabaseHelper):
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.os_sp.c.name == filt)
         ret = query.all()
-        session.close()
-        return ret
-
-    def getAllGroups(self, ctx, filt = ''):
-        """ @return: all hostnames defined in the GLPI database """
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        session = create_session()
-        query = session.query(Group).select_from(self.group.join(self.machine))
-        query = self.__filter_on(query.filter(self.machine.c.is_deleted == 0).filter(self.machine.c.is_template == 0))
-        my_parents_ids = self.getEntitiesParentsAsList(ctx.locationsid)
-        query = self.__filter_on_entity(query, ctx, my_parents_ids)
-        query = query.filter(or_(self.group.c.entities_id.in_(ctx.locationsid), and_(self.group.c.is_recursive == 1, self.group.c.entities_id.in_(my_parents_ids))))
-        if filter != '':
-            query = query.filter(self.group.c.name.like('%'+filt+'%'))
-        ret = query.group_by(self.group.c.name).all()
         session.close()
         return ret
 
@@ -3932,81 +3758,6 @@ class Glpi84(DatabaseHelper):
         ret_gw.extend(unique(ret_nogw))
 
         return ret_gw
-
-    def getMachineNumberByState(self, ctx):
-        """
-        return number of machines sorted by state
-        default states are:
-            * green: less than 10 days
-            * orange: more than 10 days and less than 35 days
-            * red: more than 35 days
-
-        @return: dictionnary with state as key, number as value
-        @rtype: dict
-        """
-
-        # Read config from ini file
-        orange = self.config.orange
-        red = self.config.red
-
-        complete_ctx(ctx)
-        filt = {'ctxlocation': ctx.locations}
-
-        ret = {
-            "days": {
-                "orange": orange,
-                "red": red,
-            },
-            "count": self.getRestrictedComputersListStatesLen(ctx, filt, orange, red),
-        }
-
-        return ret
-
-    def getAntivirusStatus(self, ctx):
-        """
-        Return number of machine by antivirus status:
-            * green: Antivirus OK
-            * orange: Antivirus not running or not up-to-date
-            * red: No antivirus or unknown status
-        """
-        session = create_session()
-
-        __computersListQ = self.__getRestrictedComputersListQuery
-
-        complete_ctx(ctx)
-        filt = {
-            'ctxlocation': ctx.locations
-        }
-
-        ret = {
-            'green': int(__computersListQ(ctx, dict(filt, **{'antivirus': 'green'}), session, count=True)),
-            'orange': int(__computersListQ(ctx, dict(filt, **{'antivirus': 'orange'}), session, count=True)),
-            'red': int(__computersListQ(ctx, dict(filt, **{'antivirus': 'red'}), session, count=True)),
-        }
-
-        session.close()
-
-        return ret
-
-    def getMachineIdsNotInAntivirusRed(self, ctx):
-        """
-        return ids list of machines who are not in antivirus red status
-        """
-        session = create_session()
-        __computersListQ = self.__getRestrictedComputersListQuery
-
-        complete_ctx(ctx)
-
-        filt = {
-            'ctxlocation': ctx.locations
-        }
-
-        query1 = __computersListQ(ctx, dict(filt, **{'antivirus': 'green'}), session)
-        query2 = __computersListQ(ctx, dict(filt, **{'antivirus': 'orange'}), session)
-
-        session.close()
-
-        return [machine.id for machine in query1.all()] + [machine.id for machine in query2.all()]
 
     def getIpFromMac(self, mac):
         """
