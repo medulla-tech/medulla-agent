@@ -4911,7 +4911,7 @@ def unique(s):
     except TypeError:
         u = None # move on to the next method
 
-    if u != None:
+    if u is not None:
         return u.keys()
     del u
 
@@ -4928,7 +4928,7 @@ def unique(s):
     except TypeError:
         t = None # move on to the next method
 
-    if t != None:
+    if t is not None:
         assert n > 0
         last = t[0]
         lasti = i = 1
