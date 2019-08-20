@@ -616,16 +616,6 @@ class Glpi84(DatabaseHelper):
         ret = self.__filter_on_entity_filter(query, ctx, other_locids)
         return query.filter(ret)
 
-    def __filter_on_entity_filter(self, query, ctx, other_locids = None):
-        # FIXME: I put the locationsid in the security context to optimize the
-        # number of requests. locationsid is set by
-        # glpi.utilities.complete_ctx, but when querying via the dyngroup
-        # plugin it is not called.
-        # Mutable list used other_locids as default argument to a method or function
-        other_locids = other_locids or []
-        if not hasattr(ctx, 'locationsid'):
-            complete_ctx(ctx)
-        return self.machine.c.entities_id.in_(ctx.locationsid + other_locids)
 
     def mini_computers_count(self):
         """Count all the GLPI machines
@@ -768,7 +758,6 @@ class Glpi84(DatabaseHelper):
                     pass
 
 
-
             if self.fusionagents is not None:
                 join_query = join_query.outerjoin(self.fusionagents)
             if 'antivirus' in filt: # Used for Antivirus dashboard
@@ -780,22 +769,21 @@ class Glpi84(DatabaseHelper):
             else:
                 query = query.select_from(join_query).filter(query_filter)
             query = query.filter(self.machine.c.is_deleted == 0).filter(self.machine.c.is_template == 0)
-            if PluginManager().isEnabled("xmppmaster"):
-                if ret:
-                    if "Online computer" in ret:
-                        if ret["Online computer"][2] == "True":
-                            query = query.filter(Machine.id.in_(ret["Online computer"][3]))
-                        else:
-                            query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
-                    if "OU user" in ret:
-                        query = query.filter(Machine.id.in_(ret["OU user"][3]))
-                    if "OU machine" in ret:
-                        query = query.filter(Machine.id.in_(ret["OU machine"][3]))
-                    if "computerpresence" in ret:
-                        if ret["computerpresence"][2] == "presence":
-                            query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
-                        else:
-                            query = query.filter(Machine.id.notin_(ret["computerpresence"][3]))
+            if ret:
+                if "Online computer" in ret:
+                    if ret["Online computer"][2] == "True":
+                        query = query.filter(Machine.id.in_(ret["Online computer"][3]))
+                    else:
+                        query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
+                if "OU user" in ret:
+                    query = query.filter(Machine.id.in_(ret["OU user"][3]))
+                if "OU machine" in ret:
+                    query = query.filter(Machine.id.in_(ret["OU machine"][3]))
+                if "computerpresence" in ret:
+                    if ret["computerpresence"][2] == "presence":
+                        query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
+                    else:
+                        query = query.filter(Machine.id.notin_(ret["computerpresence"][3]))
             query = self.__filter_on(query)
             query = self.__filter_on_entity(query, ctx)
 
@@ -3945,46 +3933,6 @@ class Glpi84(DatabaseHelper):
 
         return ret_gw
 
-    def getMachineListByState(self, ctx, groupName):
-        """
-        """
-
-        # Read config from ini file
-        orange = self.config.orange
-        red = self.config.red
-
-        complete_ctx(ctx)
-        filt = {'ctxlocation': ctx.locations}
-
-        session = create_session()
-        now = datetime.datetime.now()
-        orange = now - datetime.timedelta(orange)
-        red = now - datetime.timedelta(red)
-
-        date_mod = self.machine.c.date_mod
-        if self.fusionagents is not None:
-            date_mod = FusionAgents.last_contact
-
-        query = self.__getRestrictedComputersListQuery(ctx, filt, session)
-
-        # Limit list according to max_elements_for_static_list param in dyngroup.ini
-        limit = DGConfig().maxElementsForStaticList
-
-        if groupName == "green":
-            result = query.filter(date_mod > orange).limit(limit)
-        elif groupName == "orange":
-            result = query.filter(and_(date_mod < orange, date_mod > red)).limit(limit)
-        elif groupName == "red":
-            result = query.filter(date_mod < red).limit(limit)
-
-        ret = {}
-        for machine in result.all():
-            if machine.name is not None:
-                ret[toUUID(machine.id) + '##' + machine.name] = {"hostname": machine.name, "uuid": toUUID(machine.id)}
-
-        session.close()
-        return ret
-
     def getMachineNumberByState(self, ctx):
         """
         return number of machines sorted by state
@@ -4060,30 +4008,6 @@ class Glpi84(DatabaseHelper):
 
         return [machine.id for machine in query1.all()] + [machine.id for machine in query2.all()]
 
-    def getMachineListByAntivirusState(self, ctx, groupName):
-        session = create_session()
-
-        __computersListQ = self.__getRestrictedComputersListQuery
-
-        complete_ctx(ctx)
-        filt = {
-            'ctxlocation': ctx.locations
-        }
-        query = __computersListQ(ctx, dict(filt, **{'antivirus': groupName}), session)
-
-        # Limit list according to max_elements_for_static_list param in dyngroup.ini
-        limit = DGConfig().maxElementsForStaticList
-
-        query = query.limit(limit)
-
-        ret = {}
-        for machine in query.all():
-            if machine.name is not None:
-                ret[toUUID(machine.id) + '##' + machine.name] = {"hostname": machine.name, "uuid": toUUID(machine.id)}
-
-        session.close()
-        return ret
-
     def getIpFromMac(self, mac):
         """
         Get an ip address when a mac address is given
@@ -4116,73 +4040,6 @@ class Glpi84(DatabaseHelper):
     def isComputerNameAvailable(self, ctx, locationUUID, name):
         raise Exception("need to be implemented when we would be able to add computers")
 
-    def _killsession(self,sessionwebservice):
-        """
-        Destroy a session identified by a session token.
-
-        @param sessionwebservice: session var provided by initSession endpoint.
-        @type sessionwebservice: str
-
-        """
-        headers = {'content-type': 'application/json',
-                   'Session-Token': sessionwebservice
-                   }
-        url = GlpiConfig.webservices['glpi_base_url'] + "killSession"
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200 :
-            self.logger.debug("Kill session REST: %s"%sessionwebservice)
-
-    def delMachine(self, uuid):
-        """
-        Deleting a machine in GLPI (only the flag 'is_deleted' updated)
-
-        @param uuid: UUID of machine
-        @type uuid: str
-
-        @return: True if the machine successfully deleted
-        @rtype: bool
-        """
-        session = create_session()
-        id = fromUUID(uuid)
-
-        machine = session.query(Machine).filter(self.machine.c.id == id).first()
-
-        if machine:
-            webservice_ok = True
-            try:
-                self._get_webservices_client()
-            except ProtocolError, e:
-                webservice_ok = False
-            except Exception, e:
-                webservice_ok = False
-
-            if self.config.webservices['purge_machine']:
-                if webservice_ok:
-                    return self.purgeMachine(machine.id)
-                else:
-                    self.logger.warn("Unable to purge machine (uuid=%s) because GLPI webservice is disabled" % uuid)
-
-            connection = self.getDbConnection()
-            trans = connection.begin()
-            try:
-                machine.is_deleted = True
-            except Exception, e :
-                self.logger.warn("Unable to delete machine (uuid=%s): %s" % (uuid, str(e)))
-                session.flush()
-                session.close()
-                trans.rollback()
-
-                return False
-
-            session.flush()
-            session.close()
-            trans.commit()
-            self.logger.debug("Machine (uuid=%s) successfully deleted" % uuid)
-
-            return True
-
-        else:
-            return False
 
     @DatabaseHelper._sessionm
     def addUser(self, session, username, password, entity_rights=None):
@@ -4827,7 +4684,7 @@ class Machine(object):
     def toH(self):
         return { 'hostname':self.name, 'uuid':toUUID(self.id) }
     def to_a(self):
-        owner_login, owner_firstname, owner_realname = Glpi94().getMachineOwner(self)
+        owner_login, owner_firstname, owner_realname = Glpi84().getMachineOwner(self)
         return [
             ['name',self.name],
             ['comments',self.comment],
@@ -4850,7 +4707,7 @@ class Machine(object):
             ['model',self.computermodels_id],
             ['type',self.computertypes_id],
             ['entity',self.entities_id],
-            ['uuid',Glpi94().getMachineUUID(self)]
+            ['uuid',Glpi84().getMachineUUID(self)]
         ]
 
 class Entities(object):
@@ -4997,3 +4854,199 @@ class RuleAction(DbTOA):
 
 class OsVersion(DbTOA):
     pass
+
+
+def noNone(var, res = ''):
+    """
+    Some times, we don't want to see any None affected to a variable
+    This function checks if variable is None. If True, return empty string by default
+
+    @param var: variable who will be checked
+    @type var: any...
+
+    @param res: what we want if var is None, default empty string
+    @type res: any...
+
+    @return: var if var is not None else res
+    @rtype: any...
+    """
+    if var is None:
+        return res
+    return var
+
+def unique(s):
+    """
+    Return a list of the elements in s, but without duplicates.
+
+    For example, unique([1,2,3,1,2,3]) is some permutation of [1,2,3],
+    unique("abcabc") some permutation of ["a", "b", "c"], and
+    unique(([1, 2], [2, 3], [1, 2])) some permutation of
+    [[2, 3], [1, 2]].
+
+    For best speed, all sequence elements should be hashable.  Then
+    unique() will usually work in linear time.
+
+    If not possible, the sequence elements should enjoy a total
+    ordering, and if list(s).sort() doesn't raise TypeError it's
+    assumed that they do enjoy a total ordering.  Then unique() will
+    usually work in O(N*log2(N)) time.
+
+    If that's not possible either, the sequence elements must support
+    equality-testing.  Then unique() will usually work in quadratic
+    time.
+    """
+
+    n = len(s)
+    if n == 0:
+        return []
+
+    # Try using a dict first, as that's the fastest and will usually
+    # work.  If it doesn't work, it will usually fail quickly, so it
+    # usually doesn't cost much to *try* it.  It requires that all the
+    # sequence elements be hashable, and support equality comparison.
+    u = {}
+    try:
+        for x in s:
+            u[x] = 1
+    except TypeError:
+        u = None # move on to the next method
+
+    if u != None:
+        return u.keys()
+    del u
+
+    # We can't hash all the elements.  Second fastest is to sort,
+    # which brings the equal elements together; then duplicates are
+    # easy to weed out in a single pass.
+    # NOTE:  Python's list.sort() was designed to be efficient in the
+    # presence of many duplicate elements.  This isn't true of all
+    # sort functions in all languages or libraries, so this approach
+    # is more effective in Python than it may be elsewhere.
+    try:
+        t = list(s)
+        t.sort()
+    except TypeError:
+        t = None # move on to the next method
+
+    if t != None:
+        assert n > 0
+        last = t[0]
+        lasti = i = 1
+        while i < n:
+            if t[i] != last:
+                t[lasti] = last = t[i]
+                lasti += 1
+            i += 1
+        return t[:lasti]
+    else:
+        del t
+
+    # Brute force is all that's left.
+    u = []
+    for x in s:
+        if x not in u:
+            u.append(x)
+    return u
+
+def same_network(ip1, ip2, netmask):
+    try:
+        ip1 = map(lambda x: int(x), ip1.split('.'))
+        ip2 = map(lambda x: int(x), ip2.split('.'))
+        netmask = map(lambda x: int(x), netmask.split('.'))
+        for i in range(4):
+            if ip1[i].__and__(netmask[i]) != ip2[i].__and__(netmask[i]):
+                return False
+    except ValueError:
+        return False
+    return True
+
+class ComputerGroupManager(Singleton):
+    components = {}
+    main = 'dyngroup'
+
+    def __init__(self):
+        Singleton.__init__(self)
+        self.logger = logging.getLogger()
+
+    def select(self, name):
+        self.logger.info("Selecting computer group manager: %s" % name)
+        self.main = name
+
+    def register(self, name, klass):
+        self.logger.debug("Registering computer group manager %s / %s" % (name, str(klass)))
+        self.components[name] = klass
+
+    def validate(self):
+        return True
+
+    def isdyn_group(self, ctx, gid):
+        klass = self.components[self.main]
+        return klass().isdyn_group(ctx, gid)
+
+    def isrequest_group(self, ctx, gid):
+        klass = self.components[self.main]
+        return klass().isrequest_group(ctx, gid)
+
+    def requestresult_group(self, ctx, gid, min, max, filter):
+        klass = self.components[self.main]
+        return klass().requestresult_group(ctx, gid, min, max, filter)
+
+    def result_group(self, ctx, gid, min, max, filter, idOnly = True):
+        klass = self.components[self.main]
+        return klass().result_group(ctx, gid, min, max, filter, idOnly)
+
+    def countresult_group(self, ctx, gid, filter):
+        klass = self.components[self.main]
+        return klass().countresult_group(ctx, gid, filter)
+
+    def get_group_results(self, ctx, gid, min, max, filter, idOnly = True):
+        """
+        Wrapper that according to the group type calls result_group (static
+        or stored results for a group) or requestresult_group (dynamic group)
+        """
+        if self.isdyn_group(ctx, gid):
+            if self.isrequest_group(ctx, gid):
+                ret = self.requestresult_group(ctx, gid, min, max, filter)
+            else:
+                ret = self.result_group(ctx, gid, min, max, filter, True)
+        else:
+            ret = self.result_group(ctx, gid, min, max, filter, True)
+        return ret
+
+    def request(self, ctx, query, bool, min, max, filter):
+        klass = self.components[self.main]
+        return klass().request(ctx, query, bool, min, max, filter)
+
+    def result_group_by_name(self, ctx, name, min = 0, max = -1, filter = ''):
+        klass = self.components[self.main]
+        return klass().result_group_by_name(ctx, name, min, max, filter)
+
+# new Class to remplace current DBObject
+class DBObj(object):
+    # Function to convert mapped object to Dict
+    # TODO : Do the same for relations [convert relations to subdicts]
+    def toDict(self, relations=True):
+        d = self.__dict__
+        # Convert relations to dict, if 'relations'
+        for k in d.keys():
+            if isinstance(d[k], DBObj):
+                if relations:
+                    d[k] = d[k].toDict()
+                else:
+                    del d[k]
+        # Delete Sqlachemy instance state
+        if '_sa_instance_state' in d:
+            del d['_sa_instance_state']
+        return d
+
+    def fromDict(self, d, relations=False):
+        #TODO: Test if d is dict
+        if '_sa_instance_state' in d:
+            del d['_sa_instance_state']
+        # Actually we don't support relations
+        for key, value in d.iteritems():
+            if key and type(value) not in [type({}), type([])]:
+                setattr(self, key, value)
+
+    def __str__(self):
+        return str(self.toDict())
