@@ -1,5 +1,5 @@
 scanner:
-    diff_only: False
+    diff_only: True
 
 pycodestyle:  # Same as scanner.linter value. Other option is flake8
     max-line-length: 100  # Default is 79 in PEP 8
