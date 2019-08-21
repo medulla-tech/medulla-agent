@@ -22,11 +22,9 @@
 import sys
 import os
 import logging
-import platform
 import base64
 import json
 import time
-import threading
 import sleekxmpp
 from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
