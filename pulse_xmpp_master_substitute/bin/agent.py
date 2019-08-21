@@ -28,7 +28,6 @@ import time
 import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-import subprocess
 from lib.configuration import confParameter
 from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
