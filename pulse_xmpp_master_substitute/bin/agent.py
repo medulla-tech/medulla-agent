@@ -57,7 +57,8 @@ if sys.version_info < (3, 0):
 else:
     raw_input = input
 
-def getComputerByMac( mac):
+
+def getComputerByMac(mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
         if len(ret) != 0:
@@ -65,6 +66,7 @@ def getComputerByMac( mac):
         else:
             return None
     return ret
+
 
 #### faire singeton
 class MUCBot(sleekxmpp.ClientXMPP):
@@ -75,39 +77,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE, "start Master sub (%s)" %(self.config.jidmastersubstitute))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
 
-        ####################Update agent from MAster#############################
-        #self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-        #self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
-        #self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
-        #self.descriptorimage = Update_Remote_Agent(self.img_agent)
-        ###################END Update agent from MAster#############################
         self.agentmaster = jid.JID(self.config.jidmaster)
-        #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message, threaded=True)
-        #self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
-        #self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
         self.add_event_handler("restartmachineasynchrone",
                                self.restartmachineasynchrone, threaded=True)
-
-        #self.register_handler(handler.Callback(
-                                    #'CustomXEP Handler',
-                                    #matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
-                                    #self._handle_custom_iq))
 
     def send_message_to_master(self , msg):
         self.send_message(  mbody = json.dumps(msg),
                             mto = '%s/MASTER'%self.agentmaster,
                             mtype ='chat')
 
+
     def changed_status(self, message):
-        #print "%s %s"%(message['from'], message['type'])
         if message['from'].user == 'master':
             if message['type'] == 'available':
                pass
+
 
     def start(self, event):
         self.shutdown = False
@@ -152,7 +141,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
 
-        #self.schedule('updatelistplugin', 20, self.loadPluginList, repeat=True)
+
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
         msgevt={
@@ -168,17 +157,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"shutdown xmpp agent %s!" % self.boundjid.user)
         self.disconnect(wait=10)
 
+
     def restartAgent(self, to):
         self.send_message(mto=to,
                           mbody=json.dumps({'action': 'restartbot',
                                         'data': ''}),
                           mtype='chat')
 
+
     def restartAgent(self, to):
         self.send_message(mto=to,
                           mbody=json.dumps({'action': 'restartbotrandom',
                                         'data': ''}),
                           mtype='chat')
+
 
     def restartmachineasynchrone(self, jid):
         waittingrestart = random.randint(10, 20)
@@ -189,6 +181,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # print "Restart Machine jid %s fait" % jid
         # Check if restartAgent is not called from a plugin or a lib.
         self.restartAgent(jid)
+
 
     def xmpplog(self,
                 text,
@@ -223,6 +216,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
+
     def register(self, iq):
         """ This function is called for automatic registation """
         resp = self.Iq()
@@ -240,6 +234,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             traceback.print_exc(file=sys.stdout)
             self.disconnect()
 
+
     def __bool_data(self, variable, default = False):
         if isinstance(variable, bool):
             return variable
@@ -247,6 +242,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if variable.lower() == "true":
                 return True
         return default
+
 
     def message(self, msg):
         if not msg['type'] == "chat":
@@ -302,7 +298,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 #traite plugin
                 try:
                     msg['body'] = dataobj
-                    #logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
 
                     dataerreur={ "action" : "result" + dataobj['action'],
                      "data" : { "msg" : "error plugin : " + dataobj['action']},
