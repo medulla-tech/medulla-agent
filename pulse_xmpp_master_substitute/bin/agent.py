@@ -26,7 +26,6 @@ import base64
 import json
 import time
 import sleekxmpp
-from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 import subprocess
