@@ -189,9 +189,8 @@ def pulgin_loadpluginlistversion(self, msg, data):
                 deploy = False
         if deploy:
             logger.info("update %s version %s to version %s on Agent " % (k,
-                                                                    data['plugin'][k],
-                                                                    v,
-                                                                    msg['from']))
+                data['plugin'],
+                v))
             self.file_deploy_plugin.append(
                 {'dest': msg['from'], 'plugin': k, 'type': 'deployPlugin'})
 
