@@ -1591,10 +1591,10 @@ def keypub():
         return file_get_contents("/root/.ssh/id_rsa.pub")
     elif sys.platform.startswith('win'):
         try:
-            win32net.NetUserGetInfo('','pulse',0)
-            pathkey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
-        except:
+            win32net.NetUserGetInfo('','pulseuser',0)
             pathkey = os.path.join("c:\Users\pulseuser", ".ssh")
+        except:
+            pathkey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
         if not os.path.isfile(os.path.join(pathkey , "id_rsa")):
             obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join(pathkey, "id_rsa"))
         return file_get_contents(os.path.join(pathkey, "id_rsa.pub"))
