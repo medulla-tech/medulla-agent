@@ -22,10 +22,21 @@ from sleekxmpp import jid
 from lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion, StrictVersion
+# this import will be used later
+# import types
+
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "registeryagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.01", "NAME": "registeryagent", "TYPE": "substitute"}
 
+# function comment for next feature
+# this functions will be used later
+# def function_dynamique_declaration_plugin(objectxmpp):
+     #objectxmpp.changestatusin_plugin = types.MethodType(changestatusin_plugin, objectxmpp)
+
+# def changestatusin_plugin(self, msg_changed_status):
+     #logger.debug("chang status for %s"%msg_changed_status['from'])
+     #pass
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
@@ -33,6 +44,14 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("call %s from %s"%(plugin, msg['from']))
         logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
+        #function comment for next feature
+        # this functions will be used later
+        #if compteurcallplugin == 0:
+            ##add function for event change staus des autre agent
+            #function_dynamique_declaration_plugin(xmppobject)
+            ## intercepte event change status call function 
+            #xmppobject.add_event_handler('changed_status', xmppobject.changestatusin_plugin)
+
         if 'action' in data and data['action'] == 'infomachine':
             logger.debug(
                 "** Processing machine %s that sends this information (nini inventory)" % msg['from'].bare)
@@ -394,6 +413,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     except Exception as e:
         logger.error("machine info %s\n%s" % (str(e),traceback.format_exc()))
 
+
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
@@ -402,6 +422,7 @@ def getComputerByMac( mac):
         else:
             return None
     return ret
+
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data):
     try:
@@ -413,6 +434,7 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data):
                             mtype='chat')
     except:
         logger.error("\n%s"%(traceback.format_exc()))
+
 
 def callinventory(xmppobject,  to):
     try:
@@ -435,7 +457,10 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid) }
 
-def handlerkioskpresence(xmppobject, jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil, fromplugin = False):
+
+def handlerkioskpresence(xmppobject, jid, id, os, hostname,
+                         uuid_inventorymachine, agenttype,
+                         classutil, fromplugin = False):
     """
     This function launch the kiosk actions when a prensence machine is active
     """
@@ -455,6 +480,7 @@ def handlerkioskpresence(xmppobject, jid, id, os, hostname, uuid_inventorymachin
                             mbody = json.dumps(message_to_machine),
                             mtype = 'chat')
     return datas
+
 
 def get_packages_for_machine(machine):
     """Get a list of the packages for the concerned machine.
@@ -490,6 +516,7 @@ def get_packages_for_machine(machine):
     #logger.debug("initialisation kiosk %s on machine %s"%(structuredatakiosk, machine['hostname']))
     logger.debug("* initialisation kiosk on machine %s"%(machine['hostname']))
     return structuredatakiosk
+
 
 def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatakiosk):
     structuredatakioskelement={ 'name': packageprofile[0],
