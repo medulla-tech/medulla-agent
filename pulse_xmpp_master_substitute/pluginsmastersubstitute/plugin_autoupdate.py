@@ -37,7 +37,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "autoupdate", "TYPE" : "substitute"}
+plugin = {"VERSION" : "1.1", "NAME" : "autoupdate", "TYPE" : "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -47,6 +47,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
 
     if compteurcallplugin == 0:
+        logger.debug("Configuration remote update")
         read_conf_remote_update(objectxmpp)
         objectxmpp.Update_Remote_Agentlist = Update_Remote_Agent(
             objectxmpp.diragentbase, objectxmpp.autoupdate)
@@ -64,12 +65,14 @@ def read_conf_remote_update(objectxmpp):
             "is /var/lib/pulse2/xmpp_baseremoteagent/"\
             "\ndefault value for autoupdate is True")
         objectxmpp.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
-        objectxmpp.diragentbase = True
+        objectxmpp.autoupdate = True
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
+        logger.debug("read file %s"%pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
+            logger.debug("read file %s.local"%pathfileconf)
         if Config.has_option("parameters", "diragentbase"):
             objectxmpp.diragentbase = Config.get('parameters', 'diragentbase')
         else:
@@ -78,6 +81,9 @@ def read_conf_remote_update(objectxmpp):
             objectxmpp.autoupdate = Config.getboolean('parameters', 'autoupdate')
         else:
             objectxmpp.autoupdate = True
+    logger.debug("directory base agent is %s"%objectxmpp.diragentbase)
+    logger.debug("autoupdate agent is %s"%objectxmpp.autoupdate)
+
     objectxmpp.senddescriptormd5 = types.MethodType(senddescriptormd5, objectxmpp)
     objectxmpp.plugin_autoupdate = types.MethodType(plugin_autoupdate, objectxmpp)
 

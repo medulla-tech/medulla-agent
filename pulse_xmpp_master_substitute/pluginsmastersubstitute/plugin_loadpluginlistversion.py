@@ -53,8 +53,11 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
     if compteurcallplugin == 0:
         read_conf_load_plugin_list_version(objectxmpp)
-        objectxmpp.schedule('updatelistplugin', 900, objectxmpp.loadPluginList, repeat=True)
-
+        objectxmpp.schedule('updatelistplugin',
+                            900,
+                            objectxmpp.loadPluginList,
+                            repeat=True)
+    logger.debug("%s"%hasattr(objectxmpp, "loadPluginList"))
     objectxmpp.loadPluginList()
 
 def read_conf_load_plugin_list_version(objectxmpp):

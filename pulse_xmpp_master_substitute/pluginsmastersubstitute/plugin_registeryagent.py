@@ -22,17 +22,19 @@ from sleekxmpp import jid
 from lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion, StrictVersion
+import ConfigParser
+
 # this import will be used later
 # import types
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.01", "NAME": "registeryagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.02", "NAME": "registeryagent", "TYPE": "substitute"}
 
 # function comment for next feature
 # this functions will be used later
-# def function_dynamique_declaration_plugin(objectxmpp):
-     #objectxmpp.changestatusin_plugin = types.MethodType(changestatusin_plugin, objectxmpp)
+# def function_dynamique_declaration_plugin(xmppobject):
+     #xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
 
 # def changestatusin_plugin(self, msg_changed_status):
      #logger.debug("chang status for %s"%msg_changed_status['from'])
@@ -44,9 +46,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("call %s from %s"%(plugin, msg['from']))
         logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
-        #function comment for next feature
-        # this functions will be used later
-        #if compteurcallplugin == 0:
+
+        if compteurcallplugin == 0:
+            read_conf_remote_registeryagent(xmppobject)
+            #return
+            #function comment for next feature
+            # this functions will be used later
             ##add function for event change staus des autre agent
             #function_dynamique_declaration_plugin(xmppobject)
             ## intercepte event change status call function 
@@ -55,9 +60,21 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         if 'action' in data and data['action'] == 'infomachine':
             logger.debug(
                 "** Processing machine %s that sends this information (nini inventory)" % msg['from'].bare)
-
             if XmppMasterDatabase().getPresencejid(msg['from'].bare):
                 logger.debug("Machine %s already exists in base" % msg['from'].bare)
+                pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistregistered]
+                for function_plugin in pluginfunction:
+                    try:
+                        if hasattr(xmppobject, function_plugin):
+                            if function_plugin == 'plugin_showregistration':
+                                if logger.level == logging.DEBUG:
+                                    getattr(xmppobject, function_plugin)(msg, data)
+                            else:
+                                getattr(xmppobject, function_plugin)(msg, data)
+                        else:
+                            logger.debug("not call plugin %s"%function_plugin)
+                    except:
+                        logger.error("\n%s"%(traceback.format_exc()))
                 return
 
             if XmppMasterDatabase().getPresencejiduser(msg['from'].user):
@@ -244,14 +261,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         broadcast = ''
                     logger.debug("** Add interface %s in database for machine %s" %
                                     (str(i['macaddress']), msg['from'].bare))
-                    XmppMasterDatabase().addPresenceNetwork(
-                        i['macaddress'], i['ipaddress'], broadcast, i['gateway'], i['mask'], i['macnotshortened'], idmachine)
+                    XmppMasterDatabase().addPresenceNetwork(i['macaddress'],
+                                                            i['ipaddress'],
+                                                            broadcast, i['gateway'],
+                                                            i['mask'],
+                                                            i['macnotshortened'],
+                                                            idmachine)
                 if data['agenttype'] != "relayserver":
                     # Update the machine uuid : for consistency with inventory
                     # call Guacamole config
                     # or add inventory
                     #logger.debug(
-                        #"** Update the machine uuid : for consistency with inventory\ncall Guacamole config\nor add inventory")
+                        #"** Update the machine uuid : for consistency with inventory\n"\
+                        #     "call Guacamole config\nor add inventory")
                     result = XmppMasterDatabase().listMacAdressforMachine(idmachine)
                     results = result[0].split(",")
 
@@ -333,12 +355,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.error("** Database registration error")
                 return
 
-            pluginfunction = ['plugin_autoupdate',
-                              'pulgin_loadpluginlistversion',
-                              'plugin_loadpluginschedulerlistversion',
-                              'plugin_showregistration']
+            pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
 
             for function_plugin in pluginfunction:
+                logger.debug("type %s", type(function_plugin))
                 try:
                     if hasattr(xmppobject, function_plugin):
                         if function_plugin == 'plugin_showregistration':
@@ -346,6 +366,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 getattr(xmppobject, function_plugin)(msg, data)
                         else:
                             getattr(xmppobject, function_plugin)(msg, data)
+                    else:
+                        logger.debug("appelle1 pas le plugin %s"%function_plugin)
                 except:
                     logger.error("\n%s"%(traceback.format_exc()))
 
@@ -413,7 +435,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     except Exception as e:
         logger.error("machine info %s\n%s" % (str(e),traceback.format_exc()))
 
-
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
@@ -422,7 +443,6 @@ def getComputerByMac( mac):
         else:
             return None
     return ret
-
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data):
     try:
@@ -434,7 +454,6 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data):
                             mtype='chat')
     except:
         logger.error("\n%s"%(traceback.format_exc()))
-
 
 def callinventory(xmppobject,  to):
     try:
@@ -457,10 +476,7 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid) }
 
-
-def handlerkioskpresence(xmppobject, jid, id, os, hostname,
-                         uuid_inventorymachine, agenttype,
-                         classutil, fromplugin = False):
+def handlerkioskpresence(xmppobject, jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil, fromplugin = False):
     """
     This function launch the kiosk actions when a prensence machine is active
     """
@@ -480,7 +496,6 @@ def handlerkioskpresence(xmppobject, jid, id, os, hostname,
                             mbody = json.dumps(message_to_machine),
                             mtype = 'chat')
     return datas
-
 
 def get_packages_for_machine(machine):
     """Get a list of the packages for the concerned machine.
@@ -517,7 +532,6 @@ def get_packages_for_machine(machine):
     logger.debug("* initialisation kiosk on machine %s"%(machine['hostname']))
     return structuredatakiosk
 
-
 def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatakiosk):
     structuredatakioskelement={ 'name': packageprofile[0],
                                 "action" : [],
@@ -539,7 +553,8 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
             # verification if update
             # compare the version
             #TODO
-            # For now we use the package version. Later the software version will be needed into the pulse package
+            # For now we use the package version. 
+            #Later the software version will be needed into the pulse package
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement['action'].append('Update')
                 logger.debug("the software version is superior "\
@@ -552,3 +567,53 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
         else:
             structuredatakioskelement['action'].append('Ask')
     return structuredatakioskelement
+
+def read_conf_remote_registeryagent(xmppobject):
+    logger.debug("Initialisation plugin :% s "%plugin["NAME"])
+    namefichierconf = plugin['NAME'] + ".ini"
+    pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
+    if not os.path.isfile(pathfileconf):
+        logger.error("plugin %s\nConfiguration file :" \
+            "\n\t%s missing" \
+        "\neg conf:\n[parameters]\n" \
+            "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
+                "autoupdate, showregistration\n" \
+                "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
+                    "autoupdate, showregistration"%(plugin['NAME'], pathfileconf))
+        logger.warning("default value for pluginlistregistered " \
+            "is loadpluginlistversion, loadpluginschedulerlistversion, autoupdate, showregistration"\
+            "\ndefault value for pluginlistunregistered"\
+                "is loadpluginlistversion, loadpluginschedulerlistversion, autoupdate, showregistration")
+        xmppobject.pluginlistregistered = ["loadpluginlistversion",
+                                           "loadpluginschedulerlistversion",
+                                           "autoupdate",
+                                           "showregistration"]
+        xmppobject.pluginlistunregistered = ["loadpluginlistversion",
+                                             "loadpluginschedulerlistversion",
+                                             "autoupdate",
+                                             "showregistration"]
+    else:
+        Config = ConfigParser.ConfigParser()
+        Config.read(pathfileconf)
+        logger.debug("Config file %s for plugin %s"%(pathfileconf, 
+                                                     plugin["NAME"]))
+        if os.path.exists(pathfileconf + ".local"):
+            Config.read(pathfileconf + ".local")
+            logger.debug("read file %s.local"%pathfileconf)
+        if Config.has_option("parameters", "pluginlistregistered"):
+            pluginlistregistered = Config.get('parameters', 'pluginlistregistered')
+        else:
+            pluginlistregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
+                " autoupdate, showregistration"
+        xmppobject.pluginlistregistered = [x.strip() for x in pluginlistregistered.split(',')]
+
+        if Config.has_option("parameters", "pluginlistunregistered"):
+            pluginlistunregistered = Config.get('parameters', 'pluginlistunregistered')
+        else:
+            pluginlistunregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
+                "autoupdate, showregistration"
+
+        xmppobject.pluginlistunregistered = [x.strip() for x in pluginlistunregistered.split(',')]
+
+    logger.debug("plugin list registered is %s"%xmppobject.pluginlistregistered)
+    logger.debug("plugin list unregistered is %s"%xmppobject.pluginlistunregistered)

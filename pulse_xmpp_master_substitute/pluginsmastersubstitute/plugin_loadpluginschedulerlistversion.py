@@ -45,7 +45,11 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
     if compteurcallplugin == 0:
         read_conf_load_plugin_scheduler_list_version(objectxmpp)
-        objectxmpp.schedule('updatelistpluginscheduler', 1000, objectxmpp.loadPluginschedulerList, repeat=True)
+        objectxmpp.schedule('updatelistpluginscheduler',
+                            1000,
+                            objectxmpp.loadPluginschedulerList,
+                            repeat=True)
+        logger.debug("%s"%hasattr(objectxmpp, "loadPluginschedulerList"))
     objectxmpp.loadPluginschedulerList()
 
 def read_conf_load_plugin_scheduler_list_version(objectxmpp):
