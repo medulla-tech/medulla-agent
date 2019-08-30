@@ -54,7 +54,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
         objectxmpp.loadfingerprint = types.MethodType(loadfingerprint,
                                                       objectxmpp)
         objectxmpp.schedule('loadfingerprint',
-                            60,
+                            900,
                             objectxmpp.loadfingerprint,
                             repeat=True)
         loadfingerprint()
