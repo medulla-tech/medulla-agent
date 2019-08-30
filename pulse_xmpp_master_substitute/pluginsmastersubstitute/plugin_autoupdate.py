@@ -37,7 +37,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.1", "NAME" : "autoupdate", "TYPE" : "substitute"}
+plugin = {"VERSION" : "1.2", "NAME" : "autoupdate", "TYPE" : "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -51,6 +51,23 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
         read_conf_remote_update(objectxmpp)
         objectxmpp.Update_Remote_Agentlist = Update_Remote_Agent(
             objectxmpp.diragentbase, objectxmpp.autoupdate)
+        objectxmpp.loadfingerprint = types.MethodType(loadfingerprint,
+                                                      objectxmpp)
+        objectxmpp.schedule('loadfingerprint',
+                            60,
+                            objectxmpp.loadfingerprint,
+                            repeat=True)
+        loadfingerprint()
+
+def loadfingerprint(self):
+    """
+        Runs the load fingerprint
+    """
+    self.Update_Remote_Agentlist = Update_Remote_Agent(self.diragentbase,
+                                                       self.autoupdate)
+    logger.debug("load fingerprint: %s"%\
+        self.Update_Remote_Agentlist.get_fingerprint_agent_base())
+
 
 def read_conf_remote_update(objectxmpp):
     namefichierconf = plugin['NAME'] + ".ini"
@@ -87,6 +104,7 @@ def read_conf_remote_update(objectxmpp):
     objectxmpp.senddescriptormd5 = types.MethodType(senddescriptormd5, objectxmpp)
     objectxmpp.plugin_autoupdate = types.MethodType(plugin_autoupdate, objectxmpp)
 
+
 def senddescriptormd5(self, to):
     """
         send the agent's figerprint descriptor in database to update the machine
@@ -102,6 +120,7 @@ def senddescriptormd5(self, to):
     self.send_message(to,
                       mbody=json.dumps(datasend),
                       mtype='chat')
+
 
 def plugin_autoupdate(self, msg, data):
     # Manage update remote agent
