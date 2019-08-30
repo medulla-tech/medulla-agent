@@ -41,7 +41,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
+plugin = {"VERSION" : "1.1", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -90,7 +90,7 @@ def read_conf_load_plugin_list_version(objectxmpp):
     #objectxmpp.restartAgent = types.MethodType(restartAgent, objectxmpp)
     objectxmpp.remoteinstallPlugin = types.MethodType(remoteinstallPlugin, objectxmpp)
     objectxmpp.deployPlugin = types.MethodType(deployPlugin, objectxmpp)
-    objectxmpp.pulgin_loadpluginlistversion = types.MethodType(pulgin_loadpluginlistversion, objectxmpp)
+    objectxmpp.plugin_loadpluginlistversion = types.MethodType(plugin_loadpluginlistversion, objectxmpp)
 
 def loadPluginList(self):
     """ charges les informations des plugins 'nom plugins et version' pour
@@ -172,7 +172,7 @@ def deployPlugin(self, jid, plugin):
         except:
             logger.error("\n%s"%(traceback.format_exc()))
 
-def pulgin_loadpluginlistversion(self, msg, data):
+def plugin_loadpluginlistversion(self, msg, data):
     #function de rappel dans boucle de message.
     #cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
     # Show plugins information logs

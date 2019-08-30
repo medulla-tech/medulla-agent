@@ -59,20 +59,27 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         if 'action' in data and data['action'] == 'infomachine':
             logger.debug(
-                "** Processing machine %s that sends this information (nini inventory)" % msg['from'].bare)
+                "** Processing machine %s that sends this"\
+                    " information (nini inventory)" % msg['from'].bare)
             if XmppMasterDatabase().getPresencejid(msg['from'].bare):
                 logger.debug("Machine %s already exists in base" % msg['from'].bare)
                 pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistregistered]
+                logger.debug("call plugin  for the present machine.")
                 for function_plugin in pluginfunction:
                     try:
                         if hasattr(xmppobject, function_plugin):
                             if function_plugin == 'plugin_showregistration':
                                 if logger.level == logging.DEBUG:
+                                    logger.debug("call plugin %s"%function_plugin)
                                     getattr(xmppobject, function_plugin)(msg, data)
                             else:
+                                logger.debug("call plugin %s"%function_plugin)
                                 getattr(xmppobject, function_plugin)(msg, data)
                         else:
-                            logger.debug("not call plugin %s"%function_plugin)
+                            logger.warning("the %s plugin is not called"%function_plugin)
+                            logger.warning("verify why plugging %s"\
+                                " has no function %s"%(function_plugin,
+                                                       function_plugin))
                     except:
                         logger.error("\n%s"%(traceback.format_exc()))
                 return
@@ -84,7 +91,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
             """ Check machine information from agent """
             logger.debug(
-                "** Processing and check machine information from agent and the registry into database.")
+                "** Processing and check machine information from agent and "\
+                    "the registry into database.")
             info = json.loads(base64.b64decode(data['completedatamachine']))
             if data['ippublic'] is not None and data['ippublic'] != "":
                 data['localisationinfo'] = Localisation().geodataip(data['ippublic'])
@@ -149,9 +157,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 if 'users' in data['information'] and len(data['information']['users']) > 0:
                     logger.debug("** addition user %s in base" %
                                     data['information']['users'][0])
-                    logger.info("add user : %s for machine : %s country_name : %s" % (data['information']['users'][0],
-                                                                                        data['information']['info']['hostname'],
-                                                                                        country_name))
+                    logger.info("add user : %s for machine : %s "\
+                        "country_name : %s" % (data['information']['users'][0],
+                                               data['information']['info']['hostname'],
+                                               country_name))
                     useradd = XmppMasterDatabase().adduser(data['information']['users'][0],
                                                             data['information']['info']['hostname'],
                                                             city,
@@ -310,9 +319,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     data['agenttype'],
                                                     classutil=data['classutil'],
                                                     fromplugin = True )
-                            XmppMasterDatabase().setlogxmpp("Remote Service <b>%s</b> : for [machine : %s][RS : %s]" % (data['remoteservice'],
-                                                                                                                        data['information']['info']['hostname'],
-                                                                                                                        jidrs,),
+                            XmppMasterDatabase().setlogxmpp("Remote Service <b>%s</b>"\
+                                " : for [machine : %s][RS : %s]" % (data['remoteservice'],
+                                                                    data['information']['info']['hostname'],
+                                                                    jidrs),
                                                             "Master",
                                                             "",
                                                             0,
@@ -354,20 +364,23 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             else:
                 logger.error("** Database registration error")
                 return
-
             pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
-
+            logger.debug("call plugin for a machine not present..")
             for function_plugin in pluginfunction:
-                logger.debug("type %s", type(function_plugin))
                 try:
                     if hasattr(xmppobject, function_plugin):
                         if function_plugin == 'plugin_showregistration':
                             if logger.level == logging.DEBUG:
+                                logger.debug("call plugin %s"%function_plugin)
                                 getattr(xmppobject, function_plugin)(msg, data)
                         else:
+                            logger.debug("call plugin %s"%function_plugin)
                             getattr(xmppobject, function_plugin)(msg, data)
                     else:
-                        logger.debug("appelle1 pas le plugin %s"%function_plugin)
+                        logger.warning("the %s plugin is not called"%function_plugin)
+                        logger.warning("verify why plugging %s"\
+                            " has no function %s"%(function_plugin,
+                                                    function_plugin))
                 except:
                     logger.error("\n%s"%(traceback.format_exc()))
 
@@ -476,7 +489,15 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid) }
 
-def handlerkioskpresence(xmppobject, jid, id, os, hostname, uuid_inventorymachine, agenttype, classutil, fromplugin = False):
+def handlerkioskpresence(xmppobject,
+                         jid,
+                         id,
+                         os,
+                         hostname,
+                         uuid_inventorymachine,
+                         agenttype,
+                         classutil,
+                         fromplugin = False):
     """
     This function launch the kiosk actions when a prensence machine is active
     """
@@ -491,7 +512,8 @@ def handlerkioskpresence(xmppobject, jid, id, os, hostname, uuid_inventorymachin
                                              data = datas,
                                              ret = 0,
                                              base64 = False,
-                                             sessionid = getRandomName(6, "initialisation_kiosk"))
+                                             sessionid = getRandomName(6,
+                                                                       "initialisation_kiosk"))
     xmppobject.send_message(mto = jid,
                             mbody = json.dumps(message_to_machine),
                             mtype = 'chat')
@@ -518,7 +540,8 @@ def get_packages_for_machine(machine):
     list_software_glpi = []
     softwareonmachine = Glpi().getLastMachineInventoryPart(machine['uuid_inventorymachine'],
                                                            'Softwares', 0, -1, '',
-                                                           {'hide_win_updates': True, 'history_delta': ''})
+                                                           {'hide_win_updates': True,
+                                                            'history_delta': ''})
     for x in softwareonmachine:
         list_software_glpi.append([x[0][1],x[1][1], x[2][1]])
     #print list_software_glpi # ordre information [["Vendor","Name","Version"],]
@@ -558,7 +581,9 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement['action'].append('Update')
                 logger.debug("the software version is superior "\
-                    "to that installed on the machine %s : %s < %s"%(packageprofile[0],soft_glpi[2],LooseVersion(packageprofile[3])))
+                    "to that installed on the machine %s : %s < %s"%(packageprofile[0],
+                                                                     soft_glpi[2],
+                                                                     LooseVersion(packageprofile[3])))
             break
     if len(structuredatakioskelement['action']) == 0:
         # The package defined for this profile is absent from the machine:
