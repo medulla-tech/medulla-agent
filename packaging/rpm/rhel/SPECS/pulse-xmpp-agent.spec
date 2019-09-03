@@ -79,6 +79,7 @@ mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent/
 
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
 
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/*ini.in %buildroot%_var/lib/pulse2/clients/config/
