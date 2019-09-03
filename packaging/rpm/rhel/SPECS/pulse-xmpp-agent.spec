@@ -26,6 +26,7 @@ Requires:       python-croniter
 Requires:       python-requests
 Requires:       python2-pysftp
 Requires:       python-inotify
+Requires:       python-dateutil
 
 %description
 Pulse XMPP Agent
