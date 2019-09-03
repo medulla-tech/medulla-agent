@@ -449,6 +449,6 @@ class Syncthing_machine(Base, XmppMasterDBObj):
     syncthing       = Column(Integer, nullable=False)
     result          = Column(Text , nullable=False)
     comment         = Column(String(255))
-    progress        = Column(Integer, nullable=False)
+    progress        = Column(Integer, nullable=False, default = 0)
     fk_arscluster   = Column(Integer, ForeignKey('syncthing_ars_cluster.id'), nullable=False)
     syncthing_ars_cluster = relationship(Syncthing_ars_cluster)
