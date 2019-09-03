@@ -3257,7 +3257,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         "uuid_inventorymachine" : relayserver.uuid_inventorymachine,
                         "ip_xmpp" : relayserver.ip_xmpp,
                         "agenttype" : relayserver.agenttype,
-                        "keysyncthing" :  machine.keysyncthing
+                        "keysyncthing" :  relayserver.keysyncthing
                         }
             for i in result:
                 if result[i] == None:
