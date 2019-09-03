@@ -758,7 +758,7 @@ class syncthingapi():
             if len(paramsurl) != 0:
                 string_param_url = urllib.urlencode(paramsurl)
                 geturl = geturl+"?"+string_param_url
-            rest = requests.get(geturl,headers=self.headers)
+            rest = requests.get(geturl,headers=self.headers, timeout=(8, 6))
         except Exception as e:
             logger.error("syncthingapirest.py __getAPIREST__ verify syncthing running and ready")
             return {}
@@ -795,12 +795,12 @@ class syncthingapi():
             if RestCurl:
                 cmddate  = """command curl curl -X POST --header "X-API-Key: %s"  %s"""%(self.headers['X-API-KEY'], posturl)
                 logger.info("%s"%cmddate)
-            r = requests.post(posturl, headers = self.headers)
+            r = requests.post(posturl, headers = self.headers, timeout=(8, 6))
         else:
             if RestCurl:
                 cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
                 logger.info("%s"%cmddate)
-            r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython))
+            r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython), timeout=(8, 6))
         result = analyseresult(r)
         if isinstance(result, basestring) and "error" in result:
             logger.error("%s"%result)

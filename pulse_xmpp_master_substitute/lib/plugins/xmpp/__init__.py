@@ -20,6 +20,7 @@
 # along with MMC; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+# file : pulse_xmpp_master_substitute/lib/plugins/xmpp/__init__.py
 """
 xmppmaster database handler
 """
@@ -651,6 +652,20 @@ class XmppMasterDatabase(DatabaseHelper):
     ##########gestion packages###############
     #########################################
     @DatabaseHelper._sessionm
+    def resetPresenceMachine(self, session):
+        session.query(Machines).update({Machines.enabled : '0'})
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def getIdMachineFromMacaddress(self, session, macaddress):
+        presence = session.query(Machines.id).\
+            filter( Machines.macaddress.like(macaddress+'%')).first()
+        session.commit()
+        session.flush()
+        return presence
+
+    @DatabaseHelper._sessionm
     def addPresenceMachine(self,
                            session,
                            jid,
@@ -670,40 +685,76 @@ class XmppMasterDatabase(DatabaseHelper):
                            ad_ou_user = "",
                            ad_ou_machine = "",
                            kiosk_presence = "False",
-                           lastuser = ""):
-        try:
-            new_machine = Machines()
-            new_machine.jid = jid
-            new_machine.platform = platform
-            new_machine.hostname = hostname
-            new_machine.archi = archi
-            new_machine.uuid_inventorymachine = uuid_inventorymachine
-            new_machine.ippublic = ippublic
-            new_machine.ip_xmpp = ip_xmpp
-            new_machine.subnetxmpp = subnetxmpp
-            new_machine.macaddress = macaddress
-            new_machine.agenttype = agenttype
-            new_machine.classutil = classutil
-            new_machine.urlguacamole = urlguacamole
-            new_machine.groupdeploy = groupdeploy
-            new_machine.picklekeypublic = objkeypublic
-            new_machine.ad_ou_user = ad_ou_user
-            new_machine.ad_ou_machine = ad_ou_machine
-            new_machine.kiosk_presence = kiosk_presence
-            new_machine.lastuser = lastuser
-            session.add(new_machine)
+                           lastuser = "",
+                           keysyncthing = ""):
+        pe = self.getIdMachineFromMacaddress(macaddress)
+        if pe is not None:
+            #update
+            session.query(Machines).filter( Machines.id == pe[0]).\
+                       update({ Machines.jid: jid,
+                                Machines.platform : platform,
+                                Machines.hostname : hostname,
+                                Machines.archi : archi,
+                                Machines.uuid_inventorymachine : uuid_inventorymachine,
+                                Machines.ippublic : ippublic,
+                                Machines.ip_xmpp : ip_xmpp,
+                                Machines.subnetxmpp : subnetxmpp,
+                                Machines.macaddress : macaddress,
+                                Machines.agenttype : agenttype,
+                                Machines.classutil : classutil,
+                                Machines.urlguacamole : urlguacamole,
+                                Machines.groupdeploy : groupdeploy,
+                                Machines.picklekeypublic : objkeypublic,
+                                Machines.ad_ou_user : ad_ou_user,
+                                Machines.ad_ou_machine : ad_ou_machine,
+                                Machines.kiosk_presence : kiosk_presence,
+                                Machines.lastuser : lastuser,
+                                Machines.keysyncthing : keysyncthing,
+                                Machines.enabled : '1'
+                                })
             session.commit()
             session.flush()
-            if agenttype == "relayserver":
-                sql = "UPDATE `xmppmaster`.`relayserver` SET `enabled`='1' WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'"%hostname;
-                session.execute(sql)
+            return pe[0]
+        else:
+            #create
+            try:
+                new_machine = Machines()
+                new_machine.jid = jid
+                new_machine.platform = platform
+                new_machine.hostname = hostname
+                new_machine.archi = archi
+                new_machine.uuid_inventorymachine = uuid_inventorymachine
+                new_machine.ippublic = ippublic
+                new_machine.ip_xmpp = ip_xmpp
+                new_machine.subnetxmpp = subnetxmpp
+                new_machine.macaddress = macaddress
+                new_machine.agenttype = agenttype
+                new_machine.classutil = classutil
+                new_machine.urlguacamole = urlguacamole
+                new_machine.groupdeploy = groupdeploy
+                new_machine.picklekeypublic = objkeypublic
+                new_machine.ad_ou_user = ad_ou_user
+                new_machine.ad_ou_machine = ad_ou_machine
+                new_machine.kiosk_presence = kiosk_presence
+                new_machine.lastuser = lastuser
+                new_machine.keysyncthing = keysyncthing
+                new_machine.enabled = '1'
+                session.add(new_machine)
                 session.commit()
                 session.flush()
-        except Exception, e:
-            #logging.getLogger().error("addPresenceMachine %s" % jid)
-            logging.getLogger().error(str(e))
-            return -1
-        return new_machine.id
+                if agenttype == "relayserver":
+                    sql = "UPDATE `xmppmaster`.`relayserver` \
+                                SET `enabled`='1' \
+                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'"%hostname;
+                    session.execute(sql)
+                    session.commit()
+                    session.flush()
+            except Exception, e:
+                #logging.getLogger().error("addPresenceMachine %s" % jid)
+                logging.getLogger().error(str(e))
+                return -1
+            return new_machine.id
+
 
     @DatabaseHelper._sessionm
     def is_jiduser_organization_ad(self, session, jiduser):
@@ -1642,7 +1693,9 @@ class XmppMasterDatabase(DatabaseHelper):
                         classutil="private",
                         packageserverip ="",
                         packageserverport = "",
-                        moderelayserver = "static"):
+                        moderelayserver = "static",
+                        keysyncthing = ""
+                        ):
         sql = "SELECT count(*) as nb FROM xmppmaster.relayserver where `relayserver`.`nameserver`='%s';"%nameserver
         nb = session.execute(sql)
         session.commit()
@@ -1668,6 +1721,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_relayserver.package_server_ip = packageserverip
                 new_relayserver.package_server_port = packageserverport
                 new_relayserver.moderelayserver = moderelayserver
+                new_relayserver.keysyncthing = keysyncthing
                 session.add(new_relayserver)
                 session.commit()
                 session.flush()
@@ -1675,7 +1729,11 @@ class XmppMasterDatabase(DatabaseHelper):
                 logging.getLogger().error(str(e))
         else:
             try:
-                sql = "UPDATE `xmppmaster`.`relayserver` SET `enabled`=%s, `classutil`='%s' WHERE `xmppmaster`.`relayserver`.`nameserver`='%s';"%(enabled,classutil,nameserver)
+                sql = "UPDATE `xmppmaster`.`relayserver`\
+                        SET `enabled`=%s, `classutil`='%s'\
+                      WHERE `xmppmaster`.`relayserver`.`nameserver`='%s';"%(enabled,
+                                                                            classutil,
+                                                                            nameserver)
                 session.execute(sql)
                 session.commit()
                 session.flush()
@@ -3198,7 +3256,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         "archi" : relayserver.archi,
                         "uuid_inventorymachine" : relayserver.uuid_inventorymachine,
                         "ip_xmpp" : relayserver.ip_xmpp,
-                        "agenttype" : relayserver.agenttype
+                        "agenttype" : relayserver.agenttype,
+                        "keysyncthing" :  machine.keysyncthing
                         }
             for i in result:
                 if result[i] == None:
@@ -3216,7 +3275,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         "archi" : "",
                         "uuid_inventorymachine" : "",
                         "ip_xmpp" : "",
-                        "agenttype" : ""
+                        "agenttype" : "",
+                        "keysyncthing" :  ""
                     }
         return result
 
@@ -3271,7 +3331,9 @@ class XmppMasterDatabase(DatabaseHelper):
                         'ad_ou_user': machine.ad_ou_user,
                         'ad_ou_machine': machine.ad_ou_machine,
                         'kiosk_presence': machine.kiosk_presence,
-                        'lastuser': machine.lastuser}
+                        'lastuser': machine.lastuser,
+                        'keysyncthing' : machine.keysyncthing,
+                        'enabled' : machine.enabled}
         return result
 
     @DatabaseHelper._sessionm
@@ -3409,7 +3471,20 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.flush()
                 if ars:
                     #result1 = [(m.ipconnection,m.port,m.jid,m.urlguacamole)for m in ars]
-                    result2 = { m.jid :[m.ipconnection, m.port, m.jid, m.urlguacamole, 0 ] for m in ars}
+                    try:
+                        result2 = { m.jid :[m.ipconnection,
+                                            m.port,
+                                            m.jid,
+                                            m.urlguacamole,
+                                            0 ,
+                                            m.keysyncthing] for m in ars}
+                    except Exception:
+                        result2 = { m.jid :[m.ipconnection,
+                                            m.port,
+                                            m.jid,
+                                            m.urlguacamole,
+                                            0,
+                                            ""] for m in ars}
                     countarsclient = self.algoloadbalancerforcluster()
                     if len(countarsclient) != 0:
                         for i in countarsclient:

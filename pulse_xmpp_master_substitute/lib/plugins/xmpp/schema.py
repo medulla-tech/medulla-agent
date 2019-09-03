@@ -115,6 +115,7 @@ class Machines(Base, XmppMasterDBObj):
     # Notice that each column is also a normal Python instance attribute.
     #id = Column(Integer, primary_key=True)
     jid = Column(String(255), nullable=False)
+    enabled=  Column(Boolean, unique=False)
     platform = Column(String(60))
     hostname = Column(String(45), nullable=False)
     archi= Column(String(45), nullable=False)
@@ -132,6 +133,7 @@ class Machines(Base, XmppMasterDBObj):
     ad_ou_user = Column(Text)
     kiosk_presence = Column(Enum('False', 'True'))
     lastuser = Column(String(45))
+    keysyncthing = Column(String(70), default="")
 
 
 class Network(Base, XmppMasterDBObj):
@@ -174,6 +176,7 @@ class RelayServer(Base, XmppMasterDBObj):
     enabled=  Column(Boolean, unique=False)
     classutil = Column(String(10))
     moderelayserver = Column(String(7))
+    keysyncthing = Column(String(70), default="")
 
 class Regles(Base, XmppMasterDBObj):
     # ====== Table name =========================

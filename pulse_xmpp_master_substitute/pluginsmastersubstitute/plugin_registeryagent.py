@@ -61,6 +61,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             logger.debug(
                 "** Processing machine %s that sends this"\
                     " information (nini inventory)" % msg['from'].bare)
+            if 'completedatamachine' in data:
+                info = json.loads(base64.b64decode(data['completedatamachine']))
+                data['information'] = info
+
             if XmppMasterDatabase().getPresencejid(msg['from'].bare):
                 logger.debug("Machine %s already exists in base" % msg['from'].bare)
                 pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistregistered]
@@ -93,7 +97,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             logger.debug(
                 "** Processing and check machine information from agent and "\
                     "the registry into database.")
-            info = json.loads(base64.b64decode(data['completedatamachine']))
             if data['ippublic'] is not None and data['ippublic'] != "":
                 data['localisationinfo'] = Localisation().geodataip(data['ippublic'])
             else:
@@ -110,7 +113,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     data['adorgbyuser'] = base64.b64decode(data['adorgbyuser'])
                 except TypeError:
                     pass
-
+            if not 'keysyncthing' in data:
+                if 'information' in data and 'keysyncthing' in data['information']:
+                    data['keysyncthing'] = data['information']['keysyncthing']
+                else:
+                    data['keysyncthing'] = ""
             publickeybase64 = info['publickey']
             is_masterpublickey = info['is_masterpublickey']
             del info['publickey']
@@ -207,7 +214,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     data['classutil'],
                                                     data['packageserver']['public_ip'],
                                                     data['packageserver']['port'],
-                                                    moderelayserver=moderelayserver
+                                                    moderelayserver=moderelayserver,
+                                                    keysyncthing=data['keysyncthing']
                                                     )
                 # Recover list of cluster ARS
                 listrelayserver = XmppMasterDatabase(
@@ -255,7 +263,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                 ad_ou_user=data['adorgbyuser'],
                                                                 ad_ou_machine=data['adorgbymachine'],
                                                                 kiosk_presence=kiosk_presence,
-                                                                lastuser=data['lastusersession']
+                                                                lastuser=data['lastusersession'],
+                                                                keysyncthing=data['keysyncthing']
                                                                 )
             if idmachine != -1:
                 if useradd != -1:

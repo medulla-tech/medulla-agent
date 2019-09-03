@@ -494,7 +494,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         modif=False
         if 'pendingDevices' in config and \
             len(config['pendingDevices']) != 0:
-            print "device trouve" 
+            #print "device trouve" 
             for pendingdevice in config['pendingDevices']:
                 logger.info("pendingdevice %s"%pendingdevice)
                 # exist device?
@@ -654,11 +654,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if syncthingtojson != None:
                 namesearch = os.path.join( syncthingroot ,
                                            syncthingtojson['id_deploy'])
-                print "search namesearch"
-                print namesearch
                 #verify le contenue de namesearch
                 if os.path.isdir(namesearch):
-                    logging.debug("start deploy transfert syncthing")
+                    logging.debug("deploy transfert syncthing : %s"%namesearch)
                     # Get the deploy json
                     filedeploy = os.path.join("%s.descriptor"%filears[:-4])
                     deploytojson = managepackage.loadjsonfile(filedeploy)
@@ -751,6 +749,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     # on cherche si on a des informations sur ce transfert
                     #print self.syncthing.get_db_status(syncthingtojson['id_deploy'])
+                    logging.debug("Recherche la completion de transfert %s"%namesearch)
                     result = self.syncthing.get_db_completion(syncthingtojson['id_deploy'],
                                                               self.syncthing.device_id )
                     if 'id_deploy' in syncthingtojson and len(self.syncthing.device_id ) > 40:
