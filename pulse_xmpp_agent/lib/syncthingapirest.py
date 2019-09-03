@@ -37,7 +37,8 @@
     shared folders, and corresponding machines.
 """
 
-import requests, json
+import requests
+import json
 from lxml import etree
 import urllib
 import socket
@@ -74,6 +75,7 @@ class syncthingapi():
         self.urlbaserest = "%srest"%(self.urlbase)
         self.device_id = None
         self.tailleconf = self.taille_config_xml()
+        self.errornb = 0
         if idapirest is None:
             self.tree = etree.parse(configfile)
             self.idapirest = self.tree.xpath('/configuration/gui/apikey')[0].text
@@ -104,6 +106,7 @@ class syncthingapi():
 
 
     def reload_config(self, clean = True):
+        time.sleep(2)
         self.config = self.get_config() # content all config
         self.tailleconf = self.taille_config_xml()
         self.synchro = True
@@ -758,10 +761,17 @@ class syncthingapi():
             if len(paramsurl) != 0:
                 string_param_url = urllib.urlencode(paramsurl)
                 geturl = geturl+"?"+string_param_url
-            rest = requests.get(geturl,headers=self.headers, timeout=(8, 6))
+            rest = requests.get(geturl,headers=self.headers, timeout=(15, 6))
         except Exception as e:
             logger.error("syncthingapirest.py __getAPIREST__ verify syncthing running and ready")
+            time.sleep(5)
+            self.errornb = self.errornb + 1
+            if self.errornb > 4:
+                logger.error("\n%s"%(traceback.format_exc()))
+            else:
+                logger.warning("connection lost get REST")
             return {}
+        self.errornb = 0
         return rest
 
     def __postAPIREST__(self, cmd, dictpython = {}, paramsurl = {}, RestCurl=False):
@@ -787,20 +797,41 @@ class syncthingapi():
             else :
                 return {"error" : "inconue code %s"%r.status_code, "msg" : r.text }
 
+        r = None
         posturl = "%s%s"%(self.urlbaserest, cmd)
         if len(paramsurl) != 0:
             string_param_url = urllib.urlencode(paramsurl)
             posturl = posturl+"?"+string_param_url
+
         if len(dictpython) == 0:
             if RestCurl:
                 cmddate  = """command curl curl -X POST --header "X-API-Key: %s"  %s"""%(self.headers['X-API-KEY'], posturl)
                 logger.info("%s"%cmddate)
-            r = requests.post(posturl, headers = self.headers, timeout=(8, 6))
+            try:
+                r = requests.post(posturl, headers = self.headers, timeout=(15, 6))
+            except:
+                self.errornb = self.errornb + 1
+                if self.errornb > 4:
+                    logger.error("\n%s"%(traceback.format_exc()))
+                else:
+                    logger.warning("connection lost post REST")
+                time.sleep(5)
         else:
             if RestCurl:
                 cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
                 logger.info("%s"%cmddate)
-            r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython), timeout=(8, 6))
+            try:
+                r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython), timeout=(15, 6))
+            except:
+                self.errornb = self.errornb + 1
+                if self.errornb > 4:
+                    logger.error("\n%s"%(traceback.format_exc()))
+                else:
+                    logger.warning("connection lost post REST")
+                time.sleep(5)
+        if  r is None:
+            return None
+        self.errornb = 0
         result = analyseresult(r)
         if isinstance(result, basestring) and "error" in result:
             logger.error("%s"%result)
@@ -1318,5 +1349,7 @@ class syncthingprogram(Program):
                 return True
         return False
 
+    def statussyncthing(self):
+        pass
 if __name__ == '__main__':
     pass
