@@ -21,6 +21,7 @@
 # MA 02110-1301, USA.
 # file  : pulse_xmpp_agent/connectionagent.py
 
+import shutil
 import sys,os
 import logging
 import sleekxmpp
@@ -103,30 +104,30 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
-                fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
             else:
-                fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                     ".config","syncthing","config.xml")
 
             tmpfile = "/tmp/confsyncting.txt"
         elif sys.platform.startswith('win'):
-            fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
+            self.fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
             tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
         elif sys.platform.startswith('darwin'):
-            fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
+            self.fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
                                                 "etc", "syncthing", "config.xml")
             tmpfile = "/tmp/confsyncting.txt"
 
         #avant reinitialisation on supprime le fichier config.xml
         try:
-            os.remove(fichierconfsyncthing)
+            os.remove(self.fichierconfsyncthing)
         except :
             pass
         self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
         self.Ctrlsyncthingprogram.restart_syncthing()
         time.sleep(4)
         try:
-            self.syncthing = syncthing(configfile = fichierconfsyncthing)
+            self.syncthing = syncthing(configfile = self.fichierconfsyncthing)
             if logger.level <= 10:
                 self.syncthing.save_conf_to_file(tmpfile)
             else:
@@ -233,10 +234,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                                  json.dumps(dsyncthing_tmp,
                                                                             indent = 4)))
             self.syncthing.config['devices'].append(dsyncthing_tmp)
-        
-        
-        
-        
         else:
             #chang conf for introducer and autoAcceptFolders
             for dev in self.syncthing.config['devices']:
@@ -327,6 +324,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     logging.log(DEBUGPULSE, "write new config syncthing")
                     self.syncthing.validate_chang_config()
                     time.sleep(2)
+                    filesyncthing = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 "baseconfigsyncthing.xml")
+                    logging.log(DEBUGPULSE, "copy configuration syncthing")
+                    shutil.copyfile(self.fichierconfsyncthing, filesyncthing)
                     logger.debug("%s"%json.dumps(self.syncthing.config, indent =4))
                     if logging.getLogger().level == logging.DEBUG:
                         dataconf = json.dumps(self.syncthing.config, indent =4)
