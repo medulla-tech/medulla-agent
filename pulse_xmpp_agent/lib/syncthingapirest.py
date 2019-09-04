@@ -74,6 +74,7 @@ class syncthingapi():
         self.urlbase = "%s:%s/"%(self.urlweb,port )
         self.urlbaserest = "%srest"%(self.urlbase)
         self.device_id = None
+        self.cleansharesyncthinglist=[]
         self.tailleconf = self.taille_config_xml()
         self.errornb = 0
         if idapirest is None:
