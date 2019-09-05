@@ -140,7 +140,7 @@ if __name__ == '__main__':
     fileallkey = os.path.join(
             Setdirectorytempinfo(),
             "master-all-RSA.key" )
-    if not (os.path.isfile(filekeypublic) and os.path.isfile(filekeypublic)):
+    if not (os.path.isfile(filekeypublic) and os.path.isfile(fileallkey)):
         print "key missing"
         print ("install key of master in \n\t%s\n\t%s\n\n"%(filekeypublic, fileallkey) )
         print("find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key ")
