@@ -762,10 +762,10 @@ class syncthingapi():
             if len(paramsurl) != 0:
                 string_param_url = urllib.urlencode(paramsurl)
                 geturl = geturl+"?"+string_param_url
-            rest = requests.get(geturl,headers=self.headers, timeout=(15, 6))
+            rest = requests.get(geturl,headers=self.headers)
         except Exception as e:
             logger.error("syncthingapirest.py __getAPIREST__ verify syncthing running and ready")
-            time.sleep(5)
+            time.sleep(1)
             self.errornb = self.errornb + 1
             if self.errornb > 4:
                 logger.error("\n%s"%(traceback.format_exc()))
@@ -809,7 +809,7 @@ class syncthingapi():
                 cmddate  = """command curl curl -X POST --header "X-API-Key: %s"  %s"""%(self.headers['X-API-KEY'], posturl)
                 logger.info("%s"%cmddate)
             try:
-                r = requests.post(posturl, headers = self.headers, timeout=(15, 6))
+                r = requests.post(posturl, headers = self.headers)
             except:
                 self.errornb = self.errornb + 1
                 if self.errornb > 4:
@@ -822,14 +822,13 @@ class syncthingapi():
                 cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
                 logger.info("%s"%cmddate)
             try:
-                r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython), timeout=(15, 6))
+                r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython))
             except:
                 self.errornb = self.errornb + 1
                 if self.errornb > 4:
                     logger.error("\n%s"%(traceback.format_exc()))
                 else:
                     logger.warning("connection lost post REST")
-                time.sleep(5)
         if  r is None:
             return None
         self.errornb = 0
