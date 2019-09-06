@@ -85,7 +85,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                     # deploy on version changes
                     logger.debug ("update plugin %s on agent %s"%(k, msg['from']))
                     self.deployPluginscheduled(msg, k)
-                    self.restartAgent(msg['from'])
+                    self.restartmachineasynchrone(msg['from'])
                     break
                 else:
                     logger.debug("No version change for %s on agent %s"%(k, msg['from']))
@@ -95,15 +95,15 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                 if k in self.plugintypescheduler:
                     if self.plugintypescheduler[k] == 'all':
                         self.deployPluginscheduled(msg, k)
-                        self.restartAgent(msg['from'])
+                        self.restartmachineasynchrone(msg['from'])
                         break
                     if self.plugintypescheduler[k] == 'relayserver' and data['agenttype'] == "relayserver":
                         self.deployPluginscheduled(msg, k)
-                        self.restartAgent(msg['from'])
+                        self.restartmachineasynchrone(msg['from'])
                         break
                     if self.plugintypescheduler[k] == 'machine' and data['agenttype'] == "machine":
                         self.deployPluginscheduled(msg, k)
-                        self.restartAgent(msg['from'])
+                        self.restartmachineasynchrone(msg['from'])
                         break
 
 def deployPluginscheduled(self, msg, plugin):
