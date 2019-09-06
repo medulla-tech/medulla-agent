@@ -174,12 +174,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         'data': ''}),
                           mtype='chat')
 
-    def restartAgent(self, to):
-        self.send_message(mto=to,
-                          mbody=json.dumps({'action': 'restartbotrandom',
-                                        'data': ''}),
-                          mtype='chat')
-
     def restartmachineasynchrone(self, jid):
         waittingrestart = random.randint(10, 20)
         # TODO : Replace print by log
