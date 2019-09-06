@@ -20,22 +20,24 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file /pluginsmastersubstitute/plugin_resultmsginfoerror.py
+# file : /plugin_resultmsginfoerror.py
 
 import logging
-
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.2", "NAME": "resultmsginfoerror", "TYPE": "master"}
+plugin = {"VERSION": "1.21", "NAME": "resultmsginfoerror", "TYPE": "master"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logging.getLogger().debug(plugin)
     if 'msg' in data:
         if ret >= 50 and ret <= 80:
-            logger.warning("msg  : %s" % data['msg'])
+            logging.getLogger().warning("msg [%s] : %s" %(message['from'],
+                                                          data['msg']))
         elif ret == 0:
-            logger.debug("msg : %s" % data['msg'])
+            logging.getLogger().info("msg [%s] : %s" %(message['from'],
+                                                          data['msg']))
         else:
-            logger.error("msg : %s" % data['msg'])
+            logging.getLogger().error("msg [%s] : %s" %(message['from'],
+                                                          data['msg']))
