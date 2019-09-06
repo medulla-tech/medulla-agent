@@ -191,10 +191,13 @@ def plugin_loadpluginlistversion(self, msg, data):
             if data['agenttype'] == "machine" and self.plugintype[k] == 'relayserver':
                 deploy = False
         if deploy:
-            logger.info("update %s version %s to version %s on Agent " % (k,
-                data['plugin'],
-                v))
+            try:
+                logger.info("update %s version %s to version %s on Agent " % (k,
+                                                                              data['plugin'][k],
+                                                                              v))
+            except KeyError:
+                logger.info("install %s version %s to version on Agent " % (k,v))
             self.file_deploy_plugin.append(
                 {'dest': msg['from'], 'plugin': k, 'type': 'deployPlugin'})
-
             #return True
+    self.remoteinstallPlugin()
