@@ -109,7 +109,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
 def deployPluginscheduled(self, msg, plugin):
     data = ''
     fichierdata = {}
-    namefile = os.path.join(self.config.dirschedulerplugins, "%s.py" % plugin)
+    namefile = os.path.join(self.dirschedulerplugins, "%s.py" % plugin)
     if os.path.isfile(namefile):
         logger.debug("File plugin scheduled found %s" % namefile)
     else:
