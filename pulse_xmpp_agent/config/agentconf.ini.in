@@ -87,3 +87,7 @@ kiosk_local_port = 8766
 # Must be changed to substitute agent JIDs if used
 registration = master_reg@pulse
 inventory = master_inv@pulse
+
+[syncthing]
+# disable the use of syncthing on the machine agent.
+activation = 1
