@@ -205,11 +205,11 @@ class confParameter:
         # syncthing true or fale
         if self.agenttype != "relayserver":
             if Config.has_option('syncthing', 'activation'):
-                self.syncthinf_on = Config.getboolean('syncthing', 'activation')
+                self.syncthing_on = Config.getboolean('syncthing', 'activation')
             else:
-                self.syncthinf_on = True
+                self.syncthing_on = True
         else:
-            self.syncthinf_on = True
+            self.syncthing_on = True
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
