@@ -229,53 +229,58 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.deviceid=""
-        ################################### initialise syncthing ###################################
-        if  not self.config.agenttype in ['relayserver']:
-            self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
-        self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
-        if logger.level <= 10:
-            console = False
-            browser = True
-        self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
-        self.Ctrlsyncthingprogram.restart_syncthing()
-
-        if sys.platform.startswith('linux'):
-            if self.config.agenttype in ['relayserver']:
-                fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-            else:
-                fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
-                                                    ".config",
-                                                    "syncthing",
-                                                    "config.xml")
-            tmpfile = "/tmp/confsyncting.txt"
-        elif sys.platform.startswith('win'):
-            fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
-            tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
-        elif sys.platform.startswith('darwin'):
-            fichierconfsyncthing = os.path.join("/",
-                                                "Library",
-                                                "Application Support",
-                                                "Pulse",
-                                                "etc", 
-                                                "syncthing", 
-                                                "config.xml")
-            tmpfile = "/tmp/confsyncting.txt"
         try:
-            self.syncthing = syncthing(configfile = fichierconfsyncthing)
+            self.config.syncthing_on
+        except NameError:
+            self.config.syncthing_on = False
+        ################################### initialise syncthing ###################################
+        if self.config.syncthing_on:
+            if  not self.config.agenttype in ['relayserver']:
+                self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
+            self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
             if logger.level <= 10:
-                self.syncthing.save_conf_to_file(tmpfile)
-            else:
-                try:
-                    os.remove(tmpfile)
-                except :
-                    pass
-            self.deviceid = self.syncthing.get_id_device_local()
-            logging.debug("device local syncthing : [%s]"%self.deviceid)
-        except Exception as e:
-            logging.error("syncthing initialisation : %s" % str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            logging.error("functioning of the degraded agent. impossible to use syncthing")
-        #self.syncthing = syncthing(configfile = fichierconfsyncthing)
+                console = False
+                browser = True
+            self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
+            self.Ctrlsyncthingprogram.restart_syncthing()
+
+            if sys.platform.startswith('linux'):
+                if self.config.agenttype in ['relayserver']:
+                    fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                else:
+                    fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                                                        ".config",
+                                                        "syncthing",
+                                                        "config.xml")
+                tmpfile = "/tmp/confsyncting.txt"
+            elif sys.platform.startswith('win'):
+                fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
+                tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
+            elif sys.platform.startswith('darwin'):
+                fichierconfsyncthing = os.path.join("/",
+                                                    "Library",
+                                                    "Application Support",
+                                                    "Pulse",
+                                                    "etc", 
+                                                    "syncthing", 
+                                                    "config.xml")
+                tmpfile = "/tmp/confsyncting.txt"
+            try:
+                self.syncthing = syncthing(configfile = fichierconfsyncthing)
+                if logger.level <= 10:
+                    self.syncthing.save_conf_to_file(tmpfile)
+                else:
+                    try:
+                        os.remove(tmpfile)
+                    except :
+                        pass
+                self.deviceid = self.syncthing.get_id_device_local()
+                logging.debug("device local syncthing : [%s]"%self.deviceid)
+            except Exception as e:
+                logging.error("syncthing initialisation : %s" % str(e))
+                logger.error("\n%s"%(traceback.format_exc()))
+                logging.error("functioning of the degraded agent. impossible to use syncthing")
+            #self.syncthing = syncthing(configfile = fichierconfsyncthing)
         ################################### syncthing ###################################
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
@@ -515,6 +520,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         return modif
 
     def synchro_synthing(self):
+        if not self.config.syncthing_on:
+            return
         self.syncthingreconfigure = False;
         logger.info("synchro_synthing")
         # update syncthing
@@ -632,6 +639,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         return syncthingroot
 
     def scan_syncthing_deploy(self):
+        if not self.config.syncthing_on:
+            return
         self.clean_old_partage_syncting()
         rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                "syncthingdescriptor")

@@ -95,6 +95,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.add_event_handler('message', self.message)
         self.add_event_handler("groupchat_message", self.muc_message)
+        try:
+            self.config.syncthing_on
+        except NameError:
+            self.config.syncthing_on = False
 
         if self.config.syncthing_on:
             logger.info("---initialisation syncthing---")
