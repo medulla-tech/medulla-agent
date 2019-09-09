@@ -54,7 +54,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             # this functions will be used later
             ##add function for event change staus des autre agent
             #function_dynamique_declaration_plugin(xmppobject)
-            ## intercepte event change status call function 
+            ## intercepte event change status call function
             #xmppobject.add_event_handler('changed_status', xmppobject.changestatusin_plugin)
 
         if 'action' in data and data['action'] == 'infomachine':
@@ -86,6 +86,28 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                        function_plugin))
                     except:
                         logger.error("\n%s"%(traceback.format_exc()))
+
+                machine = XmppMasterDatabase().getMachinefromjid(data['from'])
+
+                if 'uuid_inventorymachine' in machine or machine['uuid_inventorymachine'] is False:
+
+                    if data['agenttype'] != "relayserver":
+                        result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
+                        results = result[0].split(",")
+
+                        logger.debug("List mac adress for machine %s" % results)
+                        uuid = ''
+                        for t in results:
+                            computer = getComputerByMac(t)
+                            if computer != None:
+                                jidrs = str(jid.JID(data['deployment']).user)
+                                jidm = jid.JID(data['from']).domain
+                                jidrs = "%s@%s" % (jidrs, jidm)
+                                uuid = 'UUID' + str(computer.id)
+                                logger.debug("** Update uuid %s for machine %s " %
+                                                (uuid, msg['from'].bare))
+                                XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+
                 return
 
             if XmppMasterDatabase().getPresencejiduser(msg['from'].user):
@@ -585,7 +607,7 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
             # verification if update
             # compare the version
             #TODO
-            # For now we use the package version. 
+            # For now we use the package version.
             #Later the software version will be needed into the pulse package
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement['action'].append('Update')
@@ -629,7 +651,7 @@ def read_conf_remote_registeryagent(xmppobject):
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
-        logger.debug("Config file %s for plugin %s"%(pathfileconf, 
+        logger.debug("Config file %s for plugin %s"%(pathfileconf,
                                                      plugin["NAME"]))
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
