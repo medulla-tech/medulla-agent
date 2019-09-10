@@ -87,19 +87,25 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     except:
                         logger.error("\n%s"%(traceback.format_exc()))
 
+                logger.debug("=============")
+                logger.debug("=============")
+                logger.debug("Case 1 : The machine already exists : ")
+                logger.debug("Update it's uuid_inventory_machine")
+                logger.debug("=============")
+                logger.debug("=============")
                 machine = XmppMasterDatabase().getMachinefromjid(data['from'])
 
                 if 'uuid_inventorymachine' in machine or machine['uuid_inventorymachine'] is False:
-
                     if data['agenttype'] != "relayserver":
                         result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
                         results = result[0].split(",")
-
-                        logger.debug("List mac adress for machine %s" % results)
+                        logger.debug("Mac address list for machine %s : %s" %(machine['id'], results))
                         uuid = ''
                         for t in results:
+                            logger.debug("Get GLPI computer id for mac address %s"%t)
                             computer = getComputerByMac(t)
                             if computer != None:
+                                logger.debug("Computer found : #%s" %computer.id)
                                 jidrs = str(jid.JID(data['deployment']).user)
                                 jidm = jid.JID(data['from']).domain
                                 jidrs = "%s@%s" % (jidrs, jidm)
@@ -107,7 +113,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("** Update uuid %s for machine %s " %
                                                 (uuid, msg['from'].bare))
                                 XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
-
+                            else:
+                                logger.debug("No computer found")
                 return
 
             if XmppMasterDatabase().getPresencejiduser(msg['from'].user):
@@ -268,6 +275,14 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 kiosk_presence = "False"
             if not 'lastusersession' in data:
                 data['lastusersession'] = ""
+
+            logger.debug("=============")
+            logger.debug("=============")
+            logger.debug("Case 2 : The machine is not existing : ")
+            logger.debug("Create it and update it's uuid_inventory_machine")
+            logger.debug("=============")
+            logger.debug("=============")
+            logger.debug("Adding new machine presence into machines table")
             idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
                                                                 data['information']['info']['hostname'],
@@ -289,6 +304,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                 keysyncthing=data['keysyncthing']
                                                                 )
             if idmachine != -1:
+                logger.debug("Machine %s added to machines table"%idmachine)
                 if useradd != -1:
                     XmppMasterDatabase().hasmachineusers(useradd, idmachine)
                 else:
@@ -301,6 +317,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         broadcast = ''
                     logger.debug("** Add interface %s in database for machine %s" %
                                     (str(i['macaddress']), msg['from'].bare))
+                    logger.debug("Add network card %s to the machine #%s"%(i['macaddress'], idmachine))
                     XmppMasterDatabase().addPresenceNetwork(i['macaddress'],
                                                             i['ipaddress'],
                                                             broadcast, i['gateway'],
@@ -314,14 +331,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     #logger.debug(
                         #"** Update the machine uuid : for consistency with inventory\n"\
                         #     "call Guacamole config\nor add inventory")
+                    logger.debug("List the mac addresses for the machine #%s"%idmachine)
                     result = XmppMasterDatabase().listMacAdressforMachine(idmachine)
                     results = result[0].split(",")
 
-                    logger.debug("List mac adress for machine   %s" % results)
                     uuid = ''
                     for t in results:
+                        logger.debug("Get the machine which has the specified mac address : %s"%t)
                         computer = getComputerByMac(t)
                         if computer != None:
+                            logger.debug("Id found : %s"%computer.id)
                             jidrs = str(jid.JID(data['deployment']).user)
                             jidm = jid.JID(data['from']).domain
                             jidrs = "%s@%s" % (jidrs, jidm)
@@ -480,12 +499,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.error("machine info %s\n%s" % (str(e),traceback.format_exc()))
 
 def getComputerByMac( mac):
+    logger.debug("Asking to glpi the machine list for specified mac ...")
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
         if len(ret) != 0:
             return ret[0]
         else:
             return None
+
+    logger.debug("Glpi returned : %s"%ret)
     return ret
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data):

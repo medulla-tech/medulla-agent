@@ -27,7 +27,7 @@ xmppmaster database handler
 
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
-from sqlalchemy.orm import sessionmaker; 
+from sqlalchemy.orm import sessionmaker;
 #Session = sessionmaker()
 from sqlalchemy.exc import DBAPIError
 from datetime import date, datetime, timedelta
@@ -120,7 +120,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                                                 self.config.xmpp_dbhost,
                                                                 self.config.xmpp_dbport,
                                                                 self.config.xmpp_dbname),
-                                    pool_recycle = self.config.dbpoolrecycle, 
+                                    pool_recycle = self.config.dbpoolrecycle,
                                     pool_size = self.config.dbpoolsize
         )
         self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
@@ -1232,7 +1232,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  session,
                                  idgrp,
                                  idcmd):
-        sql = """SELECT 
+        sql = """SELECT
                     pathpackage,
                     COUNT(*) AS nb,
                     CAST((SUM(xmppmaster.syncthing_machine.progress) / COUNT(*)) AS CHAR) AS progress
@@ -1265,7 +1265,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  session,
                                  idgrp,
                                  idcmd):
-        sql = """SELECT 
+        sql = """SELECT
                     pathpackage,
                     COUNT(*) AS nb,
                     (SUM(xmppmaster.syncthing_machine.progress) / COUNT(*)) AS progress
@@ -1291,15 +1291,15 @@ class XmppMasterDatabase(DatabaseHelper):
     def getnumcluster_for_ars(self,
                             session,
                             jidrelay):
-        sql = """SELECT 
+        sql = """SELECT
                     xmppmaster.has_cluster_ars.id_cluster
                 FROM
                     xmppmaster.relayserver
                         INNER JOIN
-                    xmppmaster.has_cluster_ars 
+                    xmppmaster.has_cluster_ars
                       ON `has_cluster_ars`.`id_ars` = xmppmaster.relayserver.id
                 WHERE
-                    `relayserver`.`jid` LIKE '%s' 
+                    `relayserver`.`jid` LIKE '%s'
                 LIMIT 1;"""%jidrelay
         print "getnumclusterforars", sql
         result = session.execute(sql)
@@ -1528,7 +1528,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return ret
 
     @DatabaseHelper._sessionm
-    def addlogincommand(self, 
+    def addlogincommand(self,
                         session,
                         login,
                         commandid,
@@ -2868,14 +2868,15 @@ class XmppMasterDatabase(DatabaseHelper):
                     WHERE
                         machines_id = '%s'
                     LIMIT 1;"""%(id_machine)
-            #logging.getLogger().info(" sql %s"%sql)
+            logging.getLogger().debug("SQL request to get the mac addresses list for the presence machine #%s"%id_machine)
+            logging.getLogger().debug("%s"%sql)
             listMacAdress = session.execute(sql)
             session.commit()
             session.flush()
         except Exception, e:
             logging.getLogger().error(str(e))
         result=[x for x in listMacAdress][0]
-        #logging.getLogger().info(" result %s"%result[0])
+        logging.getLogger().debug("Result : %s"%result[0])
         return result
 
     @DatabaseHelper._sessionm

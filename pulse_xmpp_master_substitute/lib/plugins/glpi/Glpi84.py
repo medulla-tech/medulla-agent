@@ -3498,7 +3498,13 @@ class Glpi84(DatabaseHelper):
         query = self.__filter_on(query)
         if ctx != 'imaging_module':
             query = self.__filter_on_entity(query, ctx)
+
+        self.logger.debug("Mac address researched : %s" %filt)
+        self.logger.debug("SQL request to get the machines list from GLPI :")
+        self.logger.debug("%s" %query)
         ret = query.all()
+
+        self.logger.debug("Computers found : %s"%ret)
         session.close()
         return ret
 
