@@ -260,8 +260,8 @@ class confParameter:
 
 
         filter = "state="
-        if confiobject.has_option("main", "filter_on"):
-            filter = confiobject.get("main", "filter_on")
+        if confiobject.has_option("glpi", "filter_on"):
+            filter = confiobject.get("glpi", "filter_on")
         self.filter_on = self._parse_filter_on(filter)
 
         self.orange = 10
