@@ -31,6 +31,9 @@ Requires:       python-dateutil
 %description
 Pulse XMPP Agent
 
+%post -n pulse-xmpp-master
+systemctl daemon-reload
+
 %files
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service  
 %_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service  
@@ -51,6 +54,9 @@ Group:          System/Servers
 
 %description -n pulse-xmpp-master-substitute
 Pulse master agent substitute
+
+%post -n pulse-xmpp-master-substitute
+systemctl daemon-reload
 
 %files -n pulse-xmpp-master-substitute
 %{python2_sitelib}/pulse_xmpp_master_substitute/
