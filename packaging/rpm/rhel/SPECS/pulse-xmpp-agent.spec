@@ -31,7 +31,7 @@ Requires:       python-dateutil
 %description
 Pulse XMPP Agent
 
-%post -n pulse-xmpp-master
+%post 
 systemctl daemon-reload
 
 %files
