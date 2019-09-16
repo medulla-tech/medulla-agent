@@ -35,7 +35,7 @@ from agentconffile import conffilename
 from sleekxmpp import jid
 from agentconffile import directoryconffile
 from utils import ipfromdns
-
+from sleekxmpp import jid
 
 def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
@@ -460,11 +460,10 @@ class confParameter:
             self.classutil = "both"
 
         try:
-            self.jidagentsiveo = "%s@%s" % (Config.get(
-                'global', 'allow_order'), Config.get('chat', 'domain'))
+            jidagentsiveo = Config.get('global', 'allow_order')
+            self.jidagentsiveo = [jid.JID(x.strip()).user for x in jidagentsiveo.split(",")]
         except BaseException:
-            self.jidagentsiveo = "%s@%s" % (
-                "agentsiveo", Config.get('chat', 'domain'))
+            self.jidagentsiveo = ["agentsiveo"]
 
         try:
             self.ordreallagent = Config.getboolean('global', 'inter_agent')

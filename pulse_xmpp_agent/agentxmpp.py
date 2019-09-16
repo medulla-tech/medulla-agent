@@ -197,7 +197,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
-        self.agentsiveo = jid.JID(self.config.jidagentsiveo)
+        self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
 
@@ -1752,7 +1752,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         pass
 
     def message(self, msg):
-        possibleclient = ['master', self.agentcommand.user, self.agentsiveo.user, self.boundjid.user,'log',self.jidchatroomcommand.user]
+        possibleclient = ['master',
+                          self.agentcommand.user,
+                          self.boundjid.user,
+                          'log',
+                          self.jidchatroomcommand.user] + self.agentsiveo
         if not msg['type'] == "chat":
             return
         try :

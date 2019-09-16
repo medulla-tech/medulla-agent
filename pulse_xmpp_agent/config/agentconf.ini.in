@@ -4,7 +4,7 @@ log_level = INFO
 # Allow inter-agent messages
 # inter_agent = False
 # Allow direct orders from specified jid
-# allow_order = agentsiveo
+# allow_order = list user autorized
 # Log file if used with -d (deamonize)
 # logfile = /var/log/pulse/xmpp-agent.log
 # Area of use of the agent: public (nomad), private (fixed), both
