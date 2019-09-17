@@ -1757,6 +1757,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                           self.boundjid.user,
                           'log',
                           self.jidchatroomcommand.user] + self.agentsiveo
+        possibleclient=[str(x) for x in possibleclient]
         if not msg['type'] == "chat":
             return
         try :
@@ -1777,11 +1778,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s"%(traceback.format_exc()))
             return
 
-        if not msg['from'].user in possibleclient:
+        if not str(msg['from'].user) in possibleclient:
             if not('sessionid' in  dataobj and self.session.isexist(dataobj['sessionid'])):
                 #les messages venant d'une machine sont filtré sauf si une session message existe dans le gestionnaire de session.
                 if  self.config.ordreallagent:
-                    logging.warning("filtre message from %s " % (msg['from'].bare))
+                    logging.warning("filtre message from %s eg possible client" % (msg['from'].bare))
                     return
 
         dataerreur={
