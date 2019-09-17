@@ -101,6 +101,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         results = result[0].split(",")
                         logger.debug("Mac address list for machine %s : %s" %(machine['id'], results))
                         uuid = ''
+                        btestfindcomputer = False
                         for t in results:
                             logger.debug("Get GLPI computer id for mac address %s"%t)
                             computer = getComputerByMac(t)
@@ -113,8 +114,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("** Update uuid %s for machine %s " %
                                                 (uuid, msg['from'].bare))
                                 XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+                                btestfindcomputer=True
+                                break;
                             else:
                                 logger.debug("No computer found")
+                        if btestfindcomputer == True:
+                            callInstallConfGuacamole(xmppobject,
+                                                     jidrs,
+                                                     {  'hostname': data['information']['info']['hostname'],
+                                                        'machine_ip': data['xmppip'],
+                                                        'uuid': str(computer.id),
+                                                        'remoteservice': data['remoteservice'],
+                                                        'platform' : data['platform'],
+                                                        'os' : data['information']['info']['os']})
                 return
 
             if XmppMasterDatabase().getPresencejiduser(msg['from'].user):
@@ -336,6 +348,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     results = result[0].split(",")
 
                     uuid = ''
+                    btestfindcomputer = False
                     for t in results:
                         logger.debug("Get the machine which has the specified mac address : %s"%t)
                         computer = getComputerByMac(t)
@@ -347,7 +360,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             uuid = 'UUID' + str(computer.id)
                             logger.debug("** Update uuid %s for machine %s " %
                                             (uuid, msg['from'].bare))
+
                             XmppMasterDatabase().updateMachineidinventory(uuid, idmachine)
+                            btestfindcomputer = True
                             if 'countstart' in data and data['countstart'] == 1:
                                 logger.debug("** Call inventory on PXE machine")
                                 callinventory(xmppobject, data['from'])
@@ -383,16 +398,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                             '',
                                                             '',
                                                             "Master")
-                            callInstallConfGuacamole(xmppobject,
-                                                     jidrs,
-                                                     {  'hostname': data['information']['info']['hostname'],
-                                                        'machine_ip': data['xmppip'],
-                                                        'uuid': str(computer.id),
-                                                        'remoteservice': data['remoteservice'],
-                                                        'platform' : data['platform'],
-                                                        'os' : data['information']['info']['os']})
                             break
-
                         else:
                             logger.debug("No computer found")
                             pass
@@ -411,6 +417,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                         '',
                                                         "Master")
                         callinventory(xmppobject, data['from'])
+                    if btestfindcomputer == True:
+                        callInstallConfGuacamole(xmppobject,
+                                                jidrs,
+                                                {  'hostname': data['information']['info']['hostname'],
+                                                'machine_ip': data['xmppip'],
+                                                'uuid': str(computer.id),
+                                                'remoteservice': data['remoteservice'],
+                                                'platform' : data['platform'],
+                                                'os' : data['information']['info']['os']})
             else:
                 logger.error("** Database registration error")
                 return
