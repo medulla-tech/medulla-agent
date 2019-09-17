@@ -70,11 +70,19 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             objectxmpp.callpluginmaster = types.MethodType(callpluginmaster,
                                                           objectxmpp)
 
+            #### call /pluginsmaster/plugin_deploysyncthing.py a ajouter dans les plugin substitute a adapter
+            objectxmpp.send_session_command = types.MethodType(send_session_command,
+                                                               objectxmpp)
+
             # chedule function scheduledeploy
             objectxmpp.schedule('check_and_process_deployment',
                             TIMESCHEDULERDEPLOY,
                             objectxmpp.scheduledeploy,
                             repeat=True)
+
+            # list probable plugin a ajouter
+            # /pluginsmaster/plugin_resultapplicationdeploymentjson.py
+            # master/pluginsmaster/plugin_resultenddeploy.py
 
 
         if 'action' in data and data['action'] == 'substitutedeploy':
@@ -521,6 +529,44 @@ def callpluginmaster(self, msg):
     except Exception as e:
         logging.error("Message structure %s   %s " % (msg, str(e)))
         traceback.print_exc(file=sys.stdout)
+
+def send_session_command(self, jid, action, data={}, datasession=None,
+                             encodebase64=False, time=20, eventthread=None,
+                            prefix=None):
+    if prefix is None:
+        prefix = "command"
+    if datasession == None:
+        datasession = {}
+    command = {'action': action,
+                'base64': encodebase64,
+                'sessionid': name_randomplus(25, pref=prefix),
+                'data': ''
+                }
+    if encodebase64:
+        command['data'] = base64.b64encode(json.dumps(data))
+    else:
+        command['data'] = data
+
+    datasession['data'] = data
+    datasession['callbackcommand'] = "commandend"
+    self.session.createsessiondatainfo(command['sessionid'],
+                                        datasession=data,
+                                        timevalid=time,
+                                        eventend=eventthread)
+    if action is not None:
+        logging.debug("Send command and creation session")
+        if jid == self.boundjid.bare:
+            self.callpluginmasterfrommmc(action,
+                                        data,
+                                        sessionid = command['sessionid'])
+        else:
+            self.send_message(mto=jid,
+                            mbody=json.dumps(command),
+                            mtype='chat')
+    else:
+        logging.debug("creation session")
+    return command['sessionid']
+
 
 def read_conf_substitutedeploy(objectxmpp):
     logger.debug("Initialisation plugin :% s "%plugin["NAME"])
