@@ -16,16 +16,16 @@ import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
+from lib.plugins.msc import MscDatabase
 from lib.localisation import Localisation
 from lib.manageRSAsigned import MsgsignedRSA
+from lib.managepackage import managepackage
 from sleekxmpp import jid
-from lib.utils import getRandomName, call_plugin
+from lib.utils import getRandomName, call_plugin, name_random, name_randomplus
 import re
 from distutils.version import LooseVersion, StrictVersion
 import ConfigParser
-
-# this import will be used later
-# import types
+import types
 
 logger = logging.getLogger()
 
@@ -76,7 +76,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
 
             # chedule function scheduledeploy
             objectxmpp.schedule('check_and_process_deployment',
-                            TIMESCHEDULERDEPLOY,
+                            objectxmpp.TIMESCHEDULERDEPLOY,
                             objectxmpp.scheduledeploy,
                             repeat=True)
 
@@ -86,18 +86,18 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
 
 
         if 'action' in data and data['action'] == 'substitutedeploy':
-
-                for function_plugin in pluginfunction:
-                    try:
-                        if hasattr(objectxmpp, function_plugin):
-                            getattr(objectxmpp, function_plugin)(msg, data)
-                        else:
-                            logger.warning("the %s plugin is not called"%function_plugin)
-                            logger.warning("verify why plugging %s"\
-                                " has no function %s"%(function_plugin,
-                                                       function_plugin))
-                    except:
-                        logger.error("\n%s"%(traceback.format_exc()))
+            pluginfunction = []
+            for function_plugin in pluginfunction:
+                try:
+                    if hasattr(objectxmpp, function_plugin):
+                        getattr(objectxmpp, function_plugin)(msg, data)
+                    else:
+                        logger.warning("the %s plugin is not called"%function_plugin)
+                        logger.warning("verify why plugging %s"\
+                            " has no function %s"%(function_plugin,
+                                                   function_plugin))
+                except:
+                    logger.error("\n%s"%(traceback.format_exc()))
 
 
     except Exception as e:
@@ -464,7 +464,7 @@ def applicationdeploymentjson(self,
                                                     )
         self.syncthingdeploy()
         return sessionid
-    
+
 def syncthingdeploy(self):
     #nanlyse la table deploy et recupere les deployement syncthing.
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
@@ -481,7 +481,7 @@ def syncthingdeploy(self):
 
 def callpluginmasterfrommmc(self, plugin, data, sessionid=None):
     if sessionid == None:
-        sessionid = name_random(5, plugin)
+        sessionid = getRandomName(5, plugin)
     msg = {}
     msg['from'] = self.boundjid.bare
     msg['body'] = json.dumps({'action': plugin,

@@ -359,6 +359,21 @@ def getRandomName(nb, pref=""):
         d = d + a[random.randint(0, 35)]
     return d
 
+def name_random(nb, pref=""):
+    a = "abcdefghijklnmopqrstuvwxyz0123456789"
+    d = pref
+    for t in range(nb):
+        d = d+a[random.randint(0, 35)]
+    return d
+
+def name_randomplus(nb, pref=""):
+    a = "abcdefghijklnmopqrstuvwxyz0123456789"
+    q = str(uuid.uuid4())
+    q = pref + q.replace("-","")
+    for t in range(nb):
+        d = a[random.randint(0, 35)]
+    res = q + d
+    return res[:nb]
 
 def md5(fname):
     hash = hashlib.md5()
@@ -1572,7 +1587,7 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
         sessionid = action.strip().replace(" ", "")
     return { 'action' : action,
              'data' : data,
-             'ret' : 0, 
+             'ret' : 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
 
@@ -1580,8 +1595,8 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
 def add_method(cls):
     """ decorateur a utiliser pour ajouter une methode a un object """
     def decorator(func):
-        @wraps(func) 
-        def wrapper(self, *args, **kwargs): 
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
             return func(*args, **kwargs)
         setattr(cls, func.__name__, wrapper)
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
