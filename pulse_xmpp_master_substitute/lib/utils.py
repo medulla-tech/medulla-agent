@@ -44,6 +44,7 @@ import time
 from datetime import datetime
 import imp
 from functools import wraps # This convenience func preserves name and docstring
+import uuid
 logger = logging.getLogger()
 
 DEBUGPULSE = 25

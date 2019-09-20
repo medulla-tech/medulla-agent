@@ -36,7 +36,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
     if "msg" in data:
-        logging.getLogger().warning("%s : %s"%(data['msg'], message['from']))
+        logging.getLogger().warning("%s : %s"%(data['msg'], msg['from']))
         return
     try:
         XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], data['connection'])
