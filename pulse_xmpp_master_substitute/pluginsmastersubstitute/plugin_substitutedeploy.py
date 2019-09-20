@@ -1,29 +1,41 @@
 # -*- coding: utf-8 -*-
 #
+# (c) 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
+# (c) 2007-2009 Mandriva, http://www.mandriva.com/
 # (c) 2016 siveo, http://www.siveo.net
-# plugin register machine dans presence table xmpp.
+#
+# $Id$
+#
+# This file is part of Pulse 2, http://pulse2.mandriva.org
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+
+""" declare the substitute plugin for deployments"""
 # file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_substitutedeploy.py
 #
-import zlib
 import base64
 import traceback
 import os
 import sys
-import urllib2
-import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
-from lib.localisation import Localisation
-from lib.manageRSAsigned import MsgsignedRSA
 from lib.managepackage import managepackage
-from sleekxmpp import jid
 from lib.utils import getRandomName, call_plugin, name_random, name_randomplus
-import re
-from distutils.version import LooseVersion, StrictVersion
 import ConfigParser
 import types
 
@@ -336,7 +348,8 @@ def applicationdeploymentjson(self,
             logger.error("deploy %s error package name version missing" % (name))
             return False
         # Name the event
-        dd = name_random(5, "deploy_")
+        # For later
+        # dd = name_random(5, "deploy_")
         path = managepackage.getpathpackagename(name)
         if path is None:
             logger.error("package Name missing (%s)" % (name))
