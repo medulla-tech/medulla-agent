@@ -95,7 +95,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.debug("=============")
                 machine = XmppMasterDatabase().getMachinefromjid(data['from'])
 
-                if 'uuid_inventorymachine' in machine or machine['uuid_inventorymachine'] is False:
+                if not 'uuid_inventorymachine' in machine or machine['uuid_inventorymachine'] is None:
                     if data['agenttype'] != "relayserver":
                         result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
                         results = result[0].split(",")
