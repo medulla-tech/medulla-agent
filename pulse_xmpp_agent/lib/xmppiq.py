@@ -128,8 +128,11 @@ class functionsynchroxmpp:
             try:
                 datastr = json.dumps(data)
             except Exception as e:
-                logging.getLogger().error("synchro xmpp function remotefile : %s"%str(e))
-                return ""
+                try:
+                    datastr = json.dumps(data, encoding="latin1")
+                except Exception as e:
+                    logging.getLogger().error("synchro xmpp function remotefile : %s"%str(e))
+                    return ""
         else:
             return ""
         try:
