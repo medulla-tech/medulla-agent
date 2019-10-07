@@ -66,18 +66,18 @@ def dispach_iq_command(xmppobject, jsonin):
     data = json.loads(jsonin)
 
     # functions synch list
-    #listactioncommand = ["xmppbrowsing", 
-                         #"test", 
-                         #"remotefile", 
-                         #"remotecommandshell", 
-                         #"listremotefileedit", 
+    #listactioncommand = ["xmppbrowsing",
+                         #"test",
+                         #"remotefile",
+                         #"remotecommandshell",
+                         #"listremotefileedit",
                          #"remotefileeditaction",
                          #"remotexmppmonitoring"]
-    listactioncommand = ["xmppbrowsing", 
-                         "test", 
-                         "remotefile", 
-                         "remotecommandshell", 
-                         "listremotefileedit", 
+    listactioncommand = ["xmppbrowsing",
+                         "test",
+                         "remotefile",
+                         "remotecommandshell",
+                         "listremotefileedit",
                          "remotefileeditaction",
                          "remotexmppmonitoring",
                          "keypub"]
@@ -95,7 +95,7 @@ def dispach_iq_command(xmppobject, jsonin):
 
 class functionsynchroxmpp:
     """
-        this function must return json string 
+        this function must return json string
     """
     @staticmethod
     def xmppbrowsing(xmppobject , data  ):
@@ -260,7 +260,7 @@ class functionsynchroxmpp:
             if data['data']['action'] == 'loadfile':
                 if 'file' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
-                    if os.path.isfile(filename): 
+                    if os.path.isfile(filename):
                         filedata = file_get_contents(filename)
                         data['data'] = { "result" : filedata, "error" : False , 'numerror' : 0  }
                         return json.dumps(data)
