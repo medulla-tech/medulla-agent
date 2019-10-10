@@ -165,6 +165,39 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
+    def get_ars_for_pausing_syncthing(self,
+                                      session,
+                                      nbtransfert = 2):
+        sql = """SELECT
+                    xmppmaster.syncthing_deploy_group.id,
+                    xmppmaster.syncthing_ars_cluster.liststrcluster,
+                    xmppmaster.syncthing_deploy_group.directory_tmp,
+                    xmppmaster.syncthing_deploy_group.nbtransfert,
+                    xmppmaster.syncthing_ars_cluster.id
+                FROM
+                    xmppmaster.syncthing_deploy_group
+                        INNER JOIN
+                    xmppmaster.syncthing_ars_cluster
+                      ON
+                         xmppmaster.syncthing_deploy_group.id =
+                         xmppmaster.syncthing_ars_cluster.fk_deploy
+                WHERE
+                    xmppmaster.syncthing_deploy_group.nbtransfert >= %s
+                    and
+                    xmppmaster.syncthing_ars_cluster.keypartage != "pausing";"""%(nbtransfert)
+        #print "get_ars_for_pausing_syncthing"#, sql
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        if result is None:
+            return -1
+        else:
+            re =  [y for y in [x for x in result]]
+            for arssyncthing in re:
+                self.update_ars_status(arssyncthing[4], "pausing")
+        return re
+
+    @DatabaseHelper._sessionm
     def getQAforMachine(self, session, cmd_id, uuidmachine):
         try:
             command_action = session.query(Command_action).filter(and_( Command_action.command_id == cmd_id, Command_action.target == uuidmachine))

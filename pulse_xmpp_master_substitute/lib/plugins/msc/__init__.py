@@ -42,9 +42,9 @@ import datetime
 # ORM mappings
 from lib.plugins.msc.orm.commands import Commands
 from lib.plugins.msc.orm.commands_on_host import CommandsOnHost
-from lib.plugins.msc.orm.orm.commands_on_host_phase import CommandsOnHostPhase
-from lib.plugins.msc.orm.orm.commands_history import CommandsHistory
-from lib.plugins.msc.orm.orm.target import Target
+from lib.plugins.msc.orm.commands_on_host_phase import CommandsOnHostPhase
+from lib.plugins.msc.orm.commands_history import CommandsHistory
+from lib.plugins.msc.orm.target import Target
 from lib.plugins.msc.orm.pull_targets import PullTargets
 from lib.plugins.msc.orm.bundle import Bundle
 # from mmc.database.database_helper import DatabaseHelper
@@ -56,8 +56,8 @@ from lib.plugins.xmpp import XmppMasterDatabase
 import logging
 import functools
 
-NB_DB_CONN_TRY = 2
 
+NB_DB_CONN_TRY = 2
 
 
 class Singleton(object):
@@ -188,28 +188,12 @@ class ComputerLocationManager(Singleton):
 
 
 class DatabaseHelper(Singleton):
-        ## Session decorator to create and close session automatically
-    @classmethod
-    def _sessionxmpp(self, func):
-        @functools.wraps(func)
-        def __session(self, *args, **kw):
-            created = False
-            if not self.sessionxmpp:
-                self.sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
-                created = True
-            result = func(self, self.session, *args, **kw)
-            if created:
-                self.sessionxmpp.close()
-                self.sessionxmpp = None
-            return result
-        return __session
-
     ## Session decorator to create and close session automatically
     @classmethod
     def _sessionm(self, func):
         @functools.wraps(func)
         def __sessionm(self, *args, **kw):
-            session_factory  = sessionmaker(bind=self.engine_xmppmmaster_base)
+            session_factory  = sessionmaker(bind=self.engine_mscmmaster_base)
             sessionmultithread = scoped_session(session_factory)
             result = func(self, sessionmultithread , *args, **kw)
             sessionmultithread.remove()
@@ -224,18 +208,14 @@ class MscDatabase(DatabaseHelper):
 
     """
     is_activated = False
-    #def db_check(self):
-        #self.my_name = "msc"
-        #self.configfile = "msc.ini"
-        #return DatabaseHelper.db_check(self)
 
-    def activate(self, config):
+    def activate(self):
         self.logger = logging.getLogger()
         if self.is_activated:
             return None
         self.logger.info("Msc database is connecting")
         self.config = confParameter()
-        self.config = config
+
         self.session = None
         self.engine_mscmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.msc_dbuser,
                                                                 self.config.msc_dbpasswd,
@@ -243,17 +223,18 @@ class MscDatabase(DatabaseHelper):
                                                                 self.config.msc_dbport,
                                                                 self.config.msc_dbname),
                                                      pool_recycle = self.config.dbpoolrecycle,
-                                                     ool_size = self.config.dbpoolsize,
+                                                     pool_size = self.config.dbpoolsize,
                                                      pool_timeout = self.config.msc_dbpooltimeout,
                                                      convert_unicode = True)
+
         self.metadata = MetaData(self.engine_mscmmaster_base)
         if not self.initTables():
             return False
-        if not self.initMappersCatchException():
-            return False
+
+        self.initMappers()
         self.metadata.create_all()
         # FIXME: should be removed
-        self.session = create_session()
+        self.session = create_session(bind=self.engine_mscmmaster_base)
         if self.session is not None:
         #self.session = sessionmaker(bind=self.engine_xmppmmaster_base)
             self.is_activated = True
@@ -460,7 +441,7 @@ class MscDatabase(DatabaseHelper):
         session.flush()
         return cmd
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def _force_command_type(self, session, cmd_id, type):
         """
         Force type of command cmd_id, usually used for reschedule
@@ -476,7 +457,7 @@ class MscDatabase(DatabaseHelper):
         self.logger.warn('Failed to set command %s to type %s' % (cmd, type))
         return False
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def _set_command_ready(self, session, cmd_id):
         """
         Set command as ready, usually used for reschedule
@@ -677,7 +658,7 @@ class MscDatabase(DatabaseHelper):
                 ORDER BY commands_on_host.id DESC
                 limit 1
                 ;"""%command_id
-        resultsql = self.db.execute(sqlselect)
+        resultsql = self.session.execute(sqlselect)
         for x in resultsql:
             result['host'] = x.host
             result['target_name'] = x.target_name
@@ -789,8 +770,8 @@ class MscDatabase(DatabaseHelper):
             """% datenow.strftime('%Y-%m-%d %H:%M:%S')
         reqsql1 = sqlselect + sqlfilter + sqllimit + sqlgroupby + ") as tmp;";
         result={}
-        resulta = self.db.execute(reqsql)
-        resultb = self.db.execute(reqsql1)
+        resulta = self.session.execute(reqsql)
+        resultb = self.session.execute(reqsql1)
         sizereq = [x for x in resultb][0][0]
         result['lentotal'] = sizereq
         result['min'] = int(min)
@@ -942,7 +923,7 @@ class MscDatabase(DatabaseHelper):
                                              INTERVAL %s SECOND);"""%(datenow,
                                                                       datenow,
                                                                       intervalsearch)
-        resultsql = self.db.execute(sqlselect)
+        resultsql = self.session.execute(sqlselect)
         return resultsql
 
     @DatabaseHelper._sessionm
@@ -2115,14 +2096,14 @@ class MscDatabase(DatabaseHelper):
             #ret['creation_date'] = ''
         #return [ret, cmds]
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def isCommandsCconvergenceType(self, session, ctx, cmd_id):
         if cmd_id == None or cmd_id == '':
             return False
         result = session.query(Commands).filter_by(id=cmd_id).one()
         return result.type
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def isArrayCommandsCconvergenceType(self, session, ctx, arraycmd_id):
         result = {}
         for idcmd in arraycmd_id:
@@ -2135,7 +2116,7 @@ class MscDatabase(DatabaseHelper):
                 pass
         return result
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def getCommands(self, session, ctx, cmd_id):
         if cmd_id == "0" or cmd_id == None or cmd_id == '':
             return False
@@ -2195,7 +2176,7 @@ class MscDatabase(DatabaseHelper):
         session.close()
         return ret
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def isPullTarget(self, session, uuid):
         try:
             session.query(PullTargets).filter(PullTargets.target_uuid == uuid).one()
@@ -2203,12 +2184,12 @@ class MscDatabase(DatabaseHelper):
         except NoResultFound:
             return False
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def getPullTargets(self, session):
         query = session.query(PullTargets)
         return [uuid.target_uuid for uuid in query]
 
-    @DatabaseHelper._session
+    @DatabaseHelper._sessionm
     def removePullTargets(self, session, uuids):
         query = session.query(PullTargets).filter(
             PullTargets.target_uuid.in_(uuids)
@@ -2753,8 +2734,8 @@ class MscDatabase(DatabaseHelper):
             - then raise the error anew
         """
         reason.trap(TimeoutError)
-        if self.db.pool._max_overflow > -1 and self.db.pool._overflow >= self.db.pool._max_overflow :
-            logging.getLogger().error('Timeout then overflow (%d vs. %d) detected in SQL pool : check your network connectivity !' % (self.db.pool._overflow, self.db.pool._max_overflow))
-            self.db.pool.dispose()
-            self.db.pool = self.db.pool.recreate()
+        if self.session.pool._max_overflow > -1 and self.session.pool._overflow >= self.session.pool._max_overflow :
+            logging.getLogger().error('Timeout then overflow (%d vs. %d) detected in SQL pool : check your network connectivity !' % (self.session.pool._overflow, self.session.pool._max_overflow))
+            self.session.pool.dispose()
+            self.session.pool = self.session.pool.recreate()
         return reason

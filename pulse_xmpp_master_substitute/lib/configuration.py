@@ -214,7 +214,7 @@ class confParameter:
         if confiobject.has_option("mscdatabase", "msc_dbport"):
             self.msc_dbport = confiobject.get('mscdatabase', 'msc_dbport')
 
-        self.msc_dbname = "mscmaster"
+        self.msc_dbname = "msc"
         if confiobject.has_option("mscdatabase", "msc_dbname"):
             self.msc_dbname = confiobject.get('mscdatabase', 'msc_dbname')
 

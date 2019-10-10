@@ -32,6 +32,7 @@ from optparse import OptionParser
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
+from lib.plugins.msc import MscDatabase
 from bin.agent import MUCBot
 
 
@@ -105,6 +106,10 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     if "kiosk" in tg.plugins_list:
         logger.info("activate KIOSK")
         KioskDatabase().activate()
+
+    if "msc" in tg.plugins_list:
+        logger.info("activate MSC")
+        MscDatabase().activate()
 
     xmpp = MUCBot( )
     xmpp.register_plugin('xep_0030') # Service Discovery

@@ -43,9 +43,7 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.00", "NAME": "substitutedeploy", "TYPE": "substitute"}
 
-
-
-def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
+def action(objectxmpp, action, sessionid, data, msg, ret):
     try:
         logger.debug("=====================================================")
         logger.debug("call %s from %s"%(plugin, msg['from']))
