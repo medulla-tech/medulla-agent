@@ -35,13 +35,16 @@ import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
 from lib.managepackage import managepackage
-from lib.utils import getRandomName, call_plugin, name_random, name_randomplus
+from lib.managesession import session
+# from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents
+from lib.utils import *
 import ConfigParser
 import types
+from sleekxmpp import jid
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.00", "NAME": "substitutedeploy", "TYPE": "substitute"}
+plugin = {"VERSION": "1.00092", "NAME": "substitutedeploy", "TYPE": "substitute"}
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
     try:
@@ -56,33 +59,21 @@ def action(objectxmpp, action, sessionid, data, msg, ret):
             objectxmpp.machineDeploy = {}
             read_conf_substitutedeploy(objectxmpp)
             # declartion function in object xmpp
-            objectxmpp.scheduledeploy = types.MethodType(scheduledeploy,
-                                                         objectxmpp)
-
+            objectxmpp.scheduledeploy = types.MethodType(scheduledeploy, objectxmpp)
             objectxmpp.applicationdeployjsonUuidMachineAndUuidPackage = \
-                types.MethodType(applicationdeployjsonUuidMachineAndUuidPackage,
-                                objectxmpp)
-
-            objectxmpp.applicationdeployjsonuuid = types.MethodType(applicationdeployjsonuuid,
-                                                                    objectxmpp)
-
-
-            objectxmpp.applicationdeploymentjson = types.MethodType(applicationdeploymentjson,
-                                                                    objectxmpp)
-
-            objectxmpp.syncthingdeploy = types.MethodType(syncthingdeploy,
-                                                          objectxmpp)
-
-
-            objectxmpp.callpluginmasterfrommmc = types.MethodType(callpluginmasterfrommmc,
-                                                          objectxmpp)
-
-            objectxmpp.callpluginmaster = types.MethodType(callpluginmaster,
-                                                          objectxmpp)
-
+                types.MethodType(applicationdeployjsonUuidMachineAndUuidPackage, objectxmpp)
+            objectxmpp.applicationdeployjsonuuid = types.MethodType(applicationdeployjsonuuid, objectxmpp)
+            objectxmpp.applicationdeploymentjson = types.MethodType(applicationdeploymentjson, objectxmpp)
+            objectxmpp.syncthingdeploy = types.MethodType(syncthingdeploy, objectxmpp)
+            objectxmpp.callpluginmasterfrommmc = types.MethodType(callpluginmasterfrommmc, objectxmpp)
+            objectxmpp.callpluginmaster = types.MethodType(callpluginmaster, objectxmpp)
             #### call /pluginsmaster/plugin_deploysyncthing.py a ajouter dans les plugin substitute a adapter
-            objectxmpp.send_session_command = types.MethodType(send_session_command,
-                                                               objectxmpp)
+            objectxmpp.send_session_command = types.MethodType(send_session_command, objectxmpp)
+            objectxmpp.totimestamp = types.MethodType(totimestamp, objectxmpp)
+            objectxmpp.parsexmppjsonfile = types.MethodType(parsexmppjsonfile, objectxmpp)
+            objectxmpp.xmpplog = types.MethodType(xmpplog, objectxmpp)
+
+            objectxmpp.session = session()
 
             # chedule function scheduledeploy
             objectxmpp.schedule('check_and_process_deployment',
@@ -476,6 +467,45 @@ def applicationdeploymentjson(self,
         self.syncthingdeploy()
         return sessionid
 
+def totimestamp(self, dt, epoch=datetime(1970,1,1)):
+    td = dt - epoch
+    # return td.total_seconds()
+    return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
+
+
+def xmpplog(self,
+            text,
+            type='noset',
+            sessionname='',
+            priority=0,
+            action="",
+            who="",
+            how="",
+            why="",
+            module="",
+            date=None,
+            fromuser="",
+            touser=""):
+    if who == "":
+        who = self.boundjid.bare
+    msgbody = {'log': 'xmpplog',
+               'text': text,
+               'type': type,
+               'session': sessionname,
+               'priority': priority,
+               'action': action,
+               'who': who,
+               'how': how,
+               'why': why,
+               'module': module,
+               'date': None,
+               'fromuser': fromuser,
+               'touser': touser}
+    self.send_message(mto=jid.JID("log@pulse"),
+                      mbody=json.dumps(msgbody),
+                      mtype='chat')
+
+
 def syncthingdeploy(self):
     #nanlyse la table deploy et recupere les deployement syncthing.
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
@@ -579,13 +609,21 @@ def send_session_command(self, jid, action, data={}, datasession=None,
     return command['sessionid']
 
 
+def parsexmppjsonfile(self, path):
+    ### puts the words False in lowercase.
+    datastr = file_get_contents(path)
+    datastr = re.sub(r"(?i) *: *false", " : false", datastr)
+    datastr = re.sub(r"(?i) *: *true", " : true", datastr)
+    file_put_contents(path, datastr)
+
+
 def read_conf_substitutedeploy(objectxmpp):
     logger.debug("Initialisation plugin :% s "%plugin["NAME"])
     namefichierconf = plugin['NAME'] + ".ini"
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         pluginlistunregistered =""
-        objectxmpp.TIMESCHEDULERDEPLOY = 30
+        objectxmpp.TIMESCHEDULERDEPLOY = 5
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -597,5 +635,5 @@ def read_conf_substitutedeploy(objectxmpp):
         if Config.has_option("parameters", "TIMESCHEDULERDEPLOY"):
             objectxmpp.TIMESCHEDULERDEPLOY =  Config.getint('parameters', 'TIMESCHEDULERDEPLOY')
         else:
-            objectxmpp.TIMESCHEDULERDEPLOY = 30
+            objectxmpp.TIMESCHEDULERDEPLOY = 5
     objectxmpp.pluginlistunregistered = [x.strip() for x in pluginlistunregistered.split(',')]
