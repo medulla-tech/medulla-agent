@@ -1809,6 +1809,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 msg = '"' + dataobj['data']['msg'] + '"'
 
             shutdown_command(time, msg)
+            return
 
         if dataobj['action'] == "vncchangepermsfrommaster":
             askpermission = 1
