@@ -52,6 +52,10 @@ from utils_psutil import sensors_battery,\
                          netstat,\
                          cputimes
 from lib.update_remote_agent import agentinfoversion
+if sys.platform.startswith('win'):
+    import win32net
+    import win32security
+    import win32serviceutil
 
 DEBUGPULSE = 25
 logger = logging.getLogger()
@@ -61,7 +65,7 @@ def callXmppFunctionIq(functionname,  *args, **kwargs):
 
 def dispach_iq_command(xmppobject, jsonin):
     """
-        this function doit retirner un json string
+        this function doit retourner un json string
     """
     data = json.loads(jsonin)
 
@@ -80,7 +84,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "listremotefileedit",
                          "remotefileeditaction",
                          "remotexmppmonitoring",
-                         "keypub"]
+                         "keypub",
+                         "information"]
 
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
@@ -193,6 +198,16 @@ class functionsynchroxmpp:
                     result['result']['informationresult'] [info_ask] = decode_strconsole(cpu_num())
                 if info_ask == "netstat":
                     result['result']['informationresult'] [info_ask] = decode_strconsole(netstat())
+                if info_ask == "profiluserpulse":
+                    profilname='pulseuser'
+                    if sys.platform.startswith('win'):
+                        # check if pulse account exists
+                        try:
+                            win32net.NetUserGetInfo('','pulseuser', 0)
+                            profilname='pulseuser'
+                        except:
+                            profilname='pulse'
+                    result['result']['informationresult'] [info_ask] = profilname
             except:
                 result['result']['informationresult'] [info_ask] = ""
         return json.dumps(result)
