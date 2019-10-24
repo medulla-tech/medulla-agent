@@ -73,7 +73,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
                     if result[0] is None:
                         raise
-                except:
+                except Exception as e:
                     # incoherence entre machine et network
                     # on supprime la machine
                     # la machine est reincrite
@@ -105,7 +105,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.warning("verify why plugging %s"\
                                     " has no function %s"%(function_plugin,
                                                         function_plugin))
-                        except:
+                        except Exception as e:
                             logger.error("\n%s"%(traceback.format_exc()))
 
                     logger.debug("=============")
@@ -114,9 +114,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.debug("Update it's uuid_inventory_machine")
                     logger.debug("=============")
                     logger.debug("=============")
-                    if not 'uuid_inventorymachine' in machine or \
+                    if 'uuid_inventorymachine' not in machine or \
                         machine['uuid_inventorymachine'] is None or \
-                        machine['uuid_inventorymachine'] == False    :
+                        not machine['uuid_inventorymachine']:
                         if data['agenttype'] != "relayserver":
                             results = result[0].split(",")
                             nbelt = len (results)
@@ -137,7 +137,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             for t in results:
                                 logger.debug("Get GLPI computer id for mac address %s"%t)
                                 computer = getComputerByMac(t)
-                                if computer != None:
+                                if computer is not None:
                                     logger.debug("Computer found : #%s" %computer.id)
                                     jidrs = str(jid.JID(data['deployment']).user)
                                     jidm = jid.JID(data['from']).domain
@@ -357,7 +357,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 for i in data['information']["listipinfo"]:
                     try:
                         broadcast = i['broadcast']
-                    except:
+                    except Exception as e:
                         broadcast = ''
                     logger.debug("** Add interface %s in database for machine %s" %
                                     (str(i['macaddress']), msg['from'].bare))
@@ -478,7 +478,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         logger.warning("verify why plugging %s"\
                             " has no function %s"%(function_plugin,
                                                     function_plugin))
-                except:
+                except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
 
             ########################################
@@ -565,7 +565,7 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data):
         xmppobject.send_message(mto=torelayserver,
                             mbody=json.dumps(body),
                             mtype='chat')
-    except:
+    except Exception as e:
         logger.error("\n%s"%(traceback.format_exc()))
 
 def callinventory(xmppobject,  to):
@@ -576,7 +576,7 @@ def callinventory(xmppobject,  to):
         xmppobject.send_message(mto=to,
                             mbody=json.dumps(body),
                             mtype='chat')
-    except:
+    except Exception as e:
         logger.error("\n%s"%(traceback.format_exc()))
 
 
