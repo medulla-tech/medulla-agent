@@ -73,7 +73,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
                     if result[0] is None:
                         raise
-                except Exception as e:
+                except Exception:
                     # incoherence entre machine et network
                     # on supprime la machine
                     # la machine est reincrite
@@ -357,7 +357,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 for i in data['information']["listipinfo"]:
                     try:
                         broadcast = i['broadcast']
-                    except Exception as e:
+                    except Exception:
                         broadcast = ''
                     logger.debug("** Add interface %s in database for machine %s" %
                                     (str(i['macaddress']), msg['from'].bare))
