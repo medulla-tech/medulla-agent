@@ -105,7 +105,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.warning("verify why plugging %s"\
                                     " has no function %s"%(function_plugin,
                                                         function_plugin))
-                        except Exception as e:
+                        except Exception:
                             logger.error("\n%s"%(traceback.format_exc()))
 
                     logger.debug("=============")
@@ -150,7 +150,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                     break;
                                 else:
                                     logger.debug("No computer found")
-                            if btestfindcomputer == True:
+                            if btestfindcomputer:
                                 callInstallConfGuacamole(xmppobject,
                                                         jidrs,
                                                         {  'hostname': data['information']['info']['hostname'],
@@ -478,7 +478,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         logger.warning("verify why plugging %s"\
                             " has no function %s"%(function_plugin,
                                                     function_plugin))
-                except Exception as e:
+                except Exception:
                     logger.error("\n%s"%(traceback.format_exc()))
 
             ########################################
@@ -565,7 +565,7 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data):
         xmppobject.send_message(mto=torelayserver,
                             mbody=json.dumps(body),
                             mtype='chat')
-    except Exception as e:
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
 def callinventory(xmppobject,  to):
@@ -576,7 +576,7 @@ def callinventory(xmppobject,  to):
         xmppobject.send_message(mto=to,
                             mbody=json.dumps(body),
                             mtype='chat')
-    except Exception as e:
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
 

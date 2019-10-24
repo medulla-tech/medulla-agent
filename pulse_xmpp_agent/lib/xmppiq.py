@@ -205,7 +205,7 @@ class functionsynchroxmpp:
                         try:
                             win32net.NetUserGetInfo('','pulseuser', 0)
                             profilname='pulseuser'
-                        except:
+                        except Exception:
                             profilname='pulse'
                     result['result']['informationresult'] [info_ask] = profilname
             except:
