@@ -33,16 +33,13 @@ import time
 import socket
 import select
 import threading
+import shutil
+import subprocess
+import psutil
+
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
-from sleekxmpp.xmlstream import handler, matcher
-
-import shutil
-import subprocess
-from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
-from sleekxmpp import jid
 from lib.networkinfo import networkagentinfo,\
                             organizationbymachine,\
                             organizationbyuser
@@ -50,7 +47,6 @@ from lib.configuration import confParameter,\
                               nextalternativeclusterconnection,\
                               changeconnection
 from lib.managesession import session
-
 from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
@@ -66,19 +62,21 @@ from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
 from lib.syncthingapirest import syncthing, syncthingprogram
-
-
-from optparse import OptionParser
-
-from multiprocessing import Queue
-from multiprocessing.managers import SyncManager
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
-import psutil
+from lib.managepackage import managepackage
+
+from optparse import OptionParser
+from multiprocessing import Queue
+from multiprocessing.managers import SyncManager
+
 from modulefinder import ModuleFinder
 
-from lib.managepackage import managepackage
+from sleekxmpp.xmlstream import handler, matcher
+from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
+from sleekxmpp import jid
 
 if sys.platform.startswith('win'):
     import win32api
@@ -421,6 +419,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_action_extern,
                       self.execcmdfile,
                       repeat=True)
+
     ###############################################################
     # syncthing function
     ###############################################################

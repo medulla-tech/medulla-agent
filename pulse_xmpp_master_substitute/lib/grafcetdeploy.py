@@ -1642,7 +1642,6 @@ class grafcet:
             if not "timeout" in self.workingstep:
                 self.workingstep['timeout'] = 900
                 logging.getLogger().warn("timeout missing : default value 900s")
-            print "llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll"
             print self.datasend['data']['pathpackageonmachine']
             self.workingstep['pwd'] = ""
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
