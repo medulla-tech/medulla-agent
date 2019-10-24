@@ -3056,7 +3056,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         machines_id = '%s'
                     LIMIT 1;"""%(id_machine)
             logging.getLogger().debug("SQL request to get the mac addresses list for the presence machine #%s"%id_machine)
-            logging.getLogger().debug("%s"%sql)
+            #logging.getLogger().debug("%s"%sql)
             listMacAdress = session.execute(sql)
             session.commit()
             session.flush()
