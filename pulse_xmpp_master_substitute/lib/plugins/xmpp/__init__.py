@@ -49,6 +49,7 @@ import os, pwd
 import traceback
 import sys
 import re
+import uuid
 from lib.configuration import confParameter
 import functools
 from sqlalchemy import func
