@@ -114,6 +114,27 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.debug("Update it's uuid_inventory_machine")
                     logger.debug("=============")
                     logger.debug("=============")
+                    # on regarde si le UUID associe a hostname machine correspond au hostname dans glpi.
+                    if xmppobject.check_uuidinventory and \
+                        'uuid_inventorymachine' in machine and \
+                            machine['uuid_inventorymachine'] is not None:
+                        hostname = None
+                        try:
+                            re = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
+                            for t in re:
+                                if t[0] == 'name':
+                                    hostname = t[1]
+                                    break
+                            if hostname and "information" in data and \
+                                "info" in data["information"] and \
+                                    "hostname" in  data["information"]["info"] and \
+                                        hostname != data["information"]["info"]["hostname"]:
+                                machine['uuid_inventorymachine'] = None
+                        except Exception:
+                            machine['uuid_inventorymachine'] = None
+                        if machine['uuid_inventorymachine'] is None:
+                            logger.warning("When there is an incoherence between xmpp and glpi's uuid, we restore the uuid from glpi")
+
                     if 'uuid_inventorymachine' not in machine or \
                         machine['uuid_inventorymachine'] is None or \
                         not machine['uuid_inventorymachine']:
@@ -717,6 +738,7 @@ def read_conf_remote_registeryagent(xmppobject):
                                              "loadpluginschedulerlistversion",
                                              "autoupdate",
                                              "showregistration"]
+        xmppobject.check_uuidinventory = False
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -725,6 +747,12 @@ def read_conf_remote_registeryagent(xmppobject):
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
             logger.debug("read file %s.local"%pathfileconf)
+
+        if Config.has_option("parameters", "check_uuidinventory"):
+            xmppobject.check_uuidinventory = Config.getboolean('parameters', 'check_uuidinventory')
+        else:
+            xmppobject.check_uuidinventory = False
+
         if Config.has_option("parameters", "pluginlistregistered"):
             pluginlistregistered = Config.get('parameters', 'pluginlistregistered')
         else:
