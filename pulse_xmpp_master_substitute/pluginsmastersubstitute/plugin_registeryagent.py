@@ -131,7 +131,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         hostname != data["information"]["info"]["hostname"]:
                                 machine['uuid_inventorymachine'] = None
                         except Exception:
-                             machine['uuid_inventorymachine'] = None
+                            machine['uuid_inventorymachine'] = None
                         if machine['uuid_inventorymachine'] is None:
                             logger.warning("When there is an incoherence between xmpp and glpi's uuid, we restore the uuid from glpi")
 
