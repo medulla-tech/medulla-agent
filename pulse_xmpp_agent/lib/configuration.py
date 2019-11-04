@@ -351,18 +351,29 @@ class confParameter:
                 self.diragentbase = Config.get('global', 'diragentbase')
             else:
                 self.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
-                
+
+
+        jidsufixetempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         "INFOSTMP",
+                                         "JIDSUFFIXE")
+        jidsufixe=''
+        if os.path.exists(jidsufixetempinfo):
+            jidsufixe = utils.file_get_contents(jidsufixetempinfo)[:3]
+        else:
+            jidsufixe = utils.getRandomName(3)
+            utils.file_put_contents(jidsufixetempinfo, jidsufixe)
+        ressource = utils.name_jid()
         #########chatroom############
         self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
         # Deployment chatroom
         self.passwordconnexionmuc = Config.get('chatroom', 'password')
-        self.NickName = "%s_%s" % (platform.node(), utils.getRandomName(2))
+        self.NickName = "%s.%s" % (platform.node(), jidsufixe)
         ########chat#############
         # The jidagent must be the smallest value in the list of mac addresses
         self.chatserver = Config.get('chat', 'domain')
         # Smallest mac address
-        nameuser = utils.name_jid()
+        nameuser = self.NickName
 
         if Config.has_option("jid_01", "jidname"):
             self.jidagent = Config.get('jid_01', 'jidname')
@@ -371,7 +382,7 @@ class confParameter:
                                       Config.get(
                                           'chat',
                                           'domain'),
-                                      platform.node())
+                                      ressource)
         try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
