@@ -308,6 +308,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
                     jsonbase['otherinfos'].append(jsonautre)
                 deploysession.result = json.dumps(jsonbase, indent=3)
+                if 'infoslist' in jsonbase and \
+                    'otherinfos' in jsonbase and \
+                     len(jsonbase['otherinfos']) > 0 and \
+                      'plan' in jsonbase['otherinfos'][0] and \
+                        len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
+                         state == "DEPLOYMENT SUCCESS":
+                    state = "DEPLOYMENT PARTIAL SUCCESS"
                 deploysession.state = state
             session.commit()
             session.flush()
