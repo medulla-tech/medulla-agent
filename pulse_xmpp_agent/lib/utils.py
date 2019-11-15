@@ -1643,6 +1643,33 @@ def showlinelog(nbline = 200):
             obj = simplecommandstr("cat %s | tail -n %s"%(na, nbline))
     return obj['result']
 
+def is_findHostfromHostname(hostname):
+    try:
+        host = socket.gethostbyname(hostname)
+        return True
+    except:
+        pass
+    return False
+
+def is_findHostfromIp(ip):
+    try:
+        host = socket.gethostbyaddr(ip)
+        return True
+    except:
+        pass
+    return False
+
+def is_connectedServer(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5.0)
+    port=int(port)
+    try:
+        sock.connect((ip, port))
+        return True
+    except socket.error:
+        return False
+    finally:
+        sock.close()
 
 class Program:
     def __init__(self):
