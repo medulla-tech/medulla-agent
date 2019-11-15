@@ -1603,3 +1603,31 @@ def add_method(cls):
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
         return func # returning func means func can still be used normally
     return decorator
+
+def is_findHostfromHostname(hostname):
+    try:
+        host = socket.gethostbyname(hostname)
+        return True
+    except:
+        pass
+    return False
+
+def is_findHostfromIp(ip):
+    try:
+        host = socket.gethostbyaddr(ip)
+        return True
+    except:
+        pass
+    return False
+
+def is_connectedServer(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5.0)
+    port=int(port)
+    try:
+        sock.connect((ip, port))
+        return True
+    except socket.error:
+        return False
+    finally:
+        sock.close()
