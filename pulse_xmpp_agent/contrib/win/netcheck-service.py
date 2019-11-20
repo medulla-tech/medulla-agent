@@ -38,6 +38,7 @@ import psutil
 import sys
 import logging
 import logging.handlers
+import urllib2
 
 # to had event log, do not remove
 # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library
