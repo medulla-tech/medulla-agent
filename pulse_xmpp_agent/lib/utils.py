@@ -237,12 +237,16 @@ def file_get_contents(filename, use_include_path=0,
 
 
 def file_put_contents(filename, data):
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
     f = open(filename, 'w')
     f.write(data)
     f.close()
 
 
 def file_put_contents_w_a(filename, data, option = "w"):
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
     if option == "a" or  option == "w":
         f = open( filename, option )
         f.write(data)
