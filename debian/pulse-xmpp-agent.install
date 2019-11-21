@@ -15,5 +15,4 @@ usr/lib/systemd/system/pulse-package-watching.service
 etc/pulse-xmpp-agent/
 var/lib/pulse2/clients/config/relayconf.ini.in
 var/lib/pulse2/clients/config/package_watching.ini
-var/lib/pulse2/clients/config/manage_scheduler.ini
 etc/logrotate.d/pulse-xmpp-agent-relay
