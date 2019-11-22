@@ -170,7 +170,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                     btestfindcomputer=True
                                     break;
                                 else:
-                                    logger.debug("No computer found")
+                                    logger.debug("No computer found in glpi")
+                                    logger.debug("** Call inventory on %s" % msg['from'].bare)
+                                    callinventory(xmppobject, data['from'])
                             if btestfindcomputer:
                                 callInstallConfGuacamole(xmppobject,
                                                         jidrs,
