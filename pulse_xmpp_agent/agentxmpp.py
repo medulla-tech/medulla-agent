@@ -124,6 +124,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         # ###### creation object session ##########
         self.session = session(self.config.agenttype)
         ###########################################
+        ######CREATE MANAGE SCHEDULER##############
+        logging.debug("### CREATION MANAGER PLUGINSCHULING ##########")
+        self.manage_scheduler  = manage_scheduler(self)
+        logging.debug("##############################################")
         #definition path directory plugin
         namelibplugins = "pluginsmachine"
         if self.config.agenttype in ['relayserver']:
@@ -1420,8 +1424,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         client_handlertcp = threading.Thread(target=self.tcpserver)
         # run server tcpserver for kiosk
         client_handlertcp.start()
-        self.manage_scheduler  = manage_scheduler(self)
         
+
         ################### initialise charge relay server ###################
         if sys.platform.startswith('win'):
             logger.debug("____________________________________________")
