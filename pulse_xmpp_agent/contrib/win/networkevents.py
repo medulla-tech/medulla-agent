@@ -328,6 +328,7 @@ if __name__ == '__main__':
                            "var",
                            "log",
                            "networkenvent")
+
     program_dir = os.path.join(os.environ["ProgramFiles"],
                            "Pulse",
                            "bin")
@@ -345,6 +346,7 @@ if __name__ == '__main__':
     service_logger.info("***************************")
     iplist = GetIpAddrTable()
     service_logger.info("START NETWORKEVENT [PID %s] %s"%(PID_PROGRAM, iplist))
+
     def connected():
         print('Connected')
 
