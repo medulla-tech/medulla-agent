@@ -785,7 +785,7 @@ def read_conf_remote_registeryagent(xmppobject):
                 macadrs = t[0:2]+":"+t[2:4]+":"+t[4:6]+":"+t[6:8]+":"+t[8:10]+":"+t[10:12]
                 xmppobject.blacklisted_mac_addresses.append(macadrs)
             else:
-                logger.warning("the mac adress in blacklisted_mac_addresses parameter is bad format for value %s"%t )
+                logger.warning("the mac address in blacklisted_mac_addresses parameter is bad format for value %s"%t )
         if "00:00:00:00:00:00" not in xmppobject.blacklisted_mac_addresses:
             xmppobject.blacklisted_mac_addresses.insert(0,"00:00:00:00:00:00")
     xmppobject.blacklisted_mac_addresses=list(set(xmppobject.blacklisted_mac_addresses))
