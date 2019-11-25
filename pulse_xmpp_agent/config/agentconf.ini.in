@@ -66,16 +66,24 @@ domain = @@CHAT_DOMAIN@@
 
 [kiosk]
 # Parameters used for local communication between kiosk and agent
-am_local_port = 8765
-kiosk_local_port = 8766
+# am_local_port = 8765
+# kiosk_local_port = 8766
 
 # Define a specific jid for the agent. Optional
 # [jid_01]
 # jidname = machine1@localhost/pulse01a
 
-#[networkstatus]
-#netchanging =1
-#detectiontime = 300
+[networkstatus]
+# Check if the machine's network has changed
+# netchanging = 1
+# detectiontime = 300
 
-#[updateagent]
-#updating =1
+[updateagent]
+# Automatically update agent
+# updating = 1
+
+[substitute]
+# Registration and Inventory JIDs
+# Must be changed to substitute agent JIDs if used
+# registration = master_reg@pulse
+# inventory = master_inv@pulse

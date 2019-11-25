@@ -204,7 +204,7 @@ class Update_Remote_Agent:
         self.directory["version"] = file_get_contents( os.path.join(self.dir_agent_base,'agentversion')).replace("\n","").replace("\r","").strip()
         self.directory["version_agent"] = hashlib.md5(self.directory["version"]).hexdigest()
         listmd5.append(self.directory["version_agent"])
-        list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py']
+        list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
 
         #for fichiername in [ x for x in os.listdir(self.dir_agent_base) if x[-3:]== ".py"]:
         for fichiername in list_script_python_for_update:
@@ -213,7 +213,7 @@ class Update_Remote_Agent:
         for fichiername in [ x for x in os.listdir(os.path.join(self.dir_agent_base, 'lib')) if x[-3:]== ".py"]:
             self.directory["lib_agent"][fichiername]= hashlib.md5(file_get_contents( os.path.join(self.dir_agent_base,'lib',fichiername))).hexdigest()
             listmd5.append(self.directory["lib_agent"][fichiername])
-        for fichiername in [ x for x in os.listdir(os.path.join(self.dir_agent_base, 'script')) if x[-3:]== ".py"]:
+        for fichiername in [ x for x in os.listdir(os.path.join(self.dir_agent_base, 'script')) if x[-4:]== ".ps1"]:
             self.directory["script_agent"][fichiername]= hashlib.md5(file_get_contents( os.path.join(self.dir_agent_base,'script',fichiername))).hexdigest()
             listmd5.append(self.directory["script_agent"][fichiername])
         listmd5.sort()
@@ -245,7 +245,7 @@ def module_needed(agent_image, verbose = False):
     if not os.path.isfile("img_agent/__init__.py"):
         boolfichier = True
         open("img_agent/__init__.py", "w").close()
-    list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py']
+    list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
     for filename in list_script_python_for_update:
         try:
             importlib.import_module('img_agent.%s'%filename[:-3])
@@ -268,13 +268,6 @@ def module_needed(agent_image, verbose = False):
         except ImportError:
             if verbose:
                 print('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename))
-            return False
-    for filename in [ x[:-3] for x in os.listdir(os.path.join(agent_image, 'script')) if x.endswith(".py")]:
-        try:
-            importlib.import_module('img_agent.script.%s'%filename)
-        except ImportError:
-            if verbose:
-                print('Some python modules needed for running script/%s are missing. We will not switch to new agent' % (filename))
             return False
     return True
 
