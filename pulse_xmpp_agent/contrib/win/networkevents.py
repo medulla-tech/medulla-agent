@@ -93,6 +93,7 @@ SUBSCRIPTIONS = [SUBSCRIPTION_NETALIVE,
                  SUBSCRIPTION_REACH_NOQOC,
                  SUBSCRIPTION_REACH_NOQOC2 ]
 
+
 SENSGUID_EVENTCLASS_NETWORK = '{d5978620-5b9f-11d1-8dd2-00aa004abd5e}'
 SENSGUID_PUBLISHER = "{5fee1bd6-5b9b-11d1-8dd2-00aa004abd5e}"
 
@@ -104,6 +105,7 @@ def GetIpAddrTable():
 
         It can be used, for example, to find out the IP addresses
         assigned to all network interfaces on this computer.
+
 
         The value returned is a list of dictionaries, each with
         the following entries:
@@ -118,6 +120,7 @@ def GetIpAddrTable():
         Raises WindowsError if there's some a accessing the 
         system DLL.
 
+
         Note: The is basically a wrapper around GetIpAddrTable()
         from the Platform SDK. Read the documentation of that 
         function for more information.
@@ -127,6 +130,7 @@ def GetIpAddrTable():
     NULL = ""
 
     dwSize = DWORD(0)
+
 
     # First call to receive the correct dwSize back.
     #
@@ -200,6 +204,7 @@ class NetworkManager(DesignatedWrapPolicy):
 ##                        'ConnectionMadeNoQOCInfo',
 ##                        'ConnectionLost']
     _public_methods_ = ['ConnectionMadeNoQOCInfo']
+
     _reg_clsid_ = '{41B032DA-86B5-4907-A7F7-958E59333010}'
     _reg_progid_ = "WaptService.NetworkManager"
 
@@ -213,6 +218,7 @@ class NetworkManager(DesignatedWrapPolicy):
 ##    def on_timer(self):
 ##        thread_id = win32api.GetCurrentThreadId()
 ##        win32api.PostThreadMessage(self.main_thread_id, WM_QUIT, 0, 0);
+
 
     def ConnectionMade(self, *args):
         """Tell that the connection is up again."""
@@ -272,6 +278,7 @@ class NetworkManager(DesignatedWrapPolicy):
                                   0, None)
         win32file.WriteFile(fileHandle, message)
         win32file.CloseHandle(fileHandle)
+
 
     def run(self):
         global iplist
@@ -345,7 +352,6 @@ if __name__ == '__main__':
 
     def disconnected():
         print('Disconnected')
-
     manager = NetworkManager(connected, disconnected)
     process = Thread(target=manager.run)
     process.start()
