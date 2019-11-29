@@ -188,6 +188,7 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
+        #################substitute####################
         if Config.has_option('substitute', 'inventory'):
             self.sub_inventory = Config.get('substitute', 'inventory')
         else:
@@ -197,6 +198,12 @@ class confParameter:
             self.sub_registration = Config.get('substitute', 'registration')
         else:
             self.sub_registration = "master@pulse"
+
+        if Config.has_option('substitute', 'assessor'):
+            self.assessor = Config.get('substitute', 'assessor')
+        else:
+            self.assessor = "master@pulse"
+
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
@@ -364,10 +371,10 @@ class confParameter:
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
         ressource = utils.name_jid()
         #########chatroom############
-        self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
-        self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
-        # Deployment chatroom
-        self.passwordconnexionmuc = Config.get('chatroom', 'password')
+        #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
+        #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
+        ## Deployment chatroom
+        #self.passwordconnexionmuc = Config.get('chatroom', 'password')
         self.NickName = "%s.%s" % (platform.node(), jidsufixe)
         ########chat#############
         # The jidagent must be the smallest value in the list of mac addresses
@@ -414,20 +421,10 @@ class confParameter:
         if Config.has_option("configuration_server", "confpassword"):
             self.confpassword = Config.get(
                 'configuration_server', 'confpassword')
-        if Config.has_option("configuration_server", "confmuc_domain"):
-            try:
-                self.confjidchatroom = "%s@%s" % (Config.get(
-                    'configuration_server',
-                    'confmuc_chatroom'),
-                    Config.get(
-                    'configuration_server',
-                    'confmuc_domain'))
-            except BaseException:
-                self.confjidchatroom = "%s@%s" % ("configmaster", Config.get(
-                    'configuration_server', 'confmuc_domain'))
-        if Config.has_option("configuration_server", "confmuc_password"):
-            self.confpasswordmuc = Config.get(
-                'configuration_server', 'confmuc_password')
+        if Config.has_option("configuration_server", "keyAES32"):
+            self.keyAES32 = Config.get('configuration_server', 'keyAES32')
+        else:
+            self.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
 
         try:
             self.baseurlguacamole = Config.get('type', 'guacamole_baseurl')
@@ -440,13 +437,10 @@ class confParameter:
             self.debug = 'NOTSET'
         self.debug = self.debug.upper()
 
-        # use [chat) domain for first connection
-        # if not  [configuration_server] [confdomain]
-        # agent connection add [configuration_server] [confdomain]
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get('configuration_server', 'confdomain')
         else:
-            self.confdomain = self.chatserver
+            self.confdomain = "pulse"
 
         if self.debug == 'CRITICAL':
             self.levellog = 50

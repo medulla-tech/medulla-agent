@@ -2166,12 +2166,6 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                         break
         return plugindataseach
 
-    def muc_onlineMaster(self, presence):
-        if presence['muc']['nick'] == self.config.NickName:
-            return
-        if presence['muc']['nick'] == "MASTER":
-            self.update_plugin()
-
     def module_needed(self):
         finder = ModuleFinder()
         newdescriptorimage = Update_Remote_Agent(self.img_agent)
@@ -2192,8 +2186,6 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     logging.warning('The following python module needs to be installed first: %s'%(name))
                     return True
         return False
-
-
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     """
