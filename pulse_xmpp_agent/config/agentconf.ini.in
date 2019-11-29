@@ -32,7 +32,7 @@ confmuc_domain = @@AGENT_CONF_XMPP_MUC_DOMAIN@@
 confmuc_password = @@AGENT_CONF_XMPP_MUC_PASSWORD@@
 # XMPP MUC chatroom
 # confmuc_chatroom = configmaster
-# key AES Authautentification
+# AES pre shared key used between master and agents. Must be 32 characters
 keyAES32 = @@AGENT_AES_KEY_32_CHARS@@
 [plugin]
 # Section used by the plugins
