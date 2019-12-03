@@ -168,7 +168,7 @@ class functionsynchroxmpp:
     def information( xmppobject, data ):
         logger.debug("iq information")
         result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
-        for info_ask in data['listinformation']:
+        for info_ask in data['data']['listinformation']:
             try:
                 if info_ask == "keypub":
                     result['result']['informationresult'] [info_ask] = keypub()
