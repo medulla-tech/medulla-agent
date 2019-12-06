@@ -1,3 +1,4 @@
+* [BUGFIX]  Fixe error search last name user on windows
 pulse-xmpp-agent 2.0.0
 ======================
 * [FEATURE] Allow scp and rsync transfers in Pull mode
