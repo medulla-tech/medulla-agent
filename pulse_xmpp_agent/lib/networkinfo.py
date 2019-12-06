@@ -372,18 +372,22 @@ def powershellgetlastuser():
     if sys.platform.startswith('win'):
         script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "script", "getlastuser.ps1"))
         result = powerschellscriptps1(script)
-        if result['code'] == 0:
-            ret = []
-            line = [x.replace("\n", '') for x in result['result'].split("\r\n") if x.replace("\n", '') != ""]
-            if len(line) == 3:
-                descriptor = [x for x in line[0].split(' ') if x != ""]
-                informationuser = [x for x in line[2].split(' ') if x != ""]
-                if  descriptor[0].startswith('Last'):
-                    ret = informationuser[1].split('\\')
-                if  descriptor[1].startswith('Last'):
-                    ret = informationuser[0].split('\\')
-                return ret[1]
-    return ""
+        try:
+            if result['code'] == 0:
+                ret = []
+                line = [x.replace("\n", '') for x in result['result'].split("\r\n") if x.replace("\n", '') != ""]
+                if len(line) == 3:
+                    descriptor = [x for x in line[0].split(' ') if x != ""]
+                    informationuser = [x for x in line[2].split(' ') if x != ""]
+                    if  descriptor[0].startswith('Last'):
+                        ret = informationuser[1].split('\\')
+                    if  descriptor[1].startswith('Last'):
+                        ret = informationuser[0].split('\\')
+                    return ret[1]
+        except IndexError:
+            logger.warning("detection last name")
+            return "system"
+    return "system"
 
 
 def isMachineInDomain():
