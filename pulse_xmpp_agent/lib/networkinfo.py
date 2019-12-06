@@ -38,6 +38,8 @@ if sys.platform.startswith('win'):
     import pythoncom
 
 
+logger = logging.getLogger()
+
 class networkagentinfo:
     def __init__(self, sessionid, action='resultgetinfo', param=[]):
         self.sessionid = sessionid
@@ -346,7 +348,7 @@ def powershellfqdnwindowscommand():
         else:
             return ""
     except subprocess.CalledProcessError, e:
-        logging.getLogger().error("subproces powershellfqdnwindowscommand.output = " + e.output)
+        logger.error("subproces powershellfqdnwindowscommand.output = " + e.output)
     return ""
 
 def powershellfqdnwindowscommandbyuser(user):
@@ -365,7 +367,7 @@ def powershellfqdnwindowscommandbyuser(user):
         else:
             return ""
     except subprocess.CalledProcessError, e:
-        logging.getLogger().error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
+        logger.error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
     return ""
 
 def powershellgetlastuser():
@@ -399,7 +401,7 @@ def isMachineInDomain():
                                          shell=True)
         return bool(strtobool(output.strip()))
     except subprocess.CalledProcessError, e:
-        logging.getLogger().error("subproces isMachineInDomain.output = " + e.output)
+        logger.error("subproces isMachineInDomain.output = " + e.output)
     return False
 
 
