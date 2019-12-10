@@ -290,6 +290,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
             if deploysession:
                 if deploysession.result is None or \
+                    ("wol" in jsonresult and \
+                        jsonresult['wol']  == 1 ) or \
                     ("advanced" in jsonresult and \
                         'syncthing' in jsonresult['advanced'] and \
                             jsonresult['advanced']['syncthing'] == 1):
