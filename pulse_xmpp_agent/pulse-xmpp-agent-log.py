@@ -377,14 +377,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         """
             this function for creating log in base
         """
-        #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
-        #engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                    #self.config.dbuser,
-                                                    #self.config.dbpasswd,
-                                                    #self.config.dbhost,
-                                                    #self.config.dbname
-                                                        #))
-        #Session = sessionmaker(bind=engine)
         session = self.Session()
         log = Logs(text = text,
                    type = type,
@@ -396,6 +388,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                    module = module,
                    action = action,
                    touser = touser,
+                   date = datetime.datetime.now(),
                    fromuser = fromuser)
         session.add(log)
         session.commit()
