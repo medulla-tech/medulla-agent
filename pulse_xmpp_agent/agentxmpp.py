@@ -331,6 +331,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
         self.add_event_handler('changed_status', self.changed_status)
 
+        self.add_event_handler('presence_unavailable', self.presence_unavailable)
+        self.add_event_handler('presence_available', self.presence_available)
+
+        self.add_event_handler('presence_subscribe', self.presence_subscribe)
+        self.add_event_handler('presence_subscribed', self.presence_subscribed)
+
+        self.add_event_handler('presence_unsubscribe', self.presence_unsubscribe)
+        self.add_event_handler('presence_unsubscribed', self.presence_unsubscribed)
+
+        self.add_event_handler('changed_subscription', self.changed_subscription)
+
         self.RSA = MsgsignedRSA(self.config.agenttype)
         logger.info("VERSION AGENT IS %s"%self.version_agent())
         #### manage information extern for Agent RS(relayserver only dont working on windows.)
@@ -1322,6 +1333,33 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
+    def presence_subscribe(self, presense):
+        print "**********   presence_subscribe %s %s"%(presense['from'],presense['type'] )
+        pass
+    def presence_subscribed(self, presense):
+        print "**********   presence_subscribed %s %s"%(presense['from'],presense['type'] )
+        pass
+
+    def changed_subscription(self, presense):
+        print "**********   changed_subscription %s %s"%(presense['from'],presense['type'] )
+        pass
+
+    def presence_unavailable(self, presense):
+        print "**********   presence_unavailable %s %s"%(presense['from'],presense['type'] )
+        pass
+
+    def presence_available(self, presense):
+        print "**********   presence_available %s %s"%(presense['from'],presense['type'] )
+        pass
+
+    def presence_unsubscribe(self, presense):
+        print "**********   presence_unsubscribe %s %s"%(presense['from'],presense['type'] )
+        pass
+    def presence_unsubscribed(self, presense):
+        print "**********   presence_unsubscribed %s %s"%(presense['from'],presense['type'] )
+        pass
+
+
     def changed_status(self, message):
         #print "%s %s"%(message['from'], message['type'])
         if message['from'].user == 'master':
@@ -1341,8 +1379,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        logging.log(DEBUGPULSE,"subscribe xmppmaster")
-        self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
+        logger.info("subscribe to %s agent"%self.sub_subscribe)
+        #self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
+        self.send_presence ( pto = self.sub_subscribe, ptype = 'subscribe' )
         self.ipconnection = self.config.Server
 
         if  self.config.agenttype in ['relayserver']:

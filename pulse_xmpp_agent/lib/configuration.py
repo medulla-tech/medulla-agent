@@ -37,6 +37,8 @@ from agentconffile import directoryconffile
 from utils import ipfromdns
 from sleekxmpp import jid
 
+logger = logging.getLogger()
+
 def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
@@ -189,21 +191,29 @@ class confParameter:
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
         #################substitute####################
+        if Config.has_option('substitute', 'subscribeagent'):
+            self.sub_subscribe = Config.get('substitute', 'subscribeagent')
+        else:
+            self.sub_subscribe = ["master@pulse"]
+        logger.info('subcribe agent is %s'%self.sub_subscribe)
+
         if Config.has_option('substitute', 'inventory'):
             self.sub_inventory = Config.get('substitute', 'inventory')
         else:
             self.sub_inventory = "master@pulse"
+        logger.info('inventory agent is %s'%self.sub_inventory)
 
         if Config.has_option('substitute', 'registration'):
             self.sub_registration = Config.get('substitute', 'registration')
         else:
             self.sub_registration = "master@pulse"
+        logger.info('registration agent is %s'%self.sub_registration)
 
         if Config.has_option('substitute', 'assessor'):
             self.assessor = Config.get('substitute', 'assessor')
         else:
             self.assessor = "master@pulse"
-
+        logger.info('assessor agent is %s'%self.assessor)
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
@@ -217,24 +227,30 @@ class confParameter:
                 self.syncthing_on = True
         else:
             self.syncthing_on = True
+        logger.info('activation syncthing %s'%self.syncthing_on)
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
             self.moderelayserver = Config.get('type', 'moderelayserver')
+        logger.info('moderelayserver %s'%self.moderelayserver)
 
         if Config.has_option("updateagent", "updating"):
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
+        logger.info('updating %s'%self.updating)
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
             self.netchanging = 1
+        logger.info('netchanging %s'%self.netchanging)
+
         if Config.has_option("networkstatus", "detectiontime"):
             self.detectiontime = Config.getint('networkstatus', 'detectiontime')
         else:
             self.detectiontime = 300
+        logger.info('detection time for networkstatus%s'%self.detectiontime)
 
         self.parametersscriptconnection = {}
 
@@ -245,17 +261,17 @@ class confParameter:
                     self.concurrentdeployments = Config.getint('global',
                                                                'concurrentdeployments')
                 except Exception as e :
-                    logging.getLogger().warning(
+                    logger.warning(
                         "parameter [global]  concurrentdeployments :(%s)" %str(e))
-                    logging.getLogger().warning(
+                    logger.warning(
                         "parameter [global]  concurrentdeployments"\
                             " : parameter set to 10")
 
             if self.concurrentdeployments < 1:
-                logging.getLogger().warning(
+                logger.warning(
                         "parameter [global]  concurrentdeployments "\
                             " : parameter must be greater than or equal to 1")
-                logging.getLogger().warning(
+                logger.warning(
                         "parameter [global]  concurrentdeployments "\
                             ": parameter set to 10")
                 self.concurrentdeployments = 10
@@ -344,7 +360,7 @@ class confParameter:
                     for keyparameter, valueparameter in liststuple:
                         setattr(self, keyparameter, valueparameter)
                 else:
-                    logging.getLogger().warning(
+                    logger.warning(
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
                     #self.nameplugindir=""
