@@ -152,7 +152,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             try:
                 shutil.rmtree(self.img_agent)
             except Exception as e:
-                logging.error('aaadeleting directory %s : %s'%(self.img_agent,str(e)))
+                logging.error('Cannot delete the directory %s : %s'%(self.img_agent,str(e)))
 
         self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
