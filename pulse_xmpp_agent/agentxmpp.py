@@ -147,6 +147,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
                                       "img_agent")
+        if os.path.isdir(self.img_agent):
+            logging.warning('deleting directory %s'%self.img_agent)
+            try:
+                shutil.rmtree(self.img_agent)
+            except Exception as e:
+                logging.error('aaadeleting directory %s : %s'%(self.img_agent,str(e)))
+
         self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         self.descriptor_master = None
