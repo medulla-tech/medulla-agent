@@ -31,6 +31,7 @@ import time
 import socket
 import select
 import threading
+import shutil
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
