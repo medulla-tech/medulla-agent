@@ -409,7 +409,7 @@ def msg_log(msg_header, hostname, user, result):
     pass
 
 def displayData(objectxmpp, data):
-    if objectxmpp.showinfomaster:
+    if objectxmpp.showinfo:
         logger.info("--------------------------")
         if 'action' in data and data['action'] == 'assessor_agent':
             logger.info("** INFORMATION FROM CONFIGURATION AGENT FOR %s" %
@@ -510,12 +510,12 @@ def read_conf_ascessor(objectxmpp):
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
         if Config.has_section("parameters"):
-            if Config.has_option("parameters", "showinfomaster"):
-                objectxmpp.showinfomaster = Config.getboolean('parameters',
-                                                              'showinfomaster')
+            if Config.has_option("parameters", "showinfo"):
+                objectxmpp.showinfo = Config.getboolean('parameters',
+                                                              'showinfo')
             else:
                 #default configuration
-                objectxmpp.showinfomaster = False
+                objectxmpp.showinfo = False
                 logger.warning("showinfo default value is False")
 
             if Config.has_option("parameters", "keyAES32"):
