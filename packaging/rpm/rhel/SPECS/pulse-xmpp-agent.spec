@@ -64,6 +64,7 @@ systemctl daemon-reload
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent-substitute/
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
 
 #--------------------------------------------------------------------
 
