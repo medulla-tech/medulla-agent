@@ -329,6 +329,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("signalsessioneventrestart",
                                self.signalsessioneventrestart)
         self.add_event_handler("loginfotomaster", self.loginfotomaster)
+
         self.add_event_handler('changed_status', self.changed_status)
 
         self.add_event_handler('presence_unavailable', self.presence_unavailable)
@@ -1189,11 +1190,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" : getRandomName(6, "eventwin"),
                     "ret" : 0,
                     "base64" : False,
-                    'data' : { 'machine' : self.boundjid.jid ,
+                    'data' : { 'machine' : self.boundjid.jid,
                                'event'   : "CTRL_C_EVENT" }
                     }
-        self.send_message_to_master(msgevt)
+        self.send_message_subcripted_agent(msgevt)
         sys.exit(0)
+
+    def send_message_subcripted_agent(self , msg):
+        self.send_message(  mbody = json.dumps(msg),
+                            mto = self.sub_subscribe,
+                            mtype ='chat')
 
     def send_message_to_master(self , msg):
         self.send_message(  mbody = json.dumps(msg),
@@ -1334,54 +1340,56 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.manage_scheduler.process_on_event()
 
     def presence_subscribe(self, presense):
-        print "**********   presence_subscribe %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   presence_subscribe %s %s"%(presense['from'],presense['type'] ))
+
     def presence_subscribed(self, presense):
-        print "**********   presence_subscribed %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   presence_subscribed %s %s"%(presense['from'],presense['type'] ))
 
     def changed_subscription(self, presense):
-        print "**********   changed_subscription %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   changed_subscription %s %s"%(presense['from'],presense['type'] ))
 
     def presence_unavailable(self, presense):
-        print "**********   presence_unavailable %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   presence_unavailable %s %s"%(presense['from'],presense['type'] ))
 
     def presence_available(self, presense):
-        print "**********   presence_available %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   presence_available %s %s"%(presense['from'],presense['type'] ))
+        self.unsubscribe_agent()
 
     def presence_unsubscribe(self, presense):
-        print "**********   presence_unsubscribe %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   presence_unsubscribe %s %s"%(presense['from'],presense['type'] ))
+
     def presence_unsubscribed(self, presense):
-        print "**********   presence_unsubscribed %s %s"%(presense['from'],presense['type'] )
-        pass
+        logger.info("**********   presence_unsubscribed %s %s"%(presense['from'],presense['type'] ))
+        self.get_roster()
 
+    def changed_status(self, presense):
+        """
+            This function is a xmpp handler used to follow the signal
+            from ejabberd when the state of an affiliated agent changes.
+        """
+        frommsg = jid.JID(presense['from'])
+        if frommsg.bare == self.boundjid.bare:
+            logger.debug( "Message self calling not processed")
+            return
+        if frommsg.bare == self.sub_subscribe and presense['type'] == 'available':
+            self.update_plugin()
 
-    def changed_status(self, message):
-        #print "%s %s"%(message['from'], message['type'])
-        if message['from'].user == 'master':
-            if message['type'] == 'available':
-                self.update_plugin()
-        else:
-            if self.config.agenttype in ['machine']:
-                if self.boundjid.bare != message['from'].bare :
-                    try:
-                        if message['type'] == 'available':
-                            self.machinerelayserver.append(message['from'].bare)
-                        elif message['type'] == 'unavailable':
-                            self.machinerelayserver.remove(message['from'].bare)
-                    except Exception:
-                        pass
+    def unsubscribe_agent(self):
+        keyroster = str(self.boundjid.bare)
+        if keyroster in self.roster:
+            for t in self.roster[keyroster]:
+                if t == self.boundjid.bare or t in [self.sub_subscribe] : continue
+                logger.info("unsubscribe %s"%self.sub_subscribe)
+                self.send_presence ( pto = t, ptype = 'unsubscribe' )
+                #self.del_roster_item(t)
+                self.update_roster(t, subscription='remove')
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        logger.info("subscribe to %s agent"%self.sub_subscribe)
-        #self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
+        logger.info("subscribe to %s agent"%self.sub_subscribe.user)
         self.send_presence ( pto = self.sub_subscribe, ptype = 'subscribe' )
+        self.unsubscribe_agent()
         self.ipconnection = self.config.Server
 
         if  self.config.agenttype in ['relayserver']:
@@ -1981,7 +1989,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
                 if not dataobj.has_key('sessionid'):
                     dataobj['sessionid']= getRandomName(6, "xmpp")
-                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],dataobj['sessionid']))
+                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],
+                                                                                                         dataobj['sessionid']))
                 else:
                     if dataobj['sessionid'] in self.ban_deploy_sessionid_list:
                         ## abort deploy if msg session id is banny
@@ -2035,7 +2044,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.send_message(  mto=msg['from'],
                                             mbody=json.dumps(dataerreur),
                                             mtype='chat')
-                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
+                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],
+                                                                                                  sys.exc_info()[0]))
                     logger.error("\n%s"%(traceback.format_exc()))
 
                 except Exception as e:
@@ -2169,7 +2179,6 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         userlist = list(set([users[0]  for users in psutil.users()]))
         if len(userlist) > 0:
             lastusersession = userlist[0]
-
         if lastusersession != "":
             dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
 
@@ -2177,10 +2186,15 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         sys.path.append(self.config.pathplugins)
         for element in os.listdir(self.config.pathplugins):
             if element.endswith('.py') and element.startswith('plugin_'):
-                mod = __import__(element[:-3])
-                reload(mod)
-                module = __import__(element[:-3]).plugin
-                dataobj['plugin'][module['NAME']] = module['VERSION']
+                try:
+                    mod = __import__(element[:-3])
+                    reload(mod)
+                    module = __import__(element[:-3]).plugin
+                    dataobj['plugin'][module['NAME']] = module['VERSION']
+                except Exception as e:
+                    logger.error("error loading plugin %s : %s\verify plugin %s"%(element,
+                                                                                  str(e),
+                                                                                  element))
         #add list scheduler plugins
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
         #persistance info machine
