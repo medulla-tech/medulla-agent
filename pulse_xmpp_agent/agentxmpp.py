@@ -57,7 +57,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
-                        simplecommand, is_connectedServer
+                        simplecommand, is_connectedServer,  testagentconf, \
+                        Setdirectorytempinfo
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -197,6 +198,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
+        self.agentsiveo = self.config.jidagentsiveo
+
+        if not testagentconf(self.config.agenttype):
+            #supprime fichier figerprint
+            pathfingerprint = os.path.join( Setdirectorytempinfo(),
+                                            'fingerprintconf')
+            logger.error("configuration error del figerprint %s"%pathfingerprint)
+            if os.path.isfile(pathfingerprint):
+                os.remove(pathfingerprint)
+                logger.error("configuration error del figerprint %s"%pathfingerprint)
+        ## relayserver_agent  guacamole_baseurl server port
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
