@@ -19,6 +19,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
 # file  : pulse_xmpp_agent/connectionagent.py
 
 import shutil
@@ -82,6 +83,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.ippublic = searchippublic()
         if self.ippublic == "":
             self.ippublic == None
+
+        if not hasattr(self.config, 'assessor'):
+            self.assessor = self.agentmaster
+        else:
+            if isinstance(self.config.assessor, list) and\
+                len(self.config.assessor) > 0:
+                self.assessor = jid.JID(self.config.assessor[0])
+            else:
+                self.assessor = jid.JID(self.config.assessor)
+        if self.assessor.bare == "":
+            self.assessor = self.agentmaster
 
         #self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
@@ -236,13 +248,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data = json.loads(msg['body'])
         except:
             return
-        print self.config.assessor
-        print str(msg['from'].bare)
+
         if self.session == data['sessionid'] and \
             data['action'] == "resultconnectionconf":
             if data['ret'] == 0 :
                 fromagent = str(msg['from'].bare)
-                if fromagent == self.config.assessor :
+                if fromagent == self.assessor :
                     #resultconnectionconf
                     logging.info("Resultat data : %s"%json.dumps(data,
                                                                 indent=4,
@@ -378,7 +389,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         print "affiche object"
         print json.dumps(dataobj, indent = 4)
         #----------------------------------
-        self.send_message(mto = self.config.assessor,
+        self.send_message(mto = self.assessor,
                             mbody = json.dumps(msginfo),
                             mtype = 'chat')
 
