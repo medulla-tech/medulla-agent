@@ -2333,7 +2333,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                 newparametersconnect[1],
                                 newparametersconnect[0],
                                 newparametersconnect[3])
-        terminateserver(xmpp)
+    terminateserver(xmpp)
 
 
 def terminateserver(xmpp):
