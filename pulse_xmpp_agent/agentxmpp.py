@@ -198,6 +198,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
+
         self.agentsiveo = self.config.jidagentsiveo
 
         if not testagentconf(self.config.agenttype):
@@ -223,6 +224,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
+
 
         if not hasattr(self.config, 'sub_inventory'):
             self.sub_inventory = self.agentmaster

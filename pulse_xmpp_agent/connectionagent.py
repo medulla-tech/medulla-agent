@@ -37,7 +37,8 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo, organizationbymachine,\
     organizationbyuser, powershellgetlastuser
 from lib.configuration import  confParameter, changeconnection,\
-    alternativeclusterconnection, nextalternativeclusterconnection
+    alternativeclusterconnection, nextalternativeclusterconnection,\
+        substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
 from lib.utils import getRandomName,\
     DEBUGPULSE, searchippublic, getIpXmppInterface,\
@@ -74,7 +75,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         newjidconf[0] = getRandomName(10,"conf")
         self.HostNameSystem = platform.node()
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
-
+        self.agentmaster =jid.JID("master@pulse")
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
 
@@ -331,7 +332,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     try:
                         #else:
                             #logging.info("Start relay server
-
+                        if "substitute" in data:
+                            changeconfigurationsubtitute(conffilename(opts.typemachine),
+                                                         data['substitute'])
                         changeconnection(conffilename(opts.typemachine),
                                         data['data'][0][1],
                                         data['data'][0][0],
@@ -366,6 +369,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def muc_message(self, msg):
         pass
 
+    def infosubstitute(self):
+        return substitutelist().parameterssubtitute()
+
     def infos_machine_assessor(self):
         #envoi information
         dataobj=self.seachInfoMachine()
@@ -373,7 +379,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataobj['sessionid'] = self.session
         dataobj['base64'] = False
         dataobj['action'] = "assessor_agent"
-
+        dataobj['substitute'] = self.infosubstitute()
         msginfo={
             'action' : "assessor_agent",
             'base64': False,

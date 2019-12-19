@@ -376,7 +376,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         objectxmpp.domaindefault,
                         objectxmpp.defaultrelayserverbaseurlguacamole]
     try:
-        listars = XmppMasterDatabase().getRelayServerofclusterFromjidars(result[2], "static")
+        listars = XmppMasterDatabase().getRelayServerofclusterFromjidars(result[2],
+                                                                         "static")
         z = [listars[x] for x in listars]
         z1 = sorted(z, key=operator.itemgetter(4))
         arsjid = XmppMasterDatabase().getRelayServerfromjid("rspulse@pulse")
@@ -388,6 +389,12 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                     'syncthing' : objectxmpp.announce_server,
                     'ret': 0
                     }
+        if "substitute" in data and \
+            "conflist" in data["substitute"] and \
+                len(data["substitute"]["conflist"]) > 0:
+            reponse["substitute"] =  XmppMasterDatabase().substituteinfo(data["substitute"],
+                                                                         z1[0][2])
+
         objectxmpp.send_message(mto=msg['from'],
                             mbody=json.dumps(reponse),
                             mtype='chat')
