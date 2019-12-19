@@ -25,18 +25,12 @@ import logging
 import sleekxmpp
 import platform
 import base64
-import time
 import json
-import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser, powershellgetlastuser
-from lib.configuration import  confParameter, changeconnection, alternativeclusterconnection, nextalternativeclusterconnection
-from lib.agentconffile import conffilename
-from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, check_exist_ip_port, ipfromdns, isWinUserAdmin, isMacOsUserAdmin
+from lib.configuration import  confParameter
+from lib.utils import getRandomName, DEBUGPULSE, searchippublic, getIpXmppInterface, subnetnetwork, isWinUserAdmin, isMacOsUserAdmin
 from optparse import OptionParser
-
-from threading import Timer
-from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)

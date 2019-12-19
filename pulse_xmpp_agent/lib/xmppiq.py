@@ -23,10 +23,16 @@
 # file pulse_xmpp_agent/lib/xmppiq.py
 #
 
-import os, sys
+import os, sys, platform
 import json
 import logging
-from utils import shellcommandtimeout, file_put_contents, file_get_contents, decode_strconsole, encode_strconsole
+from utils import   shellcommandtimeout, \
+                    file_put_contents, \
+                    file_get_contents, \
+                    decode_strconsole, \
+                    encode_strconsole, \
+                    keypub, \
+                    showlinelog
 from  agentconffile import  directoryconffile
 from shutil import copyfile
 import datetime
@@ -34,6 +40,7 @@ import zlib
 import re
 import base64
 import traceback
+from lib.managepackage import managepackage
 from utils_psutil import sensors_battery,\
                          winservices,\
                          clone_ps_aux,\
@@ -45,34 +52,40 @@ from utils_psutil import sensors_battery,\
                          netstat,\
                          cputimes
 from lib.update_remote_agent import agentinfoversion
+if sys.platform.startswith('win'):
+    import win32net
+    import win32security
+    import win32serviceutil
 
 DEBUGPULSE = 25
-
+logger = logging.getLogger()
 def callXmppFunctionIq(functionname,  *args, **kwargs):
-    logging.getLogger().debug("**call function %s %s %s"%(functionname, args, kwargs))
+    logger.debug("**call function %s %s %s"%(functionname, args, kwargs))
     return getattr(functionsynchroxmpp,functionname)(*args, **kwargs)
 
 def dispach_iq_command(xmppobject, jsonin):
     """
-        this function doit retirner un json string
+        this function doit retourner un json string
     """
     data = json.loads(jsonin)
 
     # functions synch list
-    #listactioncommand = ["xmppbrowsing", 
-                         #"test", 
-                         #"remotefile", 
-                         #"remotecommandshell", 
-                         #"listremotefileedit", 
+    #listactioncommand = ["xmppbrowsing",
+                         #"test",
+                         #"remotefile",
+                         #"remotecommandshell",
+                         #"listremotefileedit",
                          #"remotefileeditaction",
                          #"remotexmppmonitoring"]
-    listactioncommand = ["xmppbrowsing", 
-                         "test", 
-                         "remotefile", 
-                         "remotecommandshell", 
-                         "listremotefileedit", 
+    listactioncommand = ["xmppbrowsing",
+                         "test",
+                         "remotefile",
+                         "remotecommandshell",
+                         "listremotefileedit",
                          "remotefileeditaction",
-                         "remotexmppmonitoring"]
+                         "remotexmppmonitoring",
+                         "keypub",
+                         "information"]
 
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
@@ -87,18 +100,21 @@ def dispach_iq_command(xmppobject, jsonin):
 
 class functionsynchroxmpp:
     """
-        this function must return json string 
+        this function must return json string
     """
     @staticmethod
     def xmppbrowsing(xmppobject , data  ):
+        logger.debug("iq xmppbrowsing")
         return json.dumps(data)
 
     @staticmethod
     def test( xmppobject, data):
+        logger.debug("iq test")
         return json.dumps(data)
 
     @staticmethod
     def remotefilesimple( xmppobject, data ):
+        logger.debug("iq remotefilesimple")
         datapath = data['data']
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
@@ -108,6 +124,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefile( xmppobject, data ):
+        logger.debug("iq remotefile")
         datapath = data['data']
         if isinstance(datapath, basestring):
             datapath = str(data['data'])
@@ -116,8 +133,11 @@ class functionsynchroxmpp:
             try:
                 datastr = json.dumps(data)
             except Exception as e:
-                logging.getLogger().error("synchro xmpp function remotefile : %s"%str(e))
-                return ""
+                try:
+                    datastr = json.dumps(data, encoding="latin1")
+                except Exception as e:
+                    logging.getLogger().error("synchro xmpp function remotefile : %s"%str(e))
+                    return ""
         else:
             return ""
         try:
@@ -128,19 +148,80 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotecommandshell( xmppobject, data ):
+        logger.debug("iq remotecommandshell")
         result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
         re = [ decode_strconsole(x).strip(os.linesep)+"\n" for x in result['result'] ]
         result['result'] = re
         return json.dumps(result)
 
     @staticmethod
+    def keypub( xmppobject, data ):
+        logger.debug("iq keypub")
+        # verify relayserver
+        try:
+            result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror' : 0 }
+        except:
+            result =  { "result" : { "key" : "" }, "error" : True , 'numerror' : 2 }
+        return json.dumps(result)
+
+    @staticmethod
+    def information( xmppobject, data ):
+        logger.debug("iq information")
+        result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
+        for info_ask in data['data']['listinformation']:
+            try:
+                if info_ask == "keypub":
+                    result['result']['informationresult'] [info_ask] = keypub()
+                if info_ask == "os":
+                    result['result']['informationresult'] [info_ask] = sys.platform
+                if info_ask == "os_version":
+                    result['result']['informationresult'] [info_ask] = platform.platform()
+                if info_ask == "folders_packages":
+                    result['result']['informationresult'] [info_ask] = managepackage.packagedir()
+                if info_ask == "invent_xmpp":
+                    result['result']['informationresult'] [info_ask] = xmppobject.seachInfoMachine()
+                if info_ask == "battery":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(sensors_battery())
+                if info_ask == "winservices":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(winservices())
+                if info_ask == "clone_ps_aux":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(clone_ps_aux())
+                if info_ask == "disk_usage":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(disk_usage())
+                if info_ask == "sensors_fans":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(sensors_fans())
+                if info_ask == "mmemory":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(mmemory())
+                if info_ask == "ifconfig":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(ifconfig())
+                if info_ask == "cpu_num":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(cpu_num())
+                if info_ask == "netstat":
+                    result['result']['informationresult'] [info_ask] = decode_strconsole(netstat())
+                if info_ask == "profiluserpulse":
+                    profilname='pulseuser'
+                    if sys.platform.startswith('win'):
+                        # check if pulse account exists
+                        try:
+                            win32net.NetUserGetInfo('','pulseuser', 0)
+                            profilname='pulseuser'
+                        except Exception:
+                            profilname='pulse'
+                    result['result']['informationresult'] [info_ask] = profilname
+            except:
+                result['result']['informationresult'] [info_ask] = ""
+        return json.dumps(result)
+
+    @staticmethod
     def listremotefileedit( xmppobject, data ):
+        logger.debug("iq listremotefileedit")
         listfileedit = [ x for x in os.listdir(directoryconffile()) if x.endswith(".ini")]
         data['data']={"result" : listfileedit}
         return json.dumps(data)
 
     @staticmethod
     def remotexmppmonitoring( xmppobject, data ):
+        logger.debug("iq remotexmppmonitoring")
         result = ""
         if data['data'] == "battery":
             result = decode_strconsole(sensors_battery())
@@ -179,6 +260,10 @@ class functionsynchroxmpp:
                 func = getattr(sys.modules[__name__], data['subaction'])
                 result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
                 return result
+            elif data['subaction'] == "litlog":
+                func = getattr(sys.modules[__name__], "showlinelog")
+                result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
+                return result
             else:
                 return ""
         except Exception as e:
@@ -188,11 +273,12 @@ class functionsynchroxmpp:
 
     @staticmethod
     def remotefileeditaction( xmppobject, data ):
+        logger.debug("iq remotefileeditaction")
         if 'data' in data and 'action' in data['data']:
             if data['data']['action'] == 'loadfile':
                 if 'file' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
-                    if os.path.isfile(filename): 
+                    if os.path.isfile(filename):
                         filedata = file_get_contents(filename)
                         data['data'] = { "result" : filedata, "error" : False , 'numerror' : 0  }
                         return json.dumps(data)

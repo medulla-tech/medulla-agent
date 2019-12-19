@@ -161,6 +161,9 @@ class confParameter:
         if "kiosk" in self.plugins_list:
             self.readConfkiosk(Config)
 
+        if "msc" in self.plugins_list:
+            self.readConfmsc(Config)
+
         if self.debug == 'CRITICAL':
             self.levellog = 50
         elif self.debug == 'ERROR':
@@ -198,6 +201,30 @@ class confParameter:
         self.kiosk_dbpasswd = "mmc"
         if confiobject.has_option("kioskdatabase", "kiosk_dbpasswd"):
             self.kiosk_dbpasswd = confiobject.get('kioskdatabase', 'kiosk_dbpasswd')
+
+    def readConfmsc(self, confiobject):
+        self.msc_dbpooltimeout = 30
+        if confiobject.has_option("mscdatabase", "msc_dbpooltimeout"):
+            self.msc_dbpooltimeout = confiobject.getint('mscdatabase', 'msc_dbpooltimeout')
+        self.msc_dbhost = "localhost"
+        if confiobject.has_option("mscdatabase", "msc_dbhost"):
+            self.msc_dbhost = confiobject.get('mscdatabase', 'msc_dbhost')
+
+        self.msc_dbport = "3306"
+        if confiobject.has_option("mscdatabase", "msc_dbport"):
+            self.msc_dbport = confiobject.get('mscdatabase', 'msc_dbport')
+
+        self.msc_dbname = "msc"
+        if confiobject.has_option("mscdatabase", "msc_dbname"):
+            self.msc_dbname = confiobject.get('mscdatabase', 'msc_dbname')
+
+        self.msc_dbuser = "mmc"
+        if confiobject.has_option("mscdatabase", "msc_dbuser"):
+            self.msc_dbuser = confiobject.get('mscdatabase', 'msc_dbuser')
+
+        self.msc_dbpasswd = "mmc"
+        if confiobject.has_option("mscdatabase", "msc_dbpasswd"):
+            self.msc_dbpasswd = confiobject.get('mscdatabase', 'msc_dbpasswd')
 
     def readConfxmpp(self, confiobject):
         self.xmpp_dbhost = "localhost"
@@ -260,8 +287,8 @@ class confParameter:
 
 
         filter = "state="
-        if confiobject.has_option("main", "filter_on"):
-            filter = confiobject.get("main", "filter_on")
+        if confiobject.has_option("glpi", "filter_on"):
+            filter = confiobject.get("glpi", "filter_on")
         self.filter_on = self._parse_filter_on(filter)
 
         self.orange = 10

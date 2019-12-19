@@ -44,6 +44,7 @@ import time
 from datetime import datetime
 import imp
 from functools import wraps # This convenience func preserves name and docstring
+import uuid
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
@@ -359,6 +360,21 @@ def getRandomName(nb, pref=""):
         d = d + a[random.randint(0, 35)]
     return d
 
+def name_random(nb, pref=""):
+    a = "abcdefghijklnmopqrstuvwxyz0123456789"
+    d = pref
+    for t in range(nb):
+        d = d+a[random.randint(0, 35)]
+    return d
+
+def name_randomplus(nb, pref=""):
+    a = "abcdefghijklnmopqrstuvwxyz0123456789"
+    q = str(uuid.uuid4())
+    q = pref + q.replace("-","")
+    for t in range(nb):
+        d = a[random.randint(0, 35)]
+    res = q + d
+    return res[:nb]
 
 def md5(fname):
     hash = hashlib.md5()
@@ -1572,7 +1588,7 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
         sessionid = action.strip().replace(" ", "")
     return { 'action' : action,
              'data' : data,
-             'ret' : 0, 
+             'ret' : 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
 
@@ -1580,10 +1596,38 @@ def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = No
 def add_method(cls):
     """ decorateur a utiliser pour ajouter une methode a un object """
     def decorator(func):
-        @wraps(func) 
-        def wrapper(self, *args, **kwargs): 
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
             return func(*args, **kwargs)
         setattr(cls, func.__name__, wrapper)
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
         return func # returning func means func can still be used normally
     return decorator
+
+def is_findHostfromHostname(hostname):
+    try:
+        host = socket.gethostbyname(hostname)
+        return True
+    except:
+        pass
+    return False
+
+def is_findHostfromIp(ip):
+    try:
+        host = socket.gethostbyaddr(ip)
+        return True
+    except:
+        pass
+    return False
+
+def is_connectedServer(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5.0)
+    port=int(port)
+    try:
+        sock.connect((ip, port))
+        return True
+    except socket.error:
+        return False
+    finally:
+        sock.close()

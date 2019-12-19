@@ -27,6 +27,7 @@ With Pulse XMPP Agent you are be able to:
 # Installation
 
 The complete installation procedure can be found at <https://github.com/pulse-project/pulse2/blob/xmppmaster/INSTALL>.
+
 If you find some errors, please feel free to contribute.
 
 Thanks

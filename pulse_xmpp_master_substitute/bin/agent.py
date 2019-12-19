@@ -22,16 +22,12 @@
 import sys
 import os
 import logging
-import platform
 import base64
 import json
 import time
-import threading
 import sleekxmpp
-from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
-import subprocess
 from lib.configuration import confParameter
 from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
@@ -175,12 +171,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def restartAgent(self, to):
         self.send_message(mto=to,
                           mbody=json.dumps({'action': 'restartbot',
-                                        'data': ''}),
-                          mtype='chat')
-
-    def restartAgent(self, to):
-        self.send_message(mto=to,
-                          mbody=json.dumps({'action': 'restartbotrandom',
                                         'data': ''}),
                           mtype='chat')
 

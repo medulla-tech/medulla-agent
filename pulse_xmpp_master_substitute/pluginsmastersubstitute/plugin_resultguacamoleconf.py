@@ -35,10 +35,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
+    if "msg" in data:
+        logging.getLogger().warning("%s : %s"%(data['msg'], msg['from']))
+        return
     try:
         XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], data['connection'])
     except Exception, e:
         if 'msg' in data:
             logger.error("recv error from %s : %s\n"%(msg['from'],data['msg']))
         logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))
-

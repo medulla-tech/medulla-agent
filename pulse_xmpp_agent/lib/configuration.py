@@ -19,7 +19,9 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
+# file : lib/configuration.py
+#
 import netifaces
 import json
 import sys
@@ -33,7 +35,7 @@ from agentconffile import conffilename
 from sleekxmpp import jid
 from agentconffile import directoryconffile
 from utils import ipfromdns
-
+from sleekxmpp import jid
 
 def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
@@ -58,7 +60,7 @@ def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
         Config.write(configfile)
 
 def alternativeclusterconnection(conffile, data):
-    # todo del of list the ars without ip 
+    # todo del of list the ars without ip
     #for arsdataconection in data:
         #if ipfromdns(str(arsdataconection[0])) != "" and check_exist_ip_port(ipfromdns(str(arsdataconection[0])), str(arsdataconection[1])):
             #print ipfromdns(str(arsdataconection[0]))
@@ -75,7 +77,8 @@ def alternativeclusterconnection(conffile, data):
                 configfile.write("[%s]%s"%(str(arsdataconection[2]),os.linesep))
                 configfile.write("port = %s%s"%(str(arsdataconection[1]),os.linesep))
                 configfile.write("server = %s%s"%(ipfromdns(str(str(arsdataconection[0]))),os.linesep))
-                configfile.write("guacamole_baseurl = %s%s"%(str(arsdataconection[3]),os.linesep))
+                configfile.write("guacamole_baseurl = %s%s"%(str(arsdataconection[3]),
+                                                             os.linesep))
         else:
             if os.path.isfile(conffile):
                 os.unlink(conffile)
@@ -194,11 +197,19 @@ class confParameter:
             self.sub_registration = Config.get('substitute', 'registration')
         else:
             self.sub_registration = "master@pulse"
-
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
             self.agenttype = "machine"
+
+        # syncthing true or fale
+        if self.agenttype != "relayserver":
+            if Config.has_option('syncthing', 'activation'):
+                self.syncthing_on = Config.getboolean('syncthing', 'activation')
+            else:
+                self.syncthing_on = True
+        else:
+            self.syncthing_on = True
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
@@ -208,7 +219,7 @@ class confParameter:
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
-            
+
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
@@ -224,18 +235,22 @@ class confParameter:
             self.concurrentdeployments = 10
             if Config.has_option("global", "concurrentdeployments"):
                 try:
-                    self.concurrentdeployments = Config.getint('global', 'concurrentdeployments')
+                    self.concurrentdeployments = Config.getint('global',
+                                                               'concurrentdeployments')
                 except Exception as e :
                     logging.getLogger().warning(
                         "parameter [global]  concurrentdeployments :(%s)" %str(e))
                     logging.getLogger().warning(
-                        "parameter [global]  concurrentdeployments : parameter set to 10")
+                        "parameter [global]  concurrentdeployments"\
+                            " : parameter set to 10")
 
             if self.concurrentdeployments < 1:
                 logging.getLogger().warning(
-                        "parameter [global]  concurrentdeployments  : parameter must be greater than or equal to 1")
+                        "parameter [global]  concurrentdeployments "\
+                            " : parameter must be greater than or equal to 1")
                 logging.getLogger().warning(
-                        "parameter [global]  concurrentdeployments : parameter set to 10")
+                        "parameter [global]  concurrentdeployments "\
+                            ": parameter set to 10")
                 self.concurrentdeployments = 10
 
             if Config.has_option("connection", "portARSscript"):
@@ -259,6 +274,12 @@ class confParameter:
         else:
             self.defaultdir     = os.path.join("/", "tmp")
             self.rootfilesystem = os.path.join("/", "tmp")
+
+        self.pushsubstitutionmethod = "pullrsync"
+        if Config.has_option("deploy", "pushsubstitutionmethod"):
+            self.pushsubstitutionmethod = Config.get('deploy',
+                                                     'pushsubstitutionmethod')
+
         if Config.has_option("browserfile", "defaultdir"):
             self.defaultdir = Config.get('browserfile', 'defaultdir')
         if Config.has_option("browserfile", "rootfilesystem"):
@@ -271,9 +292,11 @@ class confParameter:
             self.defaultdir = self.defaultdir[:-1]
         self.listexclude = ""
         if Config.has_option("browserfile", "listexclude"):
-        # listexclude=/usr,/etc,/var,/lib,/boot,/run,/proc,/lib64,/bin,/sbin,/dev,/lost+found,/media,/mnt,/opt,/root,/srv,/sys,/vagrant
+        # listexclude=/usr,/etc,/var,/lib,/boot,/run,/proc,/lib64,
+        # /bin,/sbin,/dev,/lost+found,/media,/mnt,/opt,/root,/srv,/sys,/vagrant
             self.listexclude = Config.get('browserfile', 'listexclude')
-        self.excludelist = [ x.strip() for x in self.listexclude.split(",") if x.strip() != "" ]
+        self.excludelist = [ x.strip() for x in self.listexclude.split(",") \
+            if x.strip() != "" ]
         #######end configuration browserfile#######
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
@@ -289,7 +312,8 @@ class confParameter:
         if self.agenttype == "relayserver":
             if Config.has_option("type", "request_type"):
                 self.request_type = Config.get('type', 'request_type')
-                if self.request_type.lower() == "public" and Config.has_option("type", "public_ip"):
+                if self.request_type.lower() == "public" and Config.has_option("type",
+                                                                               "public_ip"):
                     self.public_ip_relayserver = ipfromdns(
                         Config.get('type', 'public_ip'))
                     self.packageserver["public_ip"] = self.public_ip_relayserver
@@ -316,7 +340,7 @@ class confParameter:
                     logging.getLogger().warning(
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
-                    self.nameplugindir=""
+                    #self.nameplugindir=""
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
         except BaseException:
@@ -327,18 +351,29 @@ class confParameter:
                 self.diragentbase = Config.get('global', 'diragentbase')
             else:
                 self.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
-                
+
+
+        jidsufixetempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         "INFOSTMP",
+                                         "JIDSUFFIXE")
+        jidsufixe=''
+        if os.path.exists(jidsufixetempinfo):
+            jidsufixe = utils.file_get_contents(jidsufixetempinfo)[:3]
+        else:
+            jidsufixe = utils.getRandomName(3)
+            utils.file_put_contents(jidsufixetempinfo, jidsufixe)
+        ressource = utils.name_jid()
         #########chatroom############
         self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
         # Deployment chatroom
         self.passwordconnexionmuc = Config.get('chatroom', 'password')
-        self.NickName = "%s_%s" % (platform.node(), utils.getRandomName(2))
+        self.NickName = "%s.%s" % (platform.node(), jidsufixe)
         ########chat#############
         # The jidagent must be the smallest value in the list of mac addresses
         self.chatserver = Config.get('chat', 'domain')
         # Smallest mac address
-        nameuser = utils.name_jid()
+        nameuser = self.NickName
 
         if Config.has_option("jid_01", "jidname"):
             self.jidagent = Config.get('jid_01', 'jidname')
@@ -347,13 +382,17 @@ class confParameter:
                                       Config.get(
                                           'chat',
                                           'domain'),
-                                      platform.node())
+                                      ressource)
         try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
             if sys.platform.startswith('win'):
                 self.logfile = os.path.join(
-                    os.environ["ProgramFiles"], "Pulse", "var", "log", "xmpp-agent.log")
+                    os.environ["ProgramFiles"],
+                                "Pulse",
+                                "var",
+                                "log",
+                                "xmpp-agent.log")
             elif sys.platform.startswith('darwin'):
                 self.logfile = os.path.join(
                     "/",
@@ -401,7 +440,8 @@ class confParameter:
             self.debug = 'NOTSET'
         self.debug = self.debug.upper()
 
-        # use [chat) domain for first connection if not  [configuration_server] [confdomain]
+        # use [chat) domain for first connection
+        # if not  [configuration_server] [confdomain]
         # agent connection add [configuration_server] [confdomain]
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get('configuration_server', 'confdomain')
@@ -431,11 +471,10 @@ class confParameter:
             self.classutil = "both"
 
         try:
-            self.jidagentsiveo = "%s@%s" % (Config.get(
-                'global', 'allow_order'), Config.get('chat', 'domain'))
+            jidagentsiveo = Config.get('global', 'allow_order')
+            self.jidagentsiveo = [jid.JID(x.strip()).user for x in jidagentsiveo.split(",")]
         except BaseException:
-            self.jidagentsiveo = "%s@%s" % (
-                "agentsiveo", Config.get('chat', 'domain'))
+            self.jidagentsiveo = ["agentsiveo"]
 
         try:
             self.ordreallagent = Config.getboolean('global', 'inter_agent')
@@ -448,12 +487,14 @@ class confParameter:
             self.relayserverdeploy = jid.JID(self.agentcommand)
             self.jidchatroomcommand = str(self.agentcommand)
 
-        # we make sure that the temp for the inventories is greater than or equal to 1 hour.
-        # if the time for the inventories is 0, it is left at 0. 
+        # we make sure that the temp for the
+        # inventories is greater than or equal to 1 hour.
+        # if the time for the inventories is 0, it is left at 0.
         # this deactive cycle inventory
         self.inventory_interval = 0
         if Config.has_option("inventory", "inventory_interval"):
-            self.inventory_interval = Config.getint("inventory", "inventory_interval")
+            self.inventory_interval = Config.getint("inventory",
+                                                    "inventory_interval")
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
 
@@ -513,13 +554,16 @@ class confParameter:
         return ip_addresses
 
     def mac_for_ip(self, ip):
-        'Returns a list of MACs for interfaces that have given IP, returns None if not found'
+        """
+        Returns a list of MACs for interfaces that have given IP,
+        returns None if not found"""
         for i in netifaces.interfaces():
             addrs = netifaces.ifaddresses(i)
             try:
                 if_mac = addrs[netifaces.AF_LINK][0]['addr']
                 if_ip = addrs[netifaces.AF_INET][0]['addr']
-            except BaseException:  # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
+            except BaseException:
+                # IndexError, KeyError: #ignore ifaces that dont have MAC or IP
                 if_mac = if_ip = None
             if if_ip == ip:
                 return if_mac

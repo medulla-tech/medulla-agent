@@ -41,7 +41,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
+plugin = {"VERSION" : "1.1", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -53,8 +53,11 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
     if compteurcallplugin == 0:
         read_conf_load_plugin_list_version(objectxmpp)
-        objectxmpp.schedule('updatelistplugin', 900, objectxmpp.loadPluginList, repeat=True)
-
+        objectxmpp.schedule('updatelistplugin',
+                            900,
+                            objectxmpp.loadPluginList,
+                            repeat=True)
+    logger.debug("%s"%hasattr(objectxmpp, "loadPluginList"))
     objectxmpp.loadPluginList()
 
 def read_conf_load_plugin_list_version(objectxmpp):
@@ -87,7 +90,7 @@ def read_conf_load_plugin_list_version(objectxmpp):
     #objectxmpp.restartAgent = types.MethodType(restartAgent, objectxmpp)
     objectxmpp.remoteinstallPlugin = types.MethodType(remoteinstallPlugin, objectxmpp)
     objectxmpp.deployPlugin = types.MethodType(deployPlugin, objectxmpp)
-    objectxmpp.pulgin_loadpluginlistversion = types.MethodType(pulgin_loadpluginlistversion, objectxmpp)
+    objectxmpp.plugin_loadpluginlistversion = types.MethodType(plugin_loadpluginlistversion, objectxmpp)
 
 def loadPluginList(self):
     """ charges les informations des plugins 'nom plugins et version' pour
@@ -169,7 +172,7 @@ def deployPlugin(self, jid, plugin):
         except:
             logger.error("\n%s"%(traceback.format_exc()))
 
-def pulgin_loadpluginlistversion(self, msg, data):
+def plugin_loadpluginlistversion(self, msg, data):
     #function de rappel dans boucle de message.
     #cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
     # Show plugins information logs
@@ -188,11 +191,13 @@ def pulgin_loadpluginlistversion(self, msg, data):
             if data['agenttype'] == "machine" and self.plugintype[k] == 'relayserver':
                 deploy = False
         if deploy:
-            logger.info("update %s version %s to version %s on Agent " % (k,
-                                                                    data['plugin'][k],
-                                                                    v,
-                                                                    msg['from']))
+            try:
+                logger.info("update %s version %s to version %s on Agent " % (k,
+                                                                              data['plugin'][k],
+                                                                              v))
+            except KeyError:
+                logger.info("install %s version %s to version on Agent " % (k,v))
             self.file_deploy_plugin.append(
                 {'dest': msg['from'], 'plugin': k, 'type': 'deployPlugin'})
-
             #return True
+    self.remoteinstallPlugin()

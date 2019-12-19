@@ -4,7 +4,7 @@ log_level = INFO
 # Allow inter-agent messages
 # inter_agent = False
 # Allow direct orders from specified jid
-# allow_order = agentsiveo
+# allow_order = list user autorized
 # Log file if used with -d (deamonize)
 # logfile = /var/log/pulse/xmpp-agent.log
 # Area of use of the agent: public (nomad), private (fixed), both
@@ -41,9 +41,9 @@ pluginlist = inventory, manage_scheduler
 # The server and port below are defined automatically at startup
 # They are the parameters that allow the agent to connect to the XMPP server
 # XMPP server
-server = 192.168.56.2
+server =
 # XMPP port
-port = 5222
+port =
 # XMPP password
 password = @@XMPP_PASSWORD@@
 # Port for interacting with the machine agent
@@ -66,8 +66,8 @@ domain = @@CHAT_DOMAIN@@
 
 [kiosk]
 # Parameters used for local communication between kiosk and agent
-# am_local_port = 8765
-# kiosk_local_port = 8766
+am_local_port = 8765
+kiosk_local_port = 8766
 
 # Define a specific jid for the agent. Optional
 # [jid_01]
@@ -85,5 +85,9 @@ domain = @@CHAT_DOMAIN@@
 [substitute]
 # Registration and Inventory JIDs
 # Must be changed to substitute agent JIDs if used
-# registration = master_reg@pulse
-# inventory = master_inv@pulse
+registration = master_reg@pulse
+inventory = master_inv@pulse
+
+[syncthing]
+# disable the use of syncthing on the machine agent.
+activation = 1

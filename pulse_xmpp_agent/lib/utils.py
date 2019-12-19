@@ -56,7 +56,9 @@ if sys.platform.startswith('win'):
     #import win32net
     #import win32netcon
     #import win32api
-
+    import win32security
+    import ntsecuritycon
+    import win32net
 
 def Setdirectorytempinfo():
     """
@@ -235,12 +237,16 @@ def file_get_contents(filename, use_include_path=0,
 
 
 def file_put_contents(filename, data):
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
     f = open(filename, 'w')
     f.write(data)
     f.close()
 
 
 def file_put_contents_w_a(filename, data, option = "w"):
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
     if option == "a" or  option == "w":
         f = open( filename, option )
         f.write(data)
@@ -1588,10 +1594,14 @@ def keypub():
             obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""')
         return file_get_contents("/root/.ssh/id_rsa.pub")
     elif sys.platform.startswith('win'):
-        pathkey = os.path.join("C:/", "Users", "pulseuser", ".ssh")
+        try:
+            win32net.NetUserGetInfo('','pulseuser',0)
+            pathkey = os.path.join("c:\Users\pulseuser", ".ssh")
+        except:
+            pathkey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
         if not os.path.isfile(os.path.join(pathkey , "id_rsa")):
-            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join("C:/", "Users", "pulseuser", ".ssh", "id_rsa"))
-        return file_get_contents(os.path.join("C:/", "Users", "pulseuser", ".ssh", "id_rsa.pub"))
+            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join(pathkey, "id_rsa"))
+        return file_get_contents(os.path.join(pathkey, "id_rsa.pub"))
     elif sys.platform.startswith('darwin'):
         if not os.path.isfile("/var/root/.ssh/id_rsa"):
             obj = simplecommand('ssh-keygen -b 2048 -t rsa -f /var/root/.ssh/id_rsa -q -N ""')
@@ -1624,3 +1634,81 @@ def connection_established(Port):
     else:
         logger.warning("connection xmpp low")
         return False
+
+def showlinelog(nbline = 200):
+    obj = { "result" : ""}
+    if sys.platform.startswith('win'):
+        na = os.path.join(os.environ['ProgramFiles'], "Pulse", "var", "log","xmpp-agent.log")
+        if os.path.isfile(na):
+            obj = simplecommandstr(encode_strconsole("powershell \"Get-Content '%s' | select -last %s\""%(na, nbline)))
+    elif sys.platform.startswith('linux'):
+        na = os.path.join("/", "var", "log", "pulse", "xmpp-agent.log")
+        if os.path.isfile(na):
+            obj = simplecommandstr("cat %s | tail -n %s"%(na, nbline))
+    return obj['result']
+
+def is_findHostfromHostname(hostname):
+    try:
+        host = socket.gethostbyname(hostname)
+        return True
+    except:
+        pass
+    return False
+
+def is_findHostfromIp(ip):
+    try:
+        host = socket.gethostbyaddr(ip)
+        return True
+    except:
+        pass
+    return False
+
+def is_connectedServer(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5.0)
+    port=int(port)
+    try:
+        sock.connect((ip, port))
+        return True
+    except socket.error:
+        return False
+    finally:
+        sock.close()
+
+class Program:
+    def __init__(self):
+        self.programlist = {}
+        self.logger = logging.getLogger()
+
+    def startprogram(self, pathprogram, uniqexecutablename):
+        #['/bin/vikings', '-input', 'eggs.txt', '-output', 'spam spam.txt', '-cmd', "echo '$MONEY'"]
+        #p = subprocess.Popen(args) # Success!
+        #flag windows -> https://docs.microsoft.com/fr-fr/windows/desktop/ProcThread/process-creation-flags
+
+
+        if sys.platform.startswith('win'):
+            CREATE_NEW_PROCESS_GROUP=0x00000200
+            DETACHED_PROCESS=0x00000008
+            progrm = subprocess.Popen(pathprogram,
+                                    shell=False,
+                                    creationflags=DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+                                    close_fds=True)
+            self.programlist[uniqexecutablename]=progrm
+        elif sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+            progrm = subprocess.Popen(pathprogram,
+                                      shell=True,
+                                      stdout=None,
+                                      stderr=None,
+                                      close_fds=True)
+            self.programlist[uniqexecutablename]=progrm
+        else:
+            self.logger.error("The launch command for syncthing is not implemented for this OS")
+
+    def stopprogram(self, uniqexecutablename):
+        subprocess.Popen.kill(self.programlist[uniqexecutablename])
+        del self.programlist[uniqexecutablename]
+
+    def stopallprogram(self):
+        for prog in self.programlist:
+            subprocess.Popen.kill(self.programlist[prog])
+        self.programlist.clear()

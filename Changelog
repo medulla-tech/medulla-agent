@@ -1,4 +1,24 @@
+pulse-xmpp-agent 2.0.3
+======================
+* [BUGFIX]  Fix problem where agent stops after cycling through the alternate
+			connections if no server is available 
+* [BUGFIX]  Fix agent configuration when Pulse server is not available when 
+			configurator runs
 * [BUGFIX]  Fixe error search last name user on windows
+
+pulse-xmpp-agent 2.0.2
+======================
+* Improve use of pulse/pulseuser for file transfert
+
+pulse-xmpp-agent 2.0.1
+======================
+* [Feature] Enable substitute agents by default
+* [Feature] Allow to limite transfert rate when using syncthing
+* [Feature] Add Glpi substitute support
+* [Feature] Allow to use pullrsync without package server
+* [BUGFIX]  Improve syncthing support and API
+* [BUGFIX]  Fix default creation of syncthing config.xml file 
+
 pulse-xmpp-agent 2.0.0
 ======================
 * [FEATURE] Allow scp and rsync transfers in Pull mode

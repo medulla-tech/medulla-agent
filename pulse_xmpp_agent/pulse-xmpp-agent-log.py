@@ -97,11 +97,18 @@ class Deploy(Base):
     macadress=Column(String(255))
 
 class configuration:
-    def __init__(self):
+    def __init__(self, configfile=""):
         Config = ConfigParser.ConfigParser()
         Config.read("/etc/mmc/plugins/xmppmaster.ini")
-        if os.path.exists("/etc/mmc/plugins/xmppmaster.ini.local"):
+        if configfile != "" and os.path.exists(configfile):
+            Config.read(configfile)
+        elif os.path.exists("/etc/mmc/plugins/xmppmaster.ini.local"):
             Config.read("/etc/mmc/plugins/xmppmaster.ini.local")
+
+        if Config.has_option("main", "jid"):
+            self.jid = Config.get("main", "jid")
+        else:
+            self.jid = "log@pulse"
 
         if  Config.has_option("connection", "password"):
             self.Password=Config.get('connection', 'password')
@@ -273,12 +280,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def updatedeployresultandstate(self, sessionid, state, result ):
-        #engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                                #self.config.dbuser,
-                                                                #self.config.dbpasswd,
-                                                                #self.config.dbhost,
-                                                                #self.config.dbname))
-        #Session = sessionmaker(bind=engine)
         session = self.Session()
         jsonresult = json.loads(result)
         jsonautre = copy.deepcopy(jsonresult)
@@ -286,31 +287,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
         del (jsonautre['packagefile'])
         #DEPLOYMENT START
         try:
-            dede = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
-            if dede:
-                if dede.result is None:
+            deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+            if deploysession:
+                if deploysession.result is None or \
+                    ("wol" in jsonresult and \
+                        jsonresult['wol']  == 1 ) or \
+                    ("advanced" in jsonresult and \
+                        'syncthing' in jsonresult['advanced'] and \
+                            jsonresult['advanced']['syncthing'] == 1):
                     jsonbase = {
                                 "infoslist": [jsonresult['descriptor']['info']],
                                 "descriptorslist": [jsonresult['descriptor']['sequence']],
                                 "otherinfos" : [jsonautre],
-                                "title" : dede.title,
-                                "session" : dede.sessionid,
-                                "macadress" : dede.macadress,
-                                "user" : dede.login
+                                "title" : deploysession.title,
+                                "session" : deploysession.sessionid,
+                                "macadress" : deploysession.macadress,
+                                "user" : deploysession.login
                     }
                 else:
-                    jsonbase = json.loads(dede.result)
+                    jsonbase = json.loads(deploysession.result)
                     jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
                     jsonbase['otherinfos'].append(jsonautre)
-                dede.result = json.dumps(jsonbase, indent=3)
-                dede.state = state
+                deploysession.result = json.dumps(jsonbase, indent=3)
+                if 'infoslist' in jsonbase and \
+                    'otherinfos' in jsonbase and \
+                     len(jsonbase['otherinfos']) > 0 and \
+                      'plan' in jsonbase['otherinfos'][0] and \
+                        len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
+                         state == "DEPLOYMENT SUCCESS":
+                    state = "DEPLOYMENT PARTIAL SUCCESS"
+                deploysession.state = state
             session.commit()
             session.flush()
             session.close()
             return 1
         except Exception, e:
             logging.getLogger().error(str(e))
+            traceback.print_exc(file=sys.stdout)
             return -1
 
     def createlog(self, dataobj):
@@ -363,14 +377,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         """
             this function for creating log in base
         """
-        #mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>
-        #engine = create_engine('%s://%s:%s@%s/%s'%( self.config.dbdriver,
-                                                    #self.config.dbuser,
-                                                    #self.config.dbpasswd,
-                                                    #self.config.dbhost,
-                                                    #self.config.dbname
-                                                        #))
-        #Session = sessionmaker(bind=engine)
         session = self.Session()
         log = Logs(text = text,
                    type = type,
@@ -382,6 +388,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                    module = module,
                    action = action,
                    touser = touser,
+                   date = datetime.datetime.now(),
                    fromuser = fromuser)
         session.add(log)
         session.commit()
@@ -512,13 +519,22 @@ if __name__ == '__main__':
                     default = False,
                     help = "version programme")
 
+    optp.add_option("-f",
+                    "--file",
+                    metavar="FILE",
+                    dest = "configfile",
+                    help = "specify the config file")
+
     opts, args = optp.parse_args()
 
+    configfile = ""
+    if opts.configfile:
+        configfile = opts.configfile
     if opts.version == True:
         print VERSIONLOG
         sys.exit(0)
     # Setup the command line arguments.
-    conf  = configuration()
+    conf  = configuration(configfile)
     if not opts.deamon :
         doTask(opts, conf)
     else:
