@@ -89,12 +89,13 @@ kiosk_local_port = 8766
 # updating = 1
 
 [substitute]
-# Registration and Inventory JIDs
+# Registration, Inventory, Assessor and Subscription agents JIDs
 # Must be changed to substitute agent JIDs if used
-# The assessor parameter can be a comma-separated list of available assessors jids
+# The parameters can be a comma-separated list of available substitute jids
 registration = master_reg@pulse
 inventory = master_inv@pulse
 assessor = master_asse@pulse
+subscription = master_subs@pulse
 
 [syncthing]
 # disable the use of syncthing on the machine agent.

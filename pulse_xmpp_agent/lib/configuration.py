@@ -169,8 +169,8 @@ class substitutelist:
         self.sub_registration = ["master@pulse"]
         self.assessor = ["master@pulse"]
 
-        if Config.has_option('substitute', 'subscribeagent'):
-            sub_subscribelocal = Config.get('substitute', 'subscribeagent')
+        if Config.has_option('substitute', 'subscription'):
+            sub_subscribelocal = Config.get('substitute', 'subscription')
             self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
 
         if Config.has_option('substitute', 'inventory'):
@@ -219,8 +219,8 @@ class confParameter:
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
         #################substitute####################
-        if Config.has_option('substitute', 'subscribeagent'):
-            sub_subscribelocal = Config.get('substitute', 'subscribeagent')
+        if Config.has_option('substitute', 'subscription'):
+            sub_subscribelocal = Config.get('substitute', 'subscription')
             self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
         else:
             self.sub_subscribe = ["master@pulse"]
