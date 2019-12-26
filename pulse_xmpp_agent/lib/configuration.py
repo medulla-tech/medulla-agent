@@ -39,13 +39,35 @@ from sleekxmpp import jid
 
 logger = logging.getLogger()
 
-def changeconfigurationsubtitute(conffile, confsubtitute):
+    def changeconfigurationsubtitute(conffile, confsubtitute):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
         Config.set('substitute', t, ",".join(confsubtitute[t]))
+    with open(conffile, 'w') as configfile:
+        Config.write(configfile)
+
+def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
+    Config = ConfigParser.ConfigParser()
+    Config.read(conffile)
+    if not Config.has_option("configuration_server", "confdomain"):
+        Config.set(
+            'configuration_server',
+            'confdomain',
+            Config.get(
+                'chat',
+                'domain'))
+    Config.set('connection', 'port', str(port))
+    Config.set('connection', 'server', ipfromdns(str(ipserver)))
+    Config.set('global', 'relayserver_agent', str(jid))
+    Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
+    try:
+        domain = str(jid).split("@")[1].split("/")[0]
+    except BaseException:
+        domain = str(jid)
+    Config.set('chat', 'domain', domain)
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
@@ -219,31 +241,26 @@ class confParameter:
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
         #################substitute####################
+        self.sub_inventory = ["master@pulse"]
+        self.sub_subscribe = ["master@pulse"]
+        self.sub_registration = ["master@pulse"]
+        self.assessor = ["master@pulse"]
+
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
             self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
-        else:
-            self.sub_subscribe = ["master@pulse"]
 
         if Config.has_option('substitute', 'inventory'):
             sub_inventorylocal = Config.get('substitute', 'inventory')
             self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
-        else:
-            self.sub_inventory = ["master@pulse"]
 
         if Config.has_option('substitute', 'registration'):
             sub_registrationlocal = Config.get('substitute', 'registration')
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
-        else:
-            self.sub_registration = ["master@pulse"]
 
         if Config.has_option('substitute', 'assessor'):
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
-        else:
-            self.assessor = ["master@pulse"]
-
-
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
