@@ -294,7 +294,6 @@ if __name__ == '__main__':
     conf = conf_information(inifile)
 
     if daemonize:
-        logging.getLogger().setLevel(logging.WARNING)
         try:
             pid = os.fork()
             if pid > 0:
