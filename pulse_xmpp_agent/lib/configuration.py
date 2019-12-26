@@ -49,25 +49,22 @@ logger = logging.getLogger()
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
-def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
+def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
+    domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
+        logger.warning("confdomain parameter missing in configuration_server")
+        logger.warning("parameters confdomain in configuration_server initialiastion value\"pulse\"")
         Config.set(
             'configuration_server',
             'confdomain',
-            Config.get(
-                'chat',
-                'domain'))
+            "pulse")
+    Config.set('chat', 'domain', domain)
     Config.set('connection', 'port', str(port))
     Config.set('connection', 'server', ipfromdns(str(ipserver)))
-    Config.set('global', 'relayserver_agent', str(jid))
+    Config.set('global', 'relayserver_agent', str(jidrelayserver))
     Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
-    try:
-        domain = str(jid).split("@")[1].split("/")[0]
-    except BaseException:
-        domain = str(jid)
-    Config.set('chat', 'domain', domain)
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
