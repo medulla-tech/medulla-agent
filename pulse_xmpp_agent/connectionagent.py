@@ -159,7 +159,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,
                                 "data":  { 'errorsyncthingconf' : informationerror}}
-                self.send_message(mto =  "master@%s"%self.config.confdomain,
+                self.send_message(mto =  self.assessor,
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
         ################################### syncthing ###################################
