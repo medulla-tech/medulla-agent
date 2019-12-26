@@ -39,7 +39,7 @@ from sleekxmpp import jid
 
 logger = logging.getLogger()
 
-    def changeconfigurationsubtitute(conffile, confsubtitute):
+def changeconfigurationsubtitute(conffile, confsubtitute):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
     if not Config.has_section('substitute'):
