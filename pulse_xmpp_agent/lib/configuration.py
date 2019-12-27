@@ -206,7 +206,7 @@ class substitutelist:
 
     def parameterssubtitute(self):
         conflist = []
-        data={ 'subscribeagent' : self.sub_subscribe,
+        data={ 'subscription' : self.sub_subscribe,
                'inventory' : self.sub_inventory,
                'registration' : self.sub_registration,
                'assessor' : self.assessor}
