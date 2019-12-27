@@ -44,7 +44,7 @@ from lib.utils import getRandomName,\
     DEBUGPULSE, searchippublic, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher
+                      AESCipher, refreshfingerprintconf
 from optparse import OptionParser
 
 from threading import Timer
@@ -352,6 +352,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mtype = 'chat')
                         #go to next ARS
                         nextalternativeclusterconnection(conffilename("cluster"))
+                        logger.debug("make finger print conf file")
+                        refreshfingerprintconf(opts.typemachine)
                     except:
                         # conpatibility version old agent master
                         changeconnection(conffilename(opts.typemachine),
