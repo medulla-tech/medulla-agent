@@ -93,6 +93,21 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         logger.error("\n%s"%(traceback.format_exc()))
 
 
+def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
+    codechaine="%s"%(msg['from'])
+    result = False
+    for t in objectxmpp.keyAES32:
+        cipher = AESCipher(t)
+        decrypted = cipher.decrypt(data['codechaine'])
+        if str(decrypted) == str(codechaine):
+            result = True
+            break
+    if not result:
+        logger.warning("authentification False %s"%(codechaine))
+
+        sendErrorConnectionConf(objectxmpp, sessionid, msg)
+    return result
+
 def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   action,
                                                   sessionid,
@@ -124,14 +139,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         logger.debug("missing authentification from %s"%(codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
-    cipher = AESCipher(objectxmpp.keyAES32)
 
-    decrypted = cipher.decrypt(data['codechaine'])
-    if decrypted != codechaine:
-        logger.debug("authentification False %s"%(codechaine))
-        sendErrorConnectionConf(objectxmpp, sessionid, msg)
+    if not testsignaturecodechaine(objectxmpp, data, sessionid, msg):
         return
-
 
     if data['ippublic'] is not None and data['ippublic'] != "":
         data['localisationinfo'] = Localisation().geodataip(data['ippublic'])
@@ -526,10 +536,16 @@ def read_conf_ascessor(objectxmpp):
                 logger.warning("showinfo default value is False")
 
             if Config.has_option("parameters", "keyAES32"):
-                objectxmpp.keyAES32 = Config.get('parameters', 'keyAES32')
-                if len(objectxmpp.keyAES32) != 32:
-                    logger.warning("parameter keyAES32 ")
-                    objectxmpp.assessor_agent_errorconf = True
+
+                paramkeyAES32 = Config.get('parameters', 'keyAES32')
+                objectxmpp.keyAES32 = [str(x.strip()) for x in paramkeyAES32.split(",") if x.strip() != ""]
+
+                #objectxmpp.keyAES32 = Config.get('parameters', 'keyAES32')
+                if len(objectxmpp.keyAES32) >0:
+                    for keyAES32items in objectxmpp.keyAES32:
+                        if len(keyAES32items) != 32:
+                            logger.warning("parameter taille keyAES32 %s"%keyAES32items)
+                            objectxmpp.assessor_agent_errorconf = True
             else:
                 logger.error("keyAES32 Key AES 32 char [Mandatory parameter keyAES32]")
                 objectxmpp.assessor_agent_errorconf = True
@@ -614,4 +630,4 @@ def message_config(nameplugin, pathfileconf):
     logger.error("announce_server = https://192.168.56.2:8443/?id=IGQIW2T"\
                  "-OHEFK3P-JHSB6KH-OHHYABS-YEWJRVC-M6F4NLZ-D6U55ES-VXIVMA3")
     logger.error("#for authentification key AES 32 chars")
-    logger.error("keyAES32 = abcdefghijklnmopqrstuvwxyz012345")
+    logger.error("keyAES32 = abcdefghijklnmopqrstuvwxyz012345, abcdefghijklnmopqrstuvwxyz012346")
