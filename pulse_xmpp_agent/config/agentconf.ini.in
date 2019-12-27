@@ -26,6 +26,8 @@ confserver = @@AGENT_CONF_XMPP_SERVER@@
 confport = @@AGENT_CONF_XMPP_PORT@@
 # XMPP password
 confpassword = @@AGENT_CONF_XMPP_PASSWORD@@
+# XMPP domain
+confdomain = pulse
 ### If not using assessor
 # XMPP MUC domain. eg. conference.pulse
 confmuc_domain = @@AGENT_CONF_XMPP_MUC_DOMAIN@@
