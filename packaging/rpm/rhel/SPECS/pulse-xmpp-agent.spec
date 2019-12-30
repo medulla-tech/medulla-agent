@@ -65,6 +65,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 
 #--------------------------------------------------------------------
 
@@ -107,4 +108,3 @@ cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-a
 
 cp pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system/
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
-
