@@ -506,67 +506,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 except Exception:
                     logger.error("\n%s"%(traceback.format_exc()))
 
-            ########################################
-            #### rmote update plugin
-            ########################################
-            #try:
-                #xmppobject.plugin_autoupdate(msg, data)
-            #except AttributeError:
-                #pass
-            ########################################
-            #### rmote update plugin
-            ########################################
-
-            ########################################
-            #### install plugin
-            ########################################
-            #restartAgent = False
-            #try:
-                #xmppobject.pulgin_loadpluginlistversion(msg, data)
-            #except AttributeError:
-                #pass
-            ########################################
-            #### install plugin
-            ########################################
-
-            ########################################
-            #### install plugin scheduled
-            ########################################
-            #try:
-                #xmppobject.plugin_loadpluginschedulerlistversion(msg, data)
-            #except AttributeError:
-                #pass
-            ########################################
-            #### install plugin scheduled
-            ########################################
-
-            ########################################
-            #### install plugin scheduled
-            ########################################
-            #try:
-                #if hasattr(xmppobject, "plugin_showregistration"):
-                    #xmppobject.plugin_loadpluginschedulerlistversion(msg, data)
-            #except:
-                #logger.error("\n%s"%(traceback.format_exc()))
-            ########################################
-            #### install plugin scheduled
-            ########################################
-
-            ########################################
-            #### showregistration
-            ########################################
-            #try:
-                #if hasattr(xmppobject, "plugin_showregistration"):
-                    #del data['completedatamachine']
-                    #del data['plugin']
-                    #del data['pluginscheduled']
-                    #xmppobject.plugin_showregistration(msg, data)
-            #except:
-                #logger.error("\n%s"%(traceback.format_exc()))
-                ##logger.debug( "Unexpected error plugin_showregistration: %s"%sys.exc_info()[0])
-            #######################################
-            ### showregistration
-            #######################################
     except Exception as e:
         logger.error("machine info %s\n%s" % (str(e),traceback.format_exc()))
 
@@ -727,20 +666,20 @@ def read_conf_remote_registeryagent(xmppobject):
             "\n\t%s missing" \
         "\neg conf:\n[parameters]\n" \
             "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
-                "autoupdate, showregistration\n" \
+                "loadautoupdate, showregistration\n" \
                 "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
-                    "autoupdate, showregistration"%(plugin['NAME'], pathfileconf))
+                    "loadautoupdate, showregistration"%(plugin['NAME'], pathfileconf))
         logger.warning("default value for pluginlistregistered " \
-            "is loadpluginlistversion, loadpluginschedulerlistversion, autoupdate, showregistration"\
+            "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, showregistration"\
             "\ndefault value for pluginlistunregistered"\
-                "is loadpluginlistversion, loadpluginschedulerlistversion, autoupdate, showregistration")
+                "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, showregistration")
         xmppobject.pluginlistregistered = ["loadpluginlistversion",
                                            "loadpluginschedulerlistversion",
-                                           "autoupdate",
+                                           "loadautoupdate",
                                            "showregistration"]
         xmppobject.pluginlistunregistered = ["loadpluginlistversion",
                                              "loadpluginschedulerlistversion",
-                                             "autoupdate",
+                                             "loadautoupdate",
                                              "showregistration"]
         xmppobject.check_uuidinventory = False
         xmppobject.blacklisted_mac_addresses= ["00:00:00:00:00:00"]
@@ -762,14 +701,14 @@ def read_conf_remote_registeryagent(xmppobject):
             pluginlistregistered = Config.get('parameters', 'pluginlistregistered')
         else:
             pluginlistregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
-                " autoupdate, showregistration"
+                " loadautoupdate, showregistration"
         xmppobject.pluginlistregistered = [x.strip() for x in pluginlistregistered.split(',')]
 
         if Config.has_option("parameters", "pluginlistunregistered"):
             pluginlistunregistered = Config.get('parameters', 'pluginlistunregistered')
         else:
             pluginlistunregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
-                "autoupdate, showregistration"
+                "loadautoupdate, showregistration"
 
         xmppobject.pluginlistunregistered = [x.strip() for x in pluginlistunregistered.split(',')]
         xmppobject.blacklisted_mac_addresses= []
