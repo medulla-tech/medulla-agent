@@ -92,6 +92,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 logger = logging.getLogger()
 global restart
 signalint = False
+countcycle = 0  # count cycle for the number of alternate connections
 
 if sys.version_info < (3, 0):
     reload(sys)
@@ -1679,12 +1680,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     dataerreur)
 
     def update_plugin(self):
+        global countcycle
         # Send plugin and machine informations to Master
         dataobj  = self.seachInfoMachine()
         logging.log(DEBUGPULSE,"SEND REGISTRATION XMPP to %s \n%s"%(self.sub_registration,
                                                                     json.dumps(dataobj,
                                                                                indent=4)))
 
+        countcycle = 0
         self.send_message(  mto=self.sub_registration,
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
@@ -2255,7 +2258,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         except subprocess.CalledProcessError as e:
             pass
 
-    global restart, signalint
+    global restart, signalint, countcycle
     if platform.system()=='Windows':
         # Windows does not support ANSI escapes and we are using API calls to set the console color
         logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
@@ -2328,11 +2331,20 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                 # il y a une configuration alternative
                 logging.log(DEBUGPULSE, "alternative configuration")
                 newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+                countcycle += 1
                 changeconnection( conffilename(xmpp.config.agenttype),
                                 newparametersconnect[2],
                                 newparametersconnect[1],
                                 newparametersconnect[0],
                                 newparametersconnect[3])
+                if newparametersconnect[5] < countcycle:
+                    # if plus d'un cycle fait on relance le configurateur
+                    countcycle = 0
+                    logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
+                    nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                    args = ['python', nameprogconnection, '-t', 'machine']
+                    subprocess.call(args)
+                    time.sleep(10)
     terminateserver(xmpp)
 
 

@@ -113,7 +113,7 @@ def nextalternativeclusterconnection(conffile):
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
-    return [ serverjid, server, port, guacamole_baseurl, domain ]
+    return [ serverjid, server, port, guacamole_baseurl, domain, nbserver]
 
 
 # Singleton/SingletonDecorator.py
