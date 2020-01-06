@@ -327,7 +327,7 @@ if __name__ == '__main__':
                            "Pulse",
                            "var",
                            "log",
-                           "networkenvent")
+                           "networkevents.log")
 
     program_dir = os.path.join(os.environ["ProgramFiles"],
                            "Pulse",
