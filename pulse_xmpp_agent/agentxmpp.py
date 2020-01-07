@@ -1377,39 +1377,39 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
-    def presence_subscribe(self, presense):
-        logger.info("**********   presence_subscribe %s %s"%(presense['from'],presense['type'] ))
+    def presence_subscribe(self, presence):
+        logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))
 
-    def presence_subscribed(self, presense):
-        logger.info("**********   presence_subscribed %s %s"%(presense['from'],presense['type'] ))
+    def presence_subscribed(self, presence):
+        logger.info("**********   presence_subscribed %s %s"%(presence['from'],presence['type'] ))
 
-    def changed_subscription(self, presense):
-        logger.info("**********   changed_subscription %s %s"%(presense['from'],presense['type'] ))
+    def changed_subscription(self, presence):
+        logger.info("**********   changed_subscription %s %s"%(presence['from'],presence['type'] ))
 
-    def presence_unavailable(self, presense):
-        logger.info("**********   presence_unavailable %s %s"%(presense['from'],presense['type'] ))
+    def presence_unavailable(self, presence):
+        logger.info("**********   presence_unavailable %s %s"%(presence['from'],presence['type'] ))
 
-    def presence_available(self, presense):
-        logger.info("**********   presence_available %s %s"%(presense['from'],presense['type'] ))
+    def presence_available(self, presence):
+        logger.info("**********   presence_available %s %s"%(presence['from'],presence['type'] ))
         self.unsubscribe_agent()
 
-    def presence_unsubscribe(self, presense):
-        logger.info("**********   presence_unsubscribe %s %s"%(presense['from'],presense['type'] ))
+    def presence_unsubscribe(self, presence):
+        logger.info("**********   presence_unsubscribe %s %s"%(presence['from'],presence['type'] ))
 
-    def presence_unsubscribed(self, presense):
-        logger.info("**********   presence_unsubscribed %s %s"%(presense['from'],presense['type'] ))
+    def presence_unsubscribed(self, presence):
+        logger.info("**********   presence_unsubscribed %s %s"%(presence['from'],presence['type'] ))
         self.get_roster()
 
-    def changed_status(self, presense):
+    def changed_status(self, presence):
         """
             This function is a xmpp handler used to follow the signal
             from ejabberd when the state of an affiliated agent changes.
         """
-        frommsg = jid.JID(presense['from'])
+        frommsg = jid.JID(presence['from'])
         if frommsg.bare == self.boundjid.bare:
             logger.debug( "Message self calling not processed")
             return
-        if frommsg.bare == self.sub_subscribe and presense['type'] == 'available':
+        if frommsg.bare == self.sub_subscribe and presence['type'] == 'available':
             self.update_plugin()
 
     def unsubscribe_agent(self):
