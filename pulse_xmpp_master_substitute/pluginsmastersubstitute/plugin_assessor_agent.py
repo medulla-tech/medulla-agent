@@ -130,7 +130,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         objectxmpp.sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
 
-    if not 'codechaine' in data:
+    if 'codechaine' not in data:
         logger.debug("missing authentification from %s"%(codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
@@ -174,7 +174,6 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     ordre = XmppMasterDatabase().Orderrules()
     odr = [x[0] for x in ordre]
     logger.debug("Rule order : %s " % odr)
-    indetermine = []
     result = []
     for x in ordre:
         # User Rule : 1
@@ -239,9 +238,13 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                         data['information']['info']['hostname'],
                                                         data['information']['users'][0],
                                                         listeserver))
-                        logger.warn("Continues for the other rules. Random " \
-                                    "choice only if no other is found.")
-                        indetermine = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(listeserver[index])
+                        logger.warn("ARS Random choice : %s"%listeserver[index])
+                        result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(listeserver[index])
+                        msg_log("The Geoposition",
+                                    data['information']['info']['hostname'],
+                                    data['information']['users'][0],
+                                    result)
+                        break
                     else:
                         if relayserver != -1:
                             result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(relayserver)
@@ -250,16 +253,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                     data['information']['users'][0],
                                     result)
                             break
-                if len(result) != 0:
-                    result = [objectxmpp.defaultrelayserverip,
-                              objectxmpp.defaultrelayserverport,
-                              result2[0],
-                              objectxmpp.defaultrelayserverbaseurlguacamole]
-                    msg_log("use default relay server",
-                            data['information']['info']['hostname'],
-                            data['information']['users'][0],
-                            result)
-                    break
+                        else:
+                            logger.warn("algo rule 3 inderterminat")
+                            continue
             except KeyError:
                 logger.error("Error algo rule 3")
                 logger.error("\n%s"%(traceback.format_exc()))

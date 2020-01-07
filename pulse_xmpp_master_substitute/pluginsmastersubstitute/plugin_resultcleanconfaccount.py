@@ -42,5 +42,5 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             a = simplecommandstr(cmd)
             logger.debug(a['result'])
             logger.info("The account %s has been removed :[%s]"%(destinataire, str(msg['from'].resource)))
-    except Exception as e:
+    except Exception:
         pass
