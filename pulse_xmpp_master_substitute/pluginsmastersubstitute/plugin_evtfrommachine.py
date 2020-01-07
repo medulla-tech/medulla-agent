@@ -23,9 +23,6 @@
 # file pluginsmastersubstitute/plugin_evtfrommachine.py
 
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-import traceback
-from sleekxmpp import jid
 import json
 
 

@@ -22,13 +22,10 @@
 
 import base64
 import json
-import sys, os
+import os
 import logging
-import platform
 from lib.utils import file_get_contents, getRandomName, data_struct_message
 from lib.update_remote_agent import Update_Remote_Agent
-import traceback
-from sleekxmpp import jid
 import types
 import ConfigParser
 

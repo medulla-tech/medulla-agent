@@ -23,10 +23,7 @@
 # file pluginsmastersubstitute/plugin_resultcleanconfaccount.py
 
 import logging
-import traceback
-import sys
-import json
-from utils import simplecommandstr, file_get_content, file_put_content
+from utils import simplecommandstr
 
 logger = logging.getLogger()
 

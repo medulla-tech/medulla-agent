@@ -20,16 +20,13 @@
 # MA 02110-1301, USA.
 # file pluginsmastersubstitute/plugin_loadpluginsubscribe.py
 
-import base64
 import json
-import sys, os
+import os
 import logging
-import platform
 from lib.utils import file_get_contents, getRandomName, data_struct_message
 import traceback
 from sleekxmpp import jid
 import types
-import ConfigParser
 from lib.plugins.xmpp import XmppMasterDatabase
 
 

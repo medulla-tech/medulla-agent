@@ -23,25 +23,20 @@
 
 import base64
 import json
-import sys, os
+import os
 import logging
-import platform
 from lib.utils import file_get_contents, \
                       getRandomName, \
                       data_struct_message, \
-                      add_method, \
                       ipfromdns, \
                       AESCipher
 from lib.localisation import Localisation
 from lib.plugins.xmpp import XmppMasterDatabase
 from random import randint
 import operator
-import zlib
 import traceback
-from sleekxmpp import jid
 import ConfigParser
-from ConfigParser import  NoOptionError, NoSectionError
-import types
+from ConfigParser import  NoSectionError
 import netaddr
 
 logger = logging.getLogger()
