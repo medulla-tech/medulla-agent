@@ -29,9 +29,11 @@ from lib.utils import file_get_contents, \
                       getRandomName, \
                       data_struct_message, \
                       ipfromdns, \
-                      AESCipher
+                      AESCipher, \
+                      subnetnetwork
 from lib.localisation import Localisation
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.manageADorganization import manage_fqdn_window_activedirectory
 from random import randint
 import operator
 import traceback
