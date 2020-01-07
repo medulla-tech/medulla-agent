@@ -177,7 +177,7 @@ def changed_status(self, presence):
                         self.send_message(mto=ars['jid'],
                                             mbody=json.dumps(cluster),
                                             mtype='chat')
-        except:
+        except Exception:
             logger.error("%s"%(traceback.format_exc()))
     elif presence['type'] == "available":
         logger.info("update MACH or ARS %s Online"%presence['from'])

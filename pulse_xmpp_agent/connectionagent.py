@@ -247,7 +247,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         try :
             data = json.loads(msg['body'])
-        except:
+        except Exception:
             return
 
         if self.session == data['sessionid'] and \
@@ -320,7 +320,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 self.send_message(mto =  msg['from'],
                                                 mbody = json.dumps(confsyncthing),
                                                 mtype = 'chat')
-                        except:
+                        except Exception:
                             confsyncthing = {"action": "resultconfsyncthing",
                                             "sessionid" : getRandomName(6, "confsyncthing"),
                                             "ret" : 255,
@@ -354,7 +354,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         nextalternativeclusterconnection(conffilename("cluster"))
                         logger.debug("make finger print conf file")
                         refreshfingerprintconf(opts.typemachine)
-                    except:
+                    except Exception:
                         # conpatibility version old agent master
                         changeconnection(conffilename(opts.typemachine),
                                         data['data'][1],

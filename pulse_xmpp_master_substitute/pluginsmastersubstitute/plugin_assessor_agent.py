@@ -126,7 +126,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         data['information'] = json.loads(base64.b64decode(data['completedatamachine']))
         del data['completedatamachine']
         json.dumps(data, indent = 4)
-    except:
+    except Exception:
         logger.debug("decode msg error from %s"%(codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return

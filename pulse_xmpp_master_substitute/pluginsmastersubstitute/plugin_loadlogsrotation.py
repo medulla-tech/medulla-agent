@@ -94,10 +94,10 @@ def Rotatelog(self):
                 new_name = "%s.%s" % (logfile, i + 1)
                 try:
                     shutil.copyfile(old_name, new_name)
-                except:
+                except Exception:
                     pass
             try:
                 shutil.copyfile(logfile, logfile + '.1')
-            except:
+            except Exception:
                 pass
             open(logfile, 'w').close() # Truncate the log file
