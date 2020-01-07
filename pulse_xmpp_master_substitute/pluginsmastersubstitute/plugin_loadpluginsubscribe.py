@@ -23,7 +23,7 @@
 import json
 import os
 import logging
-from lib.utils import file_get_contents, getRandomName, data_struct_message
+from lib.utils import file_get_contents, getRandomName, data_struct_message, name_random
 import traceback
 from sleekxmpp import jid
 import types
