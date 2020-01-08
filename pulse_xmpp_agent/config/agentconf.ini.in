@@ -28,14 +28,12 @@ confport = @@AGENT_CONF_XMPP_PORT@@
 confpassword = @@AGENT_CONF_XMPP_PASSWORD@@
 # XMPP domain
 confdomain = pulse
-### If not using assessor
 # XMPP MUC domain. eg. conference.pulse
 confmuc_domain = @@AGENT_CONF_XMPP_MUC_DOMAIN@@
 # XMPP MUC password
 confmuc_password = @@AGENT_CONF_XMPP_MUC_PASSWORD@@
 # XMPP MUC chatroom
 # confmuc_chatroom = configmaster
-### END if not using assessor
 # AES pre shared key used between master and agents. Must be 32 characters
 keyAES32 = @@AGENT_AES_KEY_32_CHARS@@
 
@@ -55,12 +53,10 @@ password = @@XMPP_PASSWORD@@
 # Port for interacting with the machine agent
 # portAMscript = 5000
 
-### If not using assessor
 [chatroom]
 # Parameters to connect to the chatrooms
 server = @@CHATROOM_SERVER@@
 password = @@CHATROOM_PASSWORD@@
-### END if not using assessor
 
 [chat]
 # Domain used for chat messages
