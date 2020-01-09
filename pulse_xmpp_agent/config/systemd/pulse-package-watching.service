@@ -7,7 +7,8 @@ PIDFile=/var/run/package_watching.pid
 Type=forking
 ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/package_watching.py
 ExecStop=killall -9 package_watching.py
-Restart=on-failure
+Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target
