@@ -8,6 +8,8 @@ After=samba.service slapd.service
 #Group=pulse
 Type=forking
 ExecStart=/usr/lib/python2.7/site-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py -d
+Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target
