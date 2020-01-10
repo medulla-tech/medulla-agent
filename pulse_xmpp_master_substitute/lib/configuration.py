@@ -134,7 +134,7 @@ class confParameter:
         # le code de ces plugins est executé au démarage. il commence par start
 
         #pluginlist = 'load_plugins_base, load_plugin_base_scheduled,autoupdateagent'
-        self.pluginliststart = 'loadpluginlistversion, loadpluginschedulerlistversion, autoupdate, showregistration'
+        self.pluginliststart = 'loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, showregistration'
         if Config.has_option("plugins", "pluginliststart"):
             self.pluginliststart = Config.get('plugins', 'pluginliststart')
         self.pluginliststart = [x.strip() for x in self.pluginliststart.split(",") if x.strip() != ""]
