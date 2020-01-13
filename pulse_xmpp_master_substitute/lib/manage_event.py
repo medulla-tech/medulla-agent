@@ -20,6 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+# file pulse_xmpp_master_substitute/lib/manage_event.py
+
 import json
 from multiprocessing import TimeoutError
 import threading
@@ -201,7 +203,7 @@ class manage_event:
                                                                         type = 'deploy',
                                                                         sessionname = event['eventMessageraw']['sessionid'],
                                                                         priority = i['step'],
-                                                                        action = "",
+                                                                        action = "xmpplog",
                                                                         who = self.objectxmpp.boundjid.bare,
                                                                         how = "",
                                                                         why = "",
@@ -214,7 +216,7 @@ class manage_event:
                                                                     type = 'deploy',
                                                                     sessionname = event['eventMessageraw']['sessionid'],
                                                                     priority = i['step'],
-                                                                    action = "",
+                                                                    action = "xmpplog",
                                                                     who = self.objectxmpp.boundjid.bare,
                                                                     how = "",
                                                                     why = "",

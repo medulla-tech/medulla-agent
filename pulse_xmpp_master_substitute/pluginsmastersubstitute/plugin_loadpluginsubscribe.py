@@ -18,6 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
 # file pluginsmastersubstitute/plugin_loadpluginsubscribe.py
 
 import json
@@ -137,7 +138,7 @@ def changed_status(self, presence):
                             type = 'deploy',
                             sessionname = t['sessionid'],
                             priority = -1,
-                            action = "",
+                            action = "xmpplog",
                             who = "",
                             how = "",
                             why =  t['jidmachine'],
@@ -149,7 +150,7 @@ def changed_status(self, presence):
                             type = 'deploy',
                             sessionname = t['sessionid'],
                             priority = -1,
-                            action = "",
+                            action = "xmpplog",
                             who =  t['jidmachine'],
                             how = "",
                             why = "",
