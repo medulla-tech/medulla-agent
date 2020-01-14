@@ -565,9 +565,9 @@ def read_conf_ascessor(objectxmpp):
                     if objectxmpp.defaultrelayserverip == ip:
                         logger.error("see parameter [serverip] in file : %s " \
                                 "if Connection server parameters " \
-                                "if no relay server is available"%pathfileconf)
+                                "if no relay server is available" % pathfileconf)
                         logging.getLogger().error('parameter section "parameters" ' \
-                                                  'serverip must not be %s'%t)
+                                                  'serverip must not be %s' % ip)
                         objectxmpp.assessor_agent_errorconf  = True
             else:
                 logger.error("see parameter [serverip] " \
