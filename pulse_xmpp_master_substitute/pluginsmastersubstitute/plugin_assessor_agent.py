@@ -623,4 +623,4 @@ def message_config(nameplugin, pathfileconf):
     logger.error("announce_server = https://192.168.56.2:8443/?id=IGQIW2T"\
                  "-OHEFK3P-JHSB6KH-OHHYABS-YEWJRVC-M6F4NLZ-D6U55ES-VXIVMA3")
     logger.error("#for authentification key AES 32 chars")
-    logger.error("keyAES32 = abcdefghijklmnopqrstuvwxyz012345, abcdefghijklmnopqrstuvwxyz012346")
+    logger.error("keyAES32 = abcdefghijklnmopqrstuvwxyz012345, abcdefghijklnmopqrstuvwxyz012346")
