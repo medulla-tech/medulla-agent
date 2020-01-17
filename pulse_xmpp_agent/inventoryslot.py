@@ -10133,7 +10133,7 @@ class configuration:
         return json.dumps(self.re)
 
 def getRandomName(nb, pref=""):
-    a="abcdefghijklnmopqrstuvwxyz0123456789"
+    a="abcdefghijklmnopqrstuvwxyz0123456789"
     d=pref
     for t in range(nb):
         d=d+a[random.randint(0,35)]
