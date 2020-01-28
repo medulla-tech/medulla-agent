@@ -71,7 +71,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret):
             objectxmpp.send_session_command = types.MethodType(send_session_command, objectxmpp)
             objectxmpp.totimestamp = types.MethodType(totimestamp, objectxmpp)
             objectxmpp.parsexmppjsonfile = types.MethodType(parsexmppjsonfile, objectxmpp)
-            objectxmpp.xmpplog = types.MethodType(xmpplog, objectxmpp)
+            #objectxmpp.xmpplog = types.MethodType(xmpplog, objectxmpp)
 
             objectxmpp.session = session()
 
@@ -471,44 +471,6 @@ def totimestamp(self, dt, epoch=datetime(1970,1,1)):
     td = dt - epoch
     # return td.total_seconds()
     return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
-
-
-def xmpplog(self,
-            text,
-            type = 'noset',
-            sessionname = '',
-            priority = 0,
-            action = "xmpplog",
-            who = "",
-            how = "",
-            why = "",
-            module = "",
-            date = None ,
-            fromuser = "",
-            touser = ""):
-        if who == "":
-            who = self.boundjid.bare
-        msgbody = {}
-        data = {'log' : 'xmpplog',
-                'text' : text,
-                'type': type,
-                'session' : sessionname,
-                'priority': priority,
-                'action' : action ,
-                'who': who,
-                'how' : how,
-                'why' : why,
-                'module': module,
-                'date' : None ,
-                'fromuser' : fromuser,
-                'touser' : touser}
-        msgbody['data'] = data
-        msgbody['action'] = 'xmpplog'
-        msgbody['session'] = sessionname
-        self.send_message(  mto = jid.JID("log@pulse"),
-                            mbody=json.dumps(msgbody),
-                            mtype='chat')
-
 
 def syncthingdeploy(self):
     #nanlyse la table deploy et recupere les deployement syncthing.
