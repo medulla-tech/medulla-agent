@@ -67,6 +67,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 
 #--------------------------------------------------------------------
 

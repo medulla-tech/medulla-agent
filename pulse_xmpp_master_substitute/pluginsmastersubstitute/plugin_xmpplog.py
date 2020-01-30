@@ -38,7 +38,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     if compteurcallplugin == 0:
         read_conf_log_agent(xmppobject)
     try :
-        logger.debug("%s : "%data)
         dataobj = data
         if data["action"] == 'xmpplog':
             createlog(xmppobject, data)

@@ -128,7 +128,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     why = "",
                     module = "AM",
                     date = None ,
-                    fromuser = "MASTER",
+                    fromuser = "AGENT SUBSTITUTE",
                     touser = "")
 
         #call plugin start
@@ -200,28 +200,40 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
-        if who == "":
-            who = self.boundjid.bare
-        msgbody = {}
-        data = {'log' : 'xmpplog',
-                'text' : text,
-                'type': type,
-                'session' : sessionname,
-                'priority': priority,
-                'action' : action ,
-                'who': who,
-                'how' : how,
-                'why' : why,
-                'module': module,
-                'date' : None ,
-                'fromuser' : fromuser,
-                'touser' : touser}
-        msgbody['data'] = data
-        msgbody['action'] = 'xmpplog'
-        msgbody['session'] = sessionname
-        self.send_message(  mto = jid.JID(self.config.sub_logger),
-                            mbody=json.dumps(msgbody),
-                            mtype='chat')
+        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if who == "": who = self.boundjid.bare
+        if 'xmpp' in self.config.plugins_list:
+            XmppMasterDatabase().setlogxmpp(text,
+                                            type=type,
+                                            sessionname=sessionname,
+                                            priority=priority,
+                                            who=who,
+                                            how=how,
+                                            why=why,
+                                            module=module,
+                                            action='',
+                                            touser=touser,
+                                            fromuser= fromuser)
+        else:
+            msgbody = {"action" : 'xmpplog',
+                    'sessionid' : sessionname}
+            msgbody['data'] =  {'log' : 'xmpplog',
+                                'text' : text,
+                                'type': type,
+                                'session' : sessionname,
+                                'priority': priority,
+                                'action' : action ,
+                                'who': who,
+                                'how' : how,
+                                'why' : why,
+                                'module': module,
+                                'date' : None ,
+                                'fromuser' : fromuser,
+                                'touser' : touser
+                                }
+            self.send_message(  mto = jid.JID(self.config.sub_logger),
+                                mbody=json.dumps(msgbody),
+                                mtype='chat')
 
     def register(self, iq):
         """ This function is called for automatic registation """

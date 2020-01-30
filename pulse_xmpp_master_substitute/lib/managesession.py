@@ -144,18 +144,14 @@ class sessiondatainfo:
 class session:
     def __init__(self, typemachine=None):
         self.sessiondata = []
-        if(typemachine == "relayserver"):
-            self.dirsavesession = os.path.join(
-                os.path.dirname(
-                    os.path.realpath(__file__)),
-                "..",
-                "sessionsrelayserver")
-        elif typemachine == "machine":
-            self.dirsavesession = os.path.join(os.path.dirname(
-                os.path.realpath(__file__)), "..", "sessionsmachine")
-        else:
-            self.dirsavesession = os.path.join(os.path.dirname(
-                os.path.realpath(__file__)), "..", "sessions")
+        self.sessiondata = []
+        if typemachine is None:
+            typemachine = "sessions"
+        self.dirsavesession = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            "..",
+            str(typemachine))
         if not os.path.exists(self.dirsavesession):
             os.makedirs(self.dirsavesession, mode=0o007)
         logging.getLogger().debug("Manager Session : %s" % self.dirsavesession)
@@ -340,3 +336,9 @@ class session:
         for i in self.sessiondata:
             if i.sessionid == sessionid:
                 i.setdatasession(data)
+
+    def sessiongetdata(self, sessionid):
+        for i in self.sessiondata:
+            if i.sessionid == sessionid:
+                return i.getdatasession()
+        return None
