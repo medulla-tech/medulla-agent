@@ -1516,9 +1516,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.debug("____________________________________________")
         logger.info("___________INSTALL SERVER KIOSK___________")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Bind the socket to the port
         server_address = ('localhost',  self.config.am_local_port)
-        self.sock.bind(server_address)
+        for t in range(20):
+            try:
+                logger.info("bin server kiosk %s"%server_address)
+                self.sock.bind(server_address)
+                break
+            except Exception as e:
+                logger.error(str(e))
+                time.sleep(10)       
         # Listen for incoming connections
         self.sock.listen(5)
         #using event eventkill for signal stop thread
@@ -1526,8 +1534,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         client_handlertcp = threading.Thread(target=self.tcpserver)
         # run server tcpserver for kiosk
         client_handlertcp.start()
-        
-
         ################### initialise charge relay server ###################
         if sys.platform.startswith('win'):
             logger.debug("____________________________________________")
