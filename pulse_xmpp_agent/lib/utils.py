@@ -415,16 +415,21 @@ def call_plugin(name, *args, **kwargs):
 
 def getshortenedmacaddress():
     listmacadress = {}
-    for i in netifaces.interfaces():
-        addrs = netifaces.ifaddresses(i)
-        try:
-            if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]['addr'])
-            addrs[netifaces.AF_INET][0]['addr']
-            address = int(if_mac, 16)
-            if address != 0:
-                listmacadress[address] = if_mac
-        except BaseException:
-            pass
+    for nbsearchmac in range(20):
+        for i in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(i)
+            try:
+                if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]['addr'])
+                addrs[netifaces.AF_INET][0]['addr']
+                address = int(if_mac, 16)
+                if address != 0:
+                    listmacadress[address] = if_mac
+            except BaseException:
+                pass
+        if len(listmacadress) > 0:
+            break
+        else:
+            time.sleep(1)
     return listmacadress
 
 
