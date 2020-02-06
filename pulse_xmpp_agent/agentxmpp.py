@@ -1516,7 +1516,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logger.debug("____________________________________________")
         logger.info("___________INSTALL SERVER KIOSK___________")
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1))
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Bind the socket to the port
         server_address = ('localhost',  self.config.am_local_port)
         for t in range(20):
