@@ -386,17 +386,34 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         arsjid = XmppMasterDatabase().getRelayServerfromjid("rspulse@pulse")
         # Start relay server agent configuration
         # we order the ARS from the least used to the most used.
-        reponse = {'action': 'resultconnectionconf',
+        reponse = { 'action': 'resultconnectionconf',
                     'sessionid': data['sessionid'],
                     'data': z1,
                     'syncthing' : objectxmpp.announce_server,
-                    'ret': 0
-                    }
+                    'ret': 0}
+        if len(listars) == 0:
+            logger.warning("No configuration sent to machine "\
+                "agent %s. ARS %s is found but it is stopped." % (data['information']['info']['hostname'], result[2]))
+            logger.warning("ACTION: Re-start the ARS on %s, and wait for the agent to run its reconfiguration."%(result[2]))
+            
+            objectxmpp.xmpplog("No configuration sent to machine agent %s. ARS %s is found but it is stopped." % (result[2],
+                                                                                  data['information']['info']['hostname'] ),
+                            type = 'conf',
+                            sessionname =  sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = data['information']['info']['hostname'],
+                            module = "Configuration | Notify | connectionagent",
+                            date = None,
+                            fromuser = objectxmpp.boundjid.bare)
+            sendErrorConnectionConf(objectxmpp, sessionid, msg)
+            return
         if "substitute" in data and \
             "conflist" in data["substitute"] and \
                 len(data["substitute"]["conflist"]) > 0:
-            reponse["substitute"] =  XmppMasterDatabase().substituteinfo(data["substitute"],
-                                                                         z1[0][2])
+            reponse["substitute"] =  XmppMasterDatabase().\
+                                    substituteinfo(data["substitute"],
+                                                   z1[0][2])
 
         objectxmpp.send_message(mto=msg['from'],
                             mbody=json.dumps(reponse),
