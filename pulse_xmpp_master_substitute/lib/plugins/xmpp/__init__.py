@@ -2163,7 +2163,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return cluster
 
     @DatabaseHelper._sessionm
-    def clusterlistars(self, session):
+    def clusterlistars(self, session, enabled = 1):
         sql = """SELECT
             GROUP_CONCAT(`jid`) AS 'listarsincluster',
             cluster_ars.name AS 'namecluster',
@@ -2174,10 +2174,13 @@ class XmppMasterDatabase(DatabaseHelper):
                 INNER JOIN
             xmppmaster.has_cluster_ars ON xmppmaster.has_cluster_ars.id_ars = xmppmaster.relayserver.id
                 INNER JOIN
-            xmppmaster.cluster_ars ON xmppmaster.cluster_ars.id = xmppmaster.has_cluster_ars.id_cluster
-        WHERE
-            `relayserver`.`enabled` = 1
-        GROUP BY xmppmaster.has_cluster_ars.id_cluster;"""
+            xmppmaster.cluster_ars ON xmppmaster.cluster_ars.id = xmppmaster.has_cluster_ars.id_cluster"""
+
+        if enabled is not None:
+            sql="""%s WHERE
+            `relayserver`.`enabled` = %s"""%(sql, enabled)
+
+        sql=sql+" GROUP BY xmppmaster.has_cluster_ars.id_cluster;"
         listars = session.execute(sql)
         session.commit()
         session.flush()
@@ -2192,7 +2195,6 @@ class XmppMasterDatabase(DatabaseHelper):
                              'numcluster' : z[2],
                              'keysyncthing' : za.split(",")}
         return cluster
-
     @DatabaseHelper._sessionm
     def chang_status_deploy_syncthing(self, session, datenow= None):
         if datenow is None:
@@ -4330,7 +4332,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         "uuid_inventorymachine" : machine.uuid_inventorymachine,
                         "ip_xmpp" : machine.ip_xmpp,
                         "agenttype" : machine.agenttype,
-                        "keysyncthing" :  machine.keysyncthing
+                        "keysyncthing" :  machine.keysyncthing,
+                        "enabled" : machine.enabled
                         }
             for i in result:
                 if result[i] == None:
@@ -4349,7 +4352,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         "uuid_inventorymachine" : "",
                         "ip_xmpp" : "",
                         "agenttype" : "",
-                        "keysyncthing" :  ""
+                        "keysyncthing" :  "",
+                        "enabled" : 0
                     }
         return result
 
