@@ -47,6 +47,9 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     if compteurcallplugin == 0:
         read_conf_load_plugin_subscribe(objectxmpp)
         objectxmpp.add_event_handler('changed_status', objectxmpp.changed_status)
+        
+        XmppMasterDatabase().update_enable_for_agent_subcription(objectxmpp.boundjid.bare) # update down machine substitute manage by self agent
+        
         #self.add_event_handler('presence_unavailable', objectxmpp.presence_unavailable)
         #self.add_event_handler('presence_available', objectxmpp.presence_available)
 
@@ -57,7 +60,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
         #self.add_event_handler('presence_unsubscribed', objectxmpp.presence_unsubscribed)
 
         #self.add_event_handler('changed_subscription', objectxmpp.changed_subscription)
-
+        
 
 def read_conf_load_plugin_subscribe(objectxmpp):
     """

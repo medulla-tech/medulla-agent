@@ -51,7 +51,7 @@ DEBUGPULSEPLUGIN = 25
 plugin = {"VERSION" : "1.0", "NAME" : "assessor_agent", "TYPE" : "substitute", "FEATURE": "assessor" }
 
 
-def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
+def action(objectxmpp, action, sessionid, data, msg, ret, dataobj={}):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
@@ -408,13 +408,23 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                             fromuser = objectxmpp.boundjid.bare)
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
+
+        agentsubscription = "master@pulse"
         if "substitute" in data and \
             "conflist" in data["substitute"] and \
                 len(data["substitute"]["conflist"]) > 0:
             reponse["substitute"] =  XmppMasterDatabase().\
                                     substituteinfo(data["substitute"],
                                                    z1[0][2])
-
+                                
+            reponse["substitute"]["ars_chooose_for_substitute"] = z1[0][2]
+            logger.debug("substitute resend to agent : %s"%json.dumps(reponse["substitute"],indent=4))                    
+            if "subscription" in reponse["substitute"]:
+                agentsubscription = reponse["substitute"]['subscription'][0]
+                listmacadress=[]
+                for mac in data['information']['listipinfo']:
+                    listmacadress.append(mac['macaddress'])
+                XmppMasterDatabase().setuplistSubcription(listmacadress, agentsubscription)
         objectxmpp.send_message(mto=msg['from'],
                             mbody=json.dumps(reponse),
                             mtype='chat')
