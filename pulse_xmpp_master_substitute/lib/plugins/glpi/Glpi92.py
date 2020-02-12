@@ -591,8 +591,14 @@ class Glpi92(DatabaseHelper):
 
     def __filter_on_filter(self, query):
         if self.config.filter_on != None:
+            logging.getLogger().debug('function __filter_on_filter  self.config.filter_on is  %s'%self.config.filter_on)
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
+                try:
+                    re = [x for x in filter_values if x.strip() != ""]
+                    if len(re) == 0 : continue
+                except Exception:
+                    pass
                 if filter_key == 'state':
                     self.logger.debug('will filter %s in (%s)' % (filter_key, str(filter_values)))
                     a_filter_on.append(self.machine.c.states_id.in_(filter_values))
