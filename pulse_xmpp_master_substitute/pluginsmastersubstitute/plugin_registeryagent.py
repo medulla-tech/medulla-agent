@@ -134,7 +134,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             machine['uuid_inventorymachine'] = None
                         if machine['uuid_inventorymachine'] is None:
                             logger.warning("When there is an incoherence between xmpp and glpi's uuid, we restore the uuid from glpi")
-
                     if 'uuid_inventorymachine' not in machine or \
                         machine['uuid_inventorymachine'] is None or \
                         not machine['uuid_inventorymachine']:
@@ -180,7 +179,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                     else:
                                         logger.debug("address no match %s"%macadress)
                                 if btestfindcomputer:
-                                    logger.debug("callInstallConfGuacamole on %s for %s"%(jidrs, data['information']['info']['hostname']))
+                                    logger.debug("callInstallConfGuacamole on 2 %s for %s"%(jidrs, data['information']['info']['hostname']))
                                     callInstallConfGuacamole(xmppobject,
                                                             jidrs,
                                                             {  'hostname': data['information']['info']['hostname'],
@@ -203,14 +202,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     else:
                         # il faut verifier si guacamole est initialisé.
                         #logger.debug("UUID is %s"%uuid_inventorymachine)
-                        logger.debug("Machine is %s"%machine)
-                        
-
-
-            if XmppMasterDatabase().getPresencejiduser(msg['from'].user):
-                logger.debug("Machine idem jid, domain change %s" % msg['from'])
-                # The registration of the machine in database must be deleted, so it is updated.
-                XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
+                        logger.debug("Machine %s already exist"%data['from'])
+                        logger.debug("Verify existance jid %s" % msg['from'])
+                        if XmppMasterDatabase().getPresencejid(msg['from']):
+                            logger.debug("correct jid %s" % msg['from'])
+                            return
+                        else:
+                            # The registration of the machine in database must be deleted, so it is updated.
+                            logger.debug("jid %s no exist dans base cf domaine chang" % msg['from'])
+                            XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
 
             """ Check machine information from agent """
             logger.debug(
@@ -306,9 +306,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 return
 
             # Add relayserver or update status in database
-            logger.debug("** Add relayserver or update status in database %s" %
-                            msg['from'])
+            
             if data['agenttype'] == "relayserver":
+                logger.debug("** Add relayserver or update status in database %s" %
+                            msg['from'])
                 data["adorgbyuser"] = ""
                 data["adorgbymachine"] = ""
                 data["kiosk_presence"] = ""
@@ -430,7 +431,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     jidrs=""
                     computerid =""
                     for testinventaireremonte in range(20):
-                    #jfkjfkjfk
                         for t in results:
                             logger.debug("Get the machine which has the specified mac address : %s"%t)
                             if t in xmppobject.blacklisted_mac_addresses: continue
@@ -504,7 +504,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             logger.debug("waiting inventory from %s"%( data['from']))
                             time.sleep(20)
                         else:
-                            logger.debug("callInstallConfGuacamole on %s for %s"%(jidrs, data['information']['info']['hostname']))
+                            logger.debug("callInstallConfGuacamole on 1 %s for %s"%(jidrs, data['information']['info']['hostname']))
                             callInstallConfGuacamole(xmppobject,
                                         jidrs,
                                         {  'hostname': data['information']['info']['hostname'],
