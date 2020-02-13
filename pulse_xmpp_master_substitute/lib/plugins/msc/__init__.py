@@ -1036,7 +1036,6 @@ class MscDatabase(DatabaseHelper):
                                                         x.target_target_uuid,
                                                         x.commands_package_id))
                 listemachine.append(deployobject)
-
         # return updatemachine, machine_do_deploy, listemachine #complete infos
         return updatemachine
 
