@@ -386,7 +386,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         arsjid = XmppMasterDatabase().getRelayServerfromjid("rspulse@pulse")
         # Start relay server agent configuration
         # we order the ARS from the least used to the most used.
-        reponse = { 'action': 'resultconnectionconf',
+        response = { 'action': 'resultconnectionconf',
                     'sessionid': data['sessionid'],
                     'data': z1,
                     'syncthing' : objectxmpp.announce_server,
@@ -413,20 +413,20 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         if "substitute" in data and \
             "conflist" in data["substitute"] and \
                 len(data["substitute"]["conflist"]) > 0:
-            reponse["substitute"] =  XmppMasterDatabase().\
+            response["substitute"] =  XmppMasterDatabase().\
                                     substituteinfo(data["substitute"],
                                                    z1[0][2])
-                                
-            reponse["substitute"]["ars_chooose_for_substitute"] = z1[0][2]
-            logger.debug("substitute resend to agent : %s"%json.dumps(reponse["substitute"],indent=4))                    
-            if "subscription" in reponse["substitute"]:
-                agentsubscription = reponse["substitute"]['subscription'][0]
+
+            response["substitute"]["ars_chooose_for_substitute"] = z1[0][2]
+            logger.debug("substitute resend to agent : %s"%json.dumps(response["substitute"],indent=4))
+            if "subscription" in response["substitute"]:
+                agentsubscription = response["substitute"]['subscription'][0]
                 listmacadress=[]
                 for mac in data['information']['listipinfo']:
                     listmacadress.append(mac['macaddress'])
                 XmppMasterDatabase().setuplistSubscription(listmacadress, agentsubscription)
         objectxmpp.send_message(mto=msg['from'],
-                            mbody=json.dumps(reponse),
+                            mbody=json.dumps(response),
                             mtype='chat')
         #add account for delete
         #list des comptes a suprimer
@@ -517,13 +517,13 @@ def displayData(objectxmpp, data):
             logger.info("%s" % json.dumps(data['information'], indent=4, sort_keys=True))
 
 def sendErrorConnectionConf(objectxmpp, session,  msg):
-    reponse = {'action': 'resultconnectionconf',
+    response = {'action': 'resultconnectionconf',
                'sessionid': session,
                'data': [],
                'syncthing' : "",
                'ret': 255}
     objectxmpp.send_message(mto=msg['from'],
-                        mbody=json.dumps(reponse),
+                        mbody=json.dumps(response),
                         mtype='chat')
 
 def read_conf_ascessor(objectxmpp):
