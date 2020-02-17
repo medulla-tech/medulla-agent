@@ -248,8 +248,8 @@ class XmppMasterDatabase(DatabaseHelper):
                     self.setupSubscription(macadress, id)
                 return id
             else:
-                logger.error("setup or create record for agent subscription%s"%agentsubscription)
-                return Nnone
+                logging.getLogger().error("setup or create record for agent subscription%s"%agentsubscription)
+                return None
         except Exception, e:
             logging.getLogger().error(str(e))
             return None
