@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_logsrotation.py
+# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadlogsrotation.py
 
 import os
 import logging
@@ -33,7 +33,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "logsrotation", "TYPE" : "substitute", "LOAD" : "START" }
+plugin = {"VERSION" : "1.0", "NAME" : "loadlogsrotation", "TYPE" : "substitute", "LOAD" : "START" }
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -45,7 +45,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     if compteurcallplugin == 0:
         read_conf_logsrotation(objectxmpp)
         objectxmpp.Rotatelog = types.MethodType(Rotatelog, objectxmpp)
-        objectxmpp.schedule('logsrotation', 1800, objectxmpp.Rotatelog, repeat=True)
+        objectxmpp.schedule('loadlogsrotation', 1800, objectxmpp.Rotatelog, repeat=True)
 
     objectxmpp.Rotatelog()
 
@@ -94,10 +94,10 @@ def Rotatelog(self):
                 new_name = "%s.%s" % (logfile, i + 1)
                 try:
                     shutil.copyfile(old_name, new_name)
-                except:
+                except Exception:
                     pass
             try:
                 shutil.copyfile(logfile, logfile + '.1')
-            except:
+            except Exception:
                 pass
             open(logfile, 'w').close() # Truncate the log file

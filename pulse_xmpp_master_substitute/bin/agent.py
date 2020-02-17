@@ -19,6 +19,9 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
+#fish: pulse_xmpp_master_substitute/bin/agent.py
+
 import sys
 import os
 import logging
@@ -89,7 +92,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler('message', self.message, threaded=True)
         #self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         #self.add_event_handler("loginfotomaster", self.loginfotomaster)
-        self.add_event_handler('changed_status', self.changed_status)
+        #self.add_event_handler('changed_status', self.changed_status)
         self.add_event_handler("restartmachineasynchrone",
                                self.restartmachineasynchrone, threaded=True)
 
@@ -103,11 +106,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mto = '%s/MASTER'%self.agentmaster,
                             mtype ='chat')
 
-    def changed_status(self, message):
-        #print "%s %s"%(message['from'], message['type'])
-        if message['from'].user == 'master':
-            if message['type'] == 'available':
-               pass
+    #def changed_status(self, message):
+        ##print "%s %s"%(message['from'], message['type'])
+        #if message['from'].user == 'master':
+            #if message['type'] == 'available':
+               #pass
 
     def start(self, event):
         self.shutdown = False
@@ -119,7 +122,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     type = 'info',
                     sessionname = "",
                     priority = -1,
-                    action = "",
+                    action = "xmpplog",
                     who = self.boundjid.bare,
                     how = "",
                     why = "",
@@ -189,7 +192,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 type = 'noset',
                 sessionname = '',
                 priority = 0,
-                action = "",
+                action = "xmpplog",
                 who = "",
                 how = "",
                 why = "",
@@ -199,20 +202,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 touser = ""):
         if who == "":
             who = self.boundjid.bare
-        msgbody = { 'log' : 'xmpplog',
-                    'text' : text,
-                    'type': type,
-                    'session' : sessionname,
-                    'priority': priority,
-                    'action' : action ,
-                    'who': who,
-                    'how' : how,
-                    'why' : why,
-                    'module': module,
-                    'date' : None ,
-                    'fromuser' : fromuser,
-                    'touser' : touser
-                    }
+        msgbody = {}
+        data = {'log' : 'xmpplog',
+                'text' : text,
+                'type': type,
+                'session' : sessionname,
+                'priority': priority,
+                'action' : action ,
+                'who': who,
+                'how' : how,
+                'why' : why,
+                'module': module,
+                'date' : None ,
+                'fromuser' : fromuser,
+                'touser' : touser}
+        msgbody['data'] = data
+        msgbody['action'] = 'xmpplog'
+        msgbody['session'] = sessionname
         self.send_message(  mto = jid.JID(self.config.jidlog),
                             mbody=json.dumps(msgbody),
                             mtype='chat')

@@ -26,7 +26,7 @@ xmppmaster database handler
 """
 
 # SqlAlchemy
-from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
+from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
 from sqlalchemy.orm import sessionmaker;
 #Session = sessionmaker()
 from sqlalchemy.exc import DBAPIError
@@ -39,11 +39,19 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Organization, Packages_list, Qa_custom_command,\
     Cluster_ars, Has_cluster_ars,\
     Command_action, Command_qa,\
-    Organization_ad, Cluster_resources, Syncthing_machine
+    Organization_ad,\
+    Cluster_resources,\
+    Syncthing_machine,\
+    Substituteconf,\
+    Agentsubscription,\
+    Subscription,\
+    Agentsubscription,\
+    Subscription
 # Imported last
 import logging
 import json
 import time
+import copy
 #topology
 import os, pwd
 import traceback
@@ -127,9 +135,171 @@ class XmppMasterDatabase(DatabaseHelper):
         self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
         self.is_activated = True
         self.logger.debug("xmpp finish activation")
+
     # =====================================================================
     # xmppmaster FUNCTIONS
     # =====================================================================
+    
+    # xmppmaster FUNCTIONS FOR Subscription
+    
+    @DatabaseHelper._sessionm
+    def setagentsubscription( self,
+                            session,
+                            name):
+        """
+            this functions addition a log line in table log xmpp.
+        """
+        try:
+            new_agentsubscription = Agentsubscription()
+            new_agentsubscription.name = name
+            session.add(new_agentsubscription)
+            session.commit()
+            session.flush()
+            return new_agentsubscription.id
+        except Exception, e:
+            logging.getLogger().error(str(e))
+            return None
+
+
+    @DatabaseHelper._sessionm
+    def deAgentsubscription( self,
+                            session,
+                            name):
+        """
+            del organization name
+        """
+        session.query(Agentsubscription).filter(Agentsubscription.name == name).delete()
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def setupagentsubscription( self,
+                            session,
+                            name):
+        """
+            this functions addition ou update table in table log xmpp.
+        #"""
+        try:
+            q = session.query(Agentsubscription)
+            q = q.filter(Agentsubscription.name==name)
+            record = q.one_or_none()
+            if record:
+                record.name = name
+                session.commit()
+                session.flush()
+                return record.id
+            else:
+                return self.setagentsubscription(name)
+        except Exception, e:
+            logging.getLogger().error(str(e))
+
+    @DatabaseHelper._sessionm
+    def setSubscription( self,
+                        session,
+                        macadress,
+                        idagentsubscription):
+        """
+            this functions addition a log line in table log xmpp.
+        """
+        try:
+            new_subscription = Subscription()
+            new_subscription.macadress = macadress
+            new_subscription.idagentsubscription = idagentsubscription
+            session.add(new_subscription)
+            session.commit()
+            session.flush()
+            return new_subscription.id
+        except Exception, e:
+            logging.getLogger().error(str(e))
+            return None
+
+    @DatabaseHelper._sessionm
+    def setupSubscription( self,
+                          session,
+                          macadress,
+                          idagentsubscription):
+        """
+            this functions addition a log line in table log xmpp.
+        """
+        try:
+            q = session.query(Subscription)
+            q = q.filter(Subscription.macadress==macadress)
+            record = q.one_or_none()
+            if record:
+                record.macadress = macadress
+                record.idagentsubscription = idagentsubscription
+                session.commit()
+                session.flush()
+                return record.id
+            else:
+                return self.setSubscription(macadress, idagentsubscription)
+        except Exception, e:
+            logging.getLogger().error(str(e))
+    
+    @DatabaseHelper._sessionm
+    def setuplistSubscription( self,
+                              session,
+                              listmacadress,
+                              agentsubscription):
+        try:
+            id = self.setupagentsubscription( agentsubscription)
+            if id is not None:
+                for macadress in listmacadress:
+                    self.setupSubscription(macadress, id)
+                return id
+            else:
+                logging.getLogger().error("setup or create record for agent subscription%s"%agentsubscription)
+                return None
+        except Exception, e:
+            logging.getLogger().error(str(e))
+            return None
+    
+    
+    @DatabaseHelper._sessionm
+    def delSubscriptionmacadress( self,
+                                session,
+                                macadress):
+        """
+            this functions addition a log line in table log xmpp.
+        """
+        try:
+            q = session.query(Subscription)
+            q = q.filter(Subscription.macadress==macadress).delete()
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
+
+    @DatabaseHelper._sessionm
+    def update_enable_for_agent_subscription(self,
+                                            session,
+                                            agentsubtitutename,
+                                            status = '0',
+                                            agenttype = 'machine'
+                                            ):
+        try:
+            sql="""
+            UPDATE `xmppmaster`.`machines`
+                    INNER JOIN
+                `xmppmaster`.`subscription` ON `xmppmaster`.`machines`.`macaddress` = `xmppmaster`.`subscription`.`macadress`
+                    INNER JOIN
+                `xmppmaster`.`agent_subscription` ON `xmppmaster`.`subscription`.`idagentsubscription` = `xmppmaster`.`agent_subscription`.`id` 
+            SET 
+                `xmppmaster`.`machines`.`enabled` = '%s'
+            WHERE
+                `xmppmaster`.`machines`.agenttype = '%s'
+                    AND `xmppmaster`.`agent_subscription`.`name` = '%s';"""%(status,
+                                                                            agenttype,
+                                                                            agentsubtitutename)
+            machines = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            self.logger.error("\n%s"%(traceback.format_exc()))
+    
+    ##########################################
+
+
     @DatabaseHelper._sessionm
     def setlogxmpp( self,
                     session,
@@ -1554,7 +1724,9 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getlinelogswolcmd(self, session, idcommand, uuid):
-        log = session.query(Logs).filter(and_( Logs.sessionname == str(idcommand) , Logs.type == 'wol', Logs.who == uuid)).order_by(Logs.id)
+        log = session.query(Logs).filter(and_( Logs.sessionname == str(idcommand),
+                                              Logs.type == 'wol',
+                                              Logs.who == uuid)).order_by(Logs.id)
         log = log.all()
         session.commit()
         session.flush()
@@ -1884,7 +2056,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         moderelayserver = "static",
                         keysyncthing = ""
                         ):
-        sql = "SELECT count(*) as nb FROM xmppmaster.relayserver where `relayserver`.`nameserver`='%s';"%nameserver
+        sql = "SELECT count(*) as nb FROM xmppmaster.relayserver where "\
+              "`relayserver`.`nameserver`='%s';"%nameserver
         nb = session.execute(sql)
         session.commit()
         session.flush()
@@ -1944,7 +2117,9 @@ class XmppMasterDatabase(DatabaseHelper):
                     postal_code = "",
                     country_code = "",
                     country_name = ""):
-        sql = "SELECT count(*) as nb FROM xmppmaster.users where `users`.`namesession`='%s' and `users`.`hostname`='%s';"%(namesession,hostname)
+        sql = "SELECT count(*) as nb FROM xmppmaster.users where "\
+              "`users`.`namesession`='%s' and `users`.`hostname`='%s';"%(namesession,
+                                                                         hostname)
         city = city.decode('iso-8859-1').encode('utf8')
         region_name = region_name.decode('iso-8859-1').encode('utf8')
         time_zone = time_zone.decode('iso-8859-1').encode('utf8')
@@ -2448,7 +2623,16 @@ class XmppMasterDatabase(DatabaseHelper):
         deploylog = deploylog.all()
         session.commit()
         session.flush()
-        ret ={'len' : len(deploylog),'tabdeploy' : {'state' : [],'pathpackage' : [], 'sessionid' : [],'start' : [], 'inventoryuuid' : [], 'command' : [], 'start' : [], 'login' : [],  'host' : [] }}
+        ret ={'len' : len(deploylog),
+              'tabdeploy' : {'state' : [],
+                             'pathpackage' : [],
+                             'sessionid' : [],
+                             'start' : [],
+                             'inventoryuuid' : [],
+                             'command' : [],
+                             'start' : [],
+                             'login' : [],
+                             'host' : [] }}
         for linedeploy in deploylog:
             ret['tabdeploy']['state'].append(linedeploy.state)
             ret['tabdeploy']['pathpackage'].append(linedeploy.pathpackage.split("/")[-1])
@@ -2482,10 +2666,14 @@ class XmppMasterDatabase(DatabaseHelper):
             return quick actions informations
         """
         if grp == 0:
-            qa_custom_command = session.query(Qa_custom_command).filter(and_(Qa_custom_command.namecmd==namecmd, Qa_custom_command.user==user))
+            qa_custom_command = session.query(Qa_custom_command).\
+                filter(and_(Qa_custom_command.namecmd==namecmd, Qa_custom_command.user==user))
             qa_custom_command = qa_custom_command.first()
         else:
-            qa_custom_command = session.query(Qa_custom_command).filter(and_(Qa_custom_command.customcmd==namecmd, or_(Qa_custom_command.user==user,Qa_custom_command.user=="allusers")))
+            qa_custom_command = session.query(Qa_custom_command).\
+                filter(and_(Qa_custom_command.customcmd==namecmd,
+                            or_(Qa_custom_command.user==user,
+                                Qa_custom_command.user=="allusers")))
             qa_custom_command = qa_custom_command.first()
         if qa_custom_command:
             result = {  "user" : qa_custom_command.user,
@@ -2649,11 +2837,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoruleadorganisedbyusers(self, session, userou, classutilMachine = "both", rule = 8, enabled=1):
         """
-            Field "rule_id" : This information allows you to apply the search only to the rule pointed. rule_id = 8 by organization users
+            Field "rule_id" : This information allows you to apply the search only to the rule pointed.
+                              rule_id = 8 by organization users
             Field "subject" is used to define the organisation by user OU eg Computers/HeadQuarter/Locations
             Field "relayserver_id" is used to define the Relayserver associe a ce name user
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
+            If classutilMachine is deprived then the choice of relayserver will be in the relayserver
+            reserve to a use of the private machine.
         """
 
         if classutilMachine == "private":
@@ -2687,11 +2877,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoruleadorganisedbymachines(self, session, machineou, classutilMachine = "both", rule = 7, enabled=1):
         """
-            Field "rule_id" : This information allows you to apply the search only to the rule pointed. rule_id = 7 by organization machine
+            Field "rule_id" : This information allows you to apply the search only to the rule pointed.
+                              rule_id = 7 by organization machine
             Field "subject" is used to define the organisation by machine OU eg Computers/HeadQuarter/Locations
             Field "relayserver_id" is used to define the Relayserver associe a this organization
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
+            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve
+               to a use of the private machine.
         """
         if classutilMachine == "private":
             sql = """select `relayserver`.`id`
@@ -2725,11 +2917,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algoruleuser(self, session, username, classutilMachine = "both", rule = 1, enabled=1):
         """
-            Field "rule_id" : This information allows you to apply the search only to the rule pointed. rule_id = 1 for user name
+            Field "rule_id" : This information allows you to apply the search only
+                              to the rule pointed. rule_id = 1 for user name
             Field "subject" is used to define the name of the user in this rule
             Field "relayserver_id" is used to define the Relayserver associe a ce name user
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
+            If classutilMachine is deprived then the choice of relayserver will be
+               in the relayserver reserve to a use of the private machine.
         """
         if classutilMachine == "private":
             sql = """select `relayserver`.`id`
@@ -2762,11 +2956,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algorulehostname(self, session, hostname, classutilMachine = "both", rule = 2, enabled=1):
         """
-            Field "rule_id" : This information allows you to apply the search only to the rule pointed. rule_id = 2 for hostname
+            Field "rule_id" : This information allows you to apply the search
+                              only to the rule pointed. rule_id = 2 for hostname
             Field "subject" is used to define the hostname in this rule
             Field "relayserver_id" is used to define the Relayserver associated to this hostname
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
+            If classutilMachine is deprived then the choice of relayserver will be 
+              in the relayserver reserve to a use of the private machine.
         """
         sql = """select `has_relayserverrules`.`id`,`has_relayserverrules`.`subject`
         from `has_relayserverrules`
@@ -2857,11 +3053,14 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def algorulebynetworkaddress(self, session, subnetmachine, classutilMachine = "both", rule = 9, enabled=1):
         """
-            Field "rule_id" : This information allows you to apply the search only to the rule pointed. rule_id = 9 by network address
+            Field "rule_id" : This information allows you to apply the search
+                              only to the rule pointed. rule_id = 9 by network address
             Field "subject" is used to define the subnet for association
-            Field "relayserver_id" is used to define the Relayserver to be assigned to the machines matching that rule
+            Field "relayserver_id" is used to define the Relayserver to be assigned to 
+                                   the machines matching that rule
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
+            If classutilMachine is deprived then the choice of relayserver 
+                will be in the relayserver reserve to a use of the private machine.
         """
         if classutilMachine == "private":
             sql = """select `relayserver`.`id`
@@ -3048,7 +3247,8 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def listMacAdressforMachine(self, session, id_machine):
         try:
-            #sql = "SELECT group_concat(concat('%s',mac,'%s')) as listmac FROM xmppmaster.network where machines_id = '%s'  limit 1;"%('"','"',id_machine)
+            #sql = "SELECT group_concat(concat('%s',mac,'%s')) "\
+              # "as listmac FROM xmppmaster.network where machines_id = '%s'  limit 1;"%('"','"',id_machine)
             sql = """SELECT
                         GROUP_CONCAT(CONCAT(mac)) AS listmac
                     FROM
@@ -3056,7 +3256,8 @@ class XmppMasterDatabase(DatabaseHelper):
                     WHERE
                         machines_id = '%s'
                     LIMIT 1;"""%(id_machine)
-            logging.getLogger().debug("SQL request to get the mac addresses list for the presence machine #%s"%id_machine)
+            logging.getLogger().debug("SQL request to get the mac addresses list "\
+                                      "for the presence machine #%s"%id_machine)
             #logging.getLogger().debug("%s"%sql)
             listMacAdress = session.execute(sql)
             session.commit()
@@ -3107,7 +3308,8 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getPresenceuuid(self, session, uuid):
-        machinespresente = session.query(Machines.uuid_inventorymachine).filter( Machines.uuid_inventorymachine == uuid ).first()
+        machinespresente = session.query(Machines.uuid_inventorymachine).\
+            filter( Machines.uuid_inventorymachine == uuid ).first()
         session.commit()
         session.flush()
         if machinespresente :
@@ -3121,7 +3323,8 @@ class XmppMasterDatabase(DatabaseHelper):
         result = { }
         for uuidmachine in uuids:
             result[uuidmachine] = False
-        machinespresente = session.query(Machines.uuid_inventorymachine).filter(Machines.uuid_inventorymachine.in_(uuids)).all()
+        machinespresente = session.query(Machines.uuid_inventorymachine).\
+            filter(Machines.uuid_inventorymachine.in_(uuids)).all()
         session.commit()
         session.flush()
         for linemachine in machinespresente:
@@ -3289,7 +3492,10 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             a=[]
             for t in presencelist:
-                a.append({'jid':t[0],'type': t[1], 'hostname':t[2], 'uuid_inventorymachine':t[3]})
+                a.append({'jid':t[0],
+                          'type': t[1],
+                          'hostname':t[2],
+                          'uuid_inventorymachine':t[3]})
             return a
         except:
             return -1
@@ -3357,7 +3563,8 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
         except IndexError:
-            logging.getLogger().warning("Configuration agent machine jid [%s]. no jid in base for configuration"%jid)
+            logging.getLogger().warning("Configuration agent machine jid [%s]. "\
+                                        "no jid in base for configuration"%jid)
             return {}
         except Exception, e:
             logging.getLogger().error(str(e))
@@ -3419,7 +3626,8 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
         except IndexError:
-            logging.getLogger().warning("Configuration agent machine jid [%s]. no jid in base for configuration"%jiduser)
+            logging.getLogger().warning("Configuration agent machine "\
+                                        "jid [%s]. no jid in base for configuration"%jiduser)
             return {}
         except Exception, e:
             logging.getLogger().error(str(e))
@@ -3429,7 +3637,8 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineUuid(self, session, uuid):
-        relayserver = session.query(Machines).filter(Machines.uuid_inventorymachine == uuid).one()
+        relayserver = session.query(Machines).\
+            filter(Machines.uuid_inventorymachine == uuid).one()
         session.commit()
         session.flush()
         try:
@@ -3471,7 +3680,8 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getGuacamoleidforUuid(self, session, uuid):
-        ret=session.query(Has_guacamole.idguacamole,Has_guacamole.protocol).filter(Has_guacamole.idinventory == uuid.replace('UUID','')).all()
+        ret=session.query(Has_guacamole.idguacamole,Has_guacamole.protocol).\
+            filter(Has_guacamole.idinventory == uuid.replace('UUID','')).all()
         session.commit()
         session.flush()
         if ret:
@@ -3497,7 +3707,9 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getMachinefromjid(self, session, jid):
         """ information machine"""
-        machine = session.query(Machines).filter(Machines.jid == jid).first()
+        user = str(jid).split("@")[0]
+        machine = session.query(Machines).filter(Machines.jid.like("%s%%"%user) ).first()
+        #machine = session.query(Machines).filter(Machines.jid == jid).first()
         session.commit()
         session.flush()
         result = {}
@@ -3636,7 +3848,11 @@ class XmppMasterDatabase(DatabaseHelper):
                       #relayserver.package_server_port
             #]
 
-            notconfars = { relayserver.jid :[relayserver.ipconnection, relayserver.port, relayserver.jid, relayserver.urlguacamole, 0 ]}
+            notconfars = { relayserver.jid :[relayserver.ipconnection,
+                                             relayserver.port,
+                                             relayserver.jid,
+                                             relayserver.urlguacamole,
+                                             0 ]}
             # search for clusters where ARS is
             clustersid = session.query(Has_cluster_ars).filter(Has_cluster_ars.id_ars == relayserver.id)
             clustersid = clustersid.all()
@@ -3713,7 +3929,8 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         Select the founded OUs of the logged machine.
         Param:
-            uuid_inventory: str. This param is the uuid of the inventory of the machine received by xmpp.
+            uuid_inventory: str. This param is the uuid of the inventory
+                                 of the machine received by xmpp.
 
         Returns:
             List of tuple. The tuple contains all the ou_machine and ou_user founded.
@@ -3752,3 +3969,169 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
 
         return [element for element in result]
+
+    @DatabaseHelper._sessionm
+    def substituteinfo(self, session, listconfsubstitute, arsname):
+        """
+            search  subtitute agent jid for agent machine
+        """
+        try:
+            exclud = 'master@pulse'
+
+            incrementeiscount=[]
+            for t in listconfsubstitute['conflist']:
+                result = session.query(Substituteconf.id.label("id"),
+                                       Substituteconf.jidsubtitute.label("jidsubtitute"),
+                                       Substituteconf.countsub.label("countsub"),
+                                       RelayServer.jid.label("namerelayser")).\
+                    join(RelayServer, Substituteconf.relayserver_id == RelayServer.id).\
+                        filter( and_(not_(Substituteconf.jidsubtitute.like(exclud)),
+                                    Substituteconf.type.like(t),
+                                    RelayServer.jid == arsname)).order_by(Substituteconf.countsub).all()
+                listcommand = []
+                test = False
+                for y in result:
+                    listcommand.append(y.jidsubtitute)
+                    if not test:
+                        test = True
+                        incrementeiscount.append(str(y.id))
+                        #y.countsub = y.countsub + 1
+                #session.commit()
+                #session.flush()
+                listcommand.append(exclud)
+                listconfsubstitute[t] = listcommand
+            #update contsub
+            sql="""UPDATE `xmppmaster`.`substituteconf` 
+                SET 
+                    `countsub` = `countsub` + '1'
+                WHERE
+                    `id` IN (%s);"""%','.join([x for x in incrementeiscount])
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error("substituteinfo : %s"%str(e))
+        return listconfsubstitute
+
+    @DatabaseHelper._sessionm
+    def GetMachine(self, session, jid):
+        """
+            Initialize boolean presence in table machines
+        """
+        user = str(jid).split("@")[0]
+        try:
+            sql = """SELECT
+                        id, hostname, agenttype
+                    FROM
+                        `xmppmaster`.`machines`
+                    WHERE
+                        `xmppmaster`.`machines`.jid like('%s@%%')
+                    LIMIT 1;"""%user
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [x for x in result][0]
+        except IndexError:
+            return None
+        except Exception, e:
+            logging.getLogger().error("GetMachine : %s"%str(e))
+            return None
+
+    @DatabaseHelper._sessionm
+    def initialisePresenceMachine(self, session, jid, presence=0):
+        """
+            Initialize presence in table machines and relay
+        """
+        mach = self.GetMachine(jid)
+        if mach is not None:
+            self.SetPresenceMachine(jid, presence)
+            if mach[2] != "machine":
+                try:
+                    sql = """UPDATE
+                                `xmppmaster`.`relayserver`
+                            SET
+                                `xmppmaster`.`relayserver`.`enabled` = '%s'
+                            WHERE
+                                `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%(presence,
+                                                                                    mach[1])
+                    session.execute(sql)
+                    session.commit()
+                    session.flush()
+                except Exception, e:
+                    logging.getLogger().error("initialisePresenceMachine : %s"%str(e))
+                finally:
+                    return "relayserver"
+            else:
+                return "machine"
+        else:
+            return None
+
+    @DatabaseHelper._sessionm
+    def SetPresenceMachine(self, session, jid, presence=0):
+        """
+            chang presence in table machines
+        """
+        user = str(jid).split("@")[0]
+        try:
+            sql = """UPDATE
+                        `xmppmaster`.`machines`
+                    SET
+                        `xmppmaster`.`machines`.`enabled` = '%s'
+                    WHERE
+                        `xmppmaster`.`machines`.jid like('%s@%%');"""%(presence,
+                                                                       user)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception, e:
+            logging.getLogger().error("SetPresenceMachine : %s"%str(e))
+            return False
+
+    @DatabaseHelper._sessionm
+    def updatedeployresultandstate(self, session, sessionid, state, result ):
+            jsonresult = json.loads(result)
+            jsonautre = copy.deepcopy(jsonresult)
+            del (jsonautre['descriptor'])
+            del (jsonautre['packagefile'])
+            #DEPLOYMENT START
+            try:
+                deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+                if deploysession:
+                    if deploysession.result is None or \
+                        ("wol" in jsonresult and \
+                            jsonresult['wol']  == 1 ) or \
+                        ("advanced" in jsonresult and \
+                            'syncthing' in jsonresult['advanced'] and \
+                                jsonresult['advanced']['syncthing'] == 1):
+                        jsonbase = {
+                                    "infoslist": [jsonresult['descriptor']['info']],
+                                    "descriptorslist": [jsonresult['descriptor']['sequence']],
+                                    "otherinfos" : [jsonautre],
+                                    "title" : deploysession.title,
+                                    "session" : deploysession.sessionid,
+                                    "macadress" : deploysession.macadress,
+                                    "user" : deploysession.login
+                        }
+                    else:
+                        jsonbase = json.loads(deploysession.result)
+                        jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
+                        jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
+                        jsonbase['otherinfos'].append(jsonautre)
+                    deploysession.result = json.dumps(jsonbase, indent=3)
+                    if 'infoslist' in jsonbase and \
+                        'otherinfos' in jsonbase and \
+                        len(jsonbase['otherinfos']) > 0 and \
+                        'plan' in jsonbase['otherinfos'][0] and \
+                            len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
+                            state == "DEPLOYMENT SUCCESS":
+                        state = "DEPLOYMENT PARTIAL SUCCESS"
+                    deploysession.state = state
+                session.commit()
+                session.flush()
+                session.close()
+                return 1
+            except Exception, e:
+                self.logger.error(str(e))
+                self.logger.error("\n%s"%(traceback.format_exc()))
+                return -1

@@ -44,7 +44,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from lib.logcolor import  add_coloring_to_emit_ansi
 
-
+logger = logging.getLogger()
 Base = declarative_base()
 
 VERSIONLOG = 1.0
@@ -271,11 +271,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" %
+            logger.error("Could not register account: %s" %
                     e.iq['error']['text'])
             #self.disconnect()
         except IqTimeout:
-            logging.error("No response from server.")
+            logger.error("No response from server.")
             self.disconnect()
 
 
@@ -335,6 +335,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if 'text' in dataobj :
                 text = dataobj['text']
             else:
+                logger.error( "Cannot record this log. The content is badly formatted.")
+                logger.error( "%s"%dataobj)
                 return
             type = dataobj['type'] if 'type' in dataobj else ""
             sessionname = dataobj['session'] if 'session' in dataobj else ""
@@ -358,7 +360,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     fromuser  = fromuser,
                                     touser  = touser)
         except Exception as e:
-            logging.error("Message deploy error  %s %s" %(dataobj, str(e)))
+            logger.error("format log Message  %s %s" %(dataobj, str(e)))
             traceback.print_exc(file=sys.stdout)
 
     def registerlogxmpp(self,
@@ -407,32 +409,58 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                      priority = dataobj['priority'],
                                      who = dataobj['who'])
             elif 'action' in dataobj :
-                if dataobj['action'] == 'resultapplicationdeploymentjson':
-                    #log dans base resultat
-                    if dataobj['ret'] == 0:
-                        self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT SUCCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
-                    else:
-                        self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+                if 'action' in dataobj and  'data' in dataobj and not "action" in dataobj['data']:
+                    dataobj['data']['action'] = dataobj['action']
+                    dataobj['data']['ret'] =  dataobj['ret']
+                    dataobj['data']['sessionid'] =  dataobj['sessionid']
+                if "data" in dataobj and 'action' in dataobj['data'] :
+                    if dataobj['data']['action'] == 'resultapplicationdeploymentjson':
+                        #log dans base resultat
+                        if dataobj['ret'] == 0:
+                            self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT SUCCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+                        else:
+                            self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
         except Exception as e:
-            logging.error("obj Message deploy error  %s %s" %(dataobj, str(e)))
+            logger.error("obj Message deploy error  %s %s" %(dataobj, str(e)))
             traceback.print_exc(file=sys.stdout)
 
     def message(self, msg):
         #save log message
         try :
             dataobj = json.loads(msg['body'])
+            #rend agent log compatible standart stucture messages
+            if "sessionid" in dataobj :  dataobj["session"] = dataobj["sessionid"]
+            if 'data' in dataobj:
+                if "sessionid" in dataobj['data'] :  
+                    dataobj["data"]["session"] = dataobj["sessionid"]
         except Exception as e:
-            logging.error("bad struct Message %s %s " %(msg, str(e)))
-            traceback.print_exc(file=sys.stdout)
-
-        if 'log' in dataobj:
-            if dataobj['log'] == 'xmpplog':
-                self.createlog(dataobj)
+            logger.error("bad struct Message %s %s " %(msg['from'], str(e)))
+            logger.error("\n%s"%(traceback.format_exc()))
+            return
+        try :
+            #logging.debug("recu message from %s \n%s"%(msg['from'], json.dumps(dataobj, indent=4) ))
+            if "action" in dataobj:
+                if "data" in dataobj and  'action' in dataobj['data']:
+                    if dataobj['data']['action'] == "resultapplicationdeploymentjson":
+                        self.xmpplogdeploy(dataobj)
+                        return
+                    elif dataobj['data']['action'] == "" or dataobj['data']['action'] == "xmpplog":
+                        self.createlog(dataobj['data'])
+                        return
+            if 'log' in dataobj:
+                if dataobj['log'] == 'xmpplog':
+                    self.createlog(dataobj)
+                else:
+                    # other typê message
+                    logging.debug("Verify format log message %s"%str(dataobj))
+                    pass
             else:
-                # other typê message
-                pass
-        else:
-            self.xmpplogdeploy(dataobj)
+                if dataobj['action'] == "resultapplicationdeploymentjson":
+                    self.xmpplogdeploy(dataobj)
+        except Exception as e:
+            logger.error("log  from %s error: %s " %(msg['from'], str(e)))
+            logger.error("\n%s"%(traceback.format_exc()))
+            return
 
 def createDaemon(opts,conf):
     """
@@ -445,8 +473,8 @@ def createDaemon(opts,conf):
             os._exit(0)
         doTask(opts,conf)
     except OSError, error:
-        logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
+        logger.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
 
 

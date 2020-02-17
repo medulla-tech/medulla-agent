@@ -1,3 +1,7 @@
+pulse-xmpp-agent 2.0.4
+======================
+* [FEATURE]  Integration of assessor and registration substitutes 
+
 pulse-xmpp-agent 2.0.3
 ======================
 * [BUGFIX]  Fix problem where agent stops after cycling through the alternate

@@ -44,6 +44,9 @@ import time
 from datetime import datetime
 import imp
 
+from Crypto import Random
+from Crypto.Cipher import AES
+
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
@@ -401,7 +404,7 @@ def call_plugin(name, *args, **kwargs):
         setattr(args[0], "num_call%s"%args[1], count)
     pluginaction = loadModule(nameplugin)
     pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s"%args[1], count +1)
+    setattr(args[0], "num_call%s"%args[1], count + 1)
 
 #def load_plugin(name):
     #mod = __import__("plugin_%s" % name)
@@ -415,16 +418,21 @@ def call_plugin(name, *args, **kwargs):
 
 def getshortenedmacaddress():
     listmacadress = {}
-    for i in netifaces.interfaces():
-        addrs = netifaces.ifaddresses(i)
-        try:
-            if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]['addr'])
-            addrs[netifaces.AF_INET][0]['addr']
-            address = int(if_mac, 16)
-            if address != 0:
-                listmacadress[address] = if_mac
-        except BaseException:
-            pass
+    for nbsearchmac in range(20):
+        for i in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(i)
+            try:
+                if_mac = reduction_mac(addrs[netifaces.AF_LINK][0]['addr'])
+                addrs[netifaces.AF_INET][0]['addr']
+                address = int(if_mac, 16)
+                if address != 0:
+                    listmacadress[address] = if_mac
+            except BaseException:
+                pass
+        if len(listmacadress) > 0:
+            break
+        else:
+            time.sleep(1)
     return listmacadress
 
 
@@ -1712,3 +1720,27 @@ class Program:
         for prog in self.programlist:
             subprocess.Popen.kill(self.programlist[prog])
         self.programlist.clear()
+
+unpad = lambda s : s[0:-ord(s[-1])]
+class AESCipher:
+
+    def __init__( self, key , BS = 32):
+        self.key = key
+        self.BS = BS
+
+    def _pad(self, s):
+        return s + (self.BS - len(s) % self.BS) * chr(self.BS - len(s) % self.BS)
+
+    def encrypt( self, raw ):
+        raw = self._pad(raw)
+        iv = Random.new().read( AES.block_size )
+        cipher = AES.new( self.key, AES.MODE_CBC, iv )
+        return base64.b64encode( iv + cipher.encrypt( raw ) )
+
+    def decrypt( self, enc ):
+        enc = base64.b64decode(enc)
+        iv = enc[:16]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv )
+        return unpad(cipher.decrypt( enc[16:] ))
+
+
