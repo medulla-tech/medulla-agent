@@ -37,25 +37,34 @@ from agentconffile import directoryconffile
 from utils import ipfromdns
 from sleekxmpp import jid
 
-def changeconnection(conffile, port, ipserver, jid, baseurlguacamole):
+logger = logging.getLogger()
+
+def changeconfigurationsubtitute(conffile, confsubtitute):
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
+    if not Config.has_section('substitute'):
+        Config.add_section('substitute')
+    for t in confsubtitute['conflist']:
+        Config.set('substitute', t, ",".join(confsubtitute[t]))
+    with open(conffile, 'w') as configfile:
+        Config.write(configfile)
+
+def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
+    Config = ConfigParser.ConfigParser()
+    Config.read(conffile)
+    domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
+        logger.warning("confdomain parameter missing in configuration_server")
+        logger.warning("parameters confdomain in configuration_server initialiastion value\"pulse\"")
         Config.set(
             'configuration_server',
             'confdomain',
-            Config.get(
-                'chat',
-                'domain'))
+            "pulse")
+    Config.set('chat', 'domain', domain)
     Config.set('connection', 'port', str(port))
     Config.set('connection', 'server', ipfromdns(str(ipserver)))
-    Config.set('global', 'relayserver_agent', str(jid))
+    Config.set('global', 'relayserver_agent', str(jidrelayserver))
     Config.set('type', 'guacamole_baseurl', str(baseurlguacamole))
-    try:
-        domain = str(jid).split("@")[1].split("/")[0]
-    except BaseException:
-        domain = str(jid)
-    Config.set('chat', 'domain', domain)
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
@@ -68,7 +77,6 @@ def alternativeclusterconnection(conffile, data):
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]
             nb_alternativeserver =  len(listalternative)
-            print ",".join(listalternative)
             configfile.write("[alternativelist]" + os.linesep)
             configfile.write("listars = %s%s"%(",".join(listalternative), os.linesep))
             configfile.write("nbserver = %s%s"%(nb_alternativeserver, os.linesep))
@@ -166,6 +174,53 @@ def loadparameters(namefile, group, key):
         value = Config.get('group', 'key')
     return value
 
+class substitutelist:
+    def __init__(self):
+        Config = ConfigParser.ConfigParser()
+        namefileconfig = conffilename('machine')
+        Config.read(namefileconfig)
+        if os.path.exists(namefileconfig + ".local"):
+            Config.read(namefileconfig + ".local")
+        #################substitute####################
+
+        self.sub_inventory = ["master@pulse"]
+        self.sub_subscribe = ["master@pulse"]
+        self.sub_registration = ["master@pulse"]
+        self.assessor = ["master@pulse"]
+        self.logagent = ["log@pulse", "master@pulse"]
+
+        if Config.has_option('substitute', 'subscription'):
+            sub_subscribelocal = Config.get('substitute', 'subscription')
+            self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
+
+        if Config.has_option('substitute', 'inventory'):
+            sub_inventorylocal = Config.get('substitute', 'inventory')
+            self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
+
+        if Config.has_option('substitute', 'registration'):
+            sub_registrationlocal = Config.get('substitute', 'registration')
+            self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+
+        if Config.has_option('substitute', 'assessor'):
+            assessorlocal = Config.get('substitute', 'assessor')
+            self.assessor = [x.strip() for x in assessorlocal.split(",")]
+
+        if Config.has_option('substitute', 'logagent'):
+            logagentlocal = Config.get('substitute', 'logagent')
+            self.logagent = [x.strip() for x in logagentlocal.split(",")]
+
+    def parameterssubtitute(self):
+        conflist = []
+        data={ 'subscription' : self.sub_subscribe,
+               'inventory' : self.sub_inventory,
+               'registration' : self.sub_registration,
+               'assessor' : self.assessor,
+               'logagent' : self.logagent}
+        for t in data:
+            #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
+            conflist.append(t)
+        data['conflist'] = conflist
+        return data
 
 class confParameter:
     def __init__(self, typeconf='machine'):
@@ -188,15 +243,28 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
+        #################substitute####################
+        self.sub_inventory = ["master@pulse"]
+        self.sub_subscribe = ["master@pulse"]
+        self.sub_registration = ["master@pulse"]
+        self.assessor = ["master@pulse"]
+        self.logagent = ["log@pulse", "master@pulse"]
+
+        if Config.has_option('substitute', 'subscription'):
+            sub_subscribelocal = Config.get('substitute', 'subscription')
+            self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
+
         if Config.has_option('substitute', 'inventory'):
-            self.sub_inventory = Config.get('substitute', 'inventory')
-        else:
-            self.sub_inventory = "master@pulse"
+            sub_inventorylocal = Config.get('substitute', 'inventory')
+            self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
 
         if Config.has_option('substitute', 'registration'):
-            self.sub_registration = Config.get('substitute', 'registration')
-        else:
-            self.sub_registration = "master@pulse"
+            sub_registrationlocal = Config.get('substitute', 'registration')
+            self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+
+        if Config.has_option('substitute', 'assessor'):
+            assessorlocal = Config.get('substitute', 'assessor')
+            self.assessor = [x.strip() for x in assessorlocal.split(",")]
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
@@ -210,24 +278,30 @@ class confParameter:
                 self.syncthing_on = True
         else:
             self.syncthing_on = True
+        logger.info('activation syncthing %s'%self.syncthing_on)
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
             self.moderelayserver = Config.get('type', 'moderelayserver')
+        logger.info('moderelayserver %s'%self.moderelayserver)
 
         if Config.has_option("updateagent", "updating"):
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
+        logger.info('updating %s'%self.updating)
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
             self.netchanging = 1
+        logger.info('netchanging %s'%self.netchanging)
+
         if Config.has_option("networkstatus", "detectiontime"):
             self.detectiontime = Config.getint('networkstatus', 'detectiontime')
         else:
             self.detectiontime = 300
+        logger.info('detection time for networkstatus%s'%self.detectiontime)
 
         self.parametersscriptconnection = {}
 
@@ -238,17 +312,17 @@ class confParameter:
                     self.concurrentdeployments = Config.getint('global',
                                                                'concurrentdeployments')
                 except Exception as e :
-                    logging.getLogger().warning(
+                    logger.warning(
                         "parameter [global]  concurrentdeployments :(%s)" %str(e))
-                    logging.getLogger().warning(
+                    logger.warning(
                         "parameter [global]  concurrentdeployments"\
                             " : parameter set to 10")
 
             if self.concurrentdeployments < 1:
-                logging.getLogger().warning(
+                logger.warning(
                         "parameter [global]  concurrentdeployments "\
                             " : parameter must be greater than or equal to 1")
-                logging.getLogger().warning(
+                logger.warning(
                         "parameter [global]  concurrentdeployments "\
                             ": parameter set to 10")
                 self.concurrentdeployments = 10
@@ -337,7 +411,7 @@ class confParameter:
                     for keyparameter, valueparameter in liststuple:
                         setattr(self, keyparameter, valueparameter)
                 else:
-                    logging.getLogger().warning(
+                    logger.warning(
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
                     #self.nameplugindir=""
@@ -364,10 +438,10 @@ class confParameter:
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
         ressource = utils.name_jid()
         #########chatroom############
-        self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
-        self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
-        # Deployment chatroom
-        self.passwordconnexionmuc = Config.get('chatroom', 'password')
+        #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
+        #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
+        ## Deployment chatroom
+        #self.passwordconnexionmuc = Config.get('chatroom', 'password')
         self.NickName = "%s.%s" % (platform.node(), jidsufixe)
         ########chat#############
         # The jidagent must be the smallest value in the list of mac addresses
@@ -414,20 +488,10 @@ class confParameter:
         if Config.has_option("configuration_server", "confpassword"):
             self.confpassword = Config.get(
                 'configuration_server', 'confpassword')
-        if Config.has_option("configuration_server", "confmuc_domain"):
-            try:
-                self.confjidchatroom = "%s@%s" % (Config.get(
-                    'configuration_server',
-                    'confmuc_chatroom'),
-                    Config.get(
-                    'configuration_server',
-                    'confmuc_domain'))
-            except BaseException:
-                self.confjidchatroom = "%s@%s" % ("configmaster", Config.get(
-                    'configuration_server', 'confmuc_domain'))
-        if Config.has_option("configuration_server", "confmuc_password"):
-            self.confpasswordmuc = Config.get(
-                'configuration_server', 'confmuc_password')
+        if Config.has_option("configuration_server", "keyAES32"):
+            self.keyAES32 = Config.get('configuration_server', 'keyAES32')
+        else:
+            self.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
 
         try:
             self.baseurlguacamole = Config.get('type', 'guacamole_baseurl')
@@ -440,13 +504,10 @@ class confParameter:
             self.debug = 'NOTSET'
         self.debug = self.debug.upper()
 
-        # use [chat) domain for first connection
-        # if not  [configuration_server] [confdomain]
-        # agent connection add [configuration_server] [confdomain]
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get('configuration_server', 'confdomain')
         else:
-            self.confdomain = self.chatserver
+            self.confdomain = "pulse"
 
         if self.debug == 'CRITICAL':
             self.levellog = 50

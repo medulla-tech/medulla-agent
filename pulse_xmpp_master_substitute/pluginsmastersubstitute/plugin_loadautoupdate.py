@@ -18,17 +18,14 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_autoupdate.py
+# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadautoupdate.py
 
 import base64
 import json
-import sys, os
+import os
 import logging
-import platform
 from lib.utils import file_get_contents, getRandomName, data_struct_message
 from lib.update_remote_agent import Update_Remote_Agent
-import traceback
-from sleekxmpp import jid
 import types
 import ConfigParser
 
@@ -37,7 +34,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.3", "NAME" : "autoupdate", "TYPE" : "substitute"}
+plugin = {"VERSION" : "1.3", "NAME" : "loadautoupdate", "TYPE" : "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -102,7 +99,7 @@ def read_conf_remote_update(objectxmpp):
     logger.debug("autoupdate agent is %s"%objectxmpp.autoupdate)
 
     objectxmpp.senddescriptormd5 = types.MethodType(senddescriptormd5, objectxmpp)
-    objectxmpp.plugin_autoupdate = types.MethodType(plugin_autoupdate, objectxmpp)
+    objectxmpp.plugin_loadautoupdate = types.MethodType(plugin_loadautoupdate, objectxmpp)
 
 def senddescriptormd5(self, to):
     """
@@ -120,7 +117,7 @@ def senddescriptormd5(self, to):
                       mbody=json.dumps(datasend),
                       mtype='chat')
 
-def plugin_autoupdate(self, msg, data):
+def plugin_loadautoupdate(self, msg, data):
     # Manage update remote agent
     if self.autoupdate and 'md5agent' in data and \
         self.Update_Remote_Agentlist.get_fingerprint_agent_base() != data['md5agent']:

@@ -49,6 +49,12 @@ password = @@CHATROOM_PASSWORD@@
 # Domain used for chat messages
 domain = @@CHAT_DOMAIN@@
 
+[substitute]
+# Subscription agent JIDs
+# Must be changed to substitute agent JIDs if used
+# The parameters can be a comma-separated list of available substitute jids
+subscription = master_subs@pulse
+
 # Define a specific jid for the agent. Optional
 # [jid_01]
 # jidname = machine1@localhost/pulse01a

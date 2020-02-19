@@ -69,7 +69,6 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                         plugindescriptorparameter['data'],
                         msgt,
                         plugindescriptorparametererreur)
-        except Exception as e:
-            print str(e)
-            #traceback.print_exc(file=sys.stdout)
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
     logger.debug("========= end plugin %s ========="%plugin['NAME'])

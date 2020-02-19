@@ -19,14 +19,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file manage_xmppbrowsing.py
+# file pulse_xmpp_agent/lib/manage_xmppbrowsing.py
 
 import os, sys
-import json, re
 import logging
-from utils import shellcommandtimeout, file_get_content, simplecommand, decode_strconsole, encode_strconsole
-import zlib
-import base64
+from utils import file_get_content, simplecommand, decode_strconsole
 import math
 import traceback
 
@@ -108,7 +105,7 @@ class xmppbrowsing:
                                         type = 'noset',
                                         sessionname = '',
                                         priority = 0,
-                                        action = "",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "Remote",
                                         why = "",
@@ -122,7 +119,7 @@ class xmppbrowsing:
                                         type = 'noset',
                                         sessionname = '',
                                         priority = 0,
-                                        action = "",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "Remote",
                                         why = "",
@@ -178,7 +175,6 @@ class xmppbrowsing:
             pathabs = self.defaultdir
         else:
             dd = path_abs_current.split("/")
-            rr=dd[0]
             del dd[0]
             path_abs_current = "/".join(dd)
             self.hierarchystring = ""
@@ -189,7 +185,7 @@ class xmppbrowsing:
             pathabs = pathabs.replace("C:", "c:");
         try:
             list_files_current_dirs, list_files_current_files = self._listdirfile(pathabs)
-        except Exception as e:
+        except Exception:
             list_files_current_dirs = []
             list_files_current_files = []
         display_only_folder_no_nexclude = []

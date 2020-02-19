@@ -19,6 +19,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
 # file  : pulse_xmpp_agent/connectionagent.py
 
 import shutil
@@ -36,12 +37,14 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from lib.networkinfo import networkagentinfo, organizationbymachine,\
     organizationbyuser, powershellgetlastuser
 from lib.configuration import  confParameter, changeconnection,\
-    alternativeclusterconnection, nextalternativeclusterconnection
+    alternativeclusterconnection, nextalternativeclusterconnection,\
+        substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
 from lib.utils import getRandomName,\
     DEBUGPULSE, searchippublic, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
-            isWinUserAdmin, isMacOsUserAdmin, file_put_contents
+            isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
+                      AESCipher, refreshfingerprintconf
 from optparse import OptionParser
 
 from threading import Timer
@@ -70,8 +73,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resourcejid=newjidconf[1].split("/")
         resourcejid[0]=conf.confdomain
         newjidconf[0] = getRandomName(10,"conf")
-        conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+getRandomName(10,"conf")
-
+        self.HostNameSystem = platform.node()
+        conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
+        self.agentmaster =jid.JID("master@pulse")
         self.session = ""
         logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
 
@@ -81,20 +85,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
 
-        self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
+        if not hasattr(self.config, 'assessor'):
+            self.assessor = self.agentmaster
+        else:
+            if isinstance(self.config.assessor, list) and\
+                len(self.config.assessor) > 0:
+                self.assessor = jid.JID(self.config.assessor[0])
+            else:
+                self.assessor = jid.JID(self.config.assessor)
+        if self.assessor.bare == "":
+            self.assessor = self.agentmaster
+
+        #self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
-
-        self.add_event_handler("muc::%s::presence" % conf.confjidchatroom,
-                               self.muc_presenceConf)
-        self.add_event_handler("muc::%s::got_offline" % conf.confjidchatroom,
-                               self.muc_offlineConf)
-        self.add_event_handler("muc::%s::got_online" % conf.confjidchatroom,
-                               self.muc_onlineConf)
-
         self.add_event_handler('message', self.message)
-        self.add_event_handler("groupchat_message", self.muc_message)
         try:
             self.config.syncthing_on
         except NameError:
@@ -153,7 +159,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,
                                 "data":  { 'errorsyncthingconf' : informationerror}}
-                self.send_message(mto =  "master@%s"%self.config.confdomain,
+                self.send_message(mto =  self.assessor,
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
         ################################### syncthing ###################################
@@ -163,12 +169,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
 
         self.config.ipxmpp = getIpXmppInterface(self.config.confserver, self.config.confport)
-
-        #join chatroom configuration
-        self.plugin['xep_0045'].joinMUC(self.config.confjidchatroom,
-                                        self.config.NickName,
-                                        password=self.config.confpasswordmuc,
-                                        wait=True)
+        self.infos_machine_assessor()
 
     def register(self, iq):
         """ This function is called for automatic registration"""
@@ -185,40 +186,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
-
-
-    def muc_presenceConf(self, presence):
-        """
-        traitement seulement si MASTER du chatroom configmaster
-        """
-        logging.log(DEBUGPULSE,"muc_presenceConf")
-        from xml.dom import minidom
-        reparsed = minidom.parseString(str(presence))
-        logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
-        if presence['from'] == self.config.masterchatroom:
-            print presence['from']
-        #envoi information machine
-        pass
-
-    def muc_offlineConf(self, presence):
-        logging.log(DEBUGPULSE,"muc_offlineConf")
-        from xml.dom import minidom
-        reparsed = minidom.parseString(str(presence))
-        logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
-        if presence['from'] == self.config.masterchatroom:
-            print presence['from']
-        pass
-
-    def muc_onlineConf(self, presence):
-        logging.log(DEBUGPULSE,"muc_onlineConf")
-        from xml.dom import minidom
-        reparsed = minidom.parseString(str(presence))
-        logging.log(DEBUGPULSE,reparsed.toprettyxml(indent="\t"))
-        if presence['muc']['nick'] == self.config.NickName:
-            #elimine sa propre presense
-            return
-        if presence['muc']['nick'] == "MASTER":
-            self.infos_machine()
 
     def adddevicesyncthing(self, keydevicesyncthing, namerelay, address = ["dynamic"]):
         resource = jid.JID(namerelay).resource
@@ -280,119 +247,123 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         try :
             data = json.loads(msg['body'])
-        except:
+        except Exception:
             return
 
         if self.session == data['sessionid'] and \
-            data['action'] == "resultconnectionconf" and \
-            msg['from'].user == "master" and \
-            msg['from'].resource=="MASTER" and data['ret'] == 0:
-            logging.info("Resultat data : %s"%json.dumps(data,
-                                                         indent=4,
-                                                         sort_keys=True))
-            if len(data['data']) == 0 :
-                logging.error("Verify table cluster : has_cluster_ars")
-                sys.exit(0)
-            logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'],
-                                                                                 indent=4,
-                                                                                 sort_keys=True))
-            logging.log(DEBUGPULSE, "write new config")
+            data['action'] == "resultconnectionconf":
+            if data['ret'] == 0 :
+                fromagent = str(msg['from'].bare)
+                if fromagent == self.assessor :
+                    #resultconnectionconf
+                    logging.info("Resultat data : %s"%json.dumps(data,
+                                                                indent=4,
+                                                                sort_keys=True))
+                    if len(data['data']) == 0 :
+                        logging.error("Verify table cluster : has_cluster_ars")
+                        sys.exit(0)
+                    logging.info("Start relay server agent configuration\n%s"%json.dumps(data['data'],
+                                                                                        indent=4,
+                                                                                        sort_keys=True))
+                    logging.log(DEBUGPULSE, "write new config")
 
-            if self.config.syncthing_on:
-                try:
-                    if "syncthing" in data:
-                        self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
-                        self.syncthing.config['options']['relaysEnabled'] = False
-                        self.syncthing.config['options']['localAnnounceEnabled'] = False
-                        self.syncthing.del_folder("default")
-                        if sys.platform.startswith('win'):
-                            defaultFolderPath = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
-                        elif sys.platform.startswith('linux'):
-                            defaultFolderPath = os.path.join(os.path.expanduser('~pulseuser'),
-                                                            "syncthing")
-                        elif sys.platform.startswith('darwin'):
-                            defaultFolderPath = os.path.join("/",
-                                                            "Library",
-                                                            "Application Support",
-                                                            "Pulse",
-                                                            "var", "syncthing")
-                        if not os.path.exists(defaultFolderPath):
-                            os.mkdir(defaultFolderPath)
-                            os.chmod(defaultFolderPath, 0o777)
-                        self.syncthing.config['options']['defaultFolderPath'] = defaultFolderPath
+                    if self.config.syncthing_on:
+                        try:
+                            if "syncthing" in data:
+                                self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
+                                self.syncthing.config['options']['relaysEnabled'] = False
+                                self.syncthing.config['options']['localAnnounceEnabled'] = False
+                                self.syncthing.del_folder("default")
+                                if sys.platform.startswith('win'):
+                                    defaultFolderPath = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
+                                elif sys.platform.startswith('linux'):
+                                    defaultFolderPath = os.path.join(os.path.expanduser('~pulseuser'),
+                                                                    "syncthing")
+                                elif sys.platform.startswith('darwin'):
+                                    defaultFolderPath = os.path.join("/",
+                                                                    "Library",
+                                                                    "Application Support",
+                                                                    "Pulse",
+                                                                    "var", "syncthing")
+                                if not os.path.exists(defaultFolderPath):
+                                    os.mkdir(defaultFolderPath)
+                                    os.chmod(defaultFolderPath, 0o777)
+                                self.syncthing.config['options']['defaultFolderPath'] = defaultFolderPath
 
-                    if self.deviceid != "":
-                        if len(data['data'][0]) == 6:
-                            for x in data['data']:
-                                if self.is_format_key_device(str(x[5])):
-                                    self.adddevicesyncthing(str(x[5]),
-                                                            str(x[2]),
-                                                            address=["tcp4://%s"%str(x[0])])
-                        logger.debug("synchro config %s"%self.syncthing.is_config_sync())
-                        logging.log(DEBUGPULSE, "write new config syncthing")
-                        self.syncthing.validate_chang_config()
-                        time.sleep(2)
-                        filesyncthing = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    "baseconfigsyncthing.xml")
-                        logging.log(DEBUGPULSE, "copy configuration syncthing")
-                        shutil.copyfile(self.fichierconfsyncthing, filesyncthing)
-                        logger.debug("%s"%json.dumps(self.syncthing.config, indent =4))
-                        if logging.getLogger().level == logging.DEBUG:
-                            dataconf = json.dumps(self.syncthing.config, indent =4)
-                        else:
-                            dataconf = 're-setup syncthing ok'
+                            if self.deviceid != "":
+                                if len(data['data'][0]) == 6:
+                                    for x in data['data']:
+                                        if self.is_format_key_device(str(x[5])):
+                                            self.adddevicesyncthing(str(x[5]),
+                                                                    str(x[2]),
+                                                                    address=["tcp4://%s"%str(x[0])])
+                                logger.debug("synchro config %s"%self.syncthing.is_config_sync())
+                                logging.log(DEBUGPULSE, "write new config syncthing")
+                                self.syncthing.validate_chang_config()
+                                time.sleep(2)
+                                filesyncthing = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            "baseconfigsyncthing.xml")
+                                logging.log(DEBUGPULSE, "copy configuration syncthing")
+                                shutil.copyfile(self.fichierconfsyncthing, filesyncthing)
+                                logger.debug("%s"%json.dumps(self.syncthing.config, indent =4))
+                                if logging.getLogger().level == logging.DEBUG:
+                                    dataconf = json.dumps(self.syncthing.config, indent =4)
+                                else:
+                                    dataconf = 're-setup syncthing ok'
 
-                        confsyncthing = { "action": "resultconfsyncthing",
-                                        "sessionid" : getRandomName(6, "confsyncthing"),
-                                        "ret" : 0,
-                                        "base64" : False,
-                                        "data":  { 'syncthingconf' : 're-setup syncthing ok\n%s'%dataconf}}
+                                confsyncthing = { "action": "resultconfsyncthing",
+                                                "sessionid" : getRandomName(6, "confsyncthing"),
+                                                "ret" : 0,
+                                                "base64" : False,
+                                                "data":  { 'syncthingconf' : 're-setup syncthing ok\n%s'%dataconf}}
 
+                                self.send_message(mto =  msg['from'],
+                                                mbody = json.dumps(confsyncthing),
+                                                mtype = 'chat')
+                        except Exception:
+                            confsyncthing = {"action": "resultconfsyncthing",
+                                            "sessionid" : getRandomName(6, "confsyncthing"),
+                                            "ret" : 255,
+                                            "data":  { 'errorsyncthingconf' : "%s"%traceback.format_exc()}
+                                                }
+                            self.send_message(mto =  msg['from'],
+                                                mbody = json.dumps(confsyncthing),
+                                                mtype = 'chat')
+                    try:
+                        #else:
+                            #logging.info("Start relay server
+                        if "substitute" in data:
+                            changeconfigurationsubtitute(conffilename(opts.typemachine),
+                                                         data['substitute'])
+                        changeconnection(conffilename(opts.typemachine),
+                                        data['data'][0][1],
+                                        data['data'][0][0],
+                                        data['data'][0][2],
+                                        data['data'][0][3])
+                        #write alternative configuration
+                        alternativeclusterconnection(conffilename("cluster"),data['data'])
+                        confaccountclear={  "action": "resultcleanconfaccount",
+                                            "sessionid" : getRandomName(6, "delconf"),
+                                            "ret" : 0,
+                                            "base64" : False,
+                                            "data":  { 'useraccount' : str(self.boundjid.user)}}
                         self.send_message(mto =  msg['from'],
-                                        mbody = json.dumps(confsyncthing),
+                                        mbody = json.dumps(confaccountclear),
                                         mtype = 'chat')
-                except:
-                    confsyncthing = {"action": "resultconfsyncthing",
-                                    "sessionid" : getRandomName(6, "confsyncthing"),
-                                    "ret" : 255,
-                                    "data":  { 'errorsyncthingconf' : "%s"%traceback.format_exc()}
-                                        }
-                    self.send_message(mto =  msg['from'],
-                                        mbody = json.dumps(confsyncthing),
-                                        mtype = 'chat')
-            try:
-                #else:
-                    #logging.info("Start relay server
-
-                changeconnection(conffilename(opts.typemachine),
-                                 data['data'][0][1],
-                                 data['data'][0][0],
-                                 data['data'][0][2],
-                                 data['data'][0][3])
-                #write alternative configuration
-                alternativeclusterconnection(conffilename("cluster"),data['data'])
-                confaccountclear={  "action": "resultcleanconfaccount",
-                                    "sessionid" : getRandomName(6, "delconf"),
-                                    "ret" : 0,
-                                    "base64" : False,
-                                    "data":  { 'useraccount' : str(self.boundjid.user)}}
-                self.send_message(mto =  msg['from'],
-                                  mbody = json.dumps(confaccountclear),
-                                  mtype = 'chat')
-                #go to next ARS
-                nextalternativeclusterconnection(conffilename("cluster"))
-            except:
-                # conpatibility version old agent master
-                changeconnection(conffilename(opts.typemachine),
-                                 data['data'][1],
-                                 data['data'][0],
-                                 data['data'][2],
-                                 data['data'][3])
-        elif data['ret'] != 0:
-            logging.error("configuration dynamic error")
-        else:
-            return
-        self.disconnect(wait=5)
+                        #go to next ARS
+                        nextalternativeclusterconnection(conffilename("cluster"))
+                        logger.debug("make finger print conf file")
+                        refreshfingerprintconf(opts.typemachine)
+                    except Exception:
+                        # conpatibility version old agent master
+                        changeconnection(conffilename(opts.typemachine),
+                                        data['data'][1],
+                                        data['data'][0],
+                                        data['data'][2],
+                                        data['data'][3])
+            else:
+                logging.error("configuration dynamic error")
+            self.disconnect(wait=5)
 
     def terminate(self):
         self.disconnect()
@@ -400,18 +371,34 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def muc_message(self, msg):
         pass
 
-    def infos_machine(self):
+    def infosubstitute(self):
+        return substitutelist().parameterssubtitute()
+
+    def infos_machine_assessor(self):
         #envoi information
         dataobj=self.seachInfoMachine()
         self.session = getRandomName(10,"session")
         dataobj['sessionid'] = self.session
         dataobj['base64'] = False
+        dataobj['action'] = "assessor_agent"
+        dataobj['substitute'] = self.infosubstitute()
+        msginfo={
+            'action' : "assessor_agent",
+            'base64': False,
+            'sessionid' : self.session,
+            'data' : dataobj,
+            'ret' : 0
+            }
+
+        cipher = AESCipher(self.config.keyAES32)
+        msginfo['data']['codechaine'] = cipher.encrypt(str(self.boundjid))
+
         #----------------------------------
         print "affiche object"
         print json.dumps(dataobj, indent = 4)
         #----------------------------------
-        self.send_message(mto = "master@%s"%self.config.confdomain,
-                            mbody = json.dumps(dataobj),
+        self.send_message(mto = self.assessor,
+                            mbody = json.dumps(msginfo),
                             mtype = 'chat')
 
     def seachInfoMachine(self):
@@ -507,7 +494,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                    "pidconnection"), "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
-            # knokno
             result = subprocess.check_output(["icacls",
                                     os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                  "pidconnection"),

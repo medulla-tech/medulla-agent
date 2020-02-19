@@ -475,35 +475,39 @@ def totimestamp(self, dt, epoch=datetime(1970,1,1)):
 
 def xmpplog(self,
             text,
-            type='noset',
-            sessionname='',
-            priority=0,
-            action="",
-            who="",
-            how="",
-            why="",
-            module="",
-            date=None,
-            fromuser="",
-            touser=""):
-    if who == "":
-        who = self.boundjid.bare
-    msgbody = {'log': 'xmpplog',
-               'text': text,
-               'type': type,
-               'session': sessionname,
-               'priority': priority,
-               'action': action,
-               'who': who,
-               'how': how,
-               'why': why,
-               'module': module,
-               'date': None,
-               'fromuser': fromuser,
-               'touser': touser}
-    self.send_message(mto=jid.JID("log@pulse"),
-                      mbody=json.dumps(msgbody),
-                      mtype='chat')
+            type = 'noset',
+            sessionname = '',
+            priority = 0,
+            action = "xmpplog",
+            who = "",
+            how = "",
+            why = "",
+            module = "",
+            date = None ,
+            fromuser = "",
+            touser = ""):
+        if who == "":
+            who = self.boundjid.bare
+        msgbody = {}
+        data = {'log' : 'xmpplog',
+                'text' : text,
+                'type': type,
+                'session' : sessionname,
+                'priority': priority,
+                'action' : action ,
+                'who': who,
+                'how' : how,
+                'why' : why,
+                'module': module,
+                'date' : None ,
+                'fromuser' : fromuser,
+                'touser' : touser}
+        msgbody['data'] = data
+        msgbody['action'] = 'xmpplog'
+        msgbody['session'] = sessionname
+        self.send_message(  mto = jid.JID("log@pulse"),
+                            mbody=json.dumps(msgbody),
+                            mtype='chat')
 
 
 def syncthingdeploy(self):
