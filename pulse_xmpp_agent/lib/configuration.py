@@ -36,7 +36,8 @@ from sleekxmpp import jid
 from agentconffile import directoryconffile
 from utils import ipfromdns
 from sleekxmpp import jid
-
+import re
+import traceback
 logger = logging.getLogger()
 
 def changeconfigurationsubtitute(conffile, confsubtitute):
@@ -46,6 +47,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
         Config.set('substitute', t, ",".join(confsubtitute[t]))
+    logger.info("write parameter subtitute")
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
@@ -76,7 +78,7 @@ def alternativeclusterconnection(conffile, data):
     with open(conffile, 'w') as configfile:
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]
-            nb_alternativeserver =  len(listalternative)
+            nb_alternativeserver =  len(listalternative) # print ",".join(listalternative)
             configfile.write("[alternativelist]" + os.linesep)
             configfile.write("listars = %s%s"%(",".join(listalternative), os.linesep))
             configfile.write("nbserver = %s%s"%(nb_alternativeserver, os.linesep))
@@ -121,7 +123,7 @@ def nextalternativeclusterconnection(conffile):
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
-    return [ serverjid, server, port, guacamole_baseurl, domain, nbserver]
+    return [ serverjid, server, port, guacamole_baseurl, domain, nbserver ]
 
 
 # Singleton/SingletonDecorator.py
@@ -188,7 +190,7 @@ class substitutelist:
         self.sub_registration = ["master@pulse"]
         self.assessor = ["master@pulse"]
         self.logagent = ["log@pulse", "master@pulse"]
-
+        
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
             self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
@@ -204,7 +206,7 @@ class substitutelist:
         if Config.has_option('substitute', 'assessor'):
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
-
+        
         if Config.has_option('substitute', 'logagent'):
             logagentlocal = Config.get('substitute', 'logagent')
             self.logagent = [x.strip() for x in logagentlocal.split(",")]
@@ -243,7 +245,7 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
-        #################substitute####################
+        
         self.sub_inventory = ["master@pulse"]
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
@@ -265,6 +267,11 @@ class confParameter:
         if Config.has_option('substitute', 'assessor'):
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
+            
+        if Config.has_option('substitute', 'logagent'):
+            logagentlocal = Config.get('substitute', 'logagent')
+            self.logagent = [x.strip() for x in logagentlocal.split(",")]
+
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
@@ -497,7 +504,7 @@ class confParameter:
             self.baseurlguacamole = Config.get('type', 'guacamole_baseurl')
         except BaseException:
             self.baseurlguacamole = ""
-
+        
         try:
             timeal = Config.get('global', 'alternativetimedelta')
             self.timealternatif = [int(x) for x in

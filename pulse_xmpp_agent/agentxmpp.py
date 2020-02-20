@@ -79,6 +79,8 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
 from sleekxmpp import jid
 
+import random
+
 if sys.platform.startswith('win'):
     import win32api
     import win32con
@@ -89,7 +91,7 @@ else:
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
-
+ERRORPULSE = 40
 logger = logging.getLogger()
 global restart
 signalint = False
@@ -123,6 +125,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        
+        
         # ###### creation object session ##########
         self.session = session(self.config.agenttype)
         ###########################################
@@ -200,8 +204,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
 
-        self.agentsiveo = self.config.jidagentsiveo
-
         if not testagentconf(self.config.agenttype):
             #supprime fichier figerprint
             pathfingerprint = os.path.join( Setdirectorytempinfo(),
@@ -259,14 +261,38 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.sub_registration.bare == "":
             self.sub_registration = self.agentmaster
 
+        if sys.platform.startswith('linux'):
+            if self.config.agenttype in ['relayserver']:
+                self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            else:
+                self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                                                    ".config",
+                                                    "syncthing",
+                                                    "config.xml")
+            self.tmpfile = "/tmp/confsyncting.txt"
+        elif sys.platform.startswith('win'):
+            self.fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
+            self.tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
+        elif sys.platform.startswith('darwin'):
+            self.fichierconfsyncthing = os.path.join("/",
+                                                "Library",
+                                                "Application Support",
+                                                "Pulse",
+                                                "etc", 
+                                                "syncthing", 
+                                                "config.xml")
+            self.tmpfile = "/tmp/confsyncting.txt"
+        self.deviceid = ""    
+        try:
+            self.deviceid = iddevice(self.fichierconfsyncthing)
+        except Exception:
+            pass
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files
             # de session dont le deploiement a echoue ne sont pas efface.
             self.session.clearallfilesession()
-            self.deviceid = iddevice()
-        else:
-            self.deviceid=""
+
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
@@ -436,6 +462,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('initsyncthing',
                       120,
                       self.initialise_syncthing,
+                      repeat=False)
+        
+        self.schedule('initialise_tcp_kiosk',
+                      80,
+                      self.initialise_tcp_kiosk,
                       repeat=False)
   
     ###############################################################
@@ -1514,6 +1545,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     startparameter['data'],
                     msg,
                     dataerreur)
+
+        ################### initialise charge relay server ###################
+        if sys.platform.startswith('win'):
+            logger.debug("____________________________________________")
+            logger.info("___________INSTALL SERVER PIPENAMED___________")
+            #using event eventkillpipe for signal stop thread
+            self.quitserverpipe = False
+            self.eventkillpipe = threading.Event()
+            logging.log(DEBUGPULSE,'Install pipe nammed server for network interface')
+            threading.Thread(target=self._serverPipe).start()
+            logger.debug("____________________________________________")
+
+    def initialise_tcp_kiosk(self):
         ################### Server TCP/IP #############################
         logger.debug("____________________________________________")
         logger.info("___________INSTALL SERVER KIOSK___________")
@@ -1535,16 +1579,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         client_handlertcp = threading.Thread(target=self.tcpserver)
         # run server tcpserver for kiosk
         client_handlertcp.start()
-        ################### initialise charge relay server ###################
-        if sys.platform.startswith('win'):
-            logger.debug("____________________________________________")
-            logger.info("___________INSTALL SERVER PIPENAMED___________")
-            #using event eventkillpipe for signal stop thread
-            self.quitserverpipe = False
-            self.eventkillpipe = threading.Event()
-            logging.log(DEBUGPULSE,'Install pipe nammed server for network interface')
-            threading.Thread(target=self._serverPipe).start()
-            logger.debug("____________________________________________")
 
     def initialise_syncthing(self):
         logger.debug("____________________________________________")
@@ -1706,11 +1740,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 'action' : 'xmpplog',
                 'text' : text,
                 'type':type,
+                'sessionid':sessionname,
                 'session':sessionname,
                 'priority':priority,
                 'who':who}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
+        msgbody['sessionid'] = sessionname
         msgbody['session'] = sessionname
         self.send_message(  mto = self.logagent,
                             mbody=json.dumps(msgbody),
@@ -1729,13 +1765,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
+        if sessionname == "" : sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
         data = {'log' : 'xmpplog',
                 'text' : text,
                 'type': type,
-                'session' : sessionname,
+                'sessionid' : sessionname,
                 'priority': priority,
                 'action' : action ,
                 'who': who,
@@ -1747,7 +1784,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 'touser' : touser}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
-        msgbody['session'] = sessionname
+        msgbody['sessionid'] = sessionname
         self.send_message(  mto = self.logagent,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
@@ -2424,44 +2461,71 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             restart = False
         if signalint:
             logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
-            terminateserver(xmpp)
+            try:
+                xmpp.eventkill.set()
+            except Exception:
+                pass
+            time.sleep(1)
             break
-        logging.log(DEBUGPULSE,"analyse alternative")
+        if xmpp.config.agenttype in ['relayserver']:
+            terminateserver(xmpp)
+        
         if not restart:
             logging.log(DEBUGPULSE,"not restart")
             # verify if signal stop
             # verify if alternative connection
-            logging.log(DEBUGPULSE,"alternative connection")
-            logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
             if os.path.isfile(conffilename("cluster")):
                 # il y a une configuration alternative
+                logging.log(DEBUGPULSE,"analyse alternative alternative connection")
+                logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
                 logging.log(DEBUGPULSE, "alternative configuration")
-                newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
                 countcycle += 1
-                changeconnection( conffilename(xmpp.config.agenttype),
-                                newparametersconnect[2],
-                                newparametersconnect[1],
-                                newparametersconnect[0],
-                                newparametersconnect[3])
-                if newparametersconnect[5] < countcycle:
-                    # if plus d'un cycle fait on relance le configurateur
-                    countcycle = 0
-                    logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
-                    nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                    args = ['python', nameprogconnection, '-t', 'machine']
-                    subprocess.call(args)
-                    time.sleep(10)
-    terminateserver(xmpp)
+                try:
+                    xmpp.eventkill.set()
+                except Exception:
+                    pass
+                try:
+                    xmpp.sock.close()
+                except Exception:
+                    pass
+                try:
+                    tiealternatifars = random.randint(*xmpp.config.timealternatif)
+                    logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%tiealternatifars)
+                    time.sleep(tiealternatifars)
+                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
 
+                    changeconnection( conffilename(xmpp.config.agenttype),
+                                    newparametersconnect[2],
+                                    newparametersconnect[1],
+                                    newparametersconnect[0],
+                                    newparametersconnect[3])
+
+                    if newparametersconnect[5] < countcycle:
+                        # if plus d'un cycle fait on relance le configurateur
+                        countcycle = 0
+                        logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
+                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                        args = ['python', nameprogconnection, '-t', 'machine']
+                        subprocess.call(args)
+                        time.sleep(10)
+                except Exception:
+                    logging.log(40," ERROR analyse alternative connection")
+                    logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
+    terminateserver(xmpp)
+    logging.log(DEBUGPULSE,"QUIT")
+    os._exit(0)
 
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE,"terminateserver")
-    xmpp.eventkill.set()
+    try:
+        xmpp.eventkill.set()
+    except Exception:
+        xmpp.quitserverkiosk = True
     try:
         xmpp.sock.close()
     except Exception:
-        pass
+        xmpp.quitserverkiosk = True
     if sys.platform.startswith('win'):
         try:
             xmpp.eventkillpipe.set()
@@ -2485,13 +2549,26 @@ def terminateserver(xmpp):
     time.sleep(2)
     logging.log(DEBUGPULSE,"terminate scheduler")
     xmpp.scheduler.quit()
-    logging.log(DEBUGPULSE,"waitting stop server kiosk")
-    while not xmpp.quitserverkiosk:
-        time.sleep(1)
-    while not xmpp.quitserverpipe:
-        time.sleep(1)
+    try:
+        for t in range(40):
+            logging.log(DEBUGPULSE,"waitting stop server kiosk")
+            if not xmpp.quitserverkiosk:
+                time.sleep(1)
+            else:
+                break
+    except Exception:
+        logging.log(40,"error waitting stop server kiosk")
+     
+    for t in range(40):
+        logging.log(DEBUGPULSE,"quit server pipee")
+        if not xmpp.quitserverpipe:
+            logging.log(DEBUGPULSE,"quit server pipe")
+            time.sleep(1)
+        else:
+            logging.log(DEBUGPULSE,"quitserverpipey")
+            break
     logging.log(DEBUGPULSE,"bye bye Agent")
-
+    
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
         print "Agent must be running as root"

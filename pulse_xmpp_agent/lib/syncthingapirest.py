@@ -56,19 +56,23 @@ import sys
 
 logger = logging.getLogger()
 
-
 def iddevice(configfile = "/var/lib/syncthing/.config/syncthing/config.xml"):
-    hostname = socket.gethostname()
-    tree = etree.parse(configfile)
-    arrayiddevice = [ [x.xpath("@name")[0],x.xpath("@id")[0]] 
-                     for x in tree.xpath('/configuration/device')]
-    for device in arrayiddevice:
-        if device[0] == hostname:
-            return   device[1]
-        elif device[0] == "pulse":
-            return device[1]
-    return ""
-
+    try:
+        hostname = socket.gethostname()
+        tree = etree.parse(configfile)
+        arrayiddevice = [ [x.xpath("@name")[0],x.xpath("@id")[0]] 
+                        for x in tree.xpath('/configuration/device')]
+        for device in arrayiddevice:
+            if device[0] == hostname:
+                logger.error("device id syncthing %s"%(device[1]))
+                return   device[1]
+            elif device[0] == "pulse":
+                logger.error("device id syncthing %s"%(device[1]))
+                return device[1]
+        return ""
+    except Exception as e :
+        logger.error("%s search iddevice syncthing %s"%(str(e), configfile))
+        return ""
 
 """ class use for xmpp on each server syncthing in local """
 
