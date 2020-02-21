@@ -114,26 +114,43 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.debug("Update it's uuid_inventory_machine")
                     logger.debug("=============")
                     logger.debug("=============")
-                    # on regarde si le UUID associe a hostname machine correspond au hostname dans glpi.
                     if xmppobject.check_uuidinventory and \
                         'uuid_inventorymachine' in machine and \
                             machine['uuid_inventorymachine'] is not None:
+                        # on regarde si le UUID associe a hostname machine
+                        # correspond au hostname dans glpi.
                         hostname = None
+                        logger.warning("Mode search incoherence between " \
+                                    "xmpp and glpi's for uuid %s : "%machine['uuid_inventorymachine'])
                         try:
-                            re = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
-                            for t in re:
+                            ret = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
+                            for t in ret:
                                 if t[0] == 'name':
                                     hostname = t[1]
                                     break
-                            if hostname and "information" in data and \
-                                "info" in data["information"] and \
-                                    "hostname" in  data["information"]["info"] and \
-                                        hostname != data["information"]["info"]["hostname"]:
+                            # on vérifie que la machine ayant le même uuid que celui présenter 
+                            # a l'enregistrement correspond.
+                            # on refait l'enregistrement complet si celui-ci ne correspond pas
+                            if hostname and "hostname" in data and \
+                                        hostname != data["hostname"]:
                                 machine['uuid_inventorymachine'] = None
+                                logger.warning("When there is an incoherence between " \
+                                    "xmpp and glpi's uuid, we restore the uuid from glpi")
+                            else:
+                                # la correspondance existe.
+                                # mais il se peut que la machine ne soit pas configuré pour guacamole.
+                                # si la machine n'est pas configuré pour 
+                                # guacamole, alors on refait l'enregistrement complet.
+                                ret = XmppMasterDatabase().getGuacamoleidforUuid(machine['uuid_inventorymachine'], "configured")
+                                if not ret:
+                                    machine['uuid_inventorymachine'] = None
+                                    logger.warning("When guacamole is not configured." \
+                                        " we restore the uuid from glpi")
                         except Exception:
                             machine['uuid_inventorymachine'] = None
-                        if machine['uuid_inventorymachine'] is None:
-                            logger.warning("When there is an incoherence between xmpp and glpi's uuid, we restore the uuid from glpi")
+                        if machine['uuid_inventorymachine'] is not None:
+                            logger.warning("coherence True for hostname %s"%hostname)
+                    
                     if 'uuid_inventorymachine' not in machine or \
                         machine['uuid_inventorymachine'] is None or \
                         not machine['uuid_inventorymachine']:
@@ -556,16 +573,20 @@ def getComputerByMac( mac):
     return ret
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data):
-    logger.debug("callInstallConfGuacamole on %s for %s"%(torelayserver, data['hostname']))
-    try:
-        body = {'action': 'guacamoleconf',
-                'sessionid': getRandomName(5, "guacamoleconf"),
-                'data': data}
-        xmppobject.send_message(mto=torelayserver,
-                            mbody=json.dumps(body),
-                            mtype='chat')
-    except Exception:
-        logger.error("\n%s"%(traceback.format_exc()))
+    if 'remoteservice' in data and len(data['remoteservice']) > 0:
+        try:
+            body = {'action': 'guacamoleconf',
+                    'sessionid': getRandomName(5, "guacamoleconf"),
+                    'data': data}
+            logger.debug("process callInstallConfGuacamole on %s for %s"%(torelayserver, data['hostname']))
+            xmppobject.send_message(mto=torelayserver,
+                                mbody=json.dumps(body),
+                                mtype='chat')
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
+    else:
+        logger.debug("application direct parametrage guacamole in base for uuid %s"%data['uuid'])
+        XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], {})
 
 def callinventory(xmppobject,  to):
     try:
