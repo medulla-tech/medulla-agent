@@ -519,7 +519,6 @@ class confParameter:
                 if self.timealternatif[1] > 30 : self.timealternatif[1] = 30
         except Exception:
             self.timealternatif=[2,30]
-            logger.error("\n%s"%(traceback.format_exc()))
             logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
         logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
 
