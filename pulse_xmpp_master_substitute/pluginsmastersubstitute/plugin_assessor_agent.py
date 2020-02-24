@@ -360,8 +360,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
 		# Network Rule : 10
         elif x[0] == 10:
             # Associates relay server based on network address
-            logger.debug("Analysis the 10th rule : Associate relay server based on netmask adress")
-            logger.debug("Net mask adress: %s" % data['xmppmask'])
+            logger.debug("Analysis the 10th rule : Associate relay server based on netmask address")
+            logger.debug("Net mask address: %s" % data['xmppmask'])
             result1 = XmppMasterDatabase().algorulebynetmaskaddress(data['xmppmask'],
                                                                     data['classutil'])
             if len(result1) > 0:

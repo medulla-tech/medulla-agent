@@ -3106,7 +3106,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 CIDR matching with suject of table has_relayserverrules
                 -- subject is the regex.
                 -- eg : ^55\.171\.[5-6]{1}\.[0-9]{1,3}/24$
-                -- eg : ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/24$ all adress mask 255.255.255.255
+                -- eg : ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/24$ all address mask 255.255.255.255
         """
         if classutilMachine == "private":
             sql = """select `relayserver`.`id`
