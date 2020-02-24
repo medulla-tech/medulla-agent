@@ -18,7 +18,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pluginsmastersubstitute/plugin_showregistration.py
+# file pluginsmastersubstitute/plugin_loadshowregistration.py
 
 import base64
 import json
@@ -37,7 +37,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "showregistration", "TYPE" : "substitute"}
+plugin = {"VERSION" : "1.0", "NAME" : "loadshowregistration", "TYPE" : "substitute"}
 
 
 
@@ -93,9 +93,9 @@ def read_conf_showregistration(objectxmpp):
         else:
             objectxmpp.showinventoryxmpp = False
 
-    objectxmpp.plugin_showregistration = types.MethodType(plugin_showregistration, objectxmpp)
+    objectxmpp.plugin_loadshowregistration = types.MethodType(plugin_loadshowregistration, objectxmpp)
 
-def plugin_showregistration(self, msg, data):
+def plugin_loadshowregistration(self, msg, data):
     if logger.level == logging.DEBUG:
 
 
