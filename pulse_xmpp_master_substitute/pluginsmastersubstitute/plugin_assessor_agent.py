@@ -357,6 +357,21 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         data['information']['users'][0],
                         result)
                 break
+		# Network Rule : 10
+        elif x[0] == 10:
+            # Associates relay server based on network address
+            logger.debug("Analysis the 10th rule : Associate relay server based on netmask address")
+            logger.debug("Net mask address: %s" % data['xmppmask'])
+            result1 = XmppMasterDatabase().algorulebynetmaskaddress(data['xmppmask'],
+                                                                    data['classutil'])
+            if len(result1) > 0:
+                logger.debug("Applied Rule : Associate relay server based on net Mask address")
+                result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(result1[0].id)
+                msg_log("net mask address",
+                        data['information']['info']['hostname'],
+                        data['information']['users'][0],
+                        result)
+                break
 
     try:
         msg_string ="[user %s hostanme %s] : "\
@@ -395,7 +410,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
             logger.warning("No configuration sent to machine "\
                 "agent %s. ARS %s is found but it is stopped." % (data['information']['info']['hostname'], result[2]))
             logger.warning("ACTION: Re-start the ARS on %s, and wait for the agent to run its reconfiguration."%(result[2]))
-            
+
             objectxmpp.xmpplog("No configuration sent to machine agent %s. ARS %s is found but it is stopped." % (result[2],
                                                                                   data['information']['info']['hostname'] ),
                             type = 'conf',

@@ -160,7 +160,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("%s determination uuid from GLPI computer id for mac address "%testinventaireremonte)
                                 for macadress in results:
                                     logger.debug("Get GLPI computer id for mac address %s"%macadress)
-                                    if macadress in xmppobject.blacklisted_mac_addresses: 
+                                    if macadress in xmppobject.blacklisted_mac_addresses:
                                         logger.warning("address blacklist %s for %s machine"%( macadress, data['from']))
                                         continue
                                     computer = getComputerByMac(macadress)
@@ -168,7 +168,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         logger.debug("Computer found : #%s for mac adress %s" %(computer.id, macadress))
                                         jidrs = str(jid.JID(data['deployment']).user)
                                         jidm = jid.JID(data['from']).domain
-                                        jidrs = "%s@%s" % (jidrs, jidm)                                    
+                                        jidrs = "%s@%s" % (jidrs, jidm)
                                         computerid = str(computer.id)
                                         uuid = 'UUID' + str(computer.id)
                                         logger.debug("** Update uuid %s for machine %s " %
@@ -306,7 +306,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 return
 
             # Add relayserver or update status in database
-            
+
             if data['agenttype'] == "relayserver":
                 logger.debug("** Add relayserver or update status in database %s" %
                             msg['from'])
@@ -517,9 +517,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             else:
                 logger.error("** Database registration error")
                 return
-            
-            
-            
+
+
+
             pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
             logger.debug("call plugin for a machine not present..")
             for function_plugin in pluginfunction:
