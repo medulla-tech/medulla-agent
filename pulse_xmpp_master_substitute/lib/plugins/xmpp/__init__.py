@@ -139,9 +139,9 @@ class XmppMasterDatabase(DatabaseHelper):
     # =====================================================================
     # xmppmaster FUNCTIONS
     # =====================================================================
-    
+
     # xmppmaster FUNCTIONS FOR Subscription
-    
+
     @DatabaseHelper._sessionm
     def setagentsubscription( self,
                             session,
@@ -235,7 +235,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return self.setSubscription(macadress, idagentsubscription)
         except Exception, e:
             logging.getLogger().error(str(e))
-    
+
     @DatabaseHelper._sessionm
     def setuplistSubscription( self,
                               session,
@@ -253,8 +253,8 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             return None
-    
-    
+
+
     @DatabaseHelper._sessionm
     def delSubscriptionmacadress( self,
                                 session,
@@ -283,8 +283,8 @@ class XmppMasterDatabase(DatabaseHelper):
                     INNER JOIN
                 `xmppmaster`.`subscription` ON `xmppmaster`.`machines`.`macaddress` = `xmppmaster`.`subscription`.`macadress`
                     INNER JOIN
-                `xmppmaster`.`agent_subscription` ON `xmppmaster`.`subscription`.`idagentsubscription` = `xmppmaster`.`agent_subscription`.`id` 
-            SET 
+                `xmppmaster`.`agent_subscription` ON `xmppmaster`.`subscription`.`idagentsubscription` = `xmppmaster`.`agent_subscription`.`id`
+            SET
                 `xmppmaster`.`machines`.`enabled` = '%s'
             WHERE
                 `xmppmaster`.`machines`.agenttype = '%s'
@@ -296,7 +296,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
         except Exception, e:
             self.logger.error("\n%s"%(traceback.format_exc()))
-    
+
     ##########################################
 
 
@@ -2961,7 +2961,7 @@ class XmppMasterDatabase(DatabaseHelper):
             Field "subject" is used to define the hostname in this rule
             Field "relayserver_id" is used to define the Relayserver associated to this hostname
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be 
+            If classutilMachine is deprived then the choice of relayserver will be
               in the relayserver reserve to a use of the private machine.
         """
         sql = """select `has_relayserverrules`.`id`,`has_relayserverrules`.`subject`
@@ -3095,14 +3095,16 @@ class XmppMasterDatabase(DatabaseHelper):
                                  rule = 9,
                                  enabled=1):
         """
-            Field "rule_id" : This information allows you to apply the search only to the rule pointed. rule_id = 9 by network address
+            Field "rule_id" : This information allows you to apply the search
+                              only to the rule pointed. rule_id = 9 by network address
             Field "subject" is used to define the subnet for association
-            Field "relayserver_id" is used to define the Relayserver to be assigned to the machines matching that rule
+            Field "relayserver_id" is used to define the Relayserver to be assigned to
+                                   the machines matching that rule
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
-            subnetmachine CIDR machine. 
+            If classutilMachine is private then the choice of relayserver will be in the relayserver reserved to a use of the private machine.
+            subnetmachine CIDR machine.
                 CIDR matching with suject of table has_relayserverrules
-                -- suject is the expresseion relationel.
+                -- subject is the regex.
                 -- eg : ^55\.171\.[5-6]{1}\.[0-9]{1,3}/24$
                 -- eg : ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/24$ all adress mask 255.255.255.255
         """
@@ -4048,8 +4050,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 listcommand.append(exclud)
                 listconfsubstitute[t] = listcommand
             #update contsub
-            sql="""UPDATE `xmppmaster`.`substituteconf` 
-                SET 
+            sql="""UPDATE `xmppmaster`.`substituteconf`
+                SET
                     `countsub` = `countsub` + '1'
                 WHERE
                     `id` IN (%s);"""%','.join([x for x in incrementeiscount])

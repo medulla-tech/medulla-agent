@@ -93,7 +93,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     for function_plugin in pluginfunction:
                         try:
                             if hasattr(xmppobject, function_plugin):
-                                if function_plugin == 'plugin_showregistration':
+                                if function_plugin == 'plugin_loadshowregistration':
                                     if logger.level == logging.DEBUG:
                                         logger.debug("call plugin %s"%function_plugin)
                                         getattr(xmppobject, function_plugin)(msg, data)
@@ -160,7 +160,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("%s determination uuid from GLPI computer id for mac address "%testinventaireremonte)
                                 for macadress in results:
                                     logger.debug("Get GLPI computer id for mac address %s"%macadress)
-                                    if macadress in xmppobject.blacklisted_mac_addresses: 
+                                    if macadress in xmppobject.blacklisted_mac_addresses:
                                         logger.warning("address blacklist %s for %s machine"%( macadress, data['from']))
                                         continue
                                     computer = getComputerByMac(macadress)
@@ -168,7 +168,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         logger.debug("Computer found : #%s for mac adress %s" %(computer.id, macadress))
                                         jidrs = str(jid.JID(data['deployment']).user)
                                         jidm = jid.JID(data['from']).domain
-                                        jidrs = "%s@%s" % (jidrs, jidm)                                    
+                                        jidrs = "%s@%s" % (jidrs, jidm)
                                         computerid = str(computer.id)
                                         uuid = 'UUID' + str(computer.id)
                                         logger.debug("** Update uuid %s for machine %s " %
@@ -306,7 +306,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 return
 
             # Add relayserver or update status in database
-            
+
             if data['agenttype'] == "relayserver":
                 logger.debug("** Add relayserver or update status in database %s" %
                             msg['from'])
@@ -517,15 +517,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             else:
                 logger.error("** Database registration error")
                 return
-            
-            
-            
+
+
+
             pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
             logger.debug("call plugin for a machine not present..")
             for function_plugin in pluginfunction:
                 try:
                     if hasattr(xmppobject, function_plugin):
-                        if function_plugin == 'plugin_showregistration':
+                        if function_plugin == 'plugin_loadshowregistration':
                             if logger.level == logging.DEBUG:
                                 logger.debug("call plugin %s"%function_plugin)
                                 getattr(xmppobject, function_plugin)(msg, data)
@@ -701,21 +701,21 @@ def read_conf_remote_registeryagent(xmppobject):
             "\n\t%s missing" \
         "\neg conf:\n[parameters]\n" \
             "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
-                "loadautoupdate, showregistration\n" \
+                "loadautoupdate, loadshowregistration\n" \
                 "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
-                    "loadautoupdate, showregistration"%(plugin['NAME'], pathfileconf))
+                    "loadautoupdate, loadshowregistration"%(plugin['NAME'], pathfileconf))
         logger.warning("default value for pluginlistregistered " \
-            "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, showregistration"\
+            "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration"\
             "\ndefault value for pluginlistunregistered"\
-                "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, showregistration")
+                "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration")
         xmppobject.pluginlistregistered = ["loadpluginlistversion",
                                            "loadpluginschedulerlistversion",
                                            "loadautoupdate",
-                                           "showregistration"]
+                                           "loadshowregistration"]
         xmppobject.pluginlistunregistered = ["loadpluginlistversion",
                                              "loadpluginschedulerlistversion",
                                              "loadautoupdate",
-                                             "showregistration"]
+                                             "loadshowregistration"]
         xmppobject.check_uuidinventory = False
         xmppobject.blacklisted_mac_addresses= ["00:00:00:00:00:00"]
     else:
@@ -736,14 +736,14 @@ def read_conf_remote_registeryagent(xmppobject):
             pluginlistregistered = Config.get('parameters', 'pluginlistregistered')
         else:
             pluginlistregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
-                " loadautoupdate, showregistration"
+                " loadautoupdate, loadshowregistration"
         xmppobject.pluginlistregistered = [x.strip() for x in pluginlistregistered.split(',')]
 
         if Config.has_option("parameters", "pluginlistunregistered"):
             pluginlistunregistered = Config.get('parameters', 'pluginlistunregistered')
         else:
             pluginlistunregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
-                "loadautoupdate, showregistration"
+                "loadautoupdate, loadshowregistration"
 
         xmppobject.pluginlistunregistered = [x.strip() for x in pluginlistunregistered.split(',')]
         xmppobject.blacklisted_mac_addresses= []
