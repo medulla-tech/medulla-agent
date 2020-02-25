@@ -1749,7 +1749,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
         msgbody['session'] = sessionname
-        self.send_message(  mto = self.logagent,
+        self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
@@ -1786,7 +1786,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
-        self.send_message(  mto = self.logagent,
+        self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
