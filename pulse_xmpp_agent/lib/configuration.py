@@ -217,7 +217,7 @@ class substitutelist:
                'inventory' : self.sub_inventory,
                'registration' : self.sub_registration,
                'assessor' : self.assessor,
-               'logagent' : self.logagent}
+               'logger' : self.logagent}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
