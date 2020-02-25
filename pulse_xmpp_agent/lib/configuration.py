@@ -207,8 +207,8 @@ class substitutelist:
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
 
-        if Config.has_option('substitute', 'logagent'):
-            logagentlocal = Config.get('substitute', 'logagent')
+        if Config.has_option('substitute', 'logger'):
+            logagentlocal = Config.get('substitute', 'logger')
             self.logagent = [x.strip() for x in logagentlocal.split(",")]
 
     def parameterssubtitute(self):
@@ -267,8 +267,8 @@ class confParameter:
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
 
-        if Config.has_option('substitute', 'logagent'):
-            logagentlocal = Config.get('substitute', 'logagent')
+        if Config.has_option('substitute', 'logger'):
+            logagentlocal = Config.get('substitute', 'logger')
             self.logagent = [x.strip() for x in logagentlocal.split(",")]
 
         try:
