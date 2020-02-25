@@ -225,14 +225,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
-        if not hasattr(self.config, 'logger'):
-            self.logagent = self.agentmaster
+        if not hasattr(self.config, 'sub_logger'):
+            self.sub_logger = self.agentmaster
         else:
-            if isinstance(self.config.logger, list) and\
-                len(self.config.logger) > 0:
-                self.logagent = jid.JID(self.config.logger[0])
+            if isinstance(self.config.sub_logger, list) and\
+                len(self.config.sub_logger) > 0:
+                self.sub_logger = jid.JID(self.config.sub_logger[0])
             else:
-                self.logagent = jid.JID(self.config.logger)
+                self.sub_logger = jid.JID(self.config.sub_logger)
 
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
