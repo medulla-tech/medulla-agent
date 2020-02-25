@@ -527,7 +527,7 @@ class grafcet:
             logstruct['action'] = "xmpplog"
             logstruct['data']['ret'] = ret
             logstruct['data']['sessionid'] = self.sessionid
-            self.objectxmpp.send_message(mto=self.objectxmpp.logagent,
+            self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
                                          mbody=json.dumps(logstruct),
                                          mtype='chat')
             try:
@@ -585,7 +585,7 @@ class grafcet:
             logstruct['action'] = "xmpplog"
             logstruct['data']['ret'] = ret
             logstruct['data']['sessionid'] = self.sessionid
-            self.objectxmpp.send_message(mto=self.objectxmpp.logagent,
+            self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
                                          mbody=json.dumps(logstruct),
                                          mtype='chat')
             self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],

@@ -50,10 +50,11 @@ password = @@CHATROOM_PASSWORD@@
 domain = @@CHAT_DOMAIN@@
 
 [substitute]
-# Subscription agent JIDs
+# Subscription and Logs agent JIDs
 # Must be changed to substitute agent JIDs if used
 # The parameters can be a comma-separated list of available substitute jids
 subscription = master_subs@pulse
+logger = master_log@pulse
 
 # Define a specific jid for the agent. Optional
 # [jid_01]

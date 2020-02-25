@@ -225,14 +225,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
-        if not hasattr(self.config, 'logagent'):
-            self.logagent = self.agentmaster
+        if not hasattr(self.config, 'sub_logger'):
+            self.sub_logger = self.agentmaster
         else:
-            if isinstance(self.config.logagent, list) and\
-                len(self.config.logagent) > 0:
-                self.logagent = jid.JID(self.config.logagent[0])
+            if isinstance(self.config.sub_logger, list) and\
+                len(self.config.sub_logger) > 0:
+                self.sub_logger = jid.JID(self.config.sub_logger[0])
             else:
-                self.logagent = jid.JID(self.config.logagent)
+                self.sub_logger = jid.JID(self.config.sub_logger)
 
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
@@ -1749,7 +1749,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
         msgbody['session'] = sessionname
-        self.send_message(  mto = self.logagent,
+        self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
@@ -1786,7 +1786,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
-        self.send_message(  mto = self.logagent,
+        self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 

@@ -189,7 +189,7 @@ class substitutelist:
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
         self.assessor = ["master@pulse"]
-        self.logagent = ["log@pulse", "master@pulse"]
+        self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -207,9 +207,9 @@ class substitutelist:
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
 
-        if Config.has_option('substitute', 'logagent'):
-            logagentlocal = Config.get('substitute', 'logagent')
-            self.logagent = [x.strip() for x in logagentlocal.split(",")]
+        if Config.has_option('substitute', 'logger'):
+            sub_loggerlocal = Config.get('substitute', 'logger')
+            self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
 
     def parameterssubtitute(self):
         conflist = []
@@ -217,7 +217,7 @@ class substitutelist:
                'inventory' : self.sub_inventory,
                'registration' : self.sub_registration,
                'assessor' : self.assessor,
-               'logagent' : self.logagent}
+               'logger' : self.sub_logger}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -249,7 +249,7 @@ class confParameter:
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
         self.assessor = ["master@pulse"]
-        self.logagent = ["log@pulse", "master@pulse"]
+        self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -267,9 +267,9 @@ class confParameter:
             assessorlocal = Config.get('substitute', 'assessor')
             self.assessor = [x.strip() for x in assessorlocal.split(",")]
 
-        if Config.has_option('substitute', 'logagent'):
-            logagentlocal = Config.get('substitute', 'logagent')
-            self.logagent = [x.strip() for x in logagentlocal.split(",")]
+        if Config.has_option('substitute', 'logger'):
+            sub_loggerlocal = Config.get('substitute', 'logger')
+            self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
 
         try:
             self.agenttype = Config.get('type', 'agent_type')

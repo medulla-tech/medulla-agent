@@ -219,7 +219,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['session'] = sessionname
-        self.send_message(  mto = jid.JID(self.config.jidlog),
+        self.send_message(  mto = jid.JID(self.config.logger),
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
