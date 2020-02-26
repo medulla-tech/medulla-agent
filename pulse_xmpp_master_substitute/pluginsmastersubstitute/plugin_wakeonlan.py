@@ -33,7 +33,7 @@ import traceback
 from utils import name_random
 import logging
 
-# plugin run wake on lan on mac adress
+# plugin run wake on lan on mac address
 
 plugin = {"VERSION": "1.0", "NAME": "wakeonlan", "TYPE": "master"}
 

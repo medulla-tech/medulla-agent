@@ -23,21 +23,14 @@
 # file /pluginsmaster/plugin_deploysyncthing.py
 
 
-import base64
 import json
-import os
-import sys
 from pulse2.database.xmppmaster import XmppMasterDatabase
-from mmc.plugins.glpi.database import Glpi
-import traceback
-from utils import name_random, name_randomplus
-
+from utils import name_randomplus
 
 import logging
-from random import randint
 
 logger = logging.getLogger()
-# plugin run wake on lan on mac adress
+# plugin run wake on lan on mac address
 
 plugin = {"VERSION": "1.0", "NAME": "deploysyncthing", "TYPE": "master"}
 
@@ -51,7 +44,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         if "counttransfertterminate" in data["subaction"]:
             # on ajoute 1 au compteur syncthing dans le groupe.
             XmppMasterDatabase().incr_count_transfert_terminate(data["iddeploybase"])
-            XmppMasterDatabase().update_transfert_progress( 100, 
+            XmppMasterDatabase().update_transfert_progress( 100,
                                                             data["iddeploybase"],
                                                             message['from'])
         elif "completion" in data["subaction"]:
@@ -82,17 +75,6 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 elected = clusterobjet[4]
                 ### todo voir pour plusieurs clusters differents
                 keyelected = listkey[listarsdeploy.index(elected)]
-                ##### election ####
-                #nbr_ars_in_cluster = len(listarsdeploy)
-                #if nbr_ars_in_cluster == 0:
-                    ##  probleme a voir le cluster des relay
-                    #print "probleme a voir le cluster des relay et deploy %s"%data['iddeploy']
-                    #return
-                #{"listarscluster": ["rspulse@pulse/dev-mmc"], "keysyncthing": ["IGQIW2T-OHEFK3P-JHSB6KH-OHHYABS-YEWJRVC-M6F4NLZ-D6U55ES-VXIVMA3"], "namecluster": "Public", "numcluster": 1}
-
-                #indexarselected = randint(0,nbr_ars_in_cluster -1)
-                #elected = listarsdeploy[indexarselected]
-                #keyelected = listkey[indexarselected]
 
                 datasend = {'action' : "deploysyncthing",
                             "sessionid" : name_randomplus(30, "syncthingclusterinit"),

@@ -22,10 +22,8 @@
 #
 # file pluginsmaster/plugin_resultapplicationdeploymentjson.py
 
-import json
 import logging
 import traceback
-import sys
 
 from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
@@ -46,7 +44,7 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
                                        data['descriptor']['info']['name'],
                                        sessionid))
             XmppMasterDatabase().delete_resources(sessionid)
-            
+
         else:
             msg = "Error deploy on %s Package "\
                 ": %s Session : %s" % (message['from'],

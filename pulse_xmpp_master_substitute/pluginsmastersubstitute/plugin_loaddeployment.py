@@ -40,7 +40,6 @@ from lib.managesession import session
 from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents, file_put_contents
 import ConfigParser
 import types
-from sleekxmpp import jid
 import datetime
 #from datetime import datetime
 import random
@@ -1144,7 +1143,7 @@ def garbagedeploy(self):
 
 def createsessionfordeploydiffered(self, data):
     sessionid = name_randomplus(25, "command")
-    #calcule duree max de l existance de la session
+    #Calculate maximum duration of a session
     timeseconde = data['enddate'] - data['stardate']
     self.sessiondeploysubstitute.createsessiondatainfo(sessionid,
                                         datasession=data,

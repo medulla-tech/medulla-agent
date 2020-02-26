@@ -32,8 +32,8 @@ import traceback
 from utils import name_random
 import logging
 
-# plugin run wake on lan on mac adress
-# group mac adress wakeonlangroup different wakeonlan
+# plugin run wake on lan on mac address
+# group mac address wakeonlangroup different wakeonlan
 plugin = {"VERSION": "1.0", "NAME": "wakeonlangroup", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, message, ret):
