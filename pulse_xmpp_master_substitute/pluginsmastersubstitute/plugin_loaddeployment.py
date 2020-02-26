@@ -44,6 +44,8 @@ import types
 from sleekxmpp import jid
 import datetime
 #from datetime import datetime
+import random
+import re
 
 logger = logging.getLogger()
 
@@ -1119,7 +1121,7 @@ def _chunklist(self, listseq, nb = 5000):
     return result
 
 def _sendwolgroup(self, listorset, nb = 5000):
-    # on sinde la liste en liste de 5000 mac adress maximum
+    # on sinde la liste en liste de 5000 mac address maximum
     try:
         listforsplit = self._chunklist(list(listorset), nb)
         listorset.clear()
