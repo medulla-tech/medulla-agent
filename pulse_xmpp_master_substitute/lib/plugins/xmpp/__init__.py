@@ -4382,7 +4382,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     }
         return result
 
-     @DatabaseHelper._sessionm
+    @DatabaseHelper._sessionm
     def getGuacamoleidforUuid(self, session, uuid, existtest = None):
         """
             if existtest is None
