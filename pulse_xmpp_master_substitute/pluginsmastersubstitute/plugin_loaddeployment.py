@@ -37,8 +37,7 @@ from lib.plugins.msc import MscDatabase
 from lib.plugins.glpi import  Glpi
 from lib.managepackage import managepackage
 from lib.managesession import session
-# from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents
-from lib.utils import *
+from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents, file_put_contents
 import ConfigParser
 import types
 from sleekxmpp import jid
