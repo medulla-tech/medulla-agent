@@ -150,3 +150,7 @@ class Glpi(object):
     def getLastMachineInventoryFull(self, uuid):
         global glpi
         return glpi.getLastMachineInventoryFull(uuid)
+
+    def getMachineByUUID(self, uuid):
+        global glpi
+        return glpi.getMachineByUUID(uuid)
