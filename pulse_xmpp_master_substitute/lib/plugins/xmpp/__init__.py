@@ -341,13 +341,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def search_machines_from_state(self, session, state):
         dateend = datetime.now()
-        sql= """SELECT 
+        sql= """SELECT
                     *
                 FROM
                     xmppmaster.deploy
                 WHERE
-                    state LIKE '%s%%' AND 
-                    '%s' BETWEEN startcmd AND 
+                    state LIKE '%s%%' AND
+                    '%s' BETWEEN startcmd AND
                     endcmd;"""%(state, dateend);
         machines = session.execute(sql)
         session.commit()
@@ -1417,7 +1417,7 @@ class XmppMasterDatabase(DatabaseHelper):
             if result.login != '':
                 obj['login'] = result.login
             obj['idcmd'] = result.command
-            
+
             if not (result.start_exec_on_time is None or \
                     str(result.start_exec_on_time) == '' or \
                     str(result.start_exec_on_time) == "None"):
@@ -1426,7 +1426,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
             if result.grpid != '':
                 obj['grp'] = result.grpid
-                
+
             if result.nb_machine_for_deploy != '':
                 obj['nbtotal'] = result.nb_machine_for_deploy
             if not (result.start_exec_on_nb_deploy is None or result.start_exec_on_nb_deploy == ''):
@@ -1624,7 +1624,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                                             t.group_uuid,))
 
         return list(id_deploylist)
-    
+
     # =====================================================================
     # xmppmaster FUNCTIONS deploy syncthing
     # =====================================================================
@@ -3678,7 +3678,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         return [x for x in result]
-    
+
     @DatabaseHelper._sessionm
     def algorulebynetmaskaddress(self, session, netmaskaddress, classutilMachine = "both", rule = 10, enabled=1):
         """
@@ -4007,7 +4007,7 @@ class XmppMasterDatabase(DatabaseHelper):
         for linemachine in machinespresente:
             result[linemachine.uuid_inventorymachine] = True
         return result
-    
+
     @DatabaseHelper._sessionm
     def getPresenceExistuuids(self, session, uuids):
         if isinstance(uuids, basestring):
@@ -4021,11 +4021,11 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         for linemachine in machinespresente:
             out = 0;
-            if linemachine.enabled == True: 
+            if linemachine.enabled == True:
                 out = 1
             print linemachine.uuid_inventorymachine
             result[linemachine.uuid_inventorymachine] = [out, 1 ]
-            
+
         return result
 
     #topology
@@ -4719,15 +4719,16 @@ class XmppMasterDatabase(DatabaseHelper):
                 #session.flush()
                 listcommand.append(exclud)
                 listconfsubstitute[t] = listcommand
-            #update contsub
-            sql="""UPDATE `xmppmaster`.`substituteconf`
-                SET
-                    `countsub` = `countsub` + '1'
-                WHERE
-                    `id` IN (%s);"""%','.join([x for x in incrementeiscount])
-            result = session.execute(sql)
-            session.commit()
-            session.flush()
+            if len(incrementeiscount) != 0:
+                #update contsub
+                sql="""UPDATE `xmppmaster`.`substituteconf`
+                    SET
+                        `countsub` = `countsub` + '1'
+                    WHERE
+                        `id` IN (%s);"""%','.join([x for x in incrementeiscount])
+                result = session.execute(sql)
+                session.commit()
+                session.flush()
         except Exception, e:
             logging.getLogger().error("substituteinfo : %s"%str(e))
         return listconfsubstitute
