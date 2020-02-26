@@ -188,7 +188,7 @@ class substitutelist:
         self.sub_inventory = ["master@pulse"]
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
-        self.assessor = ["master@pulse"]
+        self.sub_assessor = ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
@@ -204,8 +204,8 @@ class substitutelist:
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
-            assessorlocal = Config.get('substitute', 'assessor')
-            self.assessor = [x.strip() for x in assessorlocal.split(",")]
+            sub_assessorlocal = Config.get('substitute', 'assessor')
+            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
 
         if Config.has_option('substitute', 'logger'):
             sub_loggerlocal = Config.get('substitute', 'logger')
@@ -216,7 +216,7 @@ class substitutelist:
         data={ 'subscription' : self.sub_subscribe,
                'inventory' : self.sub_inventory,
                'registration' : self.sub_registration,
-               'assessor' : self.assessor,
+               'assessor' : self.sub_assessor,
                'logger' : self.sub_logger}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
@@ -248,7 +248,7 @@ class confParameter:
         self.sub_inventory = ["master@pulse"]
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
-        self.assessor = ["master@pulse"]
+        self.sub_assessor = ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
@@ -264,8 +264,8 @@ class confParameter:
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
-            assessorlocal = Config.get('substitute', 'assessor')
-            self.assessor = [x.strip() for x in assessorlocal.split(",")]
+            sub_assessorlocal = Config.get('substitute', 'assessor')
+            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
 
         if Config.has_option('substitute', 'logger'):
             sub_loggerlocal = Config.get('substitute', 'logger')
