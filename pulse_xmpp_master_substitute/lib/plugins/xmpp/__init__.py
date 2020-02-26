@@ -46,7 +46,9 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Agentsubscription,\
     Subscription,\
     Agentsubscription,\
-    Subscription
+    Subscription,\
+    Syncthing_deploy_group,\
+    Syncthing_ars_cluster
 # Imported last
 import logging
 import json
@@ -69,6 +71,7 @@ except ImportError:
     from sqlalchemy.orm.base import _entity_descriptor
 
 from sqlalchemy.orm import scoped_session
+import random
 
 class Singleton(object):
 
@@ -2225,11 +2228,11 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
 
     @DatabaseHelper._sessionm
-    def change_end_deploy_syncthing(self, session, iddeploy,offsettime=60):
+    def change_end_deploy_syncthing(self, session, iddeploy, offsettime=60):
 
         dateend = datetime.now() + timedelta(minutes=offsettime)
         sql =""" UPDATE `xmppmaster`.`syncthing_deploy_group` SET `dateend`=%s
-                WHERE `id`= "%s";"""%(datenow, iddeploy)
+                WHERE `id`= "%s";"""%(dateend, iddeploy)
 
         session.execute(sql)
         session.commit()
