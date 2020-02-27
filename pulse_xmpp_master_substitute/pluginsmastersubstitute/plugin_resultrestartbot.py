@@ -20,14 +20,18 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file pluginsmaster/plugin_resultenddeploy.py
-
+# file pluginsmaster/plugin_resultrestartbot.py
 
 import logging
 
-plugin = {"VERSION": "1.1", "NAME": "resultenddeploy", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "resultrestartbot", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logging.getLogger().debug(plugin)
-    pass
+    try:
+        logging.getLogger().debug("restart bot machine %s" % message['from'])
+        pass
+    except Exception as e:
+        logging.getLogger().error("Error in plugin restart bot%s" % str(e))
+        pass

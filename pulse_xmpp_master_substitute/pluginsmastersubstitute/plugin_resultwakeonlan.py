@@ -26,7 +26,7 @@ import logging
 
 # plugin_resultwakeonLan
 
-plugin = {"VERSION": "1.0", "NAME": "resultwakeonlan", "TYPE": "master"}
+plugin = {"VERSION": "1.1", "NAME": "resultwakeonlan", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

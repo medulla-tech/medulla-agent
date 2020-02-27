@@ -35,7 +35,7 @@ import logging
 
 # plugin run wake on lan on mac address
 
-plugin = {"VERSION": "1.0", "NAME": "wakeonlan", "TYPE": "master"}
+plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret):

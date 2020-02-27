@@ -26,7 +26,7 @@ import logging
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.21", "NAME": "resultmsginfoerror", "TYPE": "master"}
+plugin = {"VERSION": "2.0", "NAME": "resultmsginfoerror", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

@@ -32,7 +32,7 @@ import logging
 logger = logging.getLogger()
 # plugin run wake on lan on mac address
 
-plugin = {"VERSION": "1.0", "NAME": "deploysyncthing", "TYPE": "master"}
+plugin = {"VERSION": "1.1", "NAME": "deploysyncthing", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
