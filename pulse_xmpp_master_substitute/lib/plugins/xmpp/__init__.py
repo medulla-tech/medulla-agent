@@ -4903,3 +4903,41 @@ class XmppMasterDatabase(DatabaseHelper):
         result = session.execute(sql)
         session.commit()
         session.flush()
+
+    @DatabaseHelper._sessionm
+    def getRelayServer(self, session, enable = None ):
+        listrelayserver = []
+        if enable is not None:
+            relayservers = session.query(RelayServer).\
+                filter(and_(RelayServer.enabled == enable)).all()
+        else:
+            relayservers = session.query(RelayServer).all()
+        session.commit()
+        session.flush()
+        try:
+            for relayserver in relayservers:
+                res = { 'id' : relayserver.id,
+                        'urlguacamole': relayserver.urlguacamole,
+                        'subnet' : relayserver.subnet,
+                        'nameserver' : relayserver.nameserver,
+                        'ipserver' : relayserver.ipserver,
+                        'ipconnection' : relayserver.ipconnection,
+                        'port' : relayserver.port,
+                        'portconnection' : relayserver.portconnection,
+                        'mask' : relayserver.mask,
+                        'jid' : relayserver.jid,
+                        'longitude' : relayserver.longitude,
+                        'latitude' : relayserver.latitude,
+                        'enabled' : relayserver.enabled,
+                        'classutil' : relayserver.classutil,
+                        'groupdeploy' : relayserver.groupdeploy,
+                        'package_server_ip' : relayserver.package_server_ip,
+                        'package_server_port' : relayserver.package_server_port,
+                        'moderelayserver' : relayserver.moderelayserver
+                    }
+                listrelayserver.append(res)
+            return listrelayserver
+        except Exception, e:
+            logging.getLogger().error(str(e))
+            traceback.print_exc(file=sys.stdout)
+            return listrelayserver
