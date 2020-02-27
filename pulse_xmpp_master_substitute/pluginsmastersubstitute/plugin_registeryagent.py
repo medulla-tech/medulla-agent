@@ -93,13 +93,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     for function_plugin in pluginfunction:
                         try:
                             if hasattr(xmppobject, function_plugin):
-                                if function_plugin == 'plugin_loadshowregistration':
-                                    if logger.level == logging.DEBUG:
-                                        logger.debug("call plugin %s"%function_plugin)
-                                        getattr(xmppobject, function_plugin)(msg, data)
-                                else:
-                                    logger.debug("call plugin %s"%function_plugin)
-                                    getattr(xmppobject, function_plugin)(msg, data)
+                                logger.debug("call plugin %s"%function_plugin)
+                                getattr(xmppobject, function_plugin)(msg, data)
                             else:
                                 logger.warning("the %s plugin is not called"%function_plugin)
                                 logger.warning("verify why plugging %s"\
@@ -535,20 +530,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.error("** Database registration error")
                 return
 
-
-
             pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
             logger.debug("call plugin for a machine not present..")
             for function_plugin in pluginfunction:
                 try:
                     if hasattr(xmppobject, function_plugin):
-                        if function_plugin == 'plugin_loadshowregistration':
-                            if logger.level == logging.DEBUG:
-                                logger.debug("call plugin %s"%function_plugin)
-                                getattr(xmppobject, function_plugin)(msg, data)
-                        else:
-                            logger.debug("call plugin %s"%function_plugin)
-                            getattr(xmppobject, function_plugin)(msg, data)
+                        logger.debug("call plugin %s"%function_plugin)
+                        getattr(xmppobject, function_plugin)(msg, data)
                     else:
                         logger.warning("the %s plugin is not called"%function_plugin)
                         logger.warning("verify why plugging %s"\
