@@ -61,17 +61,17 @@ def read_conf_load_plugin_scheduler_list_version(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file missing\n  %s\neg conf:" \
-            "\n[parameters]\ndirpluginlistscheduled = /var/lib/pulse2/xmpp_basepluginscheduler/"%(plugin['NAME'], pathfileconf))
+            "\n[parameters]\ndirschedulerplugins = /var/lib/pulse2/xmpp_basepluginscheduler/"%(plugin['NAME'], pathfileconf))
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_basepluginscheduler")
-        objectxmpp.dirpluginlistscheduled = "/var/lib/pulse2/xmpp_basepluginscheduler"
+        objectxmpp.dirschedulerplugins = "/var/lib/pulse2/xmpp_basepluginscheduler"
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-        objectxmpp.dirpluginlistscheduled = "/var/lib/pulse2/xmpp_basepluginscheduler"
-        if Config.has_option("parameters", "dirpluginlistscheduled"):
-            objectxmpp.dirpluginlistscheduled = Config.get('parameters', 'dirpluginlistscheduled')
+        objectxmpp.dirschedulerplugins = "/var/lib/pulse2/xmpp_basepluginscheduler"
+        if Config.has_option("parameters", "dirschedulerplugins"):
+            objectxmpp.dirschedulerplugins = Config.get('parameters', 'dirschedulerplugins')
     # function definie dynamiquement
     objectxmpp.plugin_loadpluginschedulerlistversion = types.MethodType(plugin_loadpluginschedulerlistversion, objectxmpp)
     objectxmpp.deployPluginscheduled = types.MethodType(deployPluginscheduled, objectxmpp)
@@ -141,9 +141,9 @@ def loadPluginschedulerList(self):
     logger.debug("Verify base plugin scheduler")
     self.plugindatascheduler = {}
     self.plugintypescheduler = {}
-    for element in os.listdir(self.dirpluginlistscheduled):
+    for element in os.listdir(self.dirschedulerplugins):
         if element.endswith('.py') and element.startswith('scheduling_'):
-            f = open(os.path.join(self.dirpluginlistscheduled, element), 'r')
+            f = open(os.path.join(self.dirschedulerplugins, element), 'r')
             lignes = f.readlines()
             f.close()
             for ligne in lignes:
