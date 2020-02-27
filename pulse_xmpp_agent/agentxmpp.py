@@ -1521,7 +1521,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         server_address = ('localhost',  self.config.am_local_port)
         for t in range(20):
             try:
-                logger.info("bin server kiosk %s"%server_address)
+                logger.info("Binding to kiosk server %s" % str(server_address))
                 self.sock.bind(server_address)
                 break
             except Exception as e:
