@@ -3940,7 +3940,7 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
         result=[x for x in listMacAdress][0]
-        logging.getLogger().debug("Result : %s"%result[0])
+        logging.getLogger().debug("Result list MacAdress for Machine : %s"%result[0])
         return result
 
     @DatabaseHelper._sessionm
