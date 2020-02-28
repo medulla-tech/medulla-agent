@@ -1705,11 +1705,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 'action' : 'xmpplog',
                 'text' : text,
                 'type':type,
+                'sessionid':sessionname,
                 'session':sessionname,
                 'priority':priority,
                 'who':who}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
+        msgbody['sessionid'] = sessionname
         msgbody['session'] = sessionname
         self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
@@ -1728,13 +1730,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
+        if sessionname == "" : sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
         data = {'log' : 'xmpplog',
                 'text' : text,
                 'type': type,
-                'session' : sessionname,
+                'sessionid' : sessionname,
                 'priority': priority,
                 'action' : action ,
                 'who': who,
@@ -1746,7 +1749,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 'touser' : touser}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
-        msgbody['session'] = sessionname
+        msgbody['sessionid'] = sessionname
         self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
