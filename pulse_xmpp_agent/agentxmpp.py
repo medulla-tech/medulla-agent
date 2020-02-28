@@ -2520,6 +2520,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE,"terminateserver")
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.managerQueue.shutdown()
     try:
         xmpp.eventkill.set()
     except Exception:
@@ -2541,34 +2547,16 @@ def terminateserver(xmpp):
         except Exception as e:
             logger.error("\n%s"%(traceback.format_exc()))
             pass
-    if  xmpp.config.agenttype in ['relayserver']:
-        xmpp.qin.put("quit")
-    xmpp.queue_read_event_from_command.put("quit")
     logging.log(DEBUGPULSE,"wait 2s end thread event loop")
     logging.log(DEBUGPULSE,"terminate manage data sharing")
-    if  xmpp.config.agenttype in ['relayserver']:
-        xmpp.managerQueue.shutdown()
     time.sleep(2)
     logging.log(DEBUGPULSE,"terminate scheduler")
     xmpp.scheduler.quit()
-    try:
-        for t in range(40):
-            logging.log(DEBUGPULSE,"waitting stop server kiosk")
-            if not xmpp.quitserverkiosk:
-                time.sleep(1)
-            else:
-                break
-    except Exception:
-        logging.log(40,"error waitting stop server kiosk")
-
-    for t in range(40):
-        logging.log(DEBUGPULSE,"quit server pipee")
-        if not xmpp.quitserverpipe:
-            logging.log(DEBUGPULSE,"quit server pipe")
-            time.sleep(1)
-        else:
-            logging.log(DEBUGPULSE,"quitserverpipey")
-            break
+    logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
+    while not xmpp.quitserverkiosk:
+        time.sleep(1)
+    while not xmpp.quitserverpipe:
+        time.sleep(1)
     logging.log(DEBUGPULSE,"bye bye Agent")
 
 if __name__ == '__main__':
