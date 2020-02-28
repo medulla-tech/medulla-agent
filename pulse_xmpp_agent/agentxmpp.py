@@ -63,7 +63,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
-from lib.syncthingapirest import syncthing, syncthingprogram
+from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
