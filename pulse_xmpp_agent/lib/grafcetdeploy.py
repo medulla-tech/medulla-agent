@@ -579,7 +579,7 @@ class grafcet:
             logging.getLogger().error(str(e))
             logger.error("\n%s"%(traceback.format_exc()))
             self.datasend['ret'] = 255
-            self.datas['ret'] = 255
+            datas['ret'] = 255
             logstruct = copy.deepcopy(self.datasend)
             logstruct['data']['action'] = logstruct['action']
             logstruct['action'] = "xmpplog"
