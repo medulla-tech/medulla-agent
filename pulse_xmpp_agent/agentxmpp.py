@@ -36,6 +36,7 @@ import threading
 import shutil
 import subprocess
 import psutil
+import random
 
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -112,9 +113,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.dirsyncthing =  os.path.join(os.path.dirname(os.path.realpath(__file__)), "syncthingdescriptor")
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs( self.dirsyncthing, 0755 );
-        logger.info("start machine1  %s Type %s" %(conf.jidagent, 
+        logger.info("start machine1  %s Type %s" %(conf.jidagent,
                                                    conf.agenttype))
-        sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent), 
+        sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent),
                                       conf.passwordconnection)
         laps_time_update_plugin = 3600
         laps_time_action_extern = 60
@@ -147,7 +148,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.quitserverpipe  = True
         ###################Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-        self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+        self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                       "img_agent")
         if os.path.isdir(self.img_agent):
             logging.warning('deleting directory %s'%self.img_agent)
@@ -199,8 +200,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
-
-        self.agentsiveo = self.config.jidagentsiveo
 
         if not testagentconf(self.config.agenttype):
             #supprime fichier figerprint
@@ -259,17 +258,45 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.sub_registration.bare == "":
             self.sub_registration = self.agentmaster
 
+        if sys.platform.startswith('linux'):
+            if self.config.agenttype in ['relayserver']:
+                self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+            else:
+                self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                                                    ".config",
+                                                    "syncthing",
+                                                    "config.xml")
+            self.tmpfile = "/tmp/confsyncting.txt"
+        elif sys.platform.startswith('win'):
+            self.fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
+            self.tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
+        elif sys.platform.startswith('darwin'):
+            self.fichierconfsyncthing = os.path.join("/",
+                                                "Library",
+                                                "Application Support",
+                                                "Pulse",
+                                                "etc",
+                                                "syncthing",
+                                                "config.xml")
+            self.tmpfile = "/tmp/confsyncting.txt"
+        self.deviceid = ""
+        try:
+            self.deviceid = iddevice(self.fichierconfsyncthing)
+        except Exception:
+            pass
+
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files
             # de session dont le deploiement a echoue ne sont pas efface.
             self.session.clearallfilesession()
+
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
         self.queue_read_event_from_command = Queue()
         self.xmppbrowsingpath = xmppbrowsing(defaultdir = self.config.defaultdir,
-                                             rootfilesystem = self.config.rootfilesystem, 
+                                             rootfilesystem = self.config.rootfilesystem,
                                              objectxmpp = self)
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
@@ -277,7 +304,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.deviceid=""
-        
+
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -334,10 +361,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                           repeat=True)
 
             # ######################Update remote agent#########################
-            self.diragentbase = os.path.join('/', 
-                                             'var', 
-                                             'lib', 
-                                             'pulse2', 
+            self.diragentbase = os.path.join('/',
+                                             'var',
+                                             'lib',
+                                             'pulse2',
                                              'xmpp_baseremoteagent')
             self.Update_Remote_Agentlist = Update_Remote_Agent(
                 self.diragentbase, True)
@@ -430,12 +457,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_action_extern,
                       self.execcmdfile,
                       repeat=True)
-                      
+
         self.schedule('initsyncthing',
                       120,
                       self.initialise_syncthing,
                       repeat=False)
-  
+
+        self.schedule('initialise_tcp_kiosk',
+                      80,
+                      self.initialise_tcp_kiosk,
+                      repeat=False)
+
     ###############################################################
     # syncthing function
     ###############################################################
@@ -452,9 +484,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return True
         return False
 
-    def add_device_in_folder_if_not_exist(self, 
-                                          folderid, 
-                                          keydevice, 
+    def add_device_in_folder_if_not_exist(self,
+                                          folderid,
+                                          keydevice,
                                           config,
                                           introducedBy = ""):
         result = False
@@ -465,7 +497,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if device['deviceID'] == keydevice:
                         #device existe
                         result = False
-                new_device = {"deviceID": keydevice, 
+                new_device = {"deviceID": keydevice,
                                 "introducedBy": introducedBy}
                 folder['devices'].append(new_device)
                 result =  True
@@ -514,7 +546,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         modif=False
         if 'pendingDevices' in config and \
             len(config['pendingDevices']) != 0:
-            #print "device trouve" 
+            #print "device trouve"
             for pendingdevice in config['pendingDevices']:
                 logger.info("pendingdevice %s"%pendingdevice)
                 # exist device?
@@ -638,10 +670,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def getsyncthingroot(self):
         syncthingroot = ""
         if self.config.agenttype in ['relayserver']:
-            return os.path.join("/", 
-                                "var", 
-                                "lib", 
-                                "syncthing", 
+            return os.path.join("/",
+                                "var",
+                                "lib",
+                                "syncthing",
                                 "partagedeploy")
         else:
             if sys.platform.startswith('win'):
@@ -649,11 +681,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             elif sys.platform.startswith('linux'):
                 syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
             elif sys.platform.startswith('darwin'):
-                syncthingroot = os.path.join("/", 
-                                            "Library", 
-                                            "Application Support", 
-                                            "Pulse", 
-                                            "var", 
+                syncthingroot = os.path.join("/",
+                                            "Library",
+                                            "Application Support",
+                                            "Pulse",
+                                            "var",
                                             "syncthing")
         return syncthingroot
 
@@ -667,7 +699,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
             for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
         # Here we get all the syncthingdescriptor/*.ars files.
-        #listfilearssyncthing = 
+        #listfilearssyncthing =
         #[/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/syncthingdescriptor/
         #commandf79b0750a13c4de09a.ars']
         # get the root for the sync folders
@@ -746,8 +778,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'data' : deploytojson,
                                     'ret' : 0,
                                     'base64' : False }
-                                msg = {'from' : syncthingtojson['ARS'], 
-                                       "to" : self.boundjid.bare, 
+                                msg = {'from' : syncthingtojson['ARS'],
+                                       "to" : self.boundjid.bare,
                                        'type' : 'chat' }
 
                                 call_plugin(transfertdeploy["action"],
@@ -757,7 +789,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             transfertdeploy['data'],
                                             msg,
                                             dataerreur)
-                                #### send message transfer tdeploy terminate to substitute plugin syncthing terminate 
+                                #### send message transfer tdeploy terminate to substitute plugin syncthing terminate
                                 # self.agentmaster
                                 #####"iddeploybase": 39,
                                 logging.warning("SEND MASTER")
@@ -1053,7 +1085,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 no return value
         """
         logging.info("___________START SERVER KIOSK___________")
- 
+
         while not self.eventkill.wait(1):
             try:
                 rr, rw, err = select.select([self.sock],[],[self.sock], 5)
@@ -1512,6 +1544,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     startparameter['data'],
                     msg,
                     dataerreur)
+
+        ################### initialise charge relay server ###################
+        if sys.platform.startswith('win'):
+            logger.debug("____________________________________________")
+            logger.info("___________INSTALL SERVER PIPENAMED___________")
+            #using event eventkillpipe for signal stop thread
+            self.quitserverpipe = False
+            self.eventkillpipe = threading.Event()
+            logging.log(DEBUGPULSE,'Install pipe nammed server for network interface')
+            threading.Thread(target=self._serverPipe).start()
+            logger.debug("____________________________________________")
+
+    def initialise_tcp_kiosk(self):
+
         ################### Server TCP/IP #############################
         logger.debug("____________________________________________")
         logger.info("___________INSTALL SERVER KIOSK___________")
@@ -1526,7 +1572,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 break
             except Exception as e:
                 logger.error(str(e))
-                time.sleep(10)       
+                time.sleep(10)
         # Listen for incoming connections
         self.sock.listen(5)
         #using event eventkill for signal stop thread
@@ -1534,16 +1580,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         client_handlertcp = threading.Thread(target=self.tcpserver)
         # run server tcpserver for kiosk
         client_handlertcp.start()
-        ################### initialise charge relay server ###################
-        if sys.platform.startswith('win'):
-            logger.debug("____________________________________________")
-            logger.info("___________INSTALL SERVER PIPENAMED___________")
-            #using event eventkillpipe for signal stop thread
-            self.quitserverpipe = False
-            self.eventkillpipe = threading.Event()
-            logging.log(DEBUGPULSE,'Install pipe nammed server for network interface')
-            threading.Thread(target=self._serverPipe).start()
-            logger.debug("____________________________________________")
 
     def initialise_syncthing(self):
         logger.debug("____________________________________________")
@@ -1552,7 +1588,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.config.syncthing_on
         except NameError:
             self.config.syncthing_on = False
-            
+
         ################################### initialise syncthing ###################################
         if self.config.syncthing_on:
             if  not self.config.agenttype in ['relayserver']:
@@ -1581,8 +1617,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                     "Library",
                                                     "Application Support",
                                                     "Pulse",
-                                                    "etc", 
-                                                    "syncthing", 
+                                                    "etc",
+                                                    "syncthing",
                                                     "config.xml")
                 tmpfile = "/tmp/confsyncting.txt"
             try:
@@ -1608,9 +1644,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.quitserverpipe = False
         logger.debug("____________________________________________")
         logger.info("___________START SERVER PIPENAMED___________")
-        #self.eventkillpipe = threading.Event() 
+        #self.eventkillpipe = threading.Event()
         while not self.eventkillpipe.wait(1):
-            try:           
+            try:
                 self.pipe_handle = win32pipe.CreateNamedPipe(r'\\.\pipe\interfacechang',
                                             win32pipe.PIPE_ACCESS_DUPLEX,
                                             win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT,
@@ -2426,44 +2462,72 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             restart = False
         if signalint:
             logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
-            terminateserver(xmpp)
+            try:
+                xmpp.eventkill.set()
+            except Exception:
+                pass
+            time.sleep(1)
             break
-        logging.log(DEBUGPULSE,"analyse alternative")
+        if xmpp.config.agenttype in ['relayserver']:
+            terminateserver(xmpp)
+
         if not restart:
             logging.log(DEBUGPULSE,"not restart")
             # verify if signal stop
             # verify if alternative connection
-            logging.log(DEBUGPULSE,"alternative connection")
-            logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
             if os.path.isfile(conffilename("cluster")):
                 # il y a une configuration alternative
+                logging.log(DEBUGPULSE,"analyse alternative alternative connection")
+                logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
                 logging.log(DEBUGPULSE, "alternative configuration")
-                newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
                 countcycle += 1
-                changeconnection( conffilename(xmpp.config.agenttype),
-                                newparametersconnect[2],
-                                newparametersconnect[1],
-                                newparametersconnect[0],
-                                newparametersconnect[3])
-                if newparametersconnect[5] < countcycle:
-                    # if plus d'un cycle fait on relance le configurateur
-                    countcycle = 0
-                    logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
-                    nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                    args = ['python', nameprogconnection, '-t', 'machine']
-                    subprocess.call(args)
-                    time.sleep(10)
+                try:
+                    xmpp.eventkill.set()
+                except Exception:
+                    pass
+                try:
+                    xmpp.sock.close()
+                except Exception:
+                    pass
+                try:
+                    timealternatifars = random.randint(*xmpp.config.timealternatif)
+                    logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
+                    time.sleep(timealternatifars)
+                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+
+                    changeconnection( conffilename(xmpp.config.agenttype),
+                                    newparametersconnect[2],
+                                    newparametersconnect[1],
+                                    newparametersconnect[0],
+                                    newparametersconnect[3])
+
+                    if newparametersconnect[5] < countcycle:
+                        # if plus d'un cycle fait on relance le configurateur
+                        countcycle = 0
+                        logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
+                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                        args = ['python', nameprogconnection, '-t', 'machine']
+                        subprocess.call(args)
+                        time.sleep(10)
+                except Exception:
+                    logging.log(40," ERROR analyse alternative connection")
+                    logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
     terminateserver(xmpp)
+    logging.log(DEBUGPULSE,"QUIT")
+    os._exit(0)
 
 
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE,"terminateserver")
-    xmpp.eventkill.set()
+    try:
+        xmpp.eventkill.set()
+    except Exception:
+        xmpp.quitserverkiosk = True
     try:
         xmpp.sock.close()
     except Exception:
-        pass
+        xmpp.quitserverkiosk = True
     if sys.platform.startswith('win'):
         try:
             xmpp.eventkillpipe.set()
@@ -2487,11 +2551,24 @@ def terminateserver(xmpp):
     time.sleep(2)
     logging.log(DEBUGPULSE,"terminate scheduler")
     xmpp.scheduler.quit()
-    logging.log(DEBUGPULSE,"waitting stop server kiosk")
-    while not xmpp.quitserverkiosk:
-        time.sleep(1)
-    while not xmpp.quitserverpipe:
-        time.sleep(1)
+    try:
+        for t in range(40):
+            logging.log(DEBUGPULSE,"waitting stop server kiosk")
+            if not xmpp.quitserverkiosk:
+                time.sleep(1)
+            else:
+                break
+    except Exception:
+        logging.log(40,"error waitting stop server kiosk")
+
+    for t in range(40):
+        logging.log(DEBUGPULSE,"quit server pipee")
+        if not xmpp.quitserverpipe:
+            logging.log(DEBUGPULSE,"quit server pipe")
+            time.sleep(1)
+        else:
+            logging.log(DEBUGPULSE,"quitserverpipey")
+            break
     logging.log(DEBUGPULSE,"bye bye Agent")
 
 if __name__ == '__main__':

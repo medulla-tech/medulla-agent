@@ -504,22 +504,23 @@ class confParameter:
         except BaseException:
             self.baseurlguacamole = ""
 
-        try:
-            timeal = Config.get('global', 'alternativetimedelta')
-            self.timealternatif = [int(x) for x in
-                                   re.split(r'[a-zA-Z;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\$\|\s]\s*',
-                                            timeal)
-                                   if x.strip()!=""][:2]
-            self.timealternatif.sort()
-            if len(self.timealternatif) < 2:
-                raise
-            else:
-                if self.timealternatif[0] < 2: self.timealternatif[0] = 2
-                if self.timealternatif[1] > 30 : self.timealternatif[1] = 30
-        except Exception:
-            self.timealternatif=[2,30]
-            logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
-        logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
+        if self.agenttype == "machine":
+            try:
+                timeal = Config.get('global', 'alternativetimedelta')
+                self.timealternatif = [int(x) for x in
+                                       re.split(r'[a-zA-Z;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\$\|\s]\s*',
+                                                timeal)
+                                       if x.strip()!=""][:2]
+                self.timealternatif.sort()
+                if len(self.timealternatif) < 2:
+                    raise
+                else:
+                    if self.timealternatif[0] < 2: self.timealternatif[0] = 2
+                    if self.timealternatif[1] > 30 : self.timealternatif[1] = 30
+            except Exception:
+                self.timealternatif=[2,30]
+                logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
+            logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
 
         try:
             self.debug = Config.get('global', 'log_level')
