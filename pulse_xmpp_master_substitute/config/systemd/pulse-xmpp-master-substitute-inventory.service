@@ -1,6 +1,5 @@
 [Unit]
 Description= Pulse master agent substitute for inventory
-After=samba.service slapd.service
 
 [Service]
 #PIDFile=/var/run/launcher.pid

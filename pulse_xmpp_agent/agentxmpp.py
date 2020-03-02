@@ -36,6 +36,7 @@ import threading
 import shutil
 import subprocess
 import psutil
+import random
 
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -79,8 +80,6 @@ from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
 from sleekxmpp import jid
 
-import random
-
 if sys.platform.startswith('win'):
     import win32api
     import win32con
@@ -91,7 +90,7 @@ else:
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
-ERRORPULSE = 40
+
 logger = logging.getLogger()
 global restart
 signalint = False
@@ -125,8 +124,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss"%laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
-
-
         # ###### creation object session ##########
         self.session = session(self.config.agenttype)
         ###########################################
@@ -203,6 +200,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.nicklistchatroomcommand = {}
         self.jidchatroomcommand = jid.JID(self.config.jidchatroomcommand)
         self.agentcommand = jid.JID(self.config.agentcommand)
+
         if not testagentconf(self.config.agenttype):
             #supprime fichier figerprint
             pathfingerprint = os.path.join( Setdirectorytempinfo(),
@@ -225,14 +223,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
-        if not hasattr(self.config, 'logagent'):
-            self.logagent = self.agentmaster
+        if not hasattr(self.config, 'sub_logger'):
+            self.sub_logger = self.agentmaster
         else:
-            if isinstance(self.config.logagent, list) and\
-                len(self.config.logagent) > 0:
-                self.logagent = jid.JID(self.config.logagent[0])
+            if isinstance(self.config.sub_logger, list) and\
+                len(self.config.sub_logger) > 0:
+                self.sub_logger = jid.JID(self.config.sub_logger[0])
             else:
-                self.logagent = jid.JID(self.config.logagent)
+                self.sub_logger = jid.JID(self.config.sub_logger)
 
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
@@ -286,6 +284,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.deviceid = iddevice(self.fichierconfsyncthing)
         except Exception:
             pass
+
         if self.config.agenttype in ['relayserver']:
             # supp file session start agent.
             # tant que l'agent RS n'est pas started les files
@@ -1559,6 +1558,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.debug("____________________________________________")
 
     def initialise_tcp_kiosk(self):
+
         ################### Server TCP/IP #############################
         logger.debug("____________________________________________")
         logger.info("___________INSTALL SERVER KIOSK___________")
@@ -1568,6 +1568,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         server_address = ('localhost',  self.config.am_local_port)
         for t in range(20):
             try:
+                logger.info("Binding to kiosk server %s" % str(server_address))
                 self.sock.bind(server_address)
                 break
             except Exception as e:
@@ -1749,7 +1750,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
         msgbody['session'] = sessionname
-        self.send_message(  mto = self.logagent,
+        self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
@@ -1786,7 +1787,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
-        self.send_message(  mto = self.logagent,
+        self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
@@ -2490,9 +2491,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                 except Exception:
                     pass
                 try:
-                    tiealternatifars = random.randint(*xmpp.config.timealternatif)
-                    logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%tiealternatifars)
-                    time.sleep(tiealternatifars)
+                    timealternatifars = random.randint(*xmpp.config.timealternatif)
+                    logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
+                    time.sleep(timealternatifars)
                     newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
 
                     changeconnection( conffilename(xmpp.config.agenttype),
@@ -2516,9 +2517,16 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     logging.log(DEBUGPULSE,"QUIT")
     os._exit(0)
 
+
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE,"terminateserver")
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.qin.put("quit")
+    xmpp.queue_read_event_from_command.put("quit")
+
+    if  xmpp.config.agenttype in ['relayserver']:
+        xmpp.managerQueue.shutdown()
     try:
         xmpp.eventkill.set()
     except Exception:
@@ -2540,34 +2548,16 @@ def terminateserver(xmpp):
         except Exception as e:
             logger.error("\n%s"%(traceback.format_exc()))
             pass
-    if  xmpp.config.agenttype in ['relayserver']:
-        xmpp.qin.put("quit")
-    xmpp.queue_read_event_from_command.put("quit")
     logging.log(DEBUGPULSE,"wait 2s end thread event loop")
     logging.log(DEBUGPULSE,"terminate manage data sharing")
-    if  xmpp.config.agenttype in ['relayserver']:
-        xmpp.managerQueue.shutdown()
     time.sleep(2)
     logging.log(DEBUGPULSE,"terminate scheduler")
     xmpp.scheduler.quit()
-    try:
-        for t in range(40):
-            logging.log(DEBUGPULSE,"waitting stop server kiosk")
-            if not xmpp.quitserverkiosk:
-                time.sleep(1)
-            else:
-                break
-    except Exception:
-        logging.log(40,"error waitting stop server kiosk")
-
-    for t in range(40):
-        logging.log(DEBUGPULSE,"quit server pipee")
-        if not xmpp.quitserverpipe:
-            logging.log(DEBUGPULSE,"quit server pipe")
-            time.sleep(1)
-        else:
-            logging.log(DEBUGPULSE,"quitserverpipey")
-            break
+    logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
+    while not xmpp.quitserverkiosk:
+        time.sleep(1)
+    while not xmpp.quitserverpipe:
+        time.sleep(1)
     logging.log(DEBUGPULSE,"bye bye Agent")
 
 if __name__ == '__main__':

@@ -105,9 +105,9 @@ class confParameter:
         if Config.has_option("connection", "jidmaster"):
             self.jidmaster = Config.get('connection', 'jidmaster')
 
-        self.jidlog = "log@pulse"
-        if Config.has_option("connection", "jidlog"):
-            self.jidlog =    Config.get('connection', 'jidlog')
+        self.sub_logger = "log@pulse"
+        if Config.has_option("connection", "logger"):
+            self.sub_logger =    Config.get('connection', 'logger')
 
         self.jidmastersubstitute = ""
         if Config.has_option("connection", "jidmastersubstitute"):

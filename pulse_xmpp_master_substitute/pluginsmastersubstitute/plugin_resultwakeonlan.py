@@ -20,24 +20,20 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file : /plugin_resultmsginfoerror.py
+# file pluginsmaster/plugin_resultwakeonlan.py
 
 import logging
-logger = logging.getLogger()
 
-DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "2.0", "NAME": "resultmsginfoerror", "TYPE": "substitute"}
+# plugin_resultwakeonLan
+
+plugin = {"VERSION": "1.1", "NAME": "resultwakeonlan", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logging.getLogger().debug(plugin)
-    if 'msg' in data:
-        if ret >= 50 and ret <= 80:
-            logging.getLogger().warning("msg [%s] : %s" %(message['from'],
-                                                          data['msg']))
-        elif ret == 0:
-            logging.getLogger().info("msg [%s] : %s" %(message['from'],
-                                                          data['msg']))
-        else:
-            logging.getLogger().error("msg [%s] : %s" %(message['from'],
-                                                          data['msg']))
+    try:
+        logging.getLogger().debug("%s", data)
+        pass
+    except Exception as e:
+        logging.getLogger().error("Error in plugin %s : %s" % (action, str(e)))
+        pass
