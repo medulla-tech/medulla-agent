@@ -47,9 +47,9 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     if compteurcallplugin == 0:
         read_conf_load_plugin_subscribe(objectxmpp)
         objectxmpp.add_event_handler('changed_status', objectxmpp.changed_status)
-        
-        XmppMasterDatabase().update_enable_for_agent_subscription(objectxmpp.boundjid.bare) # update down machine substitute manage by self agent
-        
+
+        XmppMasterDatabase().update_enable_for_agent_subcription(objectxmpp.boundjid.bare) # update down machine substitute manage by self agent
+
         #self.add_event_handler('presence_unavailable', objectxmpp.presence_unavailable)
         #self.add_event_handler('presence_available', objectxmpp.presence_available)
 
@@ -60,7 +60,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
         #self.add_event_handler('presence_unsubscribed', objectxmpp.presence_unsubscribed)
 
         #self.add_event_handler('changed_subscription', objectxmpp.changed_subscription)
-        
+
 
 def read_conf_load_plugin_subscribe(objectxmpp):
     """
@@ -131,36 +131,37 @@ def changed_status(self, presence):
                                             t['sessionid'],
                                             t['hostname'],
                                             t['jidmachine'] ])
-                        #logger.debug("*** %s"%t)
-                        logger.debug("Update deploy Status for Machine OffLine %s"%t['jidmachine'])
-                        XmppMasterDatabase().updatedeploystate(t['sessionid'], "DEPLOYMENT START (REBOOT)")
-                        self.xmpplog("resource recovery on ARS %s for deploy"\
-                            "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
-                                                                                t['sessionid'],
-                                                                                t['hostname']),
-                            type = 'deploy',
-                            sessionname = t['sessionid'],
-                            priority = -1,
-                            action = "xmpplog",
-                            who = "",
-                            how = "",
-                            why =  t['jidmachine'],
-                            module = "Deployment| Notify | Cluster",
-                            date = None,
-                            fromuser = "",
-                            touser = "")
-                        self.xmpplog('<span style="font-weight: bold;color : Orange;">WAITING REBOOT</span>',
-                            type = 'deploy',
-                            sessionname = t['sessionid'],
-                            priority = -1,
-                            action = "xmpplog",
-                            who =  t['jidmachine'],
-                            how = "",
-                            why = "",
-                            module = "Deployment | Error | Terminate | Notify",
-                            date = None ,
-                            fromuser = "master",
-                            touser = "")
+
+                        ret = XmppMasterDatabase().updatedeploystate(t['sessionid'], "DEPLOYMENT START (REBOOT)")
+                        if ret >= 1:
+                            logger.debug("Update deploy Status for Machine OffLine %s"%t['jidmachine'])
+                            self.xmpplog("resource recovery on ARS %s for deploy"\
+                                "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
+                                                                                    t['sessionid'],
+                                                                                    t['hostname']),
+                                type = 'deploy',
+                                sessionname = t['sessionid'],
+                                priority = -1,
+                                action = "xmpplog",
+                                who = "",
+                                how = "",
+                                why =  t['jidmachine'],
+                                module = "Deployment| Notify | Cluster",
+                                date = None,
+                                fromuser = "",
+                                touser = "")
+                            self.xmpplog('<span style="font-weight: bold;color : Orange;">WAITING REBOOT</span>',
+                                type = 'deploy',
+                                sessionname = t['sessionid'],
+                                priority = -1,
+                                action = "xmpplog",
+                                who =  t['jidmachine'],
+                                how = "",
+                                why = "",
+                                module = "Deployment | Error | Terminate | Notify",
+                                date = None ,
+                                fromuser = "master",
+                                touser = "")
                 #arscluster = list(set(arscluster))
                 if len(arscluster) > 0:
                     #logger.debug("*** START SEND MSG ARS")
