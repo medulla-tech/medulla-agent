@@ -290,7 +290,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # tant que l'agent RS n'est pas started les files
             # de session dont le deploiement a echoue ne sont pas efface.
             self.session.clearallfilesession()
-
+            self.deviceid = iddevice()
+        else:
+            self.deviceid=""
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
@@ -303,7 +305,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.banterminate = { } # used for clear id session banned
         self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
-        self.deviceid=""
 
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)

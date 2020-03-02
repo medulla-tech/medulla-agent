@@ -3717,7 +3717,12 @@ class XmppMasterDatabase(DatabaseHelper):
         return [x for x in result]
 
     @DatabaseHelper._sessionm
-    def algorulebynetworkaddress(self, session, subnetmachine, classutilMachine = "both", rule = 9, enabled=1):
+    def algorulebynetworkaddress(self,
+                                 session,
+                                 subnetmachine,
+                                 classutilMachine = "both",
+                                 rule = 9,
+                                 enabled=1):
         """
             Field "rule_id" : This information allows you to apply the search
                               only to the rule pointed. rule_id = 9 by network address
