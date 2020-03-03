@@ -386,7 +386,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  "'WAITING MACHINE ONLINE'",
                                  "'DEPLOYMENT START'",
                                  "'WAITING REBOOT'",
-                                 "'DEPLOYMENT START (REBOOT)'",
+                                 "'DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)'",
                                  "'Offline'"]
         Stateforterminatesessioninmaster=['DEPLOYMENT SUCCESS', 'DEPLOYMENT ERROR','DEPLOYMENT ABORT']
         nowdate = datetime.now()
@@ -407,7 +407,7 @@ class XmppMasterDatabase(DatabaseHelper):
             result =  [x for x in machines]
             resultlist = []
             for t in result:
-                self.update_state_deploy( t[0], 'DEPLOYMENT ERROR ON TIMEOUT')
+                self.update_state_deploy( t[0], 'ABORT ON TIMEOUT')
                 listresult = {  "id" : t[0],
                                 "title" : t[1],
                                 "jidmachine" : t[2],
