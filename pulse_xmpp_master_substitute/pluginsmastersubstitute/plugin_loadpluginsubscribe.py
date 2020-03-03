@@ -132,7 +132,7 @@ def changed_status(self, presence):
                                             t['hostname'],
                                             t['jidmachine'] ])
 
-                        ret = XmppMasterDatabase().updatedeploystate(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
+                        ret = XmppMasterDatabase().updatedeploystate1(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
                         if ret >= 1:
                             logger.debug("Update deploy Status for Machine OffLine %s"%t['jidmachine'])
                             self.xmpplog("resource recovery on ARS %s for deploy"\
