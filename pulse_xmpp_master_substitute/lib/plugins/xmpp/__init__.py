@@ -3844,13 +3844,20 @@ class XmppMasterDatabase(DatabaseHelper):
         return [x for x in result]
 
     @DatabaseHelper._sessionm
-    def hasmachineusers(self, session, useradd, idmachine):
-        sql = """INSERT
-                INTO `xmppmaster`.`has_machinesusers` (`users_id`, `machines_id`)
-                VALUES ('%s', '%s');"""%(useradd,idmachine)
-        session.execute(sql)
+    def hasmachineusers(self, session, machines_id, users_id):
+        result = session.query(Has_machinesusers.machines_id).\
+           filter(and_( Has_machinesusers.machines_id == machines_id,\
+                        Has_machinesusers.users_id == users_id)).first()
         session.commit()
         session.flush()
+        if result is None:
+            new_machineuser = Has_relayserverrules()
+            new_machineuser.machines_id = machines_id
+            new_machineuser.users_id = users_id
+            session.commit()
+            session.flush()
+            return True
+        return False
 
     @DatabaseHelper._sessionm
     def addguacamoleidforiventoryid(self, session, idinventory, idguacamole):
