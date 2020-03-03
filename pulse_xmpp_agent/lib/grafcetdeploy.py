@@ -475,7 +475,8 @@ class grafcet:
             self.__action_completed__(self.workingstep)
         except AttributeError:
             #grafcet instance has no attribute 'workingstep'
-            self.objectxmpp.xmpplog('<span  style="color: red;font-size:x-large;font-style: italic; ">Workflow error. Please check your packag<span>',
+            self.datasend['data']['status'] = "ABORT PACKAGE WORKFLOW ERROR"
+            self.objectxmpp.xmpplog('<span  style="color: red;font-size:x-large;font-style: italic; ">Workflow error. Please check your package<span>',
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = -2,
