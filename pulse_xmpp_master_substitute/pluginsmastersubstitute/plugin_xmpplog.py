@@ -34,22 +34,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
-<<<<<<< HEAD
-    logger.debug("action %s"%action)
-    logger.debug("session_id %s"%sessionid)
-    logger.debug("ret %s"%ret)
-    logger.debug("dataobj %s"%dataobj)
-    logger.debug("data \n%s"%json.dumps(data, indent = 4))
-=======
->>>>>>> origin/xmppmaster
     compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
     if compteurcallplugin == 0:
         read_conf_log_agent(xmppobject)
     try :
-<<<<<<< HEAD
-        logger.debug("%s : "%data)
-=======
->>>>>>> origin/xmppmaster
         dataobj = data
         if data["action"] == 'xmpplog':
             createlog(xmppobject, data)
