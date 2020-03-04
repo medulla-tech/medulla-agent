@@ -188,7 +188,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.disconnect()
 
     def adddevicesyncthing(self, keydevicesyncthing, namerelay, address = ["dynamic"]):
-        resource = jid.JID(namerelay).resource
+        resource = jid.JID(namerelay).user[2:]
         if jid.JID(namerelay).bare == "rspulse@pulse":
             resource = "pulse"
         if resource=="":
@@ -213,7 +213,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if dev['name'] == namerelay or dev['deviceID'] == keydevicesyncthing:
                     dev["introducer"] = True
                     dev["autoAcceptFolders"] = True
-                if dev['name'] == jid.JID(namerelay).user:
+                if dev['name'] == jid.JID(namerelay).resource:
                     dev['name'] = "pulse"
                 dev['addresses'] = address
                 logger.info("Device [%s] syncthing to ars %s\n%s"%( dev['deviceID'],
