@@ -31,8 +31,9 @@ class managepackage:
 
     @staticmethod
     def listpackages():
-        return [os.path.join(managepackage.packagedir(), x) for x in os.listdir(
-            managepackage.packagedir()) if os.path.isdir(os.path.join(managepackage.packagedir(), x))]
+        return [ os.path.join(managepackage.packagedir(),x) for x in os.listdir(managepackage.packagedir()) \
+            if os.path.isdir(os.path.join(managepackage.packagedir(),x)) \
+                and str(os.path.join(managepackage.packagedir(),x))[-9:] != ".stfolder" ]
 
     @staticmethod
     def loadjsonfile(filename):

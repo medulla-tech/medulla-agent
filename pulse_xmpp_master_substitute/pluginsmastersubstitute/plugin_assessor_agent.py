@@ -28,6 +28,10 @@ import logging
 from lib.utils import file_get_contents, \
                       getRandomName, \
                       data_struct_message, \
+<<<<<<< HEAD
+=======
+                      add_method, \
+>>>>>>> origin/xmppmaster
                       ipfromdns, \
                       AESCipher, \
                       subnetnetwork
@@ -38,9 +42,15 @@ from random import randint
 import operator
 import traceback
 import ConfigParser
+<<<<<<< HEAD
 from ConfigParser import  NoSectionError
 import netaddr
 
+=======
+import netaddr
+
+
+>>>>>>> origin/xmppmaster
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
@@ -48,6 +58,7 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
+<<<<<<< HEAD
 plugin = {"VERSION" : "1.0", "NAME" : "assessor_agent", "TYPE" : "substitute", "FEATURE": "assessor" }
 
 
@@ -80,6 +91,26 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj={}):
                 #accuse reception to agent connection
                 sendErrorConnectionConf(objectxmpp,sessionid,msg)
                 return
+=======
+plugin = {"VERSION" : "1.1", "NAME" : "assessor_agent", "TYPE" : "substitute", "FEATURE": "assessor" }
+
+
+def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
+    logger.debug("=====================================================")
+    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("=====================================================")
+
+    try:
+        compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+        if compteurcallplugin == 0:
+            read_conf_assessor(objectxmpp)
+
+        if objectxmpp.assessor_agent_errorconf:
+            logger.debug("error configuration no process action %s for machine %s"%(action , msg['from']))
+            sendErrorConnectionConf(objectxmpp,sessionid,msg)
+            return
+
+>>>>>>> origin/xmppmaster
         Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                       action,
                                                       sessionid,
@@ -89,11 +120,18 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj={}):
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("\n%s"%(traceback.format_exc()))
 
+<<<<<<< HEAD
 
 def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
     codechaine="%s"%(msg['from'])
     result = False
     for t in objectxmpp.keyAES32:
+=======
+def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
+    codechaine="%s"%(msg['from'])
+    result = False
+    for t in objectxmpp.assessor_agent_keyAES32:
+>>>>>>> origin/xmppmaster
         cipher = AESCipher(t)
         decrypted = cipher.decrypt(data['codechaine'])
         if str(decrypted) == str(codechaine):
@@ -105,6 +143,10 @@ def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
     return result
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/xmppmaster
 def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   action,
                                                   sessionid,
@@ -113,6 +155,10 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     """
 
     """
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/xmppmaster
     codechaine="%s"%(msg['from'])
     logger.debug("CONFIGURATION AGENT MACHINE")
     if data['adorgbymachine'] is not None and data['adorgbymachine'] != "":
@@ -123,16 +169,28 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         data['information'] = json.loads(base64.b64decode(data['completedatamachine']))
         del data['completedatamachine']
         json.dumps(data, indent = 4)
+<<<<<<< HEAD
     except Exception:
+=======
+    except:
+>>>>>>> origin/xmppmaster
         logger.debug("decode msg error from %s"%(codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/xmppmaster
     if data['agenttype'] == "relayserver":
         objectxmpp.sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
 
+<<<<<<< HEAD
     if 'codechaine' not in data:
+=======
+    if not 'codechaine' in data:
+>>>>>>> origin/xmppmaster
         logger.debug("missing authentification from %s"%(codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
@@ -254,7 +312,11 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                     data['information']['info']['hostname'],
                                     data['information']['users'][0],
                                     result)
+<<<<<<< HEAD
                             break
+=======
+
+>>>>>>> origin/xmppmaster
                         else:
                             logger.warn("algo rule 3 inderterminat")
                             continue
@@ -287,8 +349,13 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         # Default Rule : 5
         elif x[0] == 5:
             logger.debug("analysis the 5th rule : use default relay server %s" %
+<<<<<<< HEAD
                             objectxmpp.defaultrelayserverip)
             result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.defaultrelayserverip)
+=======
+                            objectxmpp.assessor_agent_serverip)
+            result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
+>>>>>>> origin/xmppmaster
             msg_log("use default relay server",
                     data['information']['info']['hostname'],
                     data['information']['users'][0],
@@ -357,6 +424,24 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         data['information']['users'][0],
                         result)
                 break
+<<<<<<< HEAD
+=======
+		# Network Rule : 10
+        elif x[0] == 10:
+            # Associates relay server based on network address
+            logger.debug("Analysis the 10th rule : Associate relay server based on netmask address")
+            logger.debug("Net mask address: %s" % data['xmppmask'])
+            result1 = XmppMasterDatabase().algorulebynetmaskaddress(data['xmppmask'],
+                                                                    data['classutil'])
+            if len(result1) > 0:
+                logger.debug("Applied Rule : Associate relay server based on net Mask address")
+                result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(result1[0].id)
+                msg_log("net mask address",
+                        data['information']['info']['hostname'],
+                        data['information']['users'][0],
+                        result)
+                break
+>>>>>>> origin/xmppmaster
 
     try:
         msg_string ="[user %s hostanme %s] : "\
@@ -371,6 +456,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     except Exception:
         logger.warning("Relay server attributed by default")
         try:
+<<<<<<< HEAD
             result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.defaultrelayserverip)
         except Exception:
             logger.warn("Unable to configure the relay server : missing")
@@ -378,6 +464,20 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         objectxmpp.defaultrelayserverport,
                         objectxmpp.domaindefault,
                         objectxmpp.defaultrelayserverbaseurlguacamole]
+=======
+            result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
+        except Exception:
+            logger.warn("Unable to assign the relay server : missing")
+            #result = [objectxmpp.assessor_agent_serverip,
+                        #objectxmpp.assessor_agent_port,
+                        #objectxmpp.domaindefault,
+                        #objectxmpp.assessor_agent_baseurlguacamole]
+            result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
+            msg_log("error use default relay server",
+                    data['information']['info']['hostname'],
+                    data['information']['users'][0],
+                    result)
+>>>>>>> origin/xmppmaster
     try:
         listars = XmppMasterDatabase().getRelayServerofclusterFromjidars(result[2],
                                                                          "static")
@@ -386,16 +486,27 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         arsjid = XmppMasterDatabase().getRelayServerfromjid("rspulse@pulse")
         # Start relay server agent configuration
         # we order the ARS from the least used to the most used.
+<<<<<<< HEAD
         response = { 'action': 'resultconnectionconf',
                     'sessionid': data['sessionid'],
                     'data': z1,
                     'syncthing' : objectxmpp.announce_server,
+=======
+        response = {'action': 'resultconnectionconf',
+                    'sessionid': data['sessionid'],
+                    'data': z1,
+                    'syncthing' : objectxmpp.assessor_agent_announce_server,
+>>>>>>> origin/xmppmaster
                     'ret': 0}
         if len(listars) == 0:
             logger.warning("No configuration sent to machine "\
                 "agent %s. ARS %s is found but it is stopped." % (data['information']['info']['hostname'], result[2]))
             logger.warning("ACTION: Re-start the ARS on %s, and wait for the agent to run its reconfiguration."%(result[2]))
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> origin/xmppmaster
             objectxmpp.xmpplog("No configuration sent to machine agent %s. ARS %s is found but it is stopped." % (result[2],
                                                                                   data['information']['info']['hostname'] ),
                             type = 'conf',
@@ -418,8 +529,16 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                    z1[0][2])
 
             response["substitute"]["ars_chooose_for_substitute"] = z1[0][2]
+<<<<<<< HEAD
             logger.debug("substitute resend to agent : %s"%json.dumps(response["substitute"],indent=4))
             if "subscription" in response["substitute"]:
+=======
+
+            logger.debug("substitute resend to agent : %s"%json.dumps(response["substitute"],indent=4))
+            logger.debug("substitute resend to agent : %s"%json.dumps(response["substitute"]['subscription'],indent=4))
+            if "subscription" in response["substitute"]:
+
+>>>>>>> origin/xmppmaster
                 agentsubscription = response["substitute"]['subscription'][0]
                 listmacadress=[]
                 for mac in data['information']['listipinfo']:
@@ -428,12 +547,18 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         objectxmpp.send_message(mto=msg['from'],
                             mbody=json.dumps(response),
                             mtype='chat')
+<<<<<<< HEAD
         #add account for delete
         #list des comptes a suprimer
         objectxmpp.confaccount.append(msg['from'].user)
     except Exception:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("Unable to configure agent for one relay server")
+=======
+    except Exception:
+        sendErrorConnectionConf(objectxmpp,sessionid,msg)
+        logger.error("Unable to assign a relay server to an agent")
+>>>>>>> origin/xmppmaster
         logger.error("\n%s"%(traceback.format_exc()))
 
 def msg_log(msg_header, hostname, user, result):
@@ -446,7 +571,11 @@ def msg_log(msg_header, hostname, user, result):
     pass
 
 def displayData(objectxmpp, data):
+<<<<<<< HEAD
     if objectxmpp.showinfo:
+=======
+    if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
+>>>>>>> origin/xmppmaster
         logger.info("--------------------------")
         if 'action' in data and data['action'] == 'assessor_agent':
             logger.info("** INFORMATION FROM CONFIGURATION AGENT FOR %s" %
@@ -526,7 +655,11 @@ def sendErrorConnectionConf(objectxmpp, session,  msg):
                         mbody=json.dumps(response),
                         mtype='chat')
 
+<<<<<<< HEAD
 def read_conf_ascessor(objectxmpp):
+=======
+def read_conf_assessor(objectxmpp):
+>>>>>>> origin/xmppmaster
     """
         lit la configuration du plugin
         le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
@@ -547,6 +680,7 @@ def read_conf_ascessor(objectxmpp):
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
         if Config.has_section("parameters"):
+<<<<<<< HEAD
             if Config.has_option("parameters", "showinfo"):
                 objectxmpp.showinfo = Config.getboolean('parameters',
                                                               'showinfo')
@@ -554,15 +688,33 @@ def read_conf_ascessor(objectxmpp):
                 #default configuration
                 objectxmpp.showinfo = False
                 logger.warning("showinfo default value is False")
+=======
+            if Config.has_option("parameters", "showinfomachine"):
+                paramshowinfomachine = Config.get('parameters',
+                                                  'showinfomachine')
+                objectxmpp.assessor_agent_showinfomachine = [str(x.strip()) for x in paramshowinfomachine.split(",") if x.strip() != ""]
+            else:
+                #default configuration
+                objectxmpp.assessor_agent_showinfomachine = []
+                logger.warning("showinfomachine default value is []")
+>>>>>>> origin/xmppmaster
 
             if Config.has_option("parameters", "keyAES32"):
 
                 paramkeyAES32 = Config.get('parameters', 'keyAES32')
+<<<<<<< HEAD
                 objectxmpp.keyAES32 = [str(x.strip()) for x in paramkeyAES32.split(",") if x.strip() != ""]
 
                 #objectxmpp.keyAES32 = Config.get('parameters', 'keyAES32')
                 if len(objectxmpp.keyAES32) >0:
                     for keyAES32items in objectxmpp.keyAES32:
+=======
+                objectxmpp.assessor_agent_keyAES32 = [str(x.strip()) for x in paramkeyAES32.split(",") if x.strip() != ""]
+
+                #objectxmpp.keyAES32 = Config.get('parameters', 'keyAES32')
+                if len(objectxmpp.assessor_agent_keyAES32) >0:
+                    for keyAES32items in objectxmpp.assessor_agent_keyAES32:
+>>>>>>> origin/xmppmaster
                         if len(keyAES32items) != 32:
                             logger.warning("parameter taille keyAES32 %s"%keyAES32items)
                             objectxmpp.assessor_agent_errorconf = True
@@ -571,30 +723,51 @@ def read_conf_ascessor(objectxmpp):
                 objectxmpp.assessor_agent_errorconf = True
 
             if Config.has_option("parameters", "announce_server"):
+<<<<<<< HEAD
                 objectxmpp.announce_server = Config.get('parameters', 'announce_server')
             else:
                 objectxmpp.announce_server = "default"
+=======
+                objectxmpp.assessor_agent_announce_server = Config.get('parameters', 'announce_server')
+            else:
+                objectxmpp.assessor_agent_announce_server = "default"
+>>>>>>> origin/xmppmaster
                 logger.warning("announce_server for syncthing default value is default")
 
             ######################## default connection ##########################
             ### Connection server parameters if no relay server is available ####
 
             if Config.has_option("parameters", "serverip"):
+<<<<<<< HEAD
                 objectxmpp.defaultrelayserverip = ipfromdns(Config.get('parameters',
                                                                        'serverip'))
                 if objectxmpp.defaultrelayserverip == "":
+=======
+                objectxmpp.assessor_agent_serverip = ipfromdns(Config.get('parameters',
+                                                                       'serverip'))
+                if objectxmpp.assessor_agent_serverip == "":
+>>>>>>> origin/xmppmaster
                     logger.error("see parameter [serverip] in file : %s " \
                                 "if Connection server parameters " \
                                 "if no relay server is available"%pathfileconf)
                     objectxmpp.assessor_agent_errorconf = True
                 ipdatadown = ["localhost", "127.0.0.1"]
                 for ip in ipdatadown:
+<<<<<<< HEAD
                     if objectxmpp.defaultrelayserverip == ip:
                         logger.error("see parameter [serverip] in file : %s " \
                                 "if Connection server parameters " \
                                 "if no relay server is available" % pathfileconf)
                         logging.getLogger().error('parameter section "parameters" ' \
                                                   'serverip must not be %s' % ip)
+=======
+                    if objectxmpp.assessor_agent_serverip == ip:
+                        logger.error("see parameter [serverip] in file : %s " \
+                                "if Connection server parameters " \
+                                "if no relay server is available"%pathfileconf)
+                        logging.getLogger().error('parameter section "parameters" ' \
+                                                  'serverip must not be %s'%ip)
+>>>>>>> origin/xmppmaster
                         objectxmpp.assessor_agent_errorconf  = True
             else:
                 logger.error("see parameter [serverip] " \
@@ -602,19 +775,33 @@ def read_conf_ascessor(objectxmpp):
                 objectxmpp.assessor_agent_errorconf  = True
 
             if Config.has_option("parameters", "port"):
+<<<<<<< HEAD
                 objectxmpp.defaultrelayserverport = Config.get('parameters', 'port')
                 if objectxmpp.defaultrelayserverport == "":
+=======
+                objectxmpp.assessor_agent_port = Config.get('parameters', 'port')
+                if objectxmpp.assessor_agent_port == "":
+>>>>>>> origin/xmppmaster
                     logger.error("see parameter [port] in file : %s " \
                                 "if Connection server parameters " \
                                 "if no relay server is available"%pathfileconf)
                     objectxmpp.assessor_agent_errorconf  = True
             else:
                 logger.error("default value parameter [port] 5222")
+<<<<<<< HEAD
                 objectxmpp.defaultrelayserverport == "5222"
 
             if Config.has_option("parameters", "guacamole_baseurl"):
                 objectxmpp.defaultrelayserverbaseurlguacamole = Config.get('parameters', 'guacamole_baseurl')
                 if objectxmpp.defaultrelayserverport == "":
+=======
+                objectxmpp.assessor_agent_port == "5222"
+
+            if Config.has_option("parameters", "guacamole_baseurl"):
+                objectxmpp.assessor_agent_baseurlguacamole = Config.get('parameters',
+                                                                        'guacamole_baseurl')
+                if objectxmpp.assessor_agent_baseurlguacamole == "":
+>>>>>>> origin/xmppmaster
                     logger.error("see parameter [guacamole_baseurl] in file : %s " \
                                 "if Connection server parameters " \
                                 "if no relay server is available"%pathfileconf)
@@ -633,6 +820,21 @@ def read_conf_ascessor(objectxmpp):
     return True
 
 def message_config(nameplugin, pathfileconf):
+<<<<<<< HEAD
+=======
+    msg ="""=========configuration assessor plugin master==========="
+        check MASTER assessor plugin config file "%s"
+
+        The following parameters must be defined:
+
+        serverip : IP of default ARS (or its FQDN if it can be resolved by the clients)
+        port : Port of default ARS
+        guacamole_baseurl : Guacamole base url of default ARS
+        announce_server : Syncthing announce server url of default ARS
+        showinfomachine : list of names of the machines whose information we want displayed
+        keyAES32 : List of AES keys for checking the agent"""%pathfileconf
+    logger.error("%s"%msg)
+>>>>>>> origin/xmppmaster
     logger.error("For the [%s] plugin, it is mandatory " \
                  "to define the following parameters."%(nameplugin))
     logger.error("in files [%s] and file [%s.local]"%(pathfileconf, pathfileconf))
@@ -650,4 +852,9 @@ def message_config(nameplugin, pathfileconf):
     logger.error("announce_server = https://192.168.56.2:8443/?id=IGQIW2T"\
                  "-OHEFK3P-JHSB6KH-OHHYABS-YEWJRVC-M6F4NLZ-D6U55ES-VXIVMA3")
     logger.error("#for authentification key AES 32 chars")
+<<<<<<< HEAD
     logger.error("keyAES32 = abcdefghijklnmopqrstuvwxyz012345, abcdefghijklnmopqrstuvwxyz012346")
+=======
+    logger.error("keyAES32 = abcdefghijklnmopqrstuvwxyz012345")
+    logger.error("showinfomachine = infra_jfk_deb1, infra_jfk_deb2")
+>>>>>>> origin/xmppmaster

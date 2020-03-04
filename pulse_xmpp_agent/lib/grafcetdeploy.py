@@ -90,7 +90,7 @@ class grafcet:
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
                     elif strsection == "uninstall":
                         #attribute section "uninstall" if exists
-                        mesg_install = "START SECTION UNDINSTALL"
+                        mesg_install = "START SECTION UNINSTALL"
                         if "action_section_uninstall" in self.descriptorsection:
                             self.__action_completed__(self.sequence[self.descriptorsection['action_section_uninstall']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_uninstall'] + 1
@@ -473,6 +473,22 @@ class grafcet:
         datas = self.datasend
         try:
             self.__action_completed__(self.workingstep)
+        except AttributeError:
+            #grafcet instance has no attribute 'workingstep'
+            self.datasend['data']['status'] = "ABORT PACKAGE WORKFLOW ERROR"
+            self.objectxmpp.xmpplog('<span  style="color: red;font-size:x-large;font-style: italic; ">Workflow error. Please check your package<span>',
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -2,
+                                    action = "xmpplog",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment | Error | Terminate | Notify",
+                                    date = None ,
+                                    fromuser = login,
+                                    touser = "")
+        try:
             self.objectxmpp.session.clearnoevent(self.sessionid)
             logging.getLogger().debug(
                                     "terminate install package %s" %
@@ -527,7 +543,7 @@ class grafcet:
             logstruct['action'] = "xmpplog"
             logstruct['data']['ret'] = ret
             logstruct['data']['sessionid'] = self.sessionid
-            self.objectxmpp.send_message(mto=self.objectxmpp.logagent,
+            self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
                                          mbody=json.dumps(logstruct),
                                          mtype='chat')
             try:
@@ -579,13 +595,13 @@ class grafcet:
             logging.getLogger().error(str(e))
             logger.error("\n%s"%(traceback.format_exc()))
             self.datasend['ret'] = 255
-            self.datas['ret'] = 255
+            datas['ret'] = 255
             logstruct = copy.deepcopy(self.datasend)
             logstruct['data']['action'] = logstruct['action']
             logstruct['action'] = "xmpplog"
             logstruct['data']['ret'] = ret
             logstruct['data']['sessionid'] = self.sessionid
-            self.objectxmpp.send_message(mto=self.objectxmpp.logagent,
+            self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
                                          mbody=json.dumps(logstruct),
                                          mtype='chat')
             self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
@@ -1768,7 +1784,7 @@ class grafcet:
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
-                                        action = "inventory",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],
@@ -1794,7 +1810,7 @@ class grafcet:
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
-                                        action = "inventory",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],
@@ -1807,7 +1823,7 @@ class grafcet:
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
-                                        action = "inventory",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],

@@ -105,9 +105,9 @@ class confParameter:
         if Config.has_option("connection", "jidmaster"):
             self.jidmaster = Config.get('connection', 'jidmaster')
 
-        self.jidlog = "log@pulse"
-        if Config.has_option("connection", "jidlog"):
-            self.jidlog =    Config.get('connection', 'jidlog')
+        self.sub_logger = "log@pulse"
+        if Config.has_option("connection", "logger"):
+            self.sub_logger =    Config.get('connection', 'logger')
 
         self.jidmastersubstitute = ""
         if Config.has_option("connection", "jidmastersubstitute"):
@@ -134,7 +134,7 @@ class confParameter:
         # le code de ces plugins est executé au démarage. il commence par start
 
         #pluginlist = 'load_plugins_base, load_plugin_base_scheduled,autoupdateagent'
-        self.pluginliststart = 'loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, showregistration'
+        self.pluginliststart = 'loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration'
         if Config.has_option("plugins", "pluginliststart"):
             self.pluginliststart = Config.get('plugins', 'pluginliststart')
         self.pluginliststart = [x.strip() for x in self.pluginliststart.split(",") if x.strip() != ""]

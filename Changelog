@@ -1,6 +1,12 @@
+pulse-xmpp-agent 2.0.5
+======================
+* [FEATURE]  Integration of logger and deployment substitutes
+* [BUGFIX]   Fix sockets that are stuck in TIME_WAIT state
+* [BUGFIX]   Force configuration of guacamole if no connection present
+
 pulse-xmpp-agent 2.0.4
 ======================
-* [FEATURE]  Integration of assessor and registration substitutes 
+* [FEATURE]  Integration of assessor and registration substitutes
 
 pulse-xmpp-agent 2.0.3
 ======================

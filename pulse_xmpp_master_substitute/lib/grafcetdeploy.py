@@ -91,7 +91,7 @@ class grafcet:
                             self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
                     elif strsection == "uninstall":
                         #attribute section "uninstall" if exists
-                        mesg_install = "START SECTION UNDINSTALL"
+                        mesg_install = "START SECTION UNINSTALL"
                         if "action_section_uninstall" in self.descriptorsection:
                             self.__action_completed__(self.sequence[self.descriptorsection['action_section_uninstall']])
                             self.data['stepcurrent'] = self.descriptorsection['action_section_uninstall'] + 1
@@ -1758,7 +1758,7 @@ class grafcet:
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
-                                        action = "inventory",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],
@@ -1784,7 +1784,7 @@ class grafcet:
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
-                                        action = "inventory",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],
@@ -1797,7 +1797,7 @@ class grafcet:
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
-                                        action = "inventory",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "",
                                         why = self.data['name'],

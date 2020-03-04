@@ -36,6 +36,7 @@ from sleekxmpp import jid
 from agentconffile import directoryconffile
 from utils import ipfromdns
 from sleekxmpp import jid
+import re
 
 logger = logging.getLogger()
 
@@ -46,6 +47,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
         Config.set('substitute', t, ",".join(confsubtitute[t]))
+    logger.info("write parameter subtitute")
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
@@ -121,7 +123,7 @@ def nextalternativeclusterconnection(conffile):
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
-    return [ serverjid, server, port, guacamole_baseurl, domain, nbserver]
+    return [ serverjid, server, port, guacamole_baseurl, domain, nbserver ]
 
 
 # Singleton/SingletonDecorator.py
@@ -186,8 +188,8 @@ class substitutelist:
         self.sub_inventory = ["master@pulse"]
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
-        self.assessor = ["master@pulse"]
-        self.logagent = ["log@pulse", "master@pulse"]
+        self.sub_assessor = ["master@pulse"]
+        self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -202,20 +204,20 @@ class substitutelist:
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
-            assessorlocal = Config.get('substitute', 'assessor')
-            self.assessor = [x.strip() for x in assessorlocal.split(",")]
+            sub_assessorlocal = Config.get('substitute', 'assessor')
+            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
 
-        if Config.has_option('substitute', 'logagent'):
-            logagentlocal = Config.get('substitute', 'logagent')
-            self.logagent = [x.strip() for x in logagentlocal.split(",")]
+        if Config.has_option('substitute', 'logger'):
+            sub_loggerlocal = Config.get('substitute', 'logger')
+            self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
 
     def parameterssubtitute(self):
         conflist = []
         data={ 'subscription' : self.sub_subscribe,
                'inventory' : self.sub_inventory,
                'registration' : self.sub_registration,
-               'assessor' : self.assessor,
-               'logagent' : self.logagent}
+               'assessor' : self.sub_assessor,
+               'logger' : self.sub_logger}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -243,12 +245,11 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
-        #################substitute####################
         self.sub_inventory = ["master@pulse"]
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
-        self.assessor = ["master@pulse"]
-        self.logagent = ["log@pulse", "master@pulse"]
+        self.sub_assessor = ["master@pulse"]
+        self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -263,8 +264,13 @@ class confParameter:
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
-            assessorlocal = Config.get('substitute', 'assessor')
-            self.assessor = [x.strip() for x in assessorlocal.split(",")]
+            sub_assessorlocal = Config.get('substitute', 'assessor')
+            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
+
+        if Config.has_option('substitute', 'logger'):
+            sub_loggerlocal = Config.get('substitute', 'logger')
+            self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
+
         try:
             self.agenttype = Config.get('type', 'agent_type')
         except BaseException:
@@ -497,6 +503,24 @@ class confParameter:
             self.baseurlguacamole = Config.get('type', 'guacamole_baseurl')
         except BaseException:
             self.baseurlguacamole = ""
+
+        if self.agenttype == "machine":
+            try:
+                timeal = Config.get('global', 'alternativetimedelta')
+                self.timealternatif = [int(x) for x in
+                                       re.split(r'[a-zA-Z;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\$\|\s]\s*',
+                                                timeal)
+                                       if x.strip()!=""][:2]
+                self.timealternatif.sort()
+                if len(self.timealternatif) < 2:
+                    raise
+                else:
+                    if self.timealternatif[0] < 2: self.timealternatif[0] = 2
+                    if self.timealternatif[1] > 30 : self.timealternatif[1] = 30
+            except Exception:
+                self.timealternatif=[2,30]
+                logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
+            logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
 
         try:
             self.debug = Config.get('global', 'log_level')

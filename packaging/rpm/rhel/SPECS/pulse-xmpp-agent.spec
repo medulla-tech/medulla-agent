@@ -4,7 +4,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.0.4
+Version:	2.0.5
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -66,6 +66,8 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 
 #--------------------------------------------------------------------
 

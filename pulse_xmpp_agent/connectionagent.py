@@ -85,16 +85,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.ippublic == "":
             self.ippublic == None
 
-        if not hasattr(self.config, 'assessor'):
-            self.assessor = self.agentmaster
+        if not hasattr(self.config, 'sub_assessor'):
+            self.sub_assessor = self.agentmaster
         else:
-            if isinstance(self.config.assessor, list) and\
-                len(self.config.assessor) > 0:
-                self.assessor = jid.JID(self.config.assessor[0])
+            if isinstance(self.config.sub_assessor, list) and\
+                len(self.config.sub_assessor) > 0:
+                self.sub_assessor = jid.JID(self.config.sub_assessor[0])
             else:
-                self.assessor = jid.JID(self.config.assessor)
-        if self.assessor.bare == "":
-            self.assessor = self.agentmaster
+                self.sub_assessor = jid.JID(self.config.sub_assessor)
+        if self.sub_assessor.bare == "":
+            self.sub_assessor = self.agentmaster
 
         #self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
@@ -159,7 +159,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,
                                 "data":  { 'errorsyncthingconf' : informationerror}}
-                self.send_message(mto =  self.assessor,
+                self.send_message(mto =  self.sub_assessor,
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
         ################################### syncthing ###################################
@@ -254,7 +254,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             data['action'] == "resultconnectionconf":
             if data['ret'] == 0 :
                 fromagent = str(msg['from'].bare)
-                if fromagent == self.assessor :
+                if fromagent == self.sub_assessor :
                     #resultconnectionconf
                     logging.info("Resultat data : %s"%json.dumps(data,
                                                                 indent=4,
@@ -271,8 +271,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         try:
                             if "syncthing" in data:
                                 self.syncthing.config['options']['globalAnnounceServers'] = [data["syncthing"]]
-                                self.syncthing.config['options']['relaysEnabled'] = True
                                 self.syncthing.config['options']['relaysEnabled'] = False
+                                self.syncthing.config['options']['localAnnounceEnabled'] = False
                                 self.syncthing.del_folder("default")
                                 if sys.platform.startswith('win'):
                                     defaultFolderPath = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
@@ -397,7 +397,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         print "affiche object"
         print json.dumps(dataobj, indent = 4)
         #----------------------------------
-        self.send_message(mto = self.assessor,
+        self.send_message(mto = self.sub_assessor,
                             mbody = json.dumps(msginfo),
                             mtype = 'chat')
 

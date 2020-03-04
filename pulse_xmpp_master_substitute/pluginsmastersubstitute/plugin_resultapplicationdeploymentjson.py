@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8; -*-
 #
 # (c) 2016-2017 siveo, http://www.siveo.net
 #
@@ -18,16 +19,54 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
-# file pluginsmaster/plugin_resultapplicationdeployment.py
-
-
+#
+# file pluginsmastersubstitute/plugin_resultapplicationdeploymentjson.py
 import logging
+import traceback
+import json
+from lib.plugins.xmpp import XmppMasterDatabase
+logger = logging.getLogger()
+
 
 plugin = {"VERSION": "1.0", "NAME": "resultapplicationdeploymentjson", "TYPE": "substitute"}
 
 
-def action(xmppobject, action, sessionid, data, message, ret, dataobj):
-    logging.getLogger().debug(plugin)
-    logging.getLogger().debug("%s from %s" % (data['msg'], message['from']))
-    pass
+def action(xmppsub, action, sessionid, data, message, ret, dataobj):
+    logger.debug("=====================================================")
+    logger.debug(plugin)
+    logger.debug("=====================================================")
+    logger.debug(json.dumps(data,indent = 4))
+    try:
+        if ret == 0:
+            logger.debug("Succes deploy on %s Package "\
+                ": %s Session : %s" % (message['from'],
+                                       data['descriptor']['info']['name'],
+                                       sessionid))
+            XmppMasterDatabase().delete_resources(sessionid)
+
+        else:
+            msg = "Error deploy on %s Package "\
+                ": %s Session : %s" % (message['from'],
+                                       data['descriptor']['info']['name'],
+                                       sessionid)
+            logger.error(msg)
+
+            if  'status' in data and data['status'] != "":
+                XmppMasterDatabase().updatedeploystate(sessionid, data['status'])
+            else:
+                XmppMasterDatabase().updatedeploystate(sessionid, "DEPLOYMENT ERROR")
+            xmppsub.xmpplog(msg,
+                        type='deploy',
+                        sessionname=sessionid,
+                        priority=-1,
+                        action="",
+                        who="",
+                        how="",
+                        why=xmppsub.boundjid.bare,
+                        module="Deployment | Start | Creation",
+                        date=None,
+                        fromuser="",
+                        touser="")
+        xmppsub.sessiondeploysubstitute.clearnoevent(sessionid)
+    except:
+        logger.error("%s"%(traceback.format_exc()))

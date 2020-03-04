@@ -93,13 +93,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     for function_plugin in pluginfunction:
                         try:
                             if hasattr(xmppobject, function_plugin):
-                                if function_plugin == 'plugin_showregistration':
-                                    if logger.level == logging.DEBUG:
-                                        logger.debug("call plugin %s"%function_plugin)
-                                        getattr(xmppobject, function_plugin)(msg, data)
-                                else:
-                                    logger.debug("call plugin %s"%function_plugin)
-                                    getattr(xmppobject, function_plugin)(msg, data)
+                                logger.debug("call plugin %s"%function_plugin)
+                                getattr(xmppobject, function_plugin)(msg, data)
                             else:
                                 logger.warning("the %s plugin is not called"%function_plugin)
                                 logger.warning("verify why plugging %s"\
@@ -114,26 +109,48 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     logger.debug("Update it's uuid_inventory_machine")
                     logger.debug("=============")
                     logger.debug("=============")
-                    # on regarde si le UUID associe a hostname machine correspond au hostname dans glpi.
                     if xmppobject.check_uuidinventory and \
                         'uuid_inventorymachine' in machine and \
                             machine['uuid_inventorymachine'] is not None:
+                        # on regarde si le UUID associe a hostname machine
+                        # correspond au hostname dans glpi.
                         hostname = None
+                        logger.warning("Mode search incoherence between " \
+                                    "xmpp and glpi's for uuid %s : "%machine['uuid_inventorymachine'])
                         try:
-                            re = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
-                            for t in re:
+                            ret = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
+                            for t in ret:
                                 if t[0] == 'name':
                                     hostname = t[1]
                                     break
-                            if hostname and "information" in data and \
-                                "info" in data["information"] and \
-                                    "hostname" in  data["information"]["info"] and \
-                                        hostname != data["information"]["info"]["hostname"]:
+                            # on vérifie que la machine ayant le même uuid que celui présenter 
+                            # a l'enregistrement correspond.
+                            # on refait l'enregistrement complet si celui-ci ne correspond pas
+                            if hostname and "hostname" in data and \
+                                        hostname != data["hostname"]:
                                 machine['uuid_inventorymachine'] = None
+                                logger.warning("When there is an incoherence between " \
+                                    "xmpp and glpi's uuid, we restore the uuid from glpi")
+                            else:
+                                # la correspondance existe.
+                                # mais il se peut que la machine ne soit pas configuré pour guacamole.
+                                # si la machine n'est pas configuré pour 
+                                # guacamole, alors on refait l'enregistrement complet.
+                                ret = XmppMasterDatabase().getGuacamoleidforUuid(machine['uuid_inventorymachine'], "configured")
+                                if not ret:
+                                    machine['uuid_inventorymachine'] = None
+                                    logger.warning("When guacamole is not configured." \
+                                        " we restore the uuid from glpi")
                         except Exception:
                             machine['uuid_inventorymachine'] = None
+<<<<<<< HEAD
                         if machine['uuid_inventorymachine'] is None:
                             logger.warning("When there is an incoherence between xmpp and glpi's uuid, we restore the uuid from glpi")
+=======
+                        if machine['uuid_inventorymachine'] is not None:
+                            logger.warning("coherence True for hostname %s"%hostname)
+                    
+>>>>>>> origin/xmppmaster
                     if 'uuid_inventorymachine' not in machine or \
                         machine['uuid_inventorymachine'] is None or \
                         not machine['uuid_inventorymachine']:
@@ -160,7 +177,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 logger.debug("%s determination uuid from GLPI computer id for mac address "%testinventaireremonte)
                                 for macadress in results:
                                     logger.debug("Get GLPI computer id for mac address %s"%macadress)
+<<<<<<< HEAD
                                     if macadress in xmppobject.blacklisted_mac_addresses: 
+=======
+                                    if macadress in xmppobject.blacklisted_mac_addresses:
+>>>>>>> origin/xmppmaster
                                         logger.warning("address blacklist %s for %s machine"%( macadress, data['from']))
                                         continue
                                     computer = getComputerByMac(macadress)
@@ -168,7 +189,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         logger.debug("Computer found : #%s for mac adress %s" %(computer.id, macadress))
                                         jidrs = str(jid.JID(data['deployment']).user)
                                         jidm = jid.JID(data['from']).domain
+<<<<<<< HEAD
                                         jidrs = "%s@%s" % (jidrs, jidm)                                    
+=======
+                                        jidrs = "%s@%s" % (jidrs, jidm)
+>>>>>>> origin/xmppmaster
                                         computerid = str(computer.id)
                                         uuid = 'UUID' + str(computer.id)
                                         logger.debug("** Update uuid %s for machine %s " %
@@ -306,7 +331,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 return
 
             # Add relayserver or update status in database
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> origin/xmppmaster
             if data['agenttype'] == "relayserver":
                 logger.debug("** Add relayserver or update status in database %s" %
                             msg['from'])
@@ -517,21 +546,20 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             else:
                 logger.error("** Database registration error")
                 return
+<<<<<<< HEAD
             
             
             
+=======
+
+>>>>>>> origin/xmppmaster
             pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
             logger.debug("call plugin for a machine not present..")
             for function_plugin in pluginfunction:
                 try:
                     if hasattr(xmppobject, function_plugin):
-                        if function_plugin == 'plugin_showregistration':
-                            if logger.level == logging.DEBUG:
-                                logger.debug("call plugin %s"%function_plugin)
-                                getattr(xmppobject, function_plugin)(msg, data)
-                        else:
-                            logger.debug("call plugin %s"%function_plugin)
-                            getattr(xmppobject, function_plugin)(msg, data)
+                        logger.debug("call plugin %s"%function_plugin)
+                        getattr(xmppobject, function_plugin)(msg, data)
                     else:
                         logger.warning("the %s plugin is not called"%function_plugin)
                         logger.warning("verify why plugging %s"\
@@ -556,6 +584,7 @@ def getComputerByMac( mac):
     return ret
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data):
+<<<<<<< HEAD
     logger.debug("callInstallConfGuacamole on %s for %s"%(torelayserver, data['hostname']))
     try:
         body = {'action': 'guacamoleconf',
@@ -566,6 +595,22 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data):
                             mtype='chat')
     except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
+=======
+    if 'remoteservice' in data and len(data['remoteservice']) > 0:
+        try:
+            body = {'action': 'guacamoleconf',
+                    'sessionid': getRandomName(5, "guacamoleconf"),
+                    'data': data}
+            logger.debug("process callInstallConfGuacamole on %s for %s"%(torelayserver, data['hostname']))
+            xmppobject.send_message(mto=torelayserver,
+                                mbody=json.dumps(body),
+                                mtype='chat')
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
+    else:
+        logger.debug("application direct parametrage guacamole in base for uuid %s"%data['uuid'])
+        XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], {})
+>>>>>>> origin/xmppmaster
 
 def callinventory(xmppobject,  to):
     try:
@@ -701,6 +746,7 @@ def read_conf_remote_registeryagent(xmppobject):
             "\n\t%s missing" \
         "\neg conf:\n[parameters]\n" \
             "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
+<<<<<<< HEAD
                 "loadautoupdate, showregistration\n" \
                 "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
                     "loadautoupdate, showregistration"%(plugin['NAME'], pathfileconf))
@@ -716,6 +762,23 @@ def read_conf_remote_registeryagent(xmppobject):
                                              "loadpluginschedulerlistversion",
                                              "loadautoupdate",
                                              "showregistration"]
+=======
+                "loadautoupdate, loadshowregistration\n" \
+                "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
+                    "loadautoupdate, loadshowregistration"%(plugin['NAME'], pathfileconf))
+        logger.warning("default value for pluginlistregistered " \
+            "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration"\
+            "\ndefault value for pluginlistunregistered"\
+                "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration")
+        xmppobject.pluginlistregistered = ["loadpluginlistversion",
+                                           "loadpluginschedulerlistversion",
+                                           "loadautoupdate",
+                                           "loadshowregistration"]
+        xmppobject.pluginlistunregistered = ["loadpluginlistversion",
+                                             "loadpluginschedulerlistversion",
+                                             "loadautoupdate",
+                                             "loadshowregistration"]
+>>>>>>> origin/xmppmaster
         xmppobject.check_uuidinventory = False
         xmppobject.blacklisted_mac_addresses= ["00:00:00:00:00:00"]
     else:
@@ -736,14 +799,22 @@ def read_conf_remote_registeryagent(xmppobject):
             pluginlistregistered = Config.get('parameters', 'pluginlistregistered')
         else:
             pluginlistregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
+<<<<<<< HEAD
                 " loadautoupdate, showregistration"
+=======
+                " loadautoupdate, loadshowregistration"
+>>>>>>> origin/xmppmaster
         xmppobject.pluginlistregistered = [x.strip() for x in pluginlistregistered.split(',')]
 
         if Config.has_option("parameters", "pluginlistunregistered"):
             pluginlistunregistered = Config.get('parameters', 'pluginlistunregistered')
         else:
             pluginlistunregistered = "loadpluginlistversion, loadpluginschedulerlistversion,"\
+<<<<<<< HEAD
                 "loadautoupdate, showregistration"
+=======
+                "loadautoupdate, loadshowregistration"
+>>>>>>> origin/xmppmaster
 
         xmppobject.pluginlistunregistered = [x.strip() for x in pluginlistunregistered.split(',')]
         xmppobject.blacklisted_mac_addresses= []
