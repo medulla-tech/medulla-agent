@@ -161,6 +161,7 @@ class manage_event:
                         recipienterror = message['data']['toerror']
                         del message['data']['tosucces']
                         del message['data']['toerror']
+                        codeerror = int(message['data']['codeerror'])
                         if recipienterror != None and message['data']['codeerror'] != 0:
                             del message['data']['codeerror']
                             self.objectxmpp.send_message(mto=recipienterror,
@@ -183,6 +184,7 @@ class manage_event:
                                     event['eventMessageraw']['data']['stepcurrent']) - 1
                                 for i in event['eventMessageraw']['data']['descriptor']['sequence']:
                                     if int(i['step']) == nb_currentworkingset:
+                                        i['codereturn'] = codeerror
                                         logging.debug(
                                             'deploy [process command : %s ]\n%s' %
                                             (event['eventMessageraw']['sessionid'], json.dumps(
