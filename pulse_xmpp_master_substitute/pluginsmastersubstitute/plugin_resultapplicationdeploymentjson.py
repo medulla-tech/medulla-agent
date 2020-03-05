@@ -20,11 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file pluginsmaster/plugin_resultapplicationdeploymentjson.py
-
+# file pluginsmastersubstitute/plugin_resultapplicationdeploymentjson.py
 import logging
 import traceback
-
+import json
 from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
 
@@ -36,7 +35,7 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug(plugin)
     logger.debug("=====================================================")
-    #logger.debug(json.dumps(data,indent = 4))
+    logger.debug(json.dumps(data,indent = 4))
     try:
         if ret == 0:
             logger.debug("Succes deploy on %s Package "\
@@ -51,7 +50,11 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
                                        data['descriptor']['info']['name'],
                                        sessionid)
             logger.error(msg)
-            XmppMasterDatabase().updatedeploystate(sessionid, "DEPLOYMENT ERROR")
+
+            if  'status' in data and data['status'] != "":
+                XmppMasterDatabase().updatedeploystate(sessionid, data['status'])
+            else:
+                XmppMasterDatabase().updatedeploystate(sessionid, "DEPLOYMENT ERROR")
             xmppsub.xmpplog(msg,
                         type='deploy',
                         sessionname=sessionid,

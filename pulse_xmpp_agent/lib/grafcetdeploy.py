@@ -473,6 +473,22 @@ class grafcet:
         datas = self.datasend
         try:
             self.__action_completed__(self.workingstep)
+        except AttributeError:
+            #grafcet instance has no attribute 'workingstep'
+            self.datasend['data']['status'] = "ABORT PACKAGE WORKFLOW ERROR"
+            self.objectxmpp.xmpplog('<span  style="color: red;font-size:x-large;font-style: italic; ">Workflow error. Please check your package<span>',
+                                    type = 'deploy',
+                                    sessionname = self.sessionid,
+                                    priority = -2,
+                                    action = "xmpplog",
+                                    who = self.objectxmpp.boundjid.bare,
+                                    how = "",
+                                    why = "",
+                                    module = "Deployment | Error | Terminate | Notify",
+                                    date = None ,
+                                    fromuser = login,
+                                    touser = "")
+        try:
             self.objectxmpp.session.clearnoevent(self.sessionid)
             logging.getLogger().debug(
                                     "terminate install package %s" %

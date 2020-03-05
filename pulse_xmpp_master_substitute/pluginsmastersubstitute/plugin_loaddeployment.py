@@ -222,11 +222,11 @@ def scheduledeployrecoveryjob(self):
     msglog=[]
     wol_set = set()
     try:
-        # machine ecart temps de deploiement terminer met status a DEPLOYMENT ERROR ON TIMEOUT
+        # machine ecart temps de deploiement terminer met status a ABORT ON TIMEOUT
         result = XmppMasterDatabase().Timeouterrordeploy()
         for machine in result:
             hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
-            msglog.append("<span style='color : red;font-weight: bold;'>%s [DEPLOYMENT ERROR ON TIMEOUT For deploy]</span>"%hostnamemachine)
+            msglog.append("<span style='color : red;font-weight: bold;'>%s [ABORT ON TIMEOUT For deploy]</span>"%hostnamemachine)
             msglog.append("<span style='color : red;font-weight: bold;'>Machine down in slot deploy</span>")
             msglog.append("<span style='color : red;font-weight: bold;'>DEPLOY TERMINATE</span>")
         for logmsg in msglog:
@@ -471,7 +471,7 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                         "error_name_package____",
                                         uuidmachine,
                                         title,
-                                        "ABORT PACKAGE UUID MISSING",
+                                        "ABORT PACKAGE IDENTIFIER MISSING",
                                         sessiondeployementless,
                                         user=login,
                                         login=login,
@@ -550,7 +550,7 @@ def applicationdeployjsonuuid(self,
                                                             name,
                                                             uuidmachine,
                                                             title,
-                                                            "ABORT ARS DEPLOY DOWN",
+                                                            "ABORT RELAY DOWN",
                                                             sessiondeployementless,
                                                             user=login,
                                                             login=login,
@@ -595,7 +595,7 @@ def applicationdeployjsonuuid(self,
                                                     name,
                                                     uuidmachine,
                                                     title,
-                                                    "ABORT ALTERNATIF DOWN",
+                                                    "ABORT ALTERNATIVE RELAYS DOWN",
                                                     sessiondeployementless,
                                                     user=login,
                                                     login=login,
@@ -648,7 +648,7 @@ def applicationdeployjsonuuid(self,
                                             name,
                                             uuidmachine,
                                             title,
-                                            "ABORT ARS GROUP DEPLOY MISSING",
+                                            "ABORT INFO RELAY MISSING",
                                             sessiondeployementless,
                                             user=login,
                                             login=login,
@@ -682,7 +682,7 @@ def applicationdeployjsonuuid(self,
                                         name,
                                         uuidmachine,
                                         title,
-                                        "ABORT UUID MACHINE",
+                                        "ERROR UNKNOWN ERROR",
                                         sessiondeployementless,
                                         user=login,
                                         login=login,
@@ -743,7 +743,7 @@ def applicationdeploymentjson(self,
                                         name,
                                         uuidmachine,
                                         title,
-                                        "ABORT PACKAGE NAME VERSION MISSING",
+                                        "ABORT PACKAGE VERSION MISSING",
                                         sessiondeployementless,
                                         user=login,
                                         login=login,
