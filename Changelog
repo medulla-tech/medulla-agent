@@ -1,3 +1,11 @@
+pulse-xmpp-agent 2.0.2.2
+======================
+* Delete img_agent folder during start
+
+pulse-xmpp-agent 2.0.2.1
+======================
+* Bump version for new installer
+
 pulse-xmpp-agent 2.0.2
 ======================
 * Improve use of pulse/pulseuser for file transfert
