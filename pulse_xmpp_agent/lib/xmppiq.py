@@ -36,12 +36,14 @@ from utils import   shellcommandtimeout, \
                     showlinelog, \
                     simplecommand
 from  agentconffile import  directoryconffile
-from shutil import copyfile
+from shutil import copyfile, move
 import datetime
 import zlib
 import re
 import base64
 import traceback
+import uuid
+import subprocess
 from lib.managepackage import managepackage
 from utils_psutil import sensors_battery,\
                          winservices,\
