@@ -2097,8 +2097,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     if dataobj['sessionid'] in self.ban_deploy_sessionid_list:
                         ## abort deploy if msg session id is banny
-                        logging.info("DEPLOYMENT ABORT Sesion %s"%dataobj['sessionid'])
-                        self.xmpplog("<span  style='color:red;'>DEPLOYMENT ABORT</span>",
+                        logging.info("ABORT USER ABORT Sesion %s"%dataobj['sessionid'])
+                        self.xmpplog("<span  style='color:red;'>ABORT USER ABORT</span>",
                                     type = 'deploy',
                                     sessionname = dataobj['sessionid'],
                                     priority = -1,
