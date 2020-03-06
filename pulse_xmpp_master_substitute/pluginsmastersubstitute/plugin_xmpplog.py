@@ -135,14 +135,14 @@ def xmpplogdeploy(xmppobject, data):
             if data['action'] == 'resultapplicationdeploymentjson':
                 #log dans base resultat
                 if data['ret'] == 0:
-                    XmppMasterDatabase().updatedeployresultandstate( data['sessionid'], 
-                                                                    "DEPLOYMENT SUCCESS", 
-                                                                    json.dumps(data, 
+                    XmppMasterDatabase().updatedeployresultandstate( data['sessionid'],
+                                                                    "DEPLOYMENT SUCCESS",
+                                                                    json.dumps(data,
                                                                                indent=4,
                                                                                sort_keys=True) )
                 else:
                     XmppMasterDatabase().updatedeployresultandstate(data['sessionid'],
-                                                                    "DEPLOYMENT ERROR", 
+                                                                    "ABORT PACKAGE EXECUTION ERROR", 
                                                                     json.dumps(data,
                                                                                indent=4,
                                                                                sort_keys=True) )
