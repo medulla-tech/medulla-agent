@@ -304,8 +304,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `state`='%s'
                      WHERE `sessionid`='%s';"""%(status, sessionid)
-            logging.getLogger().error("jfkdede %s "%sql)
-
             session.execute(sql)
             session.commit()
             session.flush()
