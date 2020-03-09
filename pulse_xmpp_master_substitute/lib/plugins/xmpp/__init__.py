@@ -4984,7 +4984,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 result = [{'index':id,
                             "id" : regle.id,
-                            'regexplog':regle.reg_logmessage,
+                            'regexplog':regle.regex_logmessage, 
                             'status':regle.status} for id, regle in enumerate(ret)]
             return result
         except Exception, e:
