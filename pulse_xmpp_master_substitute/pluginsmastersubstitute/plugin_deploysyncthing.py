@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file /pluginsmaster/plugin_deploysyncthing.py
+# file /pluginsmastersubstitute/plugin_deploysyncthing.py
 
 
 import json
@@ -35,7 +35,7 @@ logger = logging.getLogger()
 plugin = {"VERSION": "1.1", "NAME": "deploysyncthing", "TYPE": "substitute"}
 
 
-def action(xmppobject, action, sessionid, data, message, ret, dataobj):
+def action(xmppobject, action, sessionid, data, message, dataobj):
     logger.debug("=====================================================")
     logger.debug(plugin)
     logger.debug("=====================================================")
