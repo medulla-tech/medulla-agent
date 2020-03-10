@@ -28,7 +28,7 @@ import ConfigParser
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.00", "NAME": "xmpplog", "TYPE": "substitute"}
+plugin = {"VERSION": "1.01", "NAME": "xmpplog", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
@@ -36,9 +36,27 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
     if compteurcallplugin == 0:
+        #load regle of satus
+        xmppobject.reglestatus = []
+        loggerliststatus = XmppMasterDatabase().get_log_status()
+        try:
+            for t in XmppMasterDatabase().get_log_status():
+                t['compile_re'] = re.compile(t['regexplog'])
+                xmppobject.reglestatus.append(t)
+            logger.debug("regle status initialise%s"% xmppobject.reglestatus)
+        except:
+            logger.error("\n%s"%(traceback.format_exc()))
         read_conf_log_agent(xmppobject)
     try :
         dataobj = data
+        if "type" in dataobj and dataobj['type'] == "deploy" and  'text' in dataobj:
+            re_status = searchstatus(xmppobject, dataobj['text'])
+            if re_status['status'] != "":
+                XmppMasterDatabase().updatedeploytosessionid(re_status['status'],
+                                                             dataobj['sessionid'])
+                logging.debug("applique status %s for sessionid %s"%(re_status['status'], dataobj['sessionid']))
+            else:
+                logging.debug("applique pas de status for sessionid %s"%(dataobj['sessionid']))
         if data["action"] == 'xmpplog':
             createlog(xmppobject, data)
         elif data["action"] == 'resultapplicationdeploymentjson':
@@ -156,3 +174,10 @@ def read_conf_log_agent(xmppobject):
     pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         pass
+
+def searchstatus(xmppobject, chaine):
+    for t in xmppobject.reglestatus:
+        if  t['compile_re'].match(chaine):
+            logger.debug("la chaine \"%s\"  matche pour [%s] et renvoi le status suivant \"%s\""%(chaine,t['regexplog'],t['status']))
+            return { "status" : t['status'] , "logmessage" : chaine}
+    return { "status" : "" , "logmessage" : chaine}
