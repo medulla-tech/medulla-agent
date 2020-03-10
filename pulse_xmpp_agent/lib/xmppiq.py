@@ -45,6 +45,7 @@ import traceback
 import uuid
 import subprocess
 from lib.managepackage import managepackage
+from lib.update_remote_agent import Update_Remote_Agent
 from utils_psutil import sensors_battery,\
                          winservices,\
                          clone_ps_aux,\
@@ -457,6 +458,8 @@ class functionsynchroxmpp:
         elif data['data'] == "cpu_num":
             result = decode_strconsole(cpu_num())
         elif data['data'] == "agentinfos":
+            # on doit verifie que l'image existe.
+            descriptorimage = Update_Remote_Agent(xmppobject.img_agent)
             result = decode_strconsole(agentinfoversion(xmppobject))
         elif data['data'] == "netstat":
             result = decode_strconsole(netstat())
