@@ -3944,10 +3944,8 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
 
     @DatabaseHelper._sessionm
-    def listMacAdressforMachine(self, session, id_machine):
+    def listMacAdressforMachine(self, session, id_machine, infomac = False):
         try:
-            #sql = "SELECT group_concat(concat('%s',mac,'%s')) "\
-              # "as listmac FROM xmppmaster.network where machines_id = '%s'  limit 1;"%('"','"',id_machine)
             sql = """SELECT
                         GROUP_CONCAT(CONCAT(mac)) AS listmac
                     FROM
@@ -3955,16 +3953,17 @@ class XmppMasterDatabase(DatabaseHelper):
                     WHERE
                         machines_id = '%s'
                     LIMIT 1;"""%(id_machine)
-            logging.getLogger().debug("SQL request to get the mac addresses list "\
-                                      "for the presence machine #%s"%id_machine)
-            #logging.getLogger().debug("%s"%sql)
+            if infomac:
+                logging.getLogger().debug("SQL request to get the mac addresses list "\
+                                        "for the presence machine #%s"%id_machine)
             listMacAdress = session.execute(sql)
             session.commit()
             session.flush()
         except Exception, e:
             logging.getLogger().error(str(e))
         result=[x for x in listMacAdress][0]
-        logging.getLogger().debug("Result list MacAdress for Machine : %s"%result[0])
+        if infomac:
+            logging.getLogger().debug("Result list MacAdress for Machine : %s"%result[0])
         return result
 
     @DatabaseHelper._sessionm
