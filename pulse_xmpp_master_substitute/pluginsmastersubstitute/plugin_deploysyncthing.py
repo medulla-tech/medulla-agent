@@ -24,7 +24,7 @@
 
 
 import json
-from pulse2.database.xmppmaster import XmppMasterDatabase
+from lib.plugins.xmpp import XmppMasterDatabase
 from utils import name_randomplus
 
 import logging
