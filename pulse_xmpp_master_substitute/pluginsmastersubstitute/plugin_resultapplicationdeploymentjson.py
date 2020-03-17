@@ -59,7 +59,7 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
                         type='deploy',
                         sessionname=sessionid,
                         priority=-1,
-                        action="",
+                        action="xmpplog",
                         who="",
                         how="",
                         why=xmppsub.boundjid.bare,
