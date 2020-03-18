@@ -4267,10 +4267,6 @@ class XmppMasterDatabase(DatabaseHelper):
                     WHERE
                         `xmppmaster`.`machines`.`id` = '%s';"""%result[0]
 
-            sql1 = """DELETE FROM `xmppmaster`.`network`
-                    WHERE
-                        `network`.`machines_id` = '%s';"""%result[0]
-
             sql3 = """DELETE FROM `xmppmaster`.`has_machinesusers`
                     WHERE
                         `has_machinesusers`.`machines_id` = '%s';"""%result[0]
@@ -4283,7 +4279,6 @@ class XmppMasterDatabase(DatabaseHelper):
                                 `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%result[1]
                 session.execute(sql2)
             session.execute(sql)
-            session.execute(sql1)
             session.execute(sql3)
             session.commit()
             session.flush()
@@ -4331,10 +4326,6 @@ class XmppMasterDatabase(DatabaseHelper):
             sql  = """DELETE FROM `xmppmaster`.`machines`
                     WHERE
                         `xmppmaster`.`machines`.`id` = '%s';"""%result[0]
-
-            sql1 = """DELETE FROM `xmppmaster`.`network`
-                    WHERE
-                        `network`.`machines_id` = '%s';"""%result[0]
             sql3 = """DELETE FROM `xmppmaster`.`has_machinesusers`
                     WHERE
                         `has_machinesusers`.`machines_id` = '%s';"""%result[0]
@@ -4347,7 +4338,6 @@ class XmppMasterDatabase(DatabaseHelper):
                                 `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%result[1]
                 session.execute(sql2)
             session.execute(sql)
-            session.execute(sql1)
             session.execute(sql3)
             session.commit()
             session.flush()
