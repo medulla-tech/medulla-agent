@@ -1746,3 +1746,48 @@ class AESCipher:
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
         return unpad(cipher.decrypt( enc[16:] ))
+
+
+def setgetcountcycle(data = None):
+    chemin = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                          "..",
+                          "cycle",
+                          "countcyclealternatif")
+    try:
+        countcyclealternatif = int( file_get_contents(chemin).strip(" \n\t"))
+    except Exception:
+        countcyclealternatif =  0
+        data=None
+    if data is None:
+        #initialise variable
+        file_put_contents(chemin, "0")
+        return 0
+    elif data == -1:
+        return countcyclealternatif
+    elif data >= 0:
+        countcyclealternatif = countcyclealternatif + data
+        file_put_contents(chemin, str(countcyclealternatif))
+        return countcyclealternatif
+
+def setgetrestart(data = None):
+    chemin = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                          "..",
+                          "cycle",
+                          "restart")
+    try:
+        restart = int(file_get_contents(chemin).strip(" \n\t"))
+    except Exception:
+        restart =  0
+        data=None
+    if data is None:
+        #initialise variable
+        file_put_contents(chemin, "0")
+        return 0
+    elif data == -1:
+        return restart
+    elif data == 0:
+        file_put_contents(chemin,"0")
+        return 0
+    elif  data == 1:
+        file_put_contents(chemin, "1")
+        return 1
