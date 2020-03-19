@@ -95,7 +95,7 @@ class xmppbrowsing:
         if obj['code'] != 0 :
             logger.error(obj['result'])
             if self.objectxmpp != None:
-                self.objectxmpp.xmpplog("error generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
+                self.objectxmpp.xmpplog("Error generating tree for machine %s [command :%s]"%(self.objectxmpp.boundjid.bare,
                                                                                          cmd),
                                         type = 'noset',
                                         sessionname = '',
@@ -109,7 +109,7 @@ class xmppbrowsing:
                                         touser = "")
             return
         if self.objectxmpp != None:
-                self.objectxmpp.xmpplog("generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
+                self.objectxmpp.xmpplog("Generating tree for machine %s [command :%s]"%(self.objectxmpp.boundjid.bare,
                                                                                   cmd),
                                         type = 'noset',
                                         sessionname = '',
@@ -151,7 +151,7 @@ class xmppbrowsing:
         ###path_abs_current
         logging.getLogger().debug("---------------------------------------------------------")
         logging.getLogger().debug("search files and folders list for %s : "%path_abs_current)
-        logging.getLogger().debug("---------------------------------------------------------")        
+        logging.getLogger().debug("---------------------------------------------------------")
         boolhierarchy = False
         if path_abs_current is  None or path_abs_current == "":
             self.initialisation = 0

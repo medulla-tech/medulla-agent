@@ -339,7 +339,7 @@ class functionsynchroxmpp:
                 logger.debug("install key ARS [%s]"%data['data']['from'])
                 msgaction.append('INSTALL key ARS %s on machine %s'%(data['data']['from'],
                                                                 xmppobject.boundjid.bare))
-                xmppobject.xmpplog( 'INSTALL key ARS %s on machine %s'%(data['data']['from'],
+                xmppobject.xmpplog( 'Installing ARS key %s on machine %s'%(data['data']['from'],
                                                                 xmppobject.boundjid.bare),
                                     type = 'deploy',
                                     sessionname = data['data']["sessionid"],
@@ -353,7 +353,7 @@ class functionsynchroxmpp:
                                     fromuser = "",
                                     touser = "")
             else:
-                xmppobject.xmpplog( 'Relay %s key is present on machine %s'%(data['data']['from'],
+                xmppobject.xmpplog( 'Relay key %s is present on machine %s'%(data['data']['from'],
                                                         xmppobject.boundjid.bare),
                                     type = 'deploy',
                                     sessionname = data['data']["sessionid"],

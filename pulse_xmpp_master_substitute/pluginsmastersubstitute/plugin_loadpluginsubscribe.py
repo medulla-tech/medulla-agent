@@ -135,8 +135,8 @@ def changed_status(self, presence):
                         ret = XmppMasterDatabase().updatedeploystate1(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
                         if ret >= 1:
                             logger.debug("Update deploy Status for Machine OffLine %s"%t['jidmachine'])
-                            self.xmpplog("resource recovery on ARS %s for deploy"\
-                                "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
+                            self.xmpplog("Freeing deployment resource on ARS %s"\
+                                "sessionid %s on machine %s (connection loss)" % (t['jidrelay'],
                                                                                     t['sessionid'],
                                                                                     t['hostname']),
                                 type = 'deploy',
@@ -150,7 +150,7 @@ def changed_status(self, presence):
                                 date = None,
                                 fromuser = "",
                                 touser = "")
-                            self.xmpplog('<span style="font-weight: bold;color : Orange;">WAITING REBOOT</span>',
+                            self.xmpplog('<span style="font-weight: bold;color : Orange;">Waiting for reboot</span>',
                                 type = 'deploy',
                                 sessionname = t['sessionid'],
                                 priority = -1,
