@@ -38,8 +38,6 @@ import shutil
 import subprocess
 import random
 from multiprocessing import Process, Queue, Lock, current_process, TimeoutError
-import Queue
-import multiprocessing
 import psutil
 import json
 import threading
