@@ -127,7 +127,7 @@ class grafcet:
                                              mtype='chat')
             self.objectxmpp.session.clearnoevent(self.sessionid)
 
-            self.objectxmpp.xmpplog('<span style="font-weight: bold; color: red;">Error initializing grafcet</span>',
+            self.objectxmpp.xmpplog('<span class="log_err">Error initializing grafcet</span>',
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = -1,
@@ -139,7 +139,7 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.datasend['data']['login'],
                                     touser = "")
-            self.objectxmpp.xmpplog('<span style="font-weight: bold; color: red;">'+str(e)+'</span>',
+            self.objectxmpp.xmpplog('<span class="log_err">'+str(e)+'</span>',
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = -1,
@@ -1754,7 +1754,7 @@ class grafcet:
             if inventoryfile != "" and os.path.isfile(inventoryfile):
                 os.remove(inventoryfile)
             ## call plugin inventory pour master.
-            self.objectxmpp.xmpplog('<span  style="color: #0000ff;">Starting inventory<span>',
+            self.objectxmpp.xmpplog('Starting inventory',
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
@@ -1780,7 +1780,7 @@ class grafcet:
                     break
                 time.sleep(5)
             if doinventory:
-                self.objectxmpp.xmpplog('<span  style="color: #0000ff;">Sending new inventory from %s : (generated in %s s)<span>'%(self.objectxmpp.boundjid.bare, timeinventory),
+                self.objectxmpp.xmpplog('Sending new inventory from %s : (generated in %s s)'%(self.objectxmpp.boundjid.bare, timeinventory),
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
@@ -1793,7 +1793,7 @@ class grafcet:
                                         fromuser = self.data['login'],
                                         touser = "")
             else:
-                self.objectxmpp.xmpplog('[%s]-[%s] :<span  style="color: Orange;"> Deployment aborted: inventory error <span>' % (self.data['name'], self.workingstep['step']),
+                self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory error <span>' % (self.data['name'], self.workingstep['step']),
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],
@@ -1814,7 +1814,7 @@ class grafcet:
                 self.workingstep['clear'] = str(self.workingstep['clear'])
                 if self.workingstep['clear'] == "False":
                     clear = False
-        self.objectxmpp.xmpplog('[%s]-[%s] :<span style="color: green;">Deployment successful<span>' % (self.data['name'], self.workingstep['step']),
+        self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_ok">Deployment successful<span>' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],
@@ -1846,7 +1846,7 @@ class grafcet:
         if 'clear' in self.workingstep and isinstance(
                 self.workingstep['clear'], bool):
             clear = self.workingstep['clear']
-        self.objectxmpp.xmpplog('[%s]-[%s] :<span  style="color: red;"> Deployment aborted <span>' % (self.data['name'], self.workingstep['step']),
+        self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_err"> Deployment aborted <span>' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],

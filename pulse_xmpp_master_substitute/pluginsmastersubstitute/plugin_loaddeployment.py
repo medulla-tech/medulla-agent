@@ -145,12 +145,12 @@ def scheduledeploy(self):
                                             result = "",
                                             syncthing = 0)
 
-            msg.append("<span style='color : red;font-weight: bold;'>Agent missing on machine %s. " \
+            msg.append("<span class='log_err'>Agent missing on machine %s. " \
                         "Deployment impossible : GLPI ID is %s</span>"%(machine.name,
                                                                             UUID))
-            msg.append("<span style='color : blue;font-weight: bold;'>Action : Check that the machine "\
+            msg.append("Action : Check that the machine "\
                 "agent is working, or install the agent on the"\
-                    " machine %s (%s) if it is missing.</span>"%(machine.name,
+                    " machine %s (%s) if it is missing."%(machine.name,
                                                                     UUID))
             for logmsg in msg:
                 self.xmpplog(logmsg,
@@ -225,8 +225,8 @@ def scheduledeployrecoveryjob(self):
         result = XmppMasterDatabase().Timeouterrordeploy()
         for machine in result:
             hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
-            msglog.append("<span style='color : red;font-weight: bold;'>Deployment timed out on machine %s</span>"%hostnamemachine)
-            msglog.append("<span style='color : red;font-weight: bold;'>Machine is no longer available</span>")
+            msglog.append("<span class='log_err'>Deployment timed out on machine %s</span>"%hostnamemachine)
+            msglog.append("<span class='log_err'>Machine is no longer available</span>")
         for logmsg in msglog:
             self.xmpplog(logmsg,
                         type='deploy',
@@ -251,7 +251,7 @@ def scheduledeployrecoveryjob(self):
                 ### voir le message a afficher.
                 # cas on 1 deployement est cheduler.
                 # et la machine n'existe plus. soit son uuid GLPI a changer, ou elle a ete suprimer. la machine n'existe plus.
-                msglog.append("<span style='color : red;font-weight: bold;'>Machine %s disappeared "\
+                msglog.append("<span class='log_err'>Machine %s disappeared "\
                     "during deployment. GLPI ID: %s</span>"%(machine['jidmachine'], UUID))
                 XmppMasterDatabase().update_state_deploy(machine['id'], "ABORT MACHINE DISAPPEARED")
             elif resultpresence[UUID][0] == 1:
@@ -274,8 +274,7 @@ def scheduledeployrecoveryjob(self):
         for machine in machines_wol3:
             XmppMasterDatabase().update_state_deploy(machine['id'], "WAITING MACHINE ONLINE")
             hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
-            msglog.append("<span style='color : orange;font-weight: bold;'>Waiting for machine %s " \
-                            "to be online</span>"%hostnamemachine)
+            msglog.append("Waiting for machine %s to be online"%hostnamemachine)
         for logmsg in msglog:
             self.xmpplog(logmsg,
                         type='deploy',
@@ -297,8 +296,7 @@ def scheduledeployrecoveryjob(self):
             XmppMasterDatabase().update_state_deploy(machine['id'], "WOL 3")
             hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
             self._addsetwol(wol_set, machine['macadress'])
-            msglog.append("<span style='color : orange;font-weight: bold;'>Third WOL sent</span>:" \
-                            " to machine %s"%hostnamemachine)
+            msglog.append("Third WOL sent to machine %s"%hostnamemachine)
         for logmsg in msglog:
             self.xmpplog(logmsg,
                         type='deploy',
@@ -322,8 +320,7 @@ def scheduledeployrecoveryjob(self):
             self._addsetwol(wol_set, machine['macadress'])
             #self.sendwol(machine['macadress'], hostnamemachine)
 
-            msglog.append("<span style='color : orange;font-weight: bold;'>Second WOL sent</span>:" \
-                            " to machine %s"%hostnamemachine)
+            msglog.append("Second WOL sent to machine %s"%hostnamemachine)
         for logmsg in msglog:
             self.xmpplog(logmsg,
                         type='deploy',
@@ -344,7 +341,7 @@ def scheduledeployrecoveryjob(self):
             data = json.loads(machine['result'])
             if XmppMasterDatabase().getPresenceuuid(machine['inventoryuuid']):
                 hostnamemachine=machine['jidmachine'].split('@')[0][:-4]
-                msg="<span style='color : BLUE;font-weight: bold;'>Machine %s online. Starting deployment</span>"%hostnamemachine
+                msg="Machine %s online. Starting deployment"%hostnamemachine
                 self.xmpplog(msg,
                             type='deploy',
                             sessionname=machine['sessionid'],
@@ -362,8 +359,7 @@ def scheduledeployrecoveryjob(self):
                         data['advanced']['syncthing'] == 1 and \
                             XmppMasterDatabase().nbsyncthingdeploy(machine['group_uuid'],
                                                                     machine['command']) > 2:
-                    msg =  "<span style='color:green;font-weight: bold;'>" \
-                                "Starting peer deployment</span> on machine %s" % machine['jidmachine']
+                    msg =  "Starting peer deployment on machine %s" % machine['jidmachine']
                     self.xmpplog(msg,
                                 type='deploy',
                                 sessionname=machine['sessionid'],
@@ -382,8 +378,7 @@ def scheduledeployrecoveryjob(self):
                     self.syncthingdeploy()
                 else:
                     datasession = self.session.sessiongetdata(machine['sessionid'])
-                    msglog.append("<span style='color:green;font-weight: bold;'>" \
-                            "Starting deployment</span> on machine %s from ARS %s" %(machine['jidmachine'],
+                    msglog.append("Starting deployment on machine %s from ARS %s" %(machine['jidmachine'],
                                                                             machine['jid_relay']))
 
                     command = {'action': "applicationdeploymentjson",
@@ -407,8 +402,8 @@ def scheduledeployrecoveryjob(self):
                     msglog=[]
                     if 'syncthing' in data['advanced'] and \
                         data['advanced']['syncthing'] == 1:
-                        self.xmpplog("<span style='color : orange;font-weight: bold;'>Warning!!!" \
-                            "There are not enough machines to deploy in peer mode</span>",
+                        self.xmpplog("<span class='log_warn'>There are not enough " \
+                                        "machines to deploy in peer mode</span>",
                                 type='deploy',
                                 sessionname=machine['sessionid'],
                                 priority=-1,
@@ -473,10 +468,8 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                         macadress=macadress,
                                         result = "",
                                         syncthing = 0)
-        msg.append("<span style='color : red;font-weight: bold;'>Package identifier "\
-            "misssing for %s"%uuidpackage)
-        msg.append("<span style='color : blue;font-weight: bold;'>Action :"\
-            " Check the package %s.</span>"%(uuidpackage))
+        msg.append("<span class='log_err'>Package identifier misssing for %s"%uuidpackage)
+        msg.append("Action : Check the package %s"%(uuidpackage))
         for logmsg in msg:
             self.xmpplog(logmsg,
                             type='deploy',
@@ -518,10 +511,10 @@ def applicationdeployjsonuuid(self,
             # on regarde si celui-ci est up dans la table machine
             ARSsearch = XmppMasterDatabase().getMachinefromjid(jidrelay)
             if ARSsearch['enabled'] == 0:
-                msg.append("<span style='color : red;font-weight: bold;'>ARS %s for deployment is down.</span>"%jidrelay)
-                msg.append("<span style='color : blue;font-weight: bold;'>Action :"\
-                            " Either restart it or rerun the configurator on the machine %s to use another ARS</span>"%(name))
-                msg.append("<span style='color : blue;font-weight: bold;'>Searching alternative ARS for deployment</span>")
+                msg.append("<span class='log_err'>ARS %s for deployment is down.</span>"%jidrelay)
+                msg.append("Action : Either restart it or rerun the configurator "\
+                            "on the machine %s to use another ARS"%(name))
+                msg.append("Searching alternative ARS for deployment")
                 # il faut recherche si on trouve 1 alternative. dans le cluster
                 # on cherche 1 ars disponible et up dans son cluster.
                 cluster = XmppMasterDatabase().clusterlistars(enabled=None)
@@ -530,9 +523,9 @@ def applicationdeployjsonuuid(self,
                     nbars = len(cluster[i]['listarscluster'])
                     if jidrelay in cluster[i]['listarscluster']:
                         if nbars < 2:
-                            msg.append("<span style='color : red;font-weight: bold;'>No alternative ARS found</span>")
-                            msg.append("<span style='color : blue;font-weight: bold;'>Action :"\
-                            " Either restart it or rerun the configurator on the machine %s to use another ARS</span>"%(name))
+                            msg.append("<span class='log_err'>No alternative ARS found</span>")
+                            msg.append("Action : Either restart it or rerun the configurator "\
+                                        "on the machine %s to use another ARS"%(name))
                             XmppMasterDatabase().adddeploy(idcommand,
                                                             jidmachine,
                                                             jidrelay,
@@ -567,7 +560,7 @@ def applicationdeployjsonuuid(self,
                             nbint = random.randint(0, nbars-1)
                             arsalternative = cluster[i]['listarscluster'][nbint]
 
-                            msg.append("<span style='color : red;font-weight: bold;'>ARS %s for deployment is "\
+                            msg.append("<span class='log_err'>ARS %s for deployment is "\
                                         "down. Use alternative ARS for deployment %s. ARS "\
                                             " %s must be restarted</span>"%(jidrelay,arsalternative,jidrelay) )
                             jidrelay = arsalternative
@@ -595,8 +588,8 @@ def applicationdeployjsonuuid(self,
                                                     macadress=macadress,
                                                     result = "",
                                                     syncthing = 0)
-                    msg.append("<span style='color : red;font-weight: bold;'>Alternative ARS Down</span>")
-                    msg.append("<span style='color : blue;font-weight: bold;'>Action : check ARS cluster.")
+                    msg.append("<span class='log_err'>Alternative ARS Down</span>")
+                    msg.append("Action : check ARS cluster.")
                     for logmsg in msg:
                         self.xmpplog(logmsg,
                                     type='deploy',
@@ -647,8 +640,8 @@ def applicationdeployjsonuuid(self,
                                             macadress=macadress,
                                             result = "",
                                             syncthing = 0)
-            msg.append("<span style='color : red;font-weight: bold;'>ARS for deployment is missing for machine %s </span>"%uuidmachine)
-            msg.append("<span style='color : blue;font-weight: bold;'>Action : The configurator must be restarted on the machine.")
+            msg.append("<span class='log_err'>ARS for deployment is missing for machine %s </span>"%uuidmachine)
+            msg.append("Action : The configurator must be restarted on the machine.")
             for logmsg in msg:
                 self.xmpplog(logmsg,
                             type='deploy',
@@ -680,9 +673,8 @@ def applicationdeployjsonuuid(self,
                                         macadress=macadress,
                                         result = "",
                                         syncthing = 0)
-        msg.append("<span style='color : red;font-weight : bold;'>"\
-            " Error creating deployment on machine %s "\
-                "name %s</span>"%(uuidmachine, name))
+        msg.append("<span class='log_err'>Error creating deployment on machine %s "\
+                "[%s]</span>"%(name, uuidmachine))
         for logmsg in msg:
             self.xmpplog(logmsg,
                         type='deploy',
@@ -721,8 +713,8 @@ def applicationdeploymentjson(self,
     sessiondeployementless = name_random(5, "arsdeploy")
     if managepackage.getversionpackagename(name) is None:
         logger.error("deploy %s error package name version missing" % (name))
-        msg.append("<span style='color : red;font-weight: bold;'>Package name or version missing for %s</span>"%(name))
-        msg.append("<span style='color : blue;font-weight: bold;'>Action : check the package %s."%name)
+        msg.append("<span class='log_err'>Package name or version missing for %s</span>"%(name))
+        msg.append("Action : check the package %s"%name)
         XmppMasterDatabase().adddeploy(idcommand,
                                         jidmachine,
                                         jidrelay,
@@ -753,8 +745,8 @@ def applicationdeploymentjson(self,
     # Name the event
     path = managepackage.getpathpackagename(name)
     if path is None:
-        msg.append("<span style='color : red;font-weight: bold;'>Package name missing in package %s</span>"%(name))
-        msg.append("<span style='color : blue;font-weight: bold;'>Action : check the package %s</span>"%(name))
+        msg.append("<span class='log_err'>Package name missing in package %s</span>"%(name))
+        msg.append("Action : check the package %s"%(name))
         XmppMasterDatabase().adddeploy(idcommand,
                                         jidmachine,
                                         jidrelay,
@@ -804,10 +796,9 @@ def applicationdeploymentjson(self,
                                         macadress=macadress,
                                         result = "",
                                         syncthing = 0)
-        msg.append("<span style='color : red;font-weight: bold;'>Descriptor xmppdeploy.json " \
-                    "missing for %s on %s</span>"%(name, uuidmachine))
-        msg.append("<span style='color : blue;font-weight: bold;'>Action : "\
-            "Find out why xmppdeploy.json file is missing.</span>")
+        msg.append("<span class='log_err'>Descriptor xmppdeploy.json " \
+                    "missing for %s [%s]</span>"%(name, uuidmachine))
+        msg.append("Action : Find out why xmppdeploy.json file is missing.")
         for logmsg in msg:
             self.xmpplog(logmsg,
                         type='deploy',
@@ -879,22 +870,22 @@ def applicationdeploymentjson(self,
         data['mac'] = macadress #use macadress for WOL
         sessionid = self.createsessionfordeploydiffered(data)
         result = json.dumps(data, indent = 4)
-        msg.append("<span style='color : orange; font-weight: bold;'>Machine %s is ready for deployment</span>" % jidmachine)
+        msg.append("Machine %s is ready for deployment" % jidmachine)
     if wol == 2:
         state="DEPLOY TASK SCHEDULED"
         data['wol'] = 2
         data['mac'] = macadress #use macadress for WOL
         sessionid = self.createsessionfordeploydiffered(data)
         result = json.dumps(data, indent = 4)
-        msg.append("<span style='color : orange; font-weight: bold;'>Machine %s is ready for deployment</span>" % jidmachine)
+        msg.append("Machine %s is ready for deployment" % jidmachine)
     elif wol == 1:
         state = "WOL 1"
         data['wol'] = 1
         data['mac'] = macadress #use macadress for WOL
         sessionid = self.createsessionfordeploydiffered(data)
         result = json.dumps(data, indent = 4)
-        msg.append("<span style='color : orange; font-weight: bold;'>Machine %s online</span>" % jidmachine)
-        msg.append("<span style='color : orange;font-weight: bold;'>First WOL sent</span> to machine %s" % uuidmachine)
+        msg.append("Machine %s online" % jidmachine)
+        msg.append("First WOL sent to machine %s" % uuidmachine)
     else:
         state = "DEPLOYMENT START"
         data['wol'] = 0
@@ -915,14 +906,12 @@ def applicationdeploymentjson(self,
                                                 prefix = "command")
             #state = "DEPLOYMENT SYNCTHING"
             result = json.dumps(data, indent = 4)
-            msg.append("<span style='color:green;font-weight: bold;'>" \
-                            "Starting peer deployment</span> on machine %s" % jidmachine)
+            msg.append("Starting peer deployment on machine %s" % jidmachine)
         else:
-            msg.append("<span style='color:green;font-weight: bold;'>" \
-                            "Starting deployment</span> on machine %s from ARS %s" % (jidmachine,jidrelay))
+            msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
             if data['advanced']['syncthing'] == 1:
-                msg.append("<span style='color : orange;font-weight: bold;'>Warning!!!" \
-                    " There are not enough machines to deploy in peer mode</span>")
+                msg.append("<span class='log_warn'>There are not enough machines " \
+                            "to deploy in peer mode</span>")
 
             data['advanced']['syncthing'] = 0
             result = None

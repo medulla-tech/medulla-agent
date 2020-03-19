@@ -191,15 +191,15 @@ class manage_event:
                                                 i, indent=4, sort_keys=True)))
                                         if 'command' in i:
                                             if i['codereturn'] == 0:
-                                                color = "green"
+                                                log_class = "log_ok"
                                             else:
-                                                color = "red"
+                                                log_class = "log_err"
 
-                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span style="color: %s;"> '\
+                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span class="%s"> '\
                                                                         '[Process command] errorcode %s for'\
                                                                         'command : %s <span>' % (event['eventMessageraw']['data']['name'],
                                                                                                     i['step'],
-                                                                                                    color,
+                                                                                                    log_class,
                                                                                                     i['codereturn'],
                                                                                                     i['command'][:20]),
                                                                         type = 'deploy',

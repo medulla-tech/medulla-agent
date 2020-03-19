@@ -1129,8 +1129,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.managefifo.delsessionfifo(sessionid )
             logging.warning("stop deploy session %s "\
                 "(deployment slot has passed)"%sessionid)
-            self.xmpplog('<span style="font-weight: bold;color : red;">'\
-                'Deployment error in fifo : timed out (sessionid %s)</span>'%(sessionid),
+            self.xmpplog('<span class="log_err">Deployment error in fifo : '\
+                            'timed out (sessionid %s)</span>'%(sessionid),
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
@@ -2097,7 +2097,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     if dataobj['sessionid'] in self.ban_deploy_sessionid_list:
                         ## abort deploy if msg session id is banny
                         logging.info("ABORT DEPLOYMENT CANCELLED BY USER Sesion %s"%dataobj['sessionid'])
-                        self.xmpplog("<span  style='color:red;'>ABORT DEPLOYMENT CANCELLED BY USER</span>",
+                        self.xmpplog("<span class='log_err'>ABORT DEPLOYMENT CANCELLED BY USER</span>",
                                     type = 'deploy',
                                     sessionname = dataobj['sessionid'],
                                     priority = -1,

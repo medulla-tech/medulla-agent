@@ -150,7 +150,7 @@ def changed_status(self, presence):
                                 date = None,
                                 fromuser = "",
                                 touser = "")
-                            self.xmpplog('<span style="font-weight: bold;color : Orange;">Waiting for reboot</span>',
+                            self.xmpplog('Waiting for reboot',
                                 type = 'deploy',
                                 sessionname = t['sessionid'],
                                 priority = -1,
