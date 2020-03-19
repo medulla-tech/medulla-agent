@@ -468,7 +468,7 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                         macadress=macadress,
                                         result = "",
                                         syncthing = 0)
-        msg.append("<span class='log_err'>Package identifier misssing for %s"%uuidpackage)
+        msg.append("<span class='log_err'>Package identifier misssing for %s</span>"%uuidpackage)
         msg.append("Action : Check the package %s"%(uuidpackage))
         for logmsg in msg:
             self.xmpplog(logmsg,
