@@ -1451,7 +1451,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
 
-        self.xmpplog("Start Agent",
+        self.xmpplog("Starting %s agent" % self.config.agenttype,
                     type = 'info',
                     sessionname = "",
                     priority = -1,
@@ -1459,9 +1459,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     who = self.boundjid.bare,
                     how = "",
                     why = "",
-                    module = "AM",
                     date = None ,
-                    fromuser = "MASTER",
+                    fromuser = self.boundjid.bare,
                     touser = "")
         #notify master conf error in AM
         dataerrornotify = {

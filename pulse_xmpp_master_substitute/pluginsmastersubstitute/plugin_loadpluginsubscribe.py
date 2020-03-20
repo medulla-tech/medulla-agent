@@ -100,6 +100,17 @@ def changed_status(self, presence):
         try:
             logger.debug("update offline for %s" % (presence['from']))
             result = XmppMasterDatabase().initialisePresenceMachine(presence['from'])
+            XmppMasterDatabase().setlogxmpp("%s offline" % presence['from'],
+                                            "info",
+                                            sessionid,
+                                            -1,
+                                            presence['from'],
+                                            '',
+                                            '',
+                                            'Presence',
+                                            '',
+                                            '',
+                                            objectxmpp.boundjid.bare)
             if result is None:
                 return
             if "type" in result and result['type'] == "relayserver":
@@ -185,6 +196,17 @@ def changed_status(self, presence):
         logger.info("update MACH or ARS %s Online"%presence['from'])
         result = XmppMasterDatabase().initialisePresenceMachine(presence['from'],
                                                                 presence=1)
+        XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
+                                        "info",
+                                        sessionid,
+                                        -1,
+                                        presence['from'],
+                                        '',
+                                        '',
+                                        'Presence',
+                                        '',
+                                        '',
+                                        objectxmpp.boundjid.bare)
 
 #def presence_subscribe(self, presence):
     #logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))

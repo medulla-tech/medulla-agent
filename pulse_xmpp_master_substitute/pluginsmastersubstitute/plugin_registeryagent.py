@@ -72,6 +72,18 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 info = json.loads(base64.b64decode(data['completedatamachine']))
                 data['information'] = info
 
+                XmppMasterDatabase().setlogxmpp("Registering machine %s" % data['from'],
+                                                "info",
+                                                sessionid,
+                                                -1,
+                                                msg['from'],
+                                                '',
+                                                '',
+                                                'Registration',
+                                                '',
+                                                '',
+                                                objectxmpp.boundjid.bare)
+
             machine = XmppMasterDatabase().getMachinefromjid(data['from'])
             if len(machine) != 0:
                 # on regarde si coherence avec table network.
@@ -349,6 +361,17 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         pass
             except Exception:
                 logger.error("** not user, inscription impossible of %s" % msg['from'])
+                XmppMasterDatabase().setlogxmpp("Machine %s not registered. No user found" % msg['from'],
+                                                "info",
+                                                sessionid,
+                                                -1,
+                                                msg['from'],
+                                                '',
+                                                '',
+                                                'Registration | Notify',
+                                                '',
+                                                '',
+                                                objectxmpp.boundjid.bare)
                 return
 
             # Add relayserver or update status in database
@@ -448,6 +471,17 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     XmppMasterDatabase().hasmachineusers(useradd, idmachine)
                 else:
                     logger.error("** No user found for the machine %s"%msg['from'])
+                    XmppMasterDatabase().setlogxmpp("Machine %s not registered. No user found" % msg['from'],
+                                                    "info",
+                                                    sessionid,
+                                                    -1,
+                                                    msg['from'],
+                                                    '',
+                                                    '',
+                                                    'Registration | Notify',
+                                                    '',
+                                                    '',
+                                                    objectxmpp.boundjid.bare)
                     return
                 for i in data['information']["listipinfo"]:
                     try:

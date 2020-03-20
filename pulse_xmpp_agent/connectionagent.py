@@ -96,6 +96,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.sub_assessor.bare == "":
             self.sub_assessor = self.agentmaster
 
+        self.xmpplog("Starting configurator on machine %s. Assessor : %s" % (conf.jidagent, self.sub_assessor),
+                    type='conf',
+                    priority=-1,
+                    action="xmpplog",
+                    who=self.HostNameSystem,
+                    module="Configuration",
+                    date=None,
+                    fromuser=self.boundjid.bare,
+                    touser="")
+
         #self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
 
         self.add_event_handler("register", self.register, threaded=True)
@@ -170,6 +180,52 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.config.ipxmpp = getIpXmppInterface(self.config.confserver, self.config.confport)
         self.infos_machine_assessor()
+
+    def xmpplog(self,
+                text,
+                type = 'noset',
+                sessionname = '',
+                priority = 0,
+                action = "xmpplog",
+                who = "",
+                how = "",
+                why = "",
+                module = "",
+                date = None ,
+                fromuser = "",
+                touser = ""):
+        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if who == "":
+            who = self.boundjid.bare
+        msgbody = {}
+        data = {'log' : 'xmpplog',
+                'text' : text,
+                'type': type,
+                'sessionid' : sessionname,
+                'priority': priority,
+                'action' : action ,
+                'who': who,
+                'how' : how,
+                'why' : why,
+                'module': module,
+                'date' : None ,
+                'fromuser' : fromuser,
+                'touser' : touser}
+        msgbody['data'] = data
+        msgbody['action'] = 'xmpplog'
+        msgbody['sessionid'] = sessionname
+        if not hasattr(self.config, 'sub_logger'):
+            self.sub_logger = self.agentmaster
+        else:
+            if isinstance(self.config.sub_logger, list) and\
+            len(self.config.sub_logger) > 0:
+                self.sub_logger = jid.JID(self.config.sub_logger[0])
+            else:
+                self.sub_logger = jid.JID(self.config.sub_logger)
+        self.send_message(  mto = self.sub_logger,
+                            mbody=json.dumps(msgbody),
+                            mtype='chat')
+
 
     def register(self, iq):
         """ This function is called for automatic registration"""
