@@ -82,7 +82,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 'Registration',
                                                 '',
                                                 '',
-                                                objectxmpp.boundjid.bare)
+                                                xmppobject.boundjid.bare)
 
             machine = XmppMasterDatabase().getMachinefromjid(data['from'])
             if len(machine) != 0:
@@ -371,7 +371,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 'Registration | Notify',
                                                 '',
                                                 '',
-                                                objectxmpp.boundjid.bare)
+                                                xmppobject.boundjid.bare)
                 return
 
             # Add relayserver or update status in database
@@ -481,7 +481,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     'Registration | Notify',
                                                     '',
                                                     '',
-                                                    objectxmpp.boundjid.bare)
+                                                    xmppobject.boundjid.bare)
                     return
                 for i in data['information']["listipinfo"]:
                     try:

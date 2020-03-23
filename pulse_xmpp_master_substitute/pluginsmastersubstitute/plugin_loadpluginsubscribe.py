@@ -102,7 +102,7 @@ def changed_status(self, presence):
             result = XmppMasterDatabase().initialisePresenceMachine(presence['from'])
             XmppMasterDatabase().setlogxmpp("%s offline" % presence['from'],
                                             "info",
-                                            sessionid,
+                                            '',
                                             -1,
                                             presence['from'],
                                             '',
@@ -110,7 +110,7 @@ def changed_status(self, presence):
                                             'Presence',
                                             '',
                                             '',
-                                            objectxmpp.boundjid.bare)
+                                            self.boundjid.bare)
             if result is None:
                 return
             if "type" in result and result['type'] == "relayserver":
@@ -198,7 +198,7 @@ def changed_status(self, presence):
                                                                 presence=1)
         XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
                                         "info",
-                                        sessionid,
+                                        '',
                                         -1,
                                         presence['from'],
                                         '',
@@ -206,7 +206,7 @@ def changed_status(self, presence):
                                         'Presence',
                                         '',
                                         '',
-                                        objectxmpp.boundjid.bare)
+                                        self.boundjid.bare)
 
 #def presence_subscribe(self, presence):
     #logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))

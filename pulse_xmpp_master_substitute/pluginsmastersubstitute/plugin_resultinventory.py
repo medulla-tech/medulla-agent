@@ -78,7 +78,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         'QuickAction |Inventory | Inventory requested',
                                         '',
                                         '',
-                                        objectxmpp.boundjid.bare)
+                                        xmppobject.boundjid.bare)
         if nbsize < 250:
             XmppMasterDatabase().setlogxmpp('<span class="log_warn">Inventory XML size: %s byte</span>' % nbsize,
                                             "Inventory",
@@ -90,7 +90,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             'Inventory | Notify',
                                             '',
                                             '',
-                                            objectxmpp.boundjid.bare)
+                                            xmppobject.boundjid.bare)
         time.sleep(15)
         if not XmppUpdateInventoried(msg['from'], machine):
             XmppMasterDatabase().setlogxmpp('<span class="log_err">Injection of inventory for machine %s failed</span>' % (msg['from']),
@@ -103,7 +103,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             'Inventory | Notify | Error',
                                             '',
                                             '',
-                                            objectxmpp.boundjid.bare)
+                                            xmppobject.boundjid.bare)
 
         # save registry inventory
         try:
@@ -122,7 +122,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         'QuickAction | Inventory | Inventory requested',
                                         '',
                                         '',
-                                        objectxmpp.boundjid.bare)
+                                        xmppobject.boundjid.bare)
 
         if reginventory:
             counter = 0
@@ -158,7 +158,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     'QuickAction |Inventory | Inventory requested',
                                                     '',
                                                     '',
-                                                    objectxmpp.boundjid.bare)
+                                                    xmppobject.boundjid.bare)
                     Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
                 except Exception, e:
                     logger.error("getting key: %s\n%s" %(str(e),traceback.format_exc()))
