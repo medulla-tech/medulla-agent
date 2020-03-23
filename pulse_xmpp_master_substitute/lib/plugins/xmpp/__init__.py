@@ -1378,7 +1378,7 @@ class XmppMasterDatabase(DatabaseHelper):
             if result.start_exec_on_nb_deploy <= result.count_deploy_progress:
                 return 'run'
         for id in  self.sessionidforidcommand(idcommand):
-                self.updatedeploystate(id,"DEPLOYMENT DIFFERED")
+                self.updatedeploystate(id,"DEPLOYMENT DELAYED")
         return "pause"
 
     @DatabaseHelper._sessionm
