@@ -58,7 +58,7 @@ logger = master_log@pulse
 
 [syncthing-deploy]
 # Parameters used for contacting the local syncthing server
-syncthing_port = 22000
+syncthing_port = 23000
 syncthing_gui_port = 8385
 syncthing_gui_apikey = @@SYNC_GUI_APIKEY@@
 syncthing_device_id = @@SYNC_DEVICE_ID@@
