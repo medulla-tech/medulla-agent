@@ -78,7 +78,7 @@ def read_conf_showregistration(objectxmpp):
         objectxmpp.showscheduledplugins = False
         objectxmpp.showinventoryxmpp = False
         objectxmpp.showinfomachine=[]
-        
+
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -119,7 +119,9 @@ def read_conf_showregistration(objectxmpp):
     objectxmpp.plugin_loadshowregistration = types.MethodType(plugin_loadshowregistration, objectxmpp)
 
 def plugin_loadshowregistration(self, msg, data):
-    if data['machine'].split(".")[0] in self.showinfomachine:
+    if "all" in self.showinfomachine or \
+        "ALL" in self.showinfomachine or \
+            data['machine'].split(".")[0] in self.showinfomachine:
         if self.showinfodeploy:
             self.presencedeployment = {}
             listrs = XmppMasterDatabase().listjidRSdeploy()
@@ -148,13 +150,17 @@ def plugin_loadshowregistration(self, msg, data):
                 logger.debug("No Machine Listed")
         strlistplugin = ""
         if self.showplugins:
+            logger.warning("ShowPlugins")
             #logger.debug("Machine %s"%msg['from'])
             if 'plugin' in data:
                 strlistplugin += "\nlist plugins on machine %s\n"%msg['from']
                 strlistplugin += "|{0:35}|{1:10}|\n".format("Plugin Name", "Version")
                 for key, value in data['plugin'].iteritems():
                     strlistplugin += "|{0:35}|{1:10}|\n".format(key, value)
+
+
         if self.showscheduledplugins:
+            logger.warning("showscheduledplugins")
             if 'pluginscheduled' in data:
                 strlistplugin += "\nlist scheduled plugins on machine %s\n"%msg['from']
                 strlistplugin += "|{0:35}|{1:10}|\n".format("scheduled Plugin Name", "Version")
