@@ -4,7 +4,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.0.5
+Version:	2.0.6
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -32,12 +32,12 @@ Requires:       python2-psutil
 %description
 Pulse XMPP Agent
 
-%post 
+%post
 systemctl daemon-reload
 
 %files
-%_prefix/lib/systemd/system/pulse-xmpp-agent-log.service  
-%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service  
+%_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
+%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
 %_sysconfdir/pulse-xmpp-agent
