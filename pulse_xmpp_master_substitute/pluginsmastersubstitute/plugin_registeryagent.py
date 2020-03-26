@@ -132,6 +132,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         logger.debug("Update it's uuid_inventory_machine")
                         logger.debug("=============")
                         logger.debug("=============")
+
+                    if data['from'] != machine['jid'] or\
+                        data['baseurlguacamole'] != machine['urlguacamole'] or\
+                        data['deployment'] != machine['groupdeploy']:
+                        machine['jid'] = data['from']
+                        machine['urlguacamole'] = data['baseurlguacamole']
+                        machine['groupdeploy'] = data['deployment']
+                        XmppMasterDatabase().updateMachinejidGuacamoleGroupdeploy(machine['jid'], machine['urlguacamole'], machine['groupdeploy'], machine['id'])
+
+                    # on regarde si le UUID associe a hostname machine correspond au hostname dans glpi.
                     if xmppobject.check_uuidinventory and \
                         'uuid_inventorymachine' in machine and \
                             machine['uuid_inventorymachine'] is not None:

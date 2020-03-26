@@ -4010,6 +4010,21 @@ class XmppMasterDatabase(DatabaseHelper):
         return updatedb
 
     @DatabaseHelper._sessionm
+    def updateMachinejidGuacamoleGroupdeploy(self, session, jid, urlguacamole, groupdeploy, idmachine):
+       try:
+           sql = """UPDATE machines
+                    SET
+                        jid = '%s', urlguacamole = '%s', groupdeploy = '%s'
+                    WHERE
+                        id = '%s';"""%(jid, urlguacamole, groupdeploy, idmachine)
+           updatedb = session.execute(sql)
+           session.commit()
+           session.flush()
+       except Exception, e:
+           logging.getLogger().error(str(e))
+       return updatedb
+
+    @DatabaseHelper._sessionm
     def getPresenceuuid(self, session, uuid):
         machinespresente = session.query(Machines.uuid_inventorymachine).\
             filter(and_( Machines.uuid_inventorymachine == uuid,
