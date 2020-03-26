@@ -20,6 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+# file : pulse_xmpp_agent/lib/utils.py
+
 import netifaces
 import json
 import subprocess
@@ -62,6 +64,8 @@ if sys.platform.startswith('win'):
     import win32security
     import ntsecuritycon
     import win32net
+    import win32com.client
+    from win32com.client import GetObject
 
 def Setdirectorytempinfo():
     """
@@ -1742,5 +1746,3 @@ class AESCipher:
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
         return unpad(cipher.decrypt( enc[16:] ))
-
-

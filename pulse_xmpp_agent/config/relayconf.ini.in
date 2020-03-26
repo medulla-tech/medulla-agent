@@ -56,6 +56,15 @@ domain = @@CHAT_DOMAIN@@
 subscription = master_subs@pulse
 logger = master_log@pulse
 
+[syncthing-deploy]
+# Parameters used for contacting the local syncthing server
+syncthing_port = 23000
+syncthing_gui_port = 8385
+syncthing_gui_apikey = @@SYNC_GUI_APIKEY@@
+syncthing_device_id = @@SYNC_DEVICE_ID@@
+syncthing_home = /var/lib/syncthing-depl/.config/syncthing
+syncthing_share = /var/lib/syncthing-depl/depl_share
+
 # Define a specific jid for the agent. Optional
 # [jid_01]
 # jidname = machine1@localhost/pulse01a

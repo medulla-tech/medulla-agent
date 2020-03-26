@@ -40,7 +40,7 @@ import copy
 #import datetime
 import traceback
 from sqlalchemy.orm import sessionmaker
-
+import re
 from sqlalchemy.ext.declarative import declarative_base
 from lib.logcolor import  add_coloring_to_emit_ansi
 
@@ -95,6 +95,16 @@ class Deploy(Base):
     login = Column(String(45), nullable=False)
     command = Column(Integer)
     macadress=Column(String(255))
+
+class Def_remote_deploy_status(Base):
+    # ====== Table name =========================
+    __tablename__ = 'def_remote_deploy_status'
+    # ====== Fields =============================
+    # Here we define columns for the table def_remote_deploy_status.
+    # Notice that each column is also a normal Python instance attribute.
+    id = Column(Integer, primary_key=True)
+    regex_logmessage = Column(String(80), nullable=False)
+    status = Column(String(80), nullable=False)
 
 class configuration:
     def __init__(self, configfile=""):
@@ -260,6 +270,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         print self.boundjid
 
+        self.reglestatus = []
+        loggerliststatus = self.get_log_status()
+        try:
+            for t in self.get_log_status():
+                t['compile_re'] = re.compile(t['regexplog'])
+                self.reglestatus.append(t)
+            logger.debug("regle status initialise%s"% self.reglestatus)
+        except:
+            logger.error("\n%s"%(traceback.format_exc()))
+
     def register(self, iq):
         """ This function is called for automatic registration """
         resp = self.Iq()
@@ -278,7 +298,40 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("No response from server.")
             self.disconnect()
 
+    def updatedeploytosessionid(self, status, sessionid):
+        session = self.Session()
+        try:
+            sql = """UPDATE `xmppmaster`.`deploy`
+                     SET `state`='%s'
+                     WHERE `sessionid`='%s';"""%(status, sessionid)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
 
+    def get_log_status(self):
+        """ 
+            get complete table
+        """
+        session = self.Session()
+        resultat = []
+        try:
+            ret = session.query(Def_remote_deploy_status).all()
+            session.commit()
+            session.flush()
+            if ret is None:
+                resultat = []
+            else:
+                resultat = [{'index':id, 
+                            "id" : regle.id,
+                            'regexplog':regle.regex_logmessage, 
+                            'status':regle.status} for id, regle in enumerate(ret)]
+            return resultat     
+        except Exception, e:
+            traceback.print_exc(file=sys.stdout)
+            return resultat
+        
     def updatedeployresultandstate(self, sessionid, state, result ):
         session = self.Session()
         jsonresult = json.loads(result)
@@ -419,15 +472,36 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         if dataobj['ret'] == 0:
                             self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT SUCCESS", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
                         else:
-                            self.updatedeployresultandstate( dataobj['sessionid'], "DEPLOYMENT ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
+                            self.updatedeployresultandstate( dataobj['sessionid'], "ABORT PACKAGE EXECUTION ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
         except Exception as e:
             logger.error("obj Message deploy error  %s %s" %(dataobj, str(e)))
             traceback.print_exc(file=sys.stdout)
+
+    def searchstatus(self, chaine):
+        for t in self.reglestatus:
+            if  t['compile_re'].match(chaine):
+                logger.debug("la chaine \"%s\"  matche pour [%s] et renvoi le status suivant \"%s\""%(chaine,t['regexplog'],t['status']))
+                return { "status" : t['status'] , "logmessage" : chaine}
+        return { "status" : "" , "logmessage" : chaine}
+
 
     def message(self, msg):
         #save log message
         try :
             dataobj = json.loads(msg['body'])
+            if 'data' in dataobj and\
+                'type' in dataobj['data'] and\
+                dataobj['data']['type'] == "deploy" and\
+                "text" in dataobj['data'] and \
+                    "sessionid" in dataobj['data']:
+                re_status = self.searchstatus(dataobj['data']['text'])
+                if re_status['status'] != "":
+                    self.updatedeploytosessionid( re_status['status'], 
+                                                 dataobj['data']['sessionid'])
+                    logger.debug("apply status %s for sessionid %s"%(re_status['status'],
+                                                                     dataobj['data']['sessionid']))
+                #else:
+                    #logger.debug("apply pas de status for sessionid %s"%(dataobj['data']['sessionid']))
             #rend agent log compatible standart stucture messages
             if "sessionid" in dataobj :  dataobj["session"] = dataobj["sessionid"]
             if 'data' in dataobj:

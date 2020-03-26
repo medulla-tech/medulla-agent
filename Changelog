@@ -1,3 +1,13 @@
+pulse-xmpp-agent 2.0.6
+======================
+* [BUGFIX]   Review messages sent to the logger
+* [BUGFIX]   Fix Agent Details quick action where the image is not generated
+* [BUGFIX]   Fix Agent Details quick action where the image is not generated
+* [FEATURE]  Allow autoupdate by relay servers instead of main pulse in multisite setups
+* [FEATURE]  Define additional statuses for deployments
+* [FEATURE]  Allow to have more debug information for specific machines only
+* [FEATURE]  Define intervals for calculating fingerprints and reloading plugins
+
 pulse-xmpp-agent 2.0.5
 ======================
 * [FEATURE]  Integration of logger and deployment substitutes
@@ -11,8 +21,8 @@ pulse-xmpp-agent 2.0.4
 pulse-xmpp-agent 2.0.3
 ======================
 * [BUGFIX]  Fix problem where agent stops after cycling through the alternate
-			connections if no server is available 
-* [BUGFIX]  Fix agent configuration when Pulse server is not available when 
+			connections if no server is available
+* [BUGFIX]  Fix agent configuration when Pulse server is not available when
 			configurator runs
 * [BUGFIX]  Fixe error search last name user on windows
 
@@ -27,7 +37,7 @@ pulse-xmpp-agent 2.0.1
 * [Feature] Add Glpi substitute support
 * [Feature] Allow to use pullrsync without package server
 * [BUGFIX]  Improve syncthing support and API
-* [BUGFIX]  Fix default creation of syncthing config.xml file 
+* [BUGFIX]  Fix default creation of syncthing config.xml file
 
 pulse-xmpp-agent 2.0.0
 ======================

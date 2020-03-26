@@ -45,8 +45,8 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
             XmppMasterDatabase().delete_resources(sessionid)
 
         else:
-            msg = "Error deploy on %s Package "\
-                ": %s Session : %s" % (message['from'],
+            msg = "Deployment error on %s [Package "\
+                ": %s / Session : %s]" % (message['from'],
                                        data['descriptor']['info']['name'],
                                        sessionid)
             logger.error(msg)
@@ -54,12 +54,12 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
             if  'status' in data and data['status'] != "":
                 XmppMasterDatabase().updatedeploystate(sessionid, data['status'])
             else:
-                XmppMasterDatabase().updatedeploystate(sessionid, "DEPLOYMENT ERROR")
+                XmppMasterDatabase().updatedeploystate(sessionid, "ABORT PACKAGE EXECUTION ERROR")
             xmppsub.xmpplog(msg,
                         type='deploy',
                         sessionname=sessionid,
                         priority=-1,
-                        action="",
+                        action="xmpplog",
                         who="",
                         how="",
                         why=xmppsub.boundjid.bare,

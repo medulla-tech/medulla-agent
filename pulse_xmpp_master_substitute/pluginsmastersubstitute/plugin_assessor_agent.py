@@ -363,30 +363,58 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 break
 
     try:
-        msg_string ="[user %s hostanme %s] : "\
-                    "Relay server for connection "\
-                    "ip %s port %s" % (data['information']['users'][0],
+        msg_string ="[user: %s / hostname: %s] : "\
+                    "Relay server assigned: "\
+                    "%s:%s" % (data['information']['users'][0],
                                        data['information']['info']['hostname'],
                                        result[0],
                                        result[1])
         logger.debug(msg_string)
-        XmppMasterDatabase().log(msg_string)
+        XmppMasterDatabase().setlogxmpp(msg_string,
+                                        "conf",
+                                        sessionid,
+                                        -1,
+                                        data['information']['info']['hostname'],
+                                        '',
+                                        '',
+                                        'Configuration | Assessor',
+                                        '',
+                                        '',
+                                        objectxmpp.boundjid.bare)
 
     except Exception:
         logger.warning("Relay server attributed by default")
+        XmppMasterDatabase().setlogxmpp("Relay server attributed by default",
+                                        "conf",
+                                        sessionid,
+                                        -1,
+                                        data['information']['info']['hostname'],
+                                        '',
+                                        '',
+                                        'Configuration | Assessor',
+                                        '',
+                                        '',
+                                        objectxmpp.boundjid.bare)
         try:
             result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
         except Exception:
             logger.warn("Unable to assign the relay server : missing")
-            #result = [objectxmpp.assessor_agent_serverip,
-                        #objectxmpp.assessor_agent_port,
-                        #objectxmpp.domaindefault,
-                        #objectxmpp.assessor_agent_baseurlguacamole]
             result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
             msg_log("error use default relay server",
                     data['information']['info']['hostname'],
                     data['information']['users'][0],
                     result)
+            XmppMasterDatabase().setlogxmpp("Unable to use default relay server: missing",
+                                            "conf",
+                                            sessionid,
+                                            -1,
+                                            data['information']['info']['hostname'],
+                                            '',
+                                            '',
+                                            'Configuration | Notify | Assessor',
+                                            '',
+                                            '',
+                                            objectxmpp.boundjid.bare)
     try:
         listars = XmppMasterDatabase().getRelayServerofclusterFromjidars(result[2],
                                                                          "static")
@@ -412,7 +440,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                             priority = -1,
                             action = "xmpplog",
                             who = data['information']['info']['hostname'],
-                            module = "Configuration | Notify | connectionagent",
+                            module = "Configuration | Notify | Assessor",
                             date = None,
                             fromuser = objectxmpp.boundjid.bare)
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
@@ -444,6 +472,28 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("Unable to assign a relay server to an agent")
         logger.error("\n%s"%(traceback.format_exc()))
+        XmppMasterDatabase().setlogxmpp("Unable to assign a relay server to an agent",
+                                        "conf",
+                                        sessionid,
+                                        -1,
+                                        data['information']['info']['hostname'],
+                                        '',
+                                        '',
+                                        'Configuration | Notify | Assessor',
+                                        '',
+                                        '',
+                                        objectxmpp.boundjid.bare)
+        XmppMasterDatabase().setlogxmpp("Error: %s" % (traceback.format_exc()),
+                                        "conf",
+                                        sessionid,
+                                        -1,
+                                        data['information']['info']['hostname'],
+                                        '',
+                                        '',
+                                        'Configuration | Notify | Assessor',
+                                        '',
+                                        '',
+                                        objectxmpp.boundjid.bare)
 
 def msg_log(msg_header, hostname, user, result):
     logger.debug("%s Rule selects " \

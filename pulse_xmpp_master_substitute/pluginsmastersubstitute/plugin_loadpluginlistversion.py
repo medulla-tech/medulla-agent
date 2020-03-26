@@ -54,11 +54,11 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     if compteurcallplugin == 0:
         read_conf_load_plugin_list_version(objectxmpp)
         objectxmpp.schedule('updatelistplugin',
-                            900,
+                            objectxmpp.reload_plugins_interval,
                             objectxmpp.loadPluginList,
                             repeat=True)
-    logger.debug("%s"%hasattr(objectxmpp, "loadPluginList"))
-    objectxmpp.loadPluginList()
+        logger.debug("status plugin : %s"%hasattr(objectxmpp, "loadPluginList"))
+        objectxmpp.loadPluginList()
 
 def read_conf_load_plugin_list_version(objectxmpp):
     """
@@ -72,9 +72,9 @@ def read_conf_load_plugin_list_version(objectxmpp):
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file  missing\n  %s" \
             "\neg conf:\n[parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"%(plugin['NAME'], pathfileconf))
-
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
+        objectxmpp.reload_plugins_interval=1000
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -83,6 +83,13 @@ def read_conf_load_plugin_list_version(objectxmpp):
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
         if Config.has_option("parameters", "dirpluginlist"):
             objectxmpp.dirpluginlist = Config.get('parameters', 'dirpluginlist')
+
+        if Config.has_option("parameters", "reload_plugins_interval"):
+            objectxmpp.reload_plugins_interval = Config.getint('parameters', 'reload_plugins_interval')
+        else:
+            objectxmpp.reload_plugins_interval = 1000
+    logger.debug("directory base plugins is %s"% objectxmpp.dirpluginlist)
+    logger.debug("reload plugins interval%s"%objectxmpp.reload_plugins_interval)
     # loadPluginList function definie dynamiquement
     objectxmpp.file_deploy_plugin = []
     objectxmpp.loadPluginList = types.MethodType(loadPluginList, objectxmpp)

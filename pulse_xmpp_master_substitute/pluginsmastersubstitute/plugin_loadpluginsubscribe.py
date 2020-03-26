@@ -100,6 +100,17 @@ def changed_status(self, presence):
         try:
             logger.debug("update offline for %s" % (presence['from']))
             result = XmppMasterDatabase().initialisePresenceMachine(presence['from'])
+            XmppMasterDatabase().setlogxmpp("%s offline" % presence['from'],
+                                            "info",
+                                            '',
+                                            -1,
+                                            presence['from'],
+                                            '',
+                                            '',
+                                            'Presence',
+                                            '',
+                                            '',
+                                            self.boundjid.bare)
             if result is None:
                 return
             if "type" in result and result['type'] == "relayserver":
@@ -135,8 +146,8 @@ def changed_status(self, presence):
                         ret = XmppMasterDatabase().updatedeploystate1(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
                         if ret >= 1:
                             logger.debug("Update deploy Status for Machine OffLine %s"%t['jidmachine'])
-                            self.xmpplog("resource recovery on ARS %s for deploy"\
-                                "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
+                            self.xmpplog("Freeing deployment resource on ARS %s"\
+                                "sessionid %s on machine %s (connection loss)" % (t['jidrelay'],
                                                                                     t['sessionid'],
                                                                                     t['hostname']),
                                 type = 'deploy',
@@ -150,7 +161,7 @@ def changed_status(self, presence):
                                 date = None,
                                 fromuser = "",
                                 touser = "")
-                            self.xmpplog('<span style="font-weight: bold;color : Orange;">WAITING REBOOT</span>',
+                            self.xmpplog('Waiting for reboot',
                                 type = 'deploy',
                                 sessionname = t['sessionid'],
                                 priority = -1,
@@ -185,6 +196,17 @@ def changed_status(self, presence):
         logger.info("update MACH or ARS %s Online"%presence['from'])
         result = XmppMasterDatabase().initialisePresenceMachine(presence['from'],
                                                                 presence=1)
+        XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
+                                        "info",
+                                        '',
+                                        -1,
+                                        presence['from'],
+                                        '',
+                                        '',
+                                        'Presence',
+                                        '',
+                                        '',
+                                        self.boundjid.bare)
 
 #def presence_subscribe(self, presence):
     #logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))

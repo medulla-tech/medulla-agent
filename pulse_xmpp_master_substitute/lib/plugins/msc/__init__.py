@@ -831,7 +831,7 @@ class MscDatabase(DatabaseHelper):
             resultat = {}
             resultat['gid']         = group
             resultat['pathpackage'] = objdeploy.Commands.package_id
-            resultat['state']       = 'DEPLOYMENT ABORT'
+            resultat['state']       = 'ABORT DEPLOYMENT CANCELLED BY USER'
             resultat['start']       = objdeploy.CommandsOnHost.start_date
             resultat['end']         = objdeploy.CommandsOnHost.end_date
             resultat['inventoryuuid'] = objdeploy.Target.target_uuid
@@ -1013,8 +1013,8 @@ class MscDatabase(DatabaseHelper):
                                                                     x.commands_package_id))
                 machine_do_deploy[x.target_target_uuid] = x.commands_package_id
                 updatemachine.append(deployobject)
-                sql ="""UPDATE `msc`.`commands_on_host` 
-                    SET 
+                sql ="""UPDATE `msc`.`commands_on_host`
+                    SET
                         `current_state` = 'done',
                         `stage` = 'ended'
                     WHERE
@@ -1022,8 +1022,8 @@ class MscDatabase(DatabaseHelper):
                 session.execute(sql)
                 session.commit()
                 session.flush()
-                sql="""UPDATE `msc`.`phase` 
-                    SET 
+                sql="""UPDATE `msc`.`phase`
+                    SET
                         `phase`.`state` = 'done'
                     WHERE
                         `phase`.`fk_commands_on_host` = %s;"""%x.commands_on_host_id;

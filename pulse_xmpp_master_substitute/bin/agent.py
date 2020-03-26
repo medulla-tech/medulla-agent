@@ -118,7 +118,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        self.xmpplog("Start Agent master inventory",
+        
+        self.xmpplog("Starting substitute agent",
                     type = 'info',
                     sessionname = "",
                     priority = -1,
@@ -126,9 +127,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     who = self.boundjid.bare,
                     how = "",
                     why = "",
-                    module = "AM",
                     date = None ,
-                    fromuser = "AGENT SUBSTITUTE",
+                    fromuser = self.boundjid.bare,
                     touser = "")
 
         #call plugin start
