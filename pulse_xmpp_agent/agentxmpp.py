@@ -2411,104 +2411,136 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
 
-def process_xmpp_agent(optstypemachine,
-                       optsconsoledebug,
-                       optsdeamon,
-                       tglevellog,
-                       tglogfile,
-                       queue_recv_tcp_to_xmpp,
-                       queueout,
-                       eventkilltcp):
-    setgetcountcycle()
-    while True:
-        setgetrestart()
-        logging.log(DEBUGPULSE,"WHILE RESTART VARIABLE %s"%setgetrestart(-1))
-        tg = tgconf(optstypemachine)
-        xmpp = MUCBot(tg,
-                      queue_recv_tcp_to_xmpp,
-                      queueout,
-                      eventkilltcp)
+class process_xmpp_agent():
 
-        xmpp.auto_reconnect = False
-        xmpp.register_plugin('xep_0030') # Service Discovery
-        xmpp.register_plugin('xep_0045') # Multi-User Chat
-        xmpp.register_plugin('xep_0004') # Data Forms
-        xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive' : True,
-                                          'frequency' : 600,
-                                          'interval' : 600,
-                                          'timeout' : 500  })
-        xmpp.register_plugin('xep_0077') # In-band Registration
-        xmpp['xep_0077'].force_registration = True
-
-        #tg = tgconf(optstypemachine)
-        #xmpp.config.__dict__.update(tg.__dict__)
-        # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-        if xmpp.config.agenttype in ['relayserver']:
-            attempt = True
+    def __init__(self,
+                 optstypemachine,
+                 optsconsoledebug,
+                 optsdeamon,
+                tglevellog,
+                tglogfile,
+                queue_recv_tcp_to_xmpp,
+                queueout,
+                eventkilltcp):
+        if platform.system()=='Windows':
+            # Windows does not support ANSI escapes and we are using API calls to set the console color
+            logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
         else:
-            attempt = False
-        logging.log(DEBUGPULSE,"connect to %s"%ipfromdns(tg.Server))
-        logging.log(DEBUGPULSE,"connect to port %s"%tg.Port)
-        time.sleep(5)
-        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
-            xmpp.process(block=True)
-            logging.log(DEBUGPULSE,"terminate infocommand")
-            logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-            logging.log(DEBUGPULSE,"RESTART %s"%setgetrestart(-1))
-            logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
-            time.sleep(2)
+            # all non-Windows platforms are supporting ANSI escapes so we use them
+            logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+        # format log more informations
+        format = '%(asctime)s - %(levelname)s - %(message)s'
+        # more information log
+        # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
+        if not optsdeamon :
+            if optsconsoledebug :
+                logging.basicConfig(level = logging.DEBUG, format=format)
+            else:
+                logging.basicConfig( level = tglevellog,
+                                     format = format,
+                                     filename = tglogfile,
+                                     filemode = 'a')
         else:
-            logging.log(DEBUGPULSE,"Unable to connect. search alternative")
-            setgetrestart(0)
-            logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
-            time.sleep(2)
-        if signalint:
-            logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
-            try:
-                xmpp.eventkilltcp.set()
-            except Exception:
-                pass
-            time.sleep(1)
-            break
-        if xmpp.config.agenttype in ['relayserver']:
-            terminateserver(xmpp)
+            logging.basicConfig( level = tglevellog,
+                                 format = format,
+                                 filename = tglogfile,
+                                 filemode = 'a')
+        self.logger = logging.getLogger()
 
-        if setgetrestart(-1) == 1:
-            logging.log(DEBUGPULSE,"not restart")
-            # verify if signal stop
-            # verify if alternative connection
-            if os.path.isfile(conffilename("cluster")):
-                # il y a une configuration alternative
-                logging.log(DEBUGPULSE,"analyse alternative alternative connection")
-                logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
-                logging.log(DEBUGPULSE, "alternative configuration")
-                setgetcountcycle(1)
+        self.logger.debug("____________________________________________________________")
+        self.logger.debug("_______________ INITIALISATION XMPP AGENT __________________")
+        self.logger.debug("____________________________________________________________")
+
+        setgetcountcycle()
+        while True:
+            setgetrestart()
+            logging.log(DEBUGPULSE,"WHILE RESTART VARIABLE %s"%setgetrestart(-1))
+            tg = tgconf(optstypemachine)
+            xmpp = MUCBot(tg,
+                        queue_recv_tcp_to_xmpp,
+                        queueout,
+                        eventkilltcp)
+
+            xmpp.auto_reconnect = False
+            xmpp.register_plugin('xep_0030') # Service Discovery
+            xmpp.register_plugin('xep_0045') # Multi-User Chat
+            xmpp.register_plugin('xep_0004') # Data Forms
+            xmpp.register_plugin('xep_0050') # Adhoc Commands
+            xmpp.register_plugin('xep_0199', {'keepalive' : True,
+                                            'frequency' : 600,
+                                            'interval' : 600,
+                                            'timeout' : 500  })
+            xmpp.register_plugin('xep_0077') # In-band Registration
+            xmpp['xep_0077'].force_registration = True
+
+            #tg = tgconf(optstypemachine)
+            #xmpp.config.__dict__.update(tg.__dict__)
+            # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
+            if xmpp.config.agenttype in ['relayserver']:
+                attempt = True
+            else:
+                attempt = False
+            logging.log(DEBUGPULSE,"connect to %s"%ipfromdns(tg.Server))
+            logging.log(DEBUGPULSE,"connect to port %s"%tg.Port)
+            time.sleep(5)
+            if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
+                xmpp.process(block=True)
+                logging.log(DEBUGPULSE,"terminate infocommand")
+                logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
+                logging.log(DEBUGPULSE,"RESTART %s"%setgetrestart(-1))
+                logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
+                time.sleep(2)
+            else:
+                logging.log(DEBUGPULSE,"Unable to connect. search alternative")
+                setgetrestart(0)
+                logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
+                time.sleep(2)
+            if signalint:
+                logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
                 try:
-                    timealternatifars = random.randint(*xmpp.config.timealternatif)
-                    logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
-                    time.sleep(timealternatifars)
-                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
-
-                    changeconnection( conffilename(xmpp.config.agenttype),
-                                    newparametersconnect[2],
-                                    newparametersconnect[1],
-                                    newparametersconnect[0],
-                                    newparametersconnect[3])
-                    if newparametersconnect[5] < setgetcountcycle(-1):
-                        # if plus d'un cycle fait on relance le configurateur
-                        setgetcountcycle()
-                        logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
-                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                        args = ['python', nameprogconnection, '-t', 'machine']
-                        subprocess.call(args)
-                        time.sleep(10)
+                    xmpp.eventkilltcp.set()
                 except Exception:
-                    logging.log(40," ERROR analyse alternative connection")
-                    logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
-    terminateserver(xmpp)
-    logging.log(DEBUGPULSE,"QUIT")
-    os._exit(0)
+                    pass
+                time.sleep(1)
+                break
+            if xmpp.config.agenttype in ['relayserver']:
+                terminateserver(xmpp)
+
+            if setgetrestart(-1) == 1:
+                logging.log(DEBUGPULSE,"not restart")
+                # verify if signal stop
+                # verify if alternative connection
+                if os.path.isfile(conffilename("cluster")):
+                    # il y a une configuration alternative
+                    logging.log(DEBUGPULSE,"analyse alternative alternative connection")
+                    logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
+                    logging.log(DEBUGPULSE, "alternative configuration")
+                    setgetcountcycle(1)
+                    try:
+                        timealternatifars = random.randint(*xmpp.config.timealternatif)
+                        logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
+                        time.sleep(timealternatifars)
+                        newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+
+                        changeconnection( conffilename(xmpp.config.agenttype),
+                                        newparametersconnect[2],
+                                        newparametersconnect[1],
+                                        newparametersconnect[0],
+                                        newparametersconnect[3])
+                        if newparametersconnect[5] < setgetcountcycle(-1):
+                            # if plus d'un cycle fait on relance le configurateur
+                            setgetcountcycle()
+                            logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
+                            nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                            args = ['python', nameprogconnection, '-t', 'machine']
+                            subprocess.call(args)
+                            time.sleep(10)
+                    except Exception:
+                        logging.log(40," ERROR analyse alternative connection")
+                        logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
+        terminateserver(xmpp)
+        logging.log(DEBUGPULSE,"QUIT")
+        os._exit(0)
 
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk

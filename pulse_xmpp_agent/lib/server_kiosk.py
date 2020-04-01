@@ -43,13 +43,13 @@ import json
 import threading
 from utils import getRandomName, call_plugin, isBase64
 from sleekxmpp import jid
-import logging
 from configuration import confParameter
+from logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
 from networkinfo import networkagentinfo,\
                         organizationbymachine,\
                         organizationbyuser
-logger = logging.getLogger()
+
 
 
 class process_tcp_serveur():
@@ -63,9 +63,34 @@ class process_tcp_serveur():
                  queue_recv_tcp_to_xmpp,
                  queueout,
                  eventkilltcp):
-        logger.debug("____________________________________________________________")
-        logger.debug("_______________ INITIALISATION SERVER KIOSK ________________")
-        logger.debug("____________________________________________________________")
+
+        if platform.system()=='Windows':
+            # Windows does not support ANSI escapes and we are using API calls to set the console color
+            logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
+        else:
+            # all non-Windows platforms are supporting ANSI escapes so we use them
+            logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+        # format log more informations
+        format = '%(asctime)s - %(levelname)s - %(message)s'
+        # more information log
+        # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
+        if not optsdeamon :
+            if optsconsoledebug :
+                logging.basicConfig(level = logging.DEBUG, format=format)
+            else:
+                logging.basicConfig( level = tglevellog,
+                                     format = format,
+                                     filename = tglogfile,
+                                     filemode = 'a')
+        else:
+            logging.basicConfig( level = tglevellog,
+                                 format = format,
+                                 filename = tglogfile,
+                                 filemode = 'a')
+        self.logger = logging.getLogger()
+        self.logger.debug("____________________________________________________________")
+        self.logger.debug("_______________ INITIALISATION SERVER KIOSK ________________")
+        self.logger.debug("____________________________________________________________")
 
         tg = confParameter(optstypemachine)
 
@@ -86,30 +111,30 @@ class process_tcp_serveur():
         server_address = ('localhost',  self.port)
         for t in range(20):
             try:
-                logger.info("Binding to kiosk server %s" % str(server_address))
+                self.logger.info("Binding to kiosk server %s" % str(server_address))
                 self.sock.bind(server_address)
                 break
             except Exception as e:
-                logger.error("bind adress %s"%str(e))
+                self.logger.error("bind adress %s"%str(e))
                 time.sleep(40)
         # Listen for incoming connections
         self.sock.listen(5)
-        logger.debug("_______________________________________________")
-        logger.debug("_____________ START SERVER KIOSK ______________")
-        logger.debug("_______________________________________________")
+        self.logger.debug("_______________________________________________")
+        self.logger.debug("_____________ START SERVER KIOSK ______________")
+        self.logger.debug("_______________________________________________")
         while not self.eventkill.wait(1):
-            logger.debug("SERVER KIOSK ON")
+            self.logger.debug("SERVER KIOSK ON")
             try:
                 rr, rw, err = select.select([self.sock],[],[self.sock], 5)
             except Exception as e:
-                logging.error("kiosk server : %s" % str(e))
+                self.logger.error("kiosk server : %s" % str(e))
                 #self.sock.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
                 self.sock.close()
                 # connection error event here, maybe reconnect
-                logging.error('Quit connection kiosk')
+                self.logger.error('Quit connection kiosk')
                 break
             except KeyboardInterrupt:
-                logging.error("INTERRUPTED SERVER KIOSK CTRL+C")
+                self.logger.error("INTERRUPTED SERVER KIOSK CTRL+C")
                 break
             if self.sock in rr:
                 try:
@@ -117,18 +142,18 @@ class process_tcp_serveur():
                 except Exception as e:
                     break
                 if client_address[0] == "127.0.0.1":
-                    client_handler = threading.Thread(
-                                                        target=self.handle_client_connection,
-                                                        args=(clientsocket,)).start()
+                    self.logger.debug("creation thread")
+                    client_handler = threading.Thread( target=self.handle_client_connection,
+                                                       args=(clientsocket,)).start()
                 else:
-                    logging.info("Connection refused from : %s" % client_address)
+                    self.logger.info("Connection refused from : %s" % client_address)
                     clientsocket.close()
             if self.sock in err:
                 self.sock.close()
-                logging.error('Quit connection kiosk')
+                self.logger.error('Quit connection kiosk')
                 break;
         self.quitserverkiosk = True
-        logging.debug("Stopping Kiosk")
+        self.logger.debug("Stopping Kiosk")
         self.sock.close()
 
     def handle_client_connection(self, client_socket):
@@ -148,13 +173,14 @@ class process_tcp_serveur():
                 msg = str(recv_msg_from_kiosk.decode("utf-8", 'ignore'))
                 self.queue_recv_tcp_to_xmpp.put(msg)
         except Exception as e:
-            logging.error("message to kiosk server : %s" % str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            self.logger.error("message to kiosk server : %s" % str(e))
+            self.logger.error("\n%s"%(traceback.format_exc()))
         finally:
             client_socket.close()
 
 class manage_kiosk_message:
     def __init__(self, queue_in, objectxmpp, key_quit="quit_server_kiosk"):
+        self.logger = logging.getLogger()
         self.queue_in = queue_in
         self.objectxmpp = objectxmpp
         self.key_quit = key_quit
@@ -171,21 +197,21 @@ class manage_kiosk_message:
         self.queue_in.put(msg)
 
     def manage_event_kiosk(self):
-        logging.info('loop event wait start')
+        self.logger.info('loop event wait start')
         while self.running:
             try:
                 # lit event
                 event = self.queue_in.get(5)
-                logging.info('loop event wait start')
+                self.logger.info('loop event wait start')
                 if event == self.key_quit:
                     break
                 self.handle_client_connection(str(event))
             except Queue.Empty:
-                logging.debug("VIDE")
+                self.logger.debug("VIDE")
             except KeyboardInterrupt:
                 pass
             finally:
-                logging.info('loop event wait stop')
+                self.logger.info('loop event wait stop')
 
     def handle_client_connection(self, recv_msg_from_kiosk):
         try:
@@ -202,7 +228,7 @@ class manage_kiosk_message:
             try:
                 result = json.loads(msg)
             except ValueError as e:
-                logger.error('Message socket is not json correct : %s'%(str(e)))
+                self.logger.error('Message socket is not json correct : %s'%(str(e)))
                 return
             if 'uuid' in result:
                 datasend['data']['uuid'] = result['uuid']
@@ -224,7 +250,7 @@ class manage_kiosk_message:
                 elif result['action'] == 'kioskinterfaceUpdate':
                     datasend['data']['subaction'] =  'update'
                 elif result['action'] == 'kioskLog':
-                    logger.error("kkkkkkkk")
+                    self.logger.error("kkkkkkkk")
                     if 'message' in result and result['message'] != "":
                         self.objectxmpp.xmpplog(
                                     result['message'],
@@ -240,19 +266,19 @@ class manage_kiosk_message:
                                     touser = "")
                         if 'type' in result:
                             if result['type'] == "info":
-                                logging.getLogger().info(result['message'])
+                                self.logger.getself.logger().info(result['message'])
                             elif result['type'] == "warning":
-                                logging.getLogger().warning(result['message'])
+                                self.logger.warning(result['message'])
                 elif result['action'] == "notifysyncthing":
                     datasend['action'] = "notifysyncthing"
                     datasend['sessionid'] = getRandomName(6, "syncthing")
                     datasend['data'] = result['data']
                 else:
                     #bad action
-                    logging.getLogger().warning("this action is not taken into account : %s"%result['action'])
+                    self.logger.getLogger().warning("this action is not taken into account : %s"%result['action'])
                     return
                 #call plugin on master
                 self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
-            logging.error("message to kiosk server : %s" % str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            self.logger.error("message to kiosk server : %s" % str(e))
+            self.logger.error("\n%s"%(traceback.format_exc()))
