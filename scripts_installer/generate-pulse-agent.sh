@@ -44,13 +44,9 @@ display_usage() {
     echo -e "\nUsage:\n$0 [--conf-xmppserver=<XMPP configuration server>]"
     echo -e "\t [--conf-xmppport=<XMPP configuration server port>]"
     echo -e "\t [--conf-xmpppasswd=<XMPP configuration server password>]"
-    echo -e "\t [--conf-xmppmuchost=<XMPP configuration server MUC host>]"
-    echo -e "\t [--conf-xmppmucpasswd=<XMPP configuration server MUC password>]"
-    echo -e "\t [--xmpp-passwd=<XMPP server password>]"
-    echo -e "\t [--xmpp-mucserver=<XMPP MUC server>]"
-    echo -e "\t [--xmpp-mucpasswd=<XMPP server MUC password>]"
-    echo -e "\t [--chat-domain=<XMPP domain>]"
     echo -e "\t [--aes-key=<32-character AES PSK>]"
+    echo -e "\t [--xmpp-passwd=<XMPP server password>]"
+    echo -e "\t [--chat-domain=<XMPP domain>]"
     echo -e "\t [--inventory-tag=<Tag added to the inventory>]"
     echo -e "\t [--minimal [--base-url=<URL for downloading agent and dependencies from>]]"
     echo -e "\t [--disable-vnc (Disable VNC Server)]"
@@ -76,32 +72,16 @@ check_arguments() {
                 PUBLIC_XMPP_SERVER_PASSWORD="${i#*=}"
                 shift
                 ;;
-            --conf-xmppmuchost=*)
-                PUBLIC_XMPP_SERVER_MUCHOST="${i#*=}"
-                shift
-                ;;
-            --conf-xmppmucpasswd=*)
-                PUBLIC_XMPP_SERVER_MUCPASSWORD="${i#*=}"
+            --aes-key=*)
+                AES_KEY="${i#*=}"
                 shift
                 ;;
             --xmpp-passwd=*)
                 XMPP_SERVER_PASSWORD="${i#*=}"
                 shift
                 ;;
-            --xmpp-mucserver=*)
-                XMPP_MUC_SERVER="${i#*=}"
-                shift
-                ;;
-            --xmpp-mucpasswd=*)
-                XMPP_SERVER_MUCPASSWORD="${i#*=}"
-                shift
-                ;;
             --chat-domain=*)
                 CHAT_DOMAIN="${i#*=}"
-                shift
-                ;;
-            --aes-key=*)
-                AES_KEY="${i#*=}"
                 shift
                 ;;
             --inventory-tag=*)
@@ -187,22 +167,11 @@ compute_settings() {
 
     colored_echo green " - XMPP configuration server password: '${PUBLIC_XMPP_SERVER_PASSWORD}'"
 
-    if [ -z "${PUBLIC_XMPP_SERVER_MUCHOST}" ]; then
-        PUBLIC_XMPP_SERVER_MUCHOST="conference.pulse"
-    fi
-    colored_echo green " - XMPP configuration server MUC host: '${PUBLIC_XMPP_SERVER_MUCHOST}'"
-
-    colored_echo green " - XMPP configuration server MUC password: '${PUBLIC_XMPP_SERVER_MUCPASSWORD}'"
+    colored_echo green " - AES pre-shared key: '${AES_KEY}'"
 
     colored_echo green " - XMPP server password: '${XMPP_SERVER_PASSWORD}'"
 
-    colored_echo green " - XMPP MUC server: '${XMPP_MUC_SERVER}'"
-
-    colored_echo green " - XMPP server MUC password: '${XMPP_SERVER_MUCPASSWORD}'"
-
     colored_echo green " - XMPP chat domain: '${CHAT_DOMAIN}'"
-
-    colored_echo green " - AES pre-shared key: '${AES_KEY}'"
 
     if [ -z "${INVENTORY_TAG}" ]; then
         colored_echo green " - Inventory TAG: None"
@@ -259,23 +228,19 @@ compute_settings() {
 }
 
 update_config_file() {
+    CONFIG_FILE='config/agentconf.ini'
     # Backup the config file if no backup present
-    if [ ! -e config/agentconf.ini.bak ]; then
-        cp config/agentconf.ini config/agentconf.ini.bak
+    if [ ! -e ${CONFIG_FILE}.bak ]; then
+        cp ${CONFIG_FILE} ${CONFIG_FILE}.bak
     fi
     # Update the config file for the agent
-    cp config/agentconf.ini.in config/agentconf.ini
-    sed -i "s/@@AGENT_CONF_XMPP_SERVER@@/${PUBLIC_XMPP_SERVER_ADDRESS}/" config/agentconf.ini
-    sed -i "s/@@AGENT_CONF_XMPP_PORT@@/${PUBLIC_XMPP_SERVER_PORT}/" config/agentconf.ini
-    sed -i "s/@@AGENT_CONF_XMPP_PASSWORD@@/${PUBLIC_XMPP_SERVER_PASSWORD}/" config/agentconf.ini
-    sed -i "s/@@AGENT_CONF_XMPP_MUC_DOMAIN@@/${PUBLIC_XMPP_SERVER_MUCHOST}/" config/agentconf.ini
-    sed -i "s/@@AGENT_CONF_XMPP_MUC_PASSWORD@@/${PUBLIC_XMPP_SERVER_MUCPASSWORD}/" config/agentconf.ini
-    sed -i "s/@@XMPP_PASSWORD@@/${XMPP_SERVER_PASSWORD}/" config/agentconf.ini
-    sed -i "s/@@CHATROOM_SERVER@@/${XMPP_MUC_SERVER}/" config/agentconf.ini
-    sed -i "s/@@CHATROOM_PASSWORD@@/${XMPP_SERVER_MUCPASSWORD}/" config/agentconf.ini
-	sed -i "s/@@CHAT_DOMAIN@@/${CHAT_DOMAIN}/" config/agentconf.ini
-	sed -i "s/@@AGENT_AES_KEY_32_CHARS@@/${AES_KEY}/" config/agentconf.ini
-	unix2dos config/agentconf.ini
+    crudini --set ${CONFIG_FILE} configuration_server confserver ${PUBLIC_XMPP_SERVER_ADDRESS}
+    crudini --set ${CONFIG_FILE} configuration_server confport ${PUBLIC_XMPP_SERVER_PORT}
+    crudini --set ${CONFIG_FILE} configuration_server confpassword ${PUBLIC_XMPP_SERVER_PASSWORD}
+    crudini --set ${CONFIG_FILE} configuration_server keyAES32 ${AES_KEY}
+    crudini --set ${CONFIG_FILE} connection password ${XMPP_SERVER_PASSWORD}
+    crudini --set ${CONFIG_FILE} chat domain ${CHAT_DOMAIN}
+	unix2dos ${CONFIG_FILE}
 }
 
 update_generation_options_file() {
@@ -284,20 +249,17 @@ update_generation_options_file() {
 }
 
 extract_parameters() {
+    CONFIG_FILE='config/agentconf.ini'
     # Extract current parameters from agentconf.ini and .generation_options
 	# Check that agentconf.ini is present
-	if [ -e config/agentconf.ini ]; then
-		colored_echo blue "Extracting parameters from previous config file (config/agentconf.ini)."
-        CONFIG_OPTIONS="--conf-xmppserver=$(crudini --get config/agentconf.ini configuration_server confserver)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --conf-xmppport=$(crudini --get config/agentconf.ini configuration_server confport)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --conf-xmpppasswd=$(crudini --get config/agentconf.ini configuration_server confpassword)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --conf-xmppmuchost=$(crudini --get config/agentconf.ini configuration_server confmuc_domain)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --conf-xmppmucpasswd=$(crudini --get config/agentconf.ini configuration_server confmuc_password)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --xmpp-passwd=$(crudini --get config/agentconf.ini connection password)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --xmpp-mucserver=$(crudini --get config/agentconf.ini chatroom server)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --xmpp-mucpasswd=$(crudini --get config/agentconf.ini chatroom password)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --chat-domain=$(crudini --get config/agentconf.ini chat domain)"
-        CONFIG_OPTIONS="${CONFIG_OPTIONS} --aes-key=$(crudini --get config/agentconf.ini configuration_server keyAES32)"
+	if [ -e ${CONFIG_FILE} ]; then
+		colored_echo blue "Extracting parameters from previous config file (${CONFIG_FILE})."
+        CONFIG_OPTIONS="--conf-xmppserver=$(crudini --get ${CONFIG_FILE} configuration_server confserver)"
+        CONFIG_OPTIONS="${CONFIG_OPTIONS} --conf-xmppport=$(crudini --get ${CONFIG_FILE} configuration_server confport)"
+        CONFIG_OPTIONS="${CONFIG_OPTIONS} --conf-xmpppasswd=$(crudini --get ${CONFIG_FILE} configuration_server confpassword)"
+        CONFIG_OPTIONS="${CONFIG_OPTIONS} --aes-key=$(crudini --get ${CONFIG_FILE} configuration_server keyAES32)"
+        CONFIG_OPTIONS="${CONFIG_OPTIONS} --xmpp-passwd=$(crudini --get ${CONFIG_FILE} connection password)"
+        CONFIG_OPTIONS="${CONFIG_OPTIONS} --chat-domain=$(crudini --get ${CONFIG_FILE} chat domain)"
 	else
 		colored_echo blue "No previous config file found. Parameters needed at runtime"
 	fi
