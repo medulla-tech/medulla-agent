@@ -93,7 +93,6 @@ SUBSCRIPTIONS = [SUBSCRIPTION_NETALIVE,
                  SUBSCRIPTION_REACH_NOQOC,
                  SUBSCRIPTION_REACH_NOQOC2 ]
 
-
 SENSGUID_EVENTCLASS_NETWORK = '{d5978620-5b9f-11d1-8dd2-00aa004abd5e}'
 SENSGUID_PUBLISHER = "{5fee1bd6-5b9b-11d1-8dd2-00aa004abd5e}"
 
@@ -106,7 +105,6 @@ def GetIpAddrTable():
         It can be used, for example, to find out the IP addresses
         assigned to all network interfaces on this computer.
 
-
         The value returned is a list of dictionaries, each with
         the following entries:
             ip_raw:     IP address, in raw format (long integer)
@@ -117,12 +115,11 @@ def GetIpAddrTable():
             reasm_size: Maximum reassembly size
             type:       Address type or state
 
-        Raises WindowsError if there's some a accessing the 
+        Raises WindowsError if there's some a accessing the
         system DLL.
 
-
         Note: The is basically a wrapper around GetIpAddrTable()
-        from the Platform SDK. Read the documentation of that 
+        from the Platform SDK. Read the documentation of that
         function for more information.
     """
     DWORD = ctypes.c_ulong
@@ -131,11 +128,10 @@ def GetIpAddrTable():
 
     dwSize = DWORD(0)
 
-
     # First call to receive the correct dwSize back.
     #
     windll.iphlpapi.GetIpAddrTable(NULL, ctypes.byref(dwSize), 0)
- 
+
     class MIB_IPADDRROW(ctypes.Structure):
         _fields_ = [('dwAddr', DWORD),
                     ('dwIndex', DWORD),
@@ -150,8 +146,8 @@ def GetIpAddrTable():
                     ('table', MIB_IPADDRROW * dwSize.value)]
 
     ipTable = MIB_IPADDRTABLE()
-    rc = windll.iphlpapi.GetIpAddrTable(  ctypes.byref(ipTable), 
-                                        ctypes.byref(dwSize), 
+    rc = windll.iphlpapi.GetIpAddrTable(  ctypes.byref(ipTable),
+                                        ctypes.byref(dwSize),
                                         0)
     if rc != 0:
         raise WindowsError, "GetIpAddrTable returned %d" % rc
@@ -204,7 +200,6 @@ class NetworkManager(DesignatedWrapPolicy):
 ##                        'ConnectionMadeNoQOCInfo',
 ##                        'ConnectionLost']
     _public_methods_ = ['ConnectionMadeNoQOCInfo']
-
     _reg_clsid_ = '{41B032DA-86B5-4907-A7F7-958E59333010}'
     _reg_progid_ = "WaptService.NetworkManager"
 
@@ -218,7 +213,6 @@ class NetworkManager(DesignatedWrapPolicy):
 ##    def on_timer(self):
 ##        thread_id = win32api.GetCurrentThreadId()
 ##        win32api.PostThreadMessage(self.main_thread_id, WM_QUIT, 0, 0);
-
 
     def ConnectionMade(self, *args):
         """Tell that the connection is up again."""
@@ -279,7 +273,6 @@ class NetworkManager(DesignatedWrapPolicy):
         win32file.WriteFile(fileHandle, message)
         win32file.CloseHandle(fileHandle)
 
-
     def run(self):
         global iplist
         """Thread run
@@ -287,7 +280,7 @@ class NetworkManager(DesignatedWrapPolicy):
         >>> p = Thread(target=manager.run)
         >>> p.start()
         """
-        pilemessage = deque() 
+        pilemessage = deque()
         self.register()
         #pythoncom.PumpMessages()
         service_logger.info("start listen network interface")
@@ -352,6 +345,7 @@ if __name__ == '__main__':
 
     def disconnected():
         print('Disconnected')
+
     manager = NetworkManager(connected, disconnected)
     process = Thread(target=manager.run)
     process.start()

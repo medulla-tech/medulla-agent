@@ -1,0 +1,1311 @@
+;
+; (c) 2016 siveo, http://www.siveo.net
+;
+; This file is part of Pulse 2, http://www.siveo.net
+;
+; Pulse 2 is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 2 of the License, or
+; (at your option) any later version.
+;
+; Pulse 2 is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with Pulse 2; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+; MA 02110-1301, USA.
+
+
+; Make sure the installer runs as admin
+RequestExecutionLevel admin
+
+; Define a few variables
+!define PRODUCT_NAME "Pulse Agent"
+!define PRODUCT_PUBLISHER "SIVEO"
+!define PRODUCT_WEB_SITE "http://www.siveo.net"
+!define PRODUCT_VERSION "@@PRODUCT_VERSION@@"
+!define PRODUCT_DIR_REGKEY "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_ROOT_KEY "HKLM"
+!define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
+!define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
+!define USERDIR "c:\Users"
+!define PROGRAMDATA "C:\ProgramData"
+
+; Variables replaced by the script calling the nsi
+!define DOWNLOADS_DIR "@@DOWNLOADS_DIR@@"
+!define PYTHON32_FILENAME "@@PYTHON32_FILENAME@@"
+!define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
+!define PY_VCPYTHON27 "@@PY_VCPYTHON27@@"
+!define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
+!define PY_WIN3232_FILENAME "@@PY_WIN3232_FILENAME@@"
+!define PY_WIN3264_FILENAME "@@PY_WIN3264_FILENAME@@"
+!define PY_NETIFACES_FILENAME "@@PY_NETIFACES_FILENAME@@"
+!define PY_COMTYPES_FILENAME "@@PY_COMTYPES_FILENAME@@"
+!define PY_CONFIGPARSER_FILENAME "@@PY_CONFIGPARSER_FILENAME@@"
+!define PY_UTILS_FILENAME "@@PY_UTILS_FILENAME@@"
+!define PY_SLEEKXMPP_FILENAME "@@PY_SLEEKXMPP_FILENAME@@"
+!define PY_WMI_FILENAME "@@PY_WMI_FILENAME@@"
+!define PY_ZIPFILE_FILENAME "@@PY_ZIPFILE_FILENAME@@"
+!define PY_CURL32_FILENAME "@@PY_CURL32_FILENAME@@"
+!define PY_CURL64_FILENAME "@@PY_CURL64_FILENAME@@"
+!define PY_LXML32_FILENAME "@@PY_LXML32_FILENAME@@"
+!define PY_LXML64_FILENAME "@@PY_LXML64_FILENAME@@"
+!define PY_CRYPTO_FILENAME "@@PY_CRYPTO_FILENAME@@"
+!define PY_CRON_FILENAME "@@PY_CRON_FILENAME@@"
+!define PY_CRON_DEPS_1_FILENAME "@@PY_CRON_DEPS_1_FILENAME@@"
+!define PY_CRON_DEPS_2_FILENAME "@@PY_CRON_DEPS_2_FILENAME@@"
+!define PY_PSUTIL32_FILENAME "@@PY_PSUTIL32_FILENAME@@"
+!define PY_PSUTIL64_FILENAME "@@PY_PSUTIL64_FILENAME@@"
+!define PY_SFTP_FILENAME "@@PY_SFTP_FILENAME@@"
+!define PY_SFTP_DEPS_1_FILENAME "@@PY_SFTP_DEPS_1_FILENAME@@"
+!define PY_SFTP_DEPS_2_FILENAME "@@PY_SFTP_DEPS_2_FILENAME@@"
+!define PY_SYNCTHING_FILENAME "@@PY_SYNCTHING_FILENAME@@"
+!define PY_REQUESTS_FILENAME "@@PY_REQUESTS_FILENAME@@"
+!define PY_REQUESTS_DEPS_1_FILENAME "@@PY_REQUESTS_DEPS_1_FILENAME@@"
+!define PY_REQUESTS_DEPS_2_FILENAME "@@PY_REQUESTS_DEPS_2_FILENAME@@"
+!define PY_REQUESTS_DEPS_3_FILENAME "@@PY_REQUESTS_DEPS_3_FILENAME@@"
+!define PY_REQUESTS_DEPS_4_FILENAME "@@PY_REQUESTS_DEPS_4_FILENAME@@"
+!define PY_PATHLIB_FILENAME "@@PY_PATHLIB_FILENAME@@"
+!define PULSE_AGENT "@@PULSE_AGENT@@"
+!define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define PULSE_SCHEDULER_CONFFILE "@@PULSE_SCHEDULER_CONFFILE@@"
+!define PULSE_INVENTORY_CONFFILE "@@PULSE_INVENTORY_CONFFILE@@"
+!define PULSE_AGENT_NAME "@@PULSE_AGENT_NAME@@"
+!define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
+!define PULSE_AGENT_TASK_XML "@@PULSE_AGENT_TASK_XML@@"
+!define OPENSSH_NAME "@@OPENSSH_NAME@@"
+!define OPENSSH32_FILENAME "@@OPENSSH32_FILENAME@@"
+!define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
+!define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
+!define SSH_PORT "@@SSH_PORT@@"
+!define FUSION_INVENTORY_AGENT32_FILENAME "@@FUSION_INVENTORY_AGENT32_FILENAME@@"
+!define FUSION_INVENTORY_AGENT64_FILENAME "@@FUSION_INVENTORY_AGENT64_FILENAME@@"
+!define INVENTORY_TAG "@@INVENTORY_TAG@@"
+!define PULSE_AGENT_PLUGINS "@@PULSE_AGENT_PLUGINS@@"
+!define PULSE_AGENT_PLUGINS_NAME "@@PULSE_AGENT_PLUGINS_NAME@@"
+!define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
+!define GENERATED_SIZE "@@GENERATED_SIZE@@"
+!define VNC_AGENT32_FILENAME "@@VNC_AGENT32_FILENAME@@"
+!define VNC_AGENT64_FILENAME "@@VNC_AGENT64_FILENAME@@"
+!define RFB_PORT "@@RFB_PORT@@"
+!define SYNCTHING32_FILENAME "@@SYNCTHING32_FILENAME@@"
+!define SYNCTHING64_FILENAME "@@SYNCTHING64_FILENAME@@"
+!define CREATE_PROFILE_NAME "@@CREATE_PROFILE_NAME@@"
+!define PULSE_SERVICE_NAME "@@PULSE_SERVICE_NAME@@"
+!define NETCHECK_SERVICE_NAME "@@NETCHECK_SERVICE_NAME@@"
+!define NETCHECK_PROGRAM_NAME "@@NETCHECK_PROGRAM_NAME@@"
+!define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
+!define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
+
+SetCompressor lzma
+
+; Modern UI installer stuff
+!include "MUI2.nsh"
+!define MUI_ABORTWARNING
+#!define MUI_ICON "artwork/install.ico"
+!define MUI_WELCOMEPAGE_TITLE_3LINES
+#!define MUI_HEADERIMAGE
+#!define MUI_HEADERIMAGE_RIGHT
+#!define MUI_HEADERIMAGE_BITMAP "artwork/header.bmp"
+#!define MUI_WELCOMEFINISHPAGE_BITMAP "artwork/wizard.bmp"
+
+; UI pages
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_COMPONENTS
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_LANGUAGE "English"
+
+; Other useful modules
+!addincludedir libs
+!include "WinVer.nsh"
+!include "FileFunc.nsh"
+!include "zipdll.nsh"
+!include "LogicLib.nsh"
+!include "Trim.nsh"
+!Include "LogString.nsh"
+!Include "StrTok.nsh"
+!Include "psexec.nsh"
+!include "x64.nsh"
+!include "TextReplace.nsh"
+!include "StrRep.nsh"
+
+
+Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+!If "${INVENTORY_TAG}" == ''
+  OutFile "Pulse-Agent-windows-${GENERATED_SIZE}-${PRODUCT_VERSION}.exe"
+!Else
+  OutFile "Pulse-Agent-windows-${GENERATED_SIZE}-${PRODUCT_VERSION}-${INVENTORY_TAG}.exe"
+!EndIf
+!If "$PROGRAMFILES64" != ""
+  InstallDir "$PROGRAMFILES64\Pulse"
+!Else
+  InstallDir "$PROGRAMFILES\Pulse"
+!EndIf
+InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
+ShowInstDetails show
+
+; Define a few settings
+Section -SETTINGS
+  SetOutPath "$INSTDIR"
+SectionEnd
+
+!define DownloadFile "!insertmacro DownloadFile"
+!macro DownloadFile url filename
+  inetc::get /NOCANCEL ${url} ${filename} /END
+  Pop $0 ;Get the return value
+  StrCmp $0 "OK" +5
+    ${IfNot} ${Silent}
+      MessageBox MB_OK "Download of ${url} failed: $0"
+      Quit
+    ${EndIf}
+!macroend
+
+; Python installation
+Section "Python" sec_py
+  SetOutPath "$INSTDIR\tmp"
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_PYTHON64_FILENAME@@
+  ${Else}
+    @@FULL_OR_DL_PYTHON32_FILENAME@@
+  ${EndIf}
+  @@FULL_OR_DL_PY_VCPYTHON27@@
+  ${LogString} "Python Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; On win32 clean old python if installed
+  ${If} ${RunningX64}
+    ClearErrors
+    ExecWait '"python" -V'
+    ${IfNot} ${Errors}
+        ; Seems Python is installed. We'll try to uninstall the 32bit version
+        ${LogString} "Uninstalling 32bit python if found..."
+        StrCpy $0 `msiexec /x "$INSTDIR\tmp\${PYTHON32_FILENAME}" /qn REBOOT=R`
+        ${LogString} "Running $0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+        ${LogString} "Return code was: $1"
+        ${LogString} ""
+    ${EndIf}
+  ${EndIf}
+
+  ; Install of Python
+  ; Get location
+  Var /GLOBAL PYTHON_FILENAME
+  ${If} ${RunningX64}
+    StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
+  ${Else}
+    StrCpy $PYTHON_FILENAME "${PYTHON32_FILENAME}"
+  ${EndIf}
+  ; Install Python
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\$PYTHON_FILENAME" /quiet /qn /norestart ALLUSERS=1 ADDLOCAL=ALL REMOVE="pip_feature"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ; Install pip
+  StrCpy $0 `C:\Python27\python.exe -m ensurepip`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Visual C++ Compiler for Python
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27}" /quiet /qn /norestart ALLUSERS=1`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${PYTHON32_FILENAME}
+  Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
+  Delete $INSTDIR\tmp\${PY_VCPYTHON27}
+SectionEnd
+
+; Installation of Python modules needed by Pulse Agent
+Section "Python Modules" sec_pymod
+  SetOutPath "$INSTDIR\tmp"
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_PY_WIN3264@@
+  ${Else}
+    @@FULL_OR_DL_PY_WIN3232@@
+  ${EndIf}
+  @@FULL_OR_DL_PY_NETIFACES@@
+  @@FULL_OR_DL_PY_COMTYPES@@
+  @@FULL_OR_DL_PY_CONFIGPARSER@@
+  @@FULL_OR_DL_PY_UTILS@@
+  @@FULL_OR_DL_PY_SLEEKXMPP@@
+  @@FULL_OR_DL_PY_WMI@@
+  @@FULL_OR_DL_PY_ZIPFILE@@
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_PY_CURL64@@
+  ${Else}
+    @@FULL_OR_DL_PY_CURL32@@
+  ${EndIf}
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_PY_LXML64@@
+  ${Else}
+    @@FULL_OR_DL_PY_LXML32@@
+  ${EndIf}
+  @@FULL_OR_DL_PY_CRYPTO@@
+  @@FULL_OR_DL_PY_CRON@@
+  @@FULL_OR_DL_PY_CRON_DEPS_1@@
+  @@FULL_OR_DL_PY_CRON_DEPS_2@@
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_PY_PSUTIL64@@
+  ${Else}
+    @@FULL_OR_DL_PY_PSUTIL32@@
+  ${EndIf}
+  @@FULL_OR_DL_PY_SFTP@@
+  @@FULL_OR_DL_PY_SFTP_DEPS_1@@
+  @@FULL_OR_DL_PY_SFTP_DEPS_2@@
+  @@FULL_OR_DL_PY_SYNCTHING@@
+  @@FULL_OR_DL_PY_REQUESTS@@
+  @@FULL_OR_DL_PY_REQUESTS_DEPS_1@@
+  @@FULL_OR_DL_PY_REQUESTS_DEPS_2@@
+  @@FULL_OR_DL_PY_REQUESTS_DEPS_3@@
+  @@FULL_OR_DL_PY_REQUESTS_DEPS_4@@
+  @@FULL_OR_DL_PY_PATHLIB@@
+  File "${DOWNLOADS_DIR}/usr/bin/${LIBCURL_FILENAME}"
+  ${LogString} "Python modules Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Install of Python module for Windows Extensions (pywin32)
+  ${If} ${RunningX64}
+    @@INSTALL_FULL_OR_DL_PY_WIN3264@@
+  ${Else}
+    @@INSTALL_FULL_OR_DL_PY_WIN3232@@
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python netifaces module
+  @@INSTALL_FULL_OR_DL_PY_NETIFACES@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python comtypes module
+  @@INSTALL_FULL_OR_DL_PY_COMTYPES@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python configparser module
+  @@INSTALL_FULL_OR_DL_PY_CONFIGPARSER@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python utils module
+  @@INSTALL_FULL_OR_DL_PY_UTILS@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python sleekxmpp module
+  @@INSTALL_FULL_OR_DL_PY_SLEEKXMPP@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python wmi module
+  @@INSTALL_FULL_OR_DL_PY_WMI@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python zipfile module
+  @@INSTALL_FULL_OR_DL_PY_ZIPFILE@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Copy libcurl DLL to system32 folder
+  CopyFiles /SILENT "$INSTDIR\tmp\${LIBCURL_FILENAME}" "$SYSDIR"
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ; This requires a reboot
+  SetRebootFlag true
+
+  ; Install of Python curl module (pycurl)
+  ${If} ${RunningX64}
+    @@INSTALL_FULL_OR_DL_PY_CURL64@@
+  ${Else}
+    @@INSTALL_FULL_OR_DL_PY_CURL32@@
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python lxml module
+  ${If} ${RunningX64}
+    @@INSTALL_FULL_OR_DL_PY_LXML64@@
+  ${Else}
+    @@INSTALL_FULL_OR_DL_PY_LXML32@@
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python crypto module
+  @@INSTALL_FULL_OR_DL_PY_CRYPTO@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python croniter module
+  @@INSTALL_FULL_OR_DL_PY_CRON@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python psutil module
+  ${If} ${RunningX64}
+    @@INSTALL_FULL_OR_DL_PY_PSUTIL64@@
+  ${Else}
+    @@INSTALL_FULL_OR_DL_PY_PSUTIL32@@
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python sftp module
+  @@INSTALL_FULL_OR_DL_PY_SFTP@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python syncthing module
+  @@INSTALL_FULL_OR_DL_PY_SYNCTHING@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python requests module
+  @@INSTALL_FULL_OR_DL_PY_REQUESTS@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Python requests module
+  @@INSTALL_FULL_OR_DL_PY_PATHLIB@@
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${PY_WIN3232_FILENAME}
+  Delete $INSTDIR\tmp\${PY_WIN3264_FILENAME}
+  Delete $INSTDIR\tmp\${PY_NETIFACES_FILENAME}
+  Delete $INSTDIR\tmp\${PY_COMTYPES_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CONFIGPARSER_FILENAME}
+  Delete $INSTDIR\tmp\${PY_UTILS_FILENAME}
+  Delete $INSTDIR\tmp\${PY_SLEEKXMPP_FILENAME}
+  Delete $INSTDIR\tmp\${PY_WMI_FILENAME}
+  Delete $INSTDIR\tmp\${PY_ZIPFILE_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CURL32_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CURL64_FILENAME}
+  Delete $INSTDIR\tmp\${PY_LXML32_FILENAME}
+  Delete $INSTDIR\tmp\${PY_LXML64_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CRYPTO_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CRON_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CRON_DEPS_1_FILENAME}
+  Delete $INSTDIR\tmp\${PY_CRON_DEPS_2_FILENAME}
+  Delete $INSTDIR\tmp\${PY_PSUTIL32_FILENAME}
+  Delete $INSTDIR\tmp\${PY_PSUTIL64_FILENAME}
+  Delete $INSTDIR\tmp\${PY_SFTP_FILENAME}
+  Delete $INSTDIR\tmp\${PY_SFTP_DEPS_1_FILENAME}
+  Delete $INSTDIR\tmp\${PY_SFTP_DEPS_2_FILENAME}
+  Delete $INSTDIR\tmp\${PY_SYNCTHING_FILENAME}
+  Delete $INSTDIR\tmp\${PY_REQUESTS_FILENAME}
+  Delete $INSTDIR\tmp\${PY_REQUESTS_DEPS_1_FILENAME}
+  Delete $INSTDIR\tmp\${PY_REQUESTS_DEPS_2_FILENAME}
+  Delete $INSTDIR\tmp\${PY_REQUESTS_DEPS_3_FILENAME}
+  Delete $INSTDIR\tmp\${PY_REQUESTS_DEPS_4_FILENAME}
+  Delete $INSTDIR\tmp\${PY_PATHLIB_FILENAME}
+  Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
+SectionEnd
+
+; OpenSSH installation
+Section "OpenSSH" sec_openssh
+  SetOutPath "$INSTDIR\tmp"
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_OPENSSH64@@
+  ${Else}
+    @@FULL_OR_DL_OPENSSH32@@
+  ${EndIf}
+  File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
+
+  ; Remove previous Pulse profile
+  Var /GLOBAL P_PROFILE
+  !insertmacro StrRep $0 ${USERDIR} "\" "\\"
+  Pop $0
+  StrCpy $P_PROFILE $0
+  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  RMDir /r "${USERDIR}\pulse*"
+
+
+  ; Create Pulse user and copy laucher public key
+  pwgen::GeneratePassword 12
+  Pop $0
+  Var /GLOBAL Password
+  StrCpy $Password "$0"
+  StrCpy $0 `net user "pulseuser" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
+  ${LogString} "Running net user pulseuser ************ /ADD /COMMENT:Pulse user with admin rights on the system "
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Create pulse user profile
+  ${LogString} "-------------------"
+  ${LogString} "Create pulseuser profile"
+  SetOutPath "$INSTDIR\tmp"
+  File "${CREATE_PROFILE_NAME}"
+  ${PowerShellExecLog} "import-module .\${CREATE_PROFILE_NAME}; New-Profile -Account pulseuser"
+  Delete $INSTDIR\tmp\${CREATE_PROFILE_NAME}
+
+  ; Create Pulse user and copy laucher public key
+  CreateDirectory ${USERDIR}\pulseuser\.ssh
+  AccessControl::GRANTONFILE /NOINHERIT "${USERDIR}\pulseuser" "(BA)" "FullAccess"
+  AccessControl::GRANTONFILE /NOINHERIT "${USERDIR}\pulseuser\.ssh" "(BA)" "FullAccess"
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ${LogString} "OpenSSH Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Install of OpenSSH
+  ; Get location
+  Var /GLOBAL SSH_PATH
+  Var /GLOBAL OPENSSH_FILENAME
+  Var /GLOBAL OPENSSH_CONTENTS_FOLDER
+  ${If} ${RunningX64}
+    StrCpy $OPENSSH_FILENAME "${OPENSSH64_FILENAME}"
+    StrCpy $SSH_PATH "$PROGRAMFILES64\${OPENSSH_NAME}"
+    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win64"
+  ${Else}
+    StrCpy $OPENSSH_FILENAME "${OPENSSH32_FILENAME}"
+    StrCpy $SSH_PATH "$PROGRAMFILES\${OPENSSH_NAME}"
+    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win32"
+  ${EndIf}
+  ; Uninstall OpenSSH if found
+  IfFileExists "$SSH_PATH" 0 +3
+  ${PowerShellExecFileLog} "$SSH_PATH\uninstall-sshd.ps1"
+  RMDir /r "$SSH_PATH"
+  ; Uninstall Mandriva SSH if found
+  IfFileExists $PROGRAMFILES\Mandriva\OpenSSH 0 +5
+  StrCpy $0 `$PROGRAMFILES\Mandriva\OpenSSH\uninst.exe /S`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  RMDir /r "$PROGRAMFILES\Mandriva\OpenSSH"
+  ; Extract OpenSSH
+  ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
+  Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
+  ; Update service installer and uninstaller scripts
+  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "New-Service -Name sshd" "New-Service -Name sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "sc.exe config sshd" "sc.exe config sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "sc.exe privs sshd" "sc.exe privs sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
+  ${LogString} "-------------------"
+  SetOutPath "${USERDIR}\pulseuser\.ssh"
+  File /oname=authorized_keys "${LAUNCHER_SSH_KEY}"
+  StrCpy $0 `attrib +h ${USERDIR}\pulseuser`
+  ${LogString} "Running ATTR $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${PowerShellExecFileLog} "$SSH_PATH\install-sshd.ps1"
+
+  ; Configure SSH server
+  CreateDirectory "${PROGRAMDATA}\ssh"
+  CopyFiles /SILENT "$SSH_PATH\sshd_config_default" "${PROGRAMDATA}\ssh\sshd_config"
+
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#Port 22" "Port ${SSH_PORT}" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#PubkeyAuthentication yes" "PubkeyAuthentication yes" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#PasswordAuthentication yes" "PasswordAuthentication no" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#PidFile /var/run/sshd.pid" "PidFile C:\Windows\Temp\sshd.pid" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "AuthorizedKeysFile	.ssh/authorized_keys" "AuthorizedKeysFile	$\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#SyslogFacility AUTH" "SyslogFacility LOCAL0" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "Match Group administrators" "#Match Group administrators" "/S=1 /C=1 /AO=1" $0
+  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys" "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys" "/S=1 /C=1 /AO=1" $0
+
+  ; Configure SSH server to start automatically at boot
+  StrCpy $0 `sc.exe config ssh-agent start= auto`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `sc.exe config sshdaemon start= auto`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Generate SSH Keys
+  SetOutPath "$SSH_PATH"
+  StrCpy $0 `"$SSH_PATH\ssh-keygen.exe" -A`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ${LogString} "Setting permissions on pulse user profile folder"
+  StrCpy $0 `wmic useraccount where name="pulseuser" get sid /VALUE`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  ${If} $0 = 0
+    Pop $1
+    ${Trim} $0 $1
+    ${StrTok} $0 "$0" "=" "L" "1"
+    Var /GLOBAL SID
+    StrCpy $SID "$0"
+    ${LogString} "User SID: $SID"
+    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$SID" "ProfileImagePath" "${USERDIR}\pulseuser"
+  ${Else}
+    ${LogString} "Return code was: $0"
+  ${EndIf}
+  Pop $R0
+  ${If} $R0 == error
+    Pop $R0
+    ${LogString} "AccessControl error: $R0"
+  ${EndIf}
+  ${LogString} "-------------------"
+
+  ; Set pulse account password to not expire
+  StrCpy $0 `wmic useraccount where "Name='pulseuser'" set PasswordExpires=False`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Add pulse user to administrators group in English, French and Portugese
+  StrCpy $0 `net localgroup administrators "pulseuser" /ADD`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `net localgroup administrateurs "pulseuser" /ADD`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `net localgroup administradores "pulseuser" /ADD`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ; Hide the account
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; .\FixHostFilePermissions.ps1 -Confirm:$$false"
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+
+  ; Check and configure permissions
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub"
+  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys"
+
+  ; Start the service
+  StrCpy $0 `sc start ssh-agent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  StrCpy $0 `sc start sshdaemon`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Setup of Windows firewall to allow ssh
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of rsync
+  ; Install rsync only if Nytrio agent does not exist
+  IfFileExists $PROGRAMFILES\Nytrio\OpenSSH +16 0
+  ; Extract rsync
+  ZipDLL::extractall "$INSTDIR\tmp\${RSYNC_FILENAME}" "$INSTDIR\tmp\"
+  ; Copy rsync files to System32/SysWOW64 folder
+  ${DisableX64FSRedirection}
+  ${If} ${RunningX64}
+    CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$WINDIR\SysWOW64\"
+  ${Else}
+    CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$WINDIR\System32\"
+  ${EndIf}
+  ${EnableX64FSRedirection}
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+  ; This requires a reboot
+  SetRebootFlag true
+
+  Delete $INSTDIR\tmp\${OPENSSH32_FILENAME}
+  Delete $INSTDIR\tmp\${OPENSSH64_FILENAME}
+  Delete $INSTDIR\tmp\${RSYNC_FILENAME}
+  RMDir /r $INSTDIR\tmp\rsync
+  RMDir /r "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
+SectionEnd
+
+; Setup of RDP & Firewall
+Section "RDP Setup" sec_rdp
+  ${LogString} "RDP setup for remote control of machine via Pulse...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Setup of rdp
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fDenyTSConnections" 0
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fSingleSessionPerUser" 0
+  ${If} ${AtLeastWin7}
+    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "UserAuthentication" 0
+  ${EndIf}
+  ${If} ${AtLeastWin7}
+    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "SecurityLayer" 0
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Setup of Windows firewall to allow vnc
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Setup of Windows firewall to allow rdp
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+SectionEnd
+
+Section "VNC Setup" sec_vnc
+  SetOutPath "$INSTDIR\tmp"
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_VNC_AGENT64@@
+  ${Else}
+    @@FULL_OR_DL_VNC_AGENT32@@
+  ${EndIf}
+  ${LogString} "VNC setup for remote control of machine via Pulse...."
+  ${LogString} "------------------------------------------------------"
+
+  ; On win64 clean old 32bit TightVNC if installed
+  ${If} ${RunningX64}
+    IfFileExists $PROGRAMFILES\TightVNC\tvnserver.exe 0 +8
+    ${LogString} "TightVNC seems to be installed. Uninstalling..."
+    StrCpy $0 `msiexec /x "$INSTDIR\tmp\${VNC_AGENT32_FILENAME}" /qn REBOOT=R`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${LogString} ""
+  ${EndIf}
+
+  ; Get location
+  Var /GLOBAL VNC_AGENT_FILENAME
+  ${If} ${RunningX64}
+    StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT64_FILENAME}"
+  ${Else}
+    StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT32_FILENAME}"
+  ${EndIf}
+  ; Install VNC
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ; Create installation command line                                                          ;
+  ; http://www.tightvnc.com/doc/win/TightVNC_2.7_for_Windows_Installing_from_MSI_Packages.pdf ;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\$VNC_AGENT_FILENAME" /quiet /qn /norestart`
+  StrCpy $0 `$0 ADDLOCAL=Server SERVER_REGISTER_AS_SERVICE=1 SERVER_ADD_FIREWALL_EXCEPTION=1 SERVER_ALLOW_SAS=1`
+  ; Disable embedded Java WebSrv on port 5800
+  StrCpy $0 `$0 SET_ACCEPTHTTPCONNECTIONS=1 VALUE_OF_ACCEPTHTTPCONNECTIONS=0`
+  ; Enable RFB on port 5900
+  StrCpy $0 `$0 SET_ACCEPTRFBCONNECTIONS=1 VALUE_OF_ACCEPTRFBCONNECTIONS=1`
+  ; Enable loopback connection
+  StrCpy $0 `$0 SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1`
+  ; Allow on all interfaces
+  StrCpy $0 `$0 SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=0`
+  ; Only allow from 127.0.0.1 and query user
+  StrCpy $0 `$0 SET_IPACCESSCONTROL=1 VALUE_OF_IPACCESSCONTROL=0.0.0.0-255.255.255.255:2`
+  ; Default answser on timeout is reject
+  StrCpy $0 `$0 SET_QUERYACCEPTONTIMEOUT=1 VALUE_OF_QUERYACCEPTONTIMEOUT=0`
+  ; Timeout is 20s
+  StrCpy $0 `$0 SET_QUERYTIMEOUT=1 VALUE_OF_QUERYTIMEOUT=20`
+  ; Show service icon
+  StrCpy $0 `$0 SET_RUNCONTROLINTERFACE=1 VALUE_OF_RUNCONTROLINTERFACE=1`
+  ; Hide wallpaper
+  StrCpy $0 `$0 SET_REMOVEWALLPAPER=1 VALUE_OF_REMOVEWALLPAPER=1`
+  ; Share between multiple connection
+  StrCpy $0 `$0 SET_ALWASHARED=1 SET_NEVERSHARED=1 VALUE_OF_ALWASHARED=1 VALUE_OF_NEVERSHARED=0`
+  ; Disable authentication
+  StrCpy $0 `$0 SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=0`
+  ; Ensure remote inputs are enabled
+  StrCpy $0 `$0 SET_BLOCKREMOTEINPUT=1 VALUE_OF_BLOCKREMOTEINPUT=0`
+  ; Don't do anything when terminating VNC session
+  StrCpy $0 `$0 SET_DISCONNECTACTION=1 VALUE_OF_DISCONNECTACTION=0`
+  ; Set the server listening port
+  StrCpy $0 `$0 SET_RFBPORT=1 VALUE_OF_RFBPORT=${RFB_PORT}`
+
+
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${VNC_AGENT32_FILENAME}
+  Delete $INSTDIR\tmp\${VNC_AGENT64_FILENAME}
+SectionEnd
+
+; Setup of Fusion Inventory agent
+Section "Fusion Inventory agent" sec_fusinv
+  SetOutPath "$INSTDIR\tmp"
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
+  ${Else}
+    @@FULL_OR_DL_FUSION_INVENTORY_AGENT32@@
+  ${EndIf}
+  ${LogString} "Fusion Inventory agent setup...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Clean old Fusion Inventory agent if installed
+  ClearErrors
+  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\FusionInventory-Agent" "UninstallString"
+  ${IfNot} ${Errors}
+    ; Seems Fusion Inventory agent is installed
+    ${LogString} "Fusion Inventory agent seems to be installed. Uninstalling..."
+    ; Silent uninstall
+    StrCpy $0 `"$0" /S`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${LogString} ""
+  ${EndIf}
+
+  ; Install of Fusion Inventory agent
+  ; Get location
+  Var /GLOBAL FUSION_INVENTORY_AGENT_FILENAME
+  ${If} ${RunningX64}
+    StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT64_FILENAME}"
+  ${Else}
+    StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT32_FILENAME}"
+  ${EndIf}
+  ; Install Fusion Inventory agent
+  !If "${INVENTORY_TAG}" == ''
+    StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch`
+  !Else
+    StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch /tag="${INVENTORY_TAG}"`
+  !EndIf
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT32_FILENAME}
+  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT64_FILENAME}
+SectionEnd
+
+; Installation of Pulse Agent
+Section "!${PRODUCT_NAME}" sec_app
+  SetOutPath "$INSTDIR\tmp"
+  File "../${PULSE_AGENT}"
+  File "../${PULSE_AGENT_PLUGINS}"
+  ${If} ${RunningX64}
+    @@FULL_OR_DL_SYNCTHING64@@
+  ${Else}
+    @@FULL_OR_DL_SYNCTHING32@@
+  ${EndIf}
+  ${LogString} "Pulse Agent Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Remove Pulse folder if present
+  ClearErrors
+  ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
+  ${IfNot} ${Errors}
+    ; Remove pulse parameters Folder
+    Delete "$INSTDIR\etc\*.*"
+  ${EndIf}
+
+  ; Install of Pulse agent
+  StrCpy $0 `C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Install of Pulse agent plugins
+  StrCpy $0 `C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_PLUGINS}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Copy of pulse filetree generator
+  SetOutPath "$INSTDIR\bin"
+  File "pulse-filetree-generator.exe"
+
+  ; Copy syncthing exe to pulse\bin folder
+  Var /GLOBAL SYNCTHING_FILENAME
+  Var /GLOBAL SYNCTHING_FOLDERNAME
+  ${If} ${RunningX64}
+    StrCpy $SYNCTHING_FILENAME "${SYNCTHING64_FILENAME}"
+  ${Else}
+    StrCpy $SYNCTHING_FILENAME "${SYNCTHING32_FILENAME}"
+  ${EndIf}
+  StrCpy $SYNCTHING_FOLDERNAME "$SYNCTHING_FILENAME" -4
+  ZipDLL::extractall "$INSTDIR\tmp\$SYNCTHING_FILENAME" "$INSTDIR\tmp\"
+  CopyFiles /SILENT "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME\syncthing.exe" "$INSTDIR\bin\"
+  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
+  ; Create symbolic link to syncthing config file from etc
+  StrCpy $0 `cd "$INSTDIR\etc" & mklink syncthing.ini syncthing\config.xml`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Setup of Windows firewall to allow Syncthing
+  ${If} ${IsWinXP}
+    StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
+  ${Else}
+    StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
+  ${EndIf}
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Copy of agent config file
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_AGENT_CONFFILE}"
+
+  ; Copy of agent scheduler config file only if it does not already exist (using overwrite flag)
+  SetOutPath "$INSTDIR\etc"
+  SetOverwrite off
+  File "../config/${PULSE_SCHEDULER_CONFFILE}"
+  SetOverwrite on
+
+  ; Copy of inventory config file
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_INVENTORY_CONFFILE}"
+
+  ; Create log folder to hold agent logs
+  CreateDirectory $INSTDIR\var\log
+
+  ; Create Pulse service
+  SetOutPath "$INSTDIR\bin"
+  File "${PULSE_SERVICE_NAME}"
+  StrCpy $0 `SCHTASKS /Delete /TN "${PRODUCT_NAME}" /F`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_NAME}" --startup=auto install`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Create Network check service
+  SetOutPath "$INSTDIR\bin"
+  File "${NETCHECK_SERVICE_NAME}"
+  File "${NETCHECK_PROGRAM_NAME}"
+  CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${NETCHECK_SERVICE_NAME}" --startup=auto install`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  ; Create packages folder to hold packages to be deployed on client
+  CreateDirectory $INSTDIR\var\tmp\packages
+  ; Create bin folder
+  CreateDirectory $INSTDIR\bin
+
+  ; Run the agent
+  StrCpy $0 `sc start pulseagent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} "-------------------"
+
+  SectionIn RO
+  WriteUninstaller $INSTDIR\uninstall.exe
+  ; Add ourselves to Add/remove programs
+  ${If} ${RunningX64}
+      SetRegView 64
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  ${Else}
+      SetRegView 32
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  ${EndIf}
+
+  ; Write the version installed in registry
+  ${If} ${RunningX64}
+      SetRegView 64
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${PRODUCT_VERSION}"
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+  ${Else}
+      SetRegView 32
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${PRODUCT_VERSION}"
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+  ${EndIf}
+
+  Delete $INSTDIR\tmp\${PULSE_AGENT}
+  Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML}
+  Delete $INSTDIR\tmp\${PULSE_AGENT_PLUGINS}
+  Delete $INSTDIR\tmp\${SYNCTHING32_FILENAME}
+  Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
+
+  ${If} ${RunningX64}
+    RMDir /r "$PROGRAMFILES\Pulse"
+  ${EndIf}
+
+  Sleep 20000
+SectionEnd
+
+; What needs to be done for uninstalling
+Section "Uninstall"
+
+  ; Stop Pulse agent
+  StrCpy $0 `sc stop pulseagent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+  ; Stop Pulse netcheck
+  StrCpy $0 `sc stop pulsenetworknotify`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+  ; Stop syncthing
+  StrCpy $0 `taskkill /F /IM syncthing.exe`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+  ; Remove pulse user
+  StrCpy $0 `net user "pulse" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  RMDir /r "${USERDIR}/pulse*"
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "RMDir Return code was: $1"
+
+  ; Remove OpenSSH
+  StrCpy $0 `sc.exe stop sshdaemon`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc.exe stop ssh-agent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc.exe delete ssh-agent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc.exe delete sshdaemon`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  Delete "$SYSDIR\ssh-lsa.dll"
+
+  ; Uninstall OpenSSH
+  ${If} ${FileExists} "$PROGRAMFILES64\${OPENSSH_NAME}\uninstall-sshd.ps1"
+    ${LogString} "OpenSSH uninstall.."
+    ${LogString} "------------------------------------------------------"
+    ${PowerShellExecFileLog} "$PROGRAMFILES64\${OPENSSH_NAME}\uninstall-sshd.ps1"
+    RMDir /r "$PROGRAMFILES64\OpenSSH"
+  ${Else}
+    ${LogString} "OpenSSH uninstall.."
+    ${LogString} "------------------------------------------------------"
+    ${PowerShellExecFileLog} "$PROGRAMFILES\${OPENSSH_NAME}\uninstall-sshd.ps1"
+    RMDir /r "$PROGRAMFILES\${OPENSSH_NAME}"
+  ${EndIf}
+
+  RMDir /r "${PROGRAMDATA}\ssh"
+  ; Remove libcurl
+  Delete "$SYSDIR\${LIBCURL_FILENAME}"
+
+  ; Uninstall agent
+  StrCpy $0 `sc delete pulseagent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `sc delete pulsenetworknotify`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="Remote Desktop for Pulse"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="SSH for Pulse"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="Syncthing for Pulse"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip uninstall "${PULSE_AGENT_PLUGINS_NAME}" -y`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `C:\Python27\Scripts\pip uninstall "${PULSE_AGENT_MODULE}" -y`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  RMDir /r "C:\Python27\Lib\site-packages\pulse_xmpp_agent\"
+  RMDir /r "C:\Program Files\OpenSSH"
+  RMDir /r "$INSTDIR"
+
+  ; Remove Pulse profile
+  !insertmacro StrRep $0 ${USERDIR} "\" "\\"
+  Pop $0
+  StrCpy $P_PROFILE $0
+  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  RMDir /r /REBOOTOK "${USERDIR}\pulse*"
+
+  DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${NETCHECK_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+
+SectionEnd
+
+; Functions
+
+Function .onInit
+  ; XP or later
+  ${IfNot} ${AtLeastWinXP}
+    MessageBox MB_OK|MB_ICONEXCLAMATION "XP and above required for running ${PRODUCT_NAME}"
+    Quit
+  ${EndIf}
+
+  ; Make sure we are running as admin
+  UserInfo::GetAccountType
+  pop $0
+  ${If} $0 != "admin" ;Require admin rights on NT4+
+    MessageBox mb_iconstop "Administrator rights required!"
+    SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+    Quit
+  ${EndIf}
+
+  ; Create registry keys in 64bit section
+  SetRegView 64
+
+  ; Install log initialization
+  !If "$PROGRAMFILES64" != ""
+    StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
+  !Else
+    StrCpy $INSTDIR "$PROGRAMFILES\Pulse"
+  !EndIf
+  CreateDirectory "$INSTDIR\tmp"
+  ${LogInit} "$INSTDIR\tmp\install.log"
+  ${LogString} "Starting install..."
+  !insertmacro GetTime
+  ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
+  ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
+
+  ; Stop the agent if it is already running and kill all python tasks
+  StrCpy $0 `sc stop pulseagent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} ""
+FunctionEnd
+
+Function un.onInit
+  ; Create registry keys in 64bit section
+  SetRegView 64
+FunctionEnd
+
+Function .onGUIEnd
+  ; Write the log file
+  !insertmacro Log_Close
+FunctionEnd
+
+Function .onMouseOverSection
+  ; Find which section the mouse is over, and set the corresponding description.
+  FindWindow $R0 "#32770" "" $HWNDPARENT
+  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+
+  StrCmp $0 ${sec_py} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+          This is required for ${PRODUCT_NAME} to run."
+
+  StrCmp $0 ${sec_pymod} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Python modules required by ${PRODUCT_NAME}."
+
+  StrCmp $0 ${sec_openssh} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:OpenSSH required for deployment, backup, etc."
+
+  StrCmp $0 ${sec_rdp} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
+
+  StrCmp $0 ${sec_vnc} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup VNC required for remote control"
+
+  StrCmp $0 ${sec_fusinv} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Fusion inventory agent required for inventory"
+
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+FunctionEnd

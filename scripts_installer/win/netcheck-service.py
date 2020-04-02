@@ -160,9 +160,9 @@ class SMWinservice(win32serviceutil.ServiceFramework):
 
 
 class PulseAgentService(SMWinservice):
-    _svc_name_ = "networkpulsenotify"
+    _svc_name_ = "pulsenetworknotify"
     _svc_display_name_ = "Pulse network notify"
-    _svc_description_ = "Network modification notifier"
+    _svc_description_ = "Network events monitoring for Pulse Agent"
     isrunning = False
     isdebug = False
     listnamefilepid=[".PID_NETWORKS_ENVENTS"]

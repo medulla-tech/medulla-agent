@@ -1,0 +1,380 @@
+#!/bin/bash
+PREFIX="$1/Contents/Resources"
+MACOS_VERSION=$(sw_vers |grep ProductVersion|awk '{print $2}'|awk -F "." '{print $1"."$2}')
+INSTALL_PATH="/Library/Application Support/Pulse"
+VNC_PASSWORD=$(uuidgen | sed 's/-//g')
+VNC_PORT="@@VNC_PORT@@"
+BASE_URL="@@BASE_URL@@"
+INVENTORY_TAG="@@INVENTORY_TAG@@"
+CLT_FILENAME="Command_Line_Tools_${MACOS_VERSION}.pkg"
+HOMEBREW_FILENAME="@@HOMEBREW_FILENAME@@"
+FUSION_INVENTORY_AGENT_PKG="@@FUSION_INVENTORY_AGENT_PKG@@"
+FUSION_INVENTORY_AGENT_ARCHIVE="@@FUSION_INVENTORY_AGENT_ARCHIVE@@"
+VNC_SERVER_FILENAME="@@VNC_SERVER_FILENAME@@"
+VNC_SERVER_MOUNTED="@@VNC_SERVER_MOUNTED@@"
+VNC_SERVER_APP="@@VNC_SERVER_APP@@"
+SYNCTHING_FILENAME="@@SYNCTHING_FILENAME@@"
+MODULES_LIST_FILENAMES="@@PY_NETIFACES_FILENAME@@
+                        @@PY_CONFIGPARSER_FILENAME@@
+                        @@PY_UTILS_FILENAME@@
+                        @@PY_SLEEKXMPP_FILENAME@@
+                        @@PY_ZIPFILE_FILENAME@@
+                        @@PY_CURL_FILENAME@@
+                        @@PY_LXML_FILENAME@@
+                        @@PY_CRYPTO_FILENAME@@
+                        @@PY_CRON_DEPS_2_FILENAME@@
+                        @@PY_CRON_DEPS_1_FILENAME@@
+                        @@PY_CRON_FILENAME@@
+                        @@PY_PSUTIL_FILENAME@@
+                        @@PY_PLYVEL_FILENAME@@
+                        @@PY_SFTP_FILENAME@@
+                        @@PY_SFTP_DEPS_2_FILENAME@@
+                        @@PY_SFTP_DEPS_1_FILENAME@@
+                        @@PY_SYNCTHING_FILENAME@@
+                        @@PY_CRON_DEPS_4_FILENAME@@
+                        @@PY_CRON_DEPS_3_FILENAME@@
+                        @@PY_CRON_DEPS_2_FILENAME@@
+                        @@PY_CRON_DEPS_1_FILENAME@@
+                        @@PY_REQUESTS_FILENAME@@"
+PULSE_AGENT_FILENAME="@@PULSE_AGENT_FILENAME@@"
+PULSE_AGENT_PLUGINS_FILENAME="@@PULSE_AGENT_PLUGINS_FILENAME@@"
+PULSE_AGENT_CONFFILE_FILENAME="@@PULSE_AGENT_CONFFILE_FILENAME@@"
+PULSE_SCHEDULER_CONFFILE_FILENAME="@@PULSE_SCHEDULER_CONFFILE_FILENAME@@"
+PULSE_INVENTORY_CONFFILE_FILENAME="@@PULSE_INVENTORY_CONFFILE_FILENAME@@"
+FUSION_CFG=/opt/fusioninventory-agent/agent.cfg
+SSH_PUB_KEY="${PREFIX}/id_rsa.pub"
+SSH_PORT="@@SSH_PORT@@"
+
+
+### Command Line tools
+
+echo
+echo "################################"
+echo "1. INSTALLING COMMAND LINE TOOLS"
+echo "################################"
+echo
+
+
+# Homebrew
+which brew
+if [[ ${?} -ne 0 ]]; then
+  # Install Homebrew only if not found
+  curl -O ${BASE_URL}/mac/downloads/${HOMEBREW_FILENAME}
+  if [[ -f ${HOMEBREW_FILENAME} ]];then
+    # Create folders needed by Homebrew
+    for dir in Cellar homebrew Frameworks bin etc include lib opt sbin share share/zsh share/zsh/site-functions var etc/bash_completion.d lib/pkgconfig var/log share/aclocal share/doc share/info share/locale share/man share/man/man1 share/man/man2 share/man/man3 share/man/man4 share/man/man5 share/man/man6 share/man/man7 share/man/man8; do
+      if [[ ! -d /usr/local/${dir} ]]; then
+        mkdir -p /usr/local/${dir}
+      fi
+    done
+    if [[ ! -d /Library/Caches/Homebrew ]]; then
+      mkdir -p /Library/Caches/Homebrew
+    fi
+    # Update permissions
+    for dir in Cellar homebrew Frameworks bin etc include lib opt sbin share share/zsh share/zsh/site-functions var etc/bash_completion.d lib/pkgconfig var/log share/aclocal share/doc share/info share/locale share/man share/man/man1 share/man/man2 share/man/man3 share/man/man4 share/man/man5 share/man/man6 share/man/man7 share/man/man8; do
+      chmod ug+rwx /usr/local/${dir}
+      chown $USER /usr/local/${dir}
+      chgrp admin /usr/local/${dir}
+    done
+    for dir in share/zsh share/zsh/site-functions; do
+      chmod 755 /usr/local/${dir}
+    done
+    chmod g+rwx /Library/Caches/Homebrew
+    chown $USER /Library/Caches/Homebrew
+    chgrp admin /Library/Caches/Homebrew
+    # Extract Homebrew
+    tar xvzf "${HOMEBREW_FILENAME}" --strip 1 -C /usr/local/homebrew
+    chown -R $USER:wheel /usr/local/homebrew
+    if [[ ! -d /usr/local/bin ]]; then
+      mkdir -p /usr/local/bin
+    fi
+    chown $USER:admin /usr/local/bin
+    ln -s /usr/local/homebrew/bin/brew /usr/local/bin/brew
+    chown $USER:admin /usr/local/bin/brew
+    # Update Homebrew
+    su - $USER -c '/usr/local/bin/brew update --force'
+  else
+    echo "ERROR: downloaded package ${HOMEBREW_FILENAME} not found"
+    exit 1
+  fi
+  if [ -e ${HOMEBREW_FILENAME} ];then
+    rm -rf ${HOMEBREW_FILENAME}
+  fi
+fi
+
+# Reinstall python
+su - $USER -c '/usr/local/bin/brew reinstall python@2'
+
+# Install leveldb
+su - $USER -c '/usr/local/bin/brew install leveldb'
+
+# Re-install curl
+su - $USER -c '/usr/local/bin/brew install openssl'
+su - $USER -c '/usr/local/bin/brew install --force curl --with-openssl'
+
+### Pulse account
+
+echo
+echo "#########################"
+echo "2. CREATING PULSE ACCOUNT"
+echo "#########################"
+echo
+
+# Create restricted shell
+if [[ ! -f /bin/rbash ]]; then
+  cp "${PREFIX}/rbash" /usr/local/bin/
+  chmod +x /usr/local/bin/rbash
+  xattr -d com.apple.quarantine /usr/local/bin/rbash
+fi
+
+# Create pulse user account
+if id pulseuser 2>/dev/null; then
+  echo "WARN: pulse user already exists on the system"
+else
+  USER_PASSWORD=$(openssl rand -base64 24)
+  dscl . -create /Users/pulseuser UserShell /usr/local/bin/rbash
+  dscl . -passwd /Users/pulseuser ${USER_PASSWORD}
+  if [[ ${?} -eq 0 ]]; then
+    echo "INFO: pulse user account created"
+  else
+    echo "ERROR: Something went wrong while creating pulse user account"
+  fi
+  MAX_USERID=$(dscl . -list /Users UniqueID | sort -nr -k 2 | head -1 | awk '{print $2}')
+  dscl . -create /Users/pulseuser UniqueID $(expr ${MAX_USERID} + 1)
+  dscl . -create /Users/pulseuser PrimaryGroupID 20
+fi
+
+# Hide the account
+dscl . -create /Users/pulseuser IsHidden 1
+dscl . -delete "/SharePoints/Pulseuser's Public Folder"
+
+# Create pulse homedir
+dscl . -create /Users/pulseuser NFSHomeDirectory /var/lib/pulse2
+createhomedir -c -u pulseuser 2>&1
+
+# Allow remote login
+systemsetup -setremotelogin on
+
+# Change port number
+sed -i -E "/ssh/s/[0-9]+/${SSH_PORT}/" /etc/services
+
+# Add pulse user to list of users allowed to ssh
+dseditgroup com.apple.access_ssh
+if [[ ${?} -ne 0 ]]; then
+  dseditgroup -o create -q com.apple.access_ssh
+fi
+dseditgroup -o edit -a pulseuser -t user com.apple.access_ssh
+
+# Allow pulse user to sudo rsync without password for backuppc
+echo "pulseuser ALL = NOPASSWD:/usr/bin/rsync" > /private/etc/sudoers.d/pulse
+
+### SSH Key
+
+echo
+echo "###########################################"
+echo "3. ADDING SERVER SSH KEY TO AUTHORIZED KEYS"
+echo "###########################################"
+echo
+
+# Add server's public key
+if [[ -e ${SSH_PUB_KEY} ]]; then
+  if [[ ! -d /var/lib/pulse2/.ssh/ ]]; then
+    mkdir -p /var/lib/pulse2/.ssh/
+  fi
+  cat ${SSH_PUB_KEY} > /var/lib/pulse2/.ssh/authorized_keys
+  chown -R pulseuser: /var/lib/pulse2
+  chmod -R 700 /var/lib/pulse2
+  chmod 600 /var/lib/pulse2/.ssh/authorized_keys
+fi
+
+
+### Fusion-Inventory agent
+
+echo
+echo "###################################"
+echo "4. INSTALLING FUSIONINVENTORY AGENT"
+echo "###################################"
+echo
+
+curl -O ${BASE_URL}/mac/downloads/${FUSION_INVENTORY_AGENT_ARCHIVE}
+if [[ -f ${FUSION_INVENTORY_AGENT_ARCHIVE} ]];then
+  tar xzf ${FUSION_INVENTORY_AGENT_ARCHIVE}
+else
+  echo "ERROR: downloaded package ${FUSION_INVENTORY_AGENT_ARCHIVE} not found"
+  exit 1
+fi
+
+if [[ -d ${FUSION_INVENTORY_AGENT_PKG} ]]; then
+  installer -pkg "${FUSION_INVENTORY_AGENT_PKG}" -target /
+  echo "tag=${INVENTORY_TAG}" > ${FUSION_CFG}
+else
+  echo "ERROR: downloaded package ${FUSION_INVENTORY_AGENT_PKG} not found"
+  exit 1
+fi
+
+if [ -e ${FUSION_INVENTORY_AGENT_PKG} ];then
+  rm -rf ${FUSION_INVENTORY_AGENT_PKG}
+fi
+
+if [ -e ${FUSION_INVENTORY_AGENT_ARCHIVE} ];then
+  rm -rf ${FUSION_INVENTORY_AGENT_ARCHIVE}
+fi
+
+
+### Python modules needed by Pulse
+
+echo
+echo "############################"
+echo "5. INSTALLING PYTHON MODULES"
+echo "############################"
+echo
+
+# Download and install the python modules
+for MODULE_FILENAME in ${MODULES_LIST_FILENAMES}; do
+  curl -O ${BASE_URL}/mac/downloads/python_modules/${MODULE_FILENAME}
+  if [[ -f ${MODULE_FILENAME} ]]; then
+    if [[ "${MODULE_FILENAME}" == "@@PY_CURL_FILENAME@@" ]]; then
+      export PYCURL_SSL_LIBRARY=openssl
+      export LDFLAGS=-L/usr/local/opt/openssl/lib
+      export CPPFLAGS=-I/usr/local/opt/openssl/include
+      /usr/local/bin/pip2 install --upgrade --no-deps --install-option="--with-openssl" --install-option="--openssl-dir=/usr/local/opt/openssl" @@PY_CURL_FILENAME@@
+    elif [[ "${MODULE_FILENAME}" == "@@PY_CRON_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_CRON_DEPS_1_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_SFTP_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_SFTP_DEPS_1_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_4_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_3_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_1_FILENAME@@" ]]; then
+      /usr/local/bin/pip2 install --upgrade --no-deps --ignore-installed --no-index --find-links="." ${MODULE_FILENAME}
+    else
+      /usr/local/bin/pip2 install --upgrade --no-deps --no-index --find-links="." ${MODULE_FILENAME}
+    fi
+  else
+    echo "ERROR: downloaded package ${MODULE_FILENAME} not found"
+    exit 1
+  fi
+  if [[ -e ${MODULE_FILENAME} ]];then
+    rm -rf ${MODULE_FILENAME}
+  fi
+done
+
+
+### Pulse agent and plugins
+
+echo
+echo "#########################"
+echo "6. INSTALLING PULSE AGENT"
+echo "#########################"
+echo
+
+# Download and install agent
+curl -O ${BASE_URL}/${PULSE_AGENT_FILENAME}
+if [[ -f ${PULSE_AGENT_FILENAME} ]]; then
+  /usr/local/bin/pip2 install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME}
+else
+  echo "ERROR: downloaded package ${PULSE_AGENT_FILENAME} not found"
+  exit 1
+fi
+if [[ -e ${PULSE_AGENT_FILENAME} ]];then
+  rm -rf ${PULSE_AGENT_FILENAME}
+fi
+
+# Download and install plugins
+curl -O ${BASE_URL}/${PULSE_AGENT_PLUGINS_FILENAME}
+if [[ -f ${PULSE_AGENT_PLUGINS_FILENAME} ]]; then
+  /usr/local/bin/pip2 install --upgrade --no-index --find-links="." ${PULSE_AGENT_PLUGINS_FILENAME}
+else
+  echo "ERROR: downloaded package ${PULSE_AGENT_PLUGINS_FILENAME} not found"
+  exit 1
+fi
+if [[ -e ${PULSE_AGENT_PLUGINS_FILENAME} ]];then
+  rm -rf ${PULSE_AGENT_PLUGINS_FILENAME}
+fi
+
+# Create Pulse folder and base layout
+if [[ ! -d "${INSTALL_PATH}/etc" ]]; then
+  mkdir -p "${INSTALL_PATH}/etc"
+fi
+if [[ ! -d "${INSTALL_PATH}/var" ]]; then
+  mkdir -p "${INSTALL_PATH}/var"
+fi
+if [[ ! -d "${INSTALL_PATH}/bin" ]]; then
+  mkdir -p "${INSTALL_PATH}/bin"
+fi
+
+# Copy config files
+cp "${PREFIX}/${PULSE_AGENT_CONFFILE_FILENAME}" "${INSTALL_PATH}/etc/"
+# Only copy scheduler config file if is does not already exist
+if [[ ! -f ${INSTALL_PATH}/etc/${PULSE_SCHEDULER_CONFFILE_FILENAME} ]]; then
+  cp "${PREFIX}/${PULSE_SCHEDULER_CONFFILE_FILENAME}" "${INSTALL_PATH}/etc/"
+fi
+# Copy inventory config file
+cp "${PREFIX}/${PULSE_INVENTORY_CONFFILE_FILENAME}" "${INSTALL_PATH}/etc/"
+
+# Create log folder to hold agent logs
+if [[ ! -d "${INSTALL_PATH}/var/log/" ]]; then
+  mkdir "${INSTALL_PATH}/var/log"
+fi
+# Create packages folder to hold packages to be deployed on client
+if [[ ! -d "${INSTALL_PATH}/var/tmp/packages/" ]]; then
+  mkdir -p "${INSTALL_PATH}/var/tmp/packages"
+fi
+
+# Copy launcher
+cp "${PREFIX}/runpulseagent" "${INSTALL_PATH}/bin"
+chmod +x "${INSTALL_PATH}/bin/runpulseagent"
+xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/runpulseagent"
+
+# Copy pulse filetree generator
+cp "${PREFIX}/pulse-filetree-generator" "${INSTALL_PATH}/bin"
+chmod +x "${INSTALL_PATH}/bin/pulse-filetree-generator"
+xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/pulse-filetree-generator"
+
+# Download, extract and copy syncthing
+curl -O ${BASE_URL}/mac/downloads/${SYNCTHING_FILENAME}
+if [[ -f ${SYNCTHING_FILENAME} ]];then
+  tar xzf ${SYNCTHING_FILENAME}
+  cp "${SYNCTHING_FILENAME%.*}/syncthing" "${INSTALL_PATH}/bin"
+  chmod +x "${INSTALL_PATH}/bin/syncthing"
+  xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/syncthing"
+else
+  echo "ERROR: downloaded package ${SYNCTHING_FILENAME} not found"
+  exit 1
+fi
+if [ -e ${SYNCTHING_FILENAME} ];then
+  rm -rf ${SYNCTHING_FILENAME}
+fi
+if [ -e ${SYNCTHING_FILENAME%.*} ];then
+  rm -rf ${SYNCTHING_FILENAME%.*}
+fi
+
+# Copy service descriptor
+cp "${PREFIX}/net.siveo.pulse_xmpp_agent.plist" /Library/LaunchDaemons/
+xattr -d com.apple.quarantine /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+chown root:wheel /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+chmod 644 /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+
+# Load the service
+echo 'Loading Pulse Agent Service'
+launchctl unload /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+launchctl load /Library/LaunchDaemons/net.siveo.pulse_xmpp_agent.plist
+
+
+### Enable VNC server
+echo
+echo "####################"
+echo "7. Enable VNC server"
+echo "####################"
+echo
+
+/System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -clientopts -setvnclegacy -vnclegacy yes -clientopts -setvncpw -vncpw ${VNC_PASSWORD} -restart -agent -privs -all
+
+curl -O ${BASE_URL}/mac/downloads/${VNC_SERVER_FILENAME}
+if [[ -f ${VNC_SERVER_FILENAME} ]];then
+  hdiutil attach ${VNC_SERVER_FILENAME}
+  cp -R "/Volumes/${VNC_SERVER_MOUNTED}/${VNC_SERVER_APP}" /Applications
+  hdiutil detach "/Volumes/${VNC_SERVER_MOUNTED}/"
+else
+  echo "ERROR: downloaded package ${VNC_SERVER_FILENAME} not found"
+  exit 1
+fi
+
+if [ -e ${VNC_SERVER_FILENAME} ];then
+  rm -rf ${VNC_SERVER_FILENAME}
+fi
+
+sed -i -E "/vnc-server/s/[0-9]+/${VNC_PORT}/" /etc/services
