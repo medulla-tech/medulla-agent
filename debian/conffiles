@@ -1,0 +1,9 @@
+/etc/pulse-xmpp-agent/guacamoleconf.ini
+/etc/pulse-xmpp-agent/downloadfile.ini
+/etc/pulse-xmpp-agent/downloadfileexpert.ini
+/etc/pulse-xmpp-agent/applicationdeploymentjson.ini
+/etc/pulse-xmpp-agent/guacamole.ini
+/etc/pulse-xmpp-agent/reverse_ssh_on.ini
+/etc/pulse-xmpp-agent/wakeonlan.ini
+/etc/pulse-xmpp-agent/relayconf.ini.in
+/etc/pulse-xmpp-agent/package_watching.ini
