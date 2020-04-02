@@ -14,9 +14,4 @@ usr/lib/systemd/system/pulse-xmpp-agent-machine.service
 usr/lib/systemd/system/pulse-xmpp-agent-relay.service
 usr/lib/systemd/system/pulse-package-watching.service
 etc/pulse-xmpp-agent/
-var/lib/pulse2/clients/config/relayconf.ini.in
-var/lib/pulse2/clients/config/package_watching.ini
-var/lib/pulse2/clients/config/guacamoleconf.ini
-var/lib/pulse2/clients/config/downloadfile.ini
-var/lib/pulse2/clients/config/downloadfileexpert.ini
 etc/logrotate.d/pulse-xmpp-agent-relay
