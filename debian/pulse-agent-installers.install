@@ -1,0 +1,4 @@
+var/lib/pulse2/clients/config/agentconf.ini
+var/lib/pulse2/clients/config/inventory.ini
+var/lib/pulse2/clients/config/manage_scheduler.ini
+
