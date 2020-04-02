@@ -49,6 +49,7 @@ override_dh_auto_install:
 	cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptor_scheduler_machine/
 	cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptor_scheduler_relay/
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config
+	cp pulse_xmpp_agent/config/agentconf.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config
 	cp pulse_xmpp_agent/config/guacamoleconf.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config
 	cp pulse_xmpp_agent/config/downloadfile.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config
 	cp pulse_xmpp_agent/config/downloadfileexpert.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config
@@ -66,6 +67,9 @@ override_dh_auto_install:
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/package_watching.py
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py
 	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
+	cp $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/ $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
+	rm -fv $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent/agentconf.ini
+	rm -fv $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent/inventory.ini
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
 	cp pulse_xmpp_master_substitute/agentmastersubstitute.py $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
 	cp pulse_xmpp_master_substitute/agentversion $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
