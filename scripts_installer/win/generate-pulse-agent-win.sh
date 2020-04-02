@@ -145,10 +145,8 @@ FUSION_INVENTORY_AGENT_VERSION="2.4.2"
 VNC_AGENT_NAME="tightvnc"
 VNC_AGENT_VERSION="2.8.8"
 DOWNLOAD_FOLDER="downloads"
-PULSE_AGENT_PLUGINS_NAME="pulse-agent-plugins"
 VNC_PORT="5900"
 SSH_PORT="22"
-PULSE_AGENT_PLUGINS_VERSION="1.15"
 SYNCTHING_NAME="syncthing"
 SYNCTHING_VERSION="1.1.0"
 CREATE_PROFILE_NAME="create-profile.ps1"
@@ -296,7 +294,6 @@ compute_parameters() {
 	PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler.ini"
 	PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 	PULSE_AGENT_TASK_XML="pulse-agent-task.xml"
-	PULSE_AGENT_PLUGINS="${PULSE_AGENT_PLUGINS_NAME}-${PULSE_AGENT_PLUGINS_VERSION}.tar.gz"
 	RSYNC_FILENAME="${RSYNC_NAME}_${RSYNC_VERSION}_x86_Free.zip"
 	RSYNC_URL="${BASE_URL}/win/downloads/${RSYNC_FILENAME}"
 	OPENSSH32_FILENAME="${OPENSSH_NAME}-Win32.zip"
@@ -570,8 +567,6 @@ update_nsi_script_full() {
 		-e "s/@@FULL_OR_DL_SYNCTHING32@@/$(sed_escape ${FULL_SYNCTHING32})/" \
 		-e "s/@@SYNCTHING64_FILENAME@@/${SYNCTHING64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_SYNCTHING64@@/$(sed_escape ${FULL_SYNCTHING64})/" \
-		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
-        -e "s/@@PULSE_AGENT_PLUGINS_NAME@@/${PULSE_AGENT_PLUGINS_NAME}/" \
 		-e "s/@@RSYNC_FILENAME@@/rsync.zip/" \
 		-e "s/@@GENERATED_SIZE@@/FULL/" \
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
@@ -773,8 +768,6 @@ update_nsi_script_dl() {
 		-e "s/@@FULL_OR_DL_SYNCTHING32@@/$(sed_escape ${DL_SYNCTHING32})/" \
 		-e "s/@@SYNCTHING64_FILENAME@@/${SYNCTHING64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_SYNCTHING64@@/$(sed_escape ${DL_SYNCTHING64})/" \
-		-e "s/@@PULSE_AGENT_PLUGINS@@/${PULSE_AGENT_PLUGINS}/" \
-        -e "s/@@PULSE_AGENT_PLUGINS_NAME@@/${PULSE_AGENT_PLUGINS_NAME}/" \
 		-e "s/@@RSYNC_FILENAME@@/rsync.zip/" \
 		-e "s/@@GENERATED_SIZE@@/MINIMAL/" \
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \

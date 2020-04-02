@@ -85,8 +85,6 @@ RequestExecutionLevel admin
 !define FUSION_INVENTORY_AGENT32_FILENAME "@@FUSION_INVENTORY_AGENT32_FILENAME@@"
 !define FUSION_INVENTORY_AGENT64_FILENAME "@@FUSION_INVENTORY_AGENT64_FILENAME@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
-!define PULSE_AGENT_PLUGINS "@@PULSE_AGENT_PLUGINS@@"
-!define PULSE_AGENT_PLUGINS_NAME "@@PULSE_AGENT_PLUGINS_NAME@@"
 !define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
 !define GENERATED_SIZE "@@GENERATED_SIZE@@"
 !define VNC_AGENT32_FILENAME "@@VNC_AGENT32_FILENAME@@"
@@ -907,7 +905,6 @@ SectionEnd
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
   File "../${PULSE_AGENT}"
-  File "../${PULSE_AGENT_PLUGINS}"
   ${If} ${RunningX64}
     @@FULL_OR_DL_SYNCTHING64@@
   ${Else}
@@ -926,14 +923,6 @@ Section "!${PRODUCT_NAME}" sec_app
 
   ; Install of Pulse agent
   StrCpy $0 `C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT}`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${LogString} "-------------------"
-
-  ; Install of Pulse agent plugins
-  StrCpy $0 `C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_PLUGINS}`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1084,7 +1073,6 @@ Section "!${PRODUCT_NAME}" sec_app
 
   Delete $INSTDIR\tmp\${PULSE_AGENT}
   Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML}
-  Delete $INSTDIR\tmp\${PULSE_AGENT_PLUGINS}
   Delete $INSTDIR\tmp\${SYNCTHING32_FILENAME}
   Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
 
@@ -1193,11 +1181,6 @@ Section "Uninstall"
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   StrCpy $0 `netsh.exe advfirewall firewall delete rule name="Syncthing for Pulse"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `C:\Python27\Scripts\pip uninstall "${PULSE_AGENT_PLUGINS_NAME}" -y`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
