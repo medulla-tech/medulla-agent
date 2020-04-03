@@ -183,14 +183,27 @@ build_deb() {
         if [ -d "debian/9" ]; then
             cp -fv *.deb debian/9
             pushd debian/9
-                dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
+            popd
+        fi
+        if [ -d "debian/10" ]; then
+            cp -fv *.deb debian/10
+            pushd debian/10
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
             popd
         fi
 
         if [ -d "ubuntu/16.04" ]; then
             cp -fv *.deb ubuntu/16.04
             pushd ubuntu/16.04
-                dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
+            popd
+        fi
+
+        if [ -d "ubuntu/19.10" ]; then
+            cp -fv *.deb ubuntu/19.10
+            pushd ubuntu/19.10
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
             popd
         fi
 
