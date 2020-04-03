@@ -14,13 +14,13 @@ Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/python-cups.git
 Vcs-Browser: https://anonscm.debian.org/cgit/python-modules/packages/python-cups.git
 X-Python-Version: >= 2.7
 
-Package: pulse-xmpp-agent
+Package: pulse-xmpp-agent-relay
 Architecture: all
 Provides: ${python:Provides}
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-utils, python-mysqldb-dbg, python-croniter, python-psutil, python-crypto, python-lxml, python-requests, python-sftp, python-pyinotify
 Description: Pulse xmpp agent
 Breaks: pulse-agent-installers  (<< 1.9.1)
-Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.6)
+Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.6), pulse-xmpp-agent (<< 2.0.6)
 
 Package: pulse-xmpp-master-substitute
 Architecture: all
