@@ -20,9 +20,12 @@
 
 from setuptools import setup
 from distutils.command.install import INSTALL_SCHEMES
-
-import os
+from distutils.sysconfig import get_python_lib
 import sys
+import os
+
+
+path = get_python_lib() ;
 
 if sys.platform.startswith('linux'):
     fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent")
@@ -53,7 +56,7 @@ setup(
     url='https://www.siveo.net/',
     packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
     data_files=[('script', ['pulse_xmpp_agent/script/getlastuser.ps1', 'pulse_xmpp_agent/script/create-profile.ps1']),
-                  ('', ['pulse_xmpp_agent/agentversion']),], (path + '/pulse_xmpp_agent/pluginsmachine', ['pulse_agent_plugins/common/plugin_enddeploy.py', 'pulse_agent_plugins/common/plugin_force_setup_agent.py', 'pulse_agent_plugins/common/plugin_applicationdeploymentjson.py', 'pulse_agent_plugins/common/plugin_start.py', 'pulse_agent_plugins/common/plugin_installplugin.py', 'pulse_agent_plugins/common/plugin_requestinfo.py', 'pulse_agent_plugins/common/plugin_restartbot.py', 'pulse_agent_plugins/common/plugin_shellcommand.py', 'pulse_agent_plugins/common/plugin_asynchromeremoteshell.py',  'pulse_agent_plugins/common/plugin_guacamole.py', 'pulse_agent_plugins/common/plugin_installkey.py', 'pulse_agent_plugins/common/plugin_installpluginscheduled.py', 'pulse_agent_plugins/common/plugin_resultapplicationdeploymentjson.py', 'pulse_agent_plugins/common/plugin_reverse_ssh_on.py', 'pulse_agent_plugins/common/plugin_asynchroremoteQA.py','pulse_agent_plugins/common/plugin_updateagent.py','pulse_agent_plugins/common/plugin_deploysyncthing.py']),],
+                  ('', ['pulse_xmpp_agent/agentversion']), (path + '/pulse_xmpp_agent/pluginsmachine', ['pulse_xmpp_agent/plugins_common/plugin_enddeploy.py', 'pulse_xmpp_agent/plugins_common/plugin_force_setup_agent.py', 'pulse_xmpp_agent/plugins_common/plugin_applicationdeploymentjson.py', 'pulse_xmpp_agent/plugins_common/plugin_start.py', 'pulse_xmpp_agent/plugins_common/plugin_installplugin.py', 'pulse_xmpp_agent/plugins_common/plugin_requestinfo.py', 'pulse_xmpp_agent/plugins_common/plugin_restartbot.py', 'pulse_xmpp_agent/plugins_common/plugin_shellcommand.py', 'pulse_xmpp_agent/plugins_common/plugin_asynchromeremoteshell.py',  'pulse_xmpp_agent/plugins_common/plugin_guacamole.py', 'pulse_xmpp_agent/plugins_common/plugin_installkey.py', 'pulse_xmpp_agent/plugins_common/plugin_installpluginscheduled.py', 'pulse_xmpp_agent/plugins_common/plugin_resultapplicationdeploymentjson.py', 'pulse_xmpp_agent/plugins_common/plugin_reverse_ssh_on.py', 'pulse_xmpp_agent/plugins_common/plugin_asynchroremoteQA.py','pulse_xmpp_agent/plugins_common/plugin_updateagent.py','pulse_xmpp_agent/plugins_common/plugin_deploysyncthing.py']),],
     test_suite='',
     package_data={},
     entry_points={},
