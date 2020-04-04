@@ -60,7 +60,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/guacamole.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/reverse_ssh_on.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/wakeonlan.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
-	cp pulse_xmpp_agent/config/relayconf.ini.in $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
+	cp pulse_xmpp_agent/config/relayconf.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/package_watching.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	mkdir -p $(CURDIR)/debian/tmp/etc/logrotate.d/
 	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/pulse-xmpp-agent-relay
