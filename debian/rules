@@ -152,4 +152,3 @@ override_dh_auto_install:
 	cp scripts_installer/win/pulse-service.py var/lib/pulse2/clients/win/
 	cp scripts_installer/win/netcheck-service.py var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py var/lib/pulse2/clients/win/
-	rm -frv $(DESTDIR)/tmp
