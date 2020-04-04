@@ -149,7 +149,6 @@ override_dh_auto_install:
 	mv pulse-filetree-generator var/lib/pulse2/clients/mac
 	chmod +x var/lib/pulse2/clients/mac/pulse-filetree-generator
 	cp scripts_installer/win/create-profile.ps1 var/lib/pulse2/clients/win/
-	cp scripts_installer/win/remove-profile.ps1 var/lib/pulse2/clients/win/
 	cp scripts_installer/win/pulse-service.py var/lib/pulse2/clients/win/
 	cp scripts_installer/win/netcheck-service.py var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py var/lib/pulse2/clients/win/
