@@ -87,7 +87,7 @@ override_dh_auto_install:
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
 	# We create the installer part now
 	mkdir -p $(DESTDIR)/tmp
-	GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-xmpp-agent.git -b $BRANCH
+	GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-xmpp-agent.git -b ${BRANCH}
 	mv pulse-xmpp-agent pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	tar czvf pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	rm -fr pulse-xmpp-agent/
