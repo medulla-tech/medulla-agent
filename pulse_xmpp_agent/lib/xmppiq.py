@@ -34,8 +34,8 @@ from utils import   shellcommandtimeout, \
                     encode_strconsole, \
                     keypub, \
                     showlinelog, \
-                    simplecommand \
-                    sshdup \
+                    simplecommand, \
+                    sshdup, \
                     restartsshd
 
 from  agentconffile import  directoryconffile
