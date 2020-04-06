@@ -880,7 +880,8 @@ Please check the logs in $INSTDIR\tmp\install.log"
     Quit
   ${EndIf}
   ; Create symbolic link to syncthing config file from etc
-  StrCpy $0 `cd "$INSTDIR\etc" & mklink syncthing.ini syncthing\config.xml`
+  SetOutPath "$INSTDIR\etc"
+  StrCpy $0 `mklink "syncthing.ini" "syncthing\config.xml"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
