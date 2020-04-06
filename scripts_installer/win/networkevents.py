@@ -35,8 +35,6 @@ from threading import Thread, current_thread
 import pythoncom
 import win32pipe
 import win32file
-import win32evtlogutil
-import win32evtlog
 import time
 import ctypes
 import json
@@ -46,7 +44,6 @@ import win32gui
 import win32api
 import socket
 import struct
-import ctypes
 from ctypes import windll
 import os
 ## from EventSys.h

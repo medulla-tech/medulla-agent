@@ -36,6 +36,7 @@ import psutil
 import sys
 import logging
 import logging.handlers
+import urllib2
 
 class SMWinservice(win32serviceutil.ServiceFramework):
     '''Base class to create winservice in Python'''
