@@ -537,7 +537,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 'base64' : False
                 }
                 datasend['data']['descriptor']['sequence']=[{"action" : "ERROR",
-                                                            "description" : "DESCRIPTOR MISSING FOR Paltform %s os[%s]"%(sys.platform,platform.platform()),
+                                                            "description" : "Descriptor missing for platform %s os[%s]"%(sys.platform,platform.platform()),
                                                             "step" : -1,
                                                             "completed" : 1}]
                 objectxmpp.send_message(   mto=data['jidmaster'],
@@ -1330,7 +1330,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 ### to make this call we prepare a message with the current session.
                 ### on the message ['step'] of the message or resume processing.
                 ### here data ['step'] = "transferfiles"
-                logger.debug("APPEL POUR PHASE DE TRANSFERTS" )
+                logger.debug("Next step: transfer phase" )
                 # call for aller step suivant transfert file
                 msg_self_call = create_message_self_for_transfertfile(sessionid)
                 objectxmpp.send_message(mto = strjidagent,
@@ -2161,7 +2161,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
             urlfile = curlurlbase + filepackage
 
             logger.info("###################################################")
-            logger.info("adress telechargement package par le client en curl : " + urlfile)
+            logger.info("URL for downloading package using curl : " + urlfile)
             logger.info("###################################################")
             try:
                 if 'limit_rate_ko' in datasend['data']['descriptor']['info'] and \

@@ -81,7 +81,7 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
     elif type == "script_agent":
         namescriptfile = os.path.join(xmppobject.config.diragentbase, "script", filename)
     else:
-        logger.error("script type incorect for transfert script to update remote agent")
+        logger.error("Incorrect script type for adding to update remote agent")
         return
     if os.path.isfile(namescriptfile):
         logger.debug("File script found %s" % namescriptfile)
