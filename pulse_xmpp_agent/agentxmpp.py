@@ -72,7 +72,7 @@ from lib.managepackage import managepackage
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
-
+import multiprocessing
 from modulefinder import ModuleFinder
 
 from sleekxmpp.xmlstream import handler, matcher
@@ -88,7 +88,7 @@ if sys.platform.startswith('win'):
 else:
     import signal
 
-from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message
+from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message, process_serverPipe
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 
@@ -110,10 +110,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                  conf,
                  queue_recv_tcp_to_xmpp,
                  queueout,
-                 eventkilltcp):#jid, password, room, nick):
+                 eventkilltcp,
+                 eventkillpipe):#jid, password, room, nick):
         logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent,
                                                                conf.agenttype))
         self.eventkilltcp = eventkilltcp
+        self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
         #create dir for descriptor syncthing deploy
@@ -152,8 +154,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         self.laps_time_networkMonitor = self.config.detectiontime
         logging.warning("laps time network changing %s"%self.laps_time_networkMonitor)
-        self.quitserverkiosk = False
-        self.quitserverpipe  = True
+        # self.quitserverkiosk = False
+        # self.quitserverpipe  = True
         ###################Update agent from MAster#############################
         self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -1164,7 +1166,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mbody = json.dumps(datasend),
                                         mtype = 'chat')
 
-
     def _handle_custom_iq(self, iq):
         if iq['type'] == 'get':
             for child in iq.xml:
@@ -1240,7 +1241,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                'event'   : "CTRL_C_EVENT" }
                     }
         self.send_message_subcripted_agent(msgevt)
-        sys.exit(0)
+        time.sleep(2)
+        self.quit_application( wait=3)
 
     def send_message_subcripted_agent(self , msg):
         self.send_message(  mbody = json.dumps(msg),
@@ -1291,13 +1293,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL-C EVENT")
                 signalint = True
-                sys.exit(0)
+                self.quit_application( wait=3)
                 return True
             else:
                 return False
         else:
             pass
-
 
     def __sizeout(self, q):
         return q.qsize()
@@ -1510,16 +1511,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
 
-        ################### initialise charge relay server ###################
-        if sys.platform.startswith('win'):
-            logger.debug("____________________________________________")
-            logger.info("___________INSTALL SERVER PIPENAMED___________")
-            #using event eventkillpipe for signal stop thread
-            self.quitserverpipe = False
-            self.eventkillpipe = threading.Event()
-            logging.log(DEBUGPULSE,'Install pipe nammed server for network interface')
-            threading.Thread(target=self._serverPipe).start()
-            logger.debug("____________________________________________")
+
 
     def initialise_syncthing(self):
         logger.debug("____________________________________________")
@@ -1578,68 +1570,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.error("functioning of the degraded agent. impossible to use syncthing")
             #self.syncthing = syncthing(configfile = fichierconfsyncthing)
         ################################### syncthing ###################################
-
-    def _serverPipe(self):
-        # just do one connection and terminate.
-        self.quitserverpipe = False
-        logger.debug("____________________________________________")
-        logger.info("___________START SERVER PIPENAMED___________")
-        #self.eventkillpipe = threading.Event()
-        while not self.eventkillpipe.wait(1):
-            try:
-                self.pipe_handle = win32pipe.CreateNamedPipe(r'\\.\pipe\interfacechang',
-                                            win32pipe.PIPE_ACCESS_DUPLEX,
-                                            win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT,
-                                            win32pipe.PIPE_UNLIMITED_INSTANCES,
-                                            65536,
-                                            65536,
-                                            300,
-                                            None)
-                win32pipe.ConnectNamedPipe(self.pipe_handle, None)
-                logger.debug("___Waitting event network chang___")
-                data = win32file.ReadFile(self.pipe_handle, 4096)
-            except Exception as e:
-                logger.warning("read input from Pipenammed error")
-                continue
-            finally:
-                self.pipe_handle.Close()
-            if len(data) >= 2:
-                if data[1] == "terminate":
-                    logger.debug("__Terminate event network listen Server__")
-                else:
-                    try:
-                        infointerface = json.loads(data[1])
-                        logger.info("__Event network__ %s"%json.dumps(infointerface, indent = 4))
-                        if self.config.ipxmpp in infointerface['removedinterface']:
-                            logger.info("__IP Interface used to xmpp Server %s__"%self.config.ipxmpp)
-                            logger.info("__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__")
-                            logmsg = "The new network interface can replace the previous one. The service will resume after restarting the agent"
-                            if is_connectedServer(self.ipconnection, self.config.Port ):
-                                #on fait juste 1 restart
-                                logger.warning(logmsg)
-                                self.restartBot()
-                            else:
-                                #on reconfigure la totale
-                                time.sleep(15) # l activation de la nouvelle interface peut prendre 1 moment
-                                if is_connectedServer(self.ipconnection, self.config.Port ):
-                                    #on fait juste 1 restart
-                                    logger.warning(logmsg)
-                                    self.restartBot()
-                                else:
-                                    logger.warning("No network interface can replace the previous one. Agent reconfiguration needed to resume the service.")
-                                    self.networkMonitor()
-                                    pass
-                        else:
-                            logger.warning("The new network interface is directly usable. Nothing to do")
-                    except Exception as e:
-                        logger.error("%s"%str(e))
-                        continue
-                    # logger.info("RESTART AGENT lost Connection")
-                    # self.restartBot()
-            else:
-                logger.warning("__Event network chang bat format__")
-        logger.debug("___________STOP SERVER PIPENAMED___________")
-        self.quitserverpipe = True
 
     def send_message_agent( self,
                             mto,
@@ -1914,11 +1844,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     logger.warning("ask update but descriptor_agent base missing.")
 
-    def restartBot(self):
+    def restartBot(self, wait=10):
         logging.log(DEBUGPULSE,"RESTART BOOT")
         setgetrestart(1)
         logging.log(DEBUGPULSE,"restart xmpp agent %s!" % self.boundjid.user)
-        self.disconnect(wait=10)
+        self.disconnect(wait=wait)
+
+    def quit_application(self, wait=2):
+        logging.log(DEBUGPULSE,"Quit Application")
+        setgetrestart(0)
+        self.disconnect(wait=wait)
 
     def register(self, iq):
         """ This function is called for automatic registation """
@@ -2331,10 +2266,11 @@ def tgconf(optstypemachine):
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     processes = []
-    queue_recv_tcp_to_xmpp = multiprocessing.Queue()
-    queueout= multiprocessing.Queue()
+    queue_recv_tcp_to_xmpp = Queue()
+    queueout= Queue()
     #event inter process
-    eventkilltcp = multiprocessing.Event()
+    eventkilltcp = Event()
+    eventkillpipe = Event()
     file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    "pidagent"),
                       "%s"%os.getpid())
@@ -2379,14 +2315,16 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                      "pluginsrelay"))
 
     #### start xmpp process
-    p = Process(target=process_xmpp_agent, args=(optstypemachine,
-                                                 optsconsoledebug,
-                                                 optsdeamon,
-                                                 tglevellog,
-                                                 tglogfile,
-                                                 queue_recv_tcp_to_xmpp,
-                                                 queueout,
-                                                 eventkilltcp))
+    p = Process(target=process_xmpp_agent,
+                name="xmppagent",
+                args=(optstypemachine, optsconsoledebug,
+                                       optsdeamon,
+                                       tglevellog,
+                                       tglogfile,
+                                       queue_recv_tcp_to_xmpp,
+                                       queueout,
+                                       eventkilltcp,
+                                       eventkillpipe))
     processes.append(p)
     p.start()
 
@@ -2401,114 +2339,166 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                                   eventkilltcp))
     processes.append(p)
     p.start()
+
+    if sys.platform.startswith('win'):
+        logger.debug("_______________________________________________________")
+        logger.info("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
+        logger.debug("_______________________________________________________")
+        #using event eventkillpipe for signal stop thread
+        p = Process(target=process_serverPipe,
+                    args=(optstypemachine,
+                          optsconsoledebug,
+                          optsdeamon,
+                          tglevellog,
+                          tglogfile,
+                          queue_recv_tcp_to_xmpp,
+                          queueout,
+                          eventkillpipe))
+        processes.append(p)
+        p.start()
+
+
     # completing process
     try:
         for p in processes:
             p.join()
     except KeyboardInterrupt:
         logging.error("TERMINATE PROGRAMM ON CTRL+C")
+        os._exit(1)
     except Exception as e:
         logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
 
-def process_xmpp_agent(optstypemachine,
-                       optsconsoledebug,
-                       optsdeamon,
-                       tglevellog,
-                       tglogfile,
-                       queue_recv_tcp_to_xmpp,
-                       queueout,
-                       eventkilltcp):
-    setgetcountcycle()
-    while True:
-        setgetrestart()
-        logging.log(DEBUGPULSE,"WHILE RESTART VARIABLE %s"%setgetrestart(-1))
-        tg = tgconf(optstypemachine)
-        xmpp = MUCBot(tg,
-                      queue_recv_tcp_to_xmpp,
-                      queueout,
-                      eventkilltcp)
+class process_xmpp_agent():
 
-        xmpp.auto_reconnect = False
-        xmpp.register_plugin('xep_0030') # Service Discovery
-        xmpp.register_plugin('xep_0045') # Multi-User Chat
-        xmpp.register_plugin('xep_0004') # Data Forms
-        xmpp.register_plugin('xep_0050') # Adhoc Commands
-        xmpp.register_plugin('xep_0199', {'keepalive' : True,
-                                          'frequency' : 600,
-                                          'interval' : 600,
-                                          'timeout' : 500  })
-        xmpp.register_plugin('xep_0077') # In-band Registration
-        xmpp['xep_0077'].force_registration = True
-
-        #tg = tgconf(optstypemachine)
-        #xmpp.config.__dict__.update(tg.__dict__)
-        # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
-        if xmpp.config.agenttype in ['relayserver']:
-            attempt = True
+    def __init__(self,
+                 optstypemachine,
+                 optsconsoledebug,
+                 optsdeamon,
+                 tglevellog,
+                 tglogfile,
+                 queue_recv_tcp_to_xmpp,
+                 queueout,
+                 eventkilltcp,
+                 eventkillpipe):
+        if platform.system()=='Windows':
+            # Windows does not support ANSI escapes and we are using API calls to set the console color
+            logging.StreamHandler.emit = add_coloring_to_emit_windows(logging.StreamHandler.emit)
         else:
-            attempt = False
-        logging.log(DEBUGPULSE,"connect to %s"%ipfromdns(tg.Server))
-        logging.log(DEBUGPULSE,"connect to port %s"%tg.Port)
-        time.sleep(5)
-        if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
-            xmpp.process(block=True)
-            logging.log(DEBUGPULSE,"terminate infocommand")
-            logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
-            logging.log(DEBUGPULSE,"RESTART %s"%setgetrestart(-1))
-            logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
-            time.sleep(2)
+            # all non-Windows platforms are supporting ANSI escapes so we use them
+            logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+        # format log more informations
+        format = '%(asctime)s - %(levelname)s - %(message)s'
+        # more information log
+        # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
+        if not optsdeamon :
+            if optsconsoledebug :
+                logging.basicConfig(level = logging.DEBUG, format=format)
+            else:
+                logging.basicConfig( level = tglevellog,
+                                     format = format,
+                                     filename = tglogfile,
+                                     filemode = 'a')
         else:
-            logging.log(DEBUGPULSE,"Unable to connect. search alternative")
-            setgetrestart(0)
-            logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
-            time.sleep(2)
-        if signalint:
-            logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
-            try:
-                xmpp.eventkilltcp.set()
-            except Exception:
-                pass
-            time.sleep(1)
-            break
-        if xmpp.config.agenttype in ['relayserver']:
-            terminateserver(xmpp)
+            logging.basicConfig( level = tglevellog,
+                                 format = format,
+                                 filename = tglogfile,
+                                 filemode = 'a')
+        self.logger = logging.getLogger()
 
-        if setgetrestart(-1) == 1:
-            logging.log(DEBUGPULSE,"not restart")
-            # verify if signal stop
-            # verify if alternative connection
-            if os.path.isfile(conffilename("cluster")):
-                # il y a une configuration alternative
-                logging.log(DEBUGPULSE,"analyse alternative alternative connection")
-                logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
-                logging.log(DEBUGPULSE, "alternative configuration")
-                setgetcountcycle(1)
+        self.logger.debug("____________________________________________________________")
+        self.logger.debug("_______________ INITIALISATION XMPP AGENT ________________")
+        self.logger.debug("____________________________________________________________")
+        setgetcountcycle()
+        while True:
+            setgetrestart()
+            logging.log(DEBUGPULSE,"WHILE RESTART VARIABLE %s"%setgetrestart(-1))
+            tg = tgconf(optstypemachine)
+            xmpp = MUCBot(tg,
+                          queue_recv_tcp_to_xmpp,
+                          queueout,
+                          eventkilltcp,
+                          eventkillpipe)
+
+            xmpp.auto_reconnect = False
+            xmpp.register_plugin('xep_0030') # Service Discovery
+            xmpp.register_plugin('xep_0045') # Multi-User Chat
+            xmpp.register_plugin('xep_0004') # Data Forms
+            xmpp.register_plugin('xep_0050') # Adhoc Commands
+            xmpp.register_plugin('xep_0199', {'keepalive' : True,
+                                              'frequency' : 600,
+                                              'interval' : 600,
+                                              'timeout' : 500  })
+            xmpp.register_plugin('xep_0077') # In-band Registration
+            xmpp['xep_0077'].force_registration = True
+
+            #tg = tgconf(optstypemachine)
+            #xmpp.config.__dict__.update(tg.__dict__)
+            # Connect to the XMPP server and start processing XMPP stanzas.address=(args.host, args.port)
+            if xmpp.config.agenttype in ['relayserver']:
+                attempt = True
+            else:
+                attempt = False
+            logging.log(DEBUGPULSE,"connect to %s"%ipfromdns(tg.Server))
+            logging.log(DEBUGPULSE,"connect to port %s"%tg.Port)
+            time.sleep(5)
+            if xmpp.connect(address=(ipfromdns(tg.Server),tg.Port), reattempt=attempt):
+                xmpp.process(block=True)
+                logging.log(DEBUGPULSE,"terminate infocommand")
+                logging.log(DEBUGPULSE,"event for quit loop server tcpserver for kiosk")
+                logging.log(DEBUGPULSE,"RESTART %s"%setgetrestart(-1))
+                logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
+                time.sleep(2)
+            else:
+                logging.log(DEBUGPULSE,"Unable to connect. search alternative")
+                setgetrestart(0)
+                logging.log(DEBUGPULSE,"RESTART VARIABLE %s"%setgetrestart(-1))
+                time.sleep(2)
+            if signalint:
+                logging.log(DEBUGPULSE,"bye bye Agent CTRL-C")
                 try:
-                    timealternatifars = random.randint(*xmpp.config.timealternatif)
-                    logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
-                    time.sleep(timealternatifars)
-                    newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
-
-                    changeconnection( conffilename(xmpp.config.agenttype),
-                                    newparametersconnect[2],
-                                    newparametersconnect[1],
-                                    newparametersconnect[0],
-                                    newparametersconnect[3])
-                    if newparametersconnect[5] < setgetcountcycle(-1):
-                        # if plus d'un cycle fait on relance le configurateur
-                        setgetcountcycle()
-                        logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
-                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                        args = ['python', nameprogconnection, '-t', 'machine']
-                        subprocess.call(args)
-                        time.sleep(10)
+                    xmpp.eventkilltcp.set()
+                    xmpp.eventkillpipe.set()
                 except Exception:
-                    logging.log(40," ERROR analyse alternative connection")
-                    logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
-    terminateserver(xmpp)
-    logging.log(DEBUGPULSE,"QUIT")
-    os._exit(0)
+                    pass
+                time.sleep(1)
+                break
+            if xmpp.config.agenttype in ['relayserver']:
+                terminateserver(xmpp)
+
+            if setgetrestart(-1) == 1:
+                logging.log(DEBUGPULSE,"not restart")
+                # verify if signal stop
+                # verify if alternative connection
+                if os.path.isfile(conffilename("cluster")):
+                    # il y a une configuration alternative
+                    logging.log(DEBUGPULSE,"analyse alternative alternative connection")
+                    logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
+                    logging.log(DEBUGPULSE, "alternative configuration")
+                    setgetcountcycle(1)
+                    try:
+                        timealternatifars = random.randint(*xmpp.config.timealternatif)
+                        logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
+                        time.sleep(timealternatifars)
+                        newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
+
+                        changeconnection( conffilename(xmpp.config.agenttype),
+                                        newparametersconnect[2],
+                                        newparametersconnect[1],
+                                        newparametersconnect[0],
+                                        newparametersconnect[3])
+                        if newparametersconnect[5] < setgetcountcycle(-1):
+                            # if plus d'un cycle fait on relance le configurateur
+                            setgetcountcycle()
+                            logging.log(DEBUGPULSE,"run subprocess connectionagent on cycle alternatif terminate")
+                            nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                            args = ['python', nameprogconnection, '-t', 'machine']
+                            subprocess.call(args)
+                            time.sleep(10)
+                    except Exception:
+                        logging.log(40," ERROR analyse alternative connection")
+                        logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
+        terminateserver(xmpp)
 
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
@@ -2522,9 +2512,10 @@ def terminateserver(xmpp):
     #termine server kiosk
     xmpp.eventkiosk.quit()
     xmpp.eventkilltcp.set()
+    xmpp.eventkillpipe.set()
     if sys.platform.startswith('win'):
         try:
-            xmpp.eventkillpipe.set()
+            # on debloque le pipe
             fileHandle = win32file.CreateFile("\\\\.\\pipe\\interfacechang",
                             win32file.GENERIC_READ | win32file.GENERIC_WRITE,
                             0, None,
@@ -2541,11 +2532,9 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"terminate scheduler")
     xmpp.scheduler.quit()
     logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
-    #while not xmpp.quitserverkiosk:
-        #time.sleep(1)
-    while not xmpp.quitserverpipe:
-        time.sleep(1)
+    logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
+    os._exit(0)
 
 
 if __name__ == '__main__':
