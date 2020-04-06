@@ -76,7 +76,7 @@ setup(
         'syncthing >= 2.3.1',
         'requests >= 2.8.14',
         'pathlib >= 1.0.1 ; platform_system=="Windows"',
-        'pywin32 >= 219 ; platform_system=="Windows"',
+        'pypiwin32 >= 219 ; platform_system=="Windows"',
         'comtypes >= 1.1.3 ; platform_system=="Windows"',
         'wmi >= 1.4.9 ; platform_system=="Windows"'
     ],
