@@ -48,7 +48,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.13", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.15", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -56,507 +56,6 @@ DEBUGPULSEPLUGIN = 25
 """
 Plugin for deploying a package
 """
-def maximum(x,y) :
-    if x>y :
-        return(x)
-    else :
-        return(y)
-
-def get_free_tcp_port():
-    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp.bind(('', 0))
-    addr, port = tcp.getsockname()
-    tcp.close()
-    return port
-
-def clear_chargeapparente(objectxmpp):
-    timechargeapparente = 3 #duree de la valeur de la charge apparente.
-    q=time.time()
-    for ars in objectxmpp.charge_apparente_cluster.copy():
-        if (q - objectxmpp.charge_apparente_cluster[ars]['time']) >=timechargeapparente:
-            # il faut remettre la charge apparente a time.time
-            objectxmpp.charge_apparente_cluster[ars]['time'] = q
-            objectxmpp.charge_apparente_cluster[ars]['charge']=0
-
-def add_chargeapparente(objectxmpp, ars):
-    #create structure if not exist
-    if not ars in objectxmpp.charge_apparente_cluster:
-        objectxmpp.charge_apparente_cluster[ars] = {}
-        objectxmpp.charge_apparente_cluster[ars]['charge'] = 0
-        objectxmpp.charge_apparente_cluster[ars]['time'] = time.time()
-
-def changown_dir_of_file(dest, nameuser = None):
-    if nameuser is None:
-    	nameuser = "pulseuser"
-
-    dest = os.path.dirname(dest)
-    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-        try:
-            uid = pwd.getpwnam(nameuser).pw_uid
-            gid = grp.getgrnam(nameuser).gr_gid
-            os.chown(dest, uid, gid)
-            for dirpath, dirnames, filenames in os.walk(dest):
-                for dname in dirnames:
-                    os.chown(os.path.join(dirpath, dname), uid, gid)
-                for fname in filenames:
-                    os.chown(os.path.join(dirpath, fname), uid, gid)
-        except Exception as e:
-            logger.error("%s changown_dir_of_file : %s"%(dest, str(e) ))
-    elif sys.platform.startswith('win'):
-        try:
-            check_output(["icacls",
-                          encode_strconsole(dest),
-                          "/setowner",
-                          encode_strconsole(nameuser),
-                          "/t"], stderr=STDOUT)
-
-        except Exception as e:
-            logger.error("\n%s"%(traceback.format_exc()))
-
-def cleandescriptor(datasend):
-
-    if sys.platform.startswith('linux'):
-        try:
-            del datasend['descriptor']['win']
-        except KeyError:
-            pass
-        try:
-            del datasend['descriptor']['mac']
-        except KeyError:
-            pass
-        try:
-            datasend['descriptor']['sequence'] = datasend['descriptor']['linux']['sequence']
-            del datasend['descriptor']['linux']
-        except:
-            return False
-
-    elif sys.platform.startswith('win'):
-        try:
-            del datasend['descriptor']['linux']
-        except KeyError:
-            pass
-        try:
-            del datasend['descriptor']['mac']
-        except KeyError:
-            pass
-        try:
-            datasend['descriptor']['sequence'] = datasend['descriptor']['win']['sequence']
-            #del datasend['descriptor']['win']['sequence']
-            del datasend['descriptor']['win']
-        except:
-            return False
-    elif sys.platform.startswith('darwin'):
-        try:
-            del datasend['descriptor']['linux']
-        except KeyError:
-            pass
-        try:
-            del datasend['descriptor']['win']
-        except KeyError:
-            pass
-        try:
-            datasend['descriptor']['sequence'] = datasend['descriptor']['mac']['sequence']
-            #del datasend['descriptor']['Macos']['sequence']
-            del datasend['descriptor']['mac']
-        except:
-            return False
-    datasend['typeos'] = sys.platform
-    return True
-
-def create_message_self_for_transfertfile(sessionid):
-    return  {
-        'action': plugin['NAME'],
-        'sessionid': sessionid,
-        'data' :{'step' : "transferfiles"},
-        'ret' : 0,
-        'base64' : False}
-
-def ARSremovereversessh(objectxmpp,
-                        strjidagent,
-                        sessionid,
-                        loginname = "",
-                        message = ""):
-    try:
-        objectxmpp.reversedelpoy # reversedelpoy add port for reverse ssh, used for del reverse
-    except AttributeError:
-        objectxmpp.reversedelpoy={}
-    if not message.strip():
-        msg = "<span class='log_ok'>Transfer complete</span>"
-    else:
-        msg = "<span class='log_err'>Transfer error: %s</span>"%message
-    objectxmpp.xmpplog(msg,
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment | Terminate |Notify",
-                        date = None ,
-                        fromuser = "ARS %s"% strjidagent)
-    if sessionid in objectxmpp.reversedelpoy:
-        remoteport = objectxmpp.reversedelpoy[sessionid]
-        cmd="""kill -9 $(lsof -i -n | grep  reversessh| grep %s | awk '{print $2}' | sort | uniq)"""%remoteport
-        simplecommandstr(cmd)
-        if sessionid in objectxmpp.reversedelpoy:
-            del objectxmpp.reversedelpoy[sessionid]
-        objectxmpp.xmpplog( "Closing reverse ssh tunnel for remote port %s"%remoteport,
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment | Error | Download | Transfer",
-                        date = None ,
-                        fromuser = loginname,
-                        touser = "")
-
-def askinfo(to, sessionid, objectxmpp, informationasking=[], replyaction=None,
-            list_to_sender=[], step=None):
-    ask = {
-        'action': "requestinfo",
-        'sessionid': sessionid,
-        'data' : {'actiontype' : 'requestinfo'},
-        'ret' : 0,
-        'base64' : False}
-
-    if replyaction is not None:
-        ask['data']['actionasker'] = replyaction
-    if len(list_to_sender) != 0:
-        ask['data']['sender'] = list_to_sender
-    if step is not None:
-        ask['data']['step'] = step
-    if len(informationasking) != 0:
-        ask['data']['dataask'] = informationasking
-
-    objectxmpp.send_message(mto = to,
-                            mbody = json.dumps(ask),
-                            mtype = 'chat')
-
-def takeresource(datasend, objectxmpp, sessionid):
-    datasendl = {}
-    if not 'data' in datasend:
-        datasendl['data'] = datasend
-    else:
-        datasendl = datasend
-
-    logger.debug('Taking resource : %s'%datasendl['data']['jidrelay'])
-    msgresource = {'action': "cluster",
-                    'sessionid': sessionid,
-                    'data' :  {"subaction" : "takeresource",
-                                "data" : {'user' : datasendl['data']['advanced']['login'],
-                                        'machinejid' : datasendl['data']['jidmachine']
-                                }
-                    },
-                    'ret' : 0,
-                    'base64' : False}
-    objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
-                            mbody = json.dumps(msgresource),
-                            mtype = 'chat')
-    objectxmpp.xmpplog('Taking resource : %s'%datasendl['data']['jidrelay'],
-                       type = 'deploy',
-                       sessionname = sessionid,
-                       priority = -1,
-                       action = "xmpplog",
-                       who = objectxmpp.boundjid.bare,
-                       module = "Deployment| Notify | Cluster",
-                       date = None ,
-                       fromuser = datasendl['data']['advanced']['login'])
-    return datasend
-
-def removeresource(datasend, objectxmpp, sessionid):
-    datasendl = {}
-    if not 'data' in datasend:
-        datasendl['data'] = datasend
-    else:
-        datasendl = datasend
-    logger.debug('Restoring resource : %s'%datasendl['data']['jidrelay'])
-    msgresource = {'action': "cluster",
-                    'sessionid': sessionid,
-                    'data' :  { "subaction" : "removeresource",
-                                "data" : {'user' : datasendl['data']['advanced']['login'],
-                                            'machinejid' : datasendl['data']['jidmachine']
-                                }
-                    },
-                    'ret' : 0,
-                    'base64' : False}
-    objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
-                            mbody = json.dumps(msgresource),
-                            mtype = 'chat')
-    objectxmpp.xmpplog('Restoring resource : %s'%datasendl['data']['jidrelay'],
-                       type = 'deploy',
-                       sessionname = sessionid,
-                       priority = -1,
-                       action = "xmpplog",
-                       who = objectxmpp.boundjid.bare,
-                       module = "Deployment| Notify | Cluster",
-                       date = None ,
-                       fromuser = datasendl['data']['advanced']['login'])
-    return datasend
-
-def initialisesequence(datasend, objectxmpp, sessionid ):
-    strjidagent = str(objectxmpp.boundjid.bare)
-    datasend['data']['stepcurrent'] = 0 #step initial
-    if not objectxmpp.session.isexist(sessionid):
-        logger.debug("creation session %s"%sessionid)
-        objectxmpp.session.createsessiondatainfo(sessionid,  datasession = datasend['data'], timevalid = 180)
-        logger.debug("update object backtodeploy")
-    logger.debug("start call grafcet (initiation)")
-    objectxmpp.xmpplog('Starting package execution : %s'%datasend['data']['name'],
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment| Notify | Execution | Scheduled",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-
-    logger.debug("start call grafcet (initiation)")
-    if 'data' in datasend and \
-                'descriptor' in datasend['data'] and \
-                'path' in datasend['data'] and \
-                "info" in datasend['data']['descriptor'] and \
-                "launcher" in  datasend['data']['descriptor']['info']:
-        try:
-            id_package = os.path.basename(datasend['data']['path'])
-            if id_package != "":
-                name = datasend['data']['name']
-                commandlauncher = base64.b64decode(datasend['data']['descriptor']['info']['launcher'])
-                objectxmpp.infolauncherkiook.set_cmd_launch(id_package, commandlauncher)
-                #addition correspondance name et idpackage.
-                if name != "":
-                    objectxmpp.infolauncherkiook.set_ref_package_for_name(name, id_package)
-                    objectxmpp.xmpplog("Launcher command for kiosk [%s] - [%s] -> [%s]"%(commandlauncher, name, id_package),
-                                type = 'deploy',
-                                sessionname = datasend['sessionid'],
-                                priority = -1,
-                                action = "xmpplog",
-                                who = strjidagent,
-                                module = "Deployment | Kiosk",
-                                date = None ,
-                                fromuser = str(datasend['data']['advanced']['login']))
-                else:
-                    logger.warning("nanme missing for info launcher command of kiosk")
-            else:
-                logger.warning("id package missing for info launcher command of kiosk")
-        except:
-            logger.error("launcher command of kiosk")
-            traceback.print_exc(file=sys.stdout)
-    else:
-        logger.warning("launcher command missing for kiosk")
-    grafcet(objectxmpp, datasend)
-    logger.debug("outing graphcet end initiation")
-
-def curlgetdownloadfile( destfile, urlfile, insecure = True, limit_rate_ko= None):
-    # As long as the file is opened in binary mode, both Python 2 and Python 3
-    # can write response body to it without decoding.
-    with open(destfile, 'wb') as f:
-        c = pycurl.Curl()
-        urlfile=urlfile.replace(" ", "%20")
-        c.setopt(c.URL, urlfile)
-        c.setopt(c.WRITEDATA, f)
-        if limit_rate_ko is not None and limit_rate_ko != '' and int(limit_rate_ko) > 0:
-            # limit_rate_ko en octed in curl
-            c.setopt(c.MAX_RECV_SPEED_LARGE, int(limit_rate_ko)*1024)
-        if insecure :
-            # option equivalent a friser de --insecure
-            c.setopt(pycurl.SSL_VERIFYPEER, 0)
-            c.setopt(pycurl.SSL_VERIFYHOST, 0)
-        c.perform()
-        c.close()
-
-def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmdmode="rsync"):
-    logger.info("###################################################")
-    logger.info("pull_package_transfert_rsync : " + cmdmode)
-    logger.info("###################################################")
-    takeresource(datasend, objectxmpp, sessionid)
-    strjidagent = str(objectxmpp.boundjid.bare)
-    if sys.platform.startswith('win'):
-        #for windows scp only
-        cmdmode= "scp"
-    try:
-        packagename = os.path.basename(datasend['data']['pathpackageonmachine'])
-        packagename1="/var/lib/pulse2/packages/%s"%packagename
-        userpackage = "reversessh"
-        remotesrc = """%s@%s:'%s' """%(userpackage , ippackage, packagename1)
-        execrsync = "rsync"
-        execscp   = "scp"
-        error=False
-        if sys.platform.startswith('linux'):
-            path_key_priv =  os.path.join("/", "var", "lib", "pulse2", ".ssh", "id_rsa")
-            localdest = " '%s/%s'"%(managepackage.packagedir(), packagename)
-        elif sys.platform.startswith('win'):
-            try:
-                win32net.NetUserGetInfo('','pulseuser',0)
-                path_key_priv =  os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
-            except:
-                #path_key_priv = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', "id_rsa")
-                path_key_priv = os.path.join("c:\progra~1", "pulse" ,'.ssh', "id_rsa")
-            localdest = " \"%s/%s\""%(managepackage.packagedir(), packagename)
-            if platform.machine().endswith('64'):
-                execrsync = "C:\\\\Windows\\\\SysWOW64\\\\rsync.exe"
-            else:
-                execrsync = "C:\\\\Windows\\\\System32\\\\rsync.exe"
-            execscp   = '"c:\progra~1\OpenSSH\scp.exe"'
-        elif sys.platform.startswith('darwin'):
-            path_key_priv =  os.path.join("/", "var", "root", ".ssh", "id_rsa")
-            localdest = " '%s/%s'"%(managepackage.packagedir(), packagename)
-        else :
-            return False
-
-        cmdtransfert = "%s -C -r "%execscp
-
-        cmd = """%s -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
-
-        if sys.platform.startswith('win'):
-            scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
-            cmd = """ "c:\progra~1\OpenSSH\scp.exe" -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """%(objectxmpp.config.reverseserver_ssh_port, path_key_priv)
-        if cmdmode == "rsync":
-            cmdtransfert =  " %s -z --rsync-path=rsync "%execrsync
-            cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
-
-        cmdexec =  cmd + remotesrc + localdest
-
-        objectxmpp.xmpplog("Client generated transfer command is : \n %s"%cmdexec,
-                    type = 'deploy',
-                    sessionname = datasend['sessionid'],
-                    priority = -1,
-                    action = "xmpplog",
-                    who = strjidagent,
-                    module = "Deployment | Download | Transfer",
-                    date = None ,
-                    fromuser = datasend['data']['advanced']['login'])
-        obj = simplecommand(cmdexec)
-
-        if obj['code'] != 0:
-            objectxmpp.xmpplog("Transfer error: \n %s"%obj['result'],
-                                type = 'deploy',
-                                sessionname = datasend['sessionid'],
-                                priority = -1,
-                                action = "xmpplog",
-                                who = strjidagent,
-                                module = "Deployment | Download | Transfer",
-                                date = None ,
-                                fromuser = datasend['data']['advanced']['login'])
-            error=True
-            return False
-        else:
-            if len (obj['result']) > 0:
-                msg = "<span class='log_warn'>Transfer warning:\n%s</span>"%obj['result']
-            else:
-                msg = "<span class='log_ok'>Transfer successful</span>"
-            objectxmpp.xmpplog(msg,
-                            type = 'deploy',
-                            sessionname = datasend['sessionid'],
-                            priority = -1,
-                            action = "xmpplog",
-                            who = strjidagent,
-                            module = "Deployment | Download | Transfer",
-                            date = None ,
-                            fromuser = datasend['data']['advanced']['login'])
-        error=False
-        return True
-    except Exception:
-        logger.error("\n%s"%(traceback.format_exc()))
-        error=True
-        return False
-    finally:
-        removeresource(datasend, objectxmpp, sessionid)
-        signalendsessionforARS(datasend , objectxmpp, sessionid, error = error)
-
-def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
-    strjidagent = str(objectxmpp.boundjid.bare)
-    if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
-    uuidpackage = datasend['data']['path'].split('/')[-1]
-    curlurlbase = "https://%s:%s/mirror1_files/%s/"%(ippackage, portpackage, uuidpackage )
-    takeresource(datasend, objectxmpp, sessionid)
-    objectxmpp.xmpplog("Package server is %s"%curlurlbase,
-                       type = 'deploy',
-                       sessionname = datasend['sessionid'],
-                       priority = -1,
-                       action = "xmpplog",
-                       who = strjidagent,
-                       module = "Deployment | Download | Transfer",
-                       date = None ,
-                       fromuser = datasend['data']['advanced']['login'])
-
-    for filepackage in datasend['data']['packagefile']:
-        if datasend['data']['methodetransfert'] == "pullcurl":
-            dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
-            urlfile = curlurlbase + filepackage
-
-            logger.info("###################################################")
-            logger.info("adress telechargement package par le client en curl : " + urlfile)
-            logger.info("###################################################")
-            try:
-                if 'limit_rate_ko' in datasend['data']['descriptor']['info'] and \
-                                datasend['data']['descriptor']['info']['limit_rate_ko'] != "" and\
-                                    int(datasend['data']['descriptor']['info']['limit_rate_ko'])> 0:
-                    limit_rate_ko = datasend['data']['descriptor']['info']['limit_rate_ko']
-                    msg = 'Downloading file : %s Package : %s [transfer rate %s ko]'%( filepackage, datasend['data']['name'],limit_rate_ko)
-                else:
-                    limit_rate_ko = ""
-                    msg = 'Downloading file : %s Package : %s'%( filepackage, datasend['data']['name'])
-                objectxmpp.xmpplog( msg,
-                                    type = 'deploy',
-                                    sessionname = datasend['sessionid'],
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Deployment | Download | Transfer",
-                                    date = None ,
-                                    fromuser = datasend['data']['advanced']['login'])
-                curlgetdownloadfile( dest, urlfile, insecure = True, limit_rate_ko = limit_rate_ko)
-                changown_dir_of_file(dest)# owner pulse or pulseuser.
-            except Exception as e:
-                traceback.print_exc(file=sys.stdout)
-                logger.debug(str(e))
-                objectxmpp.xmpplog('<span class="log_err">Transfer error : curl download [%s] package file: %s</span>'%(curlurlbase, filepackage),
-                                    type = 'deploy',
-                                    sessionname = datasend['sessionid'],
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Deployment | Download | Transfer | Notify | Error",
-                                    date = None ,
-                                    fromuser = datasend['data']['name'])
-                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                                    type = 'deploy',
-                                    sessionname = datasend['sessionid'],
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Deployment | Error | Terminate | Notify",
-                                    date = None ,
-                                    fromuser = datasend['data']['name'])
-                removeresource(datasend, objectxmpp, sessionid)
-                signalendsessionforARS(datasend , objectxmpp, sessionid, error = True)
-                return False
-    removeresource(datasend, objectxmpp, sessionid)
-    signalendsessionforARS(datasend , objectxmpp, sessionid, error = False)
-    return True
-
-def signalendsessionforARS(datasend , objectxmpp, sessionid, error = False):
-    #termine sessionid sur ARS pour permettre autre deploiement
-    try :
-        msgsessionend = { 'action': "resultapplicationdeploymentjson",
-                        'sessionid': sessionid,
-                        'data' :  datasend,
-                        'ret' : 255,
-                        'base64' : False
-                        }
-        if error == False:
-            msgsessionend['ret'] = 0
-        datasend['endsession'] = True
-        objectxmpp.send_message(mto=datasend['data']['jidrelay'],
-                                mbody=json.dumps(msgsessionend),
-                                mtype='chat')
-    except Exception as e:
-        logger.debug(str(e))
-        traceback.print_exc(file=sys.stdout)
-
-
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     strjidagent = str(objectxmpp.boundjid.bare)
     if hasattr(objectxmpp.config, 'clients_ssh_port'):
@@ -1543,6 +1042,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     and data['methodetransfert'] in ["pullrsync", "pullscp"] \
                         and not 'transfertpullrsync' in data:
             data['transfertpullrsync'] = True
+            innstall_key_par_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
             # creation d'un reverce ssh
             remoteport = get_free_tcp_port() # get port free
             data['remoteport'] = remoteport
@@ -1664,50 +1164,51 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.session.createsessiondatainfo(sessionid,  datasession = data, timevalid = 180)
             if 'methodetransfert' in data and data['methodetransfert'] == "pushrsync":
                 # installkey sur agent machine authorized_keys
-                logger.debug("Install ARS key in authorized_keys on client machine")
-                file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
-                key = file_get_contents(file_key_pub_ars)
-                time_out_install_key = 60
-                resultiqstr = objectxmpp.iqsendpulse( data['jidmachine'],
-                                                     {"action": "keyinstall",
-                                                      "data":{"key" : key,
-                                                      "sessionid" : sessionid,
-                                                      "from" : strjidagent}
-                                                      }, time_out_install_key)
-                resultiq = json.loads(resultiqstr)
-                msglogbool = False
-                if 'ret' in resultiq and resultiq['ret'] != 0:
-                    logger.error("Install ARS key %s on machine %s"%(strjidagent,data['jidmachine']))
-                    logger.error("Error description : %s"%json.dumps(resultiq['msg_error'], indent = 4))
-                    msglogbool = True
-                if "err" in resultiq:
-                    logger.error("Install ARS key %s on machine %s timed out %s"%(strjidagent,
-                                                                                    data['jidmachine'],
-                                                                                    time_out_install_key))
-                    msglogbool = True
-                if msglogbool:
-                    msgerror = "Check why we cannot install the ars %s " \
-                           "public key which is contained in the %s " \
-                           "file on the %s machine" % (file_key_pub_ars,
-                                                        strjidagent,
-                                                        data['jidmachine'])
-                    logger.error(msgerror)
-                    objectxmpp.xmpplog( msgerror,
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = strjidagent,
-                                        module = "Deployment | Error",
-                                        date = None )
-                    objectxmpp.xmpplog( "<span class='log_warn'>Trying to continue deployment</span>",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = strjidagent,
-                                        module = "Deployment | Error",
-                                        date = None )
+                innstall_key_par_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
+                #logger.debug("Install ARS key in authorized_keys on client machine")
+                #file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
+                #key = file_get_contents(file_key_pub_ars)
+                #time_out_install_key = 60
+                #resultiqstr = objectxmpp.iqsendpulse( data['jidmachine'],
+                                                     #{"action": "keyinstall",
+                                                      #"data":{"key" : key,
+                                                      #"sessionid" : sessionid,
+                                                      #"from" : strjidagent}
+                                                      #}, time_out_install_key)
+                #resultiq = json.loads(resultiqstr)
+                #msglogbool = False
+                #if 'ret' in resultiq and resultiq['ret'] != 0:
+                    #logger.error("Install ARS key %s on machine %s"%(strjidagent,data['jidmachine']))
+                    #logger.error("Error description : %s"%json.dumps(resultiq['msg_error'], indent = 4))
+                    #msglogbool = True
+                #if "err" in resultiq:
+                    #logger.error("Install ARS key %s on machine %s timed out %s"%(strjidagent,
+                                                                                    #data['jidmachine'],
+                                                                                    #time_out_install_key))
+                    #msglogbool = True
+                #if msglogbool:
+                    #msgerror = "Check why we cannot install the ars %s " \
+                           #"public key which is contained in the %s " \
+                           #"file on the %s machine" % (file_key_pub_ars,
+                                                        #strjidagent,
+                                                        #data['jidmachine'])
+                    #logger.error(msgerror)
+                    #objectxmpp.xmpplog( msgerror,
+                                        #type = 'deploy',
+                                        #sessionname = sessionid,
+                                        #priority = 0,
+                                        #action = "xmpplog",
+                                        #who = strjidagent,
+                                        #module = "Deployment | Error",
+                                        #date = None )
+                    #objectxmpp.xmpplog( "<span class='log_warn'>Trying to continue deployment</span>",
+                                        #type = 'deploy',
+                                        #sessionname = sessionid,
+                                        #priority = 0,
+                                        #action = "xmpplog",
+                                        #who = strjidagent,
+                                        #module = "Deployment | Error",
+                                        #date = None )
 
             ## In push method you must know or install the packages on machine agent
             ## In push mode, the packets are sent to a location depending on reception
@@ -2052,6 +1553,18 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 date = None ,
                                                 fromuser = data_in_session['login'],
                                                 touser = "")
+                            objectxmpp.xmpplog('<span class="log_warn">Make sure ssh server is running on the client machine</span>',
+                                                type = 'deploy',
+                                                sessionname = sessionid,
+                                                priority = -1,
+                                                action = "xmpplog",
+                                                who = strjidagent,
+                                                how = "",
+                                                why = "",
+                                                module = "Deployment | Error | Download | Transfer",
+                                                date = None ,
+                                                fromuser = data_in_session['login'],
+                                                touser = "")
                             objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                                                 type = 'deploy',
                                                 sessionname = sessionid,
@@ -2092,7 +1605,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 strjidagent,
                                                 sessionid,
                                                 loginname = "",
-                                                message = "")
+                                                message = "Error sending file via the established reverse ssh tunnel.")
                             return
                         else:
                             objectxmpp.xmpplog('Result : %s'\
@@ -2157,3 +1670,562 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 mtype = 'chat')
                         if objectxmpp.session.isexist(sessionid):
                             objectxmpp.session.clearnoevent(sessionid)
+
+
+############################# FUNCTIONS #############################
+
+def maximum(x,y) :
+    if x>y :
+        return(x)
+    else :
+        return(y)
+
+def get_free_tcp_port():
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp.bind(('', 0))
+    addr, port = tcp.getsockname()
+    tcp.close()
+    return port
+
+def clear_chargeapparente(objectxmpp):
+    timechargeapparente = 3 #duree de la valeur de la charge apparente.
+    q=time.time()
+    for ars in objectxmpp.charge_apparente_cluster.copy():
+        if (q - objectxmpp.charge_apparente_cluster[ars]['time']) >=timechargeapparente:
+            # il faut remettre la charge apparente a time.time
+            objectxmpp.charge_apparente_cluster[ars]['time'] = q
+            objectxmpp.charge_apparente_cluster[ars]['charge']=0
+
+def add_chargeapparente(objectxmpp, ars):
+    #create structure if not exist
+    if not ars in objectxmpp.charge_apparente_cluster:
+        objectxmpp.charge_apparente_cluster[ars] = {}
+        objectxmpp.charge_apparente_cluster[ars]['charge'] = 0
+        objectxmpp.charge_apparente_cluster[ars]['time'] = time.time()
+
+def changown_dir_of_file(dest, nameuser = None):
+    if nameuser is None:
+        nameuser = "pulseuser"
+
+    dest = os.path.dirname(dest)
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+        try:
+            uid = pwd.getpwnam(nameuser).pw_uid
+            gid = grp.getgrnam(nameuser).gr_gid
+            os.chown(dest, uid, gid)
+            for dirpath, dirnames, filenames in os.walk(dest):
+                for dname in dirnames:
+                    os.chown(os.path.join(dirpath, dname), uid, gid)
+                for fname in filenames:
+                    os.chown(os.path.join(dirpath, fname), uid, gid)
+        except Exception as e:
+            logger.error("%s changown_dir_of_file : %s"%(dest, str(e) ))
+    elif sys.platform.startswith('win'):
+        try:
+            check_output(["icacls",
+                          encode_strconsole(dest),
+                          "/setowner",
+                          encode_strconsole(nameuser),
+                          "/t"], stderr=STDOUT)
+
+        except Exception as e:
+            logger.error("\n%s"%(traceback.format_exc()))
+
+def innstall_key_par_iq(objectxmpp, tomachine, sessionid, fromrelay):
+    logger.debug("Install ARS key in authorized_keys on client machine")
+
+    objectxmpp.xmpplog( "Install ARS key in authorized_keys on client machine",
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = 0,
+                            action = "xmpplog",
+                            who = fromrelay,
+                            module = "Deployment | Error",
+                            date = None )
+
+    file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
+    key = file_get_contents(file_key_pub_ars)
+    time_out_install_key = 60
+    resultiqstr = objectxmpp.iqsendpulse( tomachine,
+                                            {"action": "keyinstall",
+                                            "data":{"key" : key,
+                                            "sessionid" : sessionid,
+                                            "from" : fromrelay}
+                                            }, time_out_install_key)
+    resultiq = json.loads(resultiqstr)
+    msglogbool = False
+    if 'ret' in resultiq and resultiq['ret'] != 0:
+        logger.error("Install ARS key %s on machine %s"%(fromrelay,tomachine))
+        logger.error("Error description : %s"%json.dumps(resultiq['msg_error'], indent = 4))
+        msglogbool = True
+    if "err" in resultiq:
+        logger.error("Install ARS key %s on machine %s timed out %s"%(fromrelay,
+                                                                        tomachine,
+                                                                        time_out_install_key))
+        msglogbool = True
+    if msglogbool:
+        msgerror = "Check why we cannot install the ars %s " \
+                "public key which is contained in the %s " \
+                "file on the %s machine" % (file_key_pub_ars,
+                                            fromrelay,
+                                            tomachine)
+        logger.error(msgerror)
+        objectxmpp.xmpplog( msgerror,
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = 0,
+                            action = "xmpplog",
+                            who = fromrelay,
+                            module = "Deployment | Error",
+                            date = None )
+        objectxmpp.xmpplog( "<span class='log_warn'>Trying to continue deployment</span>",
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = 0,
+                            action = "xmpplog",
+                            who = fromrelay,
+                            module = "Deployment | Error",
+                            date = None )
+
+def cleandescriptor(datasend):
+
+    if sys.platform.startswith('linux'):
+        try:
+            del datasend['descriptor']['win']
+        except KeyError:
+            pass
+        try:
+            del datasend['descriptor']['mac']
+        except KeyError:
+            pass
+        try:
+            datasend['descriptor']['sequence'] = datasend['descriptor']['linux']['sequence']
+            del datasend['descriptor']['linux']
+        except:
+            return False
+
+    elif sys.platform.startswith('win'):
+        try:
+            del datasend['descriptor']['linux']
+        except KeyError:
+            pass
+        try:
+            del datasend['descriptor']['mac']
+        except KeyError:
+            pass
+        try:
+            datasend['descriptor']['sequence'] = datasend['descriptor']['win']['sequence']
+            #del datasend['descriptor']['win']['sequence']
+            del datasend['descriptor']['win']
+        except:
+            return False
+    elif sys.platform.startswith('darwin'):
+        try:
+            del datasend['descriptor']['linux']
+        except KeyError:
+            pass
+        try:
+            del datasend['descriptor']['win']
+        except KeyError:
+            pass
+        try:
+            datasend['descriptor']['sequence'] = datasend['descriptor']['mac']['sequence']
+            #del datasend['descriptor']['Macos']['sequence']
+            del datasend['descriptor']['mac']
+        except:
+            return False
+    datasend['typeos'] = sys.platform
+    return True
+
+def create_message_self_for_transfertfile(sessionid):
+    return  {
+        'action': plugin['NAME'],
+        'sessionid': sessionid,
+        'data' :{'step' : "transferfiles"},
+        'ret' : 0,
+        'base64' : False}
+
+def ARSremovereversessh(objectxmpp,
+                        strjidagent,
+                        sessionid,
+                        loginname = "",
+                        message = ""):
+    try:
+        objectxmpp.reversedelpoy # reversedelpoy add port for reverse ssh, used for del reverse
+    except AttributeError:
+        objectxmpp.reversedelpoy={}
+    if not message.strip():
+        msg = "<span class='log_ok'>Transfer complete</span>"
+    else:
+        msg = "<span class='log_err'>Transfer error: %s</span>"%message
+    objectxmpp.xmpplog(msg,
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment | Terminate |Notify",
+                        date = None ,
+                        fromuser = "ARS %s"% strjidagent)
+    if sessionid in objectxmpp.reversedelpoy:
+        remoteport = objectxmpp.reversedelpoy[sessionid]
+        cmd="""kill -9 $(lsof -i -n | grep  reversessh| grep %s | awk '{print $2}' | sort | uniq)"""%remoteport
+        simplecommandstr(cmd)
+        if sessionid in objectxmpp.reversedelpoy:
+            del objectxmpp.reversedelpoy[sessionid]
+        objectxmpp.xmpplog( "Closing reverse ssh tunnel for remote port %s"%remoteport,
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment | Error | Download | Transfer",
+                        date = None ,
+                        fromuser = loginname,
+                        touser = "")
+
+def askinfo(to, sessionid, objectxmpp, informationasking=[], replyaction=None,
+            list_to_sender=[], step=None):
+    ask = {
+        'action': "requestinfo",
+        'sessionid': sessionid,
+        'data' : {'actiontype' : 'requestinfo'},
+        'ret' : 0,
+        'base64' : False}
+
+    if replyaction is not None:
+        ask['data']['actionasker'] = replyaction
+    if len(list_to_sender) != 0:
+        ask['data']['sender'] = list_to_sender
+    if step is not None:
+        ask['data']['step'] = step
+    if len(informationasking) != 0:
+        ask['data']['dataask'] = informationasking
+
+    objectxmpp.send_message(mto = to,
+                            mbody = json.dumps(ask),
+                            mtype = 'chat')
+
+def takeresource(datasend, objectxmpp, sessionid):
+    datasendl = {}
+    if not 'data' in datasend:
+        datasendl['data'] = datasend
+    else:
+        datasendl = datasend
+
+    logger.debug('Taking resource : %s'%datasendl['data']['jidrelay'])
+    msgresource = {'action': "cluster",
+                    'sessionid': sessionid,
+                    'data' :  {"subaction" : "takeresource",
+                                "data" : {'user' : datasendl['data']['advanced']['login'],
+                                        'machinejid' : datasendl['data']['jidmachine']
+                                }
+                    },
+                    'ret' : 0,
+                    'base64' : False}
+    objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
+                            mbody = json.dumps(msgresource),
+                            mtype = 'chat')
+    objectxmpp.xmpplog('Taking resource : %s'%datasendl['data']['jidrelay'],
+                       type = 'deploy',
+                       sessionname = sessionid,
+                       priority = -1,
+                       action = "xmpplog",
+                       who = objectxmpp.boundjid.bare,
+                       module = "Deployment| Notify | Cluster",
+                       date = None ,
+                       fromuser = datasendl['data']['advanced']['login'])
+    return datasend
+
+def removeresource(datasend, objectxmpp, sessionid):
+    datasendl = {}
+    if not 'data' in datasend:
+        datasendl['data'] = datasend
+    else:
+        datasendl = datasend
+    logger.debug('Restoring resource : %s'%datasendl['data']['jidrelay'])
+    msgresource = {'action': "cluster",
+                    'sessionid': sessionid,
+                    'data' :  { "subaction" : "removeresource",
+                                "data" : {'user' : datasendl['data']['advanced']['login'],
+                                            'machinejid' : datasendl['data']['jidmachine']
+                                }
+                    },
+                    'ret' : 0,
+                    'base64' : False}
+    objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
+                            mbody = json.dumps(msgresource),
+                            mtype = 'chat')
+    objectxmpp.xmpplog('Restoring resource : %s'%datasendl['data']['jidrelay'],
+                       type = 'deploy',
+                       sessionname = sessionid,
+                       priority = -1,
+                       action = "xmpplog",
+                       who = objectxmpp.boundjid.bare,
+                       module = "Deployment| Notify | Cluster",
+                       date = None ,
+                       fromuser = datasendl['data']['advanced']['login'])
+    return datasend
+
+def initialisesequence(datasend, objectxmpp, sessionid ):
+    strjidagent = str(objectxmpp.boundjid.bare)
+    datasend['data']['stepcurrent'] = 0 #step initial
+    if not objectxmpp.session.isexist(sessionid):
+        logger.debug("creation session %s"%sessionid)
+        objectxmpp.session.createsessiondatainfo(sessionid,  datasession = datasend['data'], timevalid = 180)
+        logger.debug("update object backtodeploy")
+    logger.debug("start call grafcet (initiation)")
+    objectxmpp.xmpplog('Starting package execution : %s'%datasend['data']['name'],
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | Execution | Scheduled",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+
+    logger.debug("start call grafcet (initiation)")
+    if 'data' in datasend and \
+                'descriptor' in datasend['data'] and \
+                'path' in datasend['data'] and \
+                "info" in datasend['data']['descriptor'] and \
+                "launcher" in  datasend['data']['descriptor']['info']:
+        try:
+            id_package = os.path.basename(datasend['data']['path'])
+            if id_package != "":
+                name = datasend['data']['name']
+                commandlauncher = base64.b64decode(datasend['data']['descriptor']['info']['launcher'])
+                objectxmpp.infolauncherkiook.set_cmd_launch(id_package, commandlauncher)
+                #addition correspondance name et idpackage.
+                if name != "":
+                    objectxmpp.infolauncherkiook.set_ref_package_for_name(name, id_package)
+                    objectxmpp.xmpplog("Launcher command for kiosk [%s] - [%s] -> [%s]"%(commandlauncher, name, id_package),
+                                type = 'deploy',
+                                sessionname = datasend['sessionid'],
+                                priority = -1,
+                                action = "xmpplog",
+                                who = strjidagent,
+                                module = "Deployment | Kiosk",
+                                date = None ,
+                                fromuser = str(datasend['data']['advanced']['login']))
+                else:
+                    logger.warning("nanme missing for info launcher command of kiosk")
+            else:
+                logger.warning("id package missing for info launcher command of kiosk")
+        except:
+            logger.error("launcher command of kiosk")
+            traceback.print_exc(file=sys.stdout)
+    else:
+        logger.warning("launcher command missing for kiosk")
+    grafcet(objectxmpp, datasend)
+    logger.debug("outing graphcet end initiation")
+
+def curlgetdownloadfile( destfile, urlfile, insecure = True, limit_rate_ko= None):
+    # As long as the file is opened in binary mode, both Python 2 and Python 3
+    # can write response body to it without decoding.
+    with open(destfile, 'wb') as f:
+        c = pycurl.Curl()
+        urlfile=urlfile.replace(" ", "%20")
+        c.setopt(c.URL, urlfile)
+        c.setopt(c.WRITEDATA, f)
+        if limit_rate_ko is not None and limit_rate_ko != '' and int(limit_rate_ko) > 0:
+            # limit_rate_ko en octed in curl
+            c.setopt(c.MAX_RECV_SPEED_LARGE, int(limit_rate_ko)*1024)
+        if insecure :
+            # option equivalent a friser de --insecure
+            c.setopt(pycurl.SSL_VERIFYPEER, 0)
+            c.setopt(pycurl.SSL_VERIFYHOST, 0)
+        c.perform()
+        c.close()
+
+def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmdmode="rsync"):
+    logger.info("###################################################")
+    logger.info("pull_package_transfert_rsync : " + cmdmode)
+    logger.info("###################################################")
+    takeresource(datasend, objectxmpp, sessionid)
+    strjidagent = str(objectxmpp.boundjid.bare)
+    if sys.platform.startswith('win'):
+        #for windows scp only
+        cmdmode= "scp"
+    try:
+        packagename = os.path.basename(datasend['data']['pathpackageonmachine'])
+        packagename1="/var/lib/pulse2/packages/%s"%packagename
+        userpackage = "reversessh"
+        remotesrc = """%s@%s:'%s' """%(userpackage , ippackage, packagename1)
+        execrsync = "rsync"
+        execscp   = "scp"
+        error=False
+        if sys.platform.startswith('linux'):
+            path_key_priv =  os.path.join("/", "var", "lib", "pulse2", ".ssh", "id_rsa")
+            localdest = " '%s/%s'"%(managepackage.packagedir(), packagename)
+        elif sys.platform.startswith('win'):
+            try:
+                win32net.NetUserGetInfo('','pulseuser',0)
+                path_key_priv =  os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+            except:
+                #path_key_priv = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', "id_rsa")
+                path_key_priv = os.path.join("c:\progra~1", "pulse" ,'.ssh', "id_rsa")
+            localdest = " \"%s/%s\""%(managepackage.packagedir(), packagename)
+            if platform.machine().endswith('64'):
+                execrsync = "C:\\\\Windows\\\\SysWOW64\\\\rsync.exe"
+            else:
+                execrsync = "C:\\\\Windows\\\\System32\\\\rsync.exe"
+            execscp   = '"c:\progra~1\OpenSSH\scp.exe"'
+        elif sys.platform.startswith('darwin'):
+            path_key_priv =  os.path.join("/", "var", "root", ".ssh", "id_rsa")
+            localdest = " '%s/%s'"%(managepackage.packagedir(), packagename)
+        else :
+            return False
+
+        cmdtransfert = "%s -C -r "%execscp
+
+        cmd = """%s -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
+
+        if sys.platform.startswith('win'):
+            scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
+            cmd = """ "c:\progra~1\OpenSSH\scp.exe" -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """%(objectxmpp.config.reverseserver_ssh_port, path_key_priv)
+        if cmdmode == "rsync":
+            cmdtransfert =  " %s -z --rsync-path=rsync "%execrsync
+            cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
+
+        cmdexec =  cmd + remotesrc + localdest
+
+        objectxmpp.xmpplog("Client generated transfer command is : \n %s"%cmdexec,
+                    type = 'deploy',
+                    sessionname = datasend['sessionid'],
+                    priority = -1,
+                    action = "xmpplog",
+                    who = strjidagent,
+                    module = "Deployment | Download | Transfer",
+                    date = None ,
+                    fromuser = datasend['data']['advanced']['login'])
+        obj = simplecommand(cmdexec)
+
+        if obj['code'] != 0:
+            objectxmpp.xmpplog("Transfer error: \n %s"%obj['result'],
+                                type = 'deploy',
+                                sessionname = datasend['sessionid'],
+                                priority = -1,
+                                action = "xmpplog",
+                                who = strjidagent,
+                                module = "Deployment | Download | Transfer",
+                                date = None ,
+                                fromuser = datasend['data']['advanced']['login'])
+            error=True
+            return False
+        else:
+            if len (obj['result']) > 0:
+                msg = "<span class='log_warn'>Transfer warning:\n%s</span>"%obj['result']
+            else:
+                msg = "<span class='log_ok'>Transfer successful</span>"
+            objectxmpp.xmpplog(msg,
+                            type = 'deploy',
+                            sessionname = datasend['sessionid'],
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Deployment | Download | Transfer",
+                            date = None ,
+                            fromuser = datasend['data']['advanced']['login'])
+        error=False
+        return True
+    except Exception:
+        logger.error("\n%s"%(traceback.format_exc()))
+        error=True
+        return False
+    finally:
+        removeresource(datasend, objectxmpp, sessionid)
+        signalendsessionforARS(datasend , objectxmpp, sessionid, error = error)
+
+def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
+    strjidagent = str(objectxmpp.boundjid.bare)
+    if not os.path.isdir(datasend['data']['pathpackageonmachine']):
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+    uuidpackage = datasend['data']['path'].split('/')[-1]
+    curlurlbase = "https://%s:%s/mirror1_files/%s/"%(ippackage, portpackage, uuidpackage )
+    takeresource(datasend, objectxmpp, sessionid)
+    objectxmpp.xmpplog("Package server is %s"%curlurlbase,
+                       type = 'deploy',
+                       sessionname = datasend['sessionid'],
+                       priority = -1,
+                       action = "xmpplog",
+                       who = strjidagent,
+                       module = "Deployment | Download | Transfer",
+                       date = None ,
+                       fromuser = datasend['data']['advanced']['login'])
+
+    for filepackage in datasend['data']['packagefile']:
+        if datasend['data']['methodetransfert'] == "pullcurl":
+            dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
+            urlfile = curlurlbase + filepackage
+
+            logger.info("###################################################")
+            logger.info("adress telechargement package par le client en curl : " + urlfile)
+            logger.info("###################################################")
+            try:
+                if 'limit_rate_ko' in datasend['data']['descriptor']['info'] and \
+                                datasend['data']['descriptor']['info']['limit_rate_ko'] != "" and\
+                                    int(datasend['data']['descriptor']['info']['limit_rate_ko'])> 0:
+                    limit_rate_ko = datasend['data']['descriptor']['info']['limit_rate_ko']
+                    msg = 'Downloading file : %s Package : %s [transfer rate %s ko]'%( filepackage, datasend['data']['name'],limit_rate_ko)
+                else:
+                    limit_rate_ko = ""
+                    msg = 'Downloading file : %s Package : %s'%( filepackage, datasend['data']['name'])
+                objectxmpp.xmpplog( msg,
+                                    type = 'deploy',
+                                    sessionname = datasend['sessionid'],
+                                    priority = -1,
+                                    action = "xmpplog",
+                                    who = strjidagent,
+                                    module = "Deployment | Download | Transfer",
+                                    date = None ,
+                                    fromuser = datasend['data']['advanced']['login'])
+                curlgetdownloadfile( dest, urlfile, insecure = True, limit_rate_ko = limit_rate_ko)
+                changown_dir_of_file(dest)# owner pulse or pulseuser.
+            except Exception as e:
+                traceback.print_exc(file=sys.stdout)
+                logger.debug(str(e))
+                objectxmpp.xmpplog('<span class="log_err">Transfer error : curl download [%s] package file: %s</span>'%(curlurlbase, filepackage),
+                                    type = 'deploy',
+                                    sessionname = datasend['sessionid'],
+                                    priority = -1,
+                                    action = "xmpplog",
+                                    who = strjidagent,
+                                    module = "Deployment | Download | Transfer | Notify | Error",
+                                    date = None ,
+                                    fromuser = datasend['data']['name'])
+                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                    type = 'deploy',
+                                    sessionname = datasend['sessionid'],
+                                    priority = -1,
+                                    action = "xmpplog",
+                                    who = strjidagent,
+                                    module = "Deployment | Error | Terminate | Notify",
+                                    date = None ,
+                                    fromuser = datasend['data']['name'])
+                removeresource(datasend, objectxmpp, sessionid)
+                signalendsessionforARS(datasend , objectxmpp, sessionid, error = True)
+                return False
+    removeresource(datasend, objectxmpp, sessionid)
+    signalendsessionforARS(datasend , objectxmpp, sessionid, error = False)
+    return True
+
+def signalendsessionforARS(datasend , objectxmpp, sessionid, error = False):
+    #termine sessionid sur ARS pour permettre autre deploiement
+    try :
+        msgsessionend = { 'action': "resultapplicationdeploymentjson",
+                        'sessionid': sessionid,
+                        'data' :  datasend,
+                        'ret' : 255,
+                        'base64' : False
+                        }
+        if error == False:
+            msgsessionend['ret'] = 0
+        datasend['endsession'] = True
+        objectxmpp.send_message(mto=datasend['data']['jidrelay'],
+                                mbody=json.dumps(msgsessionend),
+                                mtype='chat')
+    except Exception as e:
+        logger.debug(str(e))
+        traceback.print_exc(file=sys.stdout)
