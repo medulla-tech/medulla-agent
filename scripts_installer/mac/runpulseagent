@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Delay startup until vnc and ssh daemons have started
+sleep 60
+
+# Start the agent
+export PYCURL_SSL_LIBRARY=openssl
+/usr/local/bin/python2 /usr/local/lib/python2.7/site-packages/pulse_xmpp_agent/launcher.py -t machine

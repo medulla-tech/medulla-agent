@@ -515,7 +515,7 @@ def rewriteInterfaceTypeDebian(data, interface):
         for t in ll:
             if t.split(" ")[0] != interface:
                 z.append(t)
-        if data['dhcp'] == True:
+        if data['dhcp'] is True:
             tab.append("\nauto %s\n" % interface)
             tab.append("iface %s inet dhcp\n" % interface)
         else:

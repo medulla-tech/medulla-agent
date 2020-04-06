@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# (c) 2015-2016 siveo, http://www.siveo.net
+# $Id$
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
+#
+
+# """
+# This script is designed to generate Pulse XMPP agent for Linux
+# """
+
+# TODO: Install freerdp
+#       Make use of deb and rpm repositories for installing packages
+
+SIVEO_BASE_URL="@@SIVEO_BASE_URL@@"
+BASE_URL="@@BASE_URL@@"
+INVENTORY_TAG="@@INVENTORY_TAG@@"
+AGENT_VERSION="@@AGENT_VERSION@@"
+
+
+check_root() {
+    if [ "$(id -u)" != "0" ]; then
+        echo "This script must be run as root" 1>&2
+        exit 1
+    fi
+}
+
+check_distro() {
+    if [ ! -e /etc/os-release ]; then
+        echo "We are not able to find your linux distibution"
+    else
+        DISTRO=`cat /etc/os-release | grep ^ID= | cut -f2 -d'='`
+        VERSION=`cat /etc/os-release | grep ^VERSION_ID= | cut -f2 -d'=' | sed 's/"//g'`
+    fi
+    case "$DISTRO" in
+      mageia|debian|ubuntu)
+        ;;
+      *)
+  	    echo "We do not support your distribution yet"
+        exit 1
+        ;;
+    esac
+}
+
+configure_repo() {
+    case "$DISTRO" in
+      mageia)
+        ;;
+      debian|ubuntu)
+        apt update
+        apt install -q -y apt-transport-https
+        if [[ "${BASE_URL}" != "" ]]; then
+            echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
+        fi
+        echo "deb [trusted=yes] ${SIVEO_BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" >> /etc/apt/sources.list.d/pulseagent.list
+        apt update
+        ;;
+      *)
+        ;;
+    esac
+}
+
+install_agent() {
+    case "$DISTRO" in
+      mageia)
+  	    yum install -q -y --reinstall pulse-agent-linux=${AGENT_VERSION}\*
+        ;;
+      ubuntu|debian)
+  	    apt install -q -y --reinstall pulse-agent-linux=${AGENT_VERSION}\*
+        ;;
+      *)
+        ;;
+    esac
+}
+
+configure_inventory() {
+    TAG="$1"
+    # Setup FusionInventory
+    FUSION_DIR="/etc/fusioninventory"
+    FUSION_CFG="${FUSION_DIR}/agent.cfg"
+
+    if [ -f ${FUSION_CFG} ];then
+        sed -i '/^server/d' ${FUSION_CFG}
+        echo "tag = ${TAG}" > ${FUSION_DIR}/conf.d/tag.cfg
+    else
+        echo "ERROR: Unable to find fusioninventory config file"
+        exit 1
+    fi
+}
+
+start_agent() {
+    # Enable and start the service
+	systemctl enable pulse-xmpp-agent-machine.service
+	systemctl start pulse-xmpp-agent-machine.service
+}
+
+
+check_root
+check_distro
+configure_repo
+install_agent
+if [[ ${INVENTORY_TAG} != "" ]]; then
+    configure_inventory ${INVENTORY_TAG}
+fi
+start_agent

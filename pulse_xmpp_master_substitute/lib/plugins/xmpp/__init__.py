@@ -4082,7 +4082,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         for linemachine in machinespresente:
             out = 0;
-            if linemachine.enabled == True:
+            if linemachine.enabled is True:
                 out = 1
             print linemachine.uuid_inventorymachine
             result[linemachine.uuid_inventorymachine] = [out, 1 ]

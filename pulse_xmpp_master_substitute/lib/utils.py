@@ -840,7 +840,7 @@ def pluginprocess(func):
                 result)
             # encode  result['data'] si besoin
             # print result
-            if result['base64'] == True:
+            if result['base64'] is True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s" % result
             objetxmpp.send_message(mto=message['from'],
@@ -879,7 +879,7 @@ def pulgindeploy(func):
                 dataerreur,
                 result)
             if result['data'] != "end":
-                if result['base64'] == True:
+                if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
                 objetxmpp.send_message(mto=message['from'],
@@ -933,7 +933,7 @@ def pulgindeploy1(func):
             if not result['data']['end']:
                 print "Envoi Message"
                 print "result", result
-                if result['base64'] == True:
+                if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
                 objetxmpp.send_message(mto=message['from'],

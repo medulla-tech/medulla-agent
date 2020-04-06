@@ -148,7 +148,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.modulepath = os.path.abspath(\
                 os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              namelibplugins))
-        # totalise les sessions persistance de 10 secondes
+        # totalise les sessions persistence de 10 secondes
         self.sessionaccumulator = {}
         self.charge_apparente_cluster = {}
 
@@ -1956,7 +1956,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try :
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
-                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
+                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
                         #data in base 64
                         mydata = json.loads(base64.b64decode(dataobj['data']))
@@ -2173,7 +2173,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                                                                                   element))
         #add list scheduler plugins
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
-        #persistance info machine
+        #persistence info machine
         self.infomain = dataobj
         self.dataplugininstall = {"plu" : dataobj['plugin'],
                                   "schedule" : dataobj['pluginscheduled'] }
@@ -2500,7 +2500,6 @@ class process_xmpp_agent():
                         logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
         terminateserver(xmpp)
 
-
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE,"terminateserver")
@@ -2533,13 +2532,10 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"terminate scheduler")
     xmpp.scheduler.quit()
     logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
-    #while not xmpp.quitserverkiosk:
-        #time.sleep(1)
-    # while not xmpp.quitserverpipe:
-        # time.sleep(1)
     logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
     os._exit(0)
+
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:

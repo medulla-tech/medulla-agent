@@ -479,7 +479,7 @@ def cputimes (percpu = False ):
     if percpu == False:
         #global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
-    elif percpu == True:
+    elif percpu is True:
         infocpu =  psutil.cpu_times( percpu = percpu)
         nbcpu = len(infocpu)
         result['nbcpu'] = nbcpu

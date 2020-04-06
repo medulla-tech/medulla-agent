@@ -20,9 +20,12 @@
 
 from setuptools import setup
 from distutils.command.install import INSTALL_SCHEMES
-
-import os
+from distutils.sysconfig import get_python_lib
 import sys
+import os
+
+
+path = get_python_lib() ;
 
 if sys.platform.startswith('linux'):
     fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent")
@@ -51,12 +54,30 @@ setup(
     debian_distro='stretch',
     description = 'XMPP Agent for pulse',
     url='https://www.siveo.net/',
-    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
+    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
     data_files=[('script', ['pulse_xmpp_agent/script/getlastuser.ps1', 'pulse_xmpp_agent/script/create-profile.ps1']),
-                  ('', ['pulse_xmpp_agent/agentversion']),],
+                  ('', ['pulse_xmpp_agent/agentversion']), (path + '/pulse_xmpp_agent/pluginsmachine', ['pulse_xmpp_agent/plugins_common/plugin_enddeploy.py', 'pulse_xmpp_agent/plugins_common/plugin_force_setup_agent.py', 'pulse_xmpp_agent/plugins_common/plugin_applicationdeploymentjson.py', 'pulse_xmpp_agent/plugins_common/plugin_start.py', 'pulse_xmpp_agent/plugins_common/plugin_installplugin.py', 'pulse_xmpp_agent/plugins_common/plugin_requestinfo.py', 'pulse_xmpp_agent/plugins_common/plugin_restartbot.py', 'pulse_xmpp_agent/plugins_common/plugin_shellcommand.py', 'pulse_xmpp_agent/plugins_common/plugin_asynchromeremoteshell.py',  'pulse_xmpp_agent/plugins_common/plugin_guacamole.py', 'pulse_xmpp_agent/plugins_common/plugin_installkey.py', 'pulse_xmpp_agent/plugins_common/plugin_installpluginscheduled.py', 'pulse_xmpp_agent/plugins_common/plugin_resultapplicationdeploymentjson.py', 'pulse_xmpp_agent/plugins_common/plugin_reverse_ssh_on.py', 'pulse_xmpp_agent/plugins_common/plugin_asynchroremoteQA.py','pulse_xmpp_agent/plugins_common/plugin_updateagent.py','pulse_xmpp_agent/plugins_common/plugin_deploysyncthing.py']),],
     test_suite='',
     package_data={},
     entry_points={},
     extras_require={},
-    install_requires=[],
+    install_requires=[
+        'netifaces >= 0.10.5',
+        'configparser >= 3.5.0',
+        'utils >= 0.9.0',
+        'sleekxmpp >= 1.3.1',
+        'zipfile2 >= 0.0.12',
+        'pycurl >= 7.43.0',
+        'lxml >= 3.6.0',
+        'pycrypto >= 2.6.1',
+        'croniter >= 0.3.16',
+        'psutil >= 5.4.3',
+        'pysftp >= 0.2.9',
+        'syncthing >= 2.3.1',
+        'requests >= 2.8.14',
+        'pathlib >= 1.0.1 ; platform_system=="Windows"',
+        'pypiwin32 >= 219 ; platform_system=="Windows"',
+        'comtypes >= 1.1.3 ; platform_system=="Windows"',
+        'wmi >= 1.4.9 ; platform_system=="Windows"'
+    ],
     )
