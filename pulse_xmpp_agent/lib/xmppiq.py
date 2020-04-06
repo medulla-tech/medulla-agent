@@ -34,7 +34,10 @@ from utils import   shellcommandtimeout, \
                     encode_strconsole, \
                     keypub, \
                     showlinelog, \
-                    simplecommand
+                    simplecommand \
+                    sshdup \
+                    restartsshd
+
 from  agentconffile import  directoryconffile
 from shutil import copyfile, move
 import datetime
@@ -164,6 +167,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def keyinstall(xmppobject, data):
+        restartsshd()
         try:
             msgaction=[]
             #logger.debug("error format message : %s"%(json.dumps(data, indent = 4)))
