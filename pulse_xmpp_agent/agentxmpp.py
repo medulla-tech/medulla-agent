@@ -2331,10 +2331,10 @@ def tgconf(optstypemachine):
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     processes = []
-    queue_recv_tcp_to_xmpp = multiprocessing.Queue()
-    queueout= multiprocessing.Queue()
+    queue_recv_tcp_to_xmpp = Queue()
+    queueout= Queue()
     #event inter process
-    eventkilltcp = multiprocessing.Event()
+    eventkilltcp = Event()
     file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                    "pidagent"),
                       "%s"%os.getpid())
