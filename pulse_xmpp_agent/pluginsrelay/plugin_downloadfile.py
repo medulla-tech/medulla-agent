@@ -33,7 +33,7 @@ import traceback
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "2.5", "NAME" : "downloadfile", "TYPE" : "relayserver" }
+plugin = { "VERSION" : "2.6", "NAME" : "downloadfile", "TYPE" : "relayserver" }
 paramglobal = {"timeupreverssh" : 20 , "portsshmaster" : 22, "filetmpconfigssh" : "/tmp/tmpsshconf", "remoteport" : 22}
 
 def get_free_tcp_port():
@@ -185,7 +185,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     #print json.dumps(data,indent=4)
     ##scp file from 2 hosts
 
-    if reversessh == True:
+    if reversessh is True:
         objectxmpp.xmpplog( 'Reverse ssh tunnel needed for machine %s behind nat'% data['hostname'],
                             type = 'noset',
                             sessionname = sessionid,
@@ -239,7 +239,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     'remoteport' : paramglobal['remoteport'],
                     'reversetype' : 'R',
                     'options' : 'createreversessh',
-                    'persistance' : 'Downloadfile'
+                    'persistence' : 'Downloadfile'
             },
             'ret' : 0,
             'base64' : False }

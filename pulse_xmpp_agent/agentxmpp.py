@@ -148,7 +148,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.modulepath = os.path.abspath(\
                 os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              namelibplugins))
-        # totalise les sessions persistance de 10 secondes
+        # totalise les sessions persistence de 10 secondes
         self.sessionaccumulator = {}
         self.charge_apparente_cluster = {}
 
@@ -1956,7 +1956,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try :
             if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
                 if dataobj.has_key('base64') and \
-                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] == True) or
+                    ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
                         #data in base 64
                         mydata = json.loads(base64.b64decode(dataobj['data']))
@@ -2173,7 +2173,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                                                                                   element))
         #add list scheduler plugins
         dataobj['pluginscheduled'] = self.loadPluginschedulerList()
-        #persistance info machine
+        #persistence info machine
         self.infomain = dataobj
         self.dataplugininstall = {"plu" : dataobj['plugin'],
                                   "schedule" : dataobj['pluginscheduled'] }

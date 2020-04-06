@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.18", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "1.19", "NAME" :"inventory", "TYPE":"machine"}
 
 def compact_xml(inputfile):
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
@@ -181,7 +181,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    mtype='chat')
             return
 
-    if result['base64'] == True:
+    if result['base64'] is True:
         result['data'] = base64.b64encode(json.dumps(result['data']))
 
     xmppobject.send_message(mto=xmppobject.sub_inventory,

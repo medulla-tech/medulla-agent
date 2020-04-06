@@ -40,7 +40,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION" : "2.15", "NAME" : "reverse_ssh_on",  "TYPE" : "all"}
+plugin = {"VERSION" : "2.16", "NAME" : "reverse_ssh_on",  "TYPE" : "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
@@ -87,7 +87,7 @@ def load_key_ssh_relayserver(private=False, user="reversessh"):
             The content of the sshkey file
     """
 
-    if private == True:
+    if private is True:
         keyname = "id_rsa"
     else:
         keyname = "id_rsa.pub"
@@ -164,7 +164,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
         # on modifie les droits sur le fichier de key pour reverse ssh dans user
         if not userprogram.startswith("syst"):
             userprogram = "Administrator"
-    if private == True:
+    if private is True:
         keyname = "id_rsa"
         keyperm = 0o600
     else:
@@ -406,15 +406,15 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
-                if not 'persistance' in data:
-                    data['persistance'] = "no"
-                if 'persistance' in data and data['persistance'].lower() != "no":
-                    if data['persistance'] in objectxmpp.reversesshmanage:
-                        logger.info("Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistance']]))
-                        cmd = "kill -9 %s"%str(objectxmpp.reversesshmanage[data['persistance']])
+                if not 'persistence' in data:
+                    data['persistence'] = "no"
+                if 'persistence' in data and data['persistence'].lower() != "no":
+                    if data['persistence'] in objectxmpp.reversesshmanage:
+                        logger.info("Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistence']]))
+                        cmd = "kill -9 %s"%str(objectxmpp.reversesshmanage[data['persistence']])
                         logger.info(cmd)
                         simplecommandstr(cmd)
-                        objectxmpp.xmpplog( "Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistance']]),
+                        objectxmpp.xmpplog( "Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistence']]),
                                         type = 'noset',
                                         sessionname = sessionid,
                                         priority = -1,
@@ -427,8 +427,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                                         fromuser = "",
                                         touser = "")
                 result = subprocess.Popen(args)
-                if 'persistance' in data and data['persistance'].lower() != "no":
-                    objectxmpp.reversesshmanage[data['persistance']] = str(result.pid)
+                if 'persistence' in data and data['persistence'].lower() != "no":
+                    objectxmpp.reversesshmanage[data['persistence']] = str(result.pid)
                 else:
                     objectxmpp.reversesshmanage['other'] = str(result.pid)
                 logger.info("creation reverse ssh pid = %s"% str(result.pid))
@@ -497,8 +497,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 if not os.path.exists(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")):
                     os.makedirs(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin"))
                 file_put_contents(reversesshbat,  dd)
-                if not 'persistance' in data:
-                    data['persistance'] = "no"
+                if not 'persistence' in data:
+                    data['persistence'] = "no"
                 # clear tout les reverse ssh
                 searchreversesshprocess = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
                 for f in [ os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", x) \
@@ -529,11 +529,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                         pidnumber = f.split('\\')[-1][:-4]
                     except:
                         pass
-                    if 'persistance' in data and data['persistance'].lower() != "no":
+                    if 'persistence' in data and data['persistence'].lower() != "no":
                         os.remove(f)
-                        msg = "Creating reverse ssh tunnel [persistance: yes PID : %s]\nscript : %s"%(pidnumber, str(dd))
+                        msg = "Creating reverse ssh tunnel [persistence: yes PID : %s]\nscript : %s"%(pidnumber, str(dd))
                     else:
-                        msg = "Creating reverse ssh tunnel [persistance: no PID : %s]\nscript :%s"%(pidnumber, str(dd))
+                        msg = "Creating reverse ssh tunnel [persistence: no PID : %s]\nscript :%s"%(pidnumber, str(dd))
                     objectxmpp.xmpplog( msg,
                                         type = 'deploy',
                                         sessionname = sessionid,
@@ -555,15 +555,15 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
-                if not 'persistance' in data:
-                    data['persistance'] = "no"
-                if 'persistance' in data and data['persistance'].lower() != "no":
-                    if data['persistance'] in objectxmpp.reversesshmanage:
-                        logger.info("Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistance']]))
-                        cmd = "kill -9 %s"%str(objectxmpp.reversesshmanage[data['persistance']])
+                if not 'persistence' in data:
+                    data['persistence'] = "no"
+                if 'persistence' in data and data['persistence'].lower() != "no":
+                    if data['persistence'] in objectxmpp.reversesshmanage:
+                        logger.info("Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistence']]))
+                        cmd = "kill -9 %s"%str(objectxmpp.reversesshmanage[data['persistence']])
                         logger.info(cmd)
                         simplecommandstr(cmd)
-                        objectxmpp.xmpplog( "Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistance']]),
+                        objectxmpp.xmpplog( "Closing reverse ssh tunnel %s"%str(objectxmpp.reversesshmanage[data['persistence']]),
                                         type = 'noset',
                                         sessionname = sessionid,
                                         priority = -1,
@@ -576,11 +576,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                                         fromuser = "",
                                         touser = "")
                 result = subprocess.Popen(args)
-                if 'persistance' in data and data['persistance'].lower() != "no":
-                    objectxmpp.reversesshmanage[data['persistance']] = str(result.pid)
+                if 'persistence' in data and data['persistence'].lower() != "no":
+                    objectxmpp.reversesshmanage[data['persistence']] = str(result.pid)
                 else:
                     objectxmpp.reversesshmanage['other'] = str(result.pid)
-                    data['persistance'] = "no"
+                    data['persistence'] = "no"
                 logger.info("creation reverse ssh pid = %s"% str(result.pid))
                 objectxmpp.xmpplog(  "Creating reverse ssh tunnel [PID : %s]"% str(result.pid),
                                     type = 'noset',

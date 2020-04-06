@@ -48,7 +48,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.15", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.16", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -648,7 +648,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 datasend['data']['advanced'] = {}
                 datasend['data']['advanced']['exec'] = True
 
-            if datasend['data']['advanced']['exec'] == True or not 'advanced' in datasend['data']:
+            if datasend['data']['advanced']['exec'] is True or not 'advanced' in datasend['data']:
                 # deploy directly
                 datasend['data']['advanced']['scheduling'] = False
                 initialisesequence(datasend, objectxmpp, sessionid)
@@ -708,7 +708,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         # pour cela, on définie un nombre maximun de deploiement simultané.
         # les deploiement sont empilés dans une pile LILO, puis dépilé est deployé pour avoir toujour une charge inférieur au nombre de deploiement simultanée demandé.
         # on utilisera une base non sql pour conservé les descripteurs en attente de deploiement.
-        # ainsi on assurera une persistance en cas d'arrêt de ARS. les deploiements encore dans la base seront
+        # ainsi on assurera une persistence en cas d'arrêt de ARS. les deploiements encore dans la base seront
         # effectués a la remise en fonction de ARS.
         #initialise charge_apparente_cluster si non initialiser
         if not "login" in data:
@@ -938,7 +938,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
         if 'transfert' in data:
-            if data['transfert'] == True:
+            if data['transfert'] is True:
                 objectxmpp.xmpplog('File transfer is enabled',
                                     type = 'deploy',
                                     sessionname = sessionid,
@@ -983,7 +983,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             try:
                 sock.connect((data['ipmachine'], Globaldata['port_local']))
             except socket.error:
-                if 'transfert' in data  and data['transfert'] == True \
+                if 'transfert' in data  and data['transfert'] is True \
                         and 'methodetransfert' in data \
                             and not data['methodetransfert'] in ["pulldirect",
                                                                  "pullcurl",
@@ -1016,7 +1016,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             finally:
                 sock.close()
         if 'transfert' in data \
-            and data['transfert'] == True\
+            and data['transfert'] is True\
                 and 'methodetransfert' in data\
                     and data['methodetransfert'] in ["pullcurl",
                                                      "pulldirect"]:
@@ -1037,7 +1037,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             return
 
         if 'transfert' in data \
-            and data['transfert'] == True\
+            and data['transfert'] is True\
                 and 'methodetransfert' in data\
                     and data['methodetransfert'] in ["pullrsync", "pullscp"] \
                         and not 'transfertpullrsync' in data:
@@ -1054,7 +1054,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             'remoteport' :  Globaldata['port_local'],
                                             'reversetype' : 'R',
                                             'options' : 'createreversessh',
-                                            'persistance' : 'no' },
+                                            'persistence' : 'no' },
                                 'ret' : 0,
                                 'base64' : False }
             # prend en compte les reverses de deployement
@@ -1231,7 +1231,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
             if 'step' not in data:
                 logger.debug("STEP NOT")
-                #if 'keyinstall' in data and data['keyinstall'] == True:
+                #if 'keyinstall' in data and data['keyinstall'] is True:
                     ## We manage the message condition installation key
                     #logger.debug("keyinstall in true")
                     #data_in_session['keyinstall'] = True

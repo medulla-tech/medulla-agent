@@ -632,7 +632,7 @@ if __name__ == '__main__':
     configfile = ""
     if opts.configfile:
         configfile = opts.configfile
-    if opts.version == True:
+    if opts.version is True:
         print VERSIONLOG
         sys.exit(0)
     # Setup the command line arguments.

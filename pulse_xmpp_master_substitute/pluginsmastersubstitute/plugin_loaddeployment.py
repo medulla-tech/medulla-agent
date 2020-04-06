@@ -998,7 +998,7 @@ def directcallplugin(self, msg):
         dataobj = json.loads(msg['body'])
         if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
             if dataobj.has_key('base64') and \
-                ((isinstance(dataobj['base64'], bool) and dataobj['base64'] == True) or
+                ((isinstance(dataobj['base64'], bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'], str) and dataobj['base64'].lower() == 'true')):
                 mydata = json.loads(base64.b64decode(dataobj['data']))
             else:

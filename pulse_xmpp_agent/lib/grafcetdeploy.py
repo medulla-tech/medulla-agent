@@ -438,7 +438,7 @@ class grafcet:
         #print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
         if 'advanced' in self.datasend['data'] \
             and 'shutdownrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['shutdownrequired'] == True:
+                and self.datasend['data']['advanced']['shutdownrequired'] is True:
             shutdownmachine = True
             self.objectxmpp.xmpplog("Shutdown required for machine after deployment on %s" % (self.datasend['data']['name']),
                                     type = 'deploy',
@@ -455,7 +455,7 @@ class grafcet:
 
         if not shutdownmachine and 'advanced' in self.datasend['data'] \
             and 'rebootrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['rebootrequired'] == True:
+                and self.datasend['data']['advanced']['rebootrequired'] is True:
             restarmachine = True
             self.objectxmpp.xmpplog("Reboot required for machine after deploy on %s" % (self.datasend['data']['name']),
                                     type = 'deploy',

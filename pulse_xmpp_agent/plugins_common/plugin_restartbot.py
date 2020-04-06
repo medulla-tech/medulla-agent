@@ -28,22 +28,22 @@ import logging
 
 logger = logging.getLogger()
 
-plugin={"VERSION": "1.2", "NAME" :"restartbot", "TYPE" : "all"}
+plugin={"VERSION": "1.3", "NAME" :"restartbot", "TYPE" : "all"}
 
 def action( objetxmpp, action, sessionid, data, message, dataerreur ):
     logger.debug("###################################################")
     logger.debug("call %s from %s"%(plugin, message['from']))
     logger.debug("###################################################")
-    reponse={}
+    response={}
     if action == 'restartbot':
         resultaction = "result%s"%action
-        reponse['action'] = resultaction
-        reponse['sessionid'] = sessionid
-        reponse['base64'] = False
-        reponse['ret'] = 0
-        reponse['data'] = {}
-        reponse['data']['msg']="restart %s"%message['to']
+        response['action'] = resultaction
+        response['sessionid'] = sessionid
+        response['base64'] = False
+        response['ret'] = 0
+        response['data'] = {}
+        response['data']['msg']="restart %s"%message['to']
         objetxmpp.send_message( mto=message['from'],
-                                mbody=json.dumps(reponse),
+                                mbody=json.dumps(response),
                                 mtype='chat')
         objetxmpp.restartBot()
