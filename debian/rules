@@ -117,7 +117,11 @@ override_dh_auto_install:
 	cp scripts_installer/win/agent-installer.nsi.in var/lib/pulse2/clients/win
 	cp scripts_installer/win/pulse-agent-task.xml var/lib/pulse2/clients/win
 	cp scripts_installer/win/pulse-filetree-generator.exe var/lib/pulse2/clients/win
+	chmod +x /var/lib/pulse2/clients/win/generate-pulse-agent-win.sh
+	chmod +x /var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
+	chmod +x /var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
 	#cp scripts_installer/generate-kiosk-package var/lib/pulse2/clients/win
+	#chmod +x /var/lib/pulse2/clients/mac/generate-kiosk-package
 	mkdir -p var/lib/pulse2/clients/lin
 	cp -r scripts_installer/lin/* var/lib/pulse2/clients/lin
 	mkdir -p var/lib/pulse2/clients/mac
