@@ -46,7 +46,6 @@ systemctl daemon-reload
 %_var/lib/pulse2/clients/config/*
 %_var/log/pulse
 #%{python2_sitelib}/pulse_xmpp_agent
-%{python2_sitelib}/pulse_xmpp_agent-%{version}-py%{python2_version}.egg-info
 
 #--------------------------------------------------------------------
 
