@@ -409,7 +409,6 @@ generate_agent_installer() {
 
 # Run the script
 check_arguments "$@"
-compute_parameters
 prepare_mandatory_includes
 if [[ ${MINIMAL} -eq 1 ]]; then
 	compute_parameters_dl
