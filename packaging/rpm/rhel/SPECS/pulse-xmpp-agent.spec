@@ -245,7 +245,7 @@ rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
 mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
-cp $(DESTDIR)/tmp/pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
