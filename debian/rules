@@ -7,7 +7,7 @@ DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//'
 VERSION_XMPP_AGENT=2.0.6
 VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
-BRANCH=spo
+BRANCH=integration
 
 # Used during building to set the version
 export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"
