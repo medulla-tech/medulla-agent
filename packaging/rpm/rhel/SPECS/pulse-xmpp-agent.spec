@@ -237,7 +237,7 @@ mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 #mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
-tar xzvf %buildroot%_var/lib/pulse2/clients/pulse-xmpp-agent-%{version}.tar.gz -C tmp
+tar xzf %buildroot%_var/lib/pulse2/clients/pulse-xmpp-agent-%{version}.tar.gz -C tmp
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseremoteagent
 cp -frv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
