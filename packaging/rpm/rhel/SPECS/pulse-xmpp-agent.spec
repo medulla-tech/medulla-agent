@@ -152,7 +152,6 @@ plugins for pulse xmppmaster
 %_var/lib/pulse2/xmpp_basepluginscheduler
 %_var/lib/pulse2/clients/config/
 %_var/lib/pulse2/clients/config/inventory.ini
-%python2_sitelib/pulse_agent_plugins-%{version}-py2.7.egg-info
 
 #--------------------------------------------------------------------
 
@@ -171,9 +170,9 @@ plugins for pulse xmppmaster
 %python2_sitelib/pulse_xmpp_agent/pluginsrelay
 %python2_sitelib/pulse_xmpp_agent/descriptor_scheduler_relay
 %_var/lib/pulse2/clients/config/
-%_var/lib/pulse2/clients/config/guacamoleconf.ini.in
-%_var/lib/pulse2/clients/config/downloadfile.ini.in
-%_var/lib/pulse2/clients/config/downloadfileexpert.ini.in
+%_var/lib/pulse2/clients/config/guacamoleconf.ini
+%_var/lib/pulse2/clients/config/downloadfile.ini
+%_var/lib/pulse2/clients/config/downloadfileexpert.ini
 
 #--------------------------------------------------------------------
 
