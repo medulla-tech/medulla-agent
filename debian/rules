@@ -93,13 +93,13 @@ override_dh_auto_install:
 	#mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
 	tar xzvf var/lib/pulse2/clients/pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz -C $(DESTDIR)/tmp
 	mkdir -p var/lib/pulse2/xmpp_baseremoteagent
-	cp -frv $(DESTDIR)/tmp/pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/* var/lib/pulse2/xmpp_baseremoteagent/
+	cp -frv pulse_xmpp_agent/* var/lib/pulse2/xmpp_baseremoteagent/
 	rm -fv var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
 	mkdir -p etc/mmc/plugins/
 	mkdir -p var/lib/pulse2/clients/config/
-	cp $(DESTDIR)/tmp/pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config/agentconf.ini var/lib/pulse2/clients/config/
-	cp $(DESTDIR)/tmp/pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config/manage_scheduler.ini var/lib/pulse2/clients/config/
-	cp $(DESTDIR)/tmp/pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config/inventory.ini var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/agentconf.ini var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/manage_scheduler.ini var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/inventory.ini var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-deps-package var/lib/pulse2/clients
