@@ -174,7 +174,7 @@ rm -rf %{tarname}.egg-info
 # Nothing to do 
 %install
 mkdir -p %buildroot%{python2_sitelib}pulse_xmpp_agent
-cp -fr pulse_xmpp_agent/* %buildroot%{python2_sitelib}pulse_xmpp_agent
+cp -fr pulse_xmpp_agent/* %buildroot%{python2_sitelib}/pulse_xmpp_agent
 mkdir -p %buildroot%_var/log/pulse/
 mkdir -p %buildroot%_prefix/lib/systemd/system
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
