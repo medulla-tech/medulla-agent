@@ -85,6 +85,13 @@ override_dh_auto_install:
 	mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	cp -frv pulse_xmpp_agent pulse-xmpp-agent-${VERSION_XMPP_AGENT}/
 	cp -fv setup.py pulse-xmpp-agent-${VERSION_XMPP_AGENT}/
+	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config
+	mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine
+	mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/plugins_common/plugin_*.py pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
+	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_common/
+	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py
+	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/plugins_common/
+	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsrelay/plugin_*.py
 	tar czvf pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients
