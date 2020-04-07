@@ -1,5 +1,6 @@
 var/lib/pulse2/clients/config/agentconf.ini
 var/lib/pulse2/clients/config/manage_scheduler.ini
+var/lib/pulse2/clients/config/inventory.ini
 /var/lib/pulse2/clients/generate-agent-deps-package
 /var/lib/pulse2/clients/generate-agent-package
 /var/lib/pulse2/clients/generate-netcheck-package
