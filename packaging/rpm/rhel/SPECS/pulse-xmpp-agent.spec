@@ -19,6 +19,7 @@ Url:		http://www.siveo.net
 BuildArch:	noarch
 BuildRequires:	python-setuptools
 BuildRequires:	python-sphinx
+BuildRequires:  git 
 
 Requires:       python-netifaces
 Requires:       python-sleekxmpp
@@ -71,9 +72,21 @@ systemctl daemon-reload
 
 #--------------------------------------------------------------------
 
-%package -n     pulse-agent-installers
-Summary:        Files to create pulse windows installer
-Group:          System/Servers
+%package -n pulse-agent-installers
+Summary:    Files to create pulse windows installer
+Group:      System/Servers
+
+Requires:   pulse-xmpp-agent-deps
+
+Requires:   dos2unix
+Requires:   unzip
+Requires:   zip
+
+Requires:   nsis-plugins-ZipDLL
+Requires:   nsis-plugins-Pwgen
+Requires:   nsis-plugins-AccessControl
+Requires:   nsis-plugins-Inetc
+Requires:   nsis-plugins-TextReplace
 
 
 %description -n pulse-agent-installers
