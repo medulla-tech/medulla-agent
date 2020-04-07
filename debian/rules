@@ -85,14 +85,14 @@ override_dh_auto_install:
 	mv pulse-xmpp-agent pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	tar czvf pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	rm -fr pulse-xmpp-agent/
-	mkdir -p var/lib/pulse2/clients
-	mv  $(CURDIR)/pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz var/lib/pulse2/clients
+	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients
+	mv  $(CURDIR)/pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	#GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
 	#mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 	#tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
 	#mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
 	tar xzvf var/lib/pulse2/clients/pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz -C $(DESTDIR)/tmp
-	mkdir -p var/lib/pulse2/xmpp_baseremoteagent
+	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent
 	cp -frv pulse_xmpp_agent/* $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/
 	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
 	rm -frv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/config
@@ -101,7 +101,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/agentconf.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/inventory.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
-	cp scripts_installer/generate-pulse-agent.sh var/lib/pulse2/clients
+	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-deps-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-netcheck-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
