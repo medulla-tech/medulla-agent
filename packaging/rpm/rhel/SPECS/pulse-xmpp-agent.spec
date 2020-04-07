@@ -1,6 +1,8 @@
 %define tarname		pulse-xmpp-agent
 %define git                    SHA
 %define use_git         1
+%define branch integration
+%define filetree_version 0.2
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
@@ -226,24 +228,24 @@ cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/syst
 chmod +x %buildroot%{python2_sitelib}pulse_xmpp_master_substitute/agentmastersubstitute.py
 # We create the installer part now
 mkdir -p tmp
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-xmpp-agent.git -b ${BRANCH}
-mv pulse-xmpp-agent pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-tar czvf pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz pulse-xmpp-agent-${VERSION_XMPP_AGENT}
+GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-xmpp-agent.git -b %{branch}
+mv pulse-xmpp-agent pulse-xmpp-agent-%{version}
+tar czvf pulse-xmpp-agent-%{version}.tar.gz pulse-xmpp-agent-%{version}
 rm -fr pulse-xmpp-agent/
 mkdir -p %buildroot%_var/lib/pulse2/clients
-mv  pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz %buildroot%_var/lib/pulse2/clients
+mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 #GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
 #mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
-tar xzvf %buildroot%_var/lib/pulse2/clients/pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz -C tmp
+tar xzvf %buildroot%_var/lib/pulse2/clients/pulse-xmpp-agent-%{version}.tar.gz -C tmp
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseremoteagent
-cp -frv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
+cp -frv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
 mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
-cp pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
-cp $(DESTDIR)/tmp/pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
+cp $(DESTDIR)/tmp/pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
@@ -285,8 +287,8 @@ chmod +x %buildroot%_var/lib/pulse2/clients/generate-netcheck-package
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-service-package
 #chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-kiosk-package
 GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-filetree-generator.git
-mv pulse-filetree-generator pulse-filetree-generator-${FILETREE_VERSION}
-g++ -O3 -std=c++11 pulse-filetree-generator-${FILETREE_VERSION}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
+mv pulse-filetree-generator pulse-filetree-generator-%{filetree_version}
+g++ -O3 -std=c++11 pulse-filetree-generator-%{filetree_version}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
 cp pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
 chmod +x %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin/pulse-filetree-generator
