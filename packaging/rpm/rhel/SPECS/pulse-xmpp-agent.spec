@@ -188,16 +188,14 @@ cp -frv pulse_xmpp_agent/pluginsrelay/plugin_* %buildroot%_var/lib/pulse2/xmpp_b
 cp -fv  pulse_xmpp_agent/descriptor_scheduler_common/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
 cp -fv  pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
 cp -fv  pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
-cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}pulse_xmpp_agent/pluginsrelay
-cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}pulse_xmpp_agent/pluginsmachine
-cp -fv pulse_xmpp_agent/pluginsmachine/plugin_* %buildroot%{python2_sitelib}pulse_xmpp_agent/pluginsmachine
-cp -fr pulse_xmpp_agent/pluginsrelay/plugin_* %buildroot%{python2_sitelib}pulse_xmpp_agent/pluginsrelay
-mkdir -p %buildroot%{python2_sitelib}pulse_xmpp_agent/descriptor_scheduler_machine/
-cp -fv pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py %buildroot%{python2_sitelib}pulse_xmpp_agent/descriptor_scheduler_machine/
-mkdir -p %buildroot%{python2_sitelib}pulse_xmpp_agent/descriptor_scheduler_relay/
-cp -fv pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py %buildroot%{python2_sitelib}pulse_xmpp_agent/descriptor_scheduler_relay/
-cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}pulse_xmpp_agent/descriptor_scheduler_machine/
-cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}pulse_xmpp_agent/descriptor_scheduler_relay/
+cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
+cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine
+cp -fv pulse_xmpp_agent/pluginsmachine/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine
+cp -fr pulse_xmpp_agent/pluginsrelay/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
+mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+cp -fv pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
+cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/guacamoleconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/downloadfile.ini %buildroot%_sysconfdir/pulse-xmpp-agent
