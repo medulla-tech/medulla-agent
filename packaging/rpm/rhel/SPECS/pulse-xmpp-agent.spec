@@ -18,7 +18,7 @@ License:	MIT
 
 Group:		Development/Python
 Url:		http://www.siveo.net
-BuildArch:	noarch
+
 BuildRequires:	python-setuptools
 BuildRequires:	python-sphinx
 BuildRequires:  git 
@@ -35,10 +35,23 @@ Requires:       python2-psutil
 %description
 Pulse XMPP Agent
 
-%post
-systemctl daemon-reload
+#--------------------------------------------------------------------
 
-%files
+%package -n     pulse-xmpp-agent-relay
+Summary:        Pulse 2 common files
+Group:          System/Servers
+BuildArch:      noarch
+
+Obsoletes:     pulse-xmpp-agent < 2.0.6
+Provides:      pulse-xmpp-agent = %version
+
+Obsoletes:     pulseagent-plugins-relay < 2.0.6
+Provides:      pulseagent-plugins-relay = %version
+
+%description -n pulse-xmpp-agent-relay
+Pulse master agent substitute
+
+%files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
@@ -52,7 +65,7 @@ systemctl daemon-reload
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
-
+BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
 Pulse master agent substitute
