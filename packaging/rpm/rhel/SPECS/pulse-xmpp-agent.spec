@@ -247,12 +247,13 @@ mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 #mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
 tar xzf %buildroot%_var/lib/pulse2/clients/pulse-xmpp-agent-%{version}.tar.gz -C tmp
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseremoteagent
-cp -frv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
+cp -frv pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
 mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
-cp pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/inventory.ini var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
