@@ -964,7 +964,6 @@ Section "!${PRODUCT_NAME}" sec_app
   StrCpy $SYNCTHING_FOLDERNAME "$SYNCTHING_FILENAME" -4
   ZipDLL::extractall "$INSTDIR\tmp\$SYNCTHING_FILENAME" "$INSTDIR\tmp\"
   CopyFiles /SILENT "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME\syncthing.exe" "$INSTDIR\bin\"
-  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
@@ -973,6 +972,7 @@ Section "!${PRODUCT_NAME}" sec_app
     SetErrorLevel 130
     Quit
   ${EndIf}
+  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
   ; Create symbolic link to syncthing config file from etc
   SetOutPath "$INSTDIR\etc"
   StrCpy $0 `mklink "syncthing.ini" "syncthing\config.xml"`
