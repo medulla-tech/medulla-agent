@@ -107,7 +107,10 @@ SetCompressor lzma
 !include "x64.nsh"
 !include "TextReplace.nsh"
 !include "StrRep.nsh"
+!include "TextFunc.nsh"
+!include "Junction.nsh"
 
+Var OS_LANGUAGE
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -260,7 +263,19 @@ Section "OpenSSH" sec_openssh
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
 
-  ; Remove previous Pulse profile
+  ; Remove pulse user
+  StrCpy $0 `net user "pulse" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `net user "pulseuser" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+  ; Remove previous Pulse profile and account
   Var /GLOBAL P_PROFILE
   !insertmacro StrRep $0 ${USERDIR} "\" "\\"
   Pop $0
@@ -276,6 +291,7 @@ Section "OpenSSH" sec_openssh
     Please reboot your computer and re-run the installer. $\n\
     Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 138
     Quit
   ${EndIf}
   RMDir /r "${USERDIR}\pulse*"
@@ -417,7 +433,7 @@ Section "OpenSSH" sec_openssh
         MessageBox MB_OK|MB_ICONSTOP "ssh configuration failed. $\n\
 	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-    SetErrorLevel 112
+    SetErrorLevel 139
     Quit
   ${EndIf}
 
@@ -908,6 +924,8 @@ Section "!${PRODUCT_NAME}" sec_app
   ${IfNot} ${Errors}
     ; Remove pulse parameters Folder
     Delete "$INSTDIR\etc\*.*"
+    ; Remove files from bin
+    Delete "$INSTDIR\bin\*.*"
   ${EndIf}
 
   ; Install of Pulse agent
@@ -950,7 +968,6 @@ Section "!${PRODUCT_NAME}" sec_app
   StrCpy $SYNCTHING_FOLDERNAME "$SYNCTHING_FILENAME" -4
   ZipDLL::extractall "$INSTDIR\tmp\$SYNCTHING_FILENAME" "$INSTDIR\tmp\"
   CopyFiles /SILENT "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME\syncthing.exe" "$INSTDIR\bin\"
-  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
@@ -959,14 +976,12 @@ Section "!${PRODUCT_NAME}" sec_app
     SetErrorLevel 130
     Quit
   ${EndIf}
+  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
   ; Create symbolic link to syncthing config file from etc
+  ClearErrors
   SetOutPath "$INSTDIR\etc"
-  StrCpy $0 `mklink "syncthing.ini" "syncthing\config.xml"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
+  ${CreateSymbolicLinkFile} "syncthing.ini" "syncthing\config.xml" $0
+  ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Symbolic link creation failed. $\n\
 	Please check the logs in $INSTDIR\tmp\install.log"
@@ -1167,7 +1182,7 @@ Section "Uninstall"
   ${LogString} "Return code was: $1"
 
   ; Stop syncthing
-  StrCpy $0 `taskkill /F /IM syncthing.exe`
+  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1175,6 +1190,11 @@ Section "Uninstall"
 
   ; Remove pulse user
   StrCpy $0 `net user "pulse" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `net user "pulseuser" /DELETE`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1309,12 +1329,11 @@ Function .onInit
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
   ; Detect system language
-  Var /GLOBAL OS_LANGUAGE
-  nsExec::ExecToStack 'powershell -Command (get-culture).TwoLetterISOLanguageName'
+  nsExec::ExecToStack 'powershell -Command (get-uiculture).TwoLetterISOLanguageName'
   Pop $0
   Pop $1
-  ${LogString} "System language is :  $1"
-  StrCpy $OS_LANGUAGE $1
+  ${TrimNewLines} $1 $OS_LANGUAGE
+  ${LogString} "System language is : $OS_LANGUAGE"
 
   ; Stop the agent if it is already running and kill all python tasks
   StrCpy $0 `net stop pulseagent`
@@ -1333,6 +1352,12 @@ Function .onInit
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} ""
+  ; Stop syncthing
+  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
 FunctionEnd
 
 Function un.onInit
