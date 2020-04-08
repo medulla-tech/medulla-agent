@@ -1062,14 +1062,14 @@ SectionEnd
 Section "Uninstall"
 
   ; Stop Pulse agent
-  StrCpy $0 `sc stop pulseagent`
+  StrCpy $0 `net stop pulseagent`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
 
   ; Stop Pulse netcheck
-  StrCpy $0 `sc stop pulsenetworknotify`
+  StrCpy $0 `net stop pulsenetworknotify`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1217,7 +1217,18 @@ Function .onInit
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
   ; Stop the agent if it is already running and kill all python tasks
-  StrCpy $0 `sc stop pulseagent`
+  StrCpy $0 `net stop pulseagent`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} ""
+  StrCpy $0 `net stop pulsenetworknotify`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `taskkill.exe /F /IM python.exe`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
