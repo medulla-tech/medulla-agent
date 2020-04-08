@@ -260,7 +260,19 @@ Section "OpenSSH" sec_openssh
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
 
-  ; Remove previous Pulse profile
+  ; Remove pulse user
+  StrCpy $0 `net user "pulse" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `net user "pulseuser" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
+  ; Remove previous Pulse profile and account
   Var /GLOBAL P_PROFILE
   !insertmacro StrRep $0 ${USERDIR} "\" "\\"
   Pop $0
@@ -1175,6 +1187,11 @@ Section "Uninstall"
 
   ; Remove pulse user
   StrCpy $0 `net user "pulse" /DELETE`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `net user "pulseuser" /DELETE`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
