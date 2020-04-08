@@ -490,22 +490,39 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${EndIf}
 
   ; Add pulse user to administrators group in English, French and Portugese
-  StrCpy $0 `net localgroup administrators "pulseuser" /ADD`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `net localgroup administrateurs "pulseuser" /ADD`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${LogString} "-------------------"
-  StrCpy $0 `net localgroup administradores "pulseuser" /ADD`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  Var /GLOBAL PULSEUSER_GROUP
+  ${If} $OS_LANGUAGE == "fr";
+    StrCpy $0 `net localgroup administrateur "pulseuser" /ADD`
+    ${LogString} "Add pulseuser to Administrateur group : $1"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    StrCpy $PULSEUSER_GROUP $1
+  ${ElseIf} $OS_LANGUAGE == "es";
+    StrCpy $0 `net localgroup administradores "pulseuser" /ADD`
+    ${LogString} "Add pulseuser to Administradores group : $1"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    StrCpy $PULSEUSER_GROUP $1
+  ${Else}
+    StrCpy $1 `net localgroup administrators "pulseuser" /ADD`
+    ${LogString} "Add pulseuser to Administrators group : $1"
+    nsExec::ExecToLog $1
+    Pop $1 # return value/error/timeout
+    StrCpy $PULSEUSER_GROUP $1
+  ${EndIf}
+  ${If} $PULSEUSER_GROUP == '0'
+    ${LogString} "Added to group correctly"
+  ${ElseIf} $PULSEUSER_GROUP == '1'
+    ${LogString} "Missing pulseuser account"
+  ${ElseIf} $PULSEUSER_GROUP == '2'
+    ${LogString} "Already a member of the group"
+  ${Else}
+    ${LogString} "Other error : $1"
+  ${EndIf}
+
+
   ; Hide the account
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
   ${LogString} "Running $0"
