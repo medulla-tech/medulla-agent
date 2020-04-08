@@ -262,6 +262,14 @@ Section "OpenSSH" sec_openssh
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
+Please reboot your computer and re-run the installer. $\n\
+Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    Quit
+  ${EndIf}
   RMDir /r "${USERDIR}\pulse*"
 
   ; Create Pulse user
@@ -1075,6 +1083,13 @@ Section "Uninstall"
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
 
+  ; Kill all python processes
+  StrCpy $0 `taskkill.exe /F /IM python.exe`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
   ; Stop syncthing
   StrCpy $0 `taskkill /F /IM syncthing.exe`
   ${LogString} "Running $0"
@@ -1222,7 +1237,6 @@ Function .onInit
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
-  ${LogString} ""
   StrCpy $0 `net stop pulsenetworknotify`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
