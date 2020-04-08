@@ -1021,7 +1021,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     and data['methodetransfert'] in ["pullcurl",
                                                      "pulldirect"]:
             if data['methodetransfert'] == "pulldirect":
-                innstall_key_par_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
+                install_key_by_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
             # le transfert pull direct ou pullcurl est confie a l'agent machine.
             transfertdeploy = { 'action': action,
                                 'sessionid': sessionid,
@@ -1044,7 +1044,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     and data['methodetransfert'] in ["pullrsync", "pullscp"] \
                         and not 'transfertpullrsync' in data:
             data['transfertpullrsync'] = True
-            innstall_key_par_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
+            install_key_by_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
             # creation d'un reverce ssh
             remoteport = get_free_tcp_port() # get port free
             data['remoteport'] = remoteport
@@ -1166,7 +1166,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.session.createsessiondatainfo(sessionid,  datasession = data, timevalid = 180)
             if 'methodetransfert' in data and data['methodetransfert'] == "pushrsync":
                 # installkey sur agent machine authorized_keys
-                innstall_key_par_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
+                install_key_by_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
                 #logger.debug("Install ARS key in authorized_keys on client machine")
                 #file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
                 #key = file_get_contents(file_key_pub_ars)
@@ -1733,7 +1733,7 @@ def changown_dir_of_file(dest, nameuser = None):
         except Exception as e:
             logger.error("\n%s"%(traceback.format_exc()))
 
-def innstall_key_par_iq(objectxmpp, tomachine, sessionid, fromrelay):
+def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
     logger.debug("Install ARS key in authorized_keys on client machine")
 
     objectxmpp.xmpplog( "Install ARS key in authorized_keys on client machine",
