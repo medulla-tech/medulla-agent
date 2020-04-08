@@ -1184,7 +1184,7 @@ Section "Uninstall"
   ${LogString} "Return code was: $1"
 
   ; Stop syncthing
-  StrCpy $0 `taskkill /F /IM syncthing.exe`
+  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1354,6 +1354,12 @@ Function .onInit
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${LogString} ""
+  ; Stop syncthing
+  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
 FunctionEnd
 
 Function un.onInit
