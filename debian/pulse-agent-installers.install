@@ -44,6 +44,7 @@ var/lib/pulse2/clients/win/libs/StrRep.nsh
 var/lib/pulse2/clients/win/libs/StrTok.nsh
 var/lib/pulse2/clients/win/libs/Trim.nsh
 var/lib/pulse2/clients/win/libs/psexec.nsh
+var/lib/pulse2/clients/win/libs/Junction.nsh
 var/lib/pulse2/clients/win/netcheck-service.py
 var/lib/pulse2/clients/win/networkevents.py
 var/lib/pulse2/clients/win/pulse-agent-task.xml
