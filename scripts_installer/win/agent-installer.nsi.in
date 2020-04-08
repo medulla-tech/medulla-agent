@@ -272,10 +272,11 @@ Section "OpenSSH" sec_openssh
   ${LogString} "Return code was: $1"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
-    Please reboot your computer and re-run the installer. $\n\
-    Please check the logs in $INSTDIR\tmp\install.log"
+	MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
+        Please reboot your computer and re-run the installer. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 138
     Quit
   ${EndIf}
   RMDir /r "${USERDIR}\pulse*"
