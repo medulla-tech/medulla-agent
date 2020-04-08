@@ -95,6 +95,7 @@ Requires:   pulse-xmpp-agent-deps
 Requires:   dos2unix
 Requires:   unzip
 Requires:   zip
+Requires:   crudini
 
 Requires:   nsis-plugins-ZipDLL
 Requires:   nsis-plugins-Pwgen
@@ -309,4 +310,3 @@ cp scripts_installer/win/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/w
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
-
