@@ -1230,6 +1230,14 @@ Function .onInit
   ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
+  ; Detect system language
+  Var /GLOBAL OS_LANGUAGE
+  nsExec::ExecToStack 'powershell -Command (get-culture).TwoLetterISOLanguageName'
+  Pop $0
+  Pop $1
+  ${LogString} "System language is :  $1"
+  StrCpy $OS_LANGUAGE $1
+
   ; Stop the agent if it is already running and kill all python tasks
   StrCpy $0 `sc stop pulseagent`
   ${LogString} "Running $0"
