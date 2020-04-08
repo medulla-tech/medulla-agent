@@ -36,7 +36,8 @@ from utils import   shellcommandtimeout, \
                     showlinelog, \
                     simplecommand, \
                     sshdup, \
-                    restartsshd
+                    restartsshd, \
+                    install_key_ssh_relayserver
 
 from  agentconffile import  directoryconffile
 from shutil import copyfile, move
@@ -98,6 +99,16 @@ def dispach_iq_command(xmppobject, jsonin):
         logging.log(DEBUGPULSE,"function %s missing in list listactioncommand"%data['action'] )
         return ""
 
+
+def logdeploymsg( xmppobject, msg, sessionid):
+    xmppobject.xmpplog( msg,
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = xmppobject.boundjid.bare,
+                        module = "Deployment | Cluster | Notify",
+                        date = None)
 
 class functionsynchroxmpp:
     """
@@ -181,6 +192,7 @@ class functionsynchroxmpp:
             if sys.platform.startswith('linux'):
                 import pwd
                 import grp
+                reverse_ssh_key_privat_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'id_rsa')
                 #verify compte pulse exist
                 try:
                     uid = pwd.getpwnam("pulseuser").pw_uid
@@ -280,6 +292,7 @@ class functionsynchroxmpp:
                     logger.info("Creating authorized_keys file in pulseuser account")
                     msgaction.append("Creating authorized_keys file in pulseuser account")
                     authorized_keys_path = os.path.join("c:\Users\pulseuser", '.ssh','authorized_keys' )
+                    reverse_ssh_key_privat_path = os.path.join("c:\Users\pulseuser", '.ssh','id_rsa' )
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                         os.makedirs(os.path.dirname(authorized_keys_path), 0700)
                     if not os.path.isfile(authorized_keys_path):
@@ -315,6 +328,11 @@ class functionsynchroxmpp:
                                                         "pulse",
                                                         '.ssh',
                                                         'authorized_keys' )
+                    reverse_ssh_key_privat_path = os.path.join( os.environ["ProgramFiles"],
+                                                                "pulse",
+                                                                '.ssh',
+                                                                'id_rsa' )
+
                     # creation if no exist
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                         os.makedirs(os.path.dirname(authorized_keys_path), 0700)
@@ -332,9 +350,15 @@ class functionsynchroxmpp:
                 authorized_keys_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
                                                                 '.ssh',
                                                                 'authorized_keys') )
+                reverse_ssh_key_privat_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
+                                                                '.ssh',
+                                                                'id_rsa') )
             else:
                 return
-
+            #install private  reverse ssh key si necessaire.
+            if 'keyreverseprivatssh' in data['data']:
+                install_key_ssh_relayserver(data['data']['keyreverseprivatssh'].strip(' \t\n\r'),
+                                            private=True)
             # instal key dans authorized_keys
             authorized_keys_content = file_get_contents(authorized_keys_path)
             if not data['data']['key'].strip(' \t\n\r') in authorized_keys_content:

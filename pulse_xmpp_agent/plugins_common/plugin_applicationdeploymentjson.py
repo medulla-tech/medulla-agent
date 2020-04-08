@@ -48,7 +48,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.16", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.18", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -1020,6 +1020,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 and 'methodetransfert' in data\
                     and data['methodetransfert'] in ["pullcurl",
                                                      "pulldirect"]:
+            if data['methodetransfert'] == "pulldirect":
+                innstall_key_par_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
             # le transfert pull direct ou pullcurl est confie a l'agent machine.
             transfertdeploy = { 'action': action,
                                 'sessionid': sessionid,
@@ -1743,19 +1745,33 @@ def innstall_key_par_iq(objectxmpp, tomachine, sessionid, fromrelay):
                             module = "Deployment | Error",
                             date = None )
 
-    file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
+    file_key_pub_ars = os.path.join('/',
+                                    'root',
+                                    '.ssh',
+                                    'id_rsa.pub')
+    file_key_reverse_privat_ars = os.path.join('/',
+                                        'var',
+                                        'lib',
+                                        'pulse2',
+                                        'clients',
+                                        'reversessh',
+                                        '.ssh',
+                                        'id_rsa')
+    keyreversessh = file_get_contents(file_key_reverse_privat_ars)
     key = file_get_contents(file_key_pub_ars)
     time_out_install_key = 60
     resultiqstr = objectxmpp.iqsendpulse( tomachine,
-                                            {"action": "keyinstall",
-                                            "data":{"key" : key,
-                                            "sessionid" : sessionid,
-                                            "from" : fromrelay}
-                                            }, time_out_install_key)
+                                          { "action": "keyinstall",
+                                            "data": { "key" : key,
+                                                      "keyreverseprivatssh" : keyreversessh ,
+                                                      "sessionid" : sessionid,
+                                                      "from" : fromrelay }
+                                           }, time_out_install_key)
     resultiq = json.loads(resultiqstr)
     msglogbool = False
     if 'ret' in resultiq and resultiq['ret'] != 0:
         logger.error("Install ARS key %s on machine %s"%(fromrelay,tomachine))
+        ##toto mettre dans log du deploiement
         logger.error("Error description : %s"%json.dumps(resultiq['msg_error'], indent = 4))
         msglogbool = True
     if "err" in resultiq:
