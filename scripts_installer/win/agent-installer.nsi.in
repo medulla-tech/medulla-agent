@@ -133,8 +133,12 @@ SectionEnd
   inetc::get /NOCANCEL ${url} ${filename} /END
   Pop $0 ;Get the return value
   StrCmp $0 "OK" +5
+  ${LogString} "Download of ${url} failed: $0"
     ${IfNot} ${Silent}
       MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0"
+      Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+      SetErrorLevel 103
       Quit
     ${EndIf}
 !macroend
@@ -186,8 +190,9 @@ Section "Python" sec_py
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 104
     Quit
   ${EndIf}
 
@@ -200,8 +205,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "pip installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 105
     Quit
   ${EndIf}
 
@@ -214,8 +220,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Visual C++ Compiler for Python installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 106
     Quit
   ${EndIf}
 
@@ -227,8 +234,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "libcurl dll installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 107
     Quit
   ${EndIf}
 
@@ -285,8 +293,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "pulseuser user creation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 108
     Quit
   ${EndIf}
 
@@ -299,8 +308,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "pulseuser user profile creation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 109
     Quit
   ${EndIf}
   Delete $INSTDIR\tmp\${CREATE_PROFILE_FILENAME}
@@ -313,8 +323,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "${USERDIR}\pulseuser\.ssh folder creation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 110
     Quit
   ${EndIf}
 
@@ -329,8 +340,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "ssh public key setup failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 111
     Quit
   ${EndIf}
   ${LogString} "------------------------------------------------------"
@@ -382,8 +394,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "ssh installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 112
     Quit
   ${EndIf}
 
@@ -402,8 +415,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "ssh configuration failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 112
     Quit
   ${EndIf}
 
@@ -416,8 +430,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Setting ssh-agent autostart failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 113
     Quit
   ${EndIf}
   StrCpy $0 `sc.exe config sshdaemon start= auto`
@@ -428,8 +443,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Setting sshdaemon autostart failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 114
     Quit
   ${EndIf}
 
@@ -443,8 +459,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Generating ssh keys failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 115
     Quit
   ${EndIf}
 
@@ -470,8 +487,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
     ${LogString} "AccessControl error: $R0"
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Setting permissions on pulseuser profile folder failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 116
     Quit
   ${EndIf}
 
@@ -484,8 +502,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error setting account password expiration settings. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 117
     Quit
   ${EndIf}
 
@@ -505,23 +524,44 @@ Please check the logs in $INSTDIR\tmp\install.log"
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
-  ${Else}
+  ${ElseIf} $OS_LANGUAGE == "en";
     StrCpy $1 `net localgroup administrators "pulseuser" /ADD`
     ${LogString} "Add pulseuser to Administrators group : $1"
-    nsExec::ExecToLog $1
+    nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
+  ${Else}
+    ${LogString} "Your system language $OS_LANGUAGE is currently not supported, please report an issue https://github.com/pulse-project/pulse-xmpp-agent/issues"
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Your system language $OS_LANGUAGE is currently not supported. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 101
+    Quit
   ${EndIf}
+
   ${If} $PULSEUSER_GROUP == '0'
     ${LogString} "Added to group correctly"
   ${ElseIf} $PULSEUSER_GROUP == '1'
     ${LogString} "Missing pulseuser account"
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Missing pulseuser account. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 100
+    Quit
   ${ElseIf} $PULSEUSER_GROUP == '2'
     ${LogString} "Already a member of the group"
   ${Else}
     ${LogString} "Other error : $1"
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Other error : $1. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 102
+    Quit
   ${EndIf}
-
 
   ; Hide the account
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
@@ -545,8 +585,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 118
     Quit
   ${EndIf}
 
@@ -559,8 +600,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error starting ssh-agent service. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 119
     Quit
   ${EndIf}
   StrCpy $0 `sc start sshdaemon`
@@ -571,8 +613,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error starting sshdaemon service. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 120
     Quit
   ${EndIf}
 
@@ -589,8 +632,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 121
     Quit
   ${EndIf}
 
@@ -611,8 +655,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 122
     Quit
   ${EndIf}
   ; This requires a reboot
@@ -645,8 +690,9 @@ Section "RDP Setup" sec_rdp
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error configuring RDP. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 123
     Quit
   ${EndIf}
 
@@ -663,8 +709,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 124
     Quit
   ${EndIf}
 
@@ -745,8 +792,9 @@ Section "VNC Setup" sec_vnc
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "TightVNC installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 125
     Quit
   ${EndIf}
 
@@ -763,8 +811,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 126
     Quit
   ${EndIf}
 
@@ -821,8 +870,9 @@ Section "Fusion Inventory agent" sec_fusinv
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "FusionInventory installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 127
     Quit
   ${EndIf}
 
@@ -869,8 +919,9 @@ Section "!${PRODUCT_NAME}" sec_app
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Pulse Agent installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 128
     Quit
   ${EndIf}
 
@@ -880,9 +931,10 @@ Please check the logs in $INSTDIR\tmp\install.log"
   File "pulse-filetree-generator.exe"
   ${If} ${Errors}
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Pulse Agent installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+        MessageBox MB_OK|MB_ICONSTOP "Pulse File Tree installation failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 129
     Quit
   ${EndIf}
 
@@ -902,8 +954,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 130
     Quit
   ${EndIf}
   ; Create symbolic link to syncthing config file from etc
@@ -916,8 +969,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Symbolic link creation failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 131
     Quit
   ${EndIf}
 
@@ -934,8 +988,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 132
     Quit
   ${EndIf}
 
@@ -954,8 +1009,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 133
     Quit
   ${EndIf}
 
@@ -979,8 +1035,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error installing Pulse Agent service. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 134
     Quit
   ${EndIf}
 
@@ -997,8 +1054,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error installing Network check service. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 135
     Quit
   ${EndIf}
 
@@ -1016,8 +1074,9 @@ Please check the logs in $INSTDIR\tmp\install.log"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error starting Pulse Agent service. $\n\
-Please check the logs in $INSTDIR\tmp\install.log"
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 136
     Quit
   ${EndIf}
 
@@ -1220,6 +1279,7 @@ Function .onInit
   ; XP or later
   ${IfNot} ${AtLeastWinXP}
     MessageBox MB_OK|MB_ICONSTOP "XP and above required for running ${PRODUCT_NAME}"
+    SetErrorLevel 137
     Quit
   ${EndIf}
 
