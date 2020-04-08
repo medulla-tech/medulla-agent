@@ -96,6 +96,8 @@ override_dh_auto_install:
 	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config
 	mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/plugins_common/plugin_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
 	mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine
+	mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine/plugin_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
+	mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine
 	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_common/
 	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py
 	rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/plugins_common/
