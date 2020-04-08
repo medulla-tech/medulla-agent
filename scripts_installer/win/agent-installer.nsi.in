@@ -107,7 +107,9 @@ SetCompressor lzma
 !include "x64.nsh"
 !include "TextReplace.nsh"
 !include "StrRep.nsh"
+!include "TextFunc.nsh"
 
+Var OS_LANGUAGE
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -1326,12 +1328,11 @@ Function .onInit
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
   ; Detect system language
-  Var /GLOBAL OS_LANGUAGE
-  nsExec::ExecToStack 'powershell -Command (get-culture).TwoLetterISOLanguageName'
+  nsExec::ExecToStack 'powershell -Command (get-uiculture).TwoLetterISOLanguageName'
   Pop $0
   Pop $1
-  ${LogString} "System language is :  $1"
-  StrCpy $OS_LANGUAGE $1
+  ${TrimNewLines} $1 $OS_LANGUAGE
+  ${LogString} "System language is : $OS_LANGUAGE"
 
   ; Stop the agent if it is already running and kill all python tasks
   StrCpy $0 `net stop pulseagent`
