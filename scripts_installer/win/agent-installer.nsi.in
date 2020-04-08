@@ -290,6 +290,7 @@ Section "OpenSSH" sec_openssh
     Please reboot your computer and re-run the installer. $\n\
     Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
+    SetErrorLevel 138
     Quit
   ${EndIf}
   RMDir /r "${USERDIR}\pulse*"
@@ -431,7 +432,7 @@ Section "OpenSSH" sec_openssh
         MessageBox MB_OK|MB_ICONSTOP "ssh configuration failed. $\n\
 	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-    SetErrorLevel 112
+    SetErrorLevel 139
     Quit
   ${EndIf}
 
