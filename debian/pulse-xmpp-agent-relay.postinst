@@ -7,7 +7,8 @@ case "$1" in
     configure)
         if ! getent passwd | grep -q "^reversessh:"; then
             echo -n "Adding user reversessh..."
-            adduser --home /var/lib/pulse2/clients/reversessh \
+            adduser --system \
+                    --home /var/lib/pulse2/clients/reversessh \
                     --shell /bin/rbash \
                     --disabled-password \
                     reversessh 2>/dev/null || true
