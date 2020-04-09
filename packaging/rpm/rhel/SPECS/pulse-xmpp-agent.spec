@@ -279,6 +279,13 @@ mv  pulse-machine-plugins-${VERSION_XMPP_AGENT}.tar.gz %buildroot%_var/lib/pulse
 #mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseremoteagent
 cp -frv pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
+rm -frv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/config
+rm -frv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_common
+rm -frv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/plugins_common
+rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_machine/scheduling_*.py
+rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsmachine/plugin_*.py
+rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_relay/scheduling_*.py
+rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
