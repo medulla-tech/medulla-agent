@@ -135,15 +135,14 @@ SectionEnd
 !macro DownloadFile url filename
   inetc::get /NOCANCEL ${url} ${filename} /END
   Pop $0 ;Get the return value
-  StrCmp $0 "OK" +5
-  ${LogString} "Download of ${url} failed: $0"
+  StrCmp $0 "OK" +8
+    ${LogString} "Download of ${url} failed: $0"
     ${IfNot} ${Silent}
-      MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0"
+      MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0$\n\
       Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-      SetErrorLevel 103
-      Quit
-    ${EndIf}
+    SetErrorLevel 103
+    Quit
 !macroend
 
 
