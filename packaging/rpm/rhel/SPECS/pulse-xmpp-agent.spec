@@ -56,7 +56,15 @@ Pulse master agent substitute
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
 %_sysconfdir/pulse-xmpp-agent
-%_var/lib/pulse2/clients/config/*
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/guacamoleconf.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/downloadfile.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/downloadfileexpert.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/applicationdeploymentjson.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/guacamole.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/reverse_ssh_on.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/wakeonlan.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %_var/log/pulse
 #%{python2_sitelib}/pulse_xmpp_agent
 
