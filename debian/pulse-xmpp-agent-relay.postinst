@@ -9,6 +9,7 @@ case "$1" in
             echo -n "Adding user reversessh..."
             adduser --home /var/lib/pulse2/clients/reversessh \
                     --shell /bin/rbash \
+                    --disabled-password \
                     reversessh 2>/dev/null || true
             echo "..done"
         fi
