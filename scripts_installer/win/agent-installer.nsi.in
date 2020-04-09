@@ -156,7 +156,7 @@ Section "Python" sec_py
     @@FULL_OR_DL_PYTHON32_FILENAME@@
   ${EndIf}
   @@FULL_OR_DL_PY_VCPYTHON27@@
-  File "${DOWNLOADS_DIR}/usr/bin/${LIBCURL_FILENAME}"
+  @@FULL_OR_DL_LIBCURL@@
   ${LogString} "Python Installation...."
   ${LogString} "------------------------------------------------------"
 
@@ -258,7 +258,7 @@ Section "OpenSSH" sec_openssh
   ${Else}
     @@FULL_OR_DL_OPENSSH32@@
   ${EndIf}
-  File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
+  @@FULL_OR_DL_RSYNC@@
 
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
@@ -957,17 +957,12 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Copy syncthing exe to pulse\bin folder
-  Var /GLOBAL SYNCTHING_FILENAME
-  Var /GLOBAL SYNCTHING_FOLDERNAME
   ClearErrors
   ${If} ${RunningX64}
-    StrCpy $SYNCTHING_FILENAME "${SYNCTHING64_FILENAME}"
+    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING64_FILENAME}" "$INSTDIR\bin\syncthing.exe"
   ${Else}
-    StrCpy $SYNCTHING_FILENAME "${SYNCTHING32_FILENAME}"
+    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING32_FILENAME}" "$INSTDIR\bin\syncthing.exe"
   ${EndIf}
-  StrCpy $SYNCTHING_FOLDERNAME "$SYNCTHING_FILENAME" -4
-  ZipDLL::extractall "$INSTDIR\tmp\$SYNCTHING_FILENAME" "$INSTDIR\tmp\"
-  CopyFiles /SILENT "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME\syncthing.exe" "$INSTDIR\bin\"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
@@ -976,7 +971,6 @@ Section "!${PRODUCT_NAME}" sec_app
     SetErrorLevel 130
     Quit
   ${EndIf}
-  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
   ; Create symbolic link to syncthing config file from etc
   ClearErrors
   SetOutPath "$INSTDIR\etc"
