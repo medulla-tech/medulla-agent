@@ -39,3 +39,10 @@ Depends: ${misc:Depends}, pulse-xmpp-agent-deps, dos2unix, unzip, zip, nsis-plug
 Description: Pulse 2 Xmpp agent installer
 Breaks: pulse-xmppmaster-agentplugins (<< 2.0.7)
 Replaces: pulse-xmppmaster-agentplugins
+
+Package: pulse-xmpp-agent
+Architecture: all
+Provides: ${python:Provides}
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Description: Pulse xmpp agent - Empty package to ensuse update
+
