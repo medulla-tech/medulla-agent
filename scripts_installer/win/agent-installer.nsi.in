@@ -147,11 +147,10 @@ SectionEnd
 ; ####################### Python installation #######################
 Section "Python" sec_py
   SetOutPath "$INSTDIR\tmp"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_PYTHON64@@
-  ${Else}
-    @@FULL_OR_DL_PYTHON32@@
-  ${EndIf}
+  @@FULL_OR_DL_PYTHON64@@
+  ; 32bit python installer is needed in any case as it is used to uninstall
+  ; a previous 32bit version if found
+  @@FULL_OR_DL_PYTHON32@@
   @@FULL_OR_DL_PY_VCPYTHON27@@
   @@FULL_OR_DL_LIBCURL@@
   ${LogString} "Python Installation...."
