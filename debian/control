@@ -46,3 +46,8 @@ Provides: ${python:Provides}
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 Description: Pulse xmpp agent - Empty package to ensuse update
 
+Package: pulseagent-plugins-relay
+Architecture: all
+Provides: ${python:Provides}
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Description: Pulse xmpp agent - Empty package to ensuse update
