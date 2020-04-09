@@ -235,21 +235,19 @@ cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-a
 cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
 # We create the installer part now
-mkdir -p tmp
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-xmpp-agent.git -b %{branch}
-mv pulse-xmpp-agent pulse-xmpp-agent-%{version}
+mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}
+cp -frv pulse_xmpp_agent pulse-xmpp-agent-${VERSION_XMPP_AGENT}/
+cp -fv setup.py pulse-xmpp-agent-${VERSION_XMPP_AGENT}/
 tar czvf pulse-xmpp-agent-%{version}.tar.gz pulse-xmpp-agent-%{version}
-rm -fr pulse-xmpp-agent/
+rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 mkdir -p %buildroot%_var/lib/pulse2/clients
 mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 #GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
 #mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #mv kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz var/lib/pulse2/clients
-tar xzf %buildroot%_var/lib/pulse2/clients/pulse-xmpp-agent-%{version}.tar.gz -C tmp
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseremoteagent
 cp -frv pulse_xmpp_agent/* %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/
-rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/managedbkiosk.py
 mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
