@@ -20,7 +20,7 @@ Provides: ${python:Provides}
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-utils, python-mysqldb-dbg, python-croniter, python-psutil, python-crypto, python-lxml, python-requests, python-sftp, python-pyinotify
 Description: Pulse xmpp agent
 Breaks: pulse-agent-installers  (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.5), pulse-xmpp-agent (<< 2.0.5)
-Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.5), pulse-xmpp-agent (<< 2.0.5)
+Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay , pulse-xmpp-agent
 
 Package: pulse-xmpp-master-substitute
 Architecture: all
