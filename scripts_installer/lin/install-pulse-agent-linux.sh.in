@@ -30,6 +30,8 @@ SIVEO_BASE_URL="@@SIVEO_BASE_URL@@"
 BASE_URL="@@BASE_URL@@"
 INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
+PULSE_AGENT_FILENAME="pulse-xmpp-agent-@@AGENT_VERSION@@.tar.gz"
+AGENT_PLUGINS_FILENAME="pulse-machine-plugins-@@AGENT_VERSION@@.tar.gz"
 
 
 check_root() {
@@ -75,16 +77,7 @@ configure_repo() {
 }
 
 install_agent() {
-    case "$DISTRO" in
-      mageia)
-  	    yum install -q -y --reinstall pulse-agent-linux=${AGENT_VERSION}\*
-        ;;
-      ubuntu|debian)
-  	    apt install -q -y --reinstall pulse-agent-linux=${AGENT_VERSION}\*
-        ;;
-      *)
-        ;;
-    esac
+    pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}`
 }
 
 configure_inventory() {
