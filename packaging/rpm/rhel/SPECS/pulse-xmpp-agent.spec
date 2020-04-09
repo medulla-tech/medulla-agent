@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.0.6
+Version:	2.0.7
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -21,7 +21,7 @@ Url:		http://www.siveo.net
 
 BuildRequires:	python-setuptools
 BuildRequires:	python-sphinx
-BuildRequires:  git 
+BuildRequires:  git
 
 Requires:       python-netifaces
 Requires:       python-sleekxmpp
@@ -42,10 +42,10 @@ Summary:        Pulse 2 common files
 Group:          System/Servers
 BuildArch:      noarch
 
-Obsoletes:     pulse-xmpp-agent < 2.0.6
+Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
 
-Obsoletes:     pulseagent-plugins-relay < 2.0.6
+Obsoletes:     pulseagent-plugins-relay < 2.0.7
 Provides:      pulseagent-plugins-relay = %version
 
 %description -n pulse-xmpp-agent-relay
@@ -184,7 +184,7 @@ plugins for pulse xmppmaster
 rm -rf %{tarname}.egg-info
 
 %build
-# Nothing to do 
+# Nothing to do
 %install
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_agent
 cp -fr pulse_xmpp_agent/* %buildroot%{python2_sitelib}/pulse_xmpp_agent
