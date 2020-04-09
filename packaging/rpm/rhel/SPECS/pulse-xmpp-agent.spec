@@ -135,6 +135,9 @@ fi
 
 %files -n pulse-agent-installers
 %_var/lib/pulse2/clients
+%config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
 %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
