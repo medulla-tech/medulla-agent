@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+systemctl daemon-reload
+
+case "$1" in
+    configure)
+        SERVICES='pulse-xmpp-master-substitute-inventory \
+                  pulse-xmpp-master-substitute-registration \
+                  pulse-xmpp-master-substitute-assessor \
+                  pulse-xmpp-master-substitute-deployment \
+                  pulse-xmpp-master-substitute-subscription \
+                  pulse-xmpp-master-substitute-logger \
+                  pulse-xmpp-master-substitute-all'
+        for service in ${SERVICES}; do
+            if systemctl is-enabled ${service} &>/dev/null ; then
+                echo "Restarting ${service}"
+                systemctl restart ${service}
+            fi
+        done
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
