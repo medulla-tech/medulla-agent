@@ -51,6 +51,12 @@ Provides:      pulseagent-plugins-relay = %version
 %description -n pulse-xmpp-agent-relay
 Pulse master agent substitute
 
+%post -n pulse-xmpp-agent-relay
+if [[ -f "/usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]]; then
+    rm -f /usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
+fi
+
+
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
