@@ -537,7 +537,7 @@ Section "OpenSSH" sec_openssh
     ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
   ${ElseIf} $OS_LANGUAGE == "en";
-    StrCpy $1 `net localgroup administrators "pulseuser" /ADD`
+    StrCpy $0 `net localgroup administrators "pulseuser" /ADD`
     ${LogString} "Add pulseuser to Administrators group : $1"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
