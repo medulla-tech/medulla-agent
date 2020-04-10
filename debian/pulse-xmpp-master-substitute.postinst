@@ -5,26 +5,35 @@ systemctl daemon-reload
 
 case "$1" in
     configure)
-        if systemctl is-enabled pulse-xmpp-master-substitute-inventory &>/dev/null ; then
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-inventory ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-inventory service..."
             systemctl restart pulse-xmpp-master-substitute-inventory
+            echo "..done"
         fi
-        if systemctl is-enabled pulse-xmpp-master-substitute-registration &>/dev/null ; then
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-registration ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-registration service..."
             systemctl restart pulse-xmpp-master-substitute-registration
+            echo "..done"
         fi
-        if systemctl is-enabled pulse-xmpp-master-substitute-assessor &>/dev/null ; then
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-assessor ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-assessor service..."
             systemctl restart pulse-xmpp-master-substitute-assessor
+            echo "..done"
         fi
-        if systemctl is-enabled pulse-xmpp-master-substitute-deployment &>/dev/null ; then
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-deployment ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-deployment service..."
             systemctl restart pulse-xmpp-master-substitute-deployment
+            echo "..done"
         fi
-        if systemctl is-enabled pulse-xmpp-master-substitute-subscription &>/dev/null ; then
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-subscription ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-subscription service..."
             systemctl restart pulse-xmpp-master-substitute-subscription
+            echo "..done"
         fi
-        if systemctl is-enabled pulse-xmpp-master-substitute-logger &>/dev/null ; then
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-logger ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-logger service..."
             systemctl restart pulse-xmpp-master-substitute-logger
-        fi
-        if systemctl is-enabled pulse-xmpp-master-substitute-all &>/dev/null ; then
-            systemctl restart pulse-xmpp-master-substitute-all
+            echo "..done"
         fi
         ;;
 esac
