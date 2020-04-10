@@ -5,19 +5,27 @@ systemctl daemon-reload
 
 case "$1" in
     configure)
-        SERVICES='pulse-xmpp-master-substitute-inventory \
-                  pulse-xmpp-master-substitute-registration \
-                  pulse-xmpp-master-substitute-assessor \
-                  pulse-xmpp-master-substitute-deployment \
-                  pulse-xmpp-master-substitute-subscription \
-                  pulse-xmpp-master-substitute-logger \
-                  pulse-xmpp-master-substitute-all'
-        for service in ${SERVICES}; do
-            if systemctl is-enabled ${service} &>/dev/null ; then
-                echo "Restarting ${service}"
-                systemctl restart ${service}
-            fi
-        done
+        if systemctl is-enabled pulse-xmpp-master-substitute-inventory &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-inventory
+        fi
+        if systemctl is-enabled pulse-xmpp-master-substitute-registration &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-registration
+        fi
+        if systemctl is-enabled pulse-xmpp-master-substitute-assessor &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-assessor
+        fi
+        if systemctl is-enabled pulse-xmpp-master-substitute-deployment &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-deployment
+        fi
+        if systemctl is-enabled pulse-xmpp-master-substitute-subscription &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-subscription
+        fi
+        if systemctl is-enabled pulse-xmpp-master-substitute-logger &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-logger
+        fi
+        if systemctl is-enabled pulse-xmpp-master-substitute-all &>/dev/null ; then
+            systemctl restart pulse-xmpp-master-substitute-all
+        fi
         ;;
 esac
 
