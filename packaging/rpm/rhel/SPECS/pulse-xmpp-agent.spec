@@ -52,7 +52,7 @@ Provides:      pulseagent-plugins-relay = %version
 Pulse master agent substitute
 
 %post -n pulse-xmpp-agent-relay
-if [[ -f "/usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]]; then
+if [ -f "/usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
     rm -f /usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
 fi
 

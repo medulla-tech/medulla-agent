@@ -3,7 +3,7 @@ set -e
 
 systemctl daemon-reload
 
-if [[ -f "/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]]; then
+if [ -f "/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
     rm -f /usr/lib/python2.7/dist-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
 fi
 
