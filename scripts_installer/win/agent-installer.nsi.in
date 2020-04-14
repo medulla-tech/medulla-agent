@@ -527,8 +527,8 @@ Section "OpenSSH" sec_openssh
   ; Add pulse user to administrators group in English, French and Portugese
   Var /GLOBAL PULSEUSER_GROUP
   ${If} $OS_LANGUAGE == "fr";
-    StrCpy $0 `net localgroup administrateur "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrateur group : $1"
+    StrCpy $0 `net localgroup administrateurs "pulseuser" /ADD`
+    ${LogString} "Add pulseuser to Administrateurs group : $1"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
