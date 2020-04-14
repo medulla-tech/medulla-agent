@@ -19,6 +19,7 @@
 # MA 02110-1301, USA.
 
 from setuptools import setup
+import sys
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -51,10 +52,6 @@ setup(
         'psutil >= 5.4.3',
         'pysftp >= 0.2.9',
         'syncthing >= 2.3.1',
-        'requests >= 2.8.14',
-        'pathlib >= 1.0.1 ; platform_system=="Windows"',
-        'pypiwin32 >= 219 ; platform_system=="Windows"',
-        'comtypes >= 1.1.3 ; platform_system=="Windows"',
-        'wmi >= 1.4.9 ; platform_system=="Windows"'
-    ],
+        'requests >= 2.8.14'
+    ] + ( ['pathlib >= 1.0.1', 'pypiwin32 >= 219', 'comtypes >= 1.1.3', 'wmi >= 1.4.9'] if "win" in sys.platform else [] )
 )
