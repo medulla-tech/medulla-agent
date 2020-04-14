@@ -524,21 +524,21 @@ Section "OpenSSH" sec_openssh
   Var /GLOBAL PULSEUSER_GROUP
   ${If} $OS_LANGUAGE == "fr";
     StrCpy $0 `net localgroup administrateurs "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrateurs group : $1"
+    ${LogString} "Add pulseuser to Administrateurs group"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
   ${ElseIf} $OS_LANGUAGE == "es";
     StrCpy $0 `net localgroup administradores "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administradores group : $1"
+    ${LogString} "Add pulseuser to Administradores group"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
   ${ElseIf} $OS_LANGUAGE == "en";
     StrCpy $0 `net localgroup administrators "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrators group : $1"
+    ${LogString} "Add pulseuser to Administrators group"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
