@@ -1328,17 +1328,21 @@ Function .onInit
   ; Stop the agent if it is already running and kill all python tasks
   ${LogString} "------------------------------------------------------"
   ${LogString} "Detect previous installation and stop service"
-  StrCpy $0 `sc stop pulseagent`
-  ${LogString} "Running $0"
+  StrCpy $0 `sc query pulseagent`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${Switch} $1
     ${Case} "0"
-        StrCpy $0 `Service had been stopped`
-        ${Break}
-    ${Case} "1062"
-        ;1062 The service has not been started.
-        StrCpy $0 `Service are already stopped`
+        StrCpy $0 `net stop pulseagent`
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service had been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service are already stopped`
+          ${EndSwitch}
         ${Break}
     ${Case} "1060"
         ;1060 The specified service does not exist as an installed service.
@@ -1346,31 +1350,40 @@ Function .onInit
         ${Break}
     ${Default}
         StrCpy $0 `Something else happened : $1`
-  ${EndSwitch}
-  ${LogString} $0
-  StrCpy $0 `sc stop pulsenetworknotify`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${Switch} $1
-    ${Case} "0"
-        StrCpy $0 `Service had been stopped`
-        ${Break}
-    ${Case} "1062"
-        ;1062 The service has not been started.
-        StrCpy $0 `Service are already stopped`
-        ${Break}
-    ${Case} "1060"
-        ;1060 The specified service does not exist as an installed service.
-        StrCpy $0 `No previous installation`
-        ${Break}
-    ${Break}
-    ${Default}
-        StrCpy $0 `Something else happened : $1`
+        SetErrorLevel 102
+        Quit
   ${EndSwitch}
   ${LogString} $0
 
-  StrCpy $0 `taskkill.exe /F /IM python.exe`
+ StrCpy $0 `sc query pulsenetworknotify`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `net stop pulseagent`
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service had been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service are already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        StrCpy $0 `Something else happened : $1`
+        SetErrorLevel 102
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+
+  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1385,24 +1398,8 @@ Function .onInit
     ${Break}
     ${Default}
         StrCpy $0 `Something else happened : $1`
-  ${EndSwitch}
-  ${LogString} $0
-
-    StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${Switch} $1
-    ${Case} "0"
-        StrCpy $0 `Process had been stopped`
-        ${Break}
-    ${Case} "128"
-        ;128 The process is not found.
-        StrCpy $0 `Process is already stopped`
-        ${Break}
-    ${Break}
-    ${Default}
-        StrCpy $0 `Something else happened : $1`
+        SetErrorLevel 102
+        Quit
   ${EndSwitch}
   ${LogString} $0
   ${LogString} "------------------------------------------------------"
