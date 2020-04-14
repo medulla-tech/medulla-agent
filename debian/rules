@@ -4,7 +4,7 @@
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
-VERSION_XMPP_AGENT=2.0.6
+VERSION_XMPP_AGENT=2.0.7
 VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
 BRANCH=integration
@@ -116,6 +116,12 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent
 	cp -frv pulse_xmpp_agent/* $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/
 	rm -frv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/config
+	rm -frv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_common
+	rm -frv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/plugins_common
+	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_machine/scheduling_*.py
+	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/pluginsmachine/plugin_*.py
+	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_relay/scheduling_*.py
+	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/agentconf.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/

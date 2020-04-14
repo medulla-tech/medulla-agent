@@ -2624,7 +2624,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 WHERE
                     (deploy.sessionid = '%s'
                         AND `state` NOT IN ('DEPLOYMENT SUCCESS' , 'ABORT DEPLOYMENT CANCELLED BY USER')
-                        AND `state` REGEXP '^(?!ERROR)');
+                        AND `state` REGEXP '^(?!ERROR)^(?!SUCCESS)^(?!ABORT)');
                 """%(state,sessionid)
             result = session.execute(sql)
             session.commit()
@@ -2653,15 +2653,33 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updatedeploystate(self, session, sessionid, state):
+        """
+        update status deploy
+        """
         try:
-            session.query(Deploy).filter(Deploy.sessionid == sessionid).\
-                    update({Deploy.state: state})
-            session.commit()
-            session.flush()
-            return 1
-        except Exception, e:
-            logging.getLogger().error(str(e))
+            deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+            if deploysession:
+                # les status commençant par error, success, abort ne peuvent plus être modifiés.
+                regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
+                if regexpexlusion.match(state) is None:
+                    return
+                if state == "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)":
+                    if deploysession.state in ["WOL 1",
+                                               "WOL 2",
+                                               "WOL 3",
+                                               "WAITING MACHINE ONLINE"]:
+                        #STATUS NE CHANGE PAS
+                        return 0
+                #update status
+                deploysession.state = state
+                session.commit()
+                session.flush()
+                return 1
+        except Exception:
+            logging.getLogger().error("sql : %s"%traceback.format_exc())
             return -1
+        finally:
+            session.close()
 
     @DatabaseHelper._sessionm
     def addPresenceNetwork(self, session, macaddress, ipaddress, broadcast, gateway, mask, mac, id_machine):
@@ -4898,7 +4916,9 @@ class XmppMasterDatabase(DatabaseHelper):
                             len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
                             state == "DEPLOYMENT SUCCESS":
                         state = "DEPLOYMENT PARTIAL SUCCESS"
-                    deploysession.state = state
+                    regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
+                    if regexpexlusion.match(state) is not None:
+                        deploysession.state = state
                 session.commit()
                 session.flush()
                 session.close()

@@ -49,7 +49,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.0.6"
+AGENT_VERSION="2.0.7"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 PYTHON32_FILENAME="python-2.7.9.msi"
@@ -103,8 +103,10 @@ VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
 VNC_PORT="5900"
 SSH_PORT="22"
-SYNCTHING32_FILENAME="syncthing-windows-386-v1.1.0.zip"
-SYNCTHING64_FILENAME="syncthing-windows-amd64-v1.1.0.zip"
+SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.1.0.zip"
+SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.1.0.zip"
+SYNCTHING32_FILENAME="syncthing32.exe"
+SYNCTHING64_FILENAME="syncthing64.exe"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
@@ -188,33 +190,35 @@ compute_parameters_full() {
     PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
-    FULL_OR_DL_PYTHON32_FILENAME=$(sed_escape 'File "${DOWNLOADS_DIR}/${PYTHON32_FILENAME}"')
-    FULL_OR_DL_PYTHON64_FILENAME=$(sed_escape 'File "${DOWNLOADS_DIR}/${PYTHON64_FILENAME}"')
-    FULL_OR_DL_PY_VCPYTHON27=$(sed_escape 'File "${DOWNLOADS_DIR}/${PY_VCPYTHON27_FILENAME}"')
+    FULL_OR_DL_PYTHON32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON32_FILENAME}'"')
+    FULL_OR_DL_PYTHON64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON64_FILENAME}'"')
+    FULL_OR_DL_PY_VCPYTHON27=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PY_VCPYTHON27_FILENAME}'"')
+    FULL_OR_DL_LIBCURL=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LIBCURL_FILENAME}'"')
     for FILENAME in ${PY_MODULES_32_FILENAMES}; do
-        PY_MODULES_32='File "${DOWNLOADS_DIR}/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_32}
+        PY_MODULES_32='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_32}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
     done
     FULL_OR_DL_PY_MODULES_32_FILENAMES=$(sed_escape ${PY_MODULES_32})
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
-        PY_MODULES_64='File "${DOWNLOADS_DIR}/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_64}
+        PY_MODULES_64='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
     done
     FULL_OR_DL_PY_MODULES_64_FILENAMES=$(sed_escape ${PY_MODULES_64})
     for FILENAME in ${PY_MODULES_COMMON_FILENAMES}; do
-        PY_MODULES_COMMON='File "${DOWNLOADS_DIR}/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_COMMON}
+        PY_MODULES_COMMON='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_COMMON}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-    FULL_OR_DL_OPENSSH32=$(sed_escape 'File "${DOWNLOADS_DIR}/${OPENSSH32_FILENAME}"')
-    FULL_OR_DL_OPENSSH64=$(sed_escape 'File "${DOWNLOADS_DIR}/${OPENSSH64_FILENAME}"')
-    FULL_OR_DL_FUSION_INVENTORY_AGENT32=$(sed_escape 'File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT32_FILENAME}"')
-    FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "${DOWNLOADS_DIR}/${FUSION_INVENTORY_AGENT64_FILENAME}"')
-    FULL_OR_DL_VNC_AGENT32=$(sed_escape 'File "${DOWNLOADS_DIR}/${VNC_AGENT32_FILENAME}"')
-    FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "${DOWNLOADS_DIR}/${VNC_AGENT64_FILENAME}"')
-    FULL_OR_DL_SYNCTHING32=$(sed_escape 'File "${DOWNLOADS_DIR}/${SYNCTHING32_FILENAME}"')
-    FULL_OR_DL_SYNCTHING64=$(sed_escape 'File "${DOWNLOADS_DIR}/${SYNCTHING64_FILENAME}"')
+    FULL_OR_DL_OPENSSH32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH32_FILENAME}'"')
+    FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
+    FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
+    FULL_OR_DL_FUSION_INVENTORY_AGENT32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT32_FILENAME}'"')
+    FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT64_FILENAME}'"')
+    FULL_OR_DL_VNC_AGENT32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT32_FILENAME}'"')
+    FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
+    FULL_OR_DL_SYNCTHING32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING32_FILENAME}'"')
+    FULL_OR_DL_SYNCTHING64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING64_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
 
@@ -226,9 +230,10 @@ compute_parameters_dl() {
     PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
-    FULL_OR_DL_PYTHON32_FILENAME=$(sed_escape '${DownloadFile} '${DL_URL}'/${PYTHON32_FILENAME} ${PYTHON32_FILENAME}')
-	FULL_OR_DL_PYTHON64_FILENAME=$(sed_escape '${DownloadFile} '${DL_URL}'/${PYTHON64_FILENAME} ${PYTHON64_FILENAME}')
-	FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/${PY_VCPYTHON27_FILENAME} ${PY_VCPYTHON27_FILENAME}')
+    FULL_OR_DL_PYTHON32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON32_FILENAME}' '${PYTHON32_FILENAME})
+	FULL_OR_DL_PYTHON64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON64_FILENAME}' '${PYTHON64_FILENAME})
+	FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PY_VCPYTHON27_FILENAME}' '${PY_VCPYTHON27_FILENAME})
+    FULL_OR_DL_LIBCURL=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LIBCURL_FILENAME}' '${LIBCURL_FILENAME})
     for FILENAME in ${PY_MODULES_32_FILENAMES}; do
         PY_MODULES_32='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_32}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
@@ -245,14 +250,15 @@ compute_parameters_dl() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-	FULL_OR_DL_OPENSSH32=$(sed_escape '${DownloadFile} '${DL_URL}'/${OPENSSH32_FILENAME} ${OPENSSH32_FILENAME}')
-	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/${OPENSSH64_FILENAME} ${OPENSSH64_FILENAME}')
-	FULL_OR_DL_FUSION_INVENTORY_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/${FUSION_INVENTORY_AGENT32_FILENAME} ${FUSION_INVENTORY_AGENT32_FILENAME}')
-	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/${FUSION_INVENTORY_AGENT64_FILENAME} ${FUSION_INVENTORY_AGENT64_FILENAME}')
-	FULL_OR_DL_VNC_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/${VNC_AGENT32_FILENAME} ${VNC_AGENT32_FILENAME}')
-	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/${VNC_AGENT64_FILENAME} ${VNC_AGENT64_FILENAME}')
-	FULL_OR_DL_SYNCTHING32=$(sed_escape '${DownloadFile} '${DL_URL}'/${SYNCTHING32_FILENAME} ${SYNCTHING32_FILENAME}')
-	FULL_OR_DL_SYNCTHING64=$(sed_escape '${DownloadFile} '${DL_URL}'/${SYNCTHING64_FILENAME} ${SYNCTHING64_FILENAME}')
+	FULL_OR_DL_OPENSSH32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH32_FILENAME}' '${OPENSSH32_FILENAME})
+	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
+    FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
+	FULL_OR_DL_FUSION_INVENTORY_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT32_FILENAME}' '${FUSION_INVENTORY_AGENT32_FILENAME})
+	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT64_FILENAME}' '${FUSION_INVENTORY_AGENT64_FILENAME})
+	FULL_OR_DL_VNC_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT32_FILENAME}' '${VNC_AGENT32_FILENAME})
+	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
+	FULL_OR_DL_SYNCTHING32=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING32_FILENAME}' '${SYNCTHING32_FILENAME})
+	FULL_OR_DL_SYNCTHING64=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING64_FILENAME}' '${SYNCTHING64_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
 
@@ -290,10 +296,11 @@ sed_escape() {
 
 prepare_mandatory_includes() {
 	colored_echo blue "### INFO Preparing mandatory includes..."
+    mkdir -p ${DOWNLOADS_DIR}/bin
 	# rsync
 	if [ -e ${DOWNLOADS_DIR}/${RSYNC_DL_FILENAME} ]; then
 		pushd ${DOWNLOADS_DIR}
-		unzip ${RSYNC_DL_FILENAME}
+		unzip -q ${RSYNC_DL_FILENAME}
 		mkdir rsync
 		rm -f rsync.zip
 		FOLDERNAME="${RSYNC_DL_FILENAME%.*}"
@@ -314,11 +321,34 @@ prepare_mandatory_includes() {
 	if [ -e ${DOWNLOADS_DIR}/${LIBCURL_DL_FILENAME} ]; then
 		pushd ${DOWNLOADS_DIR}
 		tar xJf ${LIBCURL_DL_FILENAME}
+        mv usr/bin/cygcurl-4.dll bin
+        rm -rf usr
 		popd
 	else
 		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
 		exit 1
 	fi
+    # syncthing
+    if [ -e ${DOWNLOADS_DIR}/${SYNCTHING32_DL_FILENAME} ]; then
+		pushd ${DOWNLOADS_DIR}
+		unzip -q ${SYNCTHING32_DL_FILENAME}
+        cp ${SYNCTHING32_DL_FILENAME::-4}/syncthing.exe bin/${SYNCTHING32_FILENAME}
+        rm -rf ${SYNCTHING32_DL_FILENAME::-4}
+		popd
+    else
+        colored_echo red "${SYNCTHING32_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
+        exit 1
+    fi
+    if [ -e ${DOWNLOADS_DIR}/${SYNCTHING64_DL_FILENAME} ]; then
+		pushd ${DOWNLOADS_DIR}
+		unzip -q ${SYNCTHING64_DL_FILENAME}
+        cp ${SYNCTHING64_DL_FILENAME::-4}/syncthing.exe bin/${SYNCTHING64_FILENAME}
+        rm -rf ${SYNCTHING64_DL_FILENAME::-4}
+		popd
+    else
+        colored_echo red "${SYNCTHING64_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
+        exit 1
+    fi
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
@@ -330,11 +360,12 @@ update_nsi_script() {
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOADS_DIR}/" \
 		-e "s/@@PYTHON32_FILENAME@@/${PYTHON32_FILENAME}/" \
 		-e "s/@@PYTHON64_FILENAME@@/${PYTHON64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PYTHON32_FILENAME@@/${FULL_OR_DL_PYTHON32_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PYTHON64_FILENAME@@/${FULL_OR_DL_PYTHON64_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_PYTHON32@@/${FULL_OR_DL_PYTHON32}/" \
+		-e "s/@@FULL_OR_DL_PYTHON64@@/${FULL_OR_DL_PYTHON64}/" \
 		-e "s/@@PY_VCPYTHON27_FILENAME@@/${PY_VCPYTHON27_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_VCPYTHON27@@/${FULL_OR_DL_PY_VCPYTHON27}/" \
 		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
+        -e "s/@@FULL_OR_DL_LIBCURL@@/${FULL_OR_DL_LIBCURL}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_32_FILENAMES@@/${FULL_OR_DL_PY_MODULES_32_FILENAMES}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_64_FILENAMES@@/${FULL_OR_DL_PY_MODULES_64_FILENAMES}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@/${FULL_OR_DL_PY_MODULES_COMMON_FILENAMES}/" \
@@ -351,6 +382,8 @@ update_nsi_script() {
 		-e "s/@@OPENSSH64_FILENAME@@/${OPENSSH64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_OPENSSH32@@/${FULL_OR_DL_OPENSSH32}/" \
 		-e "s/@@FULL_OR_DL_OPENSSH64@@/${FULL_OR_DL_OPENSSH64}/" \
+		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
+        -e "s/@@FULL_OR_DL_RSYNC@@/${FULL_OR_DL_RSYNC}/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@FUSION_INVENTORY_AGENT32_FILENAME@@/${FUSION_INVENTORY_AGENT32_FILENAME}/" \
 		-e "s/@@FUSION_INVENTORY_AGENT64_FILENAME@@/${FUSION_INVENTORY_AGENT64_FILENAME}/" \
@@ -365,7 +398,6 @@ update_nsi_script() {
 		-e "s/@@FULL_OR_DL_SYNCTHING32@@/${FULL_OR_DL_SYNCTHING32}/" \
 		-e "s/@@SYNCTHING64_FILENAME@@/${SYNCTHING64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_SYNCTHING64@@/${FULL_OR_DL_SYNCTHING64}/" \
-		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
         -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
@@ -390,7 +422,7 @@ update_nsi_script() {
 
 generate_agent_installer() {
 	colored_echo blue "### INFO Generating installer..."
-	makensis -V1 agent-installer.nsi
+	makensis -V2 agent-installer.nsi
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Generation of agent failed. Please restart"
 		exit 1

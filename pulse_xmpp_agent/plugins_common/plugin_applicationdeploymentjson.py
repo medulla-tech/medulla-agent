@@ -517,7 +517,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         if not 'stepcurrent' in datasend['data']:
             if not cleandescriptor(data):
-                objectxmpp.xmpplog('<span class="log_err">Package error: descriptor for OS %s missing</span>'%sys.platform,
+                objectxmpp.xmpplog('<span class="log_err">Descriptor error: descriptor for OS %s missing</span>'%sys.platform,
                                     type = 'deploy',
                                     sessionname = sessionid,
                                     priority = 0,

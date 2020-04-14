@@ -19,7 +19,7 @@ Architecture: all
 Provides: ${python:Provides}
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-utils, python-mysqldb-dbg, python-croniter, python-psutil, python-crypto, python-lxml, python-requests, python-sftp, python-pyinotify
 Description: Pulse xmpp agent
-Breaks: pulse-agent-installers  (<< 1.9.1), pulseagent-plugins-relay , pulse-xmpp-agent
+Breaks: pulse-agent-installers  (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.5), pulse-xmpp-agent (<< 2.0.5)
 Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay , pulse-xmpp-agent
 
 Package: pulse-xmpp-master-substitute
@@ -37,3 +37,6 @@ Package: pulse-agent-installers
 Architecture: all
 Depends: ${misc:Depends}, pulse-xmpp-agent-deps, dos2unix, unzip, zip, nsis-plugins-accesscontrol, nsis-plugins-inetc, nsis-plugins-pwgen, nsis-plugins-zipdll, uuid, nsis-plugins-textreplace, xar, pulse-kiosk-agent-deps, xz-utils, dpkg-dev, debhelper (>= 9), python-all-dev (>= 2.6.6-3~), build-essential, createrepo, crudini
 Description: Pulse 2 Xmpp agent installer
+Breaks: pulse-xmppmaster-agentplugins (<< 2.0.7)
+Replaces: pulse-xmppmaster-agentplugins
+

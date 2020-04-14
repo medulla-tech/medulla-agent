@@ -48,7 +48,15 @@ PACKAGE_NAME="Pulse Agent"
 PACKAGE_DESC="XMPP Agent for machines managed by Pulse"
 AGENT_VERSION=$(grep ^AGENT_VERSION= /var/lib/pulse2/clients/win/generate-pulse-agent-win.sh | cut -d '"' -f2)
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
+PULSE_MACHINE_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 PULSE_AGENT_PATH="/var/lib/pulse2/clients"
+dig `hostname -f` +nosearch +short | tail -n1 | grep -q -E '([0-9]{1,3}\.){3}[0-9]{1,3}'
+if [ $? -eq 0 ]; then
+	BASE_URL=http://`hostname -f`/downloads
+else
+	BASE_URL=http://`hostname`/downloads
+fi
+
 
 # First check if the package exists.
 # If it is the case, keep its uuid for deleting it after generation.
@@ -58,8 +66,9 @@ old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/* -
 mkdir -p /var/lib/pulse2/packages/${PACKAGE_UUID}
 pushd /var/lib/pulse2/packages/${PACKAGE_UUID}
 
-# Copy the agent to the package folder
+# Copy the agent and plugins to the package folder
 cp ${PULSE_AGENT_PATH}/${PULSE_AGENT_FILENAME} .
+cp ${PULSE_AGENT_PATH}/${PULSE_MACHINE_PLUGINS_FILENAME} .
 
 # Generate xmppdeploy.json
 cat <<EOF > xmppdeploy.json
@@ -85,7 +94,7 @@ cat <<EOF > xmppdeploy.json
             },
             {
                 "typescript": "Batch",
-                "script": "pip install --upgrade --no-index --find-links=\".\" ${PULSE_AGENT_FILENAME}",
+                "script": "pip install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/win/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
                 "step": 1,
                 "codereturn": "",
                 "action": "actionprocessscriptfile",
@@ -138,7 +147,7 @@ cat <<EOF > xmppdeploy.json
             },
             {
                 "typescript": "Batch",
-                "script": "pip install --upgrade --no-index --find-links=\".\" ${PULSE_AGENT_FILENAME}",
+                "script": "pip install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/lin/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
                 "step": 1,
                 "codereturn": "",
                 "action": "actionprocessscriptfile",
@@ -169,7 +178,7 @@ cat <<EOF > xmppdeploy.json
             },
             {
                 "typescript": "Batch",
-                "script": "/usr/local/bin/pip2 install --upgrade --no-index --find-links=\".\" ${PULSE_AGENT_FILENAME}",
+                "script": "/usr/local/bin/pip2 install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/mac/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
                 "step": 1,
                 "codereturn": "",
                 "action": "actionprocessscriptfile",

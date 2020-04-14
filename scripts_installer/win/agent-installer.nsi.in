@@ -36,14 +36,10 @@ RequestExecutionLevel admin
 !define PROGRAMDATA "C:\ProgramData"
 
 ; Variables replaced by the script calling the nsi
-!define DOWNLOADS_DIR "@@DOWNLOADS_DIR@@"
 !define PYTHON32_FILENAME "@@PYTHON32_FILENAME@@"
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
 !define PY_VCPYTHON27_FILENAME "@@PY_VCPYTHON27_FILENAME@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
-!define PY_MODULES_32_FILENAMES "@@PY_MODULES_32_FILENAMES@@"
-!define PY_MODULES_64_FILENAMES "@@PY_MODULES_64_FILENAMES@@"
-!define PY_MODULES_COMMON_FILENAMES "@@PY_MODULES_COMMON_FILENAMES@@"
 
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
@@ -133,30 +129,30 @@ SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
+  ${LogString} "Downloading ${url}"
   inetc::get /NOCANCEL ${url} ${filename} /END
   Pop $0 ;Get the return value
-  StrCmp $0 "OK" +5
-  ${LogString} "Download of ${url} failed: $0"
+  StrCmp $0 "OK" +8
+    ${LogString} "Download failed: $0"
     ${IfNot} ${Silent}
-      MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0"
+      MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0$\n\
       Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-      SetErrorLevel 103
-      Quit
-    ${EndIf}
+    SetErrorLevel 103
+    Quit
+  ${LogString} "Return code was: $0"
 !macroend
 
 
 ; ####################### Python installation #######################
 Section "Python" sec_py
   SetOutPath "$INSTDIR\tmp"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_PYTHON64_FILENAME@@
-  ${Else}
-    @@FULL_OR_DL_PYTHON32_FILENAME@@
-  ${EndIf}
+  @@FULL_OR_DL_PYTHON64@@
+  ; 32bit python installer is needed in any case as it is used to uninstall
+  ; a previous 32bit version if found
+  @@FULL_OR_DL_PYTHON32@@
   @@FULL_OR_DL_PY_VCPYTHON27@@
-  File "${DOWNLOADS_DIR}/usr/bin/${LIBCURL_FILENAME}"
+  @@FULL_OR_DL_LIBCURL@@
   ${LogString} "Python Installation...."
   ${LogString} "------------------------------------------------------"
 
@@ -258,7 +254,7 @@ Section "OpenSSH" sec_openssh
   ${Else}
     @@FULL_OR_DL_OPENSSH32@@
   ${EndIf}
-  File "${DOWNLOADS_DIR}/${RSYNC_FILENAME}"
+  @@FULL_OR_DL_RSYNC@@
 
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
@@ -528,21 +524,21 @@ Section "OpenSSH" sec_openssh
   Var /GLOBAL PULSEUSER_GROUP
   ${If} $OS_LANGUAGE == "fr";
     StrCpy $0 `net localgroup administrateurs "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrateurs group : $1"
+    ${LogString} "Add pulseuser to Administrateurs group"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
   ${ElseIf} $OS_LANGUAGE == "es";
     StrCpy $0 `net localgroup administradores "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administradores group : $1"
+    ${LogString} "Add pulseuser to Administradores group"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
     StrCpy $PULSEUSER_GROUP $1
   ${ElseIf} $OS_LANGUAGE == "en";
-    StrCpy $1 `net localgroup administrators "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrators group : $1"
+    StrCpy $0 `net localgroup administrators "pulseuser" /ADD`
+    ${LogString} "Add pulseuser to Administrators group"
     nsExec::ExecToLog $0
     Pop $1 # return value/error/timeout
     ${LogString} "Return code was: $1"
@@ -957,17 +953,12 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Copy syncthing exe to pulse\bin folder
-  Var /GLOBAL SYNCTHING_FILENAME
-  Var /GLOBAL SYNCTHING_FOLDERNAME
   ClearErrors
   ${If} ${RunningX64}
-    StrCpy $SYNCTHING_FILENAME "${SYNCTHING64_FILENAME}"
+    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING64_FILENAME}" "$INSTDIR\bin\syncthing.exe"
   ${Else}
-    StrCpy $SYNCTHING_FILENAME "${SYNCTHING32_FILENAME}"
+    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING32_FILENAME}" "$INSTDIR\bin\syncthing.exe"
   ${EndIf}
-  StrCpy $SYNCTHING_FOLDERNAME "$SYNCTHING_FILENAME" -4
-  ZipDLL::extractall "$INSTDIR\tmp\$SYNCTHING_FILENAME" "$INSTDIR\tmp\"
-  CopyFiles /SILENT "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME\syncthing.exe" "$INSTDIR\bin\"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
@@ -976,7 +967,6 @@ Section "!${PRODUCT_NAME}" sec_app
     SetErrorLevel 130
     Quit
   ${EndIf}
-  RMDir /r "$INSTDIR\tmp\$SYNCTHING_FOLDERNAME"
   ; Create symbolic link to syncthing config file from etc
   ClearErrors
   SetOutPath "$INSTDIR\etc"
@@ -1145,7 +1135,7 @@ Section "!${PRODUCT_NAME}" sec_app
 
   Delete $INSTDIR\tmp\${PULSE_AGENT_FILENAME}
   Delete $INSTDIR\tmp\${AGENT_PLUGINS_FILENAME}
-  Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME_FILENAME}
+  Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME}
   Delete $INSTDIR\tmp\${SYNCTHING32_FILENAME}
   Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@

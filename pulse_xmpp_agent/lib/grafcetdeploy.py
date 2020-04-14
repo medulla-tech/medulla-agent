@@ -375,7 +375,7 @@ class grafcet:
                 -1,
                 False,
                 "end error inconsistency in descriptor verify the step number [step %s not exist]" % val)
-            self.objectxmpp.xmpplog("[%s] : Descriptor inconsistency error. Verify the step number [step %s not exist]" % (val, self.data['name']),
+            self.objectxmpp.xmpplog("[%s] : Descriptor error: Verify the step number [step %s not exist]" % (val, self.data['name']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = val,
@@ -1819,7 +1819,7 @@ class grafcet:
                                         fromuser = self.data['login'],
                                         touser = "")
             else:
-                self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory error <span>' % (self.data['name'], self.workingstep['step']),
+                self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>' % (self.data['name'], self.workingstep['step']),
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],

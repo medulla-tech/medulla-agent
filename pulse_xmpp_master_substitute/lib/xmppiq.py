@@ -265,29 +265,6 @@ class functionsynchroxmpp:
                         result = simplecommand(encode_strconsole('net localgroup %s "pulseuser" /ADD' % adminsgroup))
                         logger.info("Adding pulseuser to administrators group: %s" %result)
                         msgaction.append("Adding pulseuser to administrators group: %s" %result)
-                        # Reconfigure SSH server
-                        logger.info("Reconfiguring ssh server for using keys in pulseuser account")
-                        msgaction.append("Reconfiguring ssh server for using keys in pulseuser account")
-                        sshdconfigfile = os.path.join(os.environ["ProgramFiles"], 'OpenSSH', 'sshd_config')
-                        if os.path.isfile(sshdconfigfile):
-                            with open(sshdconfigfile) as infile:
-                                with open('sshd_config', 'w') as outfile:
-                                    for line in infile:
-                                        if line.startswith('AuthorizedKeysFile'):
-                                            outfile.write('#' + line)
-                                        else:
-                                            outfile.write(line)
-                            move('sshd_config', sshdconfigfile)
-                            currentdir = os.getcwd()
-                            os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
-                            result = simplecommand(encode_strconsole('powershell '\
-                                '-ExecutionPolicy Bypass -Command ". '\
-                                '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
-                            os.chdir(currentdir)
-                            win32serviceutil.StopService('sshd')
-                            win32serviceutil.StopService('ssh-agent')
-                            win32serviceutil.StartService('ssh-agent')
-                            win32serviceutil.StartService('sshd')
                     # on configure le compte pulseuser
                     logger.info("Creating authorized_keys file in pulseuser account")
                     msgaction.append("Creating authorized_keys file in pulseuser account")
@@ -359,8 +336,6 @@ class functionsynchroxmpp:
             if 'keyreverseprivatssh' in data['data']:
                 install_key_ssh_relayserver(data['data']['keyreverseprivatssh'].strip(' \t\n\r'),
                                             private=True)
-            ##############""authorized_keys_content = file_get_contents(authorized_keys_path)
-
             # instal key dans authorized_keys
             authorized_keys_content = file_get_contents(authorized_keys_path)
             if not data['data']['key'].strip(' \t\n\r') in authorized_keys_content:

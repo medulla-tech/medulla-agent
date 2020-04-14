@@ -28,7 +28,7 @@
 #				Manage inventory tags
 
 # To be defined
-AGENT_VERSION="2.0.6"
+AGENT_VERSION="2.0.7"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
