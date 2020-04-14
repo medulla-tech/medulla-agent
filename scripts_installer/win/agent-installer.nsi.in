@@ -1338,10 +1338,10 @@ Function .onInit
         Pop $1 # return value/error/timeout
           ${Switch} $1
           ${Case} "0"
-            StrCpy $0 `Service had been stopped`
+            StrCpy $0 `Service has been stopped`
             ${Break}
           ${Default}
-            StrCpy $0 `Service are already stopped`
+            StrCpy $0 `Service is already stopped`
           ${EndSwitch}
         ${Break}
     ${Case} "1060"
@@ -1365,10 +1365,10 @@ Function .onInit
         Pop $1 # return value/error/timeout
           ${Switch} $1
           ${Case} "0"
-            StrCpy $0 `Service had been stopped`
+            StrCpy $0 `Service has been stopped`
             ${Break}
           ${Default}
-            StrCpy $0 `Service are already stopped`
+            StrCpy $0 `Service is already stopped`
           ${EndSwitch}
         ${Break}
     ${Case} "1060"
@@ -1389,7 +1389,7 @@ Function .onInit
   Pop $1 # return value/error/timeout
   ${Switch} $1
     ${Case} "0"
-        StrCpy $0 `Process had been stopped`
+        StrCpy $0 `Process has been stopped`
         ${Break}
     ${Case} "128"
         ;128 The process is not found.
