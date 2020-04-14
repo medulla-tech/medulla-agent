@@ -1406,6 +1406,10 @@ Function .onInit
     ${Break}
     ${Default}
         StrCpy $0 `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
         SetErrorLevel 102
         Quit
   ${EndSwitch}
