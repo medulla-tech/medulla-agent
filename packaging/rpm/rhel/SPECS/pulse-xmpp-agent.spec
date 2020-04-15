@@ -57,9 +57,8 @@ Pulse master agent substitute
 if ! getent passwd | grep -q "^reversessh:"; then
     echo -n "Adding user reversessh..."
     adduser --system \
-        --home /var/lib/pulse2/clients/reversessh \
-        --shell /bin/rbash \
-        --disabled-password \
+        -d /var/lib/pulse2/clients/reversessh \
+        -s /bin/rbash \
         reversessh
     echo "..done"
 fi
