@@ -23,6 +23,8 @@ BuildRequires:	python-setuptools
 BuildRequires:	python-sphinx
 BuildRequires:  git
 
+Requires(pre):  shadow-utils
+
 Requires:       python-netifaces
 Requires:       python-sleekxmpp
 Requires:       python-croniter
@@ -50,6 +52,28 @@ Provides:      pulseagent-plugins-relay = %version
 
 %description -n pulse-xmpp-agent-relay
 Pulse master agent substitute
+
+%pre
+if ! getent passwd | grep -q "^reversessh:"; then
+    echo -n "Adding user reversessh..."
+    adduser --system --quiet \
+        --home /var/lib/pulse2/clients/reversessh \
+        --shell /bin/rbash \
+        --disabled-password \
+        reversessh
+    echo "..done"
+fi
+
+if [ ! -f "/var/lib/pulse2/clients/reversessh/.ssh/id_rsa" ]; then
+    echo -n "Generating ssh key..."
+    mkdir -p /var/lib/pulse2/clients/reversessh/.ssh
+    ssh-keygen -q -N "" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa
+    cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
+    chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh
+    chmod 700 /var/lib/pulse2/clients/reversessh/.ssh
+    chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
+    echo "..done"
+fi
 
 %post -n pulse-xmpp-agent-relay
 if [ -f "/usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
