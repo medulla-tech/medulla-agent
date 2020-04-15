@@ -1040,7 +1040,26 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "1"
+        ;1 The system cannot find the file specified.. 
+        StrCpy $0 `No Pulse Agent task was found`
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Pulse Agent tasks removal failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 102
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+
   CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
   StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
   ${LogString} "Running $0"
