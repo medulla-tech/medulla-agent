@@ -56,7 +56,7 @@ Pulse master agent substitute
 %pre -n     pulse-xmpp-agent-relay
 if ! getent passwd | grep -q "^reversessh:"; then
     echo -n "Adding user reversessh..."
-    adduser --system --quiet \
+    adduser --system \
         --home /var/lib/pulse2/clients/reversessh \
         --shell /bin/rbash \
         --disabled-password \
