@@ -127,6 +127,9 @@ Section -SETTINGS
   SetOutPath "$INSTDIR"
 SectionEnd
 
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
   ${LogString} "Downloading ${url}"
@@ -167,8 +170,24 @@ Section "Python" sec_py
         ${LogString} "Running $0"
         nsExec::ExecToLog $0
         Pop $1 # return value/error/timeout
-        ${LogString} "Return code was: $1"
-        ${LogString} ""
+        ${Switch} $1
+          ${Case} "0"
+              StrCpy $0 `Return code was: $1`
+              ${Break}
+          ${Case} "1605"
+              ;1605 This error is returned when you attempted to uninstall an application that isn't actually installed on a target system.
+              StrCpy $0 `No previous installation`
+              ${Break}
+          ${Default}
+              ${LogString} `Something else happened : $1`
+              ${IfNot} ${Silent}
+                  MessageBox MB_OK|MB_ICONSTOP "Uninstalling 32bit python failed. $\n\
+                  Please check the logs in $INSTDIR\tmp\install.log"
+              ${EndIf}
+              SetErrorLevel 102
+              Quit
+        ${EndSwitch}
+        ${LogString} $0
     ${EndIf}
   ${EndIf}
 
@@ -260,16 +279,7 @@ Section "OpenSSH" sec_openssh
   ${LogString} "------------------------------------------------------"
 
   ; Remove pulse user
-  StrCpy $0 `net user "pulse" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `net user "pulseuser" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  Call RemovePulseUser
 
   ; Remove previous Pulse profile and account
   Var /GLOBAL P_PROFILE
@@ -283,9 +293,9 @@ Section "OpenSSH" sec_openssh
   ${LogString} "Return code was: $1"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
-    Please reboot your computer and re-run the installer. $\n\
-    Please check the logs in $INSTDIR\tmp\install.log"
+	MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
+        Please reboot your computer and re-run the installer. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 138
     Quit
@@ -576,11 +586,18 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Hide the account
-  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
+  StrCpy $0 `WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0`
   ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error hiding pulse account. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    ${LogString} "Error hiding pulse account."
+    SetErrorLevel 140
+    Quit
+  ${EndIf}
 
   ; Check and configure permissions
   ClearErrors
@@ -1030,7 +1047,26 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "1"
+        ;1 The system cannot find the file specified.. 
+        StrCpy $0 `No Pulse Agent task was found`
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Pulse Agent tasks removal failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 102
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+
   CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
   StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
   ${LogString} "Running $0"
@@ -1179,16 +1215,7 @@ Section "Uninstall"
   ${LogString} "Return code was: $1"
 
   ; Remove pulse user
-  StrCpy $0 `net user "pulse" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `net user "pulseuser" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  Call un.RemovePulseUser
 
   ; Remove OpenSSH
   StrCpy $0 `sc.exe stop sshdaemon`
@@ -1326,14 +1353,16 @@ Function .onInit
   ${LogString} "System language is : $OS_LANGUAGE"
 
   ; Stop the agent if it is already running and kill all python tasks
-  ${LogString} "------------------------------------------------------"
+  ${LogString} ""
   ${LogString} "Detect previous installation and stop service"
+  ${LogString} "------------------------------------------------------"
   StrCpy $0 `sc query pulseagent`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop pulseagent`
+  ${LogString} `Running $0`
   ${Switch} $1
     ${Case} "0"
-        StrCpy $0 `net stop pulseagent`
         nsExec::ExecToLog $0
         Pop $1 # return value/error/timeout
           ${Switch} $1
@@ -1359,12 +1388,13 @@ Function .onInit
   ${EndSwitch}
   ${LogString} $0
 
- StrCpy $0 `sc query pulsenetworknotify`
+  StrCpy $0 `sc query pulsenetworknotify`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop pulsenetworknotify`
+  ${LogString} `Running $0`
   ${Switch} $1
     ${Case} "0"
-        StrCpy $0 `net stop pulseagent`
         nsExec::ExecToLog $0
         Pop $1 # return value/error/timeout
           ${Switch} $1
@@ -1381,6 +1411,7 @@ Function .onInit
         ${Break}
     ${Default}
         StrCpy $0 `Something else happened : $1`
+	${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse network notify stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
@@ -1403,9 +1434,9 @@ Function .onInit
         ;128 The process is not found.
         StrCpy $0 `Process is already stopped`
         ${Break}
-    ${Break}
     ${Default}
         StrCpy $0 `Something else happened : $1`
+	${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
@@ -1414,7 +1445,6 @@ Function .onInit
         Quit
   ${EndSwitch}
   ${LogString} $0
-  ${LogString} "------------------------------------------------------"
 
 FunctionEnd
 
@@ -1452,3 +1482,57 @@ Function .onMouseOverSection
   StrCmp $0 ${sec_app} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
 FunctionEnd
+
+; Macro Remove pulseuser / pulse user
+!macro RemovePulseUser UN
+  Function ${UN}RemovePulseUser
+    ; Remove pulse user
+    StrCpy $0 `net user "pulse" /DELETE`
+    nsExec::ExecToLog $0
+    ${LogString} `Running $0`
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "2"
+          ;2 The user name could not be found. 
+          StrCpy $0 `No old Pulse account found`
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "Pulse old account removal failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 102
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+
+    StrCpy $0 `net user "pulseuser" /DELETE`
+    nsExec::ExecToLog $0
+    ${LogString} `Running $0`
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "2"
+          ;2 The user name could not be found. 
+          StrCpy $0 `No pulseuser account found`
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "pulseuser account removal failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 102
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+  FunctionEnd
+!macroend
+!insertmacro RemovePulseUser ""
+!insertmacro RemovePulseUser "un."
