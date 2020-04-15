@@ -320,7 +320,7 @@ mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/inventory.ini var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
