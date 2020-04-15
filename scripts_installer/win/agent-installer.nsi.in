@@ -279,16 +279,7 @@ Section "OpenSSH" sec_openssh
   ${LogString} "------------------------------------------------------"
 
   ; Remove pulse user
-  StrCpy $0 `net user "pulse" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `net user "pulseuser" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  Call RemovePulseUser
 
   ; Remove previous Pulse profile and account
   Var /GLOBAL P_PROFILE
@@ -1198,16 +1189,7 @@ Section "Uninstall"
   ${LogString} "Return code was: $1"
 
   ; Remove pulse user
-  StrCpy $0 `net user "pulse" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `net user "pulseuser" /DELETE`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  Call un.RemovePulseUser
 
   ; Remove OpenSSH
   StrCpy $0 `sc.exe stop sshdaemon`
@@ -1474,3 +1456,57 @@ Function .onMouseOverSection
   StrCmp $0 ${sec_app} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
 FunctionEnd
+
+; Macro Remove pulseuser / pulse user
+!macro RemovePulseUser UN
+  Function ${UN}RemovePulseUser
+    ; Remove pulse user
+    StrCpy $0 `net user "pulse" /DELETE`
+    nsExec::ExecToLog $0
+    ${LogString} `Running $0`
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "2"
+          ;2 The user name could not be found. 
+          StrCpy $0 `No old Pulse account found`
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "Pulse old account removal failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 102
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+
+    StrCpy $0 `net user "pulseuser" /DELETE`
+    nsExec::ExecToLog $0
+    ${LogString} `Running $0`
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "2"
+          ;2 The user name could not be found. 
+          StrCpy $0 `No pulseuser account found`
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "pulseuser account removal failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 102
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+  FunctionEnd
+!macroend
+!insertmacro RemovePulseUser ""
+!insertmacro RemovePulseUser "un."
