@@ -254,9 +254,7 @@ mkdir -p %buildroot%_prefix/lib/systemd/system
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp -fr pulse_xmpp_agent/config/systemd/* %buildroot%_prefix/lib/systemd/system
 cp -fv ./scripts_installer/lin/*.service %buildroot%_prefix/lib/systemd/system
-sed -i 's,site-packages,dist-packages,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
-sed -i 's,site-packages,dist-packages,g' -i %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
-sed -i 's,site-packages,dist-packages,g' -i %buildroot%_prefix/lib/systemd/system/pulse-package-watching.service
+rm -fv %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseplugin
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
 cp -frv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%_var/lib/pulse2/xmpp_baseplugin
