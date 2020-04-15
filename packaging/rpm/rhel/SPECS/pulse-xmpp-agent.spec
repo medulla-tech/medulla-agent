@@ -107,6 +107,7 @@ fi
 %{python2_sitelib}/pulse_xmpp_agent/script/create-profile.ps1
 %{python2_sitelib}/pulse_xmpp_agent/agentversion
 %{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay
+%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/
 
 #--------------------------------------------------------------------
 
