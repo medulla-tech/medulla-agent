@@ -23,6 +23,8 @@ BuildRequires:	python-setuptools
 BuildRequires:	python-sphinx
 BuildRequires:  git
 
+Requires(pre):  shadow-utils
+
 Requires:       python-netifaces
 Requires:       python-sleekxmpp
 Requires:       python-croniter
@@ -51,17 +53,74 @@ Provides:      pulseagent-plugins-relay = %version
 %description -n pulse-xmpp-agent-relay
 Pulse master agent substitute
 
+%pre -n     pulse-xmpp-agent-relay
+if ! getent passwd | grep -q "^reversessh:"; then
+    echo -n "Adding user reversessh..."
+    adduser --system \
+        -d /var/lib/pulse2/clients/reversessh \
+        -s /bin/rbash \
+        reversessh
+    echo "..done"
+fi
+
+if [ ! -f "/var/lib/pulse2/clients/reversessh/.ssh/id_rsa" ]; then
+    echo -n "Generating ssh key..."
+    mkdir -p /var/lib/pulse2/clients/reversessh/.ssh
+    ssh-keygen -q -N "" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa
+    cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
+    chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh
+    chmod 700 /var/lib/pulse2/clients/reversessh/.ssh
+    chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys
+    echo "..done"
+fi
+
 %post -n pulse-xmpp-agent-relay
 if [ -f "/usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
     rm -f /usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
 fi
 
+if systemctl -q is-enabled pulse-xmpp-master-substitute-inventory ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-inventory service..."
+    systemctl restart pulse-xmpp-master-substitute-inventory
+    echo "..done"
+fi
+
+if systemctl -q is-enabled pulse-xmpp-master-substitute-registration ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-registration service..."
+    systemctl restart pulse-xmpp-master-substitute-registration
+    echo "..done"
+fi
+
+if systemctl -q is-enabled pulse-xmpp-master-substitute-assessor ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-assessor service..."
+    systemctl restart pulse-xmpp-master-substitute-assessor
+    echo "..done"
+fi
+
+if systemctl -q is-enabled pulse-xmpp-master-substitute-deployment ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-deployment service..."
+    systemctl restart pulse-xmpp-master-substitute-deployment
+    echo "..done"
+fi
+
+if systemctl -q is-enabled pulse-xmpp-master-substitute-subscription ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-subscription service..."
+    systemctl restart pulse-xmpp-master-substitute-subscription
+    echo "..done"
+fi
+
+if systemctl -q is-enabled pulse-xmpp-master-substitute-logger ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-logger service..."
+    systemctl restart pulse-xmpp-master-substitute-logger
+    echo "..done"
+fi
 
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
 %_sysconfdir/pulse-xmpp-agent
+%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/guacamoleconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/downloadfile.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/downloadfileexpert.ini
@@ -72,7 +131,18 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %_var/log/pulse
-#%{python2_sitelib}/pulse_xmpp_agent
+%dir %{python2_sitelib}/pulse_xmpp_agent
+%{python2_sitelib}/pulse_xmpp_agent/lib
+%{python2_sitelib}/pulse_xmpp_agent/*.py*
+%{python2_sitelib}/pulse_xmpp_agent/script
+%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
+%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine
+%{python2_sitelib}/pulse_xmpp_agent/script/getlastuser.ps1
+%{python2_sitelib}/pulse_xmpp_agent/script/create-profile.ps1
+%{python2_sitelib}/pulse_xmpp_agent/agentversion
+%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay
+%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/*.py*
+%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/*.py*
 
 #--------------------------------------------------------------------
 
@@ -187,10 +257,6 @@ plugins for pulse xmppmaster
 %files -n pulseagent-plugins-relay
 %python2_sitelib/pulse_xmpp_agent/pluginsrelay
 %python2_sitelib/pulse_xmpp_agent/descriptor_scheduler_relay
-%_var/lib/pulse2/clients/config/
-%_var/lib/pulse2/clients/config/guacamoleconf.ini
-%_var/lib/pulse2/clients/config/downloadfile.ini
-%_var/lib/pulse2/clients/config/downloadfileexpert.ini
 
 #--------------------------------------------------------------------
 
@@ -202,28 +268,35 @@ rm -rf %{tarname}.egg-info
 
 %build
 # Nothing to do
+
 %install
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_agent
 cp -fr pulse_xmpp_agent/* %buildroot%{python2_sitelib}/pulse_xmpp_agent
+rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/config
+rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_common
+rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/plugins_common
+rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py
+rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
+cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
+cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
+chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/launcher.py
 mkdir -p %buildroot%_var/log/pulse/
 mkdir -p %buildroot%_prefix/lib/systemd/system
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp -fr pulse_xmpp_agent/config/systemd/* %buildroot%_prefix/lib/systemd/system
 cp -fv ./scripts_installer/lin/*.service %buildroot%_prefix/lib/systemd/system
+rm -fv %buildroot%_prefix/lib/systemd/system/pulse-xmpp-agent-machine.service
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_baseplugin
 mkdir -p %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
 cp -frv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%_var/lib/pulse2/xmpp_baseplugin
 cp -frv pulse_xmpp_agent/pluginsmachine/plugin_* %buildroot%_var/lib/pulse2/xmpp_baseplugin
 cp -frv pulse_xmpp_agent/pluginsrelay/plugin_* %buildroot%_var/lib/pulse2/xmpp_baseplugin
-cp -fv  pulse_xmpp_agent/descriptor_scheduler_common/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
+cp -fv  pulse_xmpp_agent/descriptor_scheduler_common/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler	
 cp -fv  pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
 cp -fv  pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_* %buildroot%_var/lib/pulse2/xmpp_basepluginscheduler
-mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
-cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
-cp -fr pulse_xmpp_agent/pluginsrelay/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
-mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
-cp -fv pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
-cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/guacamoleconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/downloadfile.ini %buildroot%_sysconfdir/pulse-xmpp-agent
@@ -236,10 +309,6 @@ cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/launcher.py
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp pulse_xmpp_master_substitute/agentmastersubstitute.py %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
@@ -252,33 +321,33 @@ cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-a
 cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
 # We create the installer part now
-mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-mkdir -p pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
-mkdir -p pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine
-cp -frv pulse_xmpp_agent pulse-xmpp-agent-${VERSION_XMPP_AGENT}/
-cp -fv packaging/python/agent_setup.py pulse-xmpp-agent-${VERSION_XMPP_AGENT}/setup.py
-cp -fv packaging/python/machineplugins_setup.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/setup.py
-cp -fv packaging/python/LICENSE pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-cp -fv packaging/python/README.md pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-cp -fv packaging/python/MANIFEST.in pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-cp -fv packaging/python/LICENSE pulse-machine-plugins-${VERSION_XMPP_AGENT}
-cp -fv packaging/python/README.md pulse-machine-plugins-${VERSION_XMPP_AGENT}
-rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/config
-mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/plugins_common/plugin_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
-mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine
-mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine/plugin_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
-mv pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_machine
-rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_common/
-rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py
-rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/plugins_common/
-rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsrelay/plugin_*.py
-tar czvf pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-rm -fr pulse-xmpp-agent-${VERSION_XMPP_AGENT}
-tar czvf pulse-machine-plugins-${VERSION_XMPP_AGENT}.tar.gz pulse-machine-plugins-${VERSION_XMPP_AGENT}
-rm -fr pulse-machine-plugins-${VERSION_XMPP_AGENT}
+mkdir pulse-xmpp-agent-%{version}
+mkdir -p pulse-machine-plugins-%{version}/pulse_xmpp_agent/pluginsmachine
+mkdir -p pulse-machine-plugins-%{version}/pulse_xmpp_agent/descriptor_scheduler_machine
+cp -frv pulse_xmpp_agent pulse-xmpp-agent-%{version}/
+cp -fv packaging/python/agent_setup.py pulse-xmpp-agent-%{version}/setup.py
+cp -fv packaging/python/machineplugins_setup.py pulse-machine-plugins-%{version}/setup.py
+cp -fv packaging/python/LICENSE pulse-xmpp-agent-%{version}
+cp -fv packaging/python/README.md pulse-xmpp-agent-%{version}
+cp -fv packaging/python/MANIFEST.in pulse-xmpp-agent-%{version}
+cp -fv packaging/python/LICENSE pulse-machine-plugins-%{version}
+cp -fv packaging/python/README.md pulse-machine-plugins-%{version}	
+rm -fr pulse-xmpp-agent-%{version}/pulse_xmpp_agent/config
+mv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/plugins_common/plugin_*.py pulse-machine-plugins-%{version}/pulse_xmpp_agent/pluginsmachine
+mv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py pulse-machine-plugins-%{version}/pulse_xmpp_agent/descriptor_scheduler_machine
+mv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/pluginsmachine/plugin_*.py pulse-machine-plugins-%{version}/pulse_xmpp_agent/pluginsmachine
+mv pulse-xmpp-agent-%{version}/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py pulse-machine-plugins-%{version}/pulse_xmpp_agent/descriptor_scheduler_machine
+rm -fr pulse-xmpp-agent-%{version}/pulse_xmpp_agent/descriptor_scheduler_common/
+rm -fr pulse-xmpp-agent-%{version}/pulse_xmpp_agent/descriptor_scheduler_relay/scheduling_*.py
+rm -fr pulse-xmpp-agent-%{version}/pulse_xmpp_agent/plugins_common/
+rm -fr pulse-xmpp-agent-%{version}/pulse_xmpp_agent/pluginsrelay/plugin_*.py
+tar czvf pulse-xmpp-agent-%{version}.tar.gz pulse-xmpp-agent-%{version}
+rm -fr pulse-xmpp-agent-%{version}
+tar czvf pulse-machine-plugins-%{version}.tar.gz pulse-machine-plugins-%{version}
+rm -fr pulse-machine-plugins-%{version}
 mkdir -p %buildroot%_var/lib/pulse2/clients
-mv  pulse-xmpp-agent-${VERSION_XMPP_AGENT}.tar.gz %buildroot%_var/lib/pulse2/clients
-mv  pulse-machine-plugins-${VERSION_XMPP_AGENT}.tar.gz %buildroot%_var/lib/pulse2/clients
+mv  pulse-xmpp-agent-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
+mv  pulse-machine-plugins-%{version}.tar.gz %buildroot%_var/lib/pulse2/clients
 #GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/kiosk-interface.git
 #mv kiosk-interface kiosk-interface-${VERSION_KIOSK_INTERFACE}
 #tar czvf kiosk-interface-${VERSION_KIOSK_INTERFACE}.tar.gz kiosk-interface-${VERSION_KIOSK_INTERFACE}
@@ -292,11 +361,10 @@ rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_mach
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsmachine/plugin_*.py
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_relay/scheduling_*.py
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
-mkdir -p %buildroot%_sysconfdir/mmc/plugins/
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/inventory.ini var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
@@ -316,7 +384,7 @@ chmod +x %buildroot%_var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
 cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
-#cp scripts_installer/generate-kiosk-package var/lib/pulse2/clients/win
+#cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients/win
 #chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-kiosk-package
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
