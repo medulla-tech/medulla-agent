@@ -127,9 +127,6 @@ Section -SETTINGS
   SetOutPath "$INSTDIR"
 SectionEnd
 
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
   ${LogString} "Downloading ${url}"
