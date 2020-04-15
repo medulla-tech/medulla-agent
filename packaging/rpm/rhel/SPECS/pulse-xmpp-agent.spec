@@ -53,7 +53,7 @@ Provides:      pulseagent-plugins-relay = %version
 %description -n pulse-xmpp-agent-relay
 Pulse master agent substitute
 
-%pre
+%pre -n     pulse-xmpp-agent-relay
 if ! getent passwd | grep -q "^reversessh:"; then
     echo -n "Adding user reversessh..."
     adduser --system --quiet \
