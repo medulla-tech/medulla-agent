@@ -586,11 +586,18 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Hide the account
-  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
+  StrCpy $0 `WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0`
   ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error hiding pulse account. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    ${LogString} "Error hiding pulse account."
+    SetErrorLevel 140
+    Quit
+  ${EndIf}
 
   ; Check and configure permissions
   ClearErrors
