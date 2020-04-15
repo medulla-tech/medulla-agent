@@ -211,10 +211,6 @@ plugins for pulse xmppmaster
 %files -n pulseagent-plugins-relay
 %python2_sitelib/pulse_xmpp_agent/pluginsrelay
 %python2_sitelib/pulse_xmpp_agent/descriptor_scheduler_relay
-%_var/lib/pulse2/clients/config/
-%_var/lib/pulse2/clients/config/guacamoleconf.ini
-%_var/lib/pulse2/clients/config/downloadfile.ini
-%_var/lib/pulse2/clients/config/downloadfileexpert.ini
 
 #--------------------------------------------------------------------
 
