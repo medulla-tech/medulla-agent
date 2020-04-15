@@ -127,6 +127,9 @@ Section -SETTINGS
   SetOutPath "$INSTDIR"
 SectionEnd
 
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
   ${LogString} "Downloading ${url}"
@@ -1342,8 +1345,9 @@ Function .onInit
   ${LogString} "System language is : $OS_LANGUAGE"
 
   ; Stop the agent if it is already running and kill all python tasks
-  ${LogString} "------------------------------------------------------"
+  ${LogString} ""
   ${LogString} "Detect previous installation and stop service"
+  ${LogString} "------------------------------------------------------"
   StrCpy $0 `sc query pulseagent`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1433,7 +1437,6 @@ Function .onInit
         Quit
   ${EndSwitch}
   ${LogString} $0
-  ${LogString} "------------------------------------------------------"
 
 FunctionEnd
 
