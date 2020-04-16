@@ -158,7 +158,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         # correspond au hostname dans glpi.
                         hostname = None
                         if showinfobool:
-                            logger.warning("Searching for incoherences between " \
+                            logger.info("Searching for incoherences between " \
                                         "xmpp and glpi for uuid %s : "%machine['uuid_inventorymachine'])
                         try:
                             ret = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
