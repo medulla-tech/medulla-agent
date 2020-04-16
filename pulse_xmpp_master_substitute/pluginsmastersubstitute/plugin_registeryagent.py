@@ -460,6 +460,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.info("=============")
                 logger.info("=============")
                 logger.info("Adding or updating machine presence into machines table")
+
+            for i in data['information']["listipinfo"]:
+                    # exclude mac address from table network
+                if i['macnotshortened'].lower() in xmppobject.blacklisted_mac_addresses:
+                    continue
+                else
+                    data['xmppmacaddress'] = i['macaddress']
+
+
             idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
                                                                 data['information']['info']['hostname'],
