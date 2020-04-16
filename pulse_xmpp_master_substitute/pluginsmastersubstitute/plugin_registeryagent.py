@@ -465,8 +465,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     # exclude mac address from table network
                 if i['macnotshortened'].lower() in xmppobject.blacklisted_mac_addresses:
                     continue
-                else
+                else:
                     data['xmppmacaddress'] = i['macaddress']
+                    if showinfobool:
+                        logger.info("replace mac adress %s -> %s"%( i['macaddress'],
+                                                                   data['xmppmacaddress']))
                     break
             idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
