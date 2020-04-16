@@ -23,6 +23,16 @@ BuildRequires:	python-setuptools
 BuildRequires:	python-sphinx
 BuildRequires:  git
 
+%description
+Pulse XMPP Agent
+
+#--------------------------------------------------------------------
+
+%package -n     pulse-xmpp-agent-relay
+Summary:        Pulse 2 common files
+Group:          System/Servers
+BuildArch:      noarch
+
 Requires(pre):  shadow-utils
 
 Requires:       python-netifaces
@@ -33,16 +43,7 @@ Requires:       python2-pysftp
 Requires:       python-inotify
 Requires:       python-dateutil
 Requires:       python2-psutil
-
-%description
-Pulse XMPP Agent
-
-#--------------------------------------------------------------------
-
-%package -n     pulse-xmpp-agent-relay
-Summary:        Pulse 2 common files
-Group:          System/Servers
-BuildArch:      noarch
+Requires:       python-wakeonlan
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -180,6 +181,7 @@ Requires:   dos2unix
 Requires:   unzip
 Requires:   zip
 Requires:   crudini
+Requires:   dpkg-dev
 
 Requires:   nsis-plugins-ZipDLL
 Requires:   nsis-plugins-Pwgen

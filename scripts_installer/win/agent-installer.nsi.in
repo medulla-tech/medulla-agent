@@ -1052,7 +1052,7 @@ Section "!${PRODUCT_NAME}" sec_app
         StrCpy $0 `Return code : $1`
         ${Break}
     ${Case} "1"
-        ;1 The system cannot find the file specified.. 
+        ;1 The system cannot find the file specified..
         StrCpy $0 `No Pulse Agent task was found`
         ${Break}
     ${Default}
@@ -1398,7 +1398,7 @@ FunctionEnd
           StrCpy $0 `Return code : $1`
           ${Break}
       ${Case} "2"
-          ;2 The user name could not be found. 
+          ;2 The user name could not be found.
           StrCpy $0 `No old Pulse account found`
           ${Break}
       ${Default}
@@ -1421,7 +1421,7 @@ FunctionEnd
           StrCpy $0 `Return code : $1`
           ${Break}
       ${Case} "2"
-          ;2 The user name could not be found. 
+          ;2 The user name could not be found.
           StrCpy $0 `No pulseuser account found`
           ${Break}
       ${Default}
