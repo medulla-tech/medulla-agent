@@ -74,7 +74,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if 'completedatamachine' in data:
                 info = json.loads(base64.b64decode(data['completedatamachine']))
                 data['information'] = info
-
+                logger.info("Registering machine %s" % data['from'])
                 XmppMasterDatabase().setlogxmpp("Registering machine %s" % data['from'],
                                                 "info",
                                                 sessionid,
@@ -157,7 +157,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         # correspond au hostname dans glpi.
                         hostname = None
                         if showinfobool:
-                            logger.warning("Searching for incoherences between " \
+                            logger.info("Searching for incoherences between " \
                                         "xmpp and glpi for uuid %s : "%machine['uuid_inventorymachine'])
                         try:
                             ret = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
@@ -468,10 +468,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 else:
                     data['xmppmacaddress'] = i['macaddress']
                     if showinfobool:
-                        logger.info("replace mac adress %s -> %s"%( i['macaddress'],
-                                                                   data['xmppmacaddress']  ))
+                        logger.info("Replacing mac address %s -> %s"%( i['macaddress'],
+                                                                   data['xmppmacaddress']))
                     break
-            idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
+            idmachine, msgret = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
                                                                 data['information']['info']['hostname'],
                                                                 data['information']['info']['hardtype'],
@@ -491,6 +491,18 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                 lastuser=data['lastusersession'],
                                                                 keysyncthing=data['keysyncthing']
                                                                 )
+            if msgret.startswith("Update Machine"):
+                XmppMasterDatabase().setlogxmpp(msgret,
+                                                "warn",
+                                                sessionid,
+                                                -1,
+                                                msg['from'],
+                                                '',
+                                                '',
+                                                'Registration | Notify',
+                                                '',
+                                                '',
+                                                xmppobject.boundjid.bare)
             if idmachine != -1:
                 if showinfobool:
                     logger.info("Machine %s added to machines table"%idmachine)
