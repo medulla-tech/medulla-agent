@@ -469,7 +469,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     data['xmppmacaddress'] = i['macaddress']
                     if showinfobool:
                         logger.info("replace mac adress %s -> %s"%( i['macaddress'],
-                                                                   data['xmppmacaddress']))
+                                                                   data['xmppmacaddress']  ))
                     break
             idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
@@ -541,7 +541,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         logger.info("Searching list of mac addresses for the machine %s id #%s for asigning uuid from glpi"%(msg['from'], idmachine))
                     result = XmppMasterDatabase().listMacAdressforMachine(idmachine,
                                                                           infomac=showinfobool)
-                    results = result[0].split(",")
+                    try:
+                        results = result[0].split(",")
+                    except Exception as e:
+                        logger.error("Interface missing on machine %s id %s"%(msg['from'],idmachine))
+                        logger.error("verify si les adresses mac ne sont pas exclut")
+                        macmachine = []
+                        for j in data['information']["listipinfo"]:
+                            macmachine.append(j['macnotshortened'])
+                        logger.error("list interface on machine %s"%(msg['from'],
+                                                                     macmachine))
+                        logger.error("registration incomplete pour cette machine %s"%(msg['from'],
+                                                                     macmachine))
+                        return
                     uuid = ''
                     btestfindcomputer = False
                     jidrs=""
