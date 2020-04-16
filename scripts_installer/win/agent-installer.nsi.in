@@ -1465,7 +1465,7 @@ FunctionEnd
         StrCpy $0 `No previous installation`
         ${Break}
     ${Default}
-        StrCpy $0 `Something else happened : $1`
+         ${LogString}`Something else happened : $1`
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse agent stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
@@ -1497,7 +1497,7 @@ FunctionEnd
         StrCpy $0 `No previous installation`
         ${Break}
     ${Default}
-        StrCpy $0 `Something else happened : $1`
+         ${LogString}`Something else happened : $1`
 	${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse network notify stop failed. $\n\
@@ -1521,7 +1521,7 @@ FunctionEnd
         StrCpy $0 `Process is already stopped`
         ${Break}
     ${Default}
-        StrCpy $0 `Something else happened : $1`
+        ${LogString} `Something else happened : $1`
 	${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
