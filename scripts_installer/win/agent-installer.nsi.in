@@ -215,7 +215,7 @@ Section "Python" sec_py
   ${EndIf}
 
   ; Install pip
-  StrCpy $0 `C:\Python27\python.exe -m ensurepip`
+  StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
