@@ -61,7 +61,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         for x in listupt:
             if x in str(msg['from']).upper():
                 logger.info("** Detailed information for machine %s"%(str(msg['from'])))
-            showinfobool = True
+                showinfobool = True
                 break
         else:
             showinfobool = False
