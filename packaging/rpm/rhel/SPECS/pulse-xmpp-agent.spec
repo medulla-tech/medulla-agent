@@ -180,6 +180,7 @@ Requires:   dos2unix
 Requires:   unzip
 Requires:   zip
 Requires:   crudini
+Requires:   dpkg-dev
 
 Requires:   nsis-plugins-ZipDLL
 Requires:   nsis-plugins-Pwgen
