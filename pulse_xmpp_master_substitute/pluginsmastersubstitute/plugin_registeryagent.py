@@ -545,14 +545,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         results = result[0].split(",")
                     except Exception as e:
                         logger.error("Interface missing on machine %s id %s"%(msg['from'],idmachine))
-                        logger.error("verify si les adresses mac ne sont pas exclut")
+                        logger.error("Check if its mac addresses are not blacklisted")
                         macmachine = []
                         for j in data['information']["listipinfo"]:
                             macmachine.append(j['macnotshortened'])
-                        logger.error("list interface on machine %s"%(msg['from'],
+                        logger.error("List of interfaces on machine %s: %s"%(msg['from'],
                                                                      macmachine))
-                        logger.error("registration incomplete pour cette machine %s"%(msg['from'],
-                                                                     macmachine))
+                        logger.error("Registration incomplete for machine %s"%msg['from'])
                         return
                     uuid = ''
                     btestfindcomputer = False
