@@ -129,6 +129,9 @@ SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
   ${LogString} "Downloading ${url}"
   inetc::get /NOCANCEL ${url} ${filename} /END
   Pop $0 ;Get the return value
@@ -212,7 +215,7 @@ Section "Python" sec_py
   ${EndIf}
 
   ; Install pip
-  StrCpy $0 `C:\Python27\python.exe -m ensurepip`
+  StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1049,7 +1052,7 @@ Section "!${PRODUCT_NAME}" sec_app
         StrCpy $0 `Return code : $1`
         ${Break}
     ${Case} "1"
-        ;1 The system cannot find the file specified.. 
+        ;1 The system cannot find the file specified..
         StrCpy $0 `No Pulse Agent task was found`
         ${Break}
     ${Default}
@@ -1103,7 +1106,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create bin folder
   CreateDirectory $INSTDIR\bin
 
-  ; Run the agent
+  ; Run the agent Pulse agent
   StrCpy $0 `sc start pulseagent`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -1115,6 +1118,21 @@ Section "!${PRODUCT_NAME}" sec_app
 	Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 136
+    Quit
+  ${EndIf}
+
+  ; Run the agent Pulse network notify
+  StrCpy $0 `sc start pulsenetworknotify`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error starting Pulse network notify. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 141
     Quit
   ${EndIf}
 
@@ -1183,33 +1201,8 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
-  ; Stop Pulse agent
-  StrCpy $0 `net stop pulseagent`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-
-  ; Stop Pulse netcheck
-  StrCpy $0 `net stop pulsenetworknotify`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-
-  ; Kill all python processes
-  StrCpy $0 `taskkill.exe /F /IM python.exe`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-
-  ; Stop syncthing
-  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  ; Stop all Pulse services
+  Call un.StopPulseServices
 
   ; Remove pulse user
   Call un.RemovePulseUser
@@ -1353,6 +1346,103 @@ Function .onInit
   ${LogString} ""
   ${LogString} "Detect previous installation and stop service"
   ${LogString} "------------------------------------------------------"
+  Call StopPulseServices
+
+FunctionEnd
+
+Function un.onInit
+  ; Create registry keys in 64bit section
+  SetRegView 64
+FunctionEnd
+
+Function .onGUIEnd
+  ; Write the log file
+  !insertmacro Log_Close
+FunctionEnd
+
+Function .onMouseOverSection
+  ; Find which section the mouse is over, and set the corresponding description.
+  FindWindow $R0 "#32770" "" $HWNDPARENT
+  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+
+  StrCmp $0 ${sec_py} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+          This is required for ${PRODUCT_NAME} to run."
+
+  StrCmp $0 ${sec_openssh} 0 +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:OpenSSH required for deployment, backup, etc."
+
+  StrCmp $0 ${sec_rdp} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
+
+  StrCmp $0 ${sec_vnc} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup VNC required for remote control"
+
+  StrCmp $0 ${sec_fusinv} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Fusion inventory agent required for inventory"
+
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+FunctionEnd
+
+; Macro Remove pulseuser / pulse user
+!macro RemovePulseUser UN
+  Function ${UN}RemovePulseUser
+    ; Remove pulse user
+    StrCpy $0 `net user "pulse" /DELETE`
+    nsExec::ExecToLog $0
+    ${LogString} `Running $0`
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "2"
+          ;2 The user name could not be found.
+          StrCpy $0 `No old Pulse account found`
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "Pulse old account removal failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 102
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+
+    StrCpy $0 `net user "pulseuser" /DELETE`
+    nsExec::ExecToLog $0
+    ${LogString} `Running $0`
+    Pop $1 # return value/error/timeout
+    ${Switch} $1
+      ${Case} "0"
+          StrCpy $0 `Return code : $1`
+          ${Break}
+      ${Case} "2"
+          ;2 The user name could not be found.
+          StrCpy $0 `No pulseuser account found`
+          ${Break}
+      ${Default}
+          StrCpy $0 `Return code : $1`
+          ${IfNot} ${Silent}
+              MessageBox MB_OK|MB_ICONSTOP "pulseuser account removal failed. $\n\
+              Please check the logs in $INSTDIR\tmp\install.log"
+          ${EndIf}
+          SetErrorLevel 102
+          Quit
+    ${EndSwitch}
+    ${LogString} $0
+  FunctionEnd
+!macroend
+!insertmacro RemovePulseUser ""
+!insertmacro RemovePulseUser "un."
+
+
+; Macro Stop all Pulse services
+!macro StopPulseServices UN
+  Function ${UN}StopPulseServices
   StrCpy $0 `sc query pulseagent`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1418,7 +1508,6 @@ Function .onInit
   ${EndSwitch}
   ${LogString} $0
 
-
   StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -1442,94 +1531,7 @@ Function .onInit
         Quit
   ${EndSwitch}
   ${LogString} $0
-
-FunctionEnd
-
-Function un.onInit
-  ; Create registry keys in 64bit section
-  SetRegView 64
-FunctionEnd
-
-Function .onGUIEnd
-  ; Write the log file
-  !insertmacro Log_Close
-FunctionEnd
-
-Function .onMouseOverSection
-  ; Find which section the mouse is over, and set the corresponding description.
-  FindWindow $R0 "#32770" "" $HWNDPARENT
-  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
-
-  StrCmp $0 ${sec_py} 0 +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
-          This is required for ${PRODUCT_NAME} to run."
-
-  StrCmp $0 ${sec_openssh} 0 +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:OpenSSH required for deployment, backup, etc."
-
-  StrCmp $0 ${sec_rdp} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
-
-  StrCmp $0 ${sec_vnc} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup VNC required for remote control"
-
-  StrCmp $0 ${sec_fusinv} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Fusion inventory agent required for inventory"
-
-  StrCmp $0 ${sec_app} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
-FunctionEnd
-
-; Macro Remove pulseuser / pulse user
-!macro RemovePulseUser UN
-  Function ${UN}RemovePulseUser
-    ; Remove pulse user
-    StrCpy $0 `net user "pulse" /DELETE`
-    nsExec::ExecToLog $0
-    ${LogString} `Running $0`
-    Pop $1 # return value/error/timeout
-    ${Switch} $1
-      ${Case} "0"
-          StrCpy $0 `Return code : $1`
-          ${Break}
-      ${Case} "2"
-          ;2 The user name could not be found. 
-          StrCpy $0 `No old Pulse account found`
-          ${Break}
-      ${Default}
-          StrCpy $0 `Return code : $1`
-          ${IfNot} ${Silent}
-              MessageBox MB_OK|MB_ICONSTOP "Pulse old account removal failed. $\n\
-              Please check the logs in $INSTDIR\tmp\install.log"
-          ${EndIf}
-          SetErrorLevel 102
-          Quit
-    ${EndSwitch}
-    ${LogString} $0
-
-    StrCpy $0 `net user "pulseuser" /DELETE`
-    nsExec::ExecToLog $0
-    ${LogString} `Running $0`
-    Pop $1 # return value/error/timeout
-    ${Switch} $1
-      ${Case} "0"
-          StrCpy $0 `Return code : $1`
-          ${Break}
-      ${Case} "2"
-          ;2 The user name could not be found. 
-          StrCpy $0 `No pulseuser account found`
-          ${Break}
-      ${Default}
-          StrCpy $0 `Return code : $1`
-          ${IfNot} ${Silent}
-              MessageBox MB_OK|MB_ICONSTOP "pulseuser account removal failed. $\n\
-              Please check the logs in $INSTDIR\tmp\install.log"
-          ${EndIf}
-          SetErrorLevel 102
-          Quit
-    ${EndSwitch}
-    ${LogString} $0
   FunctionEnd
 !macroend
-!insertmacro RemovePulseUser ""
-!insertmacro RemovePulseUser "un."
+!insertmacro StopPulseServices ""
+!insertmacro StopPulseServices "un."
