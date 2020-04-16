@@ -75,7 +75,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if 'completedatamachine' in data:
                 info = json.loads(base64.b64decode(data['completedatamachine']))
                 data['information'] = info
-
+                logger.info("Registering machine %s" % data['from'])
                 XmppMasterDatabase().setlogxmpp("Registering machine %s" % data['from'],
                                                 "info",
                                                 sessionid,
@@ -461,7 +461,18 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.info("=============")
                 logger.info("=============")
                 logger.info("Adding or updating machine presence into machines table")
-            idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
+
+            for i in data['information']["listipinfo"]:
+                    # exclude mac address from table network
+                if i['macnotshortened'].lower() in xmppobject.blacklisted_mac_addresses:
+                    continue
+                else:
+                    data['xmppmacaddress'] = i['macaddress']
+                    if showinfobool:
+                        logger.info("Replacing mac address %s -> %s"%( i['macaddress'],
+                                                                   data['xmppmacaddress']))
+                    break
+            idmachine, msgret = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
                                                                 data['information']['info']['hostname'],
                                                                 data['information']['info']['hardtype'],
@@ -481,6 +492,18 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                 lastuser=data['lastusersession'],
                                                                 keysyncthing=data['keysyncthing']
                                                                 )
+            if msgret.startswith("Update Machine"):
+                XmppMasterDatabase().setlogxmpp(msgret,
+                                                "warn",
+                                                sessionid,
+                                                -1,
+                                                msg['from'],
+                                                '',
+                                                '',
+                                                'Registration | Notify',
+                                                '',
+                                                '',
+                                                xmppobject.boundjid.bare)
             if idmachine != -1:
                 if showinfobool:
                     logger.info("Machine %s added to machines table"%idmachine)
