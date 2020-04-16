@@ -467,8 +467,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     continue
                 else
                     data['xmppmacaddress'] = i['macaddress']
-
-
+                    break
             idmachine = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
                                                                 data['information']['info']['hostname'],
