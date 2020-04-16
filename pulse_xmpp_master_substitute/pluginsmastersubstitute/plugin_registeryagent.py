@@ -48,7 +48,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         if compteurcallplugin == 0:
             read_conf_remote_registeryagent(xmppobject)
-            logger.debug("includ debub information for list jid %s"%(xmppobject.registeryagent_showinfomachine))
+            logger.debug("Including debug information for list jid %s"%(xmppobject.registeryagent_showinfomachine))
             #return
             #function comment for next feature
             # this functions will be used later
@@ -59,7 +59,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         listupt = [ x.upper() for x in xmppobject.registeryagent_showinfomachine]
         for x in listupt:
             if x in str(msg['from']).upper():
-                logger.debug("** information detail for machine %s"%(str(msg['from'])))
+                logger.info("** Detailed information for machine %s"%(str(msg['from'])))
                 showinfobool = True
                 break
             else:
@@ -70,7 +70,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if showinfobool:
                 logger.info(
                     "** Processing machine %s that sends this"\
-                        " information (nini inventory)" % msg['from'])
+                        " information (mini inventory)" % msg['from'])
             if 'completedatamachine' in data:
                 info = json.loads(base64.b64decode(data['completedatamachine']))
                 data['information'] = info
@@ -92,7 +92,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 if len(machine) != 0:
                     logger.debug("Machine %s already exists in base" % msg['from'])
                 else:
-                    logger.debug("Machine %s no exists in base" % msg['from'])
+                    logger.debug("Machine %s does not exist in base" % msg['from'])
             if len(machine) != 0:
                 # on regarde si coherence avec table network.
                 try:
@@ -104,32 +104,32 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     # incoherence entre machine et network
                     # on supprime la machine
                     # la machine est reincrite
-                    logger.warning("*** machine %s : incoherence entre table "\
-                        "machine et network."%data['from'])
+                    logger.warning("*** Machine %s : incoherence between machines "\
+                        "and network tables."%data['from'])
 
                     if data['agenttype'] != "relayserver":
                         machine['enabled'] = 0
-                        logger.warning("*** reincription complete de la machine")
+                        logger.warning("*** Full reinscription of the machine")
                     else:
-                        logger.warning("*** you must verify cohérence for ARS")
+                        logger.warning("*** You must verify coherence for ARS")
 
                 if machine['enabled'] == 1:
                     if showinfobool:
-                        logger.info("** machine %s report online in table machine"%data['from'])
+                        logger.info("** machine %s reports online in table machine"%data['from'])
                     pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistregistered]
                     if showinfobool:
-                        logger.info("call plugin for all action registration on present machine.")
+                        logger.info("Calling plugins for all registration actions on online machine.")
                     for function_plugin in pluginfunction:
                         try:
                             if hasattr(xmppobject, function_plugin):
                                 if showinfobool:
-                                    logger.debug("call plugin %s"%function_plugin)
+                                    logger.debug("Calling plugin %s"%function_plugin)
                                 getattr(xmppobject, function_plugin)(msg, data)
                             else:
                                 if showinfobool:
-                                    logger.warning("the %s plugin is not called"%function_plugin)
-                                    logger.warning("verify why plugging %s"\
-                                        " has no function %s"%(function_plugin,
+                                    logger.warning("The %s plugin is not called"%function_plugin)
+                                    logger.warning("Check why plugin %s"\
+                                        " does not have function %s"%(function_plugin,
                                                             function_plugin))
                         except Exception:
                             logger.error("\n%s"%(traceback.format_exc()))
@@ -157,8 +157,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         # correspond au hostname dans glpi.
                         hostname = None
                         if showinfobool:
-                            logger.warning("Mode search incoherence between " \
-                                        "xmpp and glpi's for uuid %s : "%machine['uuid_inventorymachine'])
+                            logger.warning("Searching for incoherences between " \
+                                        "xmpp and glpi for uuid %s : "%machine['uuid_inventorymachine'])
                         try:
                             ret = Glpi().getLastMachineInventoryFull(machine['uuid_inventorymachine'])
                             for t in ret:
@@ -173,7 +173,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 machine['uuid_inventorymachine'] = None
                                 if showinfobool:
                                     logger.warning("When there is an incoherence between " \
-                                        "xmpp and glpi's uuid, we restore the uuid from glpi")
+                                        "xmpp and glpi uuid, we restore the uuid from glpi")
                             else:
                                 # la correspondance existe.
                                 # mais il se peut que la machine ne soit pas configuré pour guacamole.
@@ -183,12 +183,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 if not ret:
                                     machine['uuid_inventorymachine'] = None
                                     if showinfobool:
-                                        logger.warning("When guacamole is not configured." \
+                                        logger.warning("When guacamole is not configured," \
                                             " we restore the uuid from glpi")
                         except Exception:
                             machine['uuid_inventorymachine'] = None
                         if machine['uuid_inventorymachine'] is not None:
-                            logger.warning("coherence True for hostname %s"%hostname)
+                            if showinfobool:
+                                logger.info("Coherence True for hostname %s"%hostname)
 
                     if 'uuid_inventorymachine' not in machine or \
                         machine['uuid_inventorymachine'] is None or \
@@ -215,13 +216,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             btestfindcomputer = False
                             for testinventaireremonte in range(20):
                                 if showinfobool:
-                                    logger.debug("%s determination uuid from GLPI computer id for mac address "%testinventaireremonte)
+                                    logger.debug("%s Finding uuid from GLPI computer id for mac address "%testinventaireremonte)
                                 for macaddress in results:
                                     if showinfobool:
                                         logger.debug("Get GLPI computer id for mac address %s"%macaddress)
                                     if macaddress.lower() in xmppobject.blacklisted_mac_addresses:
                                         if showinfobool:
-                                            logger.warning("address blacklisted %s for %s machine"%( macaddress, data['from']))
+                                            logger.warning("Address %s blacklisted for %s machine"%( macaddress, data['from']))
                                         continue
                                     computer = getComputerByMac(macaddress,
                                                                 showinfobool=showinfobool)
@@ -240,7 +241,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         btestfindcomputer=True
                                         break;
                                     else:
-                                        logger.debug("address not matched %s for machine %s "%(macaddress,
+                                        logger.debug("Address %s does not match machine %s "%(macaddress,
                                                                                             msg['from']))
                                 if btestfindcomputer:
                                     if showinfobool:
@@ -259,38 +260,37 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 else:
                                     logger.debug("No computer found in glpi for %s"%(data['from']) )
                                     if testinventaireremonte == 0:
-                                        logger.debug("** Call inventory on %s" % msg['from'])
+                                        logger.debug("** Calling inventory on %s" % msg['from'])
                                         callinventory(xmppobject, data['from'])
                                     if showinfobool:
-                                        logger.debug("waiting inventory from %s"%( data['from']))
+                                        logger.debug("Waiting for inventory from %s"%( data['from']))
                                     time.sleep(20)
                                     #il faut de nouveau retester si on a 1 uuid continue dans la boucle
                         if showinfobool:
-                            logger.warning("** association UUID GLPI no find for %s" % (msg['from']))
+                            logger.warning("** No association found for %s" % (msg['from']))
                         return
                     else:
                         # il faut verifier si guacamole est initialisé.
                         #logger.debug("UUID is %s"%uuid_inventorymachine)
                         if showinfobool:
-                            logger.debug("Machine %s already exist"%data['from'])
-                            logger.debug("Verify existance jid %s" % msg['from'])
+                            logger.debug("Machine %s already exists"%data['from'])
+                            logger.debug("Verifying existence of jid %s" % msg['from'])
                         if XmppMasterDatabase().getPresencejid(msg['from']):
                             if showinfobool:
-                                logger.debug("correct jid %s" % msg['from'])
+                                logger.debug("Correct jid: %s" % msg['from'])
                             return
                         else:
                             # The registration of the machine in database must be deleted, so it is updated.
                             if showinfobool:
-                                logger.debug("jid %s no exist dans base cf domaine chang" % msg['from'])
+                                logger.debug("jid %s does not exist in base cf domain change" % msg['from'])
                             XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
 
 
             """ Check machine information from agent """
             if showinfobool:
-                logger.info("** machine %s report offline in table machine"%data['from'])
+                logger.info("** Machine %s reports offline in machines table"%data['from'])
                 logger.info(
-                    "** Processing and check machine %s information from agent and "\
-                        "the registry into database."%data['from'])
+                    "** Registering machine %s with information from agent."%data['from'])
             if data['ippublic'] is not None and data['ippublic'] != "":
                 data['localisationinfo'] = Localisation().geodataip(data['ippublic'])
             else:
@@ -380,7 +380,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     except TypeError:
                         pass
             except Exception:
-                logger.error("** IMPOSIBLE REGISTRATION MACHINE %s. USER MISSING" % msg['from'])
+                logger.error("** Impossible to register machine %s. User missing" % msg['from'])
                 XmppMasterDatabase().setlogxmpp("Machine %s not registered. No user found" % msg['from'],
                                                 "info",
                                                 sessionid,
@@ -397,7 +397,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             # Add relayserver or update status in database
 
             if data['agenttype'] == "relayserver":
-                logger.info("** Add relayserver or update status in database %s" %
+                logger.info("** Adding relayserver or update status in database %s" %
                             msg['from'])
                 data["adorgbyuser"] = ""
                 data["adorgbymachine"] = ""
@@ -442,7 +442,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         mbody=json.dumps(cluster),
                                         mtype='chat')
             if showinfobool:
-                logger.info("** Add or update machine %s in database"%str(msg['from']))
+                logger.info("** Adding or updating machine %s in database"%str(msg['from']))
             # Add machine
             ippublic = None
             if "ippublic" in data:
@@ -459,8 +459,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if showinfobool:
                 logger.info("=============")
                 logger.info("=============")
-                logger.info("Case 2 : The machine %s is not existing in base"%str(msg['from']))
-                logger.info("Create it and update it's uuid_inventory_machine")
+                logger.info("Case 2 : The machine %s does not exist in database"%str(msg['from']))
+                logger.info("Creating it and updating it's uuid_inventorymachine")
                 logger.info("=============")
                 logger.info("=============")
                 logger.info("Adding or updating machine presence into machines table")
@@ -507,16 +507,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     # exclud mac adress of table network
                     if i['macnotshortened'].lower() in xmppobject.blacklisted_mac_addresses:
                         if showinfobool:
-                            logger.info("exclut of table network mac adress %s machine %s"%(i['macnotshortened'] ,msg['from']))
+                            logger.info("Mac address %s blacklisted for machine %s"%(i['macnotshortened'] ,msg['from']))
                         continue
                     try:
                         broadcast = i['broadcast']
                     except Exception:
                         broadcast = ''
                     if showinfobool:
-                        logger.info("** Add interface %s in database for machine %s" %
+                        logger.info("** Adding interface %s in database for machine %s" %
                                         (str(i['macaddress']), msg['from']))
-                        logger.info("Add network card %s to the machine %s id #%s"%(i['macaddress'],
+                        logger.info("Adding network card %s to the machine %s id #%s"%(i['macaddress'],
                                                                                     msg['from'],
                                                                                     idmachine))
                     XmppMasterDatabase().addPresenceNetwork(i['macaddress'],
@@ -534,7 +534,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         #"** Update the machine uuid : for consistency with inventory\n"\
                         #     "call Guacamole config\nor add inventory")
                     if showinfobool:
-                        logger.info("search List the mac addresses for the machine %s id #%s for attrib uuid glpi"%(msg['from'], idmachine))
+                        logger.info("Searching list of mac addresses for the machine %s id #%s for asigning uuid from glpi"%(msg['from'], idmachine))
                     result = XmppMasterDatabase().listMacAdressforMachine(idmachine,
                                                                           infomac=showinfobool)
                     results = result[0].split(",")
@@ -547,16 +547,16 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     # on scrute jusqua 20 fois si 1 mac matche avec  inventaire glpi existant
                     for testinventaireremonte in range(20):
                         if showinfobool:
-                            logger.debug("%s determination uuid from GLPI computer id for mac address "%testinventaireremonte)
+                            logger.info("%s Finding uuid from GLPI computer id for mac address "%testinventaireremonte)
                         for t in results:
                             if showinfobool:
-                                logger.info("Get the machine which has the specified mac address : %s"%t)
+                                logger.info("Finding the machine which has the specified mac address : %s"%t)
                             if t.lower() in xmppobject.blacklisted_mac_addresses:
                                 if showinfobool:
-                                    logger.info("exclud mac address : %s  for machine %s"%(t,msg['from']))
+                                    logger.info("Excluding blacklisted mac address %s for machine %s"%(t,msg['from']))
                                 continue
                             if showinfobool:
-                                logger.info("search uuid for mac adress %s for machine %s"%(t,msg['from']))
+                                logger.info("Finding uuid for mac address %s for machine %s"%(t,msg['from']))
                             computer = getComputerByMac(t,
                                                         showinfobool=showinfobool)
                             if computer != None:
@@ -568,20 +568,20 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 jidrs = "%s@%s" % (jidrs, jidm)
                                 uuid = 'UUID' + str(computer.id)
                                 if showinfobool:
-                                    logger.info("** updateMachineidinventory uuid %s for machine %s id %s" %
+                                    logger.info("** Calling updateMachineidinventory uuid %s for machine %s id %s" %
                                                     (uuid, msg['from'], idmachine))
                                 XmppMasterDatabase().updateMachineidinventory(uuid, idmachine)
                                 btestfindcomputer = True
                                 if 'countstart' in data and data['countstart'] == 1:
                                     if showinfobool:
-                                        logger.info("** Call inventory on PXE machine")
+                                        logger.info("** Calling inventory on PXE machine")
                                     callinventory(xmppobject, data['from'])
                                     return
                                 osmachine = Glpi().getComputersOS(str(computer.id))
                                 #osmachine = ComputerManager().getComputersOS(str(computer.id))
                                 if "Unknown operating system (PXE" in osmachine[0]['OSName']:
                                     if showinfobool:
-                                        logger.info("** Call inventory on PXE machine")
+                                        logger.info("** Calling inventory on PXE machine")
                                     callinventory(xmppobject, data['from'])
                                     return
                                 if "kiosk" in xmppobject.listmodulemmc and kiosk_presence:
@@ -613,13 +613,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 break
                             else:
                                 if showinfobool:
-                                    logger.info("No computer found for macadress %s for machine %s"%(t,
+                                    logger.info("No computer found for mac address %s for machine %s"%(t,
                                                                                                       msg['from']))
                                 pass
                         if btestfindcomputer == False:
                             if testinventaireremonte == 0:
                                 if showinfobool:
-                                    logger.info("** Call inventory on %s" % msg['from'])
+                                    logger.info("** Calling inventory on %s" % msg['from'])
                                 XmppMasterDatabase().setlogxmpp("Master ask inventory for registration",
                                                                 "Master",
                                                                 "",
@@ -633,11 +633,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                 "Master")
                                 callinventory(xmppobject, data['from'])
                             if showinfobool:
-                                logger.info("waiting inventory from %s"%( data['from']))
+                                logger.info("Waiting for inventory from %s"%( data['from']))
                             time.sleep(20)
                         else:
                             if showinfobool:
-                                logger.info("call callInstallConfGuacamole on %s for %s uuid %s and ip %s Mach %s"%(jidrs,
+                                logger.info("Calling callInstallConfGuacamole on %s for %s uuid %s and ip %s Mach %s"%(jidrs,
                                                                                         data['information']['info']['hostname'],
                                                                                         computerid,
                                                                                         data['xmppip'],
@@ -654,23 +654,23 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             break
 
             else:
-                logger.error("** create or update machine Database registration error for machine %s"%msg['from'])
+                logger.error("** Creating or updating machine: Database registration error for machine %s"%msg['from'])
                 return
 
             pluginfunction=[str("plugin_%s"%x) for x in xmppobject.pluginlistunregistered]
             if showinfobool:
-                logger.info("call plugin action for machine %s ."%msg['from'])
+                logger.info("Calling plugin action for machine %s ."%msg['from'])
             for function_plugin in pluginfunction:
                 try:
                     if hasattr(xmppobject, function_plugin):
                         if showinfobool:
-                            logger.info("call plugin %s"%function_plugin)
+                            logger.info("Calling plugin %s"%function_plugin)
                         getattr(xmppobject, function_plugin)(msg, data)
                     else:
                         if showinfobool:
-                            logger.warning("the %s plugin is not called"%function_plugin)
-                            logger.warning("verify why plugging %s"\
-                                " has no function %s"%(function_plugin,
+                            logger.warning("The %s plugin is not called"%function_plugin)
+                            logger.warning("Check why plugin %s"\
+                                " does not have function %s"%(function_plugin,
                                                         function_plugin))
                 except Exception:
                     logger.error("\n%s"%(traceback.format_exc()))
@@ -680,7 +680,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
 def getComputerByMac( mac, showinfobool=True):
     if showinfobool:
-        logger.info("function getComputerByMac Asking to glpi the machine list for specified mac %s"%mac)
+        logger.info("Function getComputerByMac asking glpi for machine list for mac %s"%mac)
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
         if len(ret) != 0:
@@ -688,7 +688,7 @@ def getComputerByMac( mac, showinfobool=True):
         else:
             return None
     if showinfobool:
-        logger.info("function getComputerByMac Glpi returned : %s"%ret)
+        logger.info("Function getComputerByMac Glpi returned : %s"%ret)
     return ret
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data, showinfobool=True):
@@ -698,7 +698,7 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data, showinfobool=True)
                     'sessionid': getRandomName(5, "guacamoleconf"),
                     'data': data}
             if showinfobool:
-                logger.info("process callInstallConfGuacamole on %s for %s"%(torelayserver,
+                logger.info("Calling callInstallConfGuacamole on %s for %s"%(torelayserver,
                                                                               data['hostname']))
             xmppobject.send_message(mto=torelayserver,
                                 mbody=json.dumps(body),
@@ -707,7 +707,7 @@ def callInstallConfGuacamole(xmppobject, torelayserver, data, showinfobool=True)
             logger.error("\n%s"%(traceback.format_exc()))
     else:
         if showinfobool:
-            logger.info("application direct parametrage guacamole in base for uuid %s"%data['uuid'])
+            logger.info("Setting guacamole parameters in base for uuid %s"%data['uuid'])
         XmppMasterDatabase().addlistguacamoleidforiventoryid(data['uuid'], {})
 
 def callinventory(xmppobject,  to):
@@ -798,7 +798,7 @@ def get_packages_for_machine(machine, showinfobool=True):
         packageprofile, structuredatakiosk))
     #logger.info("initialisation kiosk %s on machine %s"%(structuredatakiosk, machine['hostname']))
     if showinfobool:
-        logger.info("* initialisation kiosk on machine %s"%(machine['hostname']))
+        logger.info("* Initializing kiosk on machine %s"%(machine['hostname']))
     return structuredatakiosk
 
 def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatakiosk):
@@ -826,7 +826,7 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
             #Later the software version will be needed into the pulse package
             if LooseVersion(soft_glpi[2]) < LooseVersion(packageprofile[3]):
                 structuredatakioskelement['action'].append('Update')
-                logger.debug("the software version is superior "\
+                logger.debug("The software version is superior "\
                     "to that installed on the machine %s : %s < %s"%(packageprofile[0],
                                                                      soft_glpi[2],
                                                                      LooseVersion(packageprofile[3])))
@@ -840,18 +840,18 @@ def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatak
     return structuredatakioskelement
 
 def read_conf_remote_registeryagent(xmppobject):
-    logger.debug("Initialisation plugin :% s "%plugin["NAME"])
+    logger.debug("Initializing plugin :% s "%plugin["NAME"])
     namefichierconf = plugin['NAME'] + ".ini"
     pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
-        logger.error("plugin %s\nConfiguration file :" \
+        logger.error("Plugin %s\nConfiguration file :" \
             "\n\t%s missing" \
         "\neg conf:\n[parameters]\n" \
             "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
                 "loadautoupdate, loadshowregistration\n" \
                 "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
                     "loadautoupdate, loadshowregistration"%(plugin['NAME'], pathfileconf))
-        logger.warning("default value for pluginlistregistered " \
+        logger.warning("Default value for pluginlistregistered " \
             "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration"\
             "\ndefault value for pluginlistunregistered"\
                 "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration")
@@ -907,7 +907,7 @@ def read_conf_remote_registeryagent(xmppobject):
                 macadrs = t[0:2]+":"+t[2:4]+":"+t[4:6]+":"+t[6:8]+":"+t[8:10]+":"+t[10:12]
                 xmppobject.blacklisted_mac_addresses.append(macadrs)
             else:
-                logger.warning("the mac address in blacklisted_mac_addresses parameter is bad format for value %s"%t )
+                logger.warning("The mac addresses %s in blacklisted_mac_addresses parameter is incorrect"%t )
         if "00:00:00:00:00:00" not in xmppobject.blacklisted_mac_addresses:
             xmppobject.blacklisted_mac_addresses.insert(0,"00:00:00:00:00:00")
 
@@ -922,5 +922,5 @@ def read_conf_remote_registeryagent(xmppobject):
                 logger.warning("showinfomachine default value is []")
 
     xmppobject.blacklisted_mac_addresses=list(set(xmppobject.blacklisted_mac_addresses))
-    logger.debug("plugin list registered is %s"%xmppobject.pluginlistregistered)
-    logger.debug("plugin list unregistered is %s"%xmppobject.pluginlistunregistered)
+    logger.debug("Plugin list registered is %s"%xmppobject.pluginlistregistered)
+    logger.debug("Plugin list unregistered is %s"%xmppobject.pluginlistunregistered)
