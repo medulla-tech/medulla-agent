@@ -53,15 +53,16 @@ logger = logging.getLogger()
 
 DEBUGPULSE = 25
 
-
 if sys.platform.startswith('win'):
     import wmi
     import pythoncom
     import _winreg as wr
-    #import win32net
-    #import win32netcon
-    #import win32api
-
+    import win32api
+    import win32security
+    import ntsecuritycon
+    import win32net
+    import win32com.client
+    from win32com.client import GetObjectif
 
 def Setdirectorytempinfo():
     """
@@ -840,7 +841,7 @@ def pluginprocess(func):
                 result)
             # encode  result['data'] si besoin
             # print result
-            if result['base64'] == True:
+            if result['base64'] is True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s" % result
             objetxmpp.send_message(mto=message['from'],
@@ -879,7 +880,7 @@ def pulgindeploy(func):
                 dataerreur,
                 result)
             if result['data'] != "end":
-                if result['base64'] == True:
+                if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
                 objetxmpp.send_message(mto=message['from'],
@@ -933,7 +934,7 @@ def pulgindeploy1(func):
             if not result['data']['end']:
                 print "Envoi Message"
                 print "result", result
-                if result['base64'] == True:
+                if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
                 objetxmpp.send_message(mto=message['from'],
@@ -1658,3 +1659,131 @@ class AESCipher:
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
         return unpad(cipher.decrypt( enc[16:] ))
+
+
+def sshdup():
+    if sys.platform.startswith('linux'):
+        #verify sshd up
+        cmd = "ps aux | grep sshd | grep -v grep | grep -v pts"
+        result = simplecommand(cmd)
+        if result['code'] == 0:
+            return True
+        return False
+    elif sys.platform.startswith('darwin'):
+        cmd = "launchctl list com.openssh.sshd"
+        result = simplecommand(cmd)
+        if result['code'] == 0:
+            return True
+        return False
+    elif sys.platform.startswith('win'):
+        cmd="TASKLIST | FINDSTR sshd"
+        result = simplecommand(cmd)
+        if len (result['result']) > 0:
+            return True
+    return False
+
+def restartsshd():
+    if sys.platform.startswith('linux'):
+        #verify sshd up
+        if not sshdup():
+            cmd = "systemctrl restart sshd"
+            result = simplecommand(cmd)
+    elif sys.platform.startswith('darwin'):
+        if not sshdup():
+            cmd="launchctl restart /System/Library/LaunchDaemons/ssh.plist"
+            result = simplecommand(cmd)
+    elif sys.platform.startswith('win'):
+        if not sshdup():
+            # on cherche le nom reel du service pour sshd.
+            cmd='sc query state= all | findstr \"sshd\" | findstr \"SERVICE_NAME\"'
+            result = simplecommand(cmd)
+            if len(result['result'])>0:
+                try:
+                    nameservice = result['result'][0].split()[1]
+                    #restart service windows.
+                    cmd='sc start \"%s\"'%nameservice
+                    result = simplecommand(cmd)
+                except Exception:
+                    pass
+
+def install_key_ssh_relayserver(keypriv, private=False):
+    """
+        This function installs the sshkey
+        Args:
+            keypriv: The name of the key to copy on the dest machine
+            private: Tell if this is the private of the public ssh key
+    """
+    logger.debug("install key")
+    userprogram = "system"
+    if sys.platform.startswith('win'):
+        userprogram = win32api.GetUserName().lower()
+        # on modifie les droits sur le fichier de key pour reverse ssh dans user
+        if not userprogram.startswith("syst"):
+            userprogram = "Administrator"
+    if private is True:
+        keyname = "id_rsa"
+        keyperm = 0o600
+    else:
+        keyname = "id_rsa.pub"
+        keyperm = 0o644
+
+    if sys.platform.startswith('linux'):
+        if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh/")):
+            os.makedirs(os.path.join(os.path.expanduser('~pulseuser'), ".ssh/"))
+        filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", keyname)
+    elif sys.platform.startswith('win'):
+        # check if pulse account exists
+        try:
+            win32net.NetUserGetInfo('','pulseuser',0)
+            filekey = os.path.join("c:\Users\pulseuser", ".ssh", keyname)
+        except:
+            filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', keyname)
+
+        logger.debug("filekey  %s"%filekey)
+        logger.debug("chang permition to user %s"%userprogram)
+
+        if os.path.isfile(filekey):
+            logger.warning("change permition to %s"%userprogram)
+            user, domain, type = win32security.LookupAccountName ("", userprogram)
+            sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
+            dacl = win32security.ACL ()
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                    ntsecuritycon.FILE_GENERIC_READ | \
+                                        ntsecuritycon.FILE_GENERIC_WRITE | \
+                                            ntsecuritycon.FILE_ALL_ACCESS,
+                                    user)
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
+        else:
+            logger.debug("filekey not exist %s"%filekey)
+
+    elif sys.platform.startswith('darwin'):
+        if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh")):
+            os.makedirs(os.path.join(os.path.expanduser('~pulseuser'), ".ssh"))
+        filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", keyname)
+    else:
+        return
+
+    if os.path.isfile(filekey):
+        try:
+            os.remove(filekey)
+        except:
+            logger.warning("remove %s key impossible"%filekey)
+
+    logger.debug("CREATION DU FICHIER %s"%filekey)
+    try:
+        file_put_contents(filekey, keypriv)
+    except:
+        logger.error("\n%s"%(traceback.format_exc()))
+
+    if sys.platform.startswith('win'):
+        user, domain, type = win32security.LookupAccountName ("", userprogram)
+        sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
+        dacl = win32security.ACL ()
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
+                                user)
+        sd.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
+    else:
+        os.chmod(filekey, keyperm)

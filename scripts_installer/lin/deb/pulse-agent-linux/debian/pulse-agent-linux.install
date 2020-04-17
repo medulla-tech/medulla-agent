@@ -1,0 +1,3 @@
+etc/pulse-xmpp-agent/
+var/lib/pulse2/.ssh/
+usr/sbin/pulse-filetree-generator

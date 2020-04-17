@@ -994,6 +994,37 @@ class XmppMasterDatabase(DatabaseHelper):
         return presence
 
     @DatabaseHelper._sessionm
+    def getMachinefrommacadress(self, session, macaddress):
+        """ information machine"""
+        machine = session.query(Machines).filter(Machines.macaddress.like(macaddress) ).first()
+        session.commit()
+        session.flush()
+        result = {}
+        if machine:
+            result = {  "id" : machine.id,
+                        "jid" : machine.jid,
+                        "platform" : machine.platform,
+                        "archi" : machine.archi,
+                        "hostname" : machine.hostname,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "ippublic" : machine.ippublic,
+                        "macaddress" : machine.macaddress,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "agenttype" : machine.agenttype,
+                        "classutil" : machine.classutil,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "picklekeypublic" : machine.picklekeypublic,
+                        'ad_ou_user': machine.ad_ou_user,
+                        'ad_ou_machine': machine.ad_ou_machine,
+                        'kiosk_presence': machine.kiosk_presence,
+                        'lastuser': machine.lastuser,
+                        'keysyncthing' : machine.keysyncthing,
+                        'enabled' : machine.enabled}
+        return result
+
+    @DatabaseHelper._sessionm
     def addPresenceMachine(self,
                            session,
                            jid,
@@ -1015,10 +1046,54 @@ class XmppMasterDatabase(DatabaseHelper):
                            kiosk_presence = "False",
                            lastuser = "",
                            keysyncthing = ""):
-        pe = self.getIdMachineFromMacaddress(macaddress)
-        if pe is not None:
+        msg ="Create Machine"
+        pe=-1
+        machineforupdate = self.getMachinefrommacadress(macaddress)
+        if len(machineforupdate) > 0:
+            pe = machineforupdate['id']
+        if pe != -1:
             #update
-            session.query(Machines).filter( Machines.id == pe[0]).\
+            maxlenhostname = max([len(machineforupdate['hostname']), len(hostname)])
+            maxlenjid = max([len(machineforupdate['jid']), len(jid)])
+            maxmacadress = max([len(machineforupdate['macaddress']), len(macaddress)])
+            maxip_xmpp = max([len(machineforupdate['ip_xmpp']), len(ip_xmpp),len("ip_xmpp")])
+            maxsubnetxmpp = max([len(machineforupdate['subnetxmpp']), len(subnetxmpp), len("subnetxmpp")])
+            maxonoff=6
+            uuidold = str(machineforupdate['uuid_inventorymachine'])
+            if uuid_inventorymachine is None:
+                uuidnew = "None"
+            else:
+                uuidnew = str(uuid_inventorymachine)
+            maxuuid=max([len(uuidold), len(uuidnew)])
+            msg ="Update Machine %8s\n" \
+                "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
+                "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
+                "by\n" \
+                "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|"%(
+                    machineforupdate['id'],
+                    maxlenhostname, "hostname",
+                    maxlenjid, "jid",
+                    maxmacadress, "macaddress",
+                    maxip_xmpp, "ip_xmpp",
+                    maxsubnetxmpp, "subnetxmpp",
+                    maxonoff, "On/OFF",
+                    maxuuid,"UUID",
+                    maxlenhostname, machineforupdate['hostname'],
+                    maxlenjid, machineforupdate['jid'],
+                    maxmacadress, machineforupdate['macaddress'],
+                    maxip_xmpp, machineforupdate['ip_xmpp'],
+                    maxsubnetxmpp, machineforupdate['subnetxmpp'],
+                    maxonoff, machineforupdate['enabled'],
+                    maxuuid, uuidold,
+                    maxlenhostname, hostname,
+                    maxlenjid, jid,
+                    maxmacadress, macaddress,
+                    maxip_xmpp, ip_xmpp,
+                    maxsubnetxmpp, subnetxmpp,
+                    maxonoff, "1",
+                    6,uuidnew)
+            self.logger.warning(msg)
+            session.query(Machines).filter( Machines.id == pe).\
                        update({ Machines.jid: jid,
                                 Machines.platform : platform,
                                 Machines.hostname : hostname,
@@ -1042,7 +1117,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 })
             session.commit()
             session.flush()
-            return pe[0]
+            return pe, msg
         else:
             #create
             try:
@@ -1080,9 +1155,9 @@ class XmppMasterDatabase(DatabaseHelper):
             except Exception, e:
                 #logging.getLogger().error("addPresenceMachine %s" % jid)
                 logging.getLogger().error(str(e))
-                return -1
-            return new_machine.id
-
+                msg=str(e)
+                return -1, msg
+            return new_machine.id, msg
 
     @DatabaseHelper._sessionm
     def is_jiduser_organization_ad(self, session, jiduser):
@@ -2618,13 +2693,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def updatedeploystate1(self, session, sessionid, state):
         try:
-            sql="""UPDATE `xmppmaster`.`deploy` 
-                SET 
+            sql="""UPDATE `xmppmaster`.`deploy`
+                SET
                     `state` = '%s'
                 WHERE
                     (deploy.sessionid = '%s'
                         AND `state` NOT IN ('DEPLOYMENT SUCCESS' , 'ABORT DEPLOYMENT CANCELLED BY USER')
-                        AND `state` REGEXP '^(?!ERROR)');
+                        AND `state` REGEXP '^(?!ERROR)^(?!SUCCESS)^(?!ABORT)');
                 """%(state,sessionid)
             result = session.execute(sql)
             session.commit()
@@ -2653,18 +2728,47 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updatedeploystate(self, session, sessionid, state):
+        """
+        update status deploy
+        """
         try:
-            session.query(Deploy).filter(Deploy.sessionid == sessionid).\
-                    update({Deploy.state: state})
-            session.commit()
-            session.flush()
-            return 1
-        except Exception, e:
-            logging.getLogger().error(str(e))
+            deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+            if deploysession:
+                # les status commençant par error, success, abort ne peuvent plus être modifiés.
+                regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
+                if regexpexlusion.match(state) is None:
+                    return
+                if state == "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)":
+                    if deploysession.state in ["WOL 1",
+                                               "WOL 2",
+                                               "WOL 3",
+                                               "WAITING MACHINE ONLINE"]:
+                        #STATUS NE CHANGE PAS
+                        return 0
+                #update status
+                deploysession.state = state
+                session.commit()
+                session.flush()
+                return 1
+        except Exception:
+            logging.getLogger().error("sql : %s"%traceback.format_exc())
             return -1
+        finally:
+            session.close()
+
+    @DatabaseHelper._sessionm
+    def delNetwork_for_machines_id(self,session, machines_id):
+        sql = """DELETE FROM `xmppmaster`.`network`
+                WHERE
+                    (`machines_id` = '%s');"""%machines_id
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        return result
 
     @DatabaseHelper._sessionm
     def addPresenceNetwork(self, session, macaddress, ipaddress, broadcast, gateway, mask, mac, id_machine):
+        self.delNetwork_for_machines_id(id_machine)
         try:
             new_network = Network()
             new_network.macaddress=macaddress
@@ -3620,53 +3724,54 @@ class XmppMasterDatabase(DatabaseHelper):
     def algorulehostname(self, session, hostname, classutilMachine = "both", rule = 2, enabled=1):
         """
             Field "rule_id" : This information allows you to apply the search
-                              only to the rule pointed. rule_id = 2 for hostname
+                              only to the rule designated. rule_id = 2 for hostname
             Field "subject" is used to define the hostname in this rule
-            Field "relayserver_id" is used to define the Relayserver associated to this hostname
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be
-              in the relayserver reserve to a use of the private machine.
+            If classutilMachine is private then the choice of relayserver will be
+              in the relayservers reserved for machines where [global].agent_space
+              configuration is set to private.
+            # hostname regex
+                #hostname matches subject of has_relayserverrules table
+                #-- subject is the regex.
+                #-- eg : ^machine_win_.*1$
+                #-- eg : ^machine_win_.*[2-9]{1,3}$
+                Tip: For cheching the regex using Mysql use
+                    select "hostname_for_test" REGEXP "^hostname.*";  => result  1
+                    select "hostname_for_test" REGEXP "^(?!hostname).*"; => result 0
         """
-        sql = """select `has_relayserverrules`.`id`,`has_relayserverrules`.`subject`
-        from `has_relayserverrules`
-        where `has_relayserverrules`.`rules_id` = %d
-        order by `has_relayserverrules`.`order`;"""%(rule)
+        if classutilMachine == "private":
+            sql = """select `relayserver`.`id` , `has_relayserverrules`.`subject`
+            from `relayserver`
+                inner join
+                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
+            where
+                `has_relayserverrules`.`rules_id` = %d
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
+                    AND `relayserver`.`enabled` = %d
+                    AND `relayserver`.`moderelayserver` = 'static'
+                    AND `relayserver`.`classutil` = '%s'
+            order by `has_relayserverrules`.`order`
+            limit 1;"""%(rule, hostname, enabled, classutilMachine)
+        else:
+            sql = """select `relayserver`.`id` , `has_relayserverrules`.`subject`
+            from `relayserver`
+                inner join
+                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
+            where
+                `has_relayserverrules`.`rules_id` = %d
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
+                    AND `relayserver`.`enabled` = %d
+                    AND `relayserver`.`moderelayserver` = 'static'
+            order by `has_relayserverrules`.`order`
+            limit 1;"""%(rule, hostname, enabled)
         result = session.execute(sql)
         session.commit()
         session.flush()
-        listrules = [x for x in result]
-        for relayserverrule in listrules:
-            subject = relayserverrule[1].replace('*','.*')
-            if re.match(subject, hostname, flags=0):
-                has_relayserverrules_id = relayserverrule[0]
-                if classutilMachine == "private":
-                    sql = """select `relayserver`.`id`
-                    from `relayserver`
-                        inner join
-                            `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-                    where
-                        `has_relayserverrules`.`rules_id` = %d
-                            AND `has_relayserverrules`.`id` = %d
-                            AND `relayserver`.`enabled` = %d
-                            AND `relayserver`.`moderelayserver` = 'static'
-                            AND `relayserver`.`classutil` = '%s'
-                    limit 1;"""%(rule, has_relayserverrules_id, enabled, classutilMachine)
-                else:
-                    sql = """select `relayserver`.`id`
-                    from `relayserver`
-                        inner join
-                            `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-                    where
-                        `has_relayserverrules`.`rules_id` = %d
-                            AND `has_relayserverrules`.`id` = %d
-                            AND `relayserver`.`enabled` = %d
-                            AND `relayserver`.`moderelayserver` = 'static'
-                    limit 1;"""%(rule, has_relayserverrules_id, enabled)
-                result = session.execute(sql)
-                session.commit()
-                session.flush()
-                return [y for y in result]
-        return ""
+        ret = [y for y in result]
+        if len(ret) > 0:
+            logging.getLogger().debug("Matched hostname rule with "\
+                "hostname \"%s\# by regex \#%s\""%(hostname, ret[0].subject))
+        return ret
 
     @DatabaseHelper._sessionm
     def algoruleloadbalancer(self, session):
@@ -4082,7 +4187,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         for linemachine in machinespresente:
             out = 0;
-            if linemachine.enabled == True:
+            if linemachine.enabled is True:
                 out = 1
             print linemachine.uuid_inventorymachine
             result[linemachine.uuid_inventorymachine] = [out, 1 ]
@@ -4594,7 +4699,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return session.query(func.count(Machines.id)).filter(Machines.agenttype == "machine").scalar()
 
     @DatabaseHelper._sessionm
-    def getRelayServerofclusterFromjidars(self, session, jid, moderelayserver = None):
+    def getRelayServerofclusterFromjidars(self, session, jid, moderelayserver = None,enablears = 1):
         #determine ARS id from jid
         relayserver = session.query(RelayServer).filter(RelayServer.jid == jid)
         relayserver = relayserver.first()
@@ -4637,13 +4742,11 @@ class XmppMasterDatabase(DatabaseHelper):
                 ars = session.query(RelayServer).\
                     join(Has_cluster_ars, Has_cluster_ars.id_ars == RelayServer.id).\
                         join(Cluster_ars, Has_cluster_ars.id_cluster == Cluster_ars.id)
+                ars = ars.filter(Has_cluster_ars.id_cluster.in_(listcluster_id))
                 if moderelayserver != None:
-                    ars = ars.filter(and_(Has_cluster_ars.id_cluster.in_(listcluster_id),
-                                          RelayServer.enabled == 1,
-                                          RelayServer.moderelayserver == moderelayserver ) )
-                else:
-                    ars = ars.filter(and_(Has_cluster_ars.id_cluster.in_(listcluster_id),
-                                          RelayServer.enabled == 1 ) )
+                    ars = ars.filter(RelayServer.moderelayserver == moderelayserver)
+                if enablears != None:
+                    ars = ars.filter(RelayServer.enabled == enablears)
                 ars = ars.all()
                 session.commit()
                 session.flush()
@@ -4900,7 +5003,9 @@ class XmppMasterDatabase(DatabaseHelper):
                             len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
                             state == "DEPLOYMENT SUCCESS":
                         state = "DEPLOYMENT PARTIAL SUCCESS"
-                    deploysession.state = state
+                    regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
+                    if regexpexlusion.match(state) is not None:
+                        deploysession.state = state
                 session.commit()
                 session.flush()
                 session.close()
@@ -4935,17 +5040,17 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         ret = [{'id': x[0], 'jidmachines': x[1], 'jidrelays': x[2], 'numcluster': x[3],  'directory_tmp': x[4]} for x in result]
         return ret
-    
+
     @DatabaseHelper._sessionm
     def get_ensemble_ars_idem_cluster(self, session, ars_id):
-        sql ="""SELECT 
+        sql ="""SELECT
                     jid, nameserver, keysyncthing
                 FROM
                     xmppmaster.has_cluster_ars
                         INNER JOIN
                     xmppmaster.relayserver ON xmppmaster.has_cluster_ars.id_ars = xmppmaster.relayserver.id
                 WHERE
-                    id_cluster = (SELECT 
+                    id_cluster = (SELECT
                             id_cluster
                         FROM
                             xmppmaster.has_cluster_ars
@@ -5033,7 +5138,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 result = [{'index':id,
                             "id" : regle.id,
-                            'regexplog':regle.regex_logmessage, 
+                            'regexplog':regle.regex_logmessage,
                             'status':regle.status} for id, regle in enumerate(ret)]
             return result
         except Exception, e:

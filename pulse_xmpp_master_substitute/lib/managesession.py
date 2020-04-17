@@ -199,7 +199,7 @@ class session:
                 os.remove(namefilesession)
             return False
         if 'datasession' in session and 'data' in session['datasession'] and 'sessionreload' in session[
-                'datasession']['data'] and session['datasession']['data']['sessionreload'] == True:
+                'datasession']['data'] and session['datasession']['data']['sessionreload'] is True:
             logging.getLogger().debug(
                 "Reload Session %s :  signaled reloadable" %
                 self.dirsavesession)

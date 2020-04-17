@@ -1,0 +1,16 @@
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/lib
+usr/lib/python2.*/*-packages/pulse_xmpp_agent-*.egg-info/
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/*.py*
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/script
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/pluginsrelay
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/pluginsmachine
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/script/getlastuser.ps1
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/script/create-profile.ps1
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/agentversion
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/descriptor_scheduler_relay
+var/log/pulse/
+usr/lib/systemd/system/pulse-xmpp-agent-log.service  
+usr/lib/systemd/system/pulse-xmpp-agent-relay.service
+usr/lib/systemd/system/pulse-package-watching.service
+etc/pulse-xmpp-agent/
+etc/logrotate.d/pulse-xmpp-agent-relay

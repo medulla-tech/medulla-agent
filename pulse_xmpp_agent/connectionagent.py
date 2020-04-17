@@ -31,6 +31,7 @@ import subprocess
 import base64
 import time
 import json
+import re
 from sleekxmpp import jid
 import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
@@ -445,7 +446,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'data' : dataobj,
             'ret' : 0
             }
-
+        self.config.keyAES32 = [str(x.strip()) \
+            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', self.config.keyAES32) \
+                if x.strip() != "" and len(x) == 32][0]
         cipher = AESCipher(self.config.keyAES32)
         msginfo['data']['codechaine'] = cipher.encrypt(str(self.boundjid))
 

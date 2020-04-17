@@ -370,7 +370,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
                          state == "DEPLOYMENT SUCCESS":
                     state = "DEPLOYMENT PARTIAL SUCCESS"
-                deploysession.state = state
+                regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
+                if regexpexlusion.match(state) is not None:
+                    deploysession.state = state
             session.commit()
             session.flush()
             session.close()
@@ -632,7 +634,7 @@ if __name__ == '__main__':
     configfile = ""
     if opts.configfile:
         configfile = opts.configfile
-    if opts.version == True:
+    if opts.version is True:
         print VERSIONLOG
         sys.exit(0)
     # Setup the command line arguments.

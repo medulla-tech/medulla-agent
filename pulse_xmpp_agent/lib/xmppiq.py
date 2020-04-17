@@ -34,7 +34,11 @@ from utils import   shellcommandtimeout, \
                     encode_strconsole, \
                     keypub, \
                     showlinelog, \
-                    simplecommand
+                    simplecommand, \
+                    sshdup, \
+                    restartsshd, \
+                    install_key_ssh_relayserver
+
 from  agentconffile import  directoryconffile
 from shutil import copyfile, move
 import datetime
@@ -95,6 +99,16 @@ def dispach_iq_command(xmppobject, jsonin):
         logging.log(DEBUGPULSE,"function %s missing in list listactioncommand"%data['action'] )
         return ""
 
+
+def logdeploymsg( xmppobject, msg, sessionid):
+    xmppobject.xmpplog( msg,
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = xmppobject.boundjid.bare,
+                        module = "Deployment | Cluster | Notify",
+                        date = None)
 
 class functionsynchroxmpp:
     """
@@ -164,6 +178,7 @@ class functionsynchroxmpp:
 
     @staticmethod
     def keyinstall(xmppobject, data):
+        restartsshd()
         try:
             msgaction=[]
             #logger.debug("error format message : %s"%(json.dumps(data, indent = 4)))
@@ -177,6 +192,7 @@ class functionsynchroxmpp:
             if sys.platform.startswith('linux'):
                 import pwd
                 import grp
+                reverse_ssh_key_privat_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'id_rsa')
                 #verify compte pulse exist
                 try:
                     uid = pwd.getpwnam("pulseuser").pw_uid
@@ -249,33 +265,11 @@ class functionsynchroxmpp:
                         result = simplecommand(encode_strconsole('net localgroup %s "pulseuser" /ADD' % adminsgroup))
                         logger.info("Adding pulseuser to administrators group: %s" %result)
                         msgaction.append("Adding pulseuser to administrators group: %s" %result)
-                        # Reconfigure SSH server
-                        logger.info("Reconfiguring ssh server for using keys in pulseuser account")
-                        msgaction.append("Reconfiguring ssh server for using keys in pulseuser account")
-                        sshdconfigfile = os.path.join(os.environ["ProgramFiles"], 'OpenSSH', 'sshd_config')
-                        if os.path.isfile(sshdconfigfile):
-                            with open(sshdconfigfile) as infile:
-                                with open('sshd_config', 'w') as outfile:
-                                    for line in infile:
-                                        if line.startswith('AuthorizedKeysFile'):
-                                            outfile.write('#' + line)
-                                        else:
-                                            outfile.write(line)
-                            move('sshd_config', sshdconfigfile)
-                            currentdir = os.getcwd()
-                            os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
-                            result = simplecommand(encode_strconsole('powershell '\
-                                '-ExecutionPolicy Bypass -Command ". '\
-                                '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
-                            os.chdir(currentdir)
-                            win32serviceutil.StopService('sshd')
-                            win32serviceutil.StopService('ssh-agent')
-                            win32serviceutil.StartService('ssh-agent')
-                            win32serviceutil.StartService('sshd')
                     # on configure le compte pulseuser
                     logger.info("Creating authorized_keys file in pulseuser account")
                     msgaction.append("Creating authorized_keys file in pulseuser account")
                     authorized_keys_path = os.path.join("c:\Users\pulseuser", '.ssh','authorized_keys' )
+                    reverse_ssh_key_privat_path = os.path.join("c:\Users\pulseuser", '.ssh','id_rsa' )
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                         os.makedirs(os.path.dirname(authorized_keys_path), 0700)
                     if not os.path.isfile(authorized_keys_path):
@@ -311,6 +305,11 @@ class functionsynchroxmpp:
                                                         "pulse",
                                                         '.ssh',
                                                         'authorized_keys' )
+                    reverse_ssh_key_privat_path = os.path.join( os.environ["ProgramFiles"],
+                                                                "pulse",
+                                                                '.ssh',
+                                                                'id_rsa' )
+
                     # creation if no exist
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                         os.makedirs(os.path.dirname(authorized_keys_path), 0700)
@@ -328,9 +327,15 @@ class functionsynchroxmpp:
                 authorized_keys_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
                                                                 '.ssh',
                                                                 'authorized_keys') )
+                reverse_ssh_key_privat_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
+                                                                '.ssh',
+                                                                'id_rsa') )
             else:
                 return
-
+            #install private  reverse ssh key si necessaire.
+            if 'keyreverseprivatssh' in data['data']:
+                install_key_ssh_relayserver(data['data']['keyreverseprivatssh'].strip(' \t\n\r'),
+                                            private=True)
             # instal key dans authorized_keys
             authorized_keys_content = file_get_contents(authorized_keys_path)
             if not data['data']['key'].strip(' \t\n\r') in authorized_keys_content:

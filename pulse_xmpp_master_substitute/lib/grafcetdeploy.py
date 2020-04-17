@@ -369,7 +369,7 @@ class grafcet:
                 -1,
                 False,
                 "end error inconsistency in descriptor verify the step number [step %s not exist]" % val)
-            self.objectxmpp.xmpplog("[%s] : Descriptor inconsistency error. Verify the step number [step %s not exist]" % (val, self.data['name']),
+            self.objectxmpp.xmpplog("[%s] : Descriptor error: Verify the step number [step %s not exist]" % (val, self.data['name']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = val,
@@ -431,7 +431,7 @@ class grafcet:
         shutdownmachine = False
         if 'advanced' in self.datasend['data'] \
             and 'shutdownrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['shutdownrequired'] == True:
+                and self.datasend['data']['advanced']['shutdownrequired'] is True:
             shutdownmachine = True
             self.objectxmpp.xmpplog("Shutdown required for machine after deployment on %s" % (self.datasend['data']['name']),
                                     type = 'deploy',
@@ -448,7 +448,7 @@ class grafcet:
 
         if not shutdownmachine and 'advanced' in self.datasend['data'] \
             and 'rebootrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['rebootrequired'] == True:
+                and self.datasend['data']['advanced']['rebootrequired'] is True:
             restarmachine = True
             self.objectxmpp.xmpplog("Reboot required for machine after deploy on %s" % (self.datasend['data']['name']),
                                     type = 'deploy',
@@ -1793,7 +1793,7 @@ class grafcet:
                                         fromuser = self.data['login'],
                                         touser = "")
             else:
-                self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory error <span>' % (self.data['name'], self.workingstep['step']),
+                self.objectxmpp.xmpplog('[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>' % (self.data['name'], self.workingstep['step']),
                                         type = 'deploy',
                                         sessionname = self.sessionid,
                                         priority = self.workingstep['step'],

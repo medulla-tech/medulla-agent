@@ -58,9 +58,8 @@ if sys.platform.startswith('win'):
     import wmi
     import pythoncom
     import _winreg as wr
-    #import win32net
     #import win32netcon
-    #import win32api
+    import win32api
     import win32security
     import ntsecuritycon
     import win32net
@@ -91,7 +90,6 @@ def cleanbacktodeploy(objectxmpp):
     if len(delsession) != 0:
         logging.log(DEBUGPULSE, "Clear dependency : %s" % delsession)
         save_back_to_deploy(objectxmpp.back_to_deploy)
-
 
 def networkinfoexist():
     filenetworkinfo = os.path.join(
@@ -843,7 +841,7 @@ def pluginprocess(func):
                 result)
             # encode  result['data'] si besoin
             # print result
-            if result['base64'] == True:
+            if result['base64'] is True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s" % result
             objetxmpp.send_message(mto=message['from'],
@@ -882,7 +880,7 @@ def pulgindeploy(func):
                 dataerreur,
                 result)
             if result['data'] != "end":
-                if result['base64'] == True:
+                if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
                 objetxmpp.send_message(mto=message['from'],
@@ -936,7 +934,7 @@ def pulgindeploy1(func):
             if not result['data']['end']:
                 print "Envoi Message"
                 print "result", result
-                if result['base64'] == True:
+                if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
                 objetxmpp.send_message(mto=message['from'],
@@ -1746,3 +1744,430 @@ class AESCipher:
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
         return unpad(cipher.decrypt( enc[16:] ))
+
+
+def setgetcountcycle(data = None):
+    chemin = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                          "..",
+                          "cycle",
+                          "countcyclealternatif")
+    try:
+        countcyclealternatif = int( file_get_contents(chemin).strip(" \n\t"))
+    except Exception:
+        countcyclealternatif =  0
+        data=None
+    if data is None:
+        #initialise variable
+        file_put_contents(chemin, "0")
+        return 0
+    elif data == -1:
+        return countcyclealternatif
+    elif data >= 0:
+        countcyclealternatif = countcyclealternatif + data
+        file_put_contents(chemin, str(countcyclealternatif))
+        return countcyclealternatif
+
+def setgetrestart(data = None):
+    chemin = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                          "..",
+                          "cycle",
+                          "restart")
+    try:
+        restart = int(file_get_contents(chemin).strip(" \n\t"))
+    except Exception:
+        restart =  0
+        data=None
+    if data is None:
+        #initialise variable
+        file_put_contents(chemin, "0")
+        return 0
+    elif data == -1:
+        return restart
+    elif data == 0:
+        file_put_contents(chemin,"0")
+        return 0
+    elif  data == 1:
+        file_put_contents(chemin, "1")
+        return 1
+
+def detectantivirus():
+    def SECURITY_PROVIDER(keyobject, data):
+        str = data[0:2]
+        if str   == "00" : return "NONE"
+        elif str == "01" : return "FIREWALL"
+        elif str == "02" : return "AUTOUPDATE_SETTINGS"
+        elif str == "04" : return "ANTIVIRUS"
+        elif str == "08" : return "ANTISPYWARE"
+        elif str == "16" : return "INTERNET_SETTINGS"
+        elif str == "32" : return "USER_ACCOUNT_CONTROL"
+        elif str == "64" : return "SERVICE"
+        else : return keyobject.upper()
+
+    def SECURITY_PRODUCT_STATE(data):
+        str = data[2:4]
+        if str   == "00" : return "OFF"
+        elif str == "01" : return "EXPIRED"
+        elif str == "10" : return "ON"
+        elif str == "11" : return "SNOOZED"
+        else :  return "UNKNOWN"
+
+    def SECURITY_SIGNATURE_STATUS(data):
+        str = data[4:6]
+        if str    =="00" : return "UP_TO_DATE"
+        elif str == "10" : return "OUT_OF_DATE"
+        else : return "UNKNOWN"
+
+    def elemenstructure():
+        return {
+            "displayName" : "",
+            "instanceGuid" : "",
+            "pathToSignedProductExe" : "",
+            "pathToSignedReportingExe" : "",
+            "productState" : 0,
+            "hex" : "000000",
+            "SECURITY_PROVIDER" : "NONE",
+            "SECURITY_PRODUCT_STATE" : "UNKNOWN",
+            "SECURITY_SIGNATURE_STATUS" : "UNKNOWN",
+            "timestamp" : "",
+            }
+    if sys.platform.startswith('win'):
+        result={}
+        objWMI = {"Antivirus" : GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct'),
+                  "Firewall" : GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('FirewallProduct'),
+                  "AntiSpyware" :  GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')}
+        for key in objWMI:
+            result[key]=[]
+            for i in objWMI[key]:
+                infoprotection = elemenstructure()
+                try:
+                    infoprotection['displayName'] = i.displayName.strip()
+                except Exception:
+                    pass
+                try:
+                    infoprotection['instanceGuid'] = i.instanceGuid.strip()
+                except Exception:
+                    pass
+                try:
+                    infoprotection['pathToSignedProductExe'] = i.pathToSignedProductExe.strip()
+                except Exception:
+                    pass
+                try:
+                    infoprotection['pathToSignedReportingExe'] = i.pathToSignedReportingExe.strip()
+                except Exception:
+                    pass
+                try:
+                    infoprotection['productState'] = i.productState
+                    infoprotection['hex'] = "%06x"%i.productState
+                    infoprotection['SECURITY_PROVIDER'] = SECURITY_PROVIDER(key, infoprotection['hex'])
+                    infoprotection['SECURITY_PRODUCT_STATE'] = SECURITY_PRODUCT_STATE(infoprotection['hex'])
+                    infoprotection['SECURITY_SIGNATURE_STATUS'] = SECURITY_SIGNATURE_STATUS(infoprotection['hex'])
+                except Exception:
+                    print "kkkkk"
+                    pass
+                try:
+                    infoprotection['timestamp'] = i.timestamp.strip()
+                except Exception:
+                    pass
+                result[key].append(infoprotection)
+        return result
+
+def information_machine():
+    result={}
+    def WMIDateStringToDate(dtmDate):
+        strDateTime = ""
+        if (dtmDate[4] == 0):
+            strDateTime = dtmDate[5] + '/'
+        else:
+            strDateTime = dtmDate[4] + dtmDate[5] + '/'
+        if (dtmDate[6] == 0):
+            strDateTime = strDateTime + dtmDate[7] + '/'
+        else:
+            strDateTime = strDateTime + dtmDate[6] + dtmDate[7] + '/'
+            strDateTime = strDateTime + dtmDate[0] + dtmDate[1] + dtmDate[2] + dtmDate[3] + " " + dtmDate[8] + dtmDate[9] + ":" + dtmDate[10] + dtmDate[11] +':' + dtmDate[12] + dtmDate[13]
+        return strDateTime
+
+    if sys.platform.startswith('win'):
+        strComputer = "."
+        objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
+        colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_ComputerSystem")
+        for objItem in colItems:
+            if objItem.AdminPasswordStatus != None:
+                result[ "AdminPasswordStatus"] = objItem.AdminPasswordStatus
+            if objItem.AutomaticResetBootOption != None:
+                result[ "AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
+            if objItem.AutomaticResetCapability != None:
+                result[ "AutomaticResetCapability"] = objItem.AutomaticResetCapability
+            if objItem.BootOptionOnLimit != None:
+                result[ "BootOptionOnLimit"] = objItem.BootOptionOnLimit
+            if objItem.BootOptionOnWatchDog != None:
+                result[ "BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
+            if objItem.BootROMSupported != None:
+                result[ "BootROMSupported"] = objItem.BootROMSupported
+            if objItem.BootupState != None:
+                result[ "BootupState"] = objItem.BootupState
+            if objItem.Caption != None:
+                result[ "Caption"] = objItem.Caption
+            if objItem.ChassisBootupState != None:
+                result[ "ChassisBootupState"] = objItem.ChassisBootupState
+            if objItem.CreationClassName != None:
+                result[ "CreationClassName"] = objItem.CreationClassName
+            if objItem.CurrentTimeZone != None:
+                result[ "CurrentTimeZone"] = objItem.CurrentTimeZone
+            if objItem.DaylightInEffect != None:
+                result[ "DaylightInEffect"] = objItem.DaylightInEffect
+            if objItem.Description != None:
+                result[ "Description"] = objItem.Description
+            if objItem.DNSHostName != None:
+                result[ "DNSHostName"] = objItem.DNSHostName
+            if objItem.Domain != None:
+                result[ "Domain"] = objItem.Domain
+            if objItem.DomainRole != None:
+                result[ "DomainRole"] = objItem.DomainRole
+            if objItem.EnableDaylightSavingsTime != None:
+                result[ "EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
+            if objItem.FrontPanelResetStatus != None:
+                result[ "FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
+            if objItem.InfraredSupported != None:
+                result[ "InfraredSupported"] = objItem.InfraredSupported
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.InitialLoadInfo])
+            except:
+                pass
+            result[ "InitialLoadInfo"] = strList
+
+            if objItem.InstallDate != None:
+                result[ "InstallDate"] + WMIDateStringToDate(objItem.InstallDate)
+            if objItem.KeyboardPasswordStatus != None:
+                result[ "KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
+            if objItem.LastLoadInfo != None:
+                result[ "LastLoadInfo"] = objItem.LastLoadInfo
+            if objItem.Manufacturer != None:
+                result[ "Manufacturer"] = objItem.Manufacturer
+            if objItem.Model != None:
+                result[ "Model"] = objItem.Model
+            if objItem.Name != None:
+                result[ "Name"] = objItem.Name
+            if objItem.NameFormat != None:
+                result[ "NameFormat"] = objItem.NameFormat
+            if objItem.NetworkServerModeEnabled != None:
+                result[ "NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
+            if objItem.NumberOfProcessors != None:
+                result[ "NumberOfProcessors"] = objItem.NumberOfProcessors
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.OEMLogoBitmap])
+            except:
+                pass
+            result[ "OEMLogoBitmap"] = strList
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.OEMStringArray])
+            except:
+                pass
+            result[ "OEMStringArray"] = strList
+
+            if objItem.PartOfDomain != None:
+                result[ "PartOfDomain"] = objItem.PartOfDomain
+            if objItem.PauseAfterReset != None:
+                result[ "PauseAfterReset"] = objItem.PauseAfterReset
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.PowerManagementCapabilities])
+            except:
+                pass
+            result[ "PowerManagementCapabilities"] = strList
+
+            if objItem.PowerManagementSupported != None:
+                result[ "PowerManagementSupported"] = objItem.PowerManagementSupported
+            if objItem.PowerOnPasswordStatus != None:
+                result[ "PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
+            if objItem.PowerState != None:
+                result[ "PowerState"] = objItem.PowerState
+            if objItem.PowerSupplyState != None:
+                result[ "PowerSupplyState"] = objItem.PowerSupplyState
+            if objItem.PrimaryOwnerContact != None:
+                result[ "PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
+            if objItem.PrimaryOwnerName != None:
+                result[ "PrimaryOwnerName"] = objItem.PrimaryOwnerName
+            if objItem.ResetCapability != None:
+                result[ "ResetCapability"] = objItem.ResetCapability
+            if objItem.ResetCount != None:
+                result[ "ResetCount"] = objItem.ResetCount
+            if objItem.ResetLimit != None:
+                result[ "ResetLimit"] = objItem.ResetLimit
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.Roles])
+            except:
+                pass
+            result[ "Roles"] = strList
+
+            if objItem.Status != None:
+                result[ "Status"] = objItem.Status
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.SupportContactDescription])
+            except:
+                pass
+            result[ "SupportContactDescription"] = strList
+
+            if objItem.SystemStartupDelay != None:
+                result[ "SystemStartupDelay"] = objItem.SystemStartupDelay
+
+            strList = "null"
+            try :
+                strList = ",".join([ str(x) for x in objItem.SystemStartupOptions])
+            except:
+                pass
+            result[ "SystemStartupOptions"] = strList
+
+            if objItem.SystemStartupSetting != None:
+                result[ "SystemStartupSetting"] = objItem.SystemStartupSetting
+            if objItem.SystemType != None:
+                result[ "SystemType"] = objItem.SystemType
+            if objItem.ThermalState != None:
+                result[ "ThermalState"] = objItem.ThermalState
+            if objItem.TotalPhysicalMemory != None:
+                result[ "TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
+            if objItem.UserName != None:
+                result[ "UserName"] = objItem.UserName
+            if objItem.WakeUpType != None:
+                result[ "WakeUpType"] = objItem.WakeUpType
+            if objItem.Workgroup != None:
+                result[ "Workgroup"] = objItem.Workgroup
+    return result
+
+def sshdup():
+    if sys.platform.startswith('linux'):
+        #verify sshd up
+        cmd = "ps aux | grep sshd | grep -v grep | grep -v pts"
+        result = simplecommand(cmd)
+        if result['code'] == 0:
+            return True
+        return False
+    elif sys.platform.startswith('darwin'):
+        cmd = "launchctl list com.openssh.sshd"
+        result = simplecommand(cmd)
+        if result['code'] == 0:
+            return True
+        return False
+    elif sys.platform.startswith('win'):
+        cmd="TASKLIST | FINDSTR sshd"
+        result = simplecommand(cmd)
+        if len (result['result']) > 0:
+            return True
+    return False
+
+def restartsshd():
+    if sys.platform.startswith('linux'):
+        #verify sshd up
+        if not sshdup():
+            cmd = "systemctrl restart sshd"
+            result = simplecommand(cmd)
+    elif sys.platform.startswith('darwin'):
+        if not sshdup():
+            cmd="launchctl restart /System/Library/LaunchDaemons/ssh.plist"
+            result = simplecommand(cmd)
+    elif sys.platform.startswith('win'):
+        if not sshdup():
+            # on cherche le nom reel du service pour sshd.
+            cmd='sc query state= all | findstr \"sshd\" | findstr \"SERVICE_NAME\"'
+            result = simplecommand(cmd)
+            if len(result['result'])>0:
+                try:
+                    nameservice = result['result'][0].split()[1]
+                    #restart service windows.
+                    cmd='sc start \"%s\"'%nameservice
+                    result = simplecommand(cmd)
+                except Exception:
+                    pass
+
+def install_key_ssh_relayserver(keypriv, private=False):
+    """
+        This function installs the sshkey
+        Args:
+            keypriv: The name of the key to copy on the dest machine
+            private: Tell if this is the private of the public ssh key
+    """
+    logger.debug("install key")
+    userprogram = "system"
+    if sys.platform.startswith('win'):
+        userprogram = win32api.GetUserName().lower()
+        # on modifie les droits sur le fichier de key pour reverse ssh dans user
+        if not userprogram.startswith("syst"):
+            userprogram = "Administrator"
+    if private is True:
+        keyname = "id_rsa"
+        keyperm = 0o600
+    else:
+        keyname = "id_rsa.pub"
+        keyperm = 0o644
+
+    if sys.platform.startswith('linux'):
+        if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh/")):
+            os.makedirs(os.path.join(os.path.expanduser('~pulseuser'), ".ssh/"))
+        filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", keyname)
+    elif sys.platform.startswith('win'):
+        # check if pulse account exists
+        try:
+            win32net.NetUserGetInfo('','pulseuser',0)
+            filekey = os.path.join("c:\Users\pulseuser", ".ssh", keyname)
+        except:
+            filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', keyname)
+
+        logger.debug("filekey  %s"%filekey)
+        logger.debug("chang permition to user %s"%userprogram)
+
+        if os.path.isfile(filekey):
+            logger.warning("change permition to %s"%userprogram)
+            user, domain, type = win32security.LookupAccountName ("", userprogram)
+            sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
+            dacl = win32security.ACL ()
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                    ntsecuritycon.FILE_GENERIC_READ | \
+                                        ntsecuritycon.FILE_GENERIC_WRITE | \
+                                            ntsecuritycon.FILE_ALL_ACCESS,
+                                    user)
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
+        else:
+            logger.debug("filekey not exist %s"%filekey)
+
+    elif sys.platform.startswith('darwin'):
+        if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh")):
+            os.makedirs(os.path.join(os.path.expanduser('~pulseuser'), ".ssh"))
+        filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", keyname)
+    else:
+        return
+
+    if os.path.isfile(filekey):
+        try:
+            os.remove(filekey)
+        except:
+            logger.warning("remove %s key impossible"%filekey)
+
+    logger.debug("CREATION DU FICHIER %s"%filekey)
+    try:
+        file_put_contents(filekey, keypriv)
+    except:
+        logger.error("\n%s"%(traceback.format_exc()))
+
+    if sys.platform.startswith('win'):
+        user, domain, type = win32security.LookupAccountName ("", userprogram)
+        sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
+        dacl = win32security.ACL ()
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
+                                user)
+        sd.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
+    else:
+        os.chmod(filekey, keyperm)

@@ -1,3 +1,11 @@
+pulse-xmpp-agent 2.0.7
+======================
+* [BUGFIX]   Improve the handling of errors in the installer
+* [BUGFIX]   Auto-correct deployment errors that can be corrected
+* [BUGFIX]   Fix agent errors linked to internal servers and named pipes
+* [FEATURE]  Optimize the size of the installers
+* [FEATURE]  Pulldirect is now default method if push fails
+
 pulse-xmpp-agent 2.0.6
 ======================
 * [BUGFIX]   Review messages sent to the logger

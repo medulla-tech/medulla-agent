@@ -81,6 +81,7 @@ def read_conf_remote_update(objectxmpp):
         objectxmpp.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
         objectxmpp.autoupdate = True
         objectxmpp.generate_baseagent_fingerprint_interval = 900
+        objectxmpp.autoupdatebyrelay = False
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
