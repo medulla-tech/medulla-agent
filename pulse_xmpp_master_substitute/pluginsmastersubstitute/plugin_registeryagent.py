@@ -63,8 +63,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.info("** Detailed information for machine %s"%(str(msg['from'])))
                 showinfobool = True
                 break
-        else:
-            showinfobool = False
+            else:
+                showinfobool = False
         if "ALL" in listupt:
             showinfobool = True
         if 'action' in data and data['action'] == 'infomachine':
