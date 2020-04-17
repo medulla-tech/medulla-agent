@@ -326,15 +326,19 @@ Section "OpenSSH" sec_openssh
   SetOutPath "$INSTDIR\tmp"
   File "${CREATE_PROFILE_FILENAME}"
   ClearErrors
-  ${PowerShellExecLog} "import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser"
-  ${If} ${Errors}
+  nsExec::ExecToStack 'powershell -Command import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
     ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "pulseuser user profile creation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 109
     Quit
   ${EndIf}
+  ${LogString} "Return code was : $0"
   Delete $INSTDIR\tmp\${CREATE_PROFILE_FILENAME}
 
   ; Create .ssh folder and grant permissions
