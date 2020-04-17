@@ -393,7 +393,20 @@ Section "OpenSSH" sec_openssh
 
   ; Uninstall OpenSSH if found
   IfFileExists "$SSH_PATH" 0 +3
-  ${PowerShellExecFileLog} "$SSH_PATH\uninstall-sshd.ps1"
+  SetOutPath $SSH_PATH
+  nsExec::ExecToStack 'powershell -Command ./uninstall-sshd.ps1'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 142
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
   RMDir /r "$SSH_PATH"
   ; Uninstall Mandriva SSH if found
   IfFileExists $PROGRAMFILES\Mandriva\OpenSSH 0 +5
