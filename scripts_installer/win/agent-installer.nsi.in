@@ -429,15 +429,20 @@ Section "OpenSSH" sec_openssh
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${PowerShellExecFileLog} "$SSH_PATH\install-sshd.ps1"
-  ${If} ${Errors}
+  SetOutPath $SSH_PATH
+  nsExec::ExecToStack 'powershell -Command ./install-sshd.ps1'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "ssh installation failed. $\n\
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "SSH installation failed. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 112
     Quit
   ${EndIf}
+  ${LogString} "Return code was : $0"
 
   ; Configure SSH server
   ClearErrors
