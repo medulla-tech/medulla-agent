@@ -392,8 +392,9 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Uninstall OpenSSH if found
-  ClearErrors
-  IfFileExists "$SSH_PATH" 0 +3
+  ${LogString} "SSH_PATH : $SSH_PATH"
+  IfFileExists "$SSH_PATH\uninstall-sshd.ps1" 0 +3 file_found file_not_found
+  file_found:
   SetOutPath $SSH_PATH
   nsExec::ExecToStack 'powershell -Command .\uninstall-sshd.ps1'
   Pop $0
@@ -426,7 +427,6 @@ Section "OpenSSH" sec_openssh
   ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
   ${LogString} "SSH_PATH : $SSH_PATH"
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
-  ClearErrors
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
