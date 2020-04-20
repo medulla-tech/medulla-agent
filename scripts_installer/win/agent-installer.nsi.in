@@ -437,7 +437,6 @@ Section "OpenSSH" sec_openssh
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
-
   SetOutPath $SSH_PATH
   nsExec::ExecToStack 'powershell -Command .\install-sshd.ps1'
   Pop $0
