@@ -64,6 +64,7 @@ RequestExecutionLevel admin
 !define SYNCTHING32_FILENAME "@@SYNCTHING32_FILENAME@@"
 !define SYNCTHING64_FILENAME "@@SYNCTHING64_FILENAME@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
+!define REMOVE_PROFILE_FILENAME "@@REMOVE_PROFILE_FILENAME@@"
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
 !define NETCHECK_SERVICE_FILENAME "@@NETCHECK_SERVICE_FILENAME@@"
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
@@ -274,6 +275,7 @@ Section "OpenSSH" sec_openssh
     @@FULL_OR_DL_OPENSSH32@@
   ${EndIf}
   @@FULL_OR_DL_RSYNC@@
+  File "${REMOVE_PROFILE_FILENAME}"
 
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
@@ -282,25 +284,19 @@ Section "OpenSSH" sec_openssh
   Call RemovePulseUser
 
   ; Remove previous Pulse profile and account
-  Var /GLOBAL P_PROFILE
-  !insertmacro StrRep $0 ${USERDIR} "\" "\\"
-  Pop $0
-  StrCpy $P_PROFILE $0
-  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
+  ${PowerShellExecFileLog} "$INSTDIR\tmp\${REMOVE_PROFILE_FILENAME} -UserName pulse"
+  ClearErrors
+  ${PowerShellExecFileLog} "$INSTDIR\tmp\${REMOVE_PROFILE_FILENAME} -UserName pulseuser"
+  ${If} ${Errors}
     ${IfNot} ${Silent}
-	MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
-        Please reboot your computer and re-run the installer. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 138
     Quit
   ${EndIf}
   RMDir /r "${USERDIR}\pulse*"
+  Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
   ; Create Pulse user
   pwgen::GeneratePassword 12
@@ -1283,15 +1279,21 @@ Section "Uninstall"
   RMDir /r /REBOOTOK "$INSTDIR"
 
   ; Remove Pulse profile
-  !insertmacro StrRep $0 ${USERDIR} "\" "\\"
-  Pop $0
-  StrCpy $P_PROFILE $0
-  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  SetOutPath "$INSTDIR\tmp"
+  File "${REMOVE_PROFILE_FILENAME}"
+  ${PowerShellExecFileLog} "$INSTDIR\tmp\${REMOVE_PROFILE_FILENAME} -UserName pulse"
+  ClearErrors
+  ${PowerShellExecFileLog} "$INSTDIR\tmp\${REMOVE_PROFILE_FILENAME} -UserName pulseuser"
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 138
+    Quit
+  ${EndIf}
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
+  Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"

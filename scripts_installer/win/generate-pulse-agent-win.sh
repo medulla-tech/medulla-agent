@@ -108,6 +108,7 @@ SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.1.0.zip"
 SYNCTHING32_FILENAME="syncthing32.exe"
 SYNCTHING64_FILENAME="syncthing64.exe"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
+REMOVE_PROFILE_FILENAME="remove-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler.ini"
@@ -402,6 +403,7 @@ update_nsi_script() {
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
         -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
         -e "s/@@CREATE_PROFILE_FILENAME@@/${CREATE_PROFILE_FILENAME}/" \
+        -e "s/@@REMOVE_PROFILE_FILENAME@@/${REMOVE_PROFILE_FILENAME}/" \
         -e "s/@@PULSE_SERVICE_FILENAME@@/${PULSE_SERVICE_FILENAME}/" \
         -e "s/@@NETCHECK_SERVICE_FILENAME@@/${NETCHECK_SERVICE_FILENAME}/" \
         -e "s/@@NETCHECK_PROGRAM_FILENAME@@/${NETCHECK_PROGRAM_FILENAME}/" \
