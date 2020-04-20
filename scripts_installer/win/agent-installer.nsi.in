@@ -331,7 +331,7 @@ Section "OpenSSH" sec_openssh
   Pop $1
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
+	${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "pulseuser user profile creation failed. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -392,9 +392,10 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Uninstall OpenSSH if found
+  ClearErrors
   IfFileExists "$SSH_PATH" 0 +3
   SetOutPath $SSH_PATH
-  nsExec::ExecToStack 'powershell -Command ./uninstall-sshd.ps1'
+  nsExec::ExecToStack 'powershell -Command .\uninstall-sshd.ps1'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -406,6 +407,10 @@ Section "OpenSSH" sec_openssh
     SetErrorLevel 142
     Quit
   ${EndIf}
+  file_not_found:
+  ${LogString} "No previous SSH found"
+  end_of_test:
+  SetOutPath $SSH_PATH
   ${LogString} "Return code was : $0"
   RMDir /r "$SSH_PATH"
   ; Uninstall Mandriva SSH if found
@@ -418,7 +423,10 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
+  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
+  ${LogString} "SSH_PATH : $SSH_PATH"
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
+  ClearErrors
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -429,15 +437,21 @@ Section "OpenSSH" sec_openssh
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${PowerShellExecFileLog} "$SSH_PATH\install-sshd.ps1"
-  ${If} ${Errors}
+
+  SetOutPath $SSH_PATH
+  nsExec::ExecToStack 'powershell -Command .\install-sshd.ps1'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "ssh installation failed. $\n\
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "SSH installation failed. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 112
     Quit
   ${EndIf}
+  ${LogString} "Return code was : $0"
 
   ; Configure SSH server
   ClearErrors
@@ -618,24 +632,138 @@ Section "OpenSSH" sec_openssh
 
   ; Check and configure permissions
   ClearErrors
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub"
-  ${PowerShellExecLog} "cd $\"$SSH_PATH$\" ; import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys"
-  ${If} ${Errors}
+
+SetOutPath $SSH_PATH
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : sshd_config. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 118
     Quit
   ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_dsa_key. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_dsa_key.pub. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ecdsa_key. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ecdsa_key.pub. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ed25519_key. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ed25519_key.pub. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_rsa_key. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_rsa_key.pub. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
+  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys'
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${IfNot} ${Silent}
+        ${LogString} "Return output : $1"
+        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : authorized_keys. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 118
+    Quit
+  ${EndIf}
+  ${LogString} "Return code was : $0"
 
   ; Start the service
   StrCpy $0 `sc start ssh-agent`
@@ -1482,7 +1610,7 @@ FunctionEnd
         StrCpy $0 `No previous installation`
         ${Break}
     ${Default}
-         ${LogString}`Something else happened : $1`
+        ${LogString} `Something else happened : $1`
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse agent stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
@@ -1514,7 +1642,7 @@ FunctionEnd
         StrCpy $0 `No previous installation`
         ${Break}
     ${Default}
-         ${LogString}`Something else happened : $1`
+        ${LogString} `Something else happened : $1`
 	${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse network notify stop failed. $\n\
