@@ -63,8 +63,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.info("** Detailed information for machine %s"%(str(msg['from'])))
                 showinfobool = True
                 break
-        else:
-            showinfobool = False
+            else:
+                showinfobool = False
         if "ALL" in listupt:
             showinfobool = True
         if 'action' in data and data['action'] == 'infomachine':
@@ -732,9 +732,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 xmppobject.boundjid.bare)
                 return
 
-            logger.info("Machine %s registered with %s" %
-                                            (msg['from'], machine['id']))
-            XmppMasterDatabase().setlogxmpp("Machine %s registered with %s" % (msg['from'], machine['id']),
+            logger.info("Machine %s registered with %s" % msg['from'])
+            XmppMasterDatabase().setlogxmpp("Machine %s registered with %s" % msg['from'],
                                             "info",
                                             sessionid,
                                             -1,
@@ -762,7 +761,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                         function_plugin))
                 except Exception as e:
                     logger.error("Error on machine %s : %s\n%s"%(msg['from'], str(e), traceback.format_exc()))
-                    XmppMasterDatabase().setlogxmpp("Error on machine %s : %s" % (msg['from'], str(e))),
+                    XmppMasterDatabase().setlogxmpp("Error on machine %s : %s" % (msg['from'], str(e)),
                                                     "info",
                                                     sessionid,
                                                     -1,

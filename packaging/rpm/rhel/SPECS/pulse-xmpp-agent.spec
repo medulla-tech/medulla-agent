@@ -140,6 +140,7 @@ fi
 %{python2_sitelib}/pulse_xmpp_agent/pluginsmachine
 %{python2_sitelib}/pulse_xmpp_agent/script/getlastuser.ps1
 %{python2_sitelib}/pulse_xmpp_agent/script/create-profile.ps1
+%{python2_sitelib}/pulse_xmpp_agent/script/remove-profile.ps1
 %{python2_sitelib}/pulse_xmpp_agent/agentversion
 %{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay
 %{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/*.py*
@@ -419,6 +420,7 @@ chmod +x %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES/pulse-filetr
 mv pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/mac
 chmod +x %buildroot%_var/lib/pulse2/clients/mac/pulse-filetree-generator
 cp scripts_installer/win/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
+cp scripts_installer/win/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
