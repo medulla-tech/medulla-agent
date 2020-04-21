@@ -73,34 +73,123 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             logger.error("Error name folder")
             #to do send message de fin de deployement sur error
             return
-        packagedir = os.path.join( managepackage.packagedir(), namefolder)
-        logger.debug("packagedir %s"%packagedir)
-        ###"filebase64":
-        filetmp =  os.path.join(tempfile.gettempdir(), "%s.gz"%namefolder)
-        # ecrit file gz
-        logger.debug("create file %s"%filetmp)
-        with open(filetmp, 'wb') as f:
-            f.write(base64.b64decode(data['filebase64']))
-        extract_file(filetmp, to_directory = managepackage.packagedir(), compresstype="gz")
-        if os.path.exists(filetmp):
-            os.remove(filetmp)
-        
         #creation session
         datasend = {  'action': "applicationdeploymentjson",
                       'sessionid': sessionid,
                       'data' :  data['descriptor'],
                       'ret' : 0,
                       'base64' : False}
+        packagedir = os.path.join( managepackage.packagedir(), namefolder)
+        logger.debug("packagedir %s"%packagedir)
+        ###"filebase64":
+        filetmp =  os.path.join(tempfile.gettempdir(), "%s.gz"%namefolder)
+        # ecrit file gz
+        logger.debug("create file %s"%filetmp)
+        objectxmpp.xmpplog('Transfer terminate',
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | Transfer",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+        with open(filetmp, 'wb') as f:
+            f.write(base64.b64decode(data['filebase64']))
+        if extract_file(filetmp, to_directory = managepackage.packagedir(), compresstype="gz"):
+            objectxmpp.xmpplog('Package decompress Ok',
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | Transfer",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+        else:
+            objectxmpp.xmpplog('decompression archive Package KO',
+                    type = 'deploy',
+                    sessionname = sessionid,
+                    priority = -1,
+                    action = "xmpplog",
+                    who = strjidagent,
+                    module = "Deployment| Notify | Transfer",
+                    date = None ,
+                    fromuser = datasend['data']['advanced']['login'])
+            objectxmpp.xmpplog('TERMINATE DEPLOY',
+                    type = 'deploy',
+                    sessionname = sessionid,
+                    priority = -1,
+                    action = "xmpplog",
+                    who = strjidagent,
+                    module = "Deployment| Notify | ABORT",
+                    date = None ,
+                    fromuser = datasend['data']['advanced']['login'])
+            return
+        if os.path.exists(filetmp):
+            os.remove(filetmp)
+        
+       
         datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),
                                                                  namefolder )
         
         # on prepare sequence en fonction de l'os.
-        cleandescriptor(datasend['data'])
-        #logger.debug("pakage sequence : %s"%json.dumps(datasend, indent=4))
+        if not cleandescriptor(datasend['data']):
+            objectxmpp.xmpplog('This package is not intended for the operating system. %s'%sys.platform,
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | BADOS",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+            objectxmpp.xmpplog('TERMINATE DEPLOY',
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | BADOS",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+            return
+        objectxmpp.xmpplog('Transfer terminate',
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | Transfer",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+        logger.debug("pakage sequence : %s"%json.dumps(datasend, indent=4))
+
         objectxmpp.session.createsessiondatainfo(sessionid,
                                                  datasession =  datasend['data'],
                                                  timevalid = 180)
-        initialisesequence(datasend, objectxmpp, sessionid )
+        try:
+            initialisesequence(datasend, objectxmpp, sessionid )
+        except Exception as e:
+            objectxmpp.xmpplog('Initialisation Dployement error %s'%str(e),
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | BADOS",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+            objectxmpp.xmpplog('TERMINATE DEPLOY',
+                        type = 'deploy',
+                        sessionname = sessionid,
+                        priority = -1,
+                        action = "xmpplog",
+                        who = strjidagent,
+                        module = "Deployment| Notify | BADOS",
+                        date = None ,
+                        fromuser = datasend['data']['advanced']['login'])
+            return
         #grafcet(objectxmpp,datasend) #grafcet will use the session
         logger.debug("outing graphcet phase1")
 
@@ -209,4 +298,3 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
         logger.warning("launcher command missing for kiosk")
     grafcet(objectxmpp, datasend)
     logger.debug("outing graphcet end initiation")
-

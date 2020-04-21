@@ -565,7 +565,7 @@ class confParameter:
             self.jidchatroomcommand = self.jidagent
         else:
             self.jidchatroomcommand = str(self.agentcommand)
-        self.max_size_stanza_xmpp = 7340032
+        self.max_size_stanza_xmpp = 2097152
         if Config.has_option("quick_deploy", "max_size_stanza_xmpp"):
             self.max_size_stanza_xmpp = Config.getint("quick_deploy",
                                                     "max_size_stanza_xmpp")
