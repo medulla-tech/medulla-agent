@@ -32,8 +32,8 @@ import platform
 from lib.utils import simplecommandstr, \
                       simplecommand, \
                       encode_strconsole, \
-                      file_get_contents, extract_file
-                      
+                      file_get_contents, \
+                          extract_file
 import copy
 import traceback
 import time
@@ -46,7 +46,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.0", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "1.01", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -60,17 +60,25 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         # install le package
         # creation du repertoire pour mettre le package.
         logger.debug("%s"%json.dumps(data, indent=4))
-        namefolder = data['descriptor']['descriptor']['info']['packageUuid']
+        if 'namepackage' in data:
+            namefolder = data['namepackage']
+        elif 'descriptor' in data and 'path' in data['descriptor']:
+            namefolder = os.path.basename(data['descriptor']['path'])
+        elif 'descriptor' in data and 'info' in data['descriptor'] and \
+                 'packageUuid' in data['descriptor']['info']:
+            namefolder = data['descriptor']['info']['packageUuid']
+        elif 'path'  in data:
+            namefolder = os.path.basename(data['path'])
+        else:
+            logger.error("Error name folder")
+            #to do send message de fin de deployement sur error
+            return
         packagedir = os.path.join( managepackage.packagedir(), namefolder)
-        logger.debug("%s"%packagedir)
+        logger.debug("packagedir %s"%packagedir)
         ###"filebase64":
         filetmp =  os.path.join(tempfile.gettempdir(), "%s.gz"%namefolder)
-        #dirtmp = tempfile.mkdtemp()
         # ecrit file gz
-        # tempfile.gettempdir()
-        logger.debug("data base 64 %s"%data['filebase64'])
-        logger.error("create file %s"%filetmp)
-        logger.error("packagedir %s"%managepackage.packagedir())
+        logger.debug("create file %s"%filetmp)
         with open(filetmp, 'wb') as f:
             f.write(base64.b64decode(data['filebase64']))
         extract_file(filetmp, to_directory = managepackage.packagedir(), compresstype="gz")
@@ -84,27 +92,19 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                       'ret' : 0,
                       'base64' : False}
         datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),
-                                                      datasend['data']['descriptor']['info']['packageUuid'] )
+                                                                 namefolder )
         
         # on prepare sequence en fonction de l'os.
         cleandescriptor(datasend['data'])
-        logger.debug("datasend aaaa is %s"%json.dumps(datasend, indent=4))
-        
+        #logger.debug("pakage sequence : %s"%json.dumps(datasend, indent=4))
         objectxmpp.session.createsessiondatainfo(sessionid,
                                                  datasession =  datasend['data'],
                                                  timevalid = 180)
         initialisesequence(datasend, objectxmpp, sessionid )
         #grafcet(objectxmpp,datasend) #grafcet will use the session
         logger.debug("outing graphcet phase1")
-        
-        
+
 def cleandescriptor(datasend):
-    
-    
-    logger.error("cleandescriptor")
-    
-    logger.debug("datasend bbb is %s"%json.dumps(datasend, indent=4))
-    
     if sys.platform.startswith('linux'):
         try:
             del datasend['descriptor']['win']

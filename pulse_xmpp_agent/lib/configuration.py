@@ -564,7 +564,6 @@ class confParameter:
         if self.agenttype == "relayserver":
             self.jidchatroomcommand = self.jidagent
         else:
-            self.relayserverdeploy = jid.JID(self.agentcommand)
             self.jidchatroomcommand = str(self.agentcommand)
         self.max_size_stanza_xmpp = 7340032
         if Config.has_option("quick_deploy", "max_size_stanza_xmpp"):

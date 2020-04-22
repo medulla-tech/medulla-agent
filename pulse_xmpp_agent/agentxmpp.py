@@ -114,6 +114,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                  eventkillpipe):#jid, password, room, nick):
         logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent,
                                                                conf.agenttype))
+        #create mutex
+        #
+        self.mutex = threading.Lock()
         self.eventkilltcp = eventkilltcp
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp

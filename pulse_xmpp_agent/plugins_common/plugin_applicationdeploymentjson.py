@@ -34,7 +34,11 @@ from lib.utils import save_back_to_deploy, \
                       simplecommandstr, \
                       simplecommand, \
                       encode_strconsole, \
-                      file_get_contents
+                      file_get_contents, \
+                      _path_package, \
+                      qdeploy_generate, \
+                      _path_packagequickaction, \
+                      get_message_xmpp_quick_deploy
 import copy
 import traceback
 import time
@@ -48,7 +52,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.19", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.191", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -685,12 +689,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         ###self.mutex
         logger.debug("%s"%json.dumps(data, indent=4))
 
+        namefolder = None
+        msgdeploy=[]
         if 'descriptor' in data and \
             'info' in data['descriptor'] and \
                 'packageUuid' in data['descriptor']['info']:
             # on gener package si possible
-            msgdeploy=[]
             namefolder = data['descriptor']['info']['packageUuid']
+        elif 'path'  in data:
+            namefolder = os.path.basename(data['path'])
+
+        if  namefolder is not None:
             folder = os.path.join(_path_package(), namefolder)
             pathaqpackage = os.path.join(_path_packagequickaction(), namefolder)
             pathxmpppackage = "%s.xmpp"%pathaqpackage
