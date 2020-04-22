@@ -38,6 +38,7 @@ var/lib/pulse2/clients/win/artwork/install.ico
 var/lib/pulse2/clients/win/artwork/uninstall.ico
 var/lib/pulse2/clients/win/artwork/wizard.bmp
 var/lib/pulse2/clients/win/create-profile.ps1
+var/lib/pulse2/clients/win/remove-profile.ps1
 var/lib/pulse2/clients/win/generate-pulse-agent-win.sh
 var/lib/pulse2/clients/win/libs/LogString.nsh
 var/lib/pulse2/clients/win/libs/StrRep.nsh

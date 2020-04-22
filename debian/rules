@@ -177,7 +177,8 @@ override_dh_auto_install:
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/rpm/package/SOURCES/pulse-filetree-generator
 	mv pulse-filetree-generator $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/pulse-filetree-generator
-	cp scripts_installer/win/create-profile.ps1 $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+	cp pulse_xmpp_agent/script/create-profile.ps1 $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+	cp pulse_xmpp_agent/script/remove-profile.ps1 $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/pulse-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/netcheck-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
