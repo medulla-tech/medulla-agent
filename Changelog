@@ -32,6 +32,7 @@ pulse-xmpp-agent 2.0.3
 			connections if no server is available
 * [BUGFIX]  Fix agent configuration when Pulse server is not available when
 			configurator runs
+* [BUGFIX]  Fixe error search last name user on windows
 
 pulse-xmpp-agent 2.0.2
 ======================
