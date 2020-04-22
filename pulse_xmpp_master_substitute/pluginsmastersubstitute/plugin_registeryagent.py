@@ -5,9 +5,12 @@
 # file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_registeryagent.py
 #
 
+import zlib
 import base64
 import traceback
 import os
+import sys
+import urllib2
 
 import time
 import json
@@ -20,7 +23,7 @@ from lib.manageRSAsigned import MsgsignedRSA
 from sleekxmpp import jid
 from lib.utils import getRandomName
 import re
-from distutils.version import LooseVersion
+from distutils.version import LooseVersion, StrictVersion
 import ConfigParser
 
 # this import will be used later
