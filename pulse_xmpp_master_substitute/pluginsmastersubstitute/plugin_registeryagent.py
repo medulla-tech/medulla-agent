@@ -564,7 +564,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         (str(i['macaddress']), msg['from']))
                         logger.info("Adding network card %s to the machine %s id #%s"%(i['macaddress'],
                                                                                     msg['from'],
-                                                                               idmachine))
+                                                                                    idmachine))
                     XmppMasterDatabase().addPresenceNetwork(i['macaddress'],
                                                             i['ipaddress'],
                                                             broadcast, i['gateway'],
