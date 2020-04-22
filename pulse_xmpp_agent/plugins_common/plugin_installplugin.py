@@ -30,17 +30,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
     if action == 'installplugin':
         if len(data) != 0 :
             namefile =  os.path.join(objectxmpp.config.pathplugins, data['pluginname'])
-            logger.info("install plugin %s "% data['pluginname'])
+            logger.info("Installing plugin %s "% data['pluginname'])
             try:
                 fileplugin = open(namefile, "w")
                 fileplugin.write(str(data['datafile']))
                 fileplugin.close()
                 dataerreur['ret'] = 0
-                dataerreur['data']['msg'] = "install plugin %s on %s"%(data['pluginname'],
+                dataerreur['data']['msg'] = "Installing plugin %s on %s"%(data['pluginname'],
                                                                        message['to'].user)
             except Exception, e:
                 logging.getLogger().debug("error : %s"%str(e))
-                dataerreur['data']['msg'] = "install plugin %s on %s : %s"%(data['pluginname'],
+                dataerreur['data']['msg'] = "Installing plugin %s on %s : %s"%(data['pluginname'],
                                                                             message['to'].user,
                                                                             str(e))
                 dataerreur['ret'] = 255
