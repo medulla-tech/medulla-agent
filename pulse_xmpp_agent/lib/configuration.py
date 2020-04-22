@@ -566,6 +566,10 @@ class confParameter:
         else:
             self.relayserverdeploy = jid.JID(self.agentcommand)
             self.jidchatroomcommand = str(self.agentcommand)
+        self.max_size_stanza_xmpp = 7340032
+        if Config.has_option("quick_deploy", "max_size_stanza_xmpp"):
+            self.max_size_stanza_xmpp = Config.getint("quick_deploy",
+                                                    "max_size_stanza_xmpp")
 
         # we make sure that the temp for the
         # inventories is greater than or equal to 1 hour.

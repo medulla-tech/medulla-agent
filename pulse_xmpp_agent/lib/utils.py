@@ -2171,3 +2171,197 @@ def install_key_ssh_relayserver(keypriv, private=False):
         win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
     else:
         os.chmod(filekey, keyperm)
+
+
+def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
+    """
+        creation archive tar.gz or tat.bz2
+        compresstype "gz" or "bz2"
+    """
+    try:
+        with tarfile.open(output_file_gz_bz2, "w:%s"%compresstype) as tar:
+            tar.add(source_dir, arcname=os.path.basename(source_dir))
+        return True
+    except Exception:
+        logger.error("error create archive tar.%s %s"%(str(e),compresstype))
+        return False
+
+def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
+    """
+        extract archive tar.gz or tat.bz2
+        compresstype "gz" or "bz2"
+    """
+    cwd = os.getcwd()
+    absolutepath = os.path.abspath(imput_file__gz_bz2)
+    try:
+        os.chdir(to_directory)
+        with tarfile.open(absolutepath, "r:%s"%compresstype) as tar:
+            tar.extractall()
+    except OSError as e:
+        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        return False
+    except Exception:
+        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        return False
+    finally:
+        os.chdir(cwd)
+    return True
+
+def find_files(directory, pattern):
+    """
+        use f
+    """
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = str(os.path.join(root, basename))
+                yield filename
+
+def listfile(directory, abspath=True):
+    listfile=[]
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if abspath:
+                listfile.append(os.path.join(root, basename))
+            else:
+                listfile.append(os.path.join(basename))
+    return listfile
+
+def md5folder(directory):
+    hash = hashlib.md5()
+    strmdr=[]
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            hash.update(md5(os.path.join(root, basename)))
+    return hash.hexdigest()
+
+def _path_package():
+    return os.path.join("/", "var", "lib", "pulse2", "packages")
+
+def _path_packagequickaction():
+    pathqd = os.path.join("/", "var", "lib", "pulse2", "qpackages")
+    if not os.path.isdir(pathqd):
+        try:
+            os.makedirs(pathqd)
+        except OSError as e:
+            logger.error("creation folder for quick deploy"%(str(e)))
+    return pathqd
+
+def qdeploy_generate(folder, max_size_stanza_xmpp):
+    try:
+        namepackage = os.path.basename(folder)
+        pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+        pathxmpppackage = "%s.xmpp"%pathaqpackage
+
+        # if dependence in package ne pas generer le qpackage
+        with open(os.path.join(folder, 'xmppdeploy.json')) as json_data:
+            data_dict = json.load(json_data)
+        if len(data_dict['info']['Dependency'])>0:
+            logger.debug("dependecy in package %s. on ne genere pas de qpackage"%(pathxmpppackage))
+            logger.debug("del quick package if exists %s"%(pathxmpppackage))
+            try:
+                if "qpackages" in pathaqpackage:
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+            return 3
+
+        if os.path.exists(pathxmpppackage) and \
+            int((time.time()-os.stat(pathxmpppackage).st_mtime))/60 < 10:
+            logger.debug("inutile de genere xmpp package %s"%(pathxmpppackage))
+            simplecommand("touch -c %s"%pathxmpppackage)
+            return 2
+        else:
+            logger.debug("del quick package if exists %s"%(pathxmpppackage))
+            try:
+                if "qpackages" in pathaqpackage:
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+        logger.debug("verify for create Quick package")
+
+        result = simplecommand("du -b %s"%folder)
+        #logger.debug("cmd %s"%"du -b %s"%folder)
+        taillebytefolder = int(result['result'][0].split()[0])
+        if taillebytefolder > max_size_stanza_xmpp:
+            logger.debug("package size too large to prepare quick package.\n%s"\
+                " greater than max_size_stanza_xmpp %s"%(taillebytefolder,
+                                                         max_size_stanza_xmpp))
+            logger.debug("del quick package if exists %s"%(pathxmpppackage))
+            try:
+                if "qpackages" in pathaqpackage:
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+            return 6
+            ### creation d'un targetos
+        logger.debug("prepare quick deploy package for package %s"%(namepackage))
+        calculemd5 = md5folder(pathaqpackage)
+
+        if os.path.exists("%s.md5"%pathaqpackage):
+            content = file_get_contents("%s.md5"%pathaqpackage)
+            if content==calculemd5:
+                #pas de modifications du package
+                logger.debug("quick package exist")
+                #creation only si if fille missing
+                create_msg_xmpp_quick_deploy(folder, create = False)
+                return 1
+        file_put_contents("%s.md5"%pathaqpackage, calculemd5)
+        create_msg_xmpp_quick_deploy(folder, create = True)
+        return 0
+    except Exception:
+        logger.error("error generate qpackage : %s"%folder)
+        logger.error("%s"%(traceback.format_exc()))
+        try:
+            if "qpackages" in pathaqpackage:
+                simplecommand("rm %s.*"%pathaqpackage)
+        except Exception:
+            pass
+        return 100
+
+def get_message_xmpp_quick_deploy(folder, sessionid):
+    # read le fichier
+    namepackage = os.path.basename(folder)
+    pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+    with open("%s.xmpp"%pathaqpackage, 'r') as f:
+        data = f.read()
+    return data.replace("@-JFKSPOKNONEOCLUSTGLA@", sessionid, 1)
+
+def get_template_message_xmpp_quick_deploy(folder):
+    # read le fichier
+    namepackage = os.path.basename(folder)
+    pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+    with open("%s.xmpp"%pathaqpackage, 'r') as f:
+        data = f.read()
+    return data
+
+def get_xmpp_message_with_sessionid(template_message, sessionid):
+    # read le fichier
+    return template_message.replace("@-JFKSPOKNONEOCLUSTGLA@", sessionid, 1)
+
+def create_msg_xmpp_quick_deploy(folder, create = False):
+    namepackage = os.path.basename(folder)
+    pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+    # create compress file folder
+    if not os.path.exists("%s.xmpp"%pathaqpackage) or create:
+        logger.debug("create archive compress %s.gz"%pathaqpackage)
+        make_tarfile("%s.gz"%pathaqpackage, folder, compresstype="gz")
+        with open("%s.gz"%pathaqpackage, 'rb') as f:
+            dataraw = base64.b64encode(f.read())
+        msgxmpptemplate= """{  "sessionid" : "@-JFKSPOKNONEOCLUSTGLA@",
+                "action" : "qdeploy",
+                "data": { "nbpart" : 1,
+                          "part"   : 1,
+                          "namepackage":"%s",
+                          "filebase64" : "%s"}}"""%( namepackage, dataraw )
+        try:
+            logger.debug("write new Quick pakage %s.xmpp"%pathaqpackage)
+            with open("%s.xmpp"%pathaqpackage, 'w') as f:
+                f.write(msgxmpptemplate)
+            #le fichier compresser est inutile
+            if os.path.exists("%s.gz"%pathaqpackage):
+                os.remove("%s.gz"%pathaqpackage)
+        except Exception:
+            logger.error("%s"%(traceback.format_exc()))
+    else:
+        logger.debug("Quick pakage %s.xmpp always exist"%pathaqpackage)
