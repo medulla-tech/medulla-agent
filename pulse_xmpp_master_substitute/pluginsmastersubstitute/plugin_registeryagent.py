@@ -4,14 +4,12 @@
 # plugin register machine dans presence table xmpp.
 # file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_registeryagent.py
 #
-
 import zlib
 import base64
 import traceback
 import os
 import sys
 import urllib2
-
 import time
 import json
 import logging
