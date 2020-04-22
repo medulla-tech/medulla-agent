@@ -3825,7 +3825,9 @@ class XmppMasterDatabase(DatabaseHelper):
             Field "netmaskaddress" is used to define the net mask address for association
             Field "relayserver_id" is used to define the Relayserver to be assigned to the machines matching that rule
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver will be in the relayserver reserve to a use of the private machine.
+            If classutilMachine is deprived then the choice of relayserver 
+                will be in the relayserver reserve to a use of the private machine.
+
         """
         if classutilMachine == "private":
             sql = """select `relayserver`.`id`
