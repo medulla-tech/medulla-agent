@@ -1375,7 +1375,7 @@ Section "Uninstall"
     ${LogString} "OpenSSH uninstall.."
     ${LogString} "------------------------------------------------------"
     setOutPath $PROGRAMFILES64\${OPENSSH_NAME}
-    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1"
+    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1'
     pop $0
     pop $1
     ${IfNot} $0 == 0
@@ -1392,7 +1392,7 @@ Section "Uninstall"
     ${LogString} "OpenSSH uninstall.."
     ${LogString} "------------------------------------------------------"
     setOutPath $PROGRAMFILES\${OPENSSH_NAME}
-    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1"
+    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1'
     pop $0
     pop $1
     ${IfNot} $0 == 0
