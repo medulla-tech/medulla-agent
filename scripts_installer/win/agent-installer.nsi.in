@@ -108,6 +108,7 @@ SetCompressor lzma
 !include "Junction.nsh"
 
 Var OS_LANGUAGE
+Var CMD_POWERSHELL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -126,13 +127,11 @@ ShowInstDetails show
 ; Define a few settings
 Section -SETTINGS
   SetOutPath "$INSTDIR"
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
 !macro DownloadFile url filename
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
   ${LogString} "Downloading ${url}"
   inetc::get /NOCANCEL ${url} ${filename} /END
   Pop $0 ;Get the return value
@@ -151,6 +150,9 @@ SectionEnd
 ; ####################### Python installation #######################
 Section "Python" sec_py
   SetOutPath "$INSTDIR\tmp"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
   @@FULL_OR_DL_PYTHON64@@
   ; 32bit python installer is needed in any case as it is used to uninstall
   ; a previous 32bit version if found
@@ -269,6 +271,9 @@ SectionEnd
 ; ####################### OpenSSH installation #######################
 Section "OpenSSH" sec_openssh
   SetOutPath "$INSTDIR\tmp"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
   ${If} ${RunningX64}
     @@FULL_OR_DL_OPENSSH64@@
   ${Else}
@@ -322,7 +327,7 @@ Section "OpenSSH" sec_openssh
   SetOutPath "$INSTDIR\tmp"
   File "${CREATE_PROFILE_FILENAME}"
   ClearErrors
-  nsExec::ExecToStack 'powershell -Command import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -388,11 +393,10 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Uninstall OpenSSH if found
-  ${LogString} "SSH_PATH : $SSH_PATH"
-  IfFileExists "$SSH_PATH\uninstall-sshd.ps1" 0 +3 file_found file_not_found
-  file_found:
   SetOutPath $SSH_PATH
-  nsExec::ExecToStack 'powershell -Command .\uninstall-sshd.ps1'
+  IfFileExists "uninstall-sshd.ps1" file_found file_not_found
+  file_found:
+  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -404,11 +408,12 @@ Section "OpenSSH" sec_openssh
     SetErrorLevel 142
     Quit
   ${EndIf}
+  goto end_of_test ;
   file_not_found:
   ${LogString} "No previous SSH found"
   end_of_test:
-  SetOutPath $SSH_PATH
   ${LogString} "Return code was : $0"
+  SetOutPath "C:\Program Files"
   RMDir /r "$SSH_PATH"
   ; Uninstall Mandriva SSH if found
   IfFileExists $PROGRAMFILES\Mandriva\OpenSSH 0 +5
@@ -420,8 +425,6 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
-  ${LogString} "SSH_PATH : $SSH_PATH"
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -434,7 +437,7 @@ Section "OpenSSH" sec_openssh
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
   SetOutPath $SSH_PATH
-  nsExec::ExecToStack 'powershell -Command .\install-sshd.ps1'
+  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\install-sshd.ps1'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -629,7 +632,7 @@ Section "OpenSSH" sec_openssh
   ClearErrors
 
 SetOutPath $SSH_PATH
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -642,7 +645,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -655,7 +658,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -668,7 +671,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -681,7 +684,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -694,7 +697,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -707,7 +710,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -720,7 +723,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -733,7 +736,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -746,7 +749,7 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys'
+  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -891,6 +894,9 @@ SectionEnd
 ; ####################### Setup of VNC & Firewall #######################
 Section "VNC Setup" sec_vnc
   SetOutPath "$INSTDIR\tmp"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
   ${If} ${RunningX64}
     @@FULL_OR_DL_VNC_AGENT64@@
   ${Else}
@@ -995,6 +1001,9 @@ SectionEnd
 ; ####################### Setup of Fusion Inventory agent #######################
 Section "Fusion Inventory agent" sec_fusinv
   SetOutPath "$INSTDIR\tmp"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
   ${If} ${RunningX64}
     @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
   ${Else}
@@ -1056,6 +1065,9 @@ Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
   File "../${PULSE_AGENT_FILENAME}"
   File "../${AGENT_PLUGINS_FILENAME}"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
   ${If} ${RunningX64}
     @@FULL_OR_DL_SYNCTHING64@@
   ${Else}
@@ -1425,7 +1437,7 @@ Section "Uninstall"
   ; Remove Pulse profile
   SetOutPath "$INSTDIR\tmp"
   File "${REMOVE_PROFILE_FILENAME}"
-  nsExec::ExecToStack 'powershell -Command .\${REMOVE_PROFILE_FILENAME} -UserName pulse'
+  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\${REMOVE_PROFILE_FILENAME} -UserName pulse'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
@@ -1438,7 +1450,7 @@ Section "Uninstall"
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack 'powershell -Command .\${REMOVE_PROFILE_FILENAME} -UserName pulseuser'
+  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\${REMOVE_PROFILE_FILENAME} -UserName pulseuser'
   Pop $0
   Pop $1
   ${IfNot} $0 == 0
