@@ -2253,7 +2253,14 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
         namepackage = os.path.basename(folder)
         pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
         pathxmpppackage = "%s.xmpp"%pathaqpackage
-
+        if max_size_stanza_xmpp == 0:
+            try:
+                if "qpackages" in pathaqpackage:
+                    logger.debug("del quick package if exists %s"%(pathxmpppackage))
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+            return 50
         # if dependence in package ne pas generer le qpackage
         with open(os.path.join(folder, 'xmppdeploy.json')) as json_data:
             data_dict = json.load(json_data)
@@ -2271,7 +2278,6 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
             int((time.time()-os.stat(pathxmpppackage).st_mtime))/60 < 10:
             logger.debug("inutile de genere xmpp package %s"%(pathxmpppackage))
             simplecommand("touch -c %s"%pathxmpppackage)
-            return 2
         else:
             logger.debug("del quick package if exists %s"%(pathxmpppackage))
             try:

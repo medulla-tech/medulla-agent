@@ -52,7 +52,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.191", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.190", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -691,52 +691,53 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         namefolder = None
         msgdeploy=[]
-        if 'descriptor' in data and \
-            'info' in data['descriptor'] and \
-                'packageUuid' in data['descriptor']['info']:
-            # on gener package si possible
-            namefolder = data['descriptor']['info']['packageUuid']
-        elif 'path'  in data:
-            namefolder = os.path.basename(data['path'])
+        if objectxmpp.config.max_size_stanza_xmpp != 0:
+            if 'descriptor' in data and \
+                'info' in data['descriptor'] and \
+                    'packageUuid' in data['descriptor']['info']:
+                # on gener package si possible
+                namefolder = data['descriptor']['info']['packageUuid']
+            elif 'path'  in data:
+                namefolder = os.path.basename(data['path'])
 
-        if  namefolder is not None:
-            folder = os.path.join(_path_package(), namefolder)
-            pathaqpackage = os.path.join(_path_packagequickaction(), namefolder)
-            pathxmpppackage = "%s.xmpp"%pathaqpackage
-            try:
-                objectxmpp.mutex.acquire(1)
-                qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
-            finally:
-                logger.debug("libere mutex")
-                objectxmpp.mutex.release()
+            if  namefolder is not None:
+                folder = os.path.join(_path_package(), namefolder)
+                pathaqpackage = os.path.join(_path_packagequickaction(), namefolder)
+                pathxmpppackage = "%s.xmpp"%pathaqpackage
+                try:
+                    objectxmpp.mutex.acquire(1)
+                    qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
+                finally:
+                    logger.debug("libere mutex")
+                    objectxmpp.mutex.release()
 
-            # if le package exist alors on lance le deploy
-            if os.path.exists("%s.xmpp"%pathaqpackage):
-                msgdeploy.append("start Quick deploy")
-                txt = "Transfer quick deployment package %s TO %s"%( namefolder,
-                                                            data['jidmachine'])
-                msgdeploy.append(txt)
-                for i in msgdeploy:
-                    objectxmpp.xmpplog( i,
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = -1,
-                                        action = "xmpplog",
-                                        who = strjidagent,
-                                        module = "Deployment | Qdeploy | Notify",
-                                        date = None ,
-                                        fromuser = data['login'])
-                msgquickstr = get_message_xmpp_quick_deploy(folder, sessionid)
-                logger.debug("message string %s"%msgquickstr)
-                msgstruct=json.loads(msgquickstr)
-                msgstruct['data']['descriptor'] = data
-                objectxmpp.send_message( mto   = data['jidmachine'],
-                                        mbody = json.dumps(msgstruct),
-                                        mtype = 'chat')
-                objectxmpp.session.createsessiondatainfo(sessionid,
-                                                        datasession = data,
-                                                        timevalid = 180)
-                return
+                # if le package exist alors on lance le deploy
+                if os.path.exists("%s.xmpp"%pathaqpackage):
+                    msgdeploy.append("start Quick deploy")
+                    txt = "Transfer quick deployment package %s TO %s"%( namefolder,
+                                                                data['jidmachine'])
+                    msgdeploy.append(txt)
+                    for i in msgdeploy:
+                        objectxmpp.xmpplog( i,
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
+                    msgquickstr = get_message_xmpp_quick_deploy(folder, sessionid)
+                    logger.debug("message string %s"%msgquickstr)
+                    msgstruct=json.loads(msgquickstr)
+                    msgstruct['data']['descriptor'] = data
+                    objectxmpp.send_message( mto   = data['jidmachine'],
+                                            mbody = json.dumps(msgstruct),
+                                            mtype = 'chat')
+                    objectxmpp.session.createsessiondatainfo(sessionid,
+                                                            datasession = data,
+                                                            timevalid = 180)
+                    return
             #########################END QUICK DEPLOY###########################################
         # nota doc
         # a la réception d'un descripteur de deploiement, si plusieurs ARS sont dans le cluster,
