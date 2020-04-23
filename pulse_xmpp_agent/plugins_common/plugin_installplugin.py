@@ -30,7 +30,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
     if action == 'installplugin':
         if len(data) != 0 :
             namefile =  os.path.join(objectxmpp.config.pathplugins, data['pluginname'])
-            logger.info("Installing plugin %s "% data['pluginname'])
+            logging.getLogger().info("Installing plugin %s "% data['pluginname'])
             try:
                 fileplugin = open(namefile, "w")
                 fileplugin.write(str(data['datafile']))
