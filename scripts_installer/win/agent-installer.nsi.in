@@ -1372,12 +1372,36 @@ Section "Uninstall"
   ${If} ${FileExists} "$PROGRAMFILES64\${OPENSSH_NAME}\uninstall-sshd.ps1"
     ${LogString} "OpenSSH uninstall.."
     ${LogString} "------------------------------------------------------"
-    ${PowerShellExecFileLog} "$PROGRAMFILES64\${OPENSSH_NAME}\uninstall-sshd.ps1"
+    setOutPath $PROGRAMFILES64\${OPENSSH_NAME}
+    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1"
+    pop $0
+    pop $1
+    ${IfNot} $0 == 0
+      ${IfNot} ${Silent}
+          ${LogString} "Return output : $1"
+          MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 142
+      Quit
+    ${EndIf}
     RMDir /r /REBOOTOK "$PROGRAMFILES64\OpenSSH"
   ${Else}
     ${LogString} "OpenSSH uninstall.."
     ${LogString} "------------------------------------------------------"
-    ${PowerShellExecFileLog} "$PROGRAMFILES\${OPENSSH_NAME}\uninstall-sshd.ps1"
+    setOutPath $PROGRAMFILES\${OPENSSH_NAME}
+    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1"
+    pop $0
+    pop $1
+    ${IfNot} $0 == 0
+      ${IfNot} ${Silent}
+          ${LogString} "Return output : $1"
+          MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 142
+      Quit
+    ${EndIf}
     RMDir /r /REBOOTOK "$PROGRAMFILES\${OPENSSH_NAME}"
   ${EndIf}
 
