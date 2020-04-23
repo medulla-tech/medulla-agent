@@ -27,11 +27,11 @@ from lib.managepackage import managepackage
 import logging
 import platform
 import sys
-from lib.utils import protoandport
+from lib.utils import protoandport, restartsshd
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "1.4", "NAME" : "requestinfo", "TYPE" : "all" }
+plugin = { "VERSION" : "1.5", "NAME" : "requestinfo", "TYPE" : "all" }
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("call %s from %s"%(plugin,message['from']))
@@ -66,7 +66,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 result['data']["ssh_port"] = remoteservices['ssh']
             if informations == "cpu_arch":
                 result['data']["cpu_arch"] = platform.machine()
-
+            if informations == "sshd_on":
+                try:
+                    restartsshd()
+                    result['data']["sshd_on"] = "actionstartsshd"
+                except Exception:
+                    pass
     if 'sender' in data:
         for senderagent in data["sender"]:
             objectxmpp.send_message( mto=senderagent,
