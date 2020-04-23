@@ -332,10 +332,13 @@ class grafcet:
 
         cmd = cmd.replace('@@@IP_MACHINE_XMPP@@@', self.data['ipmachine'])
 
-        cmd = cmd.replace(
-            '@@@MAC_ADRESS_MACHINE_XMPP@@@',
-            MacAdressToIp(
-                self.data['ipmachine']))
+        # Quick fix for blacklisted mac addresses
+        # TODO: A proper fix to blacklisted mac addresses will allow uncommenting
+        # the below block
+        # cmd = cmd.replace(
+        #     '@@@MAC_ADRESS_MACHINE_XMPP@@@',
+        #     MacAdressToIp(
+        #         self.data['ipmachine']))
 
         cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
         # recherche variable environnement

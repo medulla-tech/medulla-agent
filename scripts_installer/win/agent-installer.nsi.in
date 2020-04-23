@@ -414,6 +414,8 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
+  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
+  ${LogString} "SSH_PATH : $SSH_PATH"
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
