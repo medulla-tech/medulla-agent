@@ -103,7 +103,6 @@ SetCompressor lzma
 !Include "psexec.nsh"
 !include "x64.nsh"
 !include "TextReplace.nsh"
-!include "StrRep.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
 
@@ -285,21 +284,11 @@ Section "OpenSSH" sec_openssh
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
 
+  ; Remove previous Pulse profile and account
+  Call DeletePulseProfile
+
   ; Remove pulse user
   Call RemovePulseUser
-
-  ; Remove previous Pulse profile and account
-  ${PowerShellExecFileLog} "$INSTDIR\tmp\${REMOVE_PROFILE_FILENAME} -UserName pulse"
-  ClearErrors
-  ${PowerShellExecFileLog} "$INSTDIR\tmp\${REMOVE_PROFILE_FILENAME} -UserName pulseuser"
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 138
-    Quit
-  ${EndIf}
   RMDir /r "${USERDIR}\pulse*"
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
@@ -1356,9 +1345,6 @@ Section "Uninstall"
   ; Stop all Pulse services
   Call un.StopPulseServices
 
-  ; Remove pulse user
-  Call un.RemovePulseUser
-
   ; Remove OpenSSH
   StrCpy $0 `sc.exe stop sshdaemon`
   ${LogString} "Running $0"
@@ -1432,39 +1418,15 @@ Section "Uninstall"
   ${LogString} "Return code was: $1"
   RMDir /r "C:\Python27\Lib\site-packages\pulse_xmpp_agent\"
   RMDir /r "C:\Program Files\OpenSSH"
-  RMDir /r /REBOOTOK "$INSTDIR"
 
   ; Remove Pulse profile
-  SetOutPath "$INSTDIR\tmp"
-  File "${REMOVE_PROFILE_FILENAME}"
-  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\${REMOVE_PROFILE_FILENAME} -UserName pulse'
-  Pop $0
-  Pop $1
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
-        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 138
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\${REMOVE_PROFILE_FILENAME} -UserName pulseuser'
-  Pop $0
-  Pop $1
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
-        MessageBox MB_OK|MB_ICONSTOP "Previous Pulse user profile deletion failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 138
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
+  Call un.DeletePulseProfile
+  ; Remove pulse user
+  Call un.RemovePulseUser
+
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
+  RMDir /r /REBOOTOK "$INSTDIR"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
@@ -1708,3 +1670,26 @@ FunctionEnd
 !macroend
 !insertmacro StopPulseServices ""
 !insertmacro StopPulseServices "un."
+
+; Macro Delete Pulse profile
+!macro DeletePulseProfile UN
+  Function ${UN}DeletePulseProfile
+  ; Remove Pulse profile
+  SetOutPath "$INSTDIR\tmp"
+  File "${REMOVE_PROFILE_FILENAME}"
+  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
+  Pop $R0
+  ${If} $R0 == "Failed"
+    ${IfNot} ${Silent}
+       ${LogString} "Profile deletion failed"
+        MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 138
+    Quit
+  ${EndIf}
+  ${LogString} `Remove Pulse profile : $R0`
+  FunctionEnd
+!macroend
+!insertmacro DeletePulseProfile ""
+!insertmacro DeletePulseProfile "un."
