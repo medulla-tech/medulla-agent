@@ -1848,6 +1848,7 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
         finally:
             logger.debug("libere mutex")
             objectxmpp.mutex.release()
+    keyreversessh = file_get_contents(file_key_reverse_private_ars)
     key = file_get_contents(file_key_pub_ars)
     time_out_install_key = 60
     resultiqstr = objectxmpp.iqsendpulse( tomachine,
