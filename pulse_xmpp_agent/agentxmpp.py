@@ -277,7 +277,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
-                self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                #self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                self.fichierconfsyncthing = "/var/lib/syncthing-depl/.config/syncthing/config.xml"
             else:
                 self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                     ".config",
