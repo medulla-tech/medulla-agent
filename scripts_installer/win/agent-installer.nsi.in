@@ -70,6 +70,8 @@ RequestExecutionLevel admin
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
 !define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
 !define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
+!define LGPO "@@LGPO@@"
+!define REMOTE_SIGNED "@@REMOTE_SIGNED@@"
 
 SetCompressor lzma
 
@@ -280,6 +282,7 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
   @@FULL_OR_DL_RSYNC@@
   File "${REMOVE_PROFILE_FILENAME}"
+
 
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
@@ -1334,6 +1337,17 @@ Section "!${PRODUCT_NAME}" sec_app
   Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@
 
+  ; Relock Powershell
+  ${LogString} ""
+  ${LogString} "Restaure powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  Delete $INSTDIR\tmp\${REMOTE_SIGNED}
+  StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
   ${EndIf}
@@ -1343,6 +1357,18 @@ SectionEnd
 
 ; What needs to be done for uninstalling
 Section "Uninstall"
+
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  SetOutPath "$INSTDIR\tmp"
+  File "${LGPO}"
+  StrCpy $0 `${LGPO} /m "$INSTDIR\tmp\${REMOTE_SIGNED}"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
 
   ; Stop all Pulse services
   Call un.StopPulseServices
@@ -1450,6 +1476,17 @@ Section "Uninstall"
   ; Remove pulse user
   Call un.RemovePulseUser
 
+  ; Relock Powershell
+  ${LogString} ""
+  ${LogString} "Restaure powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  Delete $INSTDIR\tmp\${REMOTE_SIGNED}
+  StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
   RMDir /r /REBOOTOK "$INSTDIR"
@@ -1496,6 +1533,24 @@ Function .onInit
   ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  SetOutPath "$INSTDIR\tmp"
+  File "${LGPO}"
+  File "${REMOTE_SIGNED}"
+  StrCpy $0 `${LGPO} /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  StrCpy $0 `${LGPO} /m "$INSTDIR\tmp\${REMOTE_SIGNED}"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  
   ; Detect system language
   nsExec::ExecToStack 'powershell -Command (get-uiculture).TwoLetterISOLanguageName'
   Pop $0

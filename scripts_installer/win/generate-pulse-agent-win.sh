@@ -120,6 +120,8 @@ NETCHECK_SERVICE_DISPLAYNAME="Pulse network notify"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
+LGPO="lgpo.exe"
+REMOTE_SIGNED="powershell-policy-remotesigned.pol"
 
 # Display usage
 display_usage() {
@@ -408,6 +410,8 @@ update_nsi_script() {
         -e "s/@@NETCHECK_SERVICE_FILENAME@@/${NETCHECK_SERVICE_FILENAME}/" \
         -e "s/@@NETCHECK_PROGRAM_FILENAME@@/${NETCHECK_PROGRAM_FILENAME}/" \
         -e "s/@@NETCHECK_SERVICE_DISPLAYNAME@@/${NETCHECK_SERVICE_DISPLAYNAME}/" \
+        -e "s/@@LGPO@@/${LGPO}/" \
+        -e "s/@@REMOTE_SIGNED@@/${REMOTE_SIGNED}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
