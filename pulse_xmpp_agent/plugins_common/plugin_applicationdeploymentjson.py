@@ -38,7 +38,8 @@ from lib.utils import save_back_to_deploy, \
                       _path_package, \
                       qdeploy_generate, \
                       _path_packagequickaction, \
-                      get_message_xmpp_quick_deploy
+                      get_message_xmpp_quick_deploy, \
+                      decode_strconsole
 import copy
 import traceback
 import time
@@ -1592,7 +1593,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             obcmd = simplecommandstr(cmdexec)
                             if obcmd['code'] != 0:
                                 objectxmpp.xmpplog('<span class="log_err">%s transfer error : %s </span>'%(objectxmpp.config.pushmethod,
-                                                                                                                            obcmd['result']),
+                                                                                                           decode_strconsole(obcmd['result'])),
                                                 type = 'deploy',
                                                 sessionname = sessionid,
                                                 priority = -1,
