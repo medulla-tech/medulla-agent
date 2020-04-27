@@ -428,8 +428,7 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
-  ${LogString} "SSH_PATH : $SSH_PATH"
+  sleep 1000
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -638,7 +637,7 @@ Section "OpenSSH" sec_openssh
   ; Check and configure permissions
   ClearErrors
 
-SetOutPath $SSH_PATH
+  SetOutPath $SSH_PATH
   StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
@@ -1392,6 +1391,9 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
+  ; Define Powershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+
   ; Unlock Powershell
   ${LogString} ""
   ${LogString} "Unlock powershell execution policy"
@@ -1559,7 +1561,7 @@ Function .onInit
   ; Create registry keys in 64bit section
   SetRegView 64
 
-  ; Define Powsershell command
+  ; Define Powershell command
   StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 
   ; Install log initialization
