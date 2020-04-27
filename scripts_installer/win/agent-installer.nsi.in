@@ -70,8 +70,8 @@ RequestExecutionLevel admin
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
 !define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
 !define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
-!define LGPO "@@LGPO@@"
-!define REMOTE_SIGNED "@@REMOTE_SIGNED@@"
+!define LGPO_FILENAME "@@LGPO_FILENAME@@"
+!define REMOTE_SIGNED_FILENAME "@@REMOTE_SIGNED_FILENAME@@"
 
 SetCompressor lzma
 
@@ -1350,9 +1350,9 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} ""
   ${LogString} "Restaure powershell execution policy"
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${REMOTE_SIGNED}
+  Delete $INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}
   SetOutPath "$INSTDIR\tmp"
-  StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
+  StrCpy $0 `${LGPO_FILENAME} /g "$INSTDIR\tmp"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1373,8 +1373,8 @@ Section "Uninstall"
   ${LogString} "Unlock powershell execution policy"
   ${LogString} "------------------------------------------------------"
   SetOutPath "$INSTDIR\tmp"
-  File "${LGPO}"
-  StrCpy $0 `${LGPO} /m "$INSTDIR\tmp\${REMOTE_SIGNED}"`
+  File "${LGPO_FILENAME}"
+  StrCpy $0 `${LGPO_FILENAME} /m "$INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1490,8 +1490,8 @@ Section "Uninstall"
   ${LogString} ""
   ${LogString} "Restaure powershell execution policy"
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${REMOTE_SIGNED}
-  StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
+  Delete $INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}
+  StrCpy $0 `${LGPO_FILENAME} /g "$INSTDIR\tmp"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1548,14 +1548,14 @@ Function .onInit
   ${LogString} "Backup and unlock powershell execution policy"
   ${LogString} "------------------------------------------------------"
   SetOutPath "$INSTDIR\tmp"
-  File "${LGPO}"
-  File "${REMOTE_SIGNED}"
-  StrCpy $0 `${LGPO} /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
+  File "${LGPO_FILENAME}"
+  File "${REMOTE_SIGNED_FILENAME}"
+  StrCpy $0 `${LGPO_FILENAME} /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
-  StrCpy $0 `${LGPO} /m "$INSTDIR\tmp\${REMOTE_SIGNED}"`
+  StrCpy $0 `${LGPO_FILENAME} /m "$INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
