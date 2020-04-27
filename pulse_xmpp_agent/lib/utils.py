@@ -2175,7 +2175,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
 
 def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
     """
-        creation archive tar.gz or tat.bz2
+        creation archive tar.gz or tar.bz2
         compresstype "gz" or "bz2"
     """
     try:
@@ -2183,12 +2183,12 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception:
-        logger.error("error create archive tar.%s %s"%(str(e),compresstype))
+        logger.error("Error creating tar.%s archive : %s"%(compresstype, str(e)))
         return False
 
 def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
     """
-        extract archive tar.gz or tat.bz2
+        extract archive tar.gz or tar.bz2
         compresstype "gz" or "bz2"
     """
     cwd = os.getcwd()
@@ -2199,10 +2199,10 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
             tar.extractall()
         return True
     except OSError as e:
-        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
         return False
     except Exception as e:
-        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
         return False
     finally:
         os.chdir(cwd)
@@ -2245,7 +2245,7 @@ def _path_packagequickaction():
         try:
             os.makedirs(pathqd)
         except OSError as e:
-            logger.error("creation folder for quick deploy"%(str(e)))
+            logger.error("Error creating folder for quick deployment packages : %s"%(str(e)))
     return pathqd
 
 def qdeploy_generate(folder, max_size_stanza_xmpp):
@@ -2254,12 +2254,12 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
         pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
         pathxmpppackage = "%s.xmpp"%pathaqpackage
 
-        # if dependence in package ne pas generer le qpackage
+        # if dependency in package do not generate the qpackage
         with open(os.path.join(folder, 'xmppdeploy.json')) as json_data:
             data_dict = json.load(json_data)
         if len(data_dict['info']['Dependency'])>0:
-            logger.debug("dependecy in package %s. on ne genere pas de qpackage"%(pathxmpppackage))
-            logger.debug("del quick package if exists %s"%(pathxmpppackage))
+            logger.debug("Package %s has dependencies. Quick deployment package not generated."%(pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
             try:
                 if "qpackages" in pathaqpackage:
                     simplecommand("rm %s.*"%pathaqpackage)
@@ -2269,26 +2269,26 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
 
         if os.path.exists(pathxmpppackage) and \
             int((time.time()-os.stat(pathxmpppackage).st_mtime))/60 < 10:
-            logger.debug("inutile de genere xmpp package %s"%(pathxmpppackage))
+            logger.debug("No need to generate quick deployment package %s"%(pathxmpppackage))
             simplecommand("touch -c %s"%pathxmpppackage)
             return 2
         else:
-            logger.debug("del quick package if exists %s"%(pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
             try:
                 if "qpackages" in pathaqpackage:
                     simplecommand("rm %s.*"%pathaqpackage)
             except Exception:
                 pass
-        logger.debug("verify for create Quick package")
+        logger.debug("Checking if quick deployment package needs to be generated")
 
         result = simplecommand("du -b %s"%folder)
         #logger.debug("cmd %s"%"du -b %s"%folder)
         taillebytefolder = int(result['result'][0].split()[0])
         if taillebytefolder > max_size_stanza_xmpp:
-            logger.debug("package size too large to prepare quick package.\n%s"\
-                " greater than max_size_stanza_xmpp %s"%(taillebytefolder,
+            logger.debug("Package is too large for quick deployment.\n%s"\
+                " greater than defined max_size_stanza_xmpp %s"%(taillebytefolder,
                                                          max_size_stanza_xmpp))
-            logger.debug("del quick package if exists %s"%(pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
             try:
                 if "qpackages" in pathaqpackage:
                     simplecommand("rm %s.*"%pathaqpackage)
@@ -2296,14 +2296,14 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
                 pass
             return 6
             ### creation d'un targetos
-        logger.debug("prepare quick deploy package for package %s"%(namepackage))
+        logger.debug("Preparing quick deployment package for package %s"%(namepackage))
         calculemd5 = md5folder(pathaqpackage)
 
         if os.path.exists("%s.md5"%pathaqpackage):
             content = file_get_contents("%s.md5"%pathaqpackage)
             if content==calculemd5:
                 #pas de modifications du package
-                logger.debug("quick package exist")
+                logger.debug("Quick deployment package found")
                 #creation only si if fille missing
                 create_msg_xmpp_quick_deploy(folder, create = False)
                 return 1
@@ -2311,7 +2311,7 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
         create_msg_xmpp_quick_deploy(folder, create = True)
         return 0
     except Exception:
-        logger.error("error generate qpackage : %s"%folder)
+        logger.error("Error generating quick deployment package : %s"%folder)
         logger.error("%s"%(traceback.format_exc()))
         try:
             if "qpackages" in pathaqpackage:
@@ -2326,7 +2326,7 @@ def get_message_xmpp_quick_deploy(folder, sessionid):
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
     with open("%s.xmpp"%pathaqpackage, 'r') as f:
         data = f.read()
-    return data.replace("@-JFKSPOKNONEOCLUSTGLA@", sessionid, 1)
+    return data.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
 
 def get_template_message_xmpp_quick_deploy(folder):
     # read le fichier
@@ -2338,25 +2338,25 @@ def get_template_message_xmpp_quick_deploy(folder):
 
 def get_xmpp_message_with_sessionid(template_message, sessionid):
     # read le fichier
-    return template_message.replace("@-JFKSPOKNONEOCLUSTGLA@", sessionid, 1)
+    return template_message.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
 
 def create_msg_xmpp_quick_deploy(folder, create = False):
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
     # create compress file folder
     if not os.path.exists("%s.xmpp"%pathaqpackage) or create:
-        logger.debug("create archive compress %s.gz"%pathaqpackage)
+        logger.debug("Creating compressed archive %s.gz"%pathaqpackage)
         make_tarfile("%s.gz"%pathaqpackage, folder, compresstype="gz")
         with open("%s.gz"%pathaqpackage, 'rb') as f:
             dataraw = base64.b64encode(f.read())
-        msgxmpptemplate= """{  "sessionid" : "@-JFKSPOKNONEOCLUSTGLA@",
+        msgxmpptemplate= """{  "sessionid" : "@-TEMPLSESSQUICKDEPLOY@",
                 "action" : "qdeploy",
                 "data": { "nbpart" : 1,
                           "part"   : 1,
                           "namepackage":"%s",
                           "filebase64" : "%s"}}"""%( namepackage, dataraw )
         try:
-            logger.debug("write new Quick pakage %s.xmpp"%pathaqpackage)
+            logger.debug("Writing new quick deployment pakage %s.xmpp"%pathaqpackage)
             with open("%s.xmpp"%pathaqpackage, 'w') as f:
                 f.write(msgxmpptemplate)
             #le fichier compresser est inutile
@@ -2365,4 +2365,4 @@ def create_msg_xmpp_quick_deploy(folder, create = False):
         except Exception:
             logger.error("%s"%(traceback.format_exc()))
     else:
-        logger.debug("Quick pakage %s.xmpp always exist"%pathaqpackage)
+        logger.debug("Quick deployment package %s.xmpp found"%pathaqpackage)

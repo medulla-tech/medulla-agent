@@ -695,7 +695,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             if 'descriptor' in data and \
                 'info' in data['descriptor'] and \
                     'packageUuid' in data['descriptor']['info']:
-                # on gener package si possible
+                # Generate package if possible
                 namefolder = data['descriptor']['info']['packageUuid']
             elif 'path'  in data:
                 namefolder = os.path.basename(data['path'])
@@ -711,13 +711,13 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         objectxmpp.mutex.acquire(1)
                         qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
                     finally:
-                        logger.debug("libere mutex")
+                        logger.debug("Releasing mutex")
                         objectxmpp.mutex.release()
                 # objectxmpp.nbconcurrentquickdeployments = 0   # compteur le nombre de deployement
-                # if le package exist alors on lance le deploy
+                # if package exists, we can run deployment
                 if os.path.exists("%s.xmpp"%pathaqpackage):
-                    msgdeploy.append("add Quick deploy")
-                    txt = "Transfer quick deployment package %s TO %s"%( namefolder,
+                    msgdeploy.append("Running as quick deployment")
+                    txt = "Transferring quick deployment package %s to %s"%( namefolder,
                                                                 data['jidmachine'])
                     msgdeploy.append(txt)
                     for i in msgdeploy:
@@ -731,7 +731,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             date = None ,
                                             fromuser = data['login'])
                     msgquickstr = get_message_xmpp_quick_deploy(folder, sessionid)
-                    logger.debug("message string %s"%msgquickstr)
+                    logger.debug("Message string %s"%msgquickstr)
                     msgstruct=json.loads(msgquickstr)
                     msgstruct['data']['descriptor'] = data
                     #save pakage
@@ -749,7 +749,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             objectxmpp.concurrentquickdeployments[sessionid]=time.time()
                         finally:
                             objectxmpp.mutex.release()
-                        objectxmpp.xmpplog( "ressource quick deploy for (%s) %s concurent/%s"%(sessionid,
+                        objectxmpp.xmpplog( "Quick deployment %s resource status: %s/%s"%(sessionid,
                                                                                             len(objectxmpp.concurrentquickdeployments),
                                                                                             objectxmpp.config.nbconcurrentquickdeployments),
                                             type = 'deploy',
@@ -768,7 +768,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                                 datasession = data,
                                                                 timevalid = 180)
 
-                        logger.debug("list concurent deploy %s"%json.dumps(objectxmpp.concurrentquickdeployments,
+                        logger.debug("List of concurrent deployments: %s"%json.dumps(objectxmpp.concurrentquickdeployments,
                                                  indent=4))
                         return
             #########################END QUICK DEPLOY###########################################
