@@ -1499,7 +1499,9 @@ Function .onInit
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
   ; Detect system language
-  nsExec::ExecToStack 'powershell -Command (get-uiculture).TwoLetterISOLanguageName'
+  StrCpy $0 `powershell -inputformat none -ExecutionPolicy UnRestricted -Command (get-uiculture).TwoLetterISOLanguageName`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
   ${TrimNewLines} $1 $OS_LANGUAGE
