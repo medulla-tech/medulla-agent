@@ -1351,6 +1351,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Restaure powershell execution policy"
   ${LogString} "------------------------------------------------------"
   Delete $INSTDIR\tmp\${REMOTE_SIGNED}
+  SetOutPath "$INSTDIR\tmp"
   StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -1561,7 +1562,7 @@ Function .onInit
   ${LogString} "Return code was: $1"
   
   ; Detect system language
-  nsExec::ExecToStack 'powershell -Command (get-uiculture).TwoLetterISOLanguageName'
+  nsExec::ExecToStack '$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName'
   Pop $0
   Pop $1
   ${TrimNewLines} $1 $OS_LANGUAGE
