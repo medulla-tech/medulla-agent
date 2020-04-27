@@ -26,6 +26,7 @@ import subprocess
 import threading
 import sys
 import os
+import fnmatch
 import logging
 import random
 import re
@@ -48,6 +49,8 @@ import uuid
 
 from Crypto import Random
 from Crypto.Cipher import AES
+import tarfile
+import zipfile
 
 logger = logging.getLogger()
 
@@ -1797,7 +1800,7 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
         with tarfile.open(output_file_gz_bz2, "w:%s"%compresstype) as tar:
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
-    except Exception:
+    except Exception as e:
         logger.error("error create archive tar.%s %s"%(str(e),compresstype))
         return False
 
