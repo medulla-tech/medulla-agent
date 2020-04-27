@@ -565,11 +565,16 @@ class confParameter:
             self.jidchatroomcommand = self.jidagent
         else:
             self.jidchatroomcommand = str(self.agentcommand)
-        self.max_size_stanza_xmpp = 2097152
+            
+        self.max_size_stanza_xmpp = 1048576
         if Config.has_option("quick_deploy", "max_size_stanza_xmpp"):
             self.max_size_stanza_xmpp = Config.getint("quick_deploy",
                                                     "max_size_stanza_xmpp")
 
+        self.nbconcurrentquickdeployments = 10
+        if Config.has_option("quick_deploy", "concurrentdeployments"):
+            self.nbconcurrentquickdeployments = Config.getint("quick_deploy",
+                                                    "concurrentdeployments")
         # we make sure that the temp for the
         # inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.

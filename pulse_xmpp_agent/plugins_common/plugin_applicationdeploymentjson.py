@@ -700,20 +700,22 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             elif 'path'  in data:
                 namefolder = os.path.basename(data['path'])
 
-            if  namefolder is not None:
+            if namefolder is not None:
                 folder = os.path.join(_path_package(), namefolder)
                 pathaqpackage = os.path.join(_path_packagequickaction(), namefolder)
                 pathxmpppackage = "%s.xmpp"%pathaqpackage
-                try:
-                    objectxmpp.mutex.acquire(1)
-                    qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
-                finally:
-                    logger.debug("libere mutex")
-                    objectxmpp.mutex.release()
-
+                if os.path.exists(pathxmpppackage) and \
+                    int(time.time()- os.stat(pathxmpppackage).st_mtime) < 360:
+                    try:
+                        objectxmpp.mutex.acquire(1)
+                        qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
+                    finally:
+                        logger.debug("libere mutex")
+                        objectxmpp.mutex.release()
+                # objectxmpp.nbconcurrentquickdeployments = 0   # compteur le nombre de deployement
                 # if le package exist alors on lance le deploy
                 if os.path.exists("%s.xmpp"%pathaqpackage):
-                    msgdeploy.append("start Quick deploy")
+                    msgdeploy.append("add Quick deploy")
                     txt = "Transfer quick deployment package %s TO %s"%( namefolder,
                                                                 data['jidmachine'])
                     msgdeploy.append(txt)
@@ -731,13 +733,42 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     logger.debug("message string %s"%msgquickstr)
                     msgstruct=json.loads(msgquickstr)
                     msgstruct['data']['descriptor'] = data
-                    objectxmpp.send_message( mto   = data['jidmachine'],
-                                            mbody = json.dumps(msgstruct),
-                                            mtype = 'chat')
-                    objectxmpp.session.createsessiondatainfo(sessionid,
-                                                            datasession = data,
-                                                            timevalid = 180)
-                    return
+                    #save pakage
+                    if len(objectxmpp.concurrentquickdeployments) >=  objectxmpp.config.nbconcurrentquickdeployments:
+                        # save deploy
+                        filejson = os.path.join(_path_packagequickaction(),
+                                            "%s@_@_@.QDeploy"%data['jidmachine'])
+                        with open(filejson, "w") as file:
+                            json.dump(msgstruct, file)
+                        return
+                    else:
+                        try:
+                            objectxmpp.mutex.acquire()
+                            objectxmpp.concurrentquickdeployments[sessionid]=time.time()
+                        finally:
+                            objectxmpp.mutex.release()
+                        objectxmpp.xmpplog( "ressource quick deploy for (%s) %s concurent/%s"%(sessionid,
+                                                                                            len(objectxmpp.concurrentquickdeployments),
+                                                                                            objectxmpp.config.nbconcurrentquickdeployments),
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
+                        # on lance le deployement
+                        objectxmpp.send_message( mto   = data['jidmachine'],
+                                                 mbody = json.dumps(msgstruct),
+                                                 mtype = 'chat')
+                        objectxmpp.session.createsessiondatainfo(sessionid,
+                                                                datasession = data,
+                                                                timevalid = 180)
+
+                        logger.debug("list concurent deploy %s"%json.dumps(objectxmpp.concurrentquickdeployments,
+                                                 indent=4))
+                        return
             #########################END QUICK DEPLOY###########################################
         # nota doc
         # a la réception d'un descripteur de deploiement, si plusieurs ARS sont dans le cluster,

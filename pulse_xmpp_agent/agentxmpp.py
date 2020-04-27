@@ -112,15 +112,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                  queueout,
                  eventkilltcp,
                  eventkillpipe):#jid, password, room, nick):
-        logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent,
+        logging.log(DEBUGPULSE, "start machine  %s Type %s" %(conf.jidagent,
                                                                conf.agenttype))
         #create mutex
         #
         self.mutex = threading.Lock()
+        self.mutexslotquickactioncount = threading.Lock()
         self.eventkilltcp = eventkilltcp
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
+
+        self.concurrentquickdeployments = {} #list object i { numerodesession : timestamp }
+
+
         #create dir for descriptor syncthing deploy
         self.dirsyncthing =  os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                           "syncthingdescriptor")
@@ -341,7 +346,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 pass
         if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
-
 
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction',

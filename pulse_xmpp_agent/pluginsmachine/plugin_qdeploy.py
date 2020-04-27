@@ -46,7 +46,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.01", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "1.03", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -55,8 +55,16 @@ Plugin for deploying a package
 """
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     strjidagent = str(objectxmpp.boundjid.bare)
-    
     if objectxmpp.config.agenttype in ['machine']:
+        # transfert terminer libere slot
+        restitution_slot_QD = { "action" : "slot_quickdeploy_count",
+                                "data" : { "subaction" : "restitution" ,
+                                           "sessionid" : sessionid },
+                                "sessionid" : sessionid,
+                                "ret" : 0 }
+        objectxmpp.send_message( mto = message['from'] ,
+                                 mbody = json.dumps(restitution_slot_QD),
+                                 mtype = 'chat')
         # install le package
         # creation du repertoire pour mettre le package.
         logger.debug("%s"%json.dumps(data, indent=4))
@@ -128,11 +136,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             return
         if os.path.exists(filetmp):
             os.remove(filetmp)
-        
-       
+
+
         datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),
                                                                  namefolder )
-        
+
         # on prepare sequence en fonction de l'os.
         if not cleandescriptor(datasend['data']):
             objectxmpp.xmpplog('This package is not intended for the operating system. %s'%sys.platform,
