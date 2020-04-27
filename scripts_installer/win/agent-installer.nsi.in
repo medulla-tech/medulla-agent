@@ -1374,12 +1374,13 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} ""
   ${LogString} "Restaure powershell execution policy"
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}
-  StrCpy $0 `$INSTDIR\tmp\${LGPO_FILENAME} /g "$INSTDIR\tmp"`
+  StrCpy $0 `"$INSTDIR\tmp\${LGPO_FILENAME}" /g "$INSTDIR\tmp"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
+  Delete $INSTDIR\tmp\${LGPO_FILENAME}
+  Delete $INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}
 
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
@@ -1396,8 +1397,9 @@ Section "Uninstall"
   ${LogString} "Unlock powershell execution policy"
   ${LogString} "------------------------------------------------------"
   SetOutPath "$INSTDIR\tmp"
+  File "${REMOTE_SIGNED_FILENAME}"
   File "${LGPO_FILENAME}"
-  StrCpy $0 `$INSTDIR\tmp\${LGPO_FILENAME} /m "$INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}"`
+  StrCpy $0 `"$INSTDIR\tmp\${LGPO_FILENAME}" /m "$INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1518,7 +1520,7 @@ Section "Uninstall"
   ${LogString} "Restaure powershell execution policy"
   ${LogString} "------------------------------------------------------"
   Delete $INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}
-  StrCpy $0 `$INSTDIR\tmp\${LGPO_FILENAME} /g "$INSTDIR\tmp"`
+  StrCpy $0 `"$INSTDIR\tmp\${LGPO_FILENAME}" /g "$INSTDIR\tmp"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1580,12 +1582,12 @@ Function .onInit
   SetOutPath "$INSTDIR\tmp"
   File "${LGPO_FILENAME}"
   File "${REMOTE_SIGNED_FILENAME}"
-  StrCpy $0 `$INSTDIR\tmp\${LGPO_FILENAME} /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
+  StrCpy $0 `"$INSTDIR\tmp\${LGPO_FILENAME}" /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
-  StrCpy $0 `$INSTDIR\tmp\${LGPO_FILENAME} /m "$INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}"`
+  StrCpy $0 `"$INSTDIR\tmp\${LGPO_FILENAME}" /m "$INSTDIR\tmp\${REMOTE_SIGNED_FILENAME}"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
