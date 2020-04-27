@@ -127,7 +127,6 @@ ShowInstDetails show
 ; Define a few settings
 Section -SETTINGS
   SetOutPath "$INSTDIR"
-  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
@@ -1524,6 +1523,9 @@ Function .onInit
 
   ; Create registry keys in 64bit section
   SetRegView 64
+
+  ; Define Powsershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 
   ; Install log initialization
   !If "$PROGRAMFILES64" != ""
