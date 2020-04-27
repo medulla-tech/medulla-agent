@@ -420,8 +420,11 @@ update_nsi_script() {
 /g' agent-installer.nsi
 
     [ ${DISABLE_VNC} -eq 1 ] && sed -i "/^\s*Section\s\"VNC.*;$/ s|^|;|; /^\s*Section\s\"VNC/, /SectionEnd$/ s|^|;|" agent-installer.nsi
+    [ ${DISABLE_VNC} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_vnc}/,+1 s/^/;/"  agent-installer.nsi
 	[ ${DISABLE_RDP} -eq 1 ] && sed -i "/^\s*Section\s\"RDP.*;$/ s|^|;|; /^\s*Section\s\"RDP/, /SectionEnd$/ s|^|;|" agent-installer.nsi
+    [ ${DISABLE_RDP} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_rdp}/,+1 s/^/;/"  agent-installer.nsi
 	[ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/^\s*Section\s\"Fusion.*;$/ s|^|;|; /^\s*Section\s\"Fusion/, /SectionEnd$/ s|^|;|" agent-installer.nsi
+    [ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_fusinv}/,+1 s/^/;/"  agent-installer.nsi
 
 	colored_echo green "### INFO Updating NSIS script.. Done"
 }

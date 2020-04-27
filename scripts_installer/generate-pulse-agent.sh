@@ -250,6 +250,8 @@ update_generation_options_file() {
 
 extract_parameters() {
     CONFIG_FILE='config/agentconf.ini'
+    # Convert to unix to be able to use crudini
+    dos2unix ${CONFIG_FILE}
     # Extract current parameters from agentconf.ini and .generation_options
 	# Check that agentconf.ini is present
 	if [ -e ${CONFIG_FILE} ]; then

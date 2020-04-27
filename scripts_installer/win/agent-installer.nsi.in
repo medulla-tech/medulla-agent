@@ -107,9 +107,11 @@ SetCompressor lzma
 !include "TextReplace.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
+!include "StrRep.nsh"
 
 Var OS_LANGUAGE
 Var CMD_POWERSHELL
+Var P_PROFILE
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -326,13 +328,14 @@ Section "OpenSSH" sec_openssh
   ${LogString} "Create pulseuser profile"
   SetOutPath "$INSTDIR\tmp"
   File "${CREATE_PROFILE_FILENAME}"
-  ClearErrors
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-	${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "pulseuser user profile creation failed. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -396,12 +399,14 @@ Section "OpenSSH" sec_openssh
   SetOutPath $SSH_PATH
   IfFileExists "uninstall-sshd.ps1" file_found file_not_found
   file_found:
-  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1'
+  StrCpy $0 `$CMD_POWERSHELL -Command .\uninstall-sshd.ps1`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -439,12 +444,14 @@ Section "OpenSSH" sec_openssh
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
   ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
   SetOutPath $SSH_PATH
-  nsExec::ExecToStack '$CMD_POWERSHELL -Command .\install-sshd.ps1'
+  StrCpy $0 `$CMD_POWERSHELL -Command .\install-sshd.ps1`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "SSH installation failed. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -634,12 +641,14 @@ Section "OpenSSH" sec_openssh
   ClearErrors
 
 SetOutPath $SSH_PATH
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : sshd_config. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -647,12 +656,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_dsa_key. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -660,12 +671,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_dsa_key.pub. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -673,12 +686,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ecdsa_key. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -686,12 +701,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ecdsa_key.pub. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -699,12 +716,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ed25519_key. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -712,12 +731,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ed25519_key.pub. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -725,12 +746,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_rsa_key. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -738,12 +761,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_rsa_key.pub. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -751,12 +776,14 @@ SetOutPath $SSH_PATH
     Quit
   ${EndIf}
   ${LogString} "Return code was : $0"
-  nsExec::ExecToStack '$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys'
+  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
+  ${LogString} "Return output : $1"
   ${IfNot} $0 == 0
     ${IfNot} ${Silent}
-        ${LogString} "Return output : $1"
         MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : authorized_keys. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
@@ -814,7 +841,7 @@ SetOutPath $SSH_PATH
 
   ; Install of rsync
   ; Install rsync only if Nytrio agent does not exist
-  IfFileExists $PROGRAMFILES\Nytrio\OpenSSH +21 0
+  IfFileExists $PROGRAMFILES\Nytrio\OpenSSH +22 0
   ; Extract rsync
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\${RSYNC_FILENAME}" "$INSTDIR\tmp\"
@@ -1409,12 +1436,14 @@ Section "Uninstall"
     ${LogString} "OpenSSH uninstall.."
     ${LogString} "------------------------------------------------------"
     setOutPath $PROGRAMFILES64\${OPENSSH_NAME}
-    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1'
+    StrCpy $0 `$CMD_POWERSHELL -Command .\uninstall-sshd.ps1`
+    ${LogString} "Running $0"
+    nsExec::ExecToStack $0
     pop $0
     pop $1
+    ${LogString} "Return output : $1"
     ${IfNot} $0 == 0
       ${IfNot} ${Silent}
-          ${LogString} "Return output : $1"
           MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
           Please check the logs in $INSTDIR\tmp\install.log"
       ${EndIf}
@@ -1426,12 +1455,14 @@ Section "Uninstall"
     ${LogString} "OpenSSH uninstall.."
     ${LogString} "------------------------------------------------------"
     setOutPath $PROGRAMFILES\${OPENSSH_NAME}
-    nsExec::ExecToStack '$CMD_POWERSHELL -Command .\uninstall-sshd.ps1'
+    StrCpy $0 `$CMD_POWERSHELL -Command .\uninstall-sshd.ps1`
+    ${LogString} "Running $0"
+    nsExec::ExecToStack $0
     pop $0
     pop $1
+    ${LogString} "Return output : $1"
     ${IfNot} $0 == 0
       ${IfNot} ${Silent}
-          ${LogString} "Return output : $1"
           MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
           Please check the logs in $INSTDIR\tmp\install.log"
       ${EndIf}
@@ -1561,9 +1592,11 @@ Function .onInit
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
-  
+
   ; Detect system language
-  nsExec::ExecToStack '$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName'
+  StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
   Pop $1
   ${TrimNewLines} $1 $OS_LANGUAGE
@@ -1592,7 +1625,7 @@ Function .onMouseOverSection
   FindWindow $R0 "#32770" "" $HWNDPARENT
   GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
 
-  StrCmp $0 ${sec_py} 0 +2
+  StrCmp $0 ${sec_py} 0 +3
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
           This is required for ${PRODUCT_NAME} to run."
 
@@ -1769,18 +1802,25 @@ FunctionEnd
   ; Remove Pulse profile
   SetOutPath "$INSTDIR\tmp"
   File "${REMOVE_PROFILE_FILENAME}"
-  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
-  Pop $R0
-  ${If} $R0 == "Failed"
+  ${LogString} "Removing user profile"
+  ${StrRep} $0 ${USERDIR} "\" "\\"
+  Pop $0
+  StrCpy $P_PROFILE $0
+  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${LogString} "Return output : $1"
     ${IfNot} ${Silent}
-       ${LogString} "Profile deletion failed"
-        MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
+        MessageBox MB_OK|MB_ICONSTOP "Profile deletion failed. It is currently being used. $\n\
+        You need to reboot and rerun the installer."
     ${EndIf}
     SetErrorLevel 138
     Quit
   ${EndIf}
-  ${LogString} `Remove Pulse profile : $R0`
+  ${LogString} "Return code was : $0"
   FunctionEnd
 !macroend
 !insertmacro DeletePulseProfile ""
