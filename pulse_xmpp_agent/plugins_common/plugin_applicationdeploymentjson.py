@@ -704,8 +704,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 folder = os.path.join(_path_package(), namefolder)
                 pathaqpackage = os.path.join(_path_packagequickaction(), namefolder)
                 pathxmpppackage = "%s.xmpp"%pathaqpackage
-                if os.path.exists(pathxmpppackage) and \
-                    int(time.time()- os.stat(pathxmpppackage).st_mtime) < 360:
+                if not os.path.exists(pathxmpppackage) or \
+                    ( os.path.exists(pathxmpppackage) and \
+                        int(time.time()- os.stat(pathxmpppackage).st_mtime) < 360):
                     try:
                         objectxmpp.mutex.acquire(1)
                         qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
@@ -736,8 +737,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     #save pakage
                     if len(objectxmpp.concurrentquickdeployments) >=  objectxmpp.config.nbconcurrentquickdeployments:
                         # save deploy
+                        namef=data['jidmachine'].split("/")[0]
                         filejson = os.path.join(_path_packagequickaction(),
-                                            "%s@_@_@.QDeploy"%data['jidmachine'])
+                                            "%s@_@_@.QDeploy"%namef)
                         with open(filejson, "w") as file:
                             json.dump(msgstruct, file)
                         return

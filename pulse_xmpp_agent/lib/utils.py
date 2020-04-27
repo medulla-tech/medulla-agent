@@ -2197,7 +2197,7 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
         os.chdir(to_directory)
         with tarfile.open(absolutepath, "r:%s"%compresstype) as tar:
             tar.extractall()
-        return true
+        return True
     except OSError as e:
         logger.error( "error extract tar.%s %s"%(str(e),compresstype))
         return False
@@ -2253,14 +2253,7 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
         namepackage = os.path.basename(folder)
         pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
         pathxmpppackage = "%s.xmpp"%pathaqpackage
-        if max_size_stanza_xmpp == 0:
-            try:
-                if "qpackages" in pathaqpackage:
-                    logger.debug("del quick package if exists %s"%(pathxmpppackage))
-                    simplecommand("rm %s.*"%pathaqpackage)
-            except Exception:
-                pass
-            return 50
+
         # if dependence in package ne pas generer le qpackage
         with open(os.path.join(folder, 'xmppdeploy.json')) as json_data:
             data_dict = json.load(json_data)
@@ -2278,6 +2271,7 @@ def qdeploy_generate(folder, max_size_stanza_xmpp):
             int((time.time()-os.stat(pathxmpppackage).st_mtime))/60 < 10:
             logger.debug("inutile de genere xmpp package %s"%(pathxmpppackage))
             simplecommand("touch -c %s"%pathxmpppackage)
+            return 2
         else:
             logger.debug("del quick package if exists %s"%(pathxmpppackage))
             try:
