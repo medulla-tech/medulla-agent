@@ -1577,7 +1577,7 @@ Function .onInit
   ${LogString} "------------------------------------------------------"
   CreateDirectory "$INSTDIR\bin"
   SetOutPath "$INSTDIR\bin"
-  @@FULL_OR_DL_LGPO_FILENAME@@
+  @@FULL_OR_DL_LGPO@@
   File "${REMOTE_SIGNED_FILENAME}"
   StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
   ${LogString} "Running $0"
