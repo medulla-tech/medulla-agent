@@ -1787,3 +1787,66 @@ def install_key_ssh_relayserver(keypriv, private=False):
         win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
     else:
         os.chmod(filekey, keyperm)
+
+def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
+    """
+        creation archive tar.gz or tat.bz2
+        compresstype "gz" or "bz2"
+    """
+    try:
+        with tarfile.open(output_file_gz_bz2, "w:%s"%compresstype) as tar:
+            tar.add(source_dir, arcname=os.path.basename(source_dir))
+        return True
+    except Exception:
+        logger.error("error create archive tar.%s %s"%(str(e),compresstype))
+        return False
+
+def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
+    """
+        extract archive tar.gz or tat.bz2
+        compresstype "gz" or "bz2"
+    """
+    cwd = os.getcwd()
+    absolutepath = os.path.abspath(imput_file__gz_bz2)
+    try:
+        os.chdir(to_directory)
+        with tarfile.open(absolutepath, "r:%s"%compresstype) as tar:
+            tar.extractall()
+        return True
+    except OSError as e:
+        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        return False
+    except Exception as e:
+        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        return False
+    finally:
+        os.chdir(cwd)
+    return True
+
+def find_files(directory, pattern):
+    """
+        use f
+    """
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = str(os.path.join(root, basename))
+                yield filename
+
+def listfile(directory, abspath=True):
+    listfile=[]
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if abspath:
+                listfile.append(os.path.join(root, basename))
+            else:
+                listfile.append(os.path.join(basename))
+    return listfile
+
+def md5folder(directory):
+    hash = hashlib.md5()
+    strmdr=[]
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            hash.update(md5(os.path.join(root, basename)))
+    return hash.hexdigest()
