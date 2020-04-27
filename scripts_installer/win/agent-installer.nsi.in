@@ -105,11 +105,9 @@ SetCompressor lzma
 !include "TextReplace.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
-!include "StrRep.nsh"
 
 Var OS_LANGUAGE
 Var CMD_POWERSHELL
-Var P_PROFILE
 Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
@@ -1753,25 +1751,18 @@ FunctionEnd
   ; Remove Pulse profile
   SetOutPath "$INSTDIR\tmp"
   File "${REMOVE_PROFILE_FILENAME}"
-  ${LogString} "Removing user profile"
-  ${StrRep} $0 ${USERDIR} "\" "\\"
-  Pop $0
-  StrCpy $P_PROFILE $0
-  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${IfNot} $0 == 0
-    ${LogString} "Return output : $1"
+  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
+  Pop $R0
+  ${If} $R0 == "Failed"
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Profile deletion failed. It is currently being used. $\n\
-        You need to reboot and rerun the installer."
+      ${LogString} "Profile deletion failed"
+      MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
+      Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 138
     Quit
   ${EndIf}
-  ${LogString} "Return code was : $0"
+  ${LogString} `Remove Pulse profile : $R0`
   FunctionEnd
 !macroend
 !insertmacro DeletePulseProfile ""
