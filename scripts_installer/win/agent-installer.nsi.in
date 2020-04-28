@@ -429,6 +429,7 @@ Section "OpenSSH" sec_openssh
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
   sleep 1000
+  Delete $INSTDIR\tmp\$OPENSSH_FILENAME
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -862,8 +863,6 @@ Section "OpenSSH" sec_openssh
   SetRebootFlag true
 
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${OPENSSH32_FILENAME}
-  Delete $INSTDIR\tmp\${OPENSSH64_FILENAME}
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
   RMDir /r $INSTDIR\tmp\rsync
   RMDir /r "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
