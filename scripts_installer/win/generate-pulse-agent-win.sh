@@ -360,7 +360,8 @@ prepare_mandatory_includes() {
 		pushd ${DOWNLOADS_DIR}
 		unzip -q ${LGPO_DL_FILENAME}
         cp LGPO.exe bin/${LGPO_FILENAME}
-        rm -rf ${LGPO_DL_FILENAME::-4}.*
+        rm -rf ${LGPO_DL_FILENAME::-4}.pdf
+        rm -rf ${LGPO_DL_FILENAME::-4}.exe
 		popd
     else
         colored_echo red "${LGPO_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
