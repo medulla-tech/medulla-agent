@@ -330,7 +330,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_check_established_connection,
                       self.established_connection,
                       repeat=True)
-
+        if self.config.agenttype in ['relayserver']:
+            #scheduled task that calls the slot plugin for sending the quick deployments that have not been processed.
+            self.schedule('Quick deployment load',
+                        15,
+                        self.QDeployfile,
+                        repeat=True)
         if not hasattr(self.config, 'geolocalisation'):
             self.config.geolocalisation = True
         # use public_ip for localisation
@@ -484,6 +489,32 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       #80,
                       #self.initialise_tcp_kiosk,
                       #repeat=False)
+
+    def QDeployfile(self):
+        sessioniddata = getRandomName(6, "Qdeployfile")
+        dataerreur={"action": "resultqdeploy",
+                    "sessionid" : sessioniddata,
+                    "ret" : 255,
+                    "base64" : False,
+                    "data": {"msg" : "Deployment error"}
+                }
+        transfertdeploy = {
+            'action': "slot_quickdeploy_count",
+            "sessionid" : sessioniddata,
+            'data' : { "subaction" : "deployfile"},
+            'ret' : 0,
+            'base64' : False }
+
+        msg = {'from' : self.boundjid.bare,
+                "to" : self.boundjid.bare,
+                'type' : 'chat' }
+        call_plugin(transfertdeploy["action"],
+                    self,
+                    transfertdeploy["action"],
+                    transfertdeploy['sessionid'],
+                    transfertdeploy['data'],
+                    msg,
+                    dataerreur)
 
     ###############################################################
     # syncthing function
