@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.0.7
+Version:	2.0.8
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -176,7 +176,7 @@ systemctl daemon-reload
 Summary:    Files to create pulse windows installer
 Group:      System/Servers
 
-Requires:   pulse-xmpp-agent-deps
+Requires:   pulse-xmpp-agent-deps >= 1.8
 
 Requires:   dos2unix
 Requires:   unzip

@@ -25,7 +25,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="pulse_machine_plugins",
-    version="2.0.7",
+    version="2.0.8",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Machine agent plugins for pulse",
