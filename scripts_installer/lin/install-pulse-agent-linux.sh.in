@@ -117,6 +117,7 @@ configure_inventory() {
 }
 
 start_agent() {
+    chmod +x /usr/local/lib/python2.7/dist-packages/pulse_xmpp_agent/agentxmpp.py
     # Enable and start the service
 	systemctl enable pulse-xmpp-agent-machine.service
 	systemctl start pulse-xmpp-agent-machine.service
