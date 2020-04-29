@@ -89,7 +89,8 @@ pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_
 }
 
 create_service () {
-cat <<EOF > pulse-xmpp-agent-machine.service
+local PYTHON_DIR="/usr/local/lib/python2.7/dist-packages/"
+cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
 [Unit]
 Description=Pulse2 XMPP Agent ( Machine )
 After=samba.service slapd.service
@@ -99,7 +100,7 @@ After=samba.service slapd.service
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/agentxmpp.py -d -t machine
+ExecStart=$PYTHON_DIR/pulse_xmpp_agent/agentxmpp.py -d -t machine
 Restart=always
 RestartSec=1
 
