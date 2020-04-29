@@ -20,6 +20,9 @@
 
 from setuptools import setup
 import sys
+from distutils.command.install import INSTALL_SCHEMES
+
+import os
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

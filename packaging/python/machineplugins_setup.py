@@ -19,6 +19,9 @@
 # MA 02110-1301, USA.
 
 from setuptools import setup
+from distutils.command.install import INSTALL_SCHEMES
+
+import os
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
