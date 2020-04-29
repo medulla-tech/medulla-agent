@@ -46,7 +46,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.03", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "1.04", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -137,10 +137,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if os.path.exists(filetmp):
             os.remove(filetmp)
 
-
         datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),
                                                                  namefolder )
-
         # on prepare sequence en fonction de l'os.
         if not cleandescriptor(datasend['data']):
             objectxmpp.xmpplog('This package is not intended for the operating system. %s'%sys.platform,

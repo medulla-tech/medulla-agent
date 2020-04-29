@@ -53,7 +53,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.20", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.23", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -688,8 +688,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         #########################START QUICK DEPLOY###########################################
         ###self.mutex
-        logger.debug("%s"%json.dumps(data, indent=4))
-
+        #logger.debug("%s"%json.dumps(data, indent=4))
         namefolder = None
         msgdeploy=[]
         if objectxmpp.config.max_size_stanza_xmpp != 0:
@@ -712,12 +711,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         objectxmpp.mutex.acquire(1)
                         qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
                     finally:
-                        logger.debug("Releasing mutex")
                         objectxmpp.mutex.release()
                 # objectxmpp.nbconcurrentquickdeployments = 0   # compteur le nombre de deployement
                 # if package exists, we can run deployment
                 if os.path.exists("%s.xmpp"%pathaqpackage):
-                    msgdeploy.append("Running as quick deployment")
+                    msgdeploy.append("Adding to quick deployment queue")
                     txt = "Transferring quick deployment package %s to %s"%( namefolder,
                                                                 data['jidmachine'])
                     msgdeploy.append(txt)
@@ -732,7 +730,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             date = None ,
                                             fromuser = data['login'])
                     msgquickstr = get_message_xmpp_quick_deploy(folder, sessionid)
-                    logger.debug("Message string %s"%msgquickstr)
                     msgstruct=json.loads(msgquickstr)
                     msgstruct['data']['descriptor'] = data
                     #save pakage
@@ -740,9 +737,29 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         # save deploy
                         namef=data['jidmachine'].split("/")[0]
                         filejson = os.path.join(_path_packagequickaction(),
-                                            "%s@_@_@.QDeploy"%namef)
+                                            "%s@_@_@%s@_@_@.QDeploy"%(sessionid, namef))
+
                         with open(filejson, "w") as file:
                             json.dump(msgstruct, file)
+                        objectxmpp.session.createsessiondatainfo(sessionid,
+                                                                datasession = data,
+                                                                timevalid = 180)
+                        res = simplecommand("ls %s | wc -l"%os.path.join(_path_packagequickaction(),"*.QDeploy"))
+                        if res['code'] == 0:
+                            nbpool = res['result']
+                        else:
+                            nbpool = "????"
+                        objectxmpp.xmpplog( "Adding deployment %s to queue %s : %s"%(sessionid,
+                                                               str(objectxmpp.boundjid.bare),
+                                                               nbpool ),
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
                         return
                     else:
                         try:
