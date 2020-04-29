@@ -24,6 +24,9 @@ import sys
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = os.path.join(scheme['purelib'], "pulse_xmpp_agent")
+
 setup(
     name="pulse_xmpp_agent",
     version="2.0.8",
