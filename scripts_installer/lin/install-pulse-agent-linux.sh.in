@@ -81,6 +81,26 @@ install_agent() {
     pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
 }
 
+create_service () {
+cat <<EOF > pulse-xmpp-agent-machine.service
+[Unit]
+Description=Pulse2 XMPP Agent ( Machine )
+After=samba.service slapd.service
+
+[Service]
+#PIDFile=/var/run/launcher.pid
+#User=pulse
+#Group=pulse
+Type=forking
+ExecStart=/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/agentxmpp.py -d -t machine
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
 configure_inventory() {
     TAG="$1"
     # Setup FusionInventory
@@ -110,4 +130,5 @@ install_agent
 if [[ ${INVENTORY_TAG} != "" ]]; then
     configure_inventory ${INVENTORY_TAG}
 fi
+create_service
 start_agent
