@@ -157,7 +157,7 @@ def timeoutslot(objectxmpp):
                             sessionname = delkey,
                             priority = -1,
                             action = "xmpplog",
-                            who = strjidagent,
+                            who = str(objectxmpp.boundjid.bare),
                             module = "Deployment | Qdeploy | Notify",
                             date = None ,
                             fromuser = "")
