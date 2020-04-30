@@ -65,9 +65,7 @@ configure_repo() {
       debian|ubuntu)
         apt update
         apt install -q -y apt-transport-https
-        if [[ "${BASE_URL}" != "" ]]; then
-            echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
-        fi
+        echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
         echo "deb [trusted=yes] ${SIVEO_BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" >> /etc/apt/sources.list.d/pulseagent.list
         apt update
         ;;
