@@ -4898,7 +4898,7 @@ class XmppMasterDatabase(DatabaseHelper):
         user = str(jid).split("@")[0]
         try:
             sql = """SELECT
-                        id, hostname, agenttype
+                        id, hostname, agenttype, need_reconf
                     FROM
                         `xmppmaster`.`machines`
                     WHERE
@@ -4929,19 +4929,19 @@ class XmppMasterDatabase(DatabaseHelper):
                             SET
                                 `xmppmaster`.`relayserver`.`enabled` = '%s'
                             WHERE
-                                `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%(presence,
-                                                                                    mach[1])
+                                `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%(presence, mach[1])
                     session.execute(sql)
                     session.commit()
                     session.flush()
                 except Exception, e:
                     logging.getLogger().error("initialisePresenceMachine : %s"%str(e))
                 finally:
-                    return "relayserver"
+                    return { "type" : "relayserver", "reconf" : mach[3] }
             else:
-                return "machine"
+                return { "type" : "machine", "reconf" : mach[3] }
         else:
-            return None
+            return {}
+
 
     @DatabaseHelper._sessionm
     def SetPresenceMachine(self, session, jid, presence=0):
