@@ -26,7 +26,7 @@ import time
 
 import os
 import json
-plugin = {"VERSION" : "1.4", "NAME" : "enddeploy",  "TYPE" : "all"}
+plugin = {"VERSION" : "1.5", "NAME" : "enddeploy",  "TYPE" : "all"}
 
 logger = logging.getLogger()
 
@@ -63,7 +63,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             sessionname = sessionid,
                                             priority = -1,
                                             action = "xmpplog",
-                                            who = strjidagent,
+                                            who = str(objectxmpp.boundjid.bare),
                                             module = "Deployment | Qdeploy | Notify",
                                             date = None ,
                                             fromuser = data['login'])
