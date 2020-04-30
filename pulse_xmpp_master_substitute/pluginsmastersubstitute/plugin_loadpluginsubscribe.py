@@ -111,7 +111,7 @@ def changed_status(self, presence):
                                             '',
                                             '',
                                             self.boundjid.bare)
-            if result is None:
+            if result is None or len(result) == 0:
                 return
             if "type" in result and result['type'] == "relayserver":
                 # recover list of cluster ARS
@@ -196,6 +196,23 @@ def changed_status(self, presence):
         logger.info("update MACH or ARS %s Online"%presence['from'])
         result = XmppMasterDatabase().initialisePresenceMachine(presence['from'],
                                                                 presence=1)
+        if result is None or len(result) == 0:
+            return
+        if "type" in result and result['type'] == "machine":
+            try:
+                if "reconf" in result and result['reconf'] == 1:
+                    result1 = self.iqsendpulse(presence['from'],
+                                                    { "action": "information",
+                                                      "data": { "listinformation" : ["force_reconf"],
+                                                                "param" : {} }},
+                                                    5)
+            except Exception:
+                pass
+            try:
+                XmppMasterDatabase().updateMachinereconf(presence['from'])
+            except Exception:
+                logger.error("\n%s"%(traceback.format_exc()))
+            
         XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
                                         "info",
                                         '',
