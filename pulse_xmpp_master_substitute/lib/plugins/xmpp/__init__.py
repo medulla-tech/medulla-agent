@@ -4898,7 +4898,7 @@ class XmppMasterDatabase(DatabaseHelper):
         user = str(jid).split("@")[0]
         try:
             sql = """SELECT
-                        id, hostname, agenttype
+                        id, hostname, agenttype, need_reconf
                     FROM
                         `xmppmaster`.`machines`
                     WHERE
@@ -4915,6 +4915,26 @@ class XmppMasterDatabase(DatabaseHelper):
             return None
 
     @DatabaseHelper._sessionm
+    def updateMachinereconf(self, session, jid, status=0):
+        """
+            update boolean need_reconf in table machines
+        """
+        user = str(jid).split("@")[0]
+        try:
+            sql = """UPDATE `xmppmaster`.`machines` 
+                         SET `need_reconf` = '%s'
+                     WHERE
+                         `xmppmaster`.`machines`.jid like('%s@%%')"""%(status,
+                                                                       user)
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception, e:
+            logging.getLogger().error("updateMachinereconf : %s"%str(e))
+            return False
+
+    @DatabaseHelper._sessionm
     def initialisePresenceMachine(self, session, jid, presence=0):
         """
             Initialize presence in table machines and relay
@@ -4929,19 +4949,19 @@ class XmppMasterDatabase(DatabaseHelper):
                             SET
                                 `xmppmaster`.`relayserver`.`enabled` = '%s'
                             WHERE
-                                `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%(presence,
-                                                                                    mach[1])
+                                `xmppmaster`.`relayserver`.`nameserver` = '%s';"""%(presence, mach[1])
                     session.execute(sql)
                     session.commit()
                     session.flush()
                 except Exception, e:
                     logging.getLogger().error("initialisePresenceMachine : %s"%str(e))
                 finally:
-                    return "relayserver"
+                    return { "type" : "relayserver", "reconf" : mach[3] }
             else:
-                return "machine"
+                return { "type" : "machine", "reconf" : mach[3] }
         else:
-            return None
+            return {}
+
 
     @DatabaseHelper._sessionm
     def SetPresenceMachine(self, session, jid, presence=0):
