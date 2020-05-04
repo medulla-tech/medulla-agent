@@ -200,6 +200,14 @@ build_deb() {
             popd
         fi
 
+        if [ -d "ubuntu/18.04" ]; then
+            cp -fv *.deb ubuntu/18.04
+            pushd ubuntu/18.04
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
+            popd
+        fi
+
+
         if [ -d "ubuntu/19.10" ]; then
             cp -fv *.deb ubuntu/19.10
             pushd ubuntu/19.10
