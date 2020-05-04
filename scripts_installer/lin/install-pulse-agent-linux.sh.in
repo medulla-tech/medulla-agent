@@ -98,7 +98,7 @@ After=samba.service slapd.service
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=$PYTHON_DIR/pulse_xmpp_agent/agentxmpp.py -d -t machine
+ExecStart=$PYTHON_DIR/pulse_xmpp_agent/launcher.py -t machine
 Restart=always
 RestartSec=1
 
