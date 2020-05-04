@@ -1260,6 +1260,16 @@ def ipfromdns(name_domaine_or_ip):
     return ""
 
 
+def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
+    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+        sessionid = action.strip().replace(" ", "")
+    return { 'action' : action,
+             'data' : data,
+             'ret' : 0,
+             "base64" : False,
+             "sessionid" : getRandomName(4,sessionid)}
+
+
 def check_exist_ip_port(name_domaine_or_ip, port):
     """ This function check if socket valid for connection
         return True or False
