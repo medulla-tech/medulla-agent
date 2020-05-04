@@ -2253,7 +2253,9 @@ class XmppMasterDatabase(DatabaseHelper):
                                 INNER JOIN
                             xmppmaster.cluster_ars ON xmppmaster.cluster_ars.id = xmppmaster.has_cluster_ars.id_cluster
                         WHERE
-                            relayserver.jid like '%s%%'  LIMIT 1);"""%jidars
+                            relayserver.jid like '%s%%' 
+                            AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
+                            LIMIT 1);"""%jidars
         listars = session.execute(sql)
         session.commit()
         session.flush()
@@ -2286,7 +2288,8 @@ class XmppMasterDatabase(DatabaseHelper):
 
         if enabled is not None:
             sql="""%s WHERE
-            `relayserver`.`enabled` = %s"""%(sql, enabled)
+            `relayserver`.`enabled` = %s
+            AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)"""%(sql, enabled)
 
         sql=sql+" GROUP BY xmppmaster.has_cluster_ars.id_cluster;"
         listars = session.execute(sql)
@@ -3624,6 +3627,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, userou, enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
@@ -3635,6 +3639,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `has_relayserverrules`.`subject` = '%s'
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, userou, enabled)
         result = session.execute(sql)
         session.commit()
@@ -3663,6 +3668,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, machineou, enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
@@ -3674,6 +3680,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `has_relayserverrules`.`subject` = '%s'
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, machineou, enabled)
         result = session.execute(sql)
         session.commit()
@@ -3703,6 +3710,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, username, enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
@@ -3714,6 +3722,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `has_relayserverrules`.`subject` = '%s'
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, username, enabled)
         result = session.execute(sql)
         session.commit()
@@ -3750,6 +3759,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             order by `has_relayserverrules`.`order`
             limit 1;"""%(rule, hostname, enabled, classutilMachine)
         else:
@@ -3762,6 +3772,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             order by `has_relayserverrules`.`order`
             limit 1;"""%(rule, hostname, enabled)
         result = session.execute(sql)
@@ -3784,6 +3795,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 xmppmaster.`relayserver` ON `relayserver`.`groupdeploy` = `machines`.`groupdeploy`
             WHERE
                 agenttype = 'machine'
+                AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             GROUP BY `machines`.`groupdeploy`
             ORDER BY nb DESC
             LIMIT 1;"""
@@ -3805,6 +3817,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`subnet` ='%s'
                     AND `relayserver`.`classutil` = '%s'
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(enabled, subnetmachine, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
@@ -3812,6 +3825,7 @@ class XmppMasterDatabase(DatabaseHelper):
             where
                         `relayserver`.`enabled` = %d
                     AND `relayserver`.`subnet` ='%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(enabled, subnetmachine)
         result = session.execute(sql)
         session.commit()
@@ -3839,6 +3853,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, netmaskaddress, enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
@@ -3850,6 +3865,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `has_relayserverrules`.`subject` = '%s'
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             limit 1;"""%(rule, netmaskaddress, enabled)
         result = session.execute(sql)
         session.commit()
@@ -3888,6 +3904,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             order by `has_relayserverrules`.`order`
             limit 1;"""%(rule, subnetmachine, enabled, classutilMachine)
         else:
@@ -3900,6 +3917,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
             order by `has_relayserverrules`.`order`
             limit 1;"""%(rule, subnetmachine, enabled)
         result = session.execute(sql)
@@ -3950,14 +3968,17 @@ class XmppMasterDatabase(DatabaseHelper):
                     WHERE
                             `relayserver`.`enabled` = %d
                         AND `relayserver`.`classutil` = '%s'
-                    AND `relayserver`.`moderelayserver` = 'static';"""%(enabled, classutilMachine)
+                    AND `relayserver`.`moderelayserver` = 'static'
+                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`);"""%(enabled,
+                                                                                        classutilMachine)
         else:
             sql = """SELECT
                         id,longitude,latitude
                     FROM
                         xmppmaster.relayserver
                     WHERE
-                            `relayserver`.`enabled` = %d;"""%(enabled)
+                        `relayserver`.`enabled` = %d
+                        AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`);"""%(enabled)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -4664,6 +4685,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         'longitude' : relayserver.longitude,
                         'latitude' : relayserver.latitude,
                         'enabled' : relayserver.enabled,
+                        'switchonoff' : relayserver.switchonoff,
+                        'mandatory' : relayserver.mandatory,
                         'classutil' : relayserver.classutil,
                         'groupdeploy' : relayserver.groupdeploy,
                         'package_server_ip' : relayserver.package_server_ip,
@@ -5130,6 +5153,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         'longitude' : relayserver.longitude,
                         'latitude' : relayserver.latitude,
                         'enabled' : relayserver.enabled,
+                        'switchonoff' : relayserver.switchonoff,
+                        'mandatory': relayserver.mandatory,
                         'classutil' : relayserver.classutil,
                         'groupdeploy' : relayserver.groupdeploy,
                         'package_server_ip' : relayserver.package_server_ip,
