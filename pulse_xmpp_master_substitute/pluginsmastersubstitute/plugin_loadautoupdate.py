@@ -28,8 +28,9 @@ from lib.utils import file_get_contents, getRandomName, data_struct_message
 from lib.update_remote_agent import Update_Remote_Agent
 import types
 import ConfigParser
-
+from lib.plugins.xmpp import XmppMasterDatabase
 from sleekxmpp import jid
+
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
