@@ -33,7 +33,7 @@ from lib.utils import simplecommandstr, \
                       simplecommand, \
                       encode_strconsole, \
                       file_get_contents, \
-                          extract_file
+                      extract_file
 import copy
 import traceback
 import time
@@ -46,7 +46,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.04", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "1.05", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -93,7 +93,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         filetmp =  os.path.join(tempfile.gettempdir(), "%s.gz"%namefolder)
         # ecrit file gz
         logger.debug("create file %s"%filetmp)
-        objectxmpp.xmpplog('Transfer terminate',
+        objectxmpp.xmpplog('<span class="log_ok">Transfer complete</span>',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
@@ -105,7 +105,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         with open(filetmp, 'wb') as f:
             f.write(base64.b64decode(data['filebase64']))
         if extract_file(filetmp, to_directory = managepackage.packagedir(), compresstype="gz"):
-            objectxmpp.xmpplog('Package decompress Ok',
+            objectxmpp.xmpplog('Package extraction successful',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
@@ -115,7 +115,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
         else:
-            objectxmpp.xmpplog('decompression archive Package KO',
+            objectxmpp.xmpplog('<span class="log_err">Package execution cancelled: extraction error</span>',
                     type = 'deploy',
                     sessionname = sessionid,
                     priority = -1,
@@ -124,7 +124,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     module = "Deployment| Notify | Transfer",
                     date = None ,
                     fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('TERMINATE DEPLOY',
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                     type = 'deploy',
                     sessionname = sessionid,
                     priority = -1,
@@ -141,35 +141,26 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                                  namefolder )
         # on prepare sequence en fonction de l'os.
         if not cleandescriptor(datasend['data']):
-            objectxmpp.xmpplog('This package is not intended for the operating system. %s'%sys.platform,
+            objectxmpp.xmpplog('<span class="log_err">Descriptor error: This package is not intended for the OS of the machine. %s</span>'%sys.platform,
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
                         action = "xmpplog",
                         who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
+                        module = "Deployment| Notify | BadOS",
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('TERMINATE DEPLOY',
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
                         action = "xmpplog",
                         who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
+                        module = "Deployment | Notify | BadOS",
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
             return
-        objectxmpp.xmpplog('Transfer terminate',
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment| Notify | Transfer",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-        logger.debug("pakage sequence : %s"%json.dumps(datasend, indent=4))
+        logger.debug("package sequence : %s"%json.dumps(datasend, indent=4))
 
         objectxmpp.session.createsessiondatainfo(sessionid,
                                                  datasession =  datasend['data'],
@@ -177,22 +168,22 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         try:
             initialisesequence(datasend, objectxmpp, sessionid )
         except Exception as e:
-            objectxmpp.xmpplog('Initialisation Dployement error %s'%str(e),
+            objectxmpp.xmpplog('<span class="log_err">Error initializing grafcet %s</span>'%str(e),
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
                         action = "xmpplog",
                         who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
+                        module = "Deployment | Notify",
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('TERMINATE DEPLOY',
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
                         action = "xmpplog",
                         who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
+                        module = "Deployment | Notify",
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
             return
