@@ -1593,9 +1593,8 @@ Function .onInit
   nsExec::ExecToStack $0
   Pop $0
   Pop $1
-  ${LogString} "POWERSHELL Policy"
-  ${LogString} "Return output : $0"
-  ${LogString} "Return output : $1"
+  ${TrimNewLines} $1 $1
+  ${LogString} "PowerShell Policy status : $1"
 
   ${IfNot} $1 == Undefined 
     SetOutPath "$INSTDIR\tmp\gpo"
