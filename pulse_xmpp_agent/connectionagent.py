@@ -70,6 +70,7 @@ else:
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
+        self.agent_machine_name= conf.jidagent
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
         resourcejid[0]=conf.confdomain
@@ -505,7 +506,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
-            'adorgbyuser' : ''
+            'adorgbyuser' : '',
+            'agent_machine_name' :self.agent_machine_name
         }
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
