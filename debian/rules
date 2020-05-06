@@ -182,4 +182,4 @@ override_dh_auto_install:
 	cp scripts_installer/win/pulse-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/netcheck-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
-	cp scripts_installer/win/powershell-policy-remotesigned.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+	cp scripts_installer/win/powershell-policy-remotesigned.pol $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/

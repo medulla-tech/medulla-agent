@@ -424,4 +424,4 @@ cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
-cp scripts_installer/win/powershell-policy-remotesigned.py %buildroot%_var/lib/pulse2/clients/win/
+cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
