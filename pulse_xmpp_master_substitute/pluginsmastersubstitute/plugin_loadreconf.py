@@ -20,12 +20,10 @@
 # MA 02110-1301, USA.
 # file /pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadreconf.py
 
-import base64
 import json
 import os
 import logging
-from lib.utils import file_get_contents, getRandomName, data_struct_message
-from lib.update_remote_agent import Update_Remote_Agent
+from lib.utils import getRandomName
 import types
 import ConfigParser
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -47,7 +45,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
 
     if compteurcallplugin == 0:
-        read_conf_remote_update(objectxmpp)
+        read_conf_loadreconf(objectxmpp)
         logger.debug("Configuration remote update")
         objectxmpp.concurentdata = {}
         objectxmpp.loadreconf = types.MethodType(loadreconf,
@@ -63,30 +61,34 @@ def loadreconf(self, objectxmpp):
     """
         Runs the load fingerprint
     """
-    if len(objectxmpp.listconcurentreconf) != 0:
-        logger.debug("load reconf concurent configuration %s/%s"%(len(objectxmpp.listconcurentreconf),
-                                                                      objectxmpp.nbconcurrentreconf))
     # calcul time entre 2 demandes de reconfiguration.
     t = time.time()
     end = t + objectxmpp.generate_reconf_interval
-    timeoutreconf = t + objectxmpp.timeout_reconf
-    #recupere les reconfigurations en timeout
-    listmachine_timeoutreconf = [x[0] for x in objectxmpp.listconcurentreconf if x[2] <= t]
-    # sur ces machines on les met en nom presence.
-    # on met ces machines a non presente
-    #if len(listmachine_timeoutreconf) != 0:
-        #logger.warning ("update off presence machine reconf timeout%s"%listmachine_timeoutreconf)
-        #XmppMasterDatabase().call_set_list_machine(listmachine=listmachine_timeoutreconf)
-    # on supprime les non acquites suivant timeout de plus de generate_reconf_interval seconde
-    objectxmpp.listconcurentreconf = [x for x in objectxmpp.listconcurentreconf if x[2] > t]
+   
     datasend = {"action": "force_setup_agent",
                 "data": "",
                 'ret': 0,
                 'sessionid': getRandomName(5, "loadreconf_")}
     result = []
     while(time.time() < end):
+        listmachine_timeoutreconf = [x[0] for x in objectxmpp.listconcurentreconf if x[2] <= t]
+        if len(listmachine_timeoutreconf) != 0:
+            logger.warning ("update off presence machine reconf timeout%s"%listmachine_timeoutreconf)
+            XmppMasterDatabase().call_set_list_machine(listmachine=listmachine_timeoutreconf)
+            # on supprime les non acquites suivant timeout de plus de generate_reconf_interval seconde
+            objectxmpp.listconcurentreconf = [x for x in objectxmpp.listconcurentreconf if x[2] > t]
         viability = time.time() + objectxmpp.timeout_reconf
-        if len(result) == 0:            
+        
+        list_need_reconf = [ x[0] for x in objectxmpp.listconcurentreconf]
+        # lists reconf terminate
+        if len(list_need_reconf) > 0:
+            resultacquite = XmppMasterDatabase().call_acknowledged_reconficuration(list_need_reconf)
+            # liste des concurent
+            if len(resultacquite) > 0:
+                logger.debug ("concurent acquite machines id %s"%resultacquite)
+            objectxmpp.listconcurentreconf = [ x for x in objectxmpp.listconcurentreconf \
+                                            if x[0] not in resultacquite]
+        if len(result) == 0:
             result =  XmppMasterDatabase().call_reconfiguration_machine(limit = objectxmpp.nbconcurrentreconf)
             if len(result) == 0:
                 return
@@ -100,26 +102,14 @@ def loadreconf(self, objectxmpp):
             self.send_message(  mto = eltmachine[1],
                                 mbody=json.dumps(datasend),
                                 mtype='chat')
-            logger.warning ("ENVOI MESSAGE %s"%eltmachine[1])
+            logger.debug ("SEND RECONFIGURATION %s (%s)"%(eltmachine[1], eltmachine[0]))
             list_updatenopresence.append(eltmachine[0])
-            # on remet a 0 le reconf. pour le cas des machine qui ne sont plus presente.
-        # verify concurent 
-        # liste de id a suprimer de la liste
-        list_need_reconf = [ x[0] for x in objectxmpp.listconcurentreconf]
-        # lists reconf terminate
-        if len(list_need_reconf) > 0:
-            resultacquite = XmppMasterDatabase().call_acknowledged_reconficuration(list_need_reconf)
-            # liste des concurent
-            logger.warning ("liberation  %s"%resultacquite)
-            objectxmpp.listconcurentreconf = [ x for x in objectxmpp.listconcurentreconf \
-                                            if x[0] not in resultacquite]
-        # tous les datas qui sont retourne doive etre suprimé de la  liste des concurents
         if len(list_updatenopresence) != 0:
-            logger.warning ("update off presence machine reconf%s"%list_updatenopresence)
+            #logger.debug ("update off presence machine reconf%s"%list_updatenopresence)
             XmppMasterDatabase().call_set_list_machine(listmachine=list_updatenopresence)
         time.sleep(.2)
 
-def read_conf_remote_update(objectxmpp):
+def read_conf_loadreconf(objectxmpp):
     namefichierconf = plugin['NAME'] + ".ini"
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
@@ -160,7 +150,7 @@ def read_conf_remote_update(objectxmpp):
                 objectxmpp.timeout_reconf = Config.getint('parameters',
                                                                     'timeout_reconf')
             else:
-                objectxmpp.timeout_reconf = 60   
+                objectxmpp.timeout_reconf = 500   
     objectxmpp.plugin_loadreconf = types.MethodType(plugin_loadreconf, objectxmpp)
 
 def plugin_loadreconf(self, msg, data):
