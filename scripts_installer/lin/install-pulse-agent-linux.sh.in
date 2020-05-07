@@ -26,7 +26,6 @@
 # TODO: Install freerdp
 #       Make use of deb and rpm repositories for installing packages
 
-SIVEO_BASE_URL="@@SIVEO_BASE_URL@@"
 BASE_URL="@@BASE_URL@@"
 INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
@@ -63,11 +62,8 @@ configure_repo() {
       mageia)
         ;;
       debian|ubuntu)
-        apt update
-        apt install -q -y apt-transport-https
         echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
-        echo "deb [trusted=yes] ${SIVEO_BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" >> /etc/apt/sources.list.d/pulseagent.list
-        apt update
+        apt update -o Dir::Etc::sourcelist="sources.list.d/pulseagent.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
         ;;
       *)
         ;;
