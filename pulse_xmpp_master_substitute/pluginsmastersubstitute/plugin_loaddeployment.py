@@ -128,15 +128,15 @@ def scheduledeploy(self):
             #incrition dans deploiement cette machine sans agent
 
             XmppMasterDatabase().adddeploy(deployobject['commandid'],
-                                            machine.name,
-                                            machine.name,
-                                            machine.name,
+                                            deployobject['name'],
+                                            deployobject['name'],
+                                            deployobject['name'],
                                             UUID,
-                                            machine.contact,
+                                            deployobject['login'],
                                             "ABORT MISSING AGENT",
                                             sessiondeployementless,
-                                            user=machine.contact,
-                                            login=machine.contact,
+                                            user=deployobject['login'],
+                                            login=deployobject['login'],
                                             title=deployobject['title'],
                                             group_uuid=deployobject['GUID'],
                                             startcmd=deployobject['start_date'],
@@ -146,11 +146,11 @@ def scheduledeploy(self):
                                             syncthing = 0)
 
             msg.append("<span class='log_err'>Agent missing on machine %s. " \
-                        "Deployment impossible : GLPI ID is %s</span>"%(machine.name,
+                        "Deployment impossible : GLPI ID is %s</span>"%(deployobject['name'],
                                                                             UUID))
             msg.append("Action : Check that the machine "\
                 "agent is working, or install the agent on the"\
-                    " machine %s (%s) if it is missing."%(machine.name,
+                    " machine %s (%s) if it is missing."%(deployobject['name'],
                                                                     UUID))
             for logmsg in msg:
                 self.xmpplog(logmsg,
@@ -161,7 +161,7 @@ def scheduledeploy(self):
                             why=self.boundjid.bare,
                             module="Deployment | Start | Creation",
                             date=None,
-                            fromuser=machine.contact)
+                            fromuser=deployobject['login'])
             continue
 
         if datetime.datetime.now() < deployobject['start_date']:
