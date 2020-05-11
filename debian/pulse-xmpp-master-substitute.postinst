@@ -35,6 +35,11 @@ case "$1" in
             systemctl restart pulse-xmpp-master-substitute-logger
             echo "..done"
         fi
+        if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
+            echo -n "Restarting pulse-xmpp-master-substitute-reconfigurator service..."
+            systemctl restart pulse-xmpp-master-substitute-reconfigurator
+            echo "..done"
+        fi
         ;;
 esac
 

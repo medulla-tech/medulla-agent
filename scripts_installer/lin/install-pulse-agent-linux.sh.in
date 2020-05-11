@@ -26,7 +26,6 @@
 # TODO: Install freerdp
 #       Make use of deb and rpm repositories for installing packages
 
-SIVEO_BASE_URL="@@SIVEO_BASE_URL@@"
 BASE_URL="@@BASE_URL@@"
 INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
@@ -63,11 +62,8 @@ configure_repo() {
       mageia)
         ;;
       debian|ubuntu)
-        apt update
-        apt install -q -y apt-transport-https
         echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
-        echo "deb [trusted=yes] ${SIVEO_BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" >> /etc/apt/sources.list.d/pulseagent.list
-        apt update
+        apt update -o Dir::Etc::sourcelist="sources.list.d/pulseagent.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
         ;;
       *)
         ;;
@@ -75,23 +71,27 @@ configure_repo() {
 }
 
 install_agent() {
+
     case "$DISTRO" in
         mageia)
         ;;
         debian)
-            if [[ ${VERSION} == "9" ]]; then
-            apt install -y python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-crypto python-pip pulse-agent-linux
-            elif  [[ ${VERSION} == "10" ]]; then
-                apt install -y python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux
+            if [[ ${VERSION} == "9" ]]; then
+                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-crypto python-pip pulse-agent-linux
+            elif [[ ${VERSION} == "10" ]]; then
+                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux
             fi
         ;;
         ubuntu)
-            apt install -y python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux
+            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux
 
         ;;
         esac
 
 pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+
+[ ! -d "/var/lib/pulse2/packages" ] && mkdir -p /var/lib/pulse2/packages
+
 }
 
 create_service () {

@@ -1195,7 +1195,7 @@ def protoandport():
 
     elif sys.platform.startswith('linux'):
         for process in psutil.process_iter():
-            if 'x11vnc' in process.name():
+            if process.name() == 'x11vnc':
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
                     try:
@@ -1206,7 +1206,7 @@ def protoandport():
                         port = cux.laddr.port
                     if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                         protport['vnc'] = port
-            elif 'sshd' in process.name():
+            elif process.name() == 'sshd':
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
                     try:
@@ -1217,7 +1217,7 @@ def protoandport():
                         port = cux.laddr.port
                     if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
                         protport['ssh'] = port
-            elif 'xrdp' in process.name():
+            elif process.name() == 'xrdp':
                 process_handler = psutil.Process(process.pid)
                 for cux in process_handler.connections():
                     try:
@@ -1226,7 +1226,7 @@ def protoandport():
                     except Exception:
                         ip = cux.laddr.ip
                         port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                    if cux.status == psutil.CONN_LISTEN and (ip == "0.0.0.0" or ip == "::"):
                         protport['rdp'] = port
 
     elif sys.platform.startswith('darwin'):
