@@ -81,7 +81,6 @@ def scheduledeploy(self):
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
     msg=[]
-    sessiondeployementless = name_random(5, "missingagent")
     list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
     for arssyncthing in list_ars_syncthing_pause:
         datasend = {  "action" : "deploysyncthing",
@@ -122,6 +121,7 @@ def scheduledeploy(self):
         UUID = deployobject['UUID']
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
         if resultpresence[UUID][1] == 0:
+            sessiondeployementless = name_random(5, "missingagent")
             # machine dans GLPI mais pas enregistré sur tavle machine xmpp.
             listobjnoexist.append(deployobject)
             machine = Glpi().getMachineByUUID(UUID)
