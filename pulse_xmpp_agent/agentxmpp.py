@@ -2139,6 +2139,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
 
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
+        remoteservice = protodef()
+        # if regcomplet = True then register agent reconfigure complet of agent
+        self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
@@ -2168,7 +2171,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.config.public_ip,
-            'remoteservice' : protoandport(),
+            'remoteservice' : remoteservice.proto,
+            'regcomplet' : regcomplet,
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
