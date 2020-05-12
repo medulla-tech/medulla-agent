@@ -139,18 +139,14 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %_var/log/pulse
 %dir %{python2_sitelib}/pulse_xmpp_agent/
-%{python2_sitelib}/pulse_xmpp_agent/lib
+%{python2_sitelib}/pulse_xmpp_agent/lib/
 %{python2_sitelib}/pulse_xmpp_agent/*.py*
-%{python2_sitelib}/pulse_xmpp_agent/script
-%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
-%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine
-%{python2_sitelib}/pulse_xmpp_agent/script/getlastuser.ps1
-%{python2_sitelib}/pulse_xmpp_agent/script/create-profile.ps1
-%{python2_sitelib}/pulse_xmpp_agent/script/remove-profile.ps1
-%{python2_sitelib}/pulse_xmpp_agent/agentversion
-%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay
-%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/*.py*
-%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/*.py*
+%{python2_sitelib}/pulse_xmpp_agent/script/
+%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay/
+%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/
+%{python2_sitelib}/pulse_xmpp_agent/agentversion/
+%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
 
 #--------------------------------------------------------------------
 
