@@ -114,7 +114,9 @@ def read_conf_loadreconf(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.warning("plugin %s\nConfiguration file :" \
-            "\n\t%s missing" \
+            "\n\t%ok je regarde sur dev
+        
+        s missing" \
         "\neg conf:\n[parameters]\n" \
         "generate_reconf_interval = 60\n" \
         "concurrentreconf = 240\n" \
@@ -130,27 +132,27 @@ def read_conf_loadreconf(objectxmpp):
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
             logger.debug("read file %s.local"%pathfileconf)
-            if Config.has_option("parameters",
-                                 "generate_reconf_interval"):
-                objectxmpp.generate_reconf_interval = Config.getint('parameters',
-                                                                    'generate_reconf_interval')
-            else:
-                objectxmpp.generate_reconf_interval = 60
-                
-            if Config.has_option("parameters",
-                                 "concurrentreconf"):
-                objectxmpp.nbconcurrentreconf = Config.getint('parameters',
-                                                      'concurrentreconf')
-            else:
-                objectxmpp.nbconcurrentreconf = 240
-                
+        if Config.has_option("parameters",
+                                "generate_reconf_interval"):
+            objectxmpp.generate_reconf_interval = Config.getint('parameters',
+                                                                'generate_reconf_interval')
+        else:
+            objectxmpp.generate_reconf_interval = 60
             
-            if Config.has_option("parameters",
-                                 "timeout_reconf"):
-                objectxmpp.timeout_reconf = Config.getint('parameters',
-                                                                    'timeout_reconf')
-            else:
-                objectxmpp.timeout_reconf = 500   
+        if Config.has_option("parameters",
+                                "concurrentreconf"):
+            objectxmpp.nbconcurrentreconf = Config.getint('parameters',
+                                                    'concurrentreconf')
+        else:
+            objectxmpp.nbconcurrentreconf = 240
+            
+        
+        if Config.has_option("parameters",
+                                "timeout_reconf"):
+            objectxmpp.timeout_reconf = Config.getint('parameters',
+                                                                'timeout_reconf')
+        else:
+            objectxmpp.timeout_reconf = 500   
     objectxmpp.plugin_loadreconf = types.MethodType(plugin_loadreconf, objectxmpp)
 
 def plugin_loadreconf(self, msg, data):
