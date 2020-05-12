@@ -27,6 +27,8 @@
 # TODO: Create rpm and deb repositories
 #				Manage inventory tags
 
+. /etc/os-release
+
 # To be defined
 AGENT_VERSION="2.0.8"
 SIVEO_BASE_URL="https://agents.siveo.net"
@@ -68,6 +70,10 @@ check_arguments() {
                 ;;
             --ssh-port*)
                 SSH_PORT="${i#*=}"
+                shift
+                ;;
+            --linux-distros*)
+                LINUX_DISTROS="${i#*=}"
                 shift
                 ;;
 			*)
@@ -176,6 +182,70 @@ generate_agent_package() {
 	colored_echo green "### INFO  Generating agent package... Done"
 }
 
+check_linux_distribution() {
+    if [[ $ID == "centos" ]]; then
+        LINUX_DISTRO="rhel"
+    else
+        LINUX_DISTRO=$ID
+    fi
+
+    DISTRO_VERSION=$VERSION_ID
+
+    case ${LINUX_DISTRO} in
+        "debian"|"mageia"|"rhel")
+            ;;
+
+        *)
+            echo "We only support Debian, Mageia, and rhel"
+            exit 1
+            ;;
+    esac
+}
+
+install_package() {
+    case ${LINUX_DISTRO} in
+        "debian")
+            apt -y install "$@"
+            ;;
+        "mageia")
+            urpmi --auto "$@"
+            ;;
+        "rhel")
+            yum -y install "$@"
+            ;;
+        *)
+            ;;
+    esac
+}
+
+install_repos() {
+    for distro in $(echo ${LINUX_DISTROS} | sed "s/,/ /g")
+    do
+        echo "$distro"
+        case $distro in
+            debian-buster)
+                install_package pulse-agent-linux-repo-buster
+                ;;
+            debian-stretch)
+                install_package pulse-agent-linux-repo-stretch
+                ;;
+            ubuntu-bionic)
+                install_package pulse-agent-linux-repo-bionic
+                ;;
+            ubuntu-eoan)
+                install_package pulse-agent-linux-repo-eoan
+                ;;
+            ubuntu-xenial)
+                install_package pulse-agent-linux-repo-xenial
+                ;;
+            *)
+                echo "the distribution $distro is not yet supported"
+        esac
+    done
+
+
+}
+
 build_deb() {
 	pushd /var/lib/pulse2/clients/lin/deb/pulse-agent-linux/
 		dpkg-buildpackage
@@ -221,6 +291,8 @@ build_deb() {
 
 # Run the script
 check_arguments "$@"
+check_linux_distribution
 update_installer_scripts
 generate_agent_package
+install_repos
 build_deb

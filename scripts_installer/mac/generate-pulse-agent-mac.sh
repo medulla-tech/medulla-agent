@@ -156,6 +156,9 @@ check_arguments() {
                 SSH_PORT="${i#*=}"
                 shift
                 ;;
+            --linux-distros*)
+                shift
+                ;;
 			*)
                 # unknown option
                 display_usage
