@@ -170,6 +170,9 @@ check_arguments() {
                 DISABLE_INVENTORY=1
                 shift
                 ;;
+            --linux-distros*)
+                shift
+                ;;
             *)
                 # unknown option
                 display_usage

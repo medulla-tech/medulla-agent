@@ -156,6 +156,9 @@ check_arguments() {
                 SSH_PORT="${i#*=}"
                 shift
                 ;;
+            --linux-distros*)
+                shift
+                ;;
 			*)
                 # unknown option
                 display_usage
@@ -173,6 +176,7 @@ check_arguments() {
 		fi
 	fi
 	if [[ ! ${MINIMAL} ]]; then
+        echo "we only support minimal installer"
 		exit 0 # Remove when we support full version as well
 	fi
 }
