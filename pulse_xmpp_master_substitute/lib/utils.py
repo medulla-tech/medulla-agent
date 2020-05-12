@@ -1853,3 +1853,104 @@ def md5folder(directory):
         for basename in files:
             hash.update(md5(os.path.join(root, basename)))
     return hash.hexdigest()
+
+
+class protodef:
+    def __init__(self):
+        self.fileprotoinfo = os.path.join(Setdirectorytempinfo(),
+                                          'fingerprintproto')
+        self.boolchangerproto , self.proto = self.protochanged()
+
+    def protoinfoexist(self):
+        if os.path.exists(self.fileprotoinfo):
+            return True
+        return False
+
+    def protochanged(self):
+        if self.protoinfoexist():
+            fproto = self.protoandport()
+            self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+            newfingerprint = pickle.dumps(fproto) #on recalcule le proto
+            if self.fingerprintproto == newfingerprint:
+                self.proto = fproto
+                return False, self.proto 
+        self.refreshfingerprintproto()
+        self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+        self.proto = pickle.loads(self.fingerprintproto)
+        return True, self.proto 
+
+    def refreshfingerprintproto(self):
+        fproto = self.protoandport()
+        with open(self.fileprotoinfo, 'wb') as handle:
+            pickle.dump(fproto, handle)
+        return fproto
+
+    def protoandport(self):
+        protport = {}
+        if sys.platform.startswith('win'):
+            for process in psutil.process_iter():
+                if 'tvnserver.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['vnc'] = cux.laddr.port
+                elif 'sshd.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['ssh'] = cux.laddr.port
+            for service in psutil.win_service_iter():
+                if 'TermService' in service.name():
+                    service_handler = psutil.win_service_get('TermService')
+                    if service_handler.status() == 'running':
+                        pid = service_handler.pid()
+                        process_handler = psutil.Process(pid)
+                        for cux in process_handler.connections():
+                            if cux.status == psutil.CONN_LISTEN:
+                                protport['rdp'] = cux.laddr.port
+
+        elif sys.platform.startswith('linux'):
+            for process in psutil.process_iter():
+                if process.name() == 'x11vnc':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['vnc'] = port
+                elif process.name() == 'sshd':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['ssh'] = port
+                elif process.name() == 'xrdp':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and (ip == "0.0.0.0" or ip == "::"):
+                            protport['rdp'] = port
+
+        elif sys.platform.startswith('darwin'):
+            for process in psutil.process_iter():
+                if 'ARDAgent' in process.name():
+                    protport['vnc'] = '5900'
+            for cux in psutil.net_connections():
+                if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
+                    protport['ssh'] = '22'
+
+        return protport
