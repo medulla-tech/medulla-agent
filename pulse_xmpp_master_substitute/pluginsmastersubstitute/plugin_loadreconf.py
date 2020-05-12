@@ -151,7 +151,6 @@ def read_conf_loadreconf(objectxmpp):
         else:
             objectxmpp.timeout_reconf = 500
     objectxmpp.plugin_loadreconf = types.MethodType(plugin_loadreconf, objectxmpp)
-    logger.debug("parametre objectxmpp.generate_reconf_interval = %s"%objectxmpp.generate_reconf_interval)
 def plugin_loadreconf(self, msg, data):
     # Manage update remote agent
     pass
