@@ -129,7 +129,7 @@ def read_conf_loadreconf(objectxmpp):
         logger.debug("read file %s"%pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-        logger.debug("read file %s.local"%pathfileconf)
+            logger.debug("read file %s.local"%pathfileconf)
         if Config.has_option("parameters",
                                 "generate_reconf_interval"):
             objectxmpp.generate_reconf_interval = Config.getint('parameters',
@@ -143,7 +143,6 @@ def read_conf_loadreconf(objectxmpp):
                                                     'concurrentreconf')
         else:
             objectxmpp.nbconcurrentreconf = 240
-
 
         if Config.has_option("parameters",
                                 "timeout_reconf"):
