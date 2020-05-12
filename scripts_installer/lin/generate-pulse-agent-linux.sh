@@ -73,7 +73,7 @@ check_arguments() {
                 shift
                 ;;
             --linux-distros*)
-                LINUX_DISTROS="${i#*=}"
+                DISTROS="${i#*=}"
                 shift
                 ;;
 			*)
@@ -218,32 +218,62 @@ install_package() {
     esac
 }
 
+remove_package() {
+    case ${LINUX_DISTRO} in
+        "debian")
+            apt -y remove "$@"
+            ;;
+        "mageia")
+            urpme --auto "$@"
+            ;;
+        "rhel")
+            yum -y remove "$@"
+            ;;
+        *)
+            ;;
+    esac
+}
+
 install_repos() {
-    for distro in $(echo ${LINUX_DISTROS} | sed "s/,/ /g")
+    if [[ $LINUX_DISTRO == "debian" ]]; then
+        INSTALLED_REPOS=`dpkg -l |grep pulse-agent-linux-repo|awk '{print $2}'`
+    else
+        INSTALLED_REPOS=`rpm -qa --queryformat "%-30{NAME} \n" |grep pulse-agent-linux-repo`
+    fi
+    echo $INSTALLED_REPOS
+
+    for distro in $(echo ${DISTROS} | sed "s/,/ /g")
     do
         echo "$distro"
         case $distro in
             debian-buster)
                 install_package pulse-agent-linux-repo-buster
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-buster}" )
                 ;;
             debian-stretch)
                 install_package pulse-agent-linux-repo-stretch
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-stretch}" )
                 ;;
             ubuntu-bionic)
                 install_package pulse-agent-linux-repo-bionic
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-bionic}" )
                 ;;
             ubuntu-eoan)
                 install_package pulse-agent-linux-repo-eoan
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-eoan}" )
                 ;;
             ubuntu-xenial)
                 install_package pulse-agent-linux-repo-xenial
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-xenial}" )
                 ;;
             *)
                 echo "the distribution $distro is not yet supported"
                 ;;
         esac
     done
-
+    if [ $LINUX_DISTRO == "debian" ]; then
+        remove_package $INSTALLED_REPOS -y
+    fi
 
 }
 
