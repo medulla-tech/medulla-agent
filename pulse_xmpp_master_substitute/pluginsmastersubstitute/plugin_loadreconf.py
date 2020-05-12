@@ -64,7 +64,7 @@ def loadreconf(self, objectxmpp):
     # calcul time entre 2 demandes de reconfiguration.
     t = time.time()
     end = t + objectxmpp.generate_reconf_interval
-   
+
     datasend = {"action": "force_setup_agent",
                 "data": "",
                 'ret': 0,
@@ -78,7 +78,7 @@ def loadreconf(self, objectxmpp):
             # on supprime les non acquites suivant timeout de plus de generate_reconf_interval seconde
             objectxmpp.listconcurentreconf = [x for x in objectxmpp.listconcurentreconf if x[2] > t]
         viability = time.time() + objectxmpp.timeout_reconf
-        
+
         list_need_reconf = [ x[0] for x in objectxmpp.listconcurentreconf]
         # lists reconf terminate
         if len(list_need_reconf) > 0:
@@ -120,11 +120,11 @@ def read_conf_loadreconf(objectxmpp):
         "\neg conf:\n[parameters]\n" \
         "generate_reconf_interval = 60\n" \
         "concurrentreconf = 240\n" \
-        "timeout_reconf = 30"%( plugin['NAME'],
+        "timeout_reconf = 500"%( plugin['NAME'],
                                 pathfileconf))
-        objectxmpp.generate_reconf_interval = 10
+        objectxmpp.generate_reconf_interval = 60
         objectxmpp.nbconcurrentreconf = 240
-        objectxmpp.timeout_reconf = 30   
+        objectxmpp.timeout_reconf = 500
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
