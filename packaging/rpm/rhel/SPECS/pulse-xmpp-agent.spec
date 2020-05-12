@@ -126,7 +126,7 @@ fi
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
-%_sysconfdir/pulse-xmpp-agent
+%dir %_sysconfdir/pulse-xmpp-agent/
 %_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/guacamoleconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/downloadfile.ini
@@ -138,7 +138,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %_var/log/pulse
-%dir %{python2_sitelib}/pulse_xmpp_agent
+%dir %{python2_sitelib}/pulse_xmpp_agent/
 %{python2_sitelib}/pulse_xmpp_agent/lib
 %{python2_sitelib}/pulse_xmpp_agent/*.py*
 %{python2_sitelib}/pulse_xmpp_agent/script
