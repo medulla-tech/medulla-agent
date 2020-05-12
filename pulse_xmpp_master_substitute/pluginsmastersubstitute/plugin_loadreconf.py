@@ -64,7 +64,7 @@ def loadreconf(self, objectxmpp):
     # calcul time entre 2 demandes de reconfiguration.
     t = time.time()
     end = t + objectxmpp.generate_reconf_interval
-   
+
     datasend = {"action": "force_setup_agent",
                 "data": "",
                 'ret': 0,
@@ -78,7 +78,7 @@ def loadreconf(self, objectxmpp):
             # on supprime les non acquites suivant timeout de plus de generate_reconf_interval seconde
             objectxmpp.listconcurentreconf = [x for x in objectxmpp.listconcurentreconf if x[2] > t]
         viability = time.time() + objectxmpp.timeout_reconf
-        
+
         list_need_reconf = [ x[0] for x in objectxmpp.listconcurentreconf]
         # lists reconf terminate
         if len(list_need_reconf) > 0:
@@ -129,30 +129,30 @@ def read_conf_loadreconf(objectxmpp):
         logger.debug("read file %s"%pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-            logger.debug("read file %s.local"%pathfileconf)
-            if Config.has_option("parameters",
-                                 "generate_reconf_interval"):
-                objectxmpp.generate_reconf_interval = Config.getint('parameters',
-                                                                    'generate_reconf_interval')
-            else:
-                objectxmpp.generate_reconf_interval = 60
-                
-            if Config.has_option("parameters",
-                                 "concurrentreconf"):
-                objectxmpp.nbconcurrentreconf = Config.getint('parameters',
-                                                      'concurrentreconf')
-            else:
-                objectxmpp.nbconcurrentreconf = 240
-                
-            
-            if Config.has_option("parameters",
-                                 "timeout_reconf"):
-                objectxmpp.timeout_reconf = Config.getint('parameters',
-                                                                    'timeout_reconf')
-            else:
-                objectxmpp.timeout_reconf = 500
-    objectxmpp.plugin_loadreconf = types.MethodType(plugin_loadreconf, objectxmpp)
+        logger.debug("read file %s.local"%pathfileconf)
+        if Config.has_option("parameters",
+                                "generate_reconf_interval"):
+            objectxmpp.generate_reconf_interval = Config.getint('parameters',
+                                                                'generate_reconf_interval')
+        else:
+            objectxmpp.generate_reconf_interval = 60
 
+        if Config.has_option("parameters",
+                                "concurrentreconf"):
+            objectxmpp.nbconcurrentreconf = Config.getint('parameters',
+                                                    'concurrentreconf')
+        else:
+            objectxmpp.nbconcurrentreconf = 240
+
+
+        if Config.has_option("parameters",
+                                "timeout_reconf"):
+            objectxmpp.timeout_reconf = Config.getint('parameters',
+                                                                'timeout_reconf')
+        else:
+            objectxmpp.timeout_reconf = 500
+    objectxmpp.plugin_loadreconf = types.MethodType(plugin_loadreconf, objectxmpp)
+    logger.debug("parametre objectxmpp.generate_reconf_interval = %s"%objectxmpp.generate_reconf_interval)
 def plugin_loadreconf(self, msg, data):
     # Manage update remote agent
     pass
