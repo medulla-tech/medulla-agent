@@ -119,7 +119,7 @@ check_arguments() {
                 shift
                 ;;
             --linux-distros*)
-                LINUX_DISTROS="--linux-distros=\"${i#*=}\""
+                LINUX_DISTROS="--linux-distros=${i#*=}"
                 shift
                 ;;
             *)
