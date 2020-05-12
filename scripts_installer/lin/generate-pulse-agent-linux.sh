@@ -240,6 +240,7 @@ install_repos() {
                 ;;
             *)
                 echo "the distribution $distro is not yet supported"
+                ;;
         esac
     done
 
