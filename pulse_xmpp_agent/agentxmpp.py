@@ -53,7 +53,7 @@ from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, searchippublic, subnetnetwork,\
-                        protoandport, createfingerprintnetwork, isWinUserAdmin,\
+                        createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
