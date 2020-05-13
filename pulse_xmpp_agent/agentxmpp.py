@@ -2508,7 +2508,7 @@ class process_xmpp_agent():
             if xmpp.config.agenttype in ['relayserver']:
                 terminateserver(xmpp)
 
-            if setgetrestart(-1) == 1:
+            if setgetrestart(-1) == 0:
                 logging.log(DEBUGPULSE,"not restart")
                 # verify if signal stop
                 # verify if alternative connection
