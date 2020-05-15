@@ -338,18 +338,6 @@ class confParameter:
                     'connection', 'portARSscript')
             else:
                 self.parametersscriptconnection['port'] = 5001
-                
-            ######################reverse ssh#############################
-            if Config.has_option('global', 'clients_ssh_port'):
-                self.clients_ssh_port = Config.getint('global',
-                                                      'clients_ssh_port')
-            else:
-                self.clients_ssh_port = 22
-            if Config.has_option('global', 'server_ssh_user'):
-                self.server_ssh_user = Config.get('global',
-                                                      'server_ssh_user')
-            else:
-                self.server_ssh_user = "root"
         else:
             if Config.has_option("connection", "portAMscript"):
                 self.parametersscriptconnection['port'] = Config.get(
