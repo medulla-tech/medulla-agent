@@ -395,7 +395,12 @@ class confParameter:
                 self.packageserver["port"] = int(packageserver["port"])
         self.public_ip = ""
         self.public_ip_relayserver = ""
+        self.geoservers = "ifconfig.co, if.siveo.net"
         self.geolocalisation = True
+        
+        if Config.has_option("type", "public_ip"):
+            self.public_ip = Config.get('type', 'public_ip')
+
         if self.agenttype == "relayserver":
             if Config.has_option("type", "request_type"):
                 self.request_type = Config.get('type', 'request_type')
@@ -404,8 +409,16 @@ class confParameter:
                     self.public_ip_relayserver = ipfromdns(
                         Config.get('type', 'public_ip'))
                     self.packageserver["public_ip"] = self.public_ip_relayserver
-            if Config.has_option("type", "geolocalisation"):
-                self.geolocalisation = Config.getboolean("type", "geolocalisation")
+        else:
+            if Config.has_option("type", "request_type"):
+                self.request_type = Config.get('type', 'request_type')
+            else:
+                self.request_type = "public"
+        if Config.has_option("type", "geolocalisation"):
+            self.geolocalisation = Config.getboolean("type", "geolocalisation")
+
+        if Config.has_option("type", "geoservers"):
+            self.geoserversstr = Config.get("type", "geoservers")
 
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         # par convention :
