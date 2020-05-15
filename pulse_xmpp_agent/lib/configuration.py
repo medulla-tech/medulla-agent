@@ -426,6 +426,12 @@ class confParameter:
                 self.diragentbase = Config.get('global', 'diragentbase')
             else:
                 self.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
+            ######################reverse ssh#############################    
+            if Config.has_option('global', 'clients_ssh_port'):
+                self.clients_ssh_port = Config.getint('global',
+                                                      'clients_ssh_port')
+            else:
+                self.clients_ssh_port = 22
 
 
         jidsufixetempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)),
