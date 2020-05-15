@@ -45,7 +45,9 @@ from lib.utils import getRandomName,\
     DEBUGPULSE, searchippublic, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher, refreshfingerprintconf
+                      AESCipher, refreshfingerprintconf, \
+                        protodef, geolocalisation_agent
+
 from optparse import OptionParser
 
 from threading import Timer
@@ -83,9 +85,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
-        self.ippublic = searchippublic()
-        if self.ippublic == "":
-            self.ippublic == None
+        if not hasattr(self.config, 'geoservers'):
+                self.geoservers = "ifconfig.co, if.siveo.net"
+
+        self.geodata = geolocalisation_agent(typeuser = 'nomade',
+                                             geolocalisation=True, 
+                                             ip_public=None,
+                                             strlistgeoserveur=self.config.geoservers)
+
+        self.ippublic = self.geodata.get_ip_public()
+
+        if self.ippublic == "" or self.ippublic == None:
+            self.ippublic = None
 
         if not hasattr(self.config, 'sub_assessor'):
             self.sub_assessor = self.agentmaster
@@ -505,10 +516,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'xmppmacnotshortened' : xmppmacnotshortened,
             'classutil' : self.config.classutil,
             'ippublic' : self.ippublic,
+            'geolocalisation' : {},
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
             'agent_machine_name' :self.agent_machine_name
         }
+        if self.geodata.localisation is not None:
+            dataobj['geolocalisation'] = self.geodata.localisation
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
             try:

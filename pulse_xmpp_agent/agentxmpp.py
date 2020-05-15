@@ -60,7 +60,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, is_connectedServer,  testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
-                        protodef
+                        protodef, geolocalisation_agent
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -337,18 +337,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         15,
                         self.QDeployfile,
                         repeat=True)
+
         if not hasattr(self.config, 'geolocalisation'):
             self.config.geolocalisation = True
-        # use public_ip for localisation
-        if self.config.public_ip == "":
-            try:
-                if self.config.agenttype in ['relayserver']:
-                    if self.config.geolocalisation:
-                        self.config.public_ip = searchippublic()
-                else:
-                    self.config.public_ip = searchippublic()
-            except Exception:
-                pass
+        if not hasattr(self.config, 'request_type'):
+            self.config.request_type = "public"
+        self.geodata = geolocalisation_agent(typeuser = self.config.request_type,
+                                             geolocalisation=self.config.geolocalisation, 
+                                             ip_public=self.config.public_ip,
+                                             strlistgeoserveur=self.config.geoservers    )
+
+        self.config.public_ip = self.geodata.get_ip_public()
         if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
 
@@ -2172,6 +2171,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.config.public_ip,
+            'geolocalisation' : {},
             'remoteservice' : remoteservice.proto,
             'regcomplet' : self.regcomplet,
             'packageserver' : self.config.packageserver,
@@ -2181,6 +2181,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart' : save_count_start(),
             'keysyncthing' : self.deviceid
         }
+        if self.geodata.localisation is not None:
+            dataobj['geolocalisation'] = self.geodata.localisation
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver

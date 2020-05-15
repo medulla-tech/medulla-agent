@@ -51,6 +51,8 @@ from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import zipfile
+from functools import wraps
+
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
