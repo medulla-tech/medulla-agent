@@ -1,3 +1,7 @@
+pulse-xmpp-agent 2.0.2.3
+======================
+* Fix use of non root user for file transfert
+
 pulse-xmpp-agent 2.0.2
 ======================
 * Improve use of pulse/pulseuser for file transfert
