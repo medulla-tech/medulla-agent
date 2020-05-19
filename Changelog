@@ -1,8 +1,11 @@
 pulse-xmpp-agent 2.1.0
 ======================
 * [FEATURE]  Quick deployment: new mode for small packages
+* [FEATURE]  New reconf substitute to allow mass-reconfiguration of machine agents
+* [FEATURE]  New user for transferring files from client machine to pulse main server
 * [BUGFIX]   Improve installer when run in restricted powershell policies
 * [BUGFIX]   Fix linux installer
+* [BUGFIX]   Fix and improve configuration of remote desktop protocols
 
 pulse-xmpp-agent 2.0.7
 ======================
