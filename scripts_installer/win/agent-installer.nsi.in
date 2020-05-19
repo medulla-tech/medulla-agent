@@ -1117,7 +1117,7 @@ Section "!${PRODUCT_NAME}" sec_app
     ; Remove pulse parameters Folder
     Delete "$INSTDIR\etc\*.*"
     ; Remove files from bin
-    Delete "$INSTDIR\bin\*.*"
+    Delete "$INSTDIR\bin\*.py*"
   ${EndIf}
 
   ; Install of Pulse agent
