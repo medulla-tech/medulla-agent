@@ -1,4 +1,8 @@
+pulse-xmpp-agent 2.0.0.1
+======================
 * [BUGFIX]  Fixe error search last name user on windows
+* [BUGFIX]  Fix searching IP for geolocalisation
+
 pulse-xmpp-agent 2.0.0
 ======================
 * [FEATURE] Allow scp and rsync transfers in Pull mode
