@@ -1,9 +1,8 @@
-* [BUGFIX]   Fix linux installer
-
-pulse-xmpp-agent 2.0.8
+pulse-xmpp-agent 2.1.0
 ======================
-* [BUGFIX]   Improve installer when run in restricted powershell policies
 * [FEATURE]  Quick deployment: new mode for small packages
+* [BUGFIX]   Improve installer when run in restricted powershell policies
+* [BUGFIX]   Fix linux installer
 
 pulse-xmpp-agent 2.0.7
 ======================
