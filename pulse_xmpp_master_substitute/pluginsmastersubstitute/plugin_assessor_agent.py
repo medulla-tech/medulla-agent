@@ -108,7 +108,7 @@ def distHaversine(p1, p2):
         c = 2 * atan2(sqrt(a), sqrt(1-a))
         d = rt * c
         return d
- def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
+def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   action,
                                                   sessionid,
                                                   data,
