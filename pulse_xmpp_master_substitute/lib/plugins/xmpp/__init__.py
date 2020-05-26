@@ -4021,11 +4021,11 @@ class XmppMasterDatabase(DatabaseHelper):
         return False
 
     @DatabaseHelper._sessionm
-    def addguacamoleidforiventoryid(self, session, idinventory, idguacamole):
+    def addguacamoleidformachineid(self, session, machine_id, idguacamole):
         try:
             hasguacamole = Has_guacamole()
             hasguacamole.idguacamole=idguacamole
-            hasguacamole.idinventory=idinventory
+            hasguacamole.machine_id=machine_id
             session.add(hasguacamole)
             session.commit()
             session.flush()
@@ -4034,7 +4034,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def addlistguacamoleidforiventoryid(self, session, idinventory, connection):
+    def addlistguacamoleidformachineid(self, session, machine_id, connection):
         # objet connection: {u'VNC': 60, u'RDP': 58, u'SSH': 59}}
         if len(connection) == 0:
             # on ajoute 1 protocole inexistant pour signaler que guacamle est configure.
@@ -4042,7 +4042,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
         sql  = """DELETE FROM `xmppmaster`.`has_guacamole`
                     WHERE
-                        `xmppmaster`.`has_guacamole`.`idinventory` = '%s';"""%idinventory
+                        `xmppmaster`.`has_guacamole`.`machine_id` = '%s';"""%machine_id
         session.execute(sql)
         session.commit()
         session.flush()
@@ -4051,7 +4051,7 @@ class XmppMasterDatabase(DatabaseHelper):
             try:
                 hasguacamole = Has_guacamole()
                 hasguacamole.idguacamole=connection[idguacamole]
-                hasguacamole.idinventory=idinventory
+                hasguacamole.machine_id=machine_id
                 hasguacamole.protocol=idguacamole
                 session.add(hasguacamole)
                 session.commit()
@@ -4059,6 +4059,7 @@ class XmppMasterDatabase(DatabaseHelper):
             except Exception, e:
                 #logging.getLogger().error("addPresenceNetwork : %s " % new_network)
                 logging.getLogger().error(str(e))
+
     @DatabaseHelper._sessionm
     def listserverrelay(self, session, moderelayserver = "static"):
         sql = """SELECT
@@ -4560,6 +4561,58 @@ class XmppMasterDatabase(DatabaseHelper):
                     }
         return result
 
+    #jfkjfk
+    @DatabaseHelper._sessionm
+    def getGuacamoleRelayServerMachineJiduser(self, session, userjid, enable = 1):
+        user = str(userjid).split("@")[0]
+        querymachine = session.query(Machines)
+        if enable == None:
+            querymachine = querymachine.filter(Machines.jid.like("%s%%"%user))
+        else:
+            querymachine = querymachine.filter(and_(Machines.jid.like("%s%%"%user),
+                                                    Machines.enabled == enable))
+        machine = querymachine.one()
+        session.commit()
+        session.flush()
+        try:
+            result = {
+                        "uuid" : uuid,
+                        "jid" : machine.jid,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "hostname" : machine.hostname,
+                        "platform" : machine.platform,
+                        "macaddress" : machine.macaddress,
+                        "archi" : machine.archi,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "agenttype" : machine.agenttype,
+                        "keysyncthing" :  machine.keysyncthing,
+                        "enabled" : machine.enabled
+                        }
+            for i in result:
+                if result[i] == None:
+                    result[i] = ""
+        except Exception:
+            result = {
+                        "uuid" : uuid,
+                        "jid" : "",
+                        "groupdeploy" : "",
+                        "urlguacamole" : "",
+                        "subnetxmpp" : "",
+                        "hostname" : "",
+                        "platform" : "",
+                        "macaddress" : "",
+                        "archi" : "",
+                        "uuid_inventorymachine" : "",
+                        "ip_xmpp" : "",
+                        "agenttype" : "",
+                        "keysyncthing" :  "",
+                        "enabled" : 0
+                    }
+        return result
+    
     @DatabaseHelper._sessionm
     def getGuacamoleidforUuid(self, session, uuid, existtest = None):
         """

@@ -29,7 +29,7 @@ import socket
 import json
 import logging
 
-plugin = {"VERSION": "1.1501", "NAME" :"guacamoleconf", "TYPE":"relayserver"}
+plugin = {"VERSION": "1.1502", "NAME" :"guacamoleconf", "TYPE":"relayserver"}
 logger = logging.getLogger()
 
 def get_free_tcp_port():
@@ -66,6 +66,7 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
         raise
     cursor = db.cursor()
     result['data']['uuid'] = data['uuid']
+    result['data']['machine_id'] = data['machine_id']
     result['data']['connection'] = {}
 
     # Add only detected protocols
