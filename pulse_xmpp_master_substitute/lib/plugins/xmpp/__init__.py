@@ -4561,6 +4561,54 @@ class XmppMasterDatabase(DatabaseHelper):
                     }
         return result
 
+    @DatabaseHelper._sessionm
+    def getGuacamoleRelayServerMachineHostname(self, session, hostname, enable = 1):
+        querymachine = session.query(Machines)
+        if enable == None:
+            querymachine = querymachine.filter(Machines.hostname == hostname)
+        else:
+            querymachine = querymachine.filter(and_(Machines.hostname == hostname,
+                                                    Machines.enabled == enable))
+        machine = querymachine.one()
+        session.commit()
+        session.flush()
+        try:
+            result = {  "uuid" : machine.uuid_inventorymachine,
+                        "jid" : machine.jid,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "hostname" : machine.hostname,
+                        "platform" : machine.platform,
+                        "macaddress" : machine.macaddress,
+                        "archi" : machine.archi,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "agenttype" : machine.agenttype,
+                        "keysyncthing" :  machine.keysyncthing,
+                        "enabled" : machine.enabled
+                        }
+            for i in result:
+                if result[i] == None:
+                    result[i] = ""
+        except Exception:
+            result = {  "uuid" : -1,
+                        "jid" : "",
+                        "groupdeploy" : "",
+                        "urlguacamole" : "",
+                        "subnetxmpp" : "",
+                        "hostname" : "",
+                        "platform" : "",
+                        "macaddress" : "",
+                        "archi" : "",
+                        "uuid_inventorymachine" : "",
+                        "ip_xmpp" : "",
+                        "agenttype" : "",
+                        "keysyncthing" :  "",
+                        "enabled" : 0
+                    }
+        return result
+
     #jfkjfk
     @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineJiduser(self, session, userjid, enable = 1):
@@ -4638,6 +4686,38 @@ class XmppMasterDatabase(DatabaseHelper):
             ret=session.query(Has_guacamole.idguacamole).\
                 filter(Has_guacamole.idinventory == uuid.replace('UUID','')).first()
             if ret:
+                return True
+            return False
+
+    @DatabaseHelper._sessionm
+    def getGuacamoleIdForHostname(self, session, host, existtest = None):
+        """
+            if existtest is None
+             this function return the list of protocole for 1 machine
+             if existtest is not None:
+             this function return True if guacamole is configured
+             or false si guacamole is not configued.
+        """   
+        if existtest is None:
+            protocole = session.query(Has_guacamole.idguacamole,Has_guacamole.protocol).\
+                    join(Machines, Machines.id == Has_guacamole.machine_id)
+                    
+            protocole = protocole.filter(and_(Has_guacamole.protocol != "INF",
+                                          Machines.hostname == host))
+            protocole = protocole.all()
+            session.commit()
+            session.flush()
+            if protocole:
+                return [(m[1],m[0]) for m in protocole]
+            else:
+                return []
+        else:
+            protocole = session.query(Has_guacamole.idguacamole).\
+                    join(Machines, Machines.id == Has_guacamole.machine_id)
+            protocole = protocole.filter(Machines.hostname == host)
+            
+            protocole = protocole.first()
+            if protocole:
                 return True
             return False
 
