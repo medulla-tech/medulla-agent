@@ -53,7 +53,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.23", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.24", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -2268,6 +2268,13 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
     logger.info("###################################################")
     logger.info("pull_package_transfert_rsync : " + cmdmode)
     logger.info("###################################################")
+    scp_limit_rate_ko = ""
+    rsync_limit_rate_ko=""
+    if 'limit_rate_ko' in datasend['data'] and \
+                    datasend['data']['limit_rate_ko'] != "" and\
+                        int(datasend['data']['limit_rate_ko']) > 0:
+        scp_limit_rate_ko = " -l %s "%(int(datasend['data']['limit_rate_ko']) * 8)
+        rsync_limit_rate_ko = " --bwlimit %s "%(int(datasend['data']['limit_rate_ko']) * 8)
     takeresource(datasend, objectxmpp, sessionid)
     strjidagent = str(objectxmpp.boundjid.bare)
     if sys.platform.startswith('win'):
@@ -2303,15 +2310,15 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         else :
             return False
 
-        cmdtransfert = "%s -C -r "%execscp
+        cmdtransfert = "%s%s -C -r "%(scp_limit_rate_ko, execscp)
 
         cmd = """%s -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         if sys.platform.startswith('win'):
             scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
-            cmd = """ "c:\progra~1\OpenSSH\scp.exe" -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """%(objectxmpp.config.reverseserver_ssh_port, path_key_priv)
+            cmd = """ "c:\progra~1\OpenSSH\scp.exe"%s -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """%(scp_limit_rate_ko,objectxmpp.config.reverseserver_ssh_port,path_key_priv)
         if cmdmode == "rsync":
-            cmdtransfert =  " %s -z --rsync-path=rsync "%execrsync
+            cmdtransfert =  " %s -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
             cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         cmdexec =  cmd + remotesrc + localdest
