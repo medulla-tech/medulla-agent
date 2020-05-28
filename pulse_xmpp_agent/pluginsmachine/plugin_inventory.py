@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 # file : plugin_inventory.py
 
-from  lib.utils import simplecommand, file_put_contents_w_a
+from  lib.utils import simplecommand, file_put_contents_w_a, file_get_contents
 import os, sys, platform
 import zlib
 import base64
@@ -29,7 +29,7 @@ import json
 import logging
 import subprocess
 import lxml.etree as ET
-
+import hashlib
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
@@ -38,24 +38,77 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.20", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "1.22", "NAME" :"inventory", "TYPE":"machine"}
 
-def compact_xml(inputfile):
+def Setdirectorytempinfo():
+    """
+    This functions create a temporary directory.
+
+    Returns:
+    path directory INFO Temporaly
+    """
+    dirtempinfo = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","lib","INFOSTMP"))
+    if not os.path.exists(dirtempinfo):
+        os.makedirs(dirtempinfo, mode=0o007)
+    return dirtempinfo
+
+def compact_xml(inputfile, graine=""):
+    """ prepare xml a envoyer et genere 1 finger print"""
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
     xmlTree = ET.parse(inputfile, parser=parser)
+    strinventorysave  =  '<?xml version="1.0" encoding="UTF-8" ?>' + \
+                            ET.tostring(xmlTree, pretty_print=False)
+    file_put_contents_w_a(inputfile, strinventorysave)
+    # fingerprint
+    listxpath=['/REQUEST/CONTENT/ACCESSLOG',
+               '/REQUEST/CONTENT/BIOS',
+               '/REQUEST/CONTENT/OPERATINGSYSTEM',
+               '/REQUEST/CONTENT/ENVS',
+               '/REQUEST/CONTENT/PROCESSES',
+               '/REQUEST/CONTENT/DRIVES',
+               '/REQUEST/CONTENT/HARDWARE',
+               '/REQUEST/CONTENT/CONTROLLERS',
+               '/REQUEST/CONTENT/CPUS',
+               '/REQUEST/CONTENT/VERSIONPROVIDER',
+               '/REQUEST/CONTENT/INPUTS',
+               '/REQUEST/CONTENT/LOCAL_GROUPS',
+               '/REQUEST/CONTENT/LOCAL_USERS',
+               '/REQUEST/CONTENT/VERSIONCLIENT',
+               '/REQUEST/CONTENT/FIREWALL',
+               '/REQUEST/DEVICEID',
+               '/REQUEST/QUERY']
+    for searchtag in listxpath:
+        p = xmlTree.xpath(searchtag)
+        for t in p:
+            t.getparent().remove(t);
     strinventory  =  ET.tostring(xmlTree, pretty_print=False)
-    file_put_contents_w_a(inputfile, '<?xml version="1.0" encoding="UTF-8" ?>' + strinventory)
-
+    #manefilesigned = os.path.join(Setdirectorytempinfo(),
+                                                #'xmlsigned')
+    #file_put_contents_w_a(manefilesigned, strinventory)
+    fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
+    # on recupere ancienne fingerprint
+    manefilefingerprintinventory = os.path.join(Setdirectorytempinfo(),
+                                                'fingerprintinventory')
+    oldfingerprintinventory = ""
+    if os.path.exists(manefilefingerprintinventory):
+        oldfingerprintinventory = file_get_contents(manefilefingerprintinventory)
+    file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
+    if fingerprintinventory == oldfingerprintinventory:
+        logger.debug("no significant change in inventory.")
+        return strinventorysave, False
+    logger.debug("inventory is modify.")
+    return strinventorysave, True
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s"%(plugin))
-    logging.getLogger().debug("###################################################")
+    logger.debug("###################################################")
+    logger.debug("call %s"%(plugin))
+    logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
+    boolchang = True # initialisation de boolchang. True si inventory modifier
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
         if compteurcallplugin == 0:
-            logging.getLogger().debug("configure plugin %s"%action)
+            logger.debug("configure plugin %s"%action)
     except:
         pass
     try:
@@ -74,12 +127,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur['sessionid'] = sessionid
     timeoutfusion = 120
     msg=[]
+    if not 'forced' in data:
+        data['forced'] = True
+
     if sys.platform.startswith('linux'):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
             if os.path.exists(inventoryfile):
                 os.remove(inventoryfile)
-            for nbcmd in range(3):
+            for nbcmd in range(1, 4):
+                logger.debug("process inventory %s timeout %s"%(nbcmd,
+                                                                timeoutfusion))
                 cmd = "fusioninventory-agent --backend-collect-timeout=%s --local=%s"%(timeoutfusion,
                                                                                        inventoryfile)
                 msg.append(cmd)
@@ -103,10 +161,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 
             if os.path.exists(inventoryfile):
                 try:
-                    compact_xml(inventoryfile)
-                    Fichier = open(inventoryfile, 'r')
-                    result['data']['inventory'] = Fichier.read()
-                    Fichier.close()
+                    result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
@@ -148,14 +203,20 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             elif bitness == '64bit':
                 other_view_flag = _winreg.KEY_WOW64_32KEY
             # run the inventory
-            program = os.path.join(os.environ["ProgramFiles"], 'FusionInventory-Agent', 'fusioninventory-agent.bat')
-            namefile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
-            if os.path.exists(namefile):
-                os.remove(namefile)
+            program = os.path.join(os.environ["ProgramFiles"],
+                                   'FusionInventory-Agent',
+                                   'fusioninventory-agent.bat')
+            inventoryfile = os.path.join(os.environ["ProgramFiles"],
+                                    'Pulse',
+                                    'tmp',
+                                    'inventory.txt')
+            if os.path.exists(inventoryfile):
+                os.remove(inventoryfile)
             for nbcmd in range(3):
-                cmd = """\"%s\" --config=none --scan-profiles --backend-collect-timeout=%s --local=\"%s\""""%(program,
-                                                                                                              timeoutfusion,
-                                                                                                              namefile)
+                cmd = """\"%s\" --config=none --scan-profiles """ \
+                        """--backend-collect-timeout=%s --local=\"%s\""""%(program,
+                                                                           timeoutfusion,
+                                                                           inventoryfile)
                 msg.append(cmd)
                 logger.debug(cmd)
                 obj = simplecommand(cmd)
@@ -174,13 +235,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                     module = "Notify | Inventory | Error",
                                     date = None )
             msg=[]
-            if os.path.exists(namefile):
+            if os.path.exists(inventoryfile):
                 try:
-                    compact_xml(namefile)
-                    Fichier = open(namefile, 'r')
-                    result['data']['inventory'] = base64.b64encode(zlib.compress(Fichier.read(), 9))
-                    Fichier.close()
+                    #result['data']['inventory'], boolchang = compact_xml(inventoryfile,graine=)
+                    #result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     # read max_key_index parameter to find out the number of keys
+                    # Registry keys that need to be pushed in an inventory
+                    graine =""
+                    listfinger = []
                     if hasattr(xmppobject.config, 'max_key_index'):
                         result['data']['reginventory'] = {}
                         result['data']['reginventory']['info'] = {}
@@ -197,10 +259,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             path = registry_key.replace(hive+'\\', '').replace('\\'+sub_key, '').strip('"')
                             if hive == 'HKEY_CURRENT_USER':
                                 if hasattr(xmppobject.config, 'current_user'):
-                                    process = subprocess.Popen("wmic useraccount where name='%s' get sid" % xmppobject.config.current_user,
-                                                        shell=True,
-                                                        stdout=subprocess.PIPE,
-                                                        stderr=subprocess.STDOUT)
+                                    process = subprocess.Popen( "wmic useraccount where name='%s' " \
+                                                                    "get sid"%xmppobject.config.current_user,
+                                                                shell=True,
+                                                                stdout=subprocess.PIPE,
+                                                                stderr=subprocess.STDOUT)
                                     output = process.stdout.readlines()
                                     sid = output[1].rstrip(' \t\n\r')
                                     hive = 'HKEY_USERS'
@@ -219,6 +282,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                 key_value = _winreg.QueryValueEx(key, sub_key)
                                 logging.log(DEBUGPULSEPLUGIN,"key_value: %s" % str(key_value[0]))
                                 result['data']['reginventory'][reg_key_num]['value'] = str(key_value[0])
+                                listfinger.append(str(key_value[0]))
                                 _winreg.CloseKey(key)
                             except Exception, e:
                                 logging.log(ERRORPULSEPLUGIN,"Error getting key: %s" % str(e))
@@ -226,9 +290,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                 pass
                         # generate the json and encode
                         logging.log(DEBUGPULSEPLUGIN,"---------- Registry inventory Data ----------")
-                        logging.log(DEBUGPULSEPLUGIN,json.dumps(result['data']['reginventory'], indent=4, separators=(',', ': ')))
+                        logging.log(DEBUGPULSEPLUGIN,json.dumps(result['data']['reginventory'],
+                                                                indent=4,
+                                                                separators=(',', ': ')))
                         logging.log(DEBUGPULSEPLUGIN,"---------- End Registry inventory Data ----------")
-                        result['data']['reginventory'] = base64.b64encode(json.dumps(result['data']['reginventory'], indent=4, separators=(',', ': ')))
+                        result['data']['reginventory'] = base64.b64encode(json.dumps(result['data']['reginventory'],
+                                                                                     indent=4,
+                                                                                     separators=(',', ': ')))
+                        # dans le cas ou il y a des registres, ceux ci seront pris en compte pour le fingerprint.
+                        # on est jamais certain de l'ordre d'un dict. donc on peut pas prendre directement celui-ci dans 1 finger print.
+                        listfinger.sort()
+                        graine = ''.join(listfinger)
+                    result['data']['inventory'], boolchang = compact_xml(inventoryfile,graine=graine)
+                    result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
                     xmppobject.xmpplog( "error inventory %s "%str(e),
@@ -264,7 +338,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     elif sys.platform.startswith('darwin'):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
-            if os.path.exists(namefile):
+            if os.path.exists(inventoryfile):
                 os.remove(inventoryfile)
             for nbcmd in range(3):
                 ## attention this command has been tested on only 1 Mac
@@ -291,10 +365,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
-                    compact_xml(inventoryfile)
-                    Fichier = open(inventoryfile, 'r')
-                    result['data']['inventory'] = Fichier.read()
-                    Fichier.close()
+                    result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
@@ -331,7 +402,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
     if result['base64'] is True:
         result['data'] = base64.b64encode(json.dumps(result['data']))
-
-    xmppobject.send_message(mto=xmppobject.sub_inventory,
-                            mbody=json.dumps(result),
-                            mtype='chat')
+    if data['forced'] or boolchang:
+        xmppobject.send_message(mto=xmppobject.sub_inventory,
+                                mbody=json.dumps(result),
+                                mtype='chat')
+    else:
+        logger.debug("inventory is not sent")

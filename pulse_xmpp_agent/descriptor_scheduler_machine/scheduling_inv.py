@@ -24,7 +24,7 @@ this plugin process inventory from crontab descriptor time
 import logging
 from  lib.utils import getRandomName, call_plugin
 
-plugin = { "VERSION" : "1.3", "NAME" : "scheduling_inv", "TYPE" : "machine" , "SCHEDULED" : True }
+plugin = { "VERSION" : "1.31", "NAME" : "scheduling_inv", "TYPE" : "machine" , "SCHEDULED" : True }
 SCHEDULE = { "schedule" : "$[0,59] $[8,17] * * *", "nb" : -1 } # nb  -1 infinie
 def schedule_main(objectxmpp):
     if objectxmpp.config.inventory_interval != 0:
@@ -47,7 +47,7 @@ def schedule_main(objectxmpp):
                     objectxmpp,
                     "inventory",
                     sessionid,
-                    {},
+                    {"forced" : False},
                     msg,
                     dataerreur)
     objectxmpp.xmpplog(
