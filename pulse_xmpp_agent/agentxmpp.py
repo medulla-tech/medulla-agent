@@ -1697,14 +1697,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-    def handleinventory(self):
+    def handleinventory(self, forced = "forced", sessionid = None):
         msg={ 'from' : "master@pulse/MASTER",
               'to': self.boundjid.bare
             }
-        sessionid = getRandomName(6, "inventory")
+        datasend = {"forced" : "forced"}
+        if forced == "forced" or forced == True:
+            datasend = {"forced" : "forced"}
+        else:
+            datasend = {"forced" : "noforced" }
+        if sessionid == None:
+            sessionid = getRandomName(6, "inventory")
         dataerreur = {}
-        dataerreur['action']= "resultinventory"
-        dataerreur['data']={}
+        dataerreur['action'] = "resultinventory"
+        dataerreur['data']= datasend
         dataerreur['data']['msg'] = "ERROR : inventory"
         dataerreur['sessionid'] = sessionid
         dataerreur['ret'] = 255
@@ -1723,12 +1729,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             module = "Inventory | Inventory reception | Planned",
                                             fromuser = "",
                                             touser = "")
-
         call_plugin("inventory",
                     self,
                     "inventory",
-                    getRandomName(6, "inventory"),
-                    {},
+                    sessionid,
+                    datasend,
                     msg,
                     dataerreur)
 
