@@ -35,7 +35,7 @@ logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 plugin = { "VERSION" : "2.0", "NAME" : "downloadfileexpert", "TYPE" : "relayserver" }
-paramglobal = {"timeupreverssh" : 30 , "portsshmaster" : 22, "filetmpconfigssh" : "/tmp/tmpsshconf", "remoteport" : 22}
+paramglobal = {"timeupreverssh" : 30 , "portsshmaster" : 22, "filetmpconfigssh" : "/tmp/tmpsshconf", "remoteport" : 22, "server_ssh_user" : "pulsetransfert"}
 
 def get_free_tcp_port():
     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -251,8 +251,13 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             else:
                 source = create_path(type = "windows", host = profiluserpulse, ipordomain = "localhost", path = r'%s'%directory)
 
+        if hasattr(objectxmpp.config, 'server_ssh_user'):
+            paramglobal['server_ssh_user'] = objectxmpp.config.server_ssh_user
+        else:
+            logger.debug("We are using default pulsetransfert user.")
+
         dest = create_path(type ="linux",
-                        host="root",
+                        host=paramglobal['server_ssh_user'],
                         ipordomain=data['ipmaster'],
                         path=data['path_dest_master'])
         if reversessh == False:

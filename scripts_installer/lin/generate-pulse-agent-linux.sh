@@ -30,7 +30,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="2.0.8"
+AGENT_VERSION="2.1.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
