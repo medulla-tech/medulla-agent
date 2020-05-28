@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 # file : plugin_inventory.py
 
-from  lib.utils import simplecommand, file_put_contents_w_a
+from  lib.utils import simplecommand, file_put_contents_w_a, file_get_contents
 import os, sys, platform
 import zlib
 import base64
@@ -29,7 +29,7 @@ import json
 import logging
 import subprocess
 import lxml.etree as ET
-
+import hashlib
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
@@ -40,22 +40,68 @@ ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
 plugin = {"VERSION": "1.20", "NAME" :"inventory", "TYPE":"machine"}
 
+def Setdirectorytempinfo():
+    """
+    This functions create a temporary directory.
+
+    Returns:
+    path directory INFO Temporaly
+    """
+    dirtempinfo = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","lib","INFOSTMP"))
+    if not os.path.exists(dirtempinfo):
+        os.makedirs(dirtempinfo, mode=0o007)
+    return dirtempinfo
+
 def compact_xml(inputfile):
+    """ prepare xml a envoyer et genere 1 finger print"""
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
     xmlTree = ET.parse(inputfile, parser=parser)
+    strinventorysave  =  '<?xml version="1.0" encoding="UTF-8" ?>' + \
+                            ET.tostring(xmlTree, pretty_print=False)
+    file_put_contents_w_a(inputfile, strinventorysave)
+    # fingerprint
+    listxpath=['/REQUEST/CONTENT/ACCESSLOG',
+               '/REQUEST/CONTENT/BIOS',
+               '/REQUEST/CONTENT/OPERATINGSYSTEM',
+               '/REQUEST/CONTENT/ENVS',
+               '/REQUEST/CONTENT/PROCESSES',
+               '/REQUEST/CONTENT/DRIVES',
+               '/REQUEST/CONTENT/HARDWARE',
+               '/REQUEST/CONTENT/CONTROLLERS',
+               '/REQUEST/CONTENT/CPUS',
+               '/REQUEST/CONTENT/VERSIONPROVIDER',
+               '/REQUEST/CONTENT/INPUTS',
+               '/REQUEST/CONTENT/LOCAL_GROUPS',
+               '/REQUEST/CONTENT/LOCAL_USERS',
+               '/REQUEST/CONTENT/VERSIONCLIENT',
+               '/REQUEST/DEVICEID',
+               '/REQUEST/QUERY']
+    for searchtag in listxpath:
+        p = xmlTree.xpath(searchtag)
+        for t in p:
+            t.getparent().remove(t);
     strinventory  =  ET.tostring(xmlTree, pretty_print=False)
-    file_put_contents_w_a(inputfile, '<?xml version="1.0" encoding="UTF-8" ?>' + strinventory)
-
+    fingerprintinventory = hashlib.md5(strinventory).hexdigest()
+    # on recupere ancienne fingerprint
+    manefilefingerprintinventory = os.path.join(Setdirectorytempinfo(),
+                                                'fingerprintinventory')
+    oldfingerprintinventory = ""
+    if os.path.exists(manefilefingerprintinventory):
+        oldfingerprintinventory = file_get_contents(manefilefingerprintinventory)
+    file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
+    if fingerprintinventory == oldfingerprintinventory:
+        return strinventorysave, False
+    return strinventorysave, True
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
-    logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s"%(plugin))
-    logging.getLogger().debug("###################################################")
+    logger.debug("###################################################")
+    logger.debug("call %s"%(plugin))
+    logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
         if compteurcallplugin == 0:
-            logging.getLogger().debug("configure plugin %s"%action)
+            logger.debug("configure plugin %s"%action)
     except:
         pass
     try:
@@ -103,10 +149,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 
             if os.path.exists(inventoryfile):
                 try:
-                    compact_xml(inventoryfile)
-                    Fichier = open(inventoryfile, 'r')
-                    result['data']['inventory'] = Fichier.read()
-                    Fichier.close()
+                    result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
@@ -176,10 +219,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg=[]
             if os.path.exists(namefile):
                 try:
-                    compact_xml(namefile)
-                    Fichier = open(namefile, 'r')
-                    result['data']['inventory'] = base64.b64encode(zlib.compress(Fichier.read(), 9))
-                    Fichier.close()
+                    result['data']['inventory'], boolchang = compact_xml(inventoryfile)
+                    result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     # read max_key_index parameter to find out the number of keys
                     if hasattr(xmppobject.config, 'max_key_index'):
                         result['data']['reginventory'] = {}
@@ -291,10 +332,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
-                    compact_xml(inventoryfile)
-                    Fichier = open(inventoryfile, 'r')
-                    result['data']['inventory'] = Fichier.read()
-                    Fichier.close()
+                    result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
