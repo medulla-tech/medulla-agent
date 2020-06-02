@@ -81,10 +81,11 @@ def compact_xml(inputfile, graine=""):
         p = xmlTree.xpath(searchtag)
         for t in p:
             t.getparent().remove(t);
-    strinventory  =  ET.tostring(xmlTree, pretty_print=False)
+    strinventory  =  ET.tostring(xmlTree, pretty_print=True)
     #manefilesigned = os.path.join(Setdirectorytempinfo(),
                                                 #'xmlsigned')
     #file_put_contents_w_a(manefilesigned, strinventory)
+    
     fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
     # on recupere ancienne fingerprint
     manefilefingerprintinventory = os.path.join(Setdirectorytempinfo(),
@@ -129,7 +130,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     msg=[]
     if not 'forced' in data:
         data['forced'] = True
-
+    
     if sys.platform.startswith('linux'):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
@@ -237,8 +238,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
-                    #result['data']['inventory'], boolchang = compact_xml(inventoryfile,graine=)
-                    #result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     # read max_key_index parameter to find out the number of keys
                     # Registry keys that need to be pushed in an inventory
                     graine =""
