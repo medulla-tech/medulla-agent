@@ -38,71 +38,11 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.22", "NAME" :"inventory", "TYPE":"machine"}
-
-def Setdirectorytempinfo():
-    """
-    This functions create a temporary directory.
-
-    Returns:
-    path directory INFO Temporaly
-    """
-    dirtempinfo = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","lib","INFOSTMP"))
-    if not os.path.exists(dirtempinfo):
-        os.makedirs(dirtempinfo, mode=0o007)
-    return dirtempinfo
-
-def compact_xml(inputfile, graine=""):
-    """ prepare xml a envoyer et genere 1 finger print"""
-    parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
-    xmlTree = ET.parse(inputfile, parser=parser)
-    strinventorysave  =  '<?xml version="1.0" encoding="UTF-8" ?>' + \
-                            ET.tostring(xmlTree, pretty_print=False)
-    file_put_contents_w_a(inputfile, strinventorysave)
-    # fingerprint
-    listxpath=['/REQUEST/CONTENT/ACCESSLOG',
-               '/REQUEST/CONTENT/BIOS',
-               '/REQUEST/CONTENT/OPERATINGSYSTEM',
-               '/REQUEST/CONTENT/ENVS',
-               '/REQUEST/CONTENT/PROCESSES',
-               '/REQUEST/CONTENT/DRIVES',
-               '/REQUEST/CONTENT/HARDWARE',
-               '/REQUEST/CONTENT/CONTROLLERS',
-               '/REQUEST/CONTENT/CPUS',
-               '/REQUEST/CONTENT/VERSIONPROVIDER',
-               '/REQUEST/CONTENT/INPUTS',
-               '/REQUEST/CONTENT/LOCAL_GROUPS',
-               '/REQUEST/CONTENT/LOCAL_USERS',
-               '/REQUEST/CONTENT/VERSIONCLIENT',
-               '/REQUEST/CONTENT/FIREWALL',
-               '/REQUEST/DEVICEID',
-               '/REQUEST/QUERY']
-    for searchtag in listxpath:
-        p = xmlTree.xpath(searchtag)
-        for t in p:
-            t.getparent().remove(t);
-    strinventory  =  ET.tostring(xmlTree, pretty_print=True)
-    #manefilesigned = os.path.join(Setdirectorytempinfo(),
-                                                #'xmlsigned')
-    #file_put_contents_w_a(manefilesigned, strinventory)
-    
-    fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
-    # on recupere ancienne fingerprint
-    manefilefingerprintinventory = os.path.join(Setdirectorytempinfo(),
-                                                'fingerprintinventory')
-    oldfingerprintinventory = ""
-    if os.path.exists(manefilefingerprintinventory):
-        oldfingerprintinventory = file_get_contents(manefilefingerprintinventory)
-    file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
-    if fingerprintinventory == oldfingerprintinventory:
-        logger.debug("no significant change in inventory.")
-        return strinventorysave, False
-    logger.debug("inventory is modify.")
-    return strinventorysave, True
+plugin = {"VERSION": "1.231", "NAME" :"inventory", "TYPE":"machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s"%(plugin))
+    logger.debug("call %s from %s"%(plugin,message['from']))
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True # initialisation de boolchang. True si inventory modifier
@@ -129,13 +69,35 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     timeoutfusion = 120
     msg=[]
     if not 'forced' in data:
-        data['forced'] = True
+        data['forced'] = "forced"
+    if data['forced'] == True:
+        data['forced'] = "forced"
+    if data['forced'] == False:
+        data['forced'] = "noforced"
+    
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+        inventoryfile = os.path.join("/","tmp","inventory.txt")
+    elif sys.platform.startswith('win'): 
+        inventoryfile = os.path.join(os.environ["ProgramFiles"],
+                                    'Pulse',
+                                    'tmp',
+                                    'inventory.txt')
+    else:
+        logger.error("undefined OS")
+        xmppobject.xmpplog( "undefined OS",
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Notify | Inventory | Error",
+                            date = None )
+        return
+    if os.path.exists(inventoryfile):
+        os.rename(inventoryfile, "%s.back"%inventoryfile)
     
     if sys.platform.startswith('linux'):
         try:
-            inventoryfile = os.path.join("/","tmp","inventory.txt")
-            if os.path.exists(inventoryfile):
-                os.remove(inventoryfile)
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s"%(nbcmd,
                                                                 timeoutfusion))
@@ -159,11 +121,28 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                     module = "Notify | Inventory | Error",
                                     date = None )
             msg=[]
-                
             if os.path.exists(inventoryfile):
                 try:
                     result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
+                    if boolchang == False:
+                        xmppobject.xmpplog("no significant change in inventory.",
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Notify | Inventory",
+                                            date = None )
+                    else:
+                        xmppobject.xmpplog("inventory changed",
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Notify | Inventory",
+                                            date = None )
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
                     xmppobject.xmpplog( "error inventory %s "%str(e),
@@ -207,12 +186,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             program = os.path.join(os.environ["ProgramFiles"],
                                    'FusionInventory-Agent',
                                    'fusioninventory-agent.bat')
-            inventoryfile = os.path.join(os.environ["ProgramFiles"],
-                                    'Pulse',
-                                    'tmp',
-                                    'inventory.txt')
-            if os.path.exists(inventoryfile):
-                os.remove(inventoryfile)
             for nbcmd in range(3):
                 cmd = """\"%s\" --config=none --scan-profiles """ \
                         """--backend-collect-timeout=%s --local=\"%s\""""%(program,
@@ -302,6 +275,24 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         graine = ''.join(listfinger)
                     result['data']['inventory'], boolchang = compact_xml(inventoryfile,graine=graine)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
+                    if boolchang == False:
+                        xmppobject.xmpplog("no significant change in inventory.",
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Notify | Inventory",
+                                            date = None )
+                    else:
+                        xmppobject.xmpplog("inventory changed",
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Notify | Inventory",
+                                            date = None )
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
                     xmppobject.xmpplog( "error inventory %s "%str(e),
@@ -336,9 +327,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             return
     elif sys.platform.startswith('darwin'):
         try:
-            inventoryfile = os.path.join("/","tmp","inventory.txt")
-            if os.path.exists(inventoryfile):
-                os.remove(inventoryfile)
             for nbcmd in range(3):
                 ## attention this command has been tested on only 1 Mac
                 cmd = "/opt/fusioninventory-agent/bin/fusioninventory-inventory " \
@@ -366,6 +354,24 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 try:
                     result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
+                    if boolchang == False:
+                        xmppobject.xmpplog("no significant change in inventory.",
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Notify | Inventory",
+                                            date = None )
+                    else:
+                        xmppobject.xmpplog("inventory changed",
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Notify | Inventory",
+                                            date = None )
                 except Exception as e:
                     logger.error("\n%s"%(traceback.format_exc()))
                     xmppobject.xmpplog( "error inventory %s "%str(e),
@@ -401,9 +407,88 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
     if result['base64'] is True:
         result['data'] = base64.b64encode(json.dumps(result['data']))
-    if data['forced'] or boolchang:
+    if data['forced']=='forced' or boolchang:
         xmppobject.send_message(mto=xmppobject.sub_inventory,
                                 mbody=json.dumps(result),
                                 mtype='chat')
+        xmppobject.xmpplog("inventory is injected",
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Notify | Inventory",
+                            date = None )
     else:
-        logger.debug("inventory is not sent")
+        logger.debug("inventory is not injected")
+        xmppobject.xmpplog("inventory is not injected",
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Notify | Inventory",
+                            date = None )
+
+def Setdirectorytempinfo():
+    """
+    This functions create a temporary directory.
+
+    Returns:
+    path directory INFO Temporaly
+    """
+    dirtempinfo = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","lib","INFOSTMP"))
+    if not os.path.exists(dirtempinfo):
+        os.makedirs(dirtempinfo, mode=0o007)
+    return dirtempinfo
+
+def compact_xml(inputfile, graine=""):
+    """ prepare xml a envoyer et genere 1 finger print"""
+    parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
+    xmlTree = ET.parse(inputfile, parser=parser)
+    strinventorysave  =  '<?xml version="1.0" encoding="UTF-8" ?>' + \
+                            ET.tostring(xmlTree, pretty_print=False)
+    file_put_contents_w_a(inputfile, strinventorysave)
+    # fingerprint
+    listxpath=['/REQUEST/CONTENT/ACCESSLOG',
+               '/REQUEST/CONTENT/BIOS',
+               '/REQUEST/CONTENT/OPERATINGSYSTEM',
+               '/REQUEST/CONTENT/ENVS',
+               '/REQUEST/CONTENT/PROCESSES',
+               '/REQUEST/CONTENT/DRIVES',
+               '/REQUEST/CONTENT/HARDWARE',
+               '/REQUEST/CONTENT/CONTROLLERS',
+               '/REQUEST/CONTENT/CPUS',
+               '/REQUEST/CONTENT/VERSIONPROVIDER',
+               '/REQUEST/CONTENT/INPUTS',
+               '/REQUEST/CONTENT/LOCAL_GROUPS',
+               '/REQUEST/CONTENT/LOCAL_USERS',
+               '/REQUEST/CONTENT/VERSIONCLIENT',
+               '/REQUEST/CONTENT/FIREWALL',
+               '/REQUEST/DEVICEID',
+               '/REQUEST/QUERY']
+    for searchtag in listxpath:
+        p = xmlTree.xpath(searchtag)
+        for t in p:
+            t.getparent().remove(t);
+    strinventory  =  ET.tostring(xmlTree, pretty_print=True)
+    # -----debug file compare------
+    #namefilecompare = "%s.xml1"%inputfile
+    #if os.path.exists(namefilecompare):
+        #os.rename(namefilecompare, "%s.back"%namefilecompare)
+    #file_put_contents_w_a(namefilecompare, strinventory)
+    # -----end debug file compare------
+    fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
+    # on recupere ancienne fingerprint
+    manefilefingerprintinventory = os.path.join(Setdirectorytempinfo(),
+                                                'fingerprintinventory')
+    oldfingerprintinventory = ""
+    if os.path.exists(manefilefingerprintinventory):
+        oldfingerprintinventory = file_get_contents(manefilefingerprintinventory)
+    file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
+    if fingerprintinventory == oldfingerprintinventory:
+        logger.debug("no significant change in inventory.")
+        
+        return strinventorysave, False
+    logger.debug("inventory is modify.")
+    return strinventorysave, True
