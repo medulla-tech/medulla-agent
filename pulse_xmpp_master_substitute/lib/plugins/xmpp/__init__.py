@@ -4140,6 +4140,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updateMachineidinventory(self, session, id_machineinventory, idmachine):
+        updatedb=-1
         try:
             sql = """UPDATE `machines`
                     SET
@@ -4156,18 +4157,19 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updateMachinejidGuacamoleGroupdeploy(self, session, jid, urlguacamole, groupdeploy, idmachine):
-       try:
-           sql = """UPDATE machines
-                    SET
-                        jid = '%s', urlguacamole = '%s', groupdeploy = '%s'
-                    WHERE
-                        id = '%s';"""%(jid, urlguacamole, groupdeploy, idmachine)
-           updatedb = session.execute(sql)
-           session.commit()
-           session.flush()
-       except Exception, e:
-           logging.getLogger().error(str(e))
-       return updatedb
+        updatedb=-1
+        try:
+            sql = """UPDATE machines
+                        SET
+                            jid = '%s', urlguacamole = '%s', groupdeploy = '%s'
+                        WHERE
+                            id = '%s';"""%(jid, urlguacamole, groupdeploy, idmachine)
+            updatedb = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
+        return updatedb
 
     @DatabaseHelper._sessionm
     def getPresenceuuid(self, session, uuid):
