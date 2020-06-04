@@ -211,8 +211,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
-                    #result['data']['inventory'], boolchang = compact_xml(inventoryfile,graine=)
-                    #result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     # read max_key_index parameter to find out the number of keys
                     # Registry keys that need to be pushed in an inventory
                     graine =""
