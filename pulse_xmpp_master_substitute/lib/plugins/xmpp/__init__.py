@@ -5327,10 +5327,16 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def call_reconfiguration_machine(self, session, limit=None):
-        res = session.query(Machines.id, Machines.jid).filter(and_( Machines.need_reconf == '1',
-                                                    Machines.enabled == '1',
-                                                    Machines.agenttype.like('machine')))
+    def call_reconfiguration_machine(self, session, limit=None, typemachine="machine"):
+        if typemachine in ["machine", "relay"]:
+            res = session.query(Machines.id, Machines.jid).\
+                filter(and_( Machines.need_reconf == '1',
+                            Machines.enabled == '1',
+                            Machines.agenttype.like(typemachine)))
+        elif typemachine is None or typemachine="all":
+            res = session.query(Machines.id, Machines.jid).\
+                filter(and_( Machines.need_reconf == '1',
+                            Machines.enabled == '1'))
         if limit is not None:
             res = res.limit(int(limit))
         res= res.all()
@@ -5341,7 +5347,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         return listjid
-    
+
     @DatabaseHelper._sessionm
     def call_acknowledged_reconficuration(self, session, listmachine=[]):
         listjid = []
