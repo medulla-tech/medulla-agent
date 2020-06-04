@@ -4611,7 +4611,6 @@ class XmppMasterDatabase(DatabaseHelper):
                     }
         return result
 
-    #jfkjfk
     @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineJiduser(self, session, userjid, enable = 1):
         user = str(userjid).split("@")[0]

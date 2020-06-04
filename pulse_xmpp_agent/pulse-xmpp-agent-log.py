@@ -49,7 +49,6 @@ Base = declarative_base()
 
 VERSIONLOG = 1.0
 
-#jfkjfk
 class Logs(Base):
     # ====== Table name =========================
     __tablename__ = 'logs'
