@@ -2488,19 +2488,22 @@ def create_msg_xmpp_quick_deploy(folder, create = False):
         logger.debug("Quick deployment package %s.xmpp found"%pathaqpackage)
 
 def pulseuser_useraccount_mustexist(username='pulseuser'):
+    message = []
     if sys.platform.startswith('linux'):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            print '%s user account already exists. Nothing to do.' % username
-            return False
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
         except Exception:
-            adduser_cmd = 'adduser --system --group --home /var/lib/pulse2 '\
-                '--shell /bin/rbash --disabled-password %s' % username
+            adduser_cmd = 'adduser --system --quiet --group '\
+                '--home /var/lib/pulse2 --shell /bin/rbash '\
+                '--disabled-password %s' % username
     elif sys.platform.startswith('win'):
         try:
             win32net.NetUserGetInfo('',username,0)
-            print '%s user account already exists. Nothing to do.' % username
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
         except Exception:
             userpassword = uuid.uuid4().hex[:14]
             adduser_cmd = 'net user "%s" "%s" /ADD /COMMENT:"Pulse '\
@@ -2509,8 +2512,8 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            print '%s user account already exists. Nothing to do.' % username
-            return False
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
         except Exception:
             userpassword = uuid.uuid4().hex[:14]
             adduser_cmd = 'dscl . -create /Users/%s '\
@@ -2519,21 +2522,22 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
     # Create the account
     result = simplecommand(encode_strconsole(adduser_cmd))
     if result['code'] == 0:
-        print 'Creation of %s user account successful: %s' % (username, result)
+        message.append('Creation of %s user account successful: %s' % (username, result))
         # Other operations specific to Windows
         if sys.platform.startswith('win'):
             result = simplecommand(encode_strconsole('wmic useraccount where "Name=\'%s\'" set PasswordExpires=False' % username))
-            print 'Setting %s user account to not expire: %s' % (username, result)
+            message.append('Setting %s user account to not expire: %s' % (username, result))
             adminsgrpsid = win32security.ConvertStringSidToSid('S-1-5-32-544')
             adminsgroup = win32security.LookupAccountSid('',adminsgrpsid)[0]
             result = simplecommand(encode_strconsole('net localgroup %s "%s" /ADD' % (adminsgroup, username)))
-            print 'Adding %s account to administrators group: %s' % (username, result)
-        return True
+            message.append('Adding %s account to administrators group: %s' % (username, result))
+        return True, message
     else:
-        print 'Creation of %s user account failed: %s' % (username, result)
-        return False
+        message.append('Creation of %s user account failed: %s' % (username, result))
+        return False, message
 
-def pulseuser_windowsprofile_mustexist(username='pulseuser'):
+def pulseuser_profile_mustexist(username='pulseuser'):
+    message = []
     if sys.platform.startswith('win'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
@@ -2552,24 +2556,66 @@ def pulseuser_windowsprofile_mustexist(username='pulseuser'):
                                      ptr_profilepath,
                                      240)
             if os.path.normpath(ptr_profilepath.value) == defined_profilepath:
-                print '%s profile created successfully.' % username
-                print '%s profile location: %s' % (username, ptr_profilepath.value)
-                return True
+                message.append('%s profile created successfully.' % username)
+                message.append('%s profile location: %s' % (username, ptr_profilepath.value))
+                return True, message
             else:
-                print 'Error creating %s profile.' % username
-                print 'Location of created profile: %s' % ptr_profilepath.value
-                return False
+                message.append('Error creating %s profile.' % username)
+                message.append('%s profile location: %s' % (username, ptr_profilepath.value))
+                return False, message
         else:
             # Profile found
-            print '%s profile already exists. Nothing to do.' % username
-            print '%s profile location: %s' % (username, profile_location)
-            return True
+            message.append('%s profile already exists. Nothing to do.' % username)
+            message.append('%s profile location: %s' % (username, profile_location))
+    elif sys.platform.startswith('linux'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            homedir = os.path.expanduser(username)
+        except Exception as e:
+            message.append('Error getting information for creating home folder '\
+                           'for user %s' % username)
+            return False, message
+        if not os.path.isdir(homedir):
+            message.append('Creating %s home folder %s' % (username, homedir))
+            os.makedirs(homedir, 0751)
+        os.chmod(homedir, 0751)
+        os.chown(homedir, uid, gid)
+        packagedir = os.path.join(homedir, 'packages')
+        if not os.path.isdir(packagedir):
+            message.append('Creating packages folder %s' % packagedir)
+            os.makedirs(packagedir, 0764)
+        gidroot = grp.getgrnam("root").gr_gid
+        os.chmod(packagedir, 0764)
+        os.chown(packagedir, uid, gidroot)
+    elif sys.platform.startswith('darwin'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            homedir = os.path.expanduser(username)
+        except Exception as e:
+            message.append('Error getting information for creating home folder '\
+                           'for user %s' % username)
+            return False, message
+        if not os.path.isdir(homedir):
+            message.append('Creating %s home folder %s' % (username, homedir))
+            os.makedirs(homedir, 0751)
+        os.chmod(homedir, 0751)
+        os.chown(homedir, uid, gid)
+        packagedir = os.path.join(homedir, 'packages')
+        if not os.path.isdir(packagedir):
+            message.append('Creating packages folder %s' % packagedir)
+            os.makedirs(packagedir, 0764)
+        gidroot = grp.getgrnam("root").gr_gid
+        os.chmod(packagedir, 0764)
+        os.chown(packagedir, uid, gidroot)
+    return True, message
 
 def get_user_profile(username='pulseuser'):
     usersid = get_user_sid(username)
     if not usersid:
-        print 'Error obtaining %s user sid' % username
-        print 'User %s probably does not exist' % username
+        logger.error('Error obtaining %s user sid' % username)
+        logger.error('User %s probably does not exist' % username)
         return ''
     check_profile_cmd = 'powershell "Get-ItemProperty '\
     '-Path \'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*\' '\
@@ -2577,7 +2623,7 @@ def get_user_profile(username='pulseuser'):
     '| Select -ExpandProperty ProfileImagePath"' % usersid
     result = simplecommand(encode_strconsole(check_profile_cmd))
     if result['code'] == 0 and result['result']:
-        print '%s profile location: %s' % (username, result['result'][0])
+        logger.info('%s profile location: %s' % (username, result['result'][0]))
         return result['result'][0]
     else:
         return ''
@@ -2586,10 +2632,10 @@ def get_user_sid(username='pulseuser'):
     try:
         usersid = win32security.ConvertSidToStringSid(
             win32security.LookupAccountName(None, username)[0])
-        print '%s user sid: %s' % (username, usersid)
+        logger.info('%s user sid: %s' % (username, usersid))
         return usersid
     except Exception as e:
-        print 'Error obtaining %s user sid: \n %s' % (username, str(e))
+        logger.error('Error obtaining %s user sid: \n %s' % (username, str(e)))
         return False
 
 def delete_profile(username='pulseuser'):
@@ -2601,9 +2647,9 @@ def delete_profile(username='pulseuser'):
                     delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
                     result = simplecommand(encode_strconsole(delete_folder_cmd))
                     if result['code'] == 0:
-                        print 'Deleted %s folder' % os.path.join('C:/Users/', name)
+                        logger.info('Deleted %s folder' % os.path.join('C:/Users/', name))
                     else:
-                        print 'Error deleting %s folder' % os.path.join('C:/Users/', name)
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
         except Exception as e:
             pass
         # Delete profile
@@ -2611,28 +2657,31 @@ def delete_profile(username='pulseuser'):
         usersid = get_user_sid(username)
         delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
         if delete_profile_result == 0:
-            print '%s profile deleted.' % username
+            logger.info('%s profile deleted.' % username)
         else:
-            print 'Error deleting %s profile: %s' % (username, delete_profile_result)
+            logger.error('Error deleting %s profile: %s' % (username, delete_profile_result))
     return True
 
 def create_idrsa_on_client(username='pulseuser', key=''):
     """
     Used on client machine for connecting to relay server
     """
+    message = []
     if sys.platform.startswith('win'):
         id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
     else:
         id_rsa_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
     result = simplecommand(encode_strconsole(delete_keyfile_cmd))
-    print 'Creating id_rsa file in %s' % id_rsa_path
+    message.append('Creating id_rsa file in %s' % id_rsa_path)
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
         os.makedirs(os.path.dirname(id_rsa_path), 0700)
     file_put_contents(id_rsa_path, key)
     file_contents = file_get_contents(id_rsa_path)
-    print '%s contents: \n %s' % (id_rsa_path, file_contents)
-    apply_perms_sshkey(id_rsa_path, True)
+    logger.debug('%s contents: \n %s' % (id_rsa_path, file_contents))
+    result, logs = apply_perms_sshkey(id_rsa_path, True)
+    message.append(logs)
+    return message
 
 def apply_perms_sshkey(path, private=True):
     """
@@ -2640,8 +2689,9 @@ def apply_perms_sshkey(path, private=True):
     If private = True, the permissions are based on the user that is executing Pulse Agent
     If private = False, the permissions are based on pulseuser
     """
+    message = []
     if not os.path.isfile(path):
-        print 'Error: File %s does not exist' % path
+        message.append('Error: File %s does not exist' % path)
         return False
     if sys.platform.startswith('win'):
         if private == True:
@@ -2672,9 +2722,9 @@ def apply_perms_sshkey(path, private=True):
                                               win32security.DACL_SECURITY_INFORMATION,
                                               sd)
         except Exception as e:
-            print 'Error setting permissions on %s for user %s' % (path, user)
-            print 'Error details: %s' % str(e)
-            return False
+            message.append('Error setting permissions on %s for user %s' % (path, user))
+            message.append('Error details: %s' % str(e))
+            return False, message
     else:
         if private == True:
             # We are using id_rsa. The owner must be the user running the Agent
@@ -2691,10 +2741,10 @@ def apply_perms_sshkey(path, private=True):
             os.chmod(os.path.dirname(path), 0700)
             os.chmod(path, 0600)
         except Exception as e:
-            print 'Error setting permissions on %s for user %s' % (path,
-                                                                   pwd.getpwuid(uid).pw_name)
-            print 'Error details: %s' % str(e)
-            return False
+            message.append('Error setting permissions on %s for user %s' % (path,
+                                                                   pwd.getpwuid(uid).pw_name))
+            message.append('Error details: %s' % str(e))
+            return False, message
     if sys.platform.startswith('win'):
         list_perms_cmd = 'powershell "(get-acl %s).access '\
         '| ft IdentityReference,FileSystemRights,AccessControlType"' % path
@@ -2703,33 +2753,89 @@ def apply_perms_sshkey(path, private=True):
     elif sys.platform.startswith('darwin'):
         list_perms_cmd = 'ls -e -l %s' % path
     result = simplecommand(encode_strconsole(list_perms_cmd))
-    print 'Permissions on file %s:' % path
-    print ''.join(result['result'])
-    return True
+    message.append('Permissions on file %s:' % path)
+    message.append("%s"%''.join(result['result']))
+    return True, message
 
 def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
     """
     Used on client machine for allowing connections from relay server
     """
+    message = []
     if sys.platform.startswith('win'):
         authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys' )
     else:
         authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
     if not os.path.isfile(authorized_keys_path):
-        print 'Creating authorized_keys file in %s' % authorized_keys_path
+        message.append('Creating authorized_keys file in %s' % authorized_keys_path)
         if not os.path.isdir(os.path.dirname(authorized_keys_path)):
             os.makedirs(os.path.dirname(authorized_keys_path), 0700)
         file_put_contents(authorized_keys_path, key)
     else:
         authorized_keys_content = file_get_contents(authorized_keys_path)
         if not key.strip(' \t\n\r') in authorized_keys_content:
-            print 'Adding key to %s' % authorized_keys_path
+            message.append('Adding key to %s' % authorized_keys_path)
             file_put_contents_w_a( authorized_keys_path, "\n"+ key, "a" )
         else:
-            print 'Key is already present in %s' % authorized_keys_path
+            message.append('Key is already present in %s' % authorized_keys_path)
     file_contents = file_get_contents(authorized_keys_path)
-    print '%s contents: \n %s' %(authorized_keys_path, file_contents)
-    apply_perms_sshkey(authorized_keys_path, False)
+    message.append('%s contents: \n %s' %(authorized_keys_path, file_contents))
+    result, logs = apply_perms_sshkey(authorized_keys_path, False)
+    message.append(logs)
+    return message
+
+def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
+    message = []
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+        message.append('%s user account already exists. Nothing to do.' % username)
+        return False, message
+    except Exception:
+        adduser_cmd = 'adduser --system --quiet --group '\
+            '--home /var/lib/pulse2/clients/reversessh '\
+            '--shell /bin/rbash --disabled-password %s' % username
+    result = simplecommand(encode_strconsole(adduser_cmd))
+    if result['code'] == 0:
+        message.append('Creation of %s user account successful: %s' % (username, result))
+        return True, message
+    else:
+        message.append('Creation of %s user account failed: %s' % (username, result))
+        return False, message
+
+def reversessh_keys_mustexist_on_relay(username='reversessh'):
+    message = []
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+        homedir = os.path.expanduser(username)
+    except Exception as e:
+        message.append('Error getting information for creating home folder '\
+                       'for user %s' % username)
+        return False, message
+    if not os.path.isdir(homedir):
+        message.append('Creating %s home folder %s' % (username, homedir))
+        os.makedirs(homedir, 0751)
+    os.chmod(homedir, 0751)
+    os.chown(homedir, uid, gid)
+    # Check keys
+    id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
+    keycheck_cmd = 'ssh-keygen -y -e -f %s > %s' % (id_rsa_key_path, public_key_path)
+    result = simplecommand(encode_strconsole(keycheck_cmd))
+    if result['code'] != 0:
+        message.append('Creating id_rsa file in %s' % id_rsa_key_path)
+        if not os.path.isdir(os.path.dirname(id_rsa_key_path)):
+            os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
+        keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
+        result = simplecommand(encode_strconsole(keygen_cmd))
+    os.chmod(os.path.dirname(id_rsa_key_path), 0700)
+    os.chown(os.path.dirname(id_rsa_key_path), uid, gid)
+    os.chmod(id_rsa_key_path, 0600)
+    os.chown(id_rsa_key_path, uid, gid)
+    os.chmod(public_key_path, 0644)
+    os.chown(public_key_path, uid, gid)
+    return True, message
 
 class geolocalisation_agent:
     def __init__(self, 
