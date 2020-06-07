@@ -22,11 +22,6 @@
 #
 # file pluginsmaster/plugin_updatenbdeploy.py
 
-import base64
-import json
-import os
-import utils
-import pprint
 from lib.plugins.xmpp import XmppMasterDatabase
 
 import logging

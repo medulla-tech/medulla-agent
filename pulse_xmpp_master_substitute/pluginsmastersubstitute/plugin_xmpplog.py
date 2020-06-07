@@ -3,25 +3,12 @@
 # plugin register machine dans presence table xmpp.
 # file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_xmpplog.py
 #
-import zlib
-import base64
 import traceback
 import os
-import sys
-import urllib2
-import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.localisation import Localisation
-from lib.manageRSAsigned import MsgsignedRSA
-from sleekxmpp import jid
-from lib.utils import getRandomName
 import re
-from distutils.version import LooseVersion, StrictVersion
-import ConfigParser
 
 # this import will be used later
 # import types

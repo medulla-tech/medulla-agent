@@ -23,10 +23,8 @@
 # file : pulse_xmpp_agent/lib/server_kiosk.py
 
 import sys
-import os
 import logging
 import traceback
-import sleekxmpp
 import platform
 import base64
 import json
@@ -34,25 +32,18 @@ import time
 import socket
 import select
 import threading
-import shutil
-import subprocess
-import random
-from multiprocessing import Process, Queue, Lock, current_process, TimeoutError
+from multiprocessing import Queue
 import psutil
 import json
 import threading
-from utils import getRandomName, call_plugin, isBase64, is_connectedServer
-from sleekxmpp import jid
+from utils import getRandomName, isBase64, is_connectedServer
 from configuration import confParameter
 from logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
-from networkinfo import networkagentinfo,\
-                        organizationbymachine,\
+from networkinfo import organizationbymachine,\
                         organizationbyuser
 
 if sys.platform.startswith('win'):
-    import win32api
-    import win32con
     import win32pipe
     import win32file
 

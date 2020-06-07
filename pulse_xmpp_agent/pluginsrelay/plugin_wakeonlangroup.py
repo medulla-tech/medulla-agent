@@ -21,9 +21,7 @@
 
 # file: pulse_xmpp_agent/pluginsmachine/plugin_wakeonlangroup.py
 
-from  lib.utils import pluginprocess
 from wakeonlan import wol
-import json
 import logging
 import traceback
 

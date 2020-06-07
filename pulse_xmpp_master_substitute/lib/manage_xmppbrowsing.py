@@ -22,11 +22,8 @@
 # file manage_xmppbrowsing.py
 
 import os, sys
-import json, re
 import logging
-from utils import shellcommandtimeout, file_get_content, simplecommand, decode_strconsole, encode_strconsole
-import zlib
-import base64
+from utils import file_get_content, simplecommand, decode_strconsole
 import math
 
 logger = logging.getLogger()

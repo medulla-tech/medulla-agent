@@ -25,11 +25,7 @@ import base64
 import json
 import os
 import logging
-from lib.utils import file_get_contents, \
-                      getRandomName, \
-                      data_struct_message, \
-                      add_method, \
-                      ipfromdns, \
+from lib.utils import ipfromdns, \
                       AESCipher, \
                       subnetnetwork
 from lib.localisation import Localisation

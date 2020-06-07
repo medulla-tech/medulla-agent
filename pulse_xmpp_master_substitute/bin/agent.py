@@ -32,23 +32,12 @@ import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp import jid
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.utils import DEBUGPULSE, getRandomName, call_plugin
 
 import traceback
-from optparse import OptionParser
-from multiprocessing import Queue
-from multiprocessing.managers import SyncManager
-import psutil
 import signal
-from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, DateTime, Text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-import imp
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
 
 import random
 
