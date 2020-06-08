@@ -222,10 +222,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         cretefileconfigrescp = "Host %s\nPort %s\nHost %s\nPort %s\n"%(data['ipmaster'], paramglobal['portsshmaster'], "localhost", localport)
         file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
 
-        if hasattr(objectxmpp.config, 'server_ssh_user'):
-            paramglobal['server_ssh_user'] = objectxmpp.config.server_ssh_user
-        else:
-            logger.debug("We are using default pulsetransfert user.")
+    if hasattr(objectxmpp.config, 'server_ssh_user'):
+        paramglobal['server_ssh_user'] = objectxmpp.config.server_ssh_user
+    else:
+        logger.debug("We are using default pulsetransfert user.")
 
     dest = create_path(type ="linux",
                        host=paramglobal['server_ssh_user'],

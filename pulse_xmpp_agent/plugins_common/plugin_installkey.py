@@ -139,7 +139,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         currentdir = os.getcwd()
                         os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
                         result = simplecommand(encode_strconsole('powershell '\
-                            '-ExecutionPolicy Bypass -Command ". '\
+                            '-ExecutionPolicy Unrestricted -Command ". '\
                             '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
                         os.chdir(currentdir)
                         win32serviceutil.StopService('sshd')
@@ -156,8 +156,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     file_put_contents(authorized_keys_path,"")
                 currentdir = os.getcwd()
                 os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
-                result = simplecommand(encode_strconsole('powershell -ExecutionPolicy Bypass -Command ". '\
-                    '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
+                result = simplecommand(encode_strconsole('powershell -ExecutionPolicy Unrestricted". '\
+                    '-Command .\FixHostFilePermissions.ps1 -Confirm:$false"'))
                 os.chdir(currentdir)
                 logging.getLogger().info("Reset of permissions on ssh keys and folders: %s" %result)
             else:
@@ -197,7 +197,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
                 currentdir = os.getcwd()
                 os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
-                result = simplecommand(encode_strconsole('powershell -ExecutionPolicy Bypass -Command ". '\
+                result = simplecommand(encode_strconsole('powershell -ExecutionPolicy Unrestricted -Command ". '\
                     '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
                 os.chdir(currentdir)
                 logging.getLogger().info("Reset of permissions on ssh keys and folders: %s" %result)

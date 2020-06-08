@@ -70,6 +70,8 @@ RequestExecutionLevel admin
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
 !define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
 !define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
+!define LGPO_FILENAME "@@LGPO_FILENAME@@"
+!define REMOTE_SIGNED_FILENAME "@@REMOTE_SIGNED_FILENAME@@"
 
 SetCompressor lzma
 
@@ -105,11 +107,9 @@ SetCompressor lzma
 !include "TextReplace.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
-!include "StrRep.nsh"
 
 Var OS_LANGUAGE
 Var CMD_POWERSHELL
-Var P_PROFILE
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -128,7 +128,6 @@ ShowInstDetails show
 ; Define a few settings
 Section -SETTINGS
   SetOutPath "$INSTDIR"
-  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
@@ -208,15 +207,24 @@ Section "Python" sec_py
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 104
-    Quit
-  ${EndIf}
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "3010"
+        StrCpy $0 `Return code : 3010 OK`
+        ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 104
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
 
   ; Install pip
   StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
@@ -282,6 +290,7 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
   @@FULL_OR_DL_RSYNC@@
   File "${REMOVE_PROFILE_FILENAME}"
+
 
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
@@ -419,8 +428,8 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
-  ${LogString} "SSH_PATH : $SSH_PATH"
+  sleep 1000
+  Delete $INSTDIR\tmp\$OPENSSH_FILENAME
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -629,7 +638,7 @@ Section "OpenSSH" sec_openssh
   ; Check and configure permissions
   ClearErrors
 
-SetOutPath $SSH_PATH
+  SetOutPath $SSH_PATH
   StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
@@ -1108,7 +1117,7 @@ Section "!${PRODUCT_NAME}" sec_app
     ; Remove pulse parameters Folder
     Delete "$INSTDIR\etc\*.*"
     ; Remove files from bin
-    Delete "$INSTDIR\bin\*.*"
+    Delete "$INSTDIR\bin\*.py*"
   ${EndIf}
 
   ; Install of Pulse agent
@@ -1361,6 +1370,18 @@ Section "!${PRODUCT_NAME}" sec_app
   Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@
 
+  ; Relock Powershell
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Restore powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
   ${EndIf}
@@ -1370,6 +1391,21 @@ SectionEnd
 
 ; What needs to be done for uninstalling
 Section "Uninstall"
+
+  ; Define Powershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+
+  ; Unlock Powershell
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Unlock powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
 
   ; Stop all Pulse services
   Call un.StopPulseServices
@@ -1481,6 +1517,18 @@ Section "Uninstall"
   ; Remove pulse user
   Call un.RemovePulseUser
 
+  ; Relock Powershell
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Restaure powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
   RMDir /r /REBOOTOK "$INSTDIR"
@@ -1514,6 +1562,9 @@ Function .onInit
   ; Create registry keys in 64bit section
   SetRegView 64
 
+  ; Define Powershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+
   ; Install log initialization
   !If "$PROGRAMFILES64" != ""
     StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
@@ -1527,8 +1578,52 @@ Function .onInit
   ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  CreateDirectory "$INSTDIR\bin"
+  SetOutPath "$INSTDIR\bin"
+  @@FULL_OR_DL_LGPO@@
+  File "${REMOTE_SIGNED_FILENAME}"
+
+  ; Detect if policy are applied
+  StrCpy $0 `$CMD_POWERSHELL get-executionpolicy -scope MachinePolicy`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  ${TrimNewLines} $1 $1
+  ${LogString} "PowerShell Policy status : $1"
+
+  ${IfNot} $1 == Undefined 
+    SetOutPath "$INSTDIR\tmp\gpo"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $0
+    ${LogString} "Return code was : $0"
+    StrCpy $0 `cmd /c where /r "$INSTDIR\tmp" registry.pol | findstr Machine`
+    ${LogString} "Running $0"
+    nsExec::ExecToStack $0
+    Pop $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was : $1"
+    Rename "$1" "$INSTDIR\tmp\machine.pol"
+    SetOutPath "$INSTDIR\tmp"
+    RMDir /r /REBOOTOK "$INSTDIR\tmp\gpo"
+  ${EndIf}
+
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
   ; Detect system language
-  StrCpy $0 `powershell -inputformat none -ExecutionPolicy UnRestricted -Command (get-uiculture).TwoLetterISOLanguageName`
+  StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
   Pop $0
@@ -1736,25 +1831,18 @@ FunctionEnd
   ; Remove Pulse profile
   SetOutPath "$INSTDIR\tmp"
   File "${REMOVE_PROFILE_FILENAME}"
-  ${LogString} "Removing user profile"
-  ${StrRep} $0 ${USERDIR} "\" "\\"
-  Pop $0
-  StrCpy $P_PROFILE $0
-  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${IfNot} $0 == 0
-    ${LogString} "Return output : $1"
+  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
+  Pop $R0
+  ${If} $R0 == "Failed"
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Profile deletion failed. It is currently being used. $\n\
-        You need to reboot and rerun the installer."
+      ${LogString} "Profile deletion failed"
+      MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
+      Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 138
     Quit
   ${EndIf}
-  ${LogString} "Return code was : $0"
+  ${LogString} `Remove Pulse profile : $R0`
   FunctionEnd
 !macroend
 !insertmacro DeletePulseProfile ""

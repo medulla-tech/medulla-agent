@@ -63,7 +63,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.0.7"
+AGENT_VERSION="2.1.0"
 HOMEBREW_VERSION="1.5.12"
 FUSION_INVENTORY_AGENT_NAME="FusionInventory-Agent"
 FUSION_INVENTORY_AGENT_VERSION="2.4-1"
@@ -156,6 +156,9 @@ check_arguments() {
                 SSH_PORT="${i#*=}"
                 shift
                 ;;
+            --linux-distros*)
+                shift
+                ;;
 			*)
                 # unknown option
                 display_usage
@@ -173,6 +176,7 @@ check_arguments() {
 		fi
 	fi
 	if [[ ! ${MINIMAL} ]]; then
+        echo "we only support minimal installer"
 		exit 0 # Remove when we support full version as well
 	fi
 }

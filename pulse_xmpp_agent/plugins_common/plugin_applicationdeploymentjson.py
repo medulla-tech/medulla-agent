@@ -34,7 +34,12 @@ from lib.utils import save_back_to_deploy, \
                       simplecommandstr, \
                       simplecommand, \
                       encode_strconsole, \
-                      file_get_contents
+                      file_get_contents, \
+                      _path_package, \
+                      qdeploy_generate, \
+                      _path_packagequickaction, \
+                      get_message_xmpp_quick_deploy, \
+                      decode_strconsole
 import copy
 import traceback
 import time
@@ -48,7 +53,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.19", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.24", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -680,6 +685,111 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             objectxmpp.reversedelpoy # reversedelpoy add port for reverse ssh, used for del reverse
         except AttributeError:
             objectxmpp.reversedelpoy={}
+
+        #########################START QUICK DEPLOY###########################################
+        ###self.mutex
+        #logger.debug("%s"%json.dumps(data, indent=4))
+        namefolder = None
+        msgdeploy=[]
+        if objectxmpp.config.max_size_stanza_xmpp != 0:
+            if 'descriptor' in data and \
+                'info' in data['descriptor'] and \
+                    'packageUuid' in data['descriptor']['info']:
+                # Generate package if possible
+                namefolder = data['descriptor']['info']['packageUuid']
+            elif 'path'  in data:
+                namefolder = os.path.basename(data['path'])
+
+            if namefolder is not None:
+                folder = os.path.join(_path_package(), namefolder)
+                pathaqpackage = os.path.join(_path_packagequickaction(), namefolder)
+                pathxmpppackage = "%s.xmpp"%pathaqpackage
+                if not os.path.exists(pathxmpppackage) or \
+                    ( os.path.exists(pathxmpppackage) and \
+                        int(time.time()- os.stat(pathxmpppackage).st_mtime) < 360):
+                    try:
+                        objectxmpp.mutex.acquire(1)
+                        qdeploy_generate(folder, objectxmpp.config.max_size_stanza_xmpp)
+                    finally:
+                        objectxmpp.mutex.release()
+                # objectxmpp.nbconcurrentquickdeployments = 0   # compteur le nombre de deployement
+                # if package exists, we can run deployment
+                if os.path.exists("%s.xmpp"%pathaqpackage):
+                    msgdeploy.append("Adding to quick deployment queue")
+                    txt = "Transferring quick deployment package %s to %s"%( namefolder,
+                                                                data['jidmachine'])
+                    msgdeploy.append(txt)
+                    for i in msgdeploy:
+                        objectxmpp.xmpplog( i,
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
+                    msgquickstr = get_message_xmpp_quick_deploy(folder, sessionid)
+                    msgstruct=json.loads(msgquickstr)
+                    msgstruct['data']['descriptor'] = data
+                    #save pakage
+                    if len(objectxmpp.concurrentquickdeployments) >=  objectxmpp.config.nbconcurrentquickdeployments:
+                        # save deploy
+                        namef=data['jidmachine'].split("/")[0]
+                        filejson = os.path.join(_path_packagequickaction(),
+                                            "%s@_@_@%s@_@_@.QDeploy"%(sessionid, namef))
+
+                        with open(filejson, "w") as file:
+                            json.dump(msgstruct, file)
+                        objectxmpp.session.createsessiondatainfo(sessionid,
+                                                                datasession = data,
+                                                                timevalid = 180)
+                        res = simplecommand("ls %s | wc -l"%os.path.join(_path_packagequickaction(),"*.QDeploy"))
+                        if res['code'] == 0:
+                            nbpool = res['result']
+                        else:
+                            nbpool = "????"
+                        objectxmpp.xmpplog( "Adding deployment %s to queue %s : %s"%(sessionid,
+                                                               str(objectxmpp.boundjid.bare),
+                                                               nbpool ),
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
+                        return
+                    else:
+                        try:
+                            objectxmpp.mutex.acquire()
+                            objectxmpp.concurrentquickdeployments[sessionid]=time.time()
+                        finally:
+                            objectxmpp.mutex.release()
+                        objectxmpp.xmpplog( "Quick deployment %s resource status: %s/%s"%(sessionid,
+                                                                                            len(objectxmpp.concurrentquickdeployments),
+                                                                                            objectxmpp.config.nbconcurrentquickdeployments),
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = strjidagent,
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
+                        # on lance le deployement
+                        objectxmpp.send_message( mto   = data['jidmachine'],
+                                                 mbody = json.dumps(msgstruct),
+                                                 mtype = 'chat')
+                        objectxmpp.session.createsessiondatainfo(sessionid,
+                                                                datasession = data,
+                                                                timevalid = 180)
+
+                        logger.debug("List of concurrent deployments: %s"%json.dumps(objectxmpp.concurrentquickdeployments,
+                                                 indent=4))
+                        return
+            #########################END QUICK DEPLOY###########################################
         # nota doc
         # a la réception d'un descripteur de deploiement, si plusieurs ARS sont dans le cluster,
         # on détermine quel ARS doit faire le deploiement. le descripteur est alors redirigé vers ARS qui doit deployé.
@@ -1500,7 +1610,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             obcmd = simplecommandstr(cmdexec)
                             if obcmd['code'] != 0:
                                 objectxmpp.xmpplog('<span class="log_err">%s transfer error : %s </span>'%(objectxmpp.config.pushmethod,
-                                                                                                                            obcmd['result']),
+                                                                                                           decode_strconsole(obcmd['result'])),
                                                 type = 'deploy',
                                                 sessionname = sessionid,
                                                 priority = -1,
@@ -2158,6 +2268,13 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
     logger.info("###################################################")
     logger.info("pull_package_transfert_rsync : " + cmdmode)
     logger.info("###################################################")
+    scp_limit_rate_ko = ""
+    rsync_limit_rate_ko=""
+    if 'limit_rate_ko' in datasend['data'] and \
+                    datasend['data']['limit_rate_ko'] != "" and\
+                        int(datasend['data']['limit_rate_ko']) > 0:
+        scp_limit_rate_ko = " -l %s "%(int(datasend['data']['limit_rate_ko']) * 8)
+        rsync_limit_rate_ko = " --bwlimit %s "%(int(datasend['data']['limit_rate_ko']))
     takeresource(datasend, objectxmpp, sessionid)
     strjidagent = str(objectxmpp.boundjid.bare)
     if sys.platform.startswith('win'):
@@ -2193,15 +2310,15 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         else :
             return False
 
-        cmdtransfert = "%s -C -r "%execscp
+        cmdtransfert = "%s%s -C -r "%(scp_limit_rate_ko, execscp)
 
         cmd = """%s -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         if sys.platform.startswith('win'):
             scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
-            cmd = """ "c:\progra~1\OpenSSH\scp.exe" -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """%(objectxmpp.config.reverseserver_ssh_port, path_key_priv)
+            cmd = """ "c:\progra~1\OpenSSH\scp.exe"%s -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """%(scp_limit_rate_ko,objectxmpp.config.reverseserver_ssh_port,path_key_priv)
         if cmdmode == "rsync":
-            cmdtransfert =  " %s -z --rsync-path=rsync "%execrsync
+            cmdtransfert =  " %s -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
             cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """%(cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         cmdexec =  cmd + remotesrc + localdest

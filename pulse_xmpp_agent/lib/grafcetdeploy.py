@@ -1764,25 +1764,43 @@ class grafcet:
         """
         inventory = True
         if 'inventory' in self.workingstep:
-            if isinstance(self.workingstep['inventory'], bool):
-                inventory = self.workingstep['inventory']
-            else:
-                self.workingstep['inventory'] = str(self.workingstep['inventory'])
-                if self.workingstep['inventory'] == "False":
-                    inventory = False
+            boolstr = str(self.workingstep['inventory'])
+            ### status inventory "No inventory / Inventory on change / Forced inventory"
+            if boolstr.lower() in ['true',
+                                    '1',
+                                    'y',
+                                    'yes',
+                                    'ok',
+                                    'forced',
+                                    'forced inventory',
+                                    ]:
+                inventory = True                
+                self.workingstep['actioninventory'] = 'forced'
+
+            if boolstr.lower() in ['false',
+                                   '0',
+                                   'n',
+                                   'no',
+                                   'ko',
+                                   'non',
+                                   'not'
+                                   'no inventory']:
+                inventory = False
+                self.workingstep['actioninventory'] = 'noforced'
+
+            if boolstr.lower() in ['Inventory on change' ,
+                                   'noforced']:
+                inventory = True
+                self.workingstep['actioninventory'] = 'noforced'
+
+
+        if not 'actioninventory' in self.workingstep:
+            logger.warning("inventory option is forced check option inventory")
+            self.workingstep['actioninventory'] = 'forced'
         inventoryfile = ""
         if inventory:
             ### genere inventaire et envoi inventaire
             #### call plugin inventory pour master.
-            if sys.platform.startswith('linux'):
-                inventoryfile = os.path.join("/","tmp","inventory.txt")
-            elif sys.platform.startswith('win'):
-                inventoryfile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
-            elif sys.platform.startswith('darwin'):
-                inventoryfile = os.path.join("/","tmp","inventory.txt")
-            if inventoryfile != "" and os.path.isfile(inventoryfile):
-                os.remove(inventoryfile)
-            ## call plugin inventory pour master.
             self.objectxmpp.xmpplog('Starting inventory',
                                         type = 'deploy',
                                         sessionname = self.sessionid,
@@ -1796,13 +1814,14 @@ class grafcet:
                                         fromuser = self.data['login'],
                                         touser = "")
             try:
-                self.objectxmpp.handleinventory()
+                self.objectxmpp.handleinventory(forced=self.workingstep['actioninventory'],
+                                                sessionid=self.sessionid)
             except Exception as e:
                 print str(e)
             #waitting active generated new inventory
             doinventory = False
             timeinventory = 0
-            for indextime in range(24):  # waitting max 2 minutes
+            for indextime in range(48):  # waitting max 2 minutes
                 if os.path.isfile(inventoryfile):
                     doinventory = True
                     timeinventory = (indextime + 1) * 5

@@ -28,6 +28,7 @@ import subprocess
 import threading
 import sys
 import os
+import fnmatch
 import logging
 import random
 import re
@@ -45,9 +46,14 @@ import psutil
 import time
 from datetime import datetime
 import imp
-
+import requests
+import uuid
+import shutil
 from Crypto import Random
 from Crypto.Cipher import AES
+import tarfile
+import zipfile
+from functools import wraps
 
 logger = logging.getLogger()
 
@@ -63,8 +69,144 @@ if sys.platform.startswith('win'):
     import win32security
     import ntsecuritycon
     import win32net
+    import ctypes
     import win32com.client
     from win32com.client import GetObject
+    from ctypes.wintypes import LPCWSTR, LPCSTR
+
+if sys.platform.startswith('linux'):
+    import pwd
+    import grp
+
+if sys.platform.startswith('darwin'):
+    import pwd
+    import grp
+
+#### debug decorator #########
+def minimum_runtime(t):
+    """
+        Function decorator constrains the minimum execution time of the function
+    """
+    def decorated(f):
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            result = f(*args, **kwargs)
+            runtime = time.time() - start
+            if runtime < t:
+                time.sleep(t - runtime)
+            return result
+        return wrapper
+    return decorated
+
+def dump_parameter(para=True, out=True, timeprocess = True):
+    """
+        Function decorator logging in and out function.
+    """
+    def decorated(decorated_function):
+        @wraps(decorated_function)
+        def wrapper(*dec_fn_args, **dec_fn_kwargs):
+            # Log function entry
+            start = time.time()
+            func_name = decorated_function.__name__
+            log = logging.getLogger(func_name)
+            
+            filepath = os.path.basename(__file__)
+            # get function params (args and kwargs)
+            if para:
+                arg_names = decorated_function.__code__.co_varnames
+                params = dict(
+                    args=dict(zip(arg_names, dec_fn_args)),
+                    kwargs=dec_fn_kwargs)
+                result = ', '.join([
+                        '{}={}'.format(str(k), repr(v)) for k, v in params.items()])
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+            else:
+                log.info('\n@@@ call func : {}() file {}'.format(func_name, filepath))
+            # Execute wrapped (decorated) function:
+            outfunction = decorated_function(*dec_fn_args, **dec_fn_kwargs)
+            timeruntime = time.time() - start
+            if out:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s is -->{}'.format(func_name,
+                                                                           timeruntime,
+                                                                           outfunction))
+                else:
+                    log.info('\n@@@ out func :{}() is -->{}'.format(func_name,
+                                                                    outfunction))
+            else:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s'.format(func_name,
+                                                                  timeruntime))
+                else:
+                    log.info('\n@@@ out func :{}()'.format(func_name))
+            return outfunction
+        return wrapper
+    return decorated
+###########################################
+
+#### debug decorator #########
+def minimum_runtime(t):
+    """
+        Function decorator constrains the minimum execution time of the function
+    """
+    def decorated(f):
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            result = f(*args, **kwargs)
+            runtime = time.time() - start
+            if runtime < t:
+                time.sleep(t - runtime)
+            return result
+        return wrapper
+    return decorated
+
+def dump_parameter(para=True, out=True, timeprocess = True):
+    """
+        Function decorator logging in and out function.
+    """
+    def decorated(decorated_function):
+        @wraps(decorated_function)
+        def wrapper(*dec_fn_args, **dec_fn_kwargs):
+            # Log function entry
+            start = time.time()
+            func_name = decorated_function.__name__
+            log = logging.getLogger(func_name)
+            
+            filepath = os.path.basename(__file__)
+            # get function params (args and kwargs)
+            if para:
+                arg_names = decorated_function.__code__.co_varnames
+                params = dict(
+                    args=dict(zip(arg_names, dec_fn_args)),
+                    kwargs=dec_fn_kwargs)
+                result = ', '.join([
+                        '{}={}'.format(str(k), repr(v)) for k, v in params.items()])
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+            else:
+                log.info('\n@@@ call func : {}() file {}'.format(func_name, filepath))
+            # Execute wrapped (decorated) function:
+            outfunction = decorated_function(*dec_fn_args, **dec_fn_kwargs)
+            timeruntime = time.time() - start
+            if out:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s is -->{}'.format(func_name,
+                                                                           timeruntime,
+                                                                           outfunction))
+                else:
+                    log.info('\n@@@ out func :{}() is -->{}'.format(func_name,
+                                                                    outfunction))
+            else:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s'.format(func_name,
+                                                                  timeruntime))
+                else:
+                    log.info('\n@@@ out func :{}()'.format(func_name))
+            return outfunction
+        return wrapper
+    return decorated
+###########################################
 
 def Setdirectorytempinfo():
     """
@@ -219,7 +361,6 @@ def refreshfingerprint():
             'fingerprintnetwork'),
         fp)
     return fp
-
 
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
@@ -1166,77 +1307,109 @@ def portline(result):
     print column
     return column[-2:-1][0].split(':')[1]
 
+class protodef:
+    def __init__(self):
+        self.fileprotoinfo = os.path.join(Setdirectorytempinfo(),
+                                          'fingerprintproto')
+        self.boolchangerproto , self.proto = self.protochanged()
 
-def protoandport():
-    protport = {}
-    if sys.platform.startswith('win'):
-        for process in psutil.process_iter():
-            if 'tvnserver.exe' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['vnc'] = cux.laddr.port
-            elif 'sshd.exe' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['ssh'] = cux.laddr.port
-        for service in psutil.win_service_iter():
-            if 'TermService' in service.name():
-                service_handler = psutil.win_service_get('TermService')
-                if service_handler.status() == 'running':
-                    pid = service_handler.pid()
-                    process_handler = psutil.Process(pid)
+    def protoinfoexist(self):
+        if os.path.exists(self.fileprotoinfo):
+            return True
+        return False
+
+    def protochanged(self):
+        if self.protoinfoexist():
+            fproto = protodef.protoandport()
+            self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+            newfingerprint = pickle.dumps(fproto) #on recalcule le proto
+            if self.fingerprintproto == newfingerprint:
+                self.proto = fproto
+                return False, self.proto 
+        self.refreshfingerprintproto()
+        self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+        self.proto = pickle.loads(self.fingerprintproto)
+        return True, self.proto 
+
+    def refreshfingerprintproto(self):
+        fproto = protodef.protoandport()
+        with open(self.fileprotoinfo, 'wb') as handle:
+            pickle.dump(fproto, handle)
+        return fproto
+
+    @staticmethod
+    def protoandport():
+        protport = {}
+        if sys.platform.startswith('win'):
+            for process in psutil.process_iter():
+                if 'tvnserver.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
                     for cux in process_handler.connections():
                         if cux.status == psutil.CONN_LISTEN:
-                            protport['rdp'] = cux.laddr.port
+                            protport['vnc'] = cux.laddr.port
+                elif 'sshd.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['ssh'] = cux.laddr.port
+            for service in psutil.win_service_iter():
+                if 'TermService' in service.name():
+                    service_handler = psutil.win_service_get('TermService')
+                    if service_handler.status() == 'running':
+                        pid = service_handler.pid()
+                        process_handler = psutil.Process(pid)
+                        for cux in process_handler.connections():
+                            if cux.status == psutil.CONN_LISTEN:
+                                protport['rdp'] = cux.laddr.port
 
-    elif sys.platform.startswith('linux'):
-        for process in psutil.process_iter():
-            if 'x11vnc' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['vnc'] = port
-            elif 'sshd' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['ssh'] = port
-            elif 'xrdp' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['rdp'] = port
+        elif sys.platform.startswith('linux'):
+            for process in psutil.process_iter():
+                if process.name() == 'x11vnc':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['vnc'] = port
+                elif process.name() == 'sshd':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['ssh'] = port
+                elif process.name() == 'xrdp':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and (ip == "0.0.0.0" or ip == "::"):
+                            protport['rdp'] = port
 
-    elif sys.platform.startswith('darwin'):
-        for process in psutil.process_iter():
-            if 'ARDAgent' in process.name():
-                protport['vnc'] = '5900'
-        for cux in psutil.net_connections():
-            if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
-                protport['ssh'] = '22'
+        elif sys.platform.startswith('darwin'):
+            for process in psutil.process_iter():
+                if 'ARDAgent' in process.name():
+                    protport['vnc'] = '5900'
+            for cux in psutil.net_connections():
+                if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
+                    protport['ssh'] = '22'
 
-    return protport
+        return protport
 
+def protoandport():
+    return protodef.protoandport()
 
 def ipfromdns(name_domaine_or_ip):
     """ This function converts a dns to ipv4
@@ -1256,6 +1429,16 @@ def ipfromdns(name_domaine_or_ip):
         except Exception:
             return ""
     return ""
+
+
+def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
+    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+        sessionid = action.strip().replace(" ", "")
+    return { 'action' : action,
+             'data' : data,
+             'ret' : 0,
+             "base64" : False,
+             "sessionid" : getRandomName(4,sessionid)}
 
 
 def check_exist_ip_port(name_domaine_or_ip, port):
@@ -2171,3 +2354,696 @@ def install_key_ssh_relayserver(keypriv, private=False):
         win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
     else:
         os.chmod(filekey, keyperm)
+
+
+def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
+    """
+        creation archive tar.gz or tar.bz2
+        compresstype "gz" or "bz2"
+    """
+    try:
+        with tarfile.open(output_file_gz_bz2, "w:%s"%compresstype) as tar:
+            tar.add(source_dir, arcname=os.path.basename(source_dir))
+        return True
+    except Exception as e:
+        logger.error("Error creating tar.%s archive : %s"%(compresstype, str(e)))
+        return False
+
+def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
+    """
+        extract archive tar.gz or tar.bz2
+        compresstype "gz" or "bz2"
+    """
+    cwd = os.getcwd()
+    absolutepath = os.path.abspath(imput_file__gz_bz2)
+    try:
+        os.chdir(to_directory)
+        with tarfile.open(absolutepath, "r:%s"%compresstype) as tar:
+            tar.extractall()
+        return True
+    except OSError as e:
+        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
+        return False
+    except Exception as e:
+        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
+        return False
+    finally:
+        os.chdir(cwd)
+    return True
+
+def find_files(directory, pattern):
+    """
+        use f
+    """
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = str(os.path.join(root, basename))
+                yield filename
+
+def listfile(directory, abspath=True):
+    listfile=[]
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if abspath:
+                listfile.append(os.path.join(root, basename))
+            else:
+                listfile.append(os.path.join(basename))
+    return listfile
+
+def md5folder(directory):
+    hash = hashlib.md5()
+    strmdr=[]
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            hash.update(md5(os.path.join(root, basename)))
+    return hash.hexdigest()
+
+def _path_package():
+    return os.path.join("/", "var", "lib", "pulse2", "packages")
+
+def _path_packagequickaction():
+    pathqd = os.path.join("/", "var", "lib", "pulse2", "qpackages")
+    if not os.path.isdir(pathqd):
+        try:
+            os.makedirs(pathqd)
+        except OSError as e:
+            logger.error("Error creating folder for quick deployment packages : %s"%(str(e)))
+    return pathqd
+
+def qdeploy_generate(folder, max_size_stanza_xmpp):
+    try:
+        namepackage = os.path.basename(folder)
+        pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+        pathxmpppackage = "%s.xmpp"%pathaqpackage
+
+        # if dependency in package do not generate the qpackage
+        with open(os.path.join(folder, 'xmppdeploy.json')) as json_data:
+            data_dict = json.load(json_data)
+        if len(data_dict['info']['Dependency'])>0:
+            logger.debug("Package %s has dependencies. Quick deployment package not generated."%(pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
+            try:
+                if "qpackages" in pathaqpackage:
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+            return 3
+
+        if os.path.exists(pathxmpppackage) and \
+            int((time.time()-os.stat(pathxmpppackage).st_mtime))/60 < 10:
+            logger.debug("No need to generate quick deployment package %s"%(pathxmpppackage))
+            simplecommand("touch -c %s"%pathxmpppackage)
+            return 2
+        else:
+            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
+            try:
+                if "qpackages" in pathaqpackage:
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+        logger.debug("Checking if quick deployment package needs to be generated")
+
+        result = simplecommand("du -b %s"%folder)
+        #logger.debug("cmd %s"%"du -b %s"%folder)
+        taillebytefolder = int(result['result'][0].split()[0])
+        if taillebytefolder > max_size_stanza_xmpp:
+            logger.debug("Package is too large for quick deployment.\n%s"\
+                " greater than defined max_size_stanza_xmpp %s"%(taillebytefolder,
+                                                         max_size_stanza_xmpp))
+            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
+            try:
+                if "qpackages" in pathaqpackage:
+                    simplecommand("rm %s.*"%pathaqpackage)
+            except Exception:
+                pass
+            return 6
+            ### creation d'un targetos
+        logger.debug("Preparing quick deployment package for package %s"%(namepackage))
+        calculemd5 = md5folder(pathaqpackage)
+
+        if os.path.exists("%s.md5"%pathaqpackage):
+            content = file_get_contents("%s.md5"%pathaqpackage)
+            if content==calculemd5:
+                #pas de modifications du package
+                logger.debug("Quick deployment package found")
+                #creation only si if fille missing
+                create_msg_xmpp_quick_deploy(folder, create = False)
+                return 1
+        file_put_contents("%s.md5"%pathaqpackage, calculemd5)
+        create_msg_xmpp_quick_deploy(folder, create = True)
+        return 0
+    except Exception:
+        logger.error("Error generating quick deployment package : %s"%folder)
+        logger.error("%s"%(traceback.format_exc()))
+        try:
+            if "qpackages" in pathaqpackage:
+                simplecommand("rm %s.*"%pathaqpackage)
+        except Exception:
+            pass
+        return 100
+
+def get_message_xmpp_quick_deploy(folder, sessionid):
+    # read le fichier
+    namepackage = os.path.basename(folder)
+    pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+    with open("%s.xmpp"%pathaqpackage, 'r') as f:
+        data = f.read()
+    return data.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
+
+def get_template_message_xmpp_quick_deploy(folder):
+    # read le fichier
+    namepackage = os.path.basename(folder)
+    pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+    with open("%s.xmpp"%pathaqpackage, 'r') as f:
+        data = f.read()
+    return data
+
+def get_xmpp_message_with_sessionid(template_message, sessionid):
+    # read le fichier
+    return template_message.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
+
+def create_msg_xmpp_quick_deploy(folder, create = False):
+    namepackage = os.path.basename(folder)
+    pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
+    # create compress file folder
+    if not os.path.exists("%s.xmpp"%pathaqpackage) or create:
+        logger.debug("Creating compressed archive %s.gz"%pathaqpackage)
+        make_tarfile("%s.gz"%pathaqpackage, folder, compresstype="gz")
+        with open("%s.gz"%pathaqpackage, 'rb') as f:
+            dataraw = base64.b64encode(f.read())
+        msgxmpptemplate= """{  "sessionid" : "@-TEMPLSESSQUICKDEPLOY@",
+                "action" : "qdeploy",
+                "data": { "nbpart" : 1,
+                          "part"   : 1,
+                          "namepackage":"%s",
+                          "filebase64" : "%s"}}"""%( namepackage, dataraw )
+        try:
+            logger.debug("Writing new quick deployment pakage %s.xmpp"%pathaqpackage)
+            with open("%s.xmpp"%pathaqpackage, 'w') as f:
+                f.write(msgxmpptemplate)
+            #le fichier compresser est inutile
+            if os.path.exists("%s.gz"%pathaqpackage):
+                os.remove("%s.gz"%pathaqpackage)
+        except Exception:
+            logger.error("%s"%(traceback.format_exc()))
+    else:
+        logger.debug("Quick deployment package %s.xmpp found"%pathaqpackage)
+
+def pulseuser_useraccount_mustexist(username='pulseuser'):
+    message = []
+    if sys.platform.startswith('linux'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
+        except Exception:
+            adduser_cmd = 'adduser --system --quiet --group '\
+                '--home /var/lib/pulse2 --shell /bin/rbash '\
+                '--disabled-password %s' % username
+    elif sys.platform.startswith('win'):
+        try:
+            win32net.NetUserGetInfo('',username,0)
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
+        except Exception:
+            userpassword = uuid.uuid4().hex[:14]
+            adduser_cmd = 'net user "%s" "%s" /ADD /COMMENT:"Pulse '\
+                'user with admin rights on the system"' % (username, userpassword)
+    elif sys.platform.startswith('darwin'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
+        except Exception:
+            userpassword = uuid.uuid4().hex[:14]
+            adduser_cmd = 'dscl . -create /Users/%s '\
+                'UserShell /usr/local/bin/rbash && '\
+                'dscl . -passwd /Users/%s %s' % (username, username, userpassword)
+    # Create the account
+    result = simplecommand(encode_strconsole(adduser_cmd))
+    if result['code'] == 0:
+        message.append('Creation of %s user account successful: %s' % (username, result))
+        # Other operations specific to Windows
+        if sys.platform.startswith('win'):
+            result = simplecommand(encode_strconsole('wmic useraccount where "Name=\'%s\'" set PasswordExpires=False' % username))
+            message.append('Setting %s user account to not expire: %s' % (username, result))
+            adminsgrpsid = win32security.ConvertStringSidToSid('S-1-5-32-544')
+            adminsgroup = win32security.LookupAccountSid('',adminsgrpsid)[0]
+            result = simplecommand(encode_strconsole('net localgroup %s "%s" /ADD' % (adminsgroup, username)))
+            message.append('Adding %s account to administrators group: %s' % (username, result))
+        return True, message
+    else:
+        message.append('Creation of %s user account failed: %s' % (username, result))
+        return False, message
+
+def pulseuser_profile_mustexist(username='pulseuser'):
+    message = []
+    if sys.platform.startswith('win'):
+        # Initialise userenv.dll
+        userenvdll = ctypes.WinDLL('userenv.dll')
+        # Define profile path that is needed
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username)
+        # Get user profile as created on the machine
+        profile_location = os.path.normpath(get_user_profile(username))
+        if not profile_location or profile_location != defined_profilepath:
+            # Delete all profiles if found
+            delete_profile(username)
+            # Create the profile
+            usersid = get_user_sid(username)
+            ptr_profilepath = ctypes.create_unicode_buffer(260)
+            userenvdll.CreateProfile(LPCWSTR(usersid),
+                                     LPCWSTR(username),
+                                     ptr_profilepath,
+                                     240)
+            if os.path.normpath(ptr_profilepath.value) == defined_profilepath:
+                message.append('%s profile created successfully.' % username)
+                message.append('%s profile location: %s' % (username, ptr_profilepath.value))
+                return True, message
+            else:
+                message.append('Error creating %s profile.' % username)
+                message.append('%s profile location: %s' % (username, ptr_profilepath.value))
+                return False, message
+        else:
+            # Profile found
+            message.append('%s profile already exists. Nothing to do.' % username)
+            message.append('%s profile location: %s' % (username, profile_location))
+    elif sys.platform.startswith('linux'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            homedir = os.path.expanduser(username)
+        except Exception as e:
+            message.append('Error getting information for creating home folder '\
+                           'for user %s' % username)
+            return False, message
+        if not os.path.isdir(homedir):
+            message.append('Creating %s home folder %s' % (username, homedir))
+            os.makedirs(homedir, 0751)
+        os.chmod(homedir, 0751)
+        os.chown(homedir, uid, gid)
+        packagedir = os.path.join(homedir, 'packages')
+        if not os.path.isdir(packagedir):
+            message.append('Creating packages folder %s' % packagedir)
+            os.makedirs(packagedir, 0764)
+        gidroot = grp.getgrnam("root").gr_gid
+        os.chmod(packagedir, 0764)
+        os.chown(packagedir, uid, gidroot)
+    elif sys.platform.startswith('darwin'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            homedir = os.path.expanduser(username)
+        except Exception as e:
+            message.append('Error getting information for creating home folder '\
+                           'for user %s' % username)
+            return False, message
+        if not os.path.isdir(homedir):
+            message.append('Creating %s home folder %s' % (username, homedir))
+            os.makedirs(homedir, 0751)
+        os.chmod(homedir, 0751)
+        os.chown(homedir, uid, gid)
+        packagedir = os.path.join(homedir, 'packages')
+        if not os.path.isdir(packagedir):
+            message.append('Creating packages folder %s' % packagedir)
+            os.makedirs(packagedir, 0764)
+        gidroot = grp.getgrnam("root").gr_gid
+        os.chmod(packagedir, 0764)
+        os.chown(packagedir, uid, gidroot)
+    return True, message
+
+def get_user_profile(username='pulseuser'):
+    usersid = get_user_sid(username)
+    if not usersid:
+        logger.error('Error obtaining %s user sid' % username)
+        logger.error('User %s probably does not exist' % username)
+        return ''
+    check_profile_cmd = 'powershell "Get-ItemProperty '\
+    '-Path \'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*\' '\
+    '| Where-Object { $_.PSChildName -eq \'%s\' } '\
+    '| Select -ExpandProperty ProfileImagePath"' % usersid
+    result = simplecommand(encode_strconsole(check_profile_cmd))
+    if result['code'] == 0 and result['result']:
+        logger.info('%s profile location: %s' % (username, result['result'][0]))
+        return result['result'][0]
+    else:
+        return ''
+
+def get_user_sid(username='pulseuser'):
+    try:
+        usersid = win32security.ConvertSidToStringSid(
+            win32security.LookupAccountName(None, username)[0])
+        logger.info('%s user sid: %s' % (username, usersid))
+        return usersid
+    except Exception as e:
+        logger.error('Error obtaining %s user sid: \n %s' % (username, str(e)))
+        return False
+
+def delete_profile(username='pulseuser'):
+    if sys.platform.startswith('win'):
+        # Delete profile folder in C:\Users if any
+        try:
+            for name in os.listdir('C:/Users/'):
+                if name.startswith(username):
+                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
+                    result = simplecommand(encode_strconsole(delete_folder_cmd))
+                    if result['code'] == 0:
+                        logger.info('Deleted %s folder' % os.path.join('C:/Users/', name))
+                    else:
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
+        except Exception as e:
+            pass
+        # Delete profile
+        userenvdll = ctypes.WinDLL('userenv.dll')
+        usersid = get_user_sid(username)
+        delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
+        if delete_profile_result == 0:
+            logger.info('%s profile deleted.' % username)
+        else:
+            logger.error('Error deleting %s profile: %s' % (username, delete_profile_result))
+    return True
+
+def create_idrsa_on_client(username='pulseuser', key=''):
+    """
+    Used on client machine for connecting to relay server
+    """
+    message = []
+    if sys.platform.startswith('win'):
+        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
+    else:
+        id_rsa_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
+    result = simplecommand(encode_strconsole(delete_keyfile_cmd))
+    message.append('Creating id_rsa file in %s' % id_rsa_path)
+    if not os.path.isdir(os.path.dirname(id_rsa_path)):
+        os.makedirs(os.path.dirname(id_rsa_path), 0700)
+    file_put_contents(id_rsa_path, key)
+    file_contents = file_get_contents(id_rsa_path)
+    logger.debug('%s contents: \n %s' % (id_rsa_path, file_contents))
+    result, logs = apply_perms_sshkey(id_rsa_path, True)
+    message.append(logs)
+    return message
+
+def apply_perms_sshkey(path, private=True):
+    """
+    Apply permissions on ssh key.
+    If private = True, the permissions are based on the user that is executing Pulse Agent
+    If private = False, the permissions are based on pulseuser
+    """
+    message = []
+    if not os.path.isfile(path):
+        message.append('Error: File %s does not exist' % path)
+        return False
+    if sys.platform.startswith('win'):
+        if private == True:
+            # We are using id_rsa. The owner must be the user running the Agent
+            username = win32api.GetUserName().lower()
+        else:
+            # The owner must be pulseuser
+            username = 'pulseuser'
+        try:
+            sd = win32security.GetFileSecurity(path,
+                                               win32security.DACL_SECURITY_INFORMATION)
+            dacl = win32security.ACL ()
+            user, domain, type = win32security.LookupAccountName ("", username)
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                     ntsecuritycon.FILE_ALL_ACCESS,
+                                     user)
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            win32security.SetFileSecurity(path,
+                                          win32security.DACL_SECURITY_INFORMATION,
+                                          sd)
+            if private == False:
+                user, domain, type = win32security.LookupAccountName ("", "system")
+                dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                         ntsecuritycon.FILE_ALL_ACCESS,
+                                         user)
+                sd.SetSecurityDescriptorDacl(1, dacl, 0)
+                win32security.SetFileSecurity(path,
+                                              win32security.DACL_SECURITY_INFORMATION,
+                                              sd)
+        except Exception as e:
+            message.append('Error setting permissions on %s for user %s' % (path, user))
+            message.append('Error details: %s' % str(e))
+            return False, message
+    else:
+        if private == True:
+            # We are using id_rsa. The owner must be the user running the Agent
+            uid = os.geteuid()
+            gid = os.getegid()
+        else:
+            # The owner must be pulseuser
+            username = 'pulseuser'
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+        try:
+            os.chown(os.path.dirname(path), uid, gid)
+            os.chown(path, uid, gid)
+            os.chmod(os.path.dirname(path), 0700)
+            os.chmod(path, 0600)
+        except Exception as e:
+            message.append('Error setting permissions on %s for user %s' % (path,
+                                                                   pwd.getpwuid(uid).pw_name))
+            message.append('Error details: %s' % str(e))
+            return False, message
+    if sys.platform.startswith('win'):
+        list_perms_cmd = 'powershell "(get-acl %s).access '\
+        '| ft IdentityReference,FileSystemRights,AccessControlType"' % path
+    elif sys.platform.startswith('linux'):
+        list_perms_cmd = 'getfacl %s' % path
+    elif sys.platform.startswith('darwin'):
+        list_perms_cmd = 'ls -e -l %s' % path
+    result = simplecommand(encode_strconsole(list_perms_cmd))
+    message.append('Permissions on file %s:' % path)
+    message.append("%s"%''.join(result['result']))
+    return True, message
+
+def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
+    """
+    Used on client machine for allowing connections from relay server
+    """
+    message = []
+    if sys.platform.startswith('win'):
+        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys' )
+    else:
+        authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
+    if not os.path.isfile(authorized_keys_path):
+        message.append('Creating authorized_keys file in %s' % authorized_keys_path)
+        if not os.path.isdir(os.path.dirname(authorized_keys_path)):
+            os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+        file_put_contents(authorized_keys_path, key)
+    else:
+        authorized_keys_content = file_get_contents(authorized_keys_path)
+        if not key.strip(' \t\n\r') in authorized_keys_content:
+            message.append('Adding key to %s' % authorized_keys_path)
+            file_put_contents_w_a( authorized_keys_path, "\n"+ key, "a" )
+        else:
+            message.append('Key is already present in %s' % authorized_keys_path)
+    file_contents = file_get_contents(authorized_keys_path)
+    message.append('%s contents: \n %s' %(authorized_keys_path, file_contents))
+    result, logs = apply_perms_sshkey(authorized_keys_path, False)
+    message.append(logs)
+    return message
+
+def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
+    message = []
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+        message.append('%s user account already exists. Nothing to do.' % username)
+        return False, message
+    except Exception:
+        adduser_cmd = 'adduser --system --quiet --group '\
+            '--home /var/lib/pulse2/clients/reversessh '\
+            '--shell /bin/rbash --disabled-password %s' % username
+    result = simplecommand(encode_strconsole(adduser_cmd))
+    if result['code'] == 0:
+        message.append('Creation of %s user account successful: %s' % (username, result))
+        return True, message
+    else:
+        message.append('Creation of %s user account failed: %s' % (username, result))
+        return False, message
+
+def reversessh_keys_mustexist_on_relay(username='reversessh'):
+    message = []
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+        homedir = os.path.expanduser(username)
+    except Exception as e:
+        message.append('Error getting information for creating home folder '\
+                       'for user %s' % username)
+        return False, message
+    if not os.path.isdir(homedir):
+        message.append('Creating %s home folder %s' % (username, homedir))
+        os.makedirs(homedir, 0751)
+    os.chmod(homedir, 0751)
+    os.chown(homedir, uid, gid)
+    # Check keys
+    id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
+    keycheck_cmd = 'ssh-keygen -y -e -f %s > %s' % (id_rsa_key_path, public_key_path)
+    result = simplecommand(encode_strconsole(keycheck_cmd))
+    if result['code'] != 0:
+        message.append('Creating id_rsa file in %s' % id_rsa_key_path)
+        if not os.path.isdir(os.path.dirname(id_rsa_key_path)):
+            os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
+        keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
+        result = simplecommand(encode_strconsole(keygen_cmd))
+    os.chmod(os.path.dirname(id_rsa_key_path), 0700)
+    os.chown(os.path.dirname(id_rsa_key_path), uid, gid)
+    os.chmod(id_rsa_key_path, 0600)
+    os.chown(id_rsa_key_path, uid, gid)
+    os.chmod(public_key_path, 0644)
+    os.chown(public_key_path, uid, gid)
+    return True, message
+
+def get_relayserver_pubkey(username='root'):
+    """
+        returns relayserver's root public key
+    """
+    public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
+    return file_get_contents(public_key_path)
+
+def get_relayserver_reversessh_idrsa(username='reversessh'):
+    """
+        returns relayserver's reversessh private key
+    """
+    idrsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    return file_get_contents(idrsa_key_path)
+
+class geolocalisation_agent:
+    def __init__(self, 
+                 typeuser = "public", 
+                 geolocalisation=True, 
+                 ip_public=None,
+                 strlistgeoserveur=""):
+        self.determination = False
+        self.geolocalisation = geolocalisation
+        self.ip_public = ip_public
+        self.typeuser = typeuser
+        self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
+                                          'filegeolocalisation')
+        self.listgeoserver = ["http://%s/json"%x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
+                                              strlistgeoserveur)  if x.strip()!=""];
+        self.localisation = None
+        self.getgeolocalisation()
+        if self.localisation is None:
+            self.localisation=self.getdatafilegeolocalisation()
+
+    def getgeolocalisationobject(self):
+        if self.localisation is None:
+            return {}
+        return self.localisation
+
+    def getdatafilegeolocalisation(self):    
+        if self.geoinfoexist():
+            try:
+                with open(self.filegeolocalisation) as json_data:
+                    self.localisation=json.load(json_data)
+                self.determination = False
+                return self.localisation
+            except Exception:
+                pass
+        return None
+
+    def setdatafilegeolocalisation(self):
+        if self.localisation is not None:
+            try:
+                with open(self.filegeolocalisation, 'w') as json_data:
+                    json.dump(self.localisation, json_data, indent=4)
+                self.determination = True
+            except Exception:
+                pass
+
+    def geoinfoexist(self):
+        if os.path.exists(self.filegeolocalisation):
+            return True
+        return False
+
+    def getgeolocalisation(self):
+        if self.geolocalisation:
+            if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
+                # on recherche a chaque fois les information
+                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                self.determination = True
+                self.setdatafilegeolocalisation()
+                return self.localisation
+            else:
+                if self.localisation is not None:
+                    if not self.geoinfoexist():
+                        self.setdatafilegeolocalisation()
+                        self.determination = False
+                    return self.localisation
+                elif not self.geoinfoexist():
+                    self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                    self.setdatafilegeolocalisation()
+                    self.determination = True
+                    return self.localisation
+            return None
+        else:
+            if not self.geoinfoexist():
+                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                self.setdatafilegeolocalisation()
+                self.determination = True
+                return self.localisation
+
+        return self.localisation
+
+    def get_ip_public(self):
+        if self.geolocalisation:
+            if self.localisation is  None:
+                self.getgeolocalisation()
+            if self.localisation is not None and is_valid_ipv4(self.localisation['ip']):
+                if not self.determination:
+                    logger.warning("Determination use file")
+                self.ip_public = self.localisation['ip']
+                return self.localisation['ip']
+            else :
+                return None
+        else:
+            if not self.determination:
+                logger.warning("use old determination ip_public")
+            if self.localisation is  None:
+                if self.geoinfoexist():
+                    logger.warning("coucou")
+                    dd=self.getdatafilegeolocalisation()
+                    logger.warning("%s"%dd)
+                    if  self.localisation is  not None:
+                        return self.localisation['ip']
+            else:
+                return self.localisation['ip']
+        return self.ip_public
+
+    @staticmethod
+    def call_simple_page(url):
+        try:
+            r = requests.get(url)
+            return r.json()
+        except:
+            return None
+    
+    @staticmethod
+    def call_simple_page_urllib(url):
+        try:
+            objip = json.loads(urllib.urlopen(url).read())
+            return objip
+        except:
+            return None
+
+    @staticmethod
+    def searchgeolocalisation(http_url_list_geo_server):
+        """
+            return objet
+        """
+        for url in http_url_list_geo_server:
+            try:
+                objip = geolocalisation_agent.call_simple_page(url)
+                if  objip is None:
+                    raise
+                return objip
+            except BaseException:
+                pass
+        return None

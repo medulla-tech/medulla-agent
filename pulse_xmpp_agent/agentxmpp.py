@@ -53,13 +53,14 @@ from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, searchippublic, subnetnetwork,\
-                        protoandport, createfingerprintnetwork, isWinUserAdmin,\
+                        createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, is_connectedServer,  testagentconf, \
-                        Setdirectorytempinfo, setgetcountcycle, setgetrestart
+                        Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
+                        protodef, geolocalisation_agent
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -112,14 +113,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
                  queueout,
                  eventkilltcp,
                  eventkillpipe):#jid, password, room, nick):
-        logging.log(DEBUGPULSE, "start machine1  %s Type %s" %(conf.jidagent,
+        logging.log(DEBUGPULSE, "start machine  %s Type %s" %(conf.jidagent,
                                                                conf.agenttype))
         #create mutex
         self.mutex = threading.Lock()
+        self.mutexslotquickactioncount = threading.Lock()
         self.eventkilltcp = eventkilltcp
         self.eventkillpipe = eventkillpipe
         self.queue_recv_tcp_to_xmpp = queue_recv_tcp_to_xmpp
         self.queueout = queueout
+
+        self.concurrentquickdeployments = {} #list object i { numerodesession : timestamp }
+
+
         #create dir for descriptor syncthing deploy
         self.dirsyncthing =  os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                           "syncthingdescriptor")
@@ -325,22 +331,25 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_check_established_connection,
                       self.established_connection,
                       repeat=True)
+        if self.config.agenttype in ['relayserver']:
+            #scheduled task that calls the slot plugin for sending the quick deployments that have not been processed.
+            self.schedule('Quick deployment load',
+                        15,
+                        self.QDeployfile,
+                        repeat=True)
 
         if not hasattr(self.config, 'geolocalisation'):
             self.config.geolocalisation = True
-        # use public_ip for localisation
-        if self.config.public_ip == "":
-            try:
-                if self.config.agenttype in ['relayserver']:
-                    if self.config.geolocalisation:
-                        self.config.public_ip = searchippublic()
-                else:
-                    self.config.public_ip = searchippublic()
-            except Exception:
-                pass
+        if not hasattr(self.config, 'request_type'):
+            self.config.request_type = "public"
+        self.geodata = geolocalisation_agent(typeuser = self.config.request_type,
+                                             geolocalisation=self.config.geolocalisation, 
+                                             ip_public=self.config.public_ip,
+                                             strlistgeoserveur=self.config.geoservers    )
+
+        self.config.public_ip = self.geodata.get_ip_public()
         if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
-
 
         self.md5reseau = refreshfingerprint()
         self.schedule('schedulerfunction',
@@ -480,6 +489,32 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       #80,
                       #self.initialise_tcp_kiosk,
                       #repeat=False)
+
+    def QDeployfile(self):
+        sessioniddata = getRandomName(6, "Qdeployfile")
+        dataerreur={"action": "resultqdeploy",
+                    "sessionid" : sessioniddata,
+                    "ret" : 255,
+                    "base64" : False,
+                    "data": {"msg" : "Deployment error"}
+                }
+        transfertdeploy = {
+            'action': "slot_quickdeploy_count",
+            "sessionid" : sessioniddata,
+            'data' : { "subaction" : "deployfile"},
+            'ret' : 0,
+            'base64' : False }
+
+        msg = {'from' : self.boundjid.bare,
+                "to" : self.boundjid.bare,
+                'type' : 'chat' }
+        call_plugin(transfertdeploy["action"],
+                    self,
+                    transfertdeploy["action"],
+                    transfertdeploy['sessionid'],
+                    transfertdeploy['data'],
+                    msg,
+                    dataerreur)
 
     ###############################################################
     # syncthing function
@@ -1662,14 +1697,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-    def handleinventory(self):
+    def handleinventory(self, forced = "forced", sessionid = None):
         msg={ 'from' : "master@pulse/MASTER",
               'to': self.boundjid.bare
             }
-        sessionid = getRandomName(6, "inventory")
+        datasend = {"forced" : "forced"}
+        if forced == "forced" or forced == True:
+            datasend = {"forced" : "forced"}
+        else:
+            datasend = {"forced" : "noforced" }
+        if sessionid == None:
+            sessionid = getRandomName(6, "inventory")
         dataerreur = {}
-        dataerreur['action']= "resultinventory"
-        dataerreur['data']={}
+        dataerreur['action'] = "resultinventory"
+        dataerreur['data']= datasend
         dataerreur['data']['msg'] = "ERROR : inventory"
         dataerreur['sessionid'] = sessionid
         dataerreur['ret'] = 255
@@ -1688,12 +1729,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             module = "Inventory | Inventory reception | Planned",
                                             fromuser = "",
                                             touser = "")
-
         call_plugin("inventory",
                     self,
                     "inventory",
-                    getRandomName(6, "inventory"),
-                    {},
+                    sessionid,
+                    datasend,
                     msg,
                     dataerreur)
 
@@ -2104,6 +2144,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
 
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
+        remoteservice = protodef()
+        # if regcomplet = True then register agent reconfigure complet of agent
+        self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
@@ -2133,7 +2176,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.config.public_ip,
-            'remoteservice' : protoandport(),
+            'geolocalisation' : {},
+            'remoteservice' : remoteservice.proto,
+            'regcomplet' : self.regcomplet,
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
@@ -2141,6 +2186,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart' : save_count_start(),
             'keysyncthing' : self.deviceid
         }
+        if self.geodata.localisation is not None:
+            dataobj['geolocalisation'] = self.geodata.localisation
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
@@ -2468,7 +2515,7 @@ class process_xmpp_agent():
             if xmpp.config.agenttype in ['relayserver']:
                 terminateserver(xmpp)
 
-            if setgetrestart(-1) == 1:
+            if setgetrestart(-1) == 0:
                 logging.log(DEBUGPULSE,"not restart")
                 # verify if signal stop
                 # verify if alternative connection

@@ -373,7 +373,6 @@ class functionsynchroxmpp:
                                     touser = "")
                 logger.warning("key ARS [%s] : is already installed."%data['data']['from'])
                 msgaction.append("key ARS [%s] : is already installed."%data['data']['from'])
-            ####### jfkjfk
             data['action'] = "resultkeyinstall"
             data['ret'] = 0
             data['data'] = { "msg_action" : msgaction}
@@ -393,6 +392,15 @@ class functionsynchroxmpp:
         result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
         for info_ask in data['data']['listinformation']:
             try:
+                if info_ask == "force_reconf": #force reconfiguration immedialy
+                    filedata=["BOOLCONNECTOR", "action_force_reconfiguration"]
+                    for filename in  filedata:
+                        file= open( os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                "..", filename),"w")
+                        file.close()
+                        xmppobject.networkMonitor()
+                    result['result']['informationresult'] [info_ask] = "action force " \
+                                                    "reconfiguration for"%xmppobject.boundjid.bare
                 if info_ask == "keypub":
                     result['result']['informationresult'] [info_ask] = keypub()
                 if info_ask == "os":

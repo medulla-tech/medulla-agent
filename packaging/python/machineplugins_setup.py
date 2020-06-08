@@ -19,13 +19,19 @@
 # MA 02110-1301, USA.
 
 from setuptools import setup
+from distutils.command.install import INSTALL_SCHEMES
+
+import os
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = os.path.join(scheme['purelib'], "pulse_xmpp_agent")
+
 setup(
     name="pulse_machine_plugins",
-    version="2.0.7",
+    version="2.1.0",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Machine agent plugins for pulse",

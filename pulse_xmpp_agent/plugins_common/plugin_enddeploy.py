@@ -18,12 +18,15 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+# file : plugin_enddeploy.py
 
 import logging
-from lib.utils import simplecommand, encode_strconsole
+from lib.utils import simplecommand, encode_strconsole, _path_packagequickaction
 import time
 
-plugin = {"VERSION" : "1.3", "NAME" : "enddeploy",  "TYPE" : "all"}
+import os
+import json
+plugin = {"VERSION" : "1.5", "NAME" : "enddeploy",  "TYPE" : "all"}
 
 logger = logging.getLogger()
 
@@ -32,6 +35,44 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("call %s from %s session id %s"%( plugin, message['from'], sessionid))
     logging.getLogger().debug("###################################################")
     if objectxmpp.config.agenttype in ['relayserver']:
+        try:
+            objectxmpp.mutexslotquickactioncount.acquire()
+            #convention 1 ban
+            pathfile = _path_packagequickaction()
+            filedeploy = [x for x in os.listdir(pathfile) if x.endswith("QDeploy")]
+            logging.getLogger().debug("filedeploy %s"%filedeploy)
+            ## remove all pool files
+            for filledeployement in filedeploy:
+                tabfile = filledeployement.split('@_@_@')
+                idmachine = tabfile[1]
+                sessionfile = tabfile[0]
+                # charge fichier dans  msgstruct
+                try:
+                    if sessionid == sessionfile:
+                        os.remove(os.path.join(pathfile, filledeployement))
+                        res = simplecommand("ls %s | wc -l"%os.path.join(_path_packagequickaction(),"*.QDeploy"))
+                        if res['code'] == 0:
+                            nbpool = res['result']
+                        else:
+                            nbpool = "????"
+                        objectxmpp.xmpplog( "<span class='log_err'>ABORT DEPLOYMENT CANCELLED BY USER</span>\n " \
+                                            "Deleting deployment %s from queue %s : %s"%(sessionid,
+                                                            str(objectxmpp.boundjid.bare),
+                                                            nbpool ),
+                                            type = 'deploy',
+                                            sessionname = sessionid,
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = str(objectxmpp.boundjid.bare),
+                                            module = "Deployment | Qdeploy | Notify",
+                                            date = None ,
+                                            fromuser = data['login'])
+                        break
+                except:
+                    pass
+        finally:
+            objectxmpp.mutexslotquickactioncount.release()
+
         if objectxmpp.session.isexist(sessionid):
             datesession = objectxmpp.session.sessionfromsessiondata(sessionid).getdatasession()
             result = simplecommand(encode_strconsole("netstat -tpn | grep -v tcp6 | grep -v sshd | grep ssh | grep ESTABLISHED | grep '%s'"%datesession['ipmachine']))

@@ -34,7 +34,6 @@ import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
-from lib.plugins.glpi import  Glpi
 from lib.managepackage import managepackage
 from lib.managesession import session
 from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents, file_put_contents
@@ -81,7 +80,6 @@ def scheduledeploy(self):
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
     msg=[]
-    sessiondeployementless = name_random(5, "missingagent")
     list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
     for arssyncthing in list_ars_syncthing_pause:
         datasend = {  "action" : "deploysyncthing",
@@ -122,21 +120,19 @@ def scheduledeploy(self):
         UUID = deployobject['UUID']
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
         if resultpresence[UUID][1] == 0:
-            # machine dans GLPI mais pas enregistré sur tavle machine xmpp.
+            sessiondeployementless = name_random(5, "missingagent")
             listobjnoexist.append(deployobject)
-            machine = Glpi().getMachineByUUID(UUID)
-            #incrition dans deploiement cette machine sans agent
-
+            # incrition dans deploiement cette machine sans agent
             XmppMasterDatabase().adddeploy(deployobject['commandid'],
-                                            machine.name,
-                                            machine.name,
-                                            machine.name,
+                                            deployobject['name'],
+                                            deployobject['name'],
+                                            deployobject['name'],
                                             UUID,
-                                            machine.contact,
+                                            deployobject['login'],
                                             "ABORT MISSING AGENT",
                                             sessiondeployementless,
-                                            user=machine.contact,
-                                            login=machine.contact,
+                                            user=deployobject['login'],
+                                            login=deployobject['login'],
                                             title=deployobject['title'],
                                             group_uuid=deployobject['GUID'],
                                             startcmd=deployobject['start_date'],
@@ -146,11 +142,11 @@ def scheduledeploy(self):
                                             syncthing = 0)
 
             msg.append("<span class='log_err'>Agent missing on machine %s. " \
-                        "Deployment impossible : GLPI ID is %s</span>"%(machine.name,
+                        "Deployment impossible : GLPI ID is %s</span>"%(deployobject['name'],
                                                                             UUID))
             msg.append("Action : Check that the machine "\
                 "agent is working, or install the agent on the"\
-                    " machine %s (%s) if it is missing."%(machine.name,
+                    " machine %s (%s) if it is missing."%(deployobject['name'],
                                                                     UUID))
             for logmsg in msg:
                 self.xmpplog(logmsg,
@@ -161,7 +157,7 @@ def scheduledeploy(self):
                             why=self.boundjid.bare,
                             module="Deployment | Start | Creation",
                             date=None,
-                            fromuser=machine.contact)
+                            fromuser=deployobject['login'])
             continue
 
         if datetime.datetime.now() < deployobject['start_date']:

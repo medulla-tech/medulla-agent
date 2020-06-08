@@ -373,7 +373,6 @@ class functionsynchroxmpp:
                                     touser = "")
                 logger.warning("key ARS [%s] : is already installed."%data['data']['from'])
                 msgaction.append("key ARS [%s] : is already installed."%data['data']['from'])
-            ####### jfkjfk
             data['action'] = "resultkeyinstall"
             data['ret'] = 0
             data['data'] = { "msg_action" : msgaction}
@@ -393,6 +392,8 @@ class functionsynchroxmpp:
         result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
         for info_ask in data['data']['listinformation']:
             try:
+                if info_ask == "force_reconf": #force reconfiguration immedialy
+                    result['result']['informationresult'] [info_ask] = "no implemented on substitute"
                 if info_ask == "keypub":
                     result['result']['informationresult'] [info_ask] = keypub()
                 if info_ask == "os":

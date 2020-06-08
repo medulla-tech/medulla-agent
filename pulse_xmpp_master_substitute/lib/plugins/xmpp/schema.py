@@ -166,7 +166,8 @@ class Machines(Base, XmppMasterDBObj):
     # Notice that each column is also a normal Python instance attribute.
     #id = Column(Integer, primary_key=True)
     jid = Column(String(255), nullable=False)
-    enabled=  Column(Boolean, unique=False)
+    need_reconf =  Column(Boolean, nullable=False, default="0")
+    enabled =  Column(Boolean, unique=False)
     platform = Column(String(60))
     hostname = Column(String(45), nullable=False)
     archi= Column(String(45), nullable=False)
@@ -224,6 +225,8 @@ class RelayServer(Base, XmppMasterDBObj):
     longitude = Column(String(45))
     latitude = Column(String(45))
     enabled=  Column(Boolean, unique=False)
+    mandatory =  Column(Boolean, nullable=False, default="1")
+    switchonoff =  Column(Boolean, nullable=False, default="1")
     classutil = Column(String(10))
     moderelayserver = Column(String(7))
     keysyncthing = Column(String(70), default="")
@@ -277,10 +280,14 @@ class Has_relayserverrules(Base, XmppMasterDBObj):
 class Has_guacamole(Base, XmppMasterDBObj):
     # ====== Table name =========================
     __tablename__ = 'has_guacamole'
-    # ====== ForeignKey =============================
+    # ====== Fields =============================
+    # Here we define columns for the table has_guacamole.
+    # Notice that each column is also a normal Python instance attribute.
     idguacamole = Column(Integer)
-    idinventory = Column(Integer)
     protocol   = Column(String(10))
+    # ====== ForeignKey =============================
+    machine_id = Column(Integer, ForeignKey('machines.id'))
+    machines = relationship(Machines)
 
 class Has_cluster_ars(Base, XmppMasterDBObj):
     ## ====== Table name =========================
