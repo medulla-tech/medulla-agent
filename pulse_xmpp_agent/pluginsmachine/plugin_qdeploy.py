@@ -46,7 +46,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.05", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "1.06", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -165,30 +165,51 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         objectxmpp.session.createsessiondatainfo(sessionid,
                                                  datasession =  datasend['data'],
                                                  timevalid = 180)
-        try:
-            initialisesequence(datasend, objectxmpp, sessionid )
-        except Exception as e:
-            objectxmpp.xmpplog('<span class="log_err">Error initializing grafcet %s</span>'%str(e),
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment | Notify",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment | Notify",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-            return
-        #grafcet(objectxmpp,datasend) #grafcet will use the session
-        logger.debug("outing graphcet phase1")
+        if not 'advanced' in datasend['data']:
+            datasend['data']['advanced'] = {}
+            datasend['data']['advanced']['exec'] = True
+        if datasend['data']['advanced']['exec'] is True or not 'advanced' in datasend['data']:
+            # deploy directly
+            datasend['data']['advanced']['scheduling'] = False
+            try:
+                initialisesequence(datasend, objectxmpp, sessionid )
+            except Exception as e:
+                objectxmpp.xmpplog('<span class="log_err">Error initializing grafcet %s</span>'%str(e),
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Deployment | Notify",
+                            date = None ,
+                            fromuser = datasend['data']['advanced']['login'])
+                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Deployment | Notify",
+                            date = None ,
+                            fromuser = datasend['data']['advanced']['login'])
+                return
+            logger.debug("outing graphcet phase1")
+        else:
+            # schedule deployment
+            objectxmpp.xmpplog('Package deployment paused : %s'%datasend['data']['name'],
+                                type = 'deploy',
+                                sessionname = sessionid,
+                                priority = -1,
+                                action = "xmpplog",
+                                who = strjidagent,
+                                how = "",
+                                why = "",
+                                module = "Deployment | Notify",
+                                date = None ,
+                                fromuser = datasend['data']['advanced']['login'],
+                                touser = "")
+            datasend['data']['advanced']['scheduling'] = True
+            objectxmpp.Deploybasesched.set_sesionscheduler(sessionid,json.dumps(datasend))
 
 def cleandescriptor(datasend):
     if sys.platform.startswith('linux'):
