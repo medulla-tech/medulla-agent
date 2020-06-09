@@ -426,7 +426,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         data['information']['users'][0],
                         result, objectxmpp, data)
                 break
-		# Network Rule : 10
+                # Network Rule : 10
         elif x[0] == 10:
             # Associates relay server based on network address
             if showinfomachine:

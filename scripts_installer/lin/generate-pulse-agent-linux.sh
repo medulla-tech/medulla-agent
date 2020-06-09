@@ -317,6 +317,12 @@ build_deb() {
             popd
         fi
 
+        if [ -d "ubuntu/20.04" ]; then
+            cp -fv *.deb ubuntu/20.04
+            pushd ubuntu/20.04
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
+            popd
+        fi
 	popd
 }
 
