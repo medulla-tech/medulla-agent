@@ -897,9 +897,12 @@ class XmppMasterDatabase(DatabaseHelper):
                 ret['limit'] = int(max)-int(min)
 
 
-            if min : ret['min'] = min
-            if max : ret['max'] = max
-            if filt : ret['filt'] = filt
+            if min:
+                ret['min'] = min
+            if max:
+                ret['max'] = max
+            if filt:
+                ret['filt'] = filt
             result = result.all()
             session.commit()
             session.flush()
