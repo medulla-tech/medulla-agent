@@ -1304,7 +1304,8 @@ class syncthingprogram(Program):
         #print("start syncthing")
         if sys.platform.startswith('linux'):
             if self.agenttype == "relayserver":
-                os.system("systemctl restart syncthing@syncthing.service")
+                #os.system("systemctl restart syncthing@syncthing.service")
+                os.system("systemctl restart syncthing@syncthing-depl.service")
             else:
                 os.system('systemctl restart syncthing@pulseuser.service')
         elif sys.platform.startswith('win'):
@@ -1344,7 +1345,8 @@ class syncthingprogram(Program):
             os.system("taskkill /f /im syncthing.exe")
         elif sys.platform.startswith('linux'):
             if self.agenttype == "relayserver":
-                os.system("systemctl stop syncthing@syncthing.service")
+                #os.system("systemctl stop syncthing@syncthing.service")
+                os.system("systemctl stop syncthing@syncthing-depl.service")
             else:
                 #os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
                 os.system('systemctl stop syncthing@pulseuser.service')
