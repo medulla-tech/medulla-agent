@@ -895,8 +895,6 @@ class XmppMasterDatabase(DatabaseHelper):
             if min is not None and max is not None:
                 result = result.offset(int(min)).limit(int(max)-int(min))
                 ret['limit'] = int(max)-int(min)
-
-
             if min:
                 ret['min'] = min
             if max:
