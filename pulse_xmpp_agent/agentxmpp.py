@@ -1559,7 +1559,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.config.syncthing_on
         except NameError:
             self.config.syncthing_on = False
-
+        portsyncthing = 8384
         ################################### initialise syncthing ###################################
         if self.config.syncthing_on:
             if  not self.config.agenttype in ['relayserver']:
@@ -1573,8 +1573,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
             if sys.platform.startswith('linux'):
                 if self.config.agenttype in ['relayserver']:
-                    #fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
                     fichierconfsyncthing = "/var/lib/syncthing-depl/.config/syncthing/config.xml"
+                    portsyncthing = 8385
                 else:
                     fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                         ".config",
@@ -1594,7 +1594,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                     "config.xml")
                 tmpfile = "/tmp/confsyncting.txt"
             try:
-                self.syncthing = syncthing(configfile = fichierconfsyncthing)
+                self.syncthing = syncthing(configfile = fichierconfsyncthing, port = portsyncthing)
                 if logger.level <= 10:
                     self.syncthing.save_conf_to_file(tmpfile)
                 else:
