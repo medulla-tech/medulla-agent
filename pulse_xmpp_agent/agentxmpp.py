@@ -482,7 +482,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       repeat=True)
 
         self.schedule('initsyncthing',
-                      120,
+                      60,
                       self.initialise_syncthing,
                       repeat=False)
 
@@ -1572,7 +1572,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
             if sys.platform.startswith('linux'):
                 if self.config.agenttype in ['relayserver']:
-                    fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                    #fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                    fichierconfsyncthing = "/var/lib/syncthing-depl/.config/syncthing/config.xml"
                 else:
                     fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                         ".config",
