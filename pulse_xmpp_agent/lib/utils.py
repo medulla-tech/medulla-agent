@@ -2900,6 +2900,20 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     os.chown(public_key_path, uid, gid)
     return True, message
 
+def get_relayserver_pubkey(username='root'):
+    """
+        returns relayserver's root public key
+    """
+    public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
+    return file_get_contents(public_key_path)
+
+def get_relayserver_reversessh_idrsa(username='reversessh'):
+    """
+        returns relayserver's reversessh private key
+    """
+    idrsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    return file_get_contents(idrsa_key_path)
+
 class geolocalisation_agent:
     def __init__(self, 
                  typeuser = "public", 

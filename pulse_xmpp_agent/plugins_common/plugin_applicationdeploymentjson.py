@@ -2274,7 +2274,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
                     datasend['data']['limit_rate_ko'] != "" and\
                         int(datasend['data']['limit_rate_ko']) > 0:
         scp_limit_rate_ko = " -l %s "%(int(datasend['data']['limit_rate_ko']) * 8)
-        rsync_limit_rate_ko = " --bwlimit %s "%(int(datasend['data']['limit_rate_ko']) * 8)
+        rsync_limit_rate_ko = " --bwlimit %s "%(int(datasend['data']['limit_rate_ko']))
     takeresource(datasend, objectxmpp, sessionid)
     strjidagent = str(objectxmpp.boundjid.bare)
     if sys.platform.startswith('win'):
