@@ -1853,7 +1853,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except:
             pass
-        replycatorcmd = "python %s"%(os.path.join(self.pathagent, "replicator.py"))
+        replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
         logger.debug("cmd : %s"%(replycatorcmd))
         result = simplecommand(replycatorcmd)
         if result['code'] == 0:
