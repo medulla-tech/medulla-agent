@@ -522,8 +522,10 @@ class confParameter:
                 if len(self.timealternatif) < 2:
                     raise
                 else:
-                    if self.timealternatif[0] < 2: self.timealternatif[0] = 2
-                    if self.timealternatif[1] > 30 : self.timealternatif[1] = 30
+                    if self.timealternatif[0] < 2:
+                        self.timealternatif[0] = 2
+                    if self.timealternatif[1] > 30:
+                        self.timealternatif[1] = 30
             except Exception:
                 self.timealternatif=[2,30]
                 logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)

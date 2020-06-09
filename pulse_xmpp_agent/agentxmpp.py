@@ -1463,7 +1463,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         keyroster = str(self.boundjid.bare)
         if keyroster in self.roster:
             for t in self.roster[keyroster]:
-                if t == self.boundjid.bare or t in [self.sub_subscribe] : continue
+                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                    continue
                 logger.info("unsubscribe %s"%self.sub_subscribe)
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
                 #self.del_roster_item(t)
@@ -1675,7 +1676,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
-        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if sessionname == "":
+            sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
@@ -1828,8 +1830,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if os.path.isfile(namefilebool):
                     os.remove(namefilebool)
 
-                args = ['python', nameprogconnection, '-t', 'machine']
-                subprocess.call(args)
+                connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
+                subprocess.call(connectionagentArgs)
 
                 for i in range(15):
                     if os.path.isfile(namefilebool):
@@ -1853,9 +1855,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except:
             pass
-        cmd = "python %s"%(os.path.join(self.pathagent, "replicator.py"))
-        logger.debug("cmd : %s"%(cmd))
-        result = simplecommand(cmd)
+        replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
+        logger.debug("cmd : %s" % (replycatorcmd))
+        result = simplecommand(replycatorcmd)
         if result['code'] == 0:
             logger.warning("the agent is already installed for version  %s"%(versiondata))
         elif result['code'] == 1:
@@ -2303,7 +2305,8 @@ def tgconf(optstypemachine):
         if tg.Server == "" or tg.Port == "":
             logger.error("Error config ; Parameter Connection missing")
             sys.exit(1)
-        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        if ipfromdns(tg.Server) != "" and check_exist_ip_port(ipfromdns(tg.Server), tg.Port):
+            break
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.Server,
                                               tg.Port,
