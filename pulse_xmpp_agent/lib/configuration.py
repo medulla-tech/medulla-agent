@@ -35,7 +35,6 @@ from agentconffile import conffilename
 from sleekxmpp import jid
 from agentconffile import directoryconffile
 from utils import ipfromdns
-from sleekxmpp import jid
 import re
 
 logger = logging.getLogger()

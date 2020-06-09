@@ -38,7 +38,6 @@ import copy
 import traceback
 import time
 from subprocess import STDOUT, check_output
-from lib.grafcetdeploy import grafcet
 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
     import grp
     import pwd
