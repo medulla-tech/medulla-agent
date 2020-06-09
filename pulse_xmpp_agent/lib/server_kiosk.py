@@ -39,8 +39,6 @@ import subprocess
 import random
 from multiprocessing import Process, Queue, Lock, current_process, TimeoutError
 import psutil
-import json
-import threading
 from utils import getRandomName, call_plugin, isBase64, is_connectedServer
 from sleekxmpp import jid
 from configuration import confParameter

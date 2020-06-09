@@ -25,7 +25,7 @@ kiosk database handler
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
 from sqlalchemy.orm import sessionmaker; Session = sessionmaker()
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy import update
 from datetime import date, datetime, timedelta
 # PULSE2 modules
@@ -42,8 +42,7 @@ from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
 import functools
 from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.orm import Query
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:

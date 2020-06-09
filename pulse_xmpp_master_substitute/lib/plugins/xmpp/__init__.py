@@ -27,9 +27,9 @@ xmppmaster database handler
 
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
-from sqlalchemy.orm import sessionmaker;
+from sqlalchemy.orm import sessionmaker, Query
 #Session = sessionmaker()
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from datetime import date, datetime, timedelta
 
 
@@ -43,8 +43,6 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Cluster_resources,\
     Syncthing_machine,\
     Substituteconf,\
-    Agentsubscription,\
-    Subscription,\
     Agentsubscription,\
     Subscription,\
     Syncthing_deploy_group,\
@@ -63,9 +61,7 @@ import re
 import uuid
 from lib.configuration import confParameter
 import functools
-from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.exc import NoSuchTableError
+
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
