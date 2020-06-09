@@ -1462,7 +1462,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         keyroster = str(self.boundjid.bare)
         if keyroster in self.roster:
             for t in self.roster[keyroster]:
-                if t == self.boundjid.bare or t in [self.sub_subscribe] : continue
+                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                    continue
                 logger.info("unsubscribe %s"%self.sub_subscribe)
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
                 #self.del_roster_item(t)
@@ -1673,7 +1674,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
-        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if sessionname == "":
+            sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
@@ -2301,7 +2303,8 @@ def tgconf(optstypemachine):
         if tg.Server == "" or tg.Port == "":
             logger.error("Error config ; Parameter Connection missing")
             sys.exit(1)
-        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        if ipfromdns(tg.Server) != "" and check_exist_ip_port(ipfromdns(tg.Server), tg.Port):
+            break
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.Server,
                                               tg.Port,
