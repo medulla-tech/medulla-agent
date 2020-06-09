@@ -1854,7 +1854,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except:
             pass
         replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
-        logger.debug("cmd : %s"%(replycatorcmd))
+        logger.debug("cmd : %s" % (replycatorcmd))
         result = simplecommand(replycatorcmd)
         if result['code'] == 0:
             logger.warning("the agent is already installed for version  %s"%(versiondata))
