@@ -1828,8 +1828,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if os.path.isfile(namefilebool):
                     os.remove(namefilebool)
 
-                args = ['python', nameprogconnection, '-t', 'machine']
-                subprocess.call(args)
+                connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
+                subprocess.call(connectionagentArgs)
 
                 for i in range(15):
                     if os.path.isfile(namefilebool):
@@ -1853,9 +1853,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except:
             pass
-        cmd = "python %s"%(os.path.join(self.pathagent, "replicator.py"))
-        logger.debug("cmd : %s"%(cmd))
-        result = simplecommand(cmd)
+        replycatorcmd = "python %s"%(os.path.join(self.pathagent, "replicator.py"))
+        logger.debug("cmd : %s"%(replycatorcmd))
+        result = simplecommand(replycatorcmd)
         if result['code'] == 0:
             logger.warning("the agent is already installed for version  %s"%(versiondata))
         elif result['code'] == 1:
