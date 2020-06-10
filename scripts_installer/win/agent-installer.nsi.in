@@ -1596,7 +1596,7 @@ Function .onInit
   ${TrimNewLines} $1 $1
   ${LogString} "PowerShell Policy status : $1"
 
-  ${IfNot} $1 == Undefined 
+  ${IfNot} $1 == Undefined
     SetOutPath "$INSTDIR\tmp\gpo"
     StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
     ${LogString} "Running $0"
