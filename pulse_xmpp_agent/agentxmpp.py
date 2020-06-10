@@ -297,9 +297,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "syncthing",
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
-        self.deviceid = ""
         try:
-            self.deviceid = iddevice(self.fichierconfsyncthing)
+            self.deviceid = iddevice(configfile = self.fichierconfsyncthing)
         except Exception:
             pass
 
@@ -308,9 +307,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # tant que l'agent RS n'est pas started les files
             # de session dont le deploiement a echoue ne sont pas efface.
             self.session.clearallfilesession()
-            self.deviceid = iddevice()
-        else:
-            self.deviceid=""
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
@@ -1552,8 +1548,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def initialise_syncthing(self):
-        logger.debug("____________________________________________")
-        logger.info("___________INITIALISE SYNCTHING___________")
+        logger.info("____________________________________________")
+        logger.info("___________ INITIALISE SYNCTHING ___________")
+        logger.info("____________________________________________")
         try:
             self.config.syncthing_on
         except NameError:
@@ -1570,34 +1567,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
             self.Ctrlsyncthingprogram.restart_syncthing()
 
-            if sys.platform.startswith('linux'):
-                if self.config.agenttype in ['relayserver']:
-                    fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-                else:
-                    fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
-                                                        ".config",
-                                                        "syncthing",
-                                                        "config.xml")
-                tmpfile = "/tmp/confsyncting.txt"
-            elif sys.platform.startswith('win'):
-                fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
-                tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
-            elif sys.platform.startswith('darwin'):
-                fichierconfsyncthing = os.path.join("/",
-                                                    "Library",
-                                                    "Application Support",
-                                                    "Pulse",
-                                                    "etc",
-                                                    "syncthing",
-                                                    "config.xml")
-                tmpfile = "/tmp/confsyncting.txt"
             try:
-                self.syncthing = syncthing(configfile = fichierconfsyncthing)
+                self.syncthing = syncthing(configfile = self.fichierconfsyncthing)
                 if logger.level <= 10:
-                    self.syncthing.save_conf_to_file(tmpfile)
+                    self.syncthing.save_conf_to_file(self.tmpfile)
                 else:
                     try:
-                        os.remove(tmpfile)
+                        os.remove(self.tmpfile)
                     except :
                         pass
                 self.deviceid = self.syncthing.get_id_device_local()
