@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.231", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "1.232", "NAME" :"inventory", "TYPE":"machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -94,8 +94,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             date = None )
         return
     if os.path.exists(inventoryfile):
+        if os.path.exists("%s.back"%inventoryfile):
+            os.remove("%s.back"%inventoryfile)
         os.rename(inventoryfile, "%s.back"%inventoryfile)
-    
+
     if sys.platform.startswith('linux'):
         try:
             for nbcmd in range(1, 4):
