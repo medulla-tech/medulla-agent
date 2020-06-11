@@ -57,9 +57,9 @@ PULSE_AGENT_BASE_PATH="/var/lib/pulse2/clients"
 
 WIN_FILETREE_GENERATOR_FILENAME="pulse-filetree-generator.exe"
 MAC_FILETREE_GENERATOR_FILENAME="pulse-filetree-generator"
-MAC_SYNCTHING_FILENAME="syncthing-macos-amd64-v1.1.0.tar.gz"
-WIN32_SYNCTHING_FILENAME="syncthing-windows-386-v1.1.0.zip"
-WIN64_SYNCTHING_FILENAME="syncthing-windows-amd64-v1.1.0.zip"
+MAC_SYNCTHING_FILENAME="syncthing-macos-amd64-v1.6.1.zip"
+WIN32_SYNCTHING_FILENAME="syncthing-windows-386-v1.6.1.zip"
+WIN64_SYNCTHING_FILENAME="syncthing-windows-amd64-v1.6.1.zip"
 PY_MAC_PLYVEL_FILENAME="plyvel-1.0.1.tar.gz"
 PY_SFTP_FILENAME="pysftp-0.2.9.tar.gz"
 PY_PATHLIB_FILENAME="pathlib-1.0.1.tar.gz"
@@ -134,7 +134,7 @@ if %errorlevel%==0 (\n
   copy \"${WIN64_SYNCTHING_FOLDERNAME}\\${WIN64_SYNCTHING_FOLDERNAME}\\syncthing.exe\" \"%PROGRAMFILES%/Pulse/bin\"\n
 )"
 SYNCTHING_INSTALL_CMD_WIN_ENCODED=$(echo -e ${SYNCTHING_INSTALL_CMD_WIN} | base64 --wrap=0)
-SYNCTHING_INSTALL_CMD_MAC="tar xzf ${MAC_SYNCTHING_FILENAME}\n
+SYNCTHING_INSTALL_CMD_MAC="unzip ${MAC_SYNCTHING_FILENAME}\n
 cp \"${MAC_SYNCTHING_FILENAME%.*}/syncthing\" \"/Library/Application Support/Pulse/bin\"\n
 chmod +x \"/Library/Application Support/Pulse/bin/syncthing\"\n
 xattr -d com.apple.quarantine \"/Library/Application Support/Pulse/bin/syncthing\""
