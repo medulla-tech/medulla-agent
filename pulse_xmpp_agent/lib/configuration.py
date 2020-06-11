@@ -275,15 +275,35 @@ class confParameter:
         except BaseException:
             self.agenttype = "machine"
 
+        ########## SYNCTHING #################
         # syncthing true or fale
         if self.agenttype != "relayserver":
             if Config.has_option('syncthing', 'activation'):
                 self.syncthing_on = Config.getboolean('syncthing', 'activation')
             else:
                 self.syncthing_on = True
+            
+            self.syncthing_port = 23000
+            if Config.has_option('syncthing-deploy', 'syncthing_port'):
+                self.syncthing_port = Config.getint('syncthing-deploy', 'syncthing_port')
+                
+            self.syncthing_gui_port = 8385 
+            if Config.has_option('syncthing-deploy', 'syncthing_gui_port'):
+                self.syncthing_port = Config.getint('syncthing-deploy', 'syncthing_gui_port')
+
+            self.syncthing_home = "/var/lib/syncthing-depl/.config/syncthing"
+            if Config.has_option('syncthing-deploy', 'syncthing_home'):
+                self.syncthing_port = Config.get('syncthing-deploy', 'syncthing_home')
+            
+            self.syncthing_share = "/var/lib/syncthing-depl/depl_share"
+            if Config.syncthing_share('syncthing-deploy', 'syncthing_share'):
+                self.syncthing_port = Config.get('syncthing-deploy', 'syncthing_share')
         else:
+            self.syncthing_home = "/var/lib/pulse2/.config/syncthing"
+            self.syncthing_gui_port = 8384
             self.syncthing_on = True
         logger.info('activation syncthing %s'%self.syncthing_on)
+        ########## SYNCTHING ################# 
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
