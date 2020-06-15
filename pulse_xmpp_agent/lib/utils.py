@@ -2940,7 +2940,7 @@ class geolocalisation_agent:
         """
             return dict location or None
         """
-        if self.localisation is none:
+        if self.localisation is None:
             return {}
         return self.localisation
 
