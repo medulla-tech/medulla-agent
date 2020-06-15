@@ -1976,48 +1976,65 @@ def setgetrestart(data = None):
 def detectantivirus():
     def SECURITY_PROVIDER(keyobject, data):
         str = data[0:2]
-        if str   == "00" : return "NONE"
-        elif str == "01" : return "FIREWALL"
-        elif str == "02" : return "AUTOUPDATE_SETTINGS"
-        elif str == "04" : return "ANTIVIRUS"
-        elif str == "08" : return "ANTISPYWARE"
-        elif str == "16" : return "INTERNET_SETTINGS"
-        elif str == "32" : return "USER_ACCOUNT_CONTROL"
-        elif str == "64" : return "SERVICE"
-        else : return keyobject.upper()
+        if str == "00":
+            return "NONE"
+        elif str == "01":
+            return "FIREWALL"
+        elif str == "02":
+            return "AUTOUPDATE_SETTINGS"
+        elif str == "04":
+            return "ANTIVIRUS"
+        elif str == "08":
+            return "ANTISPYWARE"
+        elif str == "16":
+            return "INTERNET_SETTINGS"
+        elif str == "32":
+            return "USER_ACCOUNT_CONTROL"
+        elif str == "64":
+            return "SERVICE"
+        else:
+            return keyobject.upper()
 
     def SECURITY_PRODUCT_STATE(data):
         str = data[2:4]
-        if str   == "00" : return "OFF"
-        elif str == "01" : return "EXPIRED"
-        elif str == "10" : return "ON"
-        elif str == "11" : return "SNOOZED"
-        else :  return "UNKNOWN"
+        if str == "00":
+            return "OFF"
+        elif str == "01":
+            return "EXPIRED"
+        elif str == "10":
+            return "ON"
+        elif str == "11":
+            return "SNOOZED"
+        else:
+            return "UNKNOWN"
 
     def SECURITY_SIGNATURE_STATUS(data):
         str = data[4:6]
-        if str    =="00" : return "UP_TO_DATE"
-        elif str == "10" : return "OUT_OF_DATE"
-        else : return "UNKNOWN"
+        if str == "00":
+            return "UP_TO_DATE"
+        elif str == "10":
+            return "OUT_OF_DATE"
+        else:
+            return "UNKNOWN"
 
     def elemenstructure():
         return {
-            "displayName" : "",
-            "instanceGuid" : "",
-            "pathToSignedProductExe" : "",
-            "pathToSignedReportingExe" : "",
-            "productState" : 0,
-            "hex" : "000000",
-            "SECURITY_PROVIDER" : "NONE",
-            "SECURITY_PRODUCT_STATE" : "UNKNOWN",
-            "SECURITY_SIGNATURE_STATUS" : "UNKNOWN",
-            "timestamp" : "",
+            "displayName": "",
+            "instanceGuid": "",
+            "pathToSignedProductExe": "",
+            "pathToSignedReportingExe": "",
+            "productState": 0,
+            "hex": "000000",
+            "SECURITY_PROVIDER": "NONE",
+            "SECURITY_PRODUCT_STATE": "UNKNOWN",
+            "SECURITY_SIGNATURE_STATUS": "UNKNOWN",
+            "timestamp": "",
             }
     if sys.platform.startswith('win'):
         result={}
-        objWMI = {"Antivirus" : GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct'),
-                  "Firewall" : GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('FirewallProduct'),
-                  "AntiSpyware" :  GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')}
+        objWMI = {"Antivirus": GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct'),
+                  "Firewall": GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('FirewallProduct'),
+                  "AntiSpyware":  GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')}
         for key in objWMI:
             result[key]=[]
             for i in objWMI[key]:
