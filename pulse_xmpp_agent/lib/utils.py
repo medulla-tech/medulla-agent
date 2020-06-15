@@ -2922,6 +2922,7 @@ class geolocalisation_agent:
                  geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
+        logger.error("dede")
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public

@@ -93,7 +93,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     if len(data['information']["listipinfo"]):
                         logger.info('Interface Actif')
                         logger.info("|   macadress|      ip adress|")
-                        for interface in data['information']["listipinfo"]:                
+                        for interface in data['information']["listipinfo"]:
                             logger.info("|%s|%15s|"%(interface['macaddress'],
                                                     interface['ipaddress']))
                     if len(interfaceblacklistdata):
@@ -267,12 +267,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             if showinfobool:
                                 logger.info("Finding uuid from GLPI computer id for mac address")
                             for macaddress in results:
-                                #if showinfobool:
-                                    #logger.info("Get GLPI computer id for mac address %s"%macaddress)
-                                #if test_mac_adress_black_list(macaddress, xmppobject.blacklisted_mac_addresses):
-                                    #if showinfobool:
-                                        #logger.warning("Address %s blacklisted for %s machine"%( macaddress, data['from']))
-                                    #continue
                                 computer = getComputerByMac(macaddress,
                                                             showinfobool=showinfobool)
                                 if computer is not None:
@@ -434,25 +428,14 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 logger.info("=============")
                 logger.info("=============")
                 logger.info("Adding or updating machine presence into machines table")
-
-            #for i in data['information']["listipinfo"]:
-                    ## exclude mac address from table network
-                #if test_mac_adress_black_list(i['macnotshortened'], xmppobject.blacklisted_mac_addresses):
-                    #continue
-                #else:
-                    #data['xmppmacaddress'] = i['macaddress']
-                    #if showinfobool:
-                        #logger.info("Replacing mac address %s -> %s"%( i['macaddress'],
-                                                                   #data['xmppmacaddress']))
-                    #break
-
             for interface in data['information']["listipinfo"]:
                 if interface['macaddress'] == data['xmppmacaddress']:
                     break
-            else:
+                else:
                 # adress mac exclut alert
                 if len(data['information']["listipinfo"]):
                     data['xmppmacaddress'] = data['information']["listipinfo"][0]['macaddress']
+
 
             idmachine, msgret = XmppMasterDatabase().addPresenceMachine(data['from'],
                                                                 data['platform'],
@@ -538,10 +521,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     xmppobject.boundjid.bare)
                 for i in data['information']["listipinfo"]:
                     # exclude mac address from table network
-                    #if test_mac_adress_black_list(i['macnotshortened'], xmppobject.blacklisted_mac_addresses):
-                        #if showinfobool:
-                            #logger.info("Mac address %s blacklisted for machine %s"%(i['macnotshortened'] ,msg['from']))
-                        #continue
                     try:
                         broadcast = i['broadcast']
                     except Exception:
@@ -602,11 +581,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         logger.info("Finding uuid from GLPI computer id for mac address ")
                     for t in results:
                         if showinfobool:
-                            logger.info("Finding the machine which has the specified mac address : %s"%t)
-                        #if test_mac_adress_black_list(t, xmppobject.blacklisted_mac_addresses):
-                            #if showinfobool:
-                                #logger.info("Excluding blacklisted mac address %s for machine %s"%(t,msg['from']))
-                            #continue
+                            logger.info("Finding the machine which has the specified mac address : %s" % t)
                         if showinfobool:
                             logger.info("Finding uuid for mac address %s for machine %s" % (t,msg['from']))
                         computer = getComputerByMac(t,showinfobool=showinfobool)
