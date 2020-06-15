@@ -1691,7 +1691,7 @@ def loadjsonfile(filename):
         try:
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error("filename %s error decodage [%s]" % (filename ,str(e)))
+            logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
 def save_user_current(name = None):
@@ -2382,10 +2382,10 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
             tar.extractall()
         return True
     except OSError as e:
-        logger.error("Error extracting tar.%s : %s" % (str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
         return False
     except Exception as e:
-        logger.error("Error extracting tar.%s : %s" % (str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
         return False
     finally:
         os.chdir(cwd)
@@ -2837,7 +2837,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
         authorized_keys_content = file_get_contents(authorized_keys_path)
         if not key.strip(' \t\n\r') in authorized_keys_content:
             message.append('Adding key to %s' % authorized_keys_path)
-            file_put_contents_w_a(authorized_keys_path, "\n"+ key, "a")
+            file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
         else:
             message.append('Key is already present in %s' % authorized_keys_path)
     file_contents = file_get_contents(authorized_keys_path)
