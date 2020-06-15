@@ -63,7 +63,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
-from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
+from lib.syncthingapirest import syncthing, syncthingprogram, iddevice, conf_ars_deploy
 from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
@@ -277,8 +277,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
-                #self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-                self.fichierconfsyncthing = "/var/lib/syncthing-depl/.config/syncthing/config.xml"
+                self.fichierconfsyncthing = os.path.join(self.config.syncthing_home, 'config.xml' )
+                conf_ars_deploy(self.config.syncthing_port,
+                                configfile= self.fichierconfsyncthing,
+                                name="pulse")
             else:
                 self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                     ".config",
@@ -715,11 +717,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def getsyncthingroot(self):
         syncthingroot = ""
         if self.config.agenttype in ['relayserver']:
-            return os.path.join("/",
-                                "var",
-                                "lib",
-                                "syncthing",
-                                "partagedeploy")
+            return self.config.syncthing_share
+            #return os.path.join("/",
+                                #"var",
+                                #"lib",
+                                #"syncthing",
+                                #"partagedeploy")
         else:
             if sys.platform.startswith('win'):
                 syncthingroot = "%s\\pulse\\var\\syncthing"%os.environ['programfiles']
