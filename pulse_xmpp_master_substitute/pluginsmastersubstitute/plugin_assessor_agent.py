@@ -145,7 +145,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     if data['agenttype'] == "relayserver":
         objectxmpp.sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
-    if not 'codechaine' in data:
+    if 'codechaine' not in data:
         logger.error("missing authentification from %s"%(codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
