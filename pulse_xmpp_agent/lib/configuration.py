@@ -688,7 +688,7 @@ def listMacAdressMacOs():
     ifconfig = os.popen('/sbin/ifconfig').readlines()
     for line in ifconfig:
         if line.startswith(' ') or line.startswith(
-                "\t") and not "ether" in line:
+                "\t") and "ether" not in line:
             pass
         else:
             if "ether" not in line:
