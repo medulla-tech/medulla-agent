@@ -89,18 +89,18 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
                 data['information']["listipinfo"] = interfacedata
                 if showinfobool:
-                    logger.info("machine %s"%str(msg['from']))
+                    logger.info("machine %s" % str(msg['from']))
                     if len(data['information']["listipinfo"]):
                         logger.info('Interface Actif')
                         logger.info("|   macadress|      ip adress|")
                         for interface in data['information']["listipinfo"]:
-                            logger.info("|%s|%15s|"%(interface['macaddress'],
+                            logger.info("|%s|%15s|" % (interface['macaddress'],
                                                     interface['ipaddress']))
                     if len(interfaceblacklistdata):
                         logger.warning('Interface blacklisted')
                         for interface in interfaceblacklistdata:
                             logger.warning("|   macadress|      ip adress|")
-                            logger.warning("|%s|%15s|"%(interface['macaddress'],
+                            logger.warning("|%s|%15s|" % (interface['macaddress'],
                                                     interface['ipaddress']))
 
                 logger.info("Registering machine %s" % data['from'])
@@ -119,7 +119,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             machine = XmppMasterDatabase().getMachinefromjid(data['from'])
             if len(machine) != 0 and 'regcomplet' in data and data['regcomplet'] == True:
                 if showinfobool:
-                    logger.info("Performing a complete re-registration of the machine %s"%msg['from'])
+                    logger.info("Performing a complete re-registration of the machine %s" % msg['from'])
                     logger.info("Deleting machine %s in machines table" % msg['from'])
                 XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
                 machine = {}
@@ -729,19 +729,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
 def test_mac_adress_black_list(macadress, table_reg_for_match, showinfobool =True):
     if showinfobool:
-        logger.info('analyse blacklist Mac adress %s'%macadress)
+        logger.info('analyse blacklist Mac adress %s' % macadress)
     for regexpmatch in table_reg_for_match:
         if regexpmatch.match(macadress.lower()):
             if showinfobool:
-                logger.info('Blacklist Mac Adress  %s'%macadress)
+                logger.info('Blacklist Mac Adress  %s' % macadress)
             return True
     if showinfobool:
-        logger.info('No Blacklist Mac Adress  %s'%macadress)
+        logger.info('No Blacklist Mac Adress  %s' % macadress)
     return False
 
 def getComputerByMac( mac, showinfobool=True):
     if showinfobool:
-        logger.info("Function getComputerByMac asking glpi for machine list for mac %s"%mac)
+        logger.info("Function getComputerByMac asking glpi for machine list for mac %s" % mac)
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
     if type(ret) == list:
         if len(ret) != 0:
@@ -749,7 +749,7 @@ def getComputerByMac( mac, showinfobool=True):
         else:
             return None
     if showinfobool:
-        logger.info("Function getComputerByMac Glpi returned : %s"%ret)
+        logger.info("Function getComputerByMac Glpi returned : %s" % ret)
     return ret
 
 def callInstallConfGuacamole(xmppobject, torelayserver, data, showinfobool=True):
