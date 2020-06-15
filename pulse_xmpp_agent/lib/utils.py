@@ -2922,7 +2922,6 @@ class geolocalisation_agent:
                  geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
-        logger.error("dede")
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public
@@ -2983,7 +2982,6 @@ class geolocalisation_agent:
         """
             return localisation
         """
-        logger.error("getgeolocalisation")
         if self.typeuser in ["public", "nomade", "both"]:
             # on recherche a chaque fois les information
             self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
@@ -2993,23 +2991,18 @@ class geolocalisation_agent:
         if self.localisation is not None:
             return self.localisation
         if self.geolocalisation:
-            logger.error(" geolocalisation true")
             # on recharge la geolocalisation
             if self.geoinfoexist():
-                logger.error("geoinfoexist True")
                 self.getdatafilegeolocalisation()
                 self.determination = False
                 return self.localisation
             else:
-                logger.error("no geoinfoexist False")
                 self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
                 self.setdatafilegeolocalisation()
                 self.determination = True
                 return self.localisation
         else:
-            logger.error("geolocalisation False")
             if self.geoinfoexist():
-                logger.error("file no exist")
                 self.getdatafilegeolocalisation()
                 self.determination = False
                 return self.localisation
