@@ -2076,114 +2076,114 @@ def information_machine():
         colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_ComputerSystem")
         for objItem in colItems:
             if objItem.AdminPasswordStatus != None:
-                result[ "AdminPasswordStatus"] = objItem.AdminPasswordStatus
+                result["AdminPasswordStatus"] = objItem.AdminPasswordStatus
             if objItem.AutomaticResetBootOption != None:
-                result[ "AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
+                result["AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
             if objItem.AutomaticResetCapability != None:
-                result[ "AutomaticResetCapability"] = objItem.AutomaticResetCapability
+                result["AutomaticResetCapability"] = objItem.AutomaticResetCapability
             if objItem.BootOptionOnLimit != None:
-                result[ "BootOptionOnLimit"] = objItem.BootOptionOnLimit
+                result["BootOptionOnLimit"] = objItem.BootOptionOnLimit
             if objItem.BootOptionOnWatchDog != None:
-                result[ "BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
+                result["BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
             if objItem.BootROMSupported != None:
-                result[ "BootROMSupported"] = objItem.BootROMSupported
+                result["BootROMSupported"] = objItem.BootROMSupported
             if objItem.BootupState != None:
-                result[ "BootupState"] = objItem.BootupState
+                result["BootupState"] = objItem.BootupState
             if objItem.Caption != None:
-                result[ "Caption"] = objItem.Caption
+                result["Caption"] = objItem.Caption
             if objItem.ChassisBootupState != None:
-                result[ "ChassisBootupState"] = objItem.ChassisBootupState
+                result["ChassisBootupState"] = objItem.ChassisBootupState
             if objItem.CreationClassName != None:
-                result[ "CreationClassName"] = objItem.CreationClassName
+                result["CreationClassName"] = objItem.CreationClassName
             if objItem.CurrentTimeZone != None:
-                result[ "CurrentTimeZone"] = objItem.CurrentTimeZone
+                result["CurrentTimeZone"] = objItem.CurrentTimeZone
             if objItem.DaylightInEffect != None:
-                result[ "DaylightInEffect"] = objItem.DaylightInEffect
+                result["DaylightInEffect"] = objItem.DaylightInEffect
             if objItem.Description != None:
-                result[ "Description"] = objItem.Description
+                result["Description"] = objItem.Description
             if objItem.DNSHostName != None:
-                result[ "DNSHostName"] = objItem.DNSHostName
+                result["DNSHostName"] = objItem.DNSHostName
             if objItem.Domain != None:
-                result[ "Domain"] = objItem.Domain
+                result["Domain"] = objItem.Domain
             if objItem.DomainRole != None:
-                result[ "DomainRole"] = objItem.DomainRole
+                result["DomainRole"] = objItem.DomainRole
             if objItem.EnableDaylightSavingsTime != None:
-                result[ "EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
+                result["EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
             if objItem.FrontPanelResetStatus != None:
-                result[ "FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
+                result["FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
             if objItem.InfraredSupported != None:
-                result[ "InfraredSupported"] = objItem.InfraredSupported
+                result["InfraredSupported"] = objItem.InfraredSupported
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.InitialLoadInfo])
             except:
                 pass
-            result[ "InitialLoadInfo"] = strList
+            result["InitialLoadInfo"] = strList
 
             if objItem.InstallDate != None:
-                result[ "InstallDate"] + WMIDateStringToDate(objItem.InstallDate)
+                result["InstallDate"] + WMIDateStringToDate(objItem.InstallDate)
             if objItem.KeyboardPasswordStatus != None:
-                result[ "KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
+                result["KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
             if objItem.LastLoadInfo != None:
-                result[ "LastLoadInfo"] = objItem.LastLoadInfo
+                result["LastLoadInfo"] = objItem.LastLoadInfo
             if objItem.Manufacturer != None:
-                result[ "Manufacturer"] = objItem.Manufacturer
+                result["Manufacturer"] = objItem.Manufacturer
             if objItem.Model != None:
-                result[ "Model"] = objItem.Model
+                result["Model"] = objItem.Model
             if objItem.Name != None:
-                result[ "Name"] = objItem.Name
+                result["Name"] = objItem.Name
             if objItem.NameFormat != None:
-                result[ "NameFormat"] = objItem.NameFormat
+                result["NameFormat"] = objItem.NameFormat
             if objItem.NetworkServerModeEnabled != None:
-                result[ "NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
+                result["NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
             if objItem.NumberOfProcessors != None:
-                result[ "NumberOfProcessors"] = objItem.NumberOfProcessors
+                result["NumberOfProcessors"] = objItem.NumberOfProcessors
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.OEMLogoBitmap])
             except:
                 pass
-            result[ "OEMLogoBitmap"] = strList
+            result["OEMLogoBitmap"] = strList
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.OEMStringArray])
             except:
                 pass
-            result[ "OEMStringArray"] = strList
+            result["OEMStringArray"] = strList
 
             if objItem.PartOfDomain != None:
-                result[ "PartOfDomain"] = objItem.PartOfDomain
+                result["PartOfDomain"] = objItem.PartOfDomain
             if objItem.PauseAfterReset != None:
-                result[ "PauseAfterReset"] = objItem.PauseAfterReset
+                result["PauseAfterReset"] = objItem.PauseAfterReset
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.PowerManagementCapabilities])
             except:
                 pass
-            result[ "PowerManagementCapabilities"] = strList
+            result["PowerManagementCapabilities"] = strList
 
             if objItem.PowerManagementSupported != None:
-                result[ "PowerManagementSupported"] = objItem.PowerManagementSupported
+                result["PowerManagementSupported"] = objItem.PowerManagementSupported
             if objItem.PowerOnPasswordStatus != None:
-                result[ "PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
+                result["PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
             if objItem.PowerState != None:
-                result[ "PowerState"] = objItem.PowerState
+                result["PowerState"] = objItem.PowerState
             if objItem.PowerSupplyState != None:
-                result[ "PowerSupplyState"] = objItem.PowerSupplyState
+                result["PowerSupplyState"] = objItem.PowerSupplyState
             if objItem.PrimaryOwnerContact != None:
-                result[ "PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
+                result["PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
             if objItem.PrimaryOwnerName != None:
-                result[ "PrimaryOwnerName"] = objItem.PrimaryOwnerName
+                result["PrimaryOwnerName"] = objItem.PrimaryOwnerName
             if objItem.ResetCapability != None:
-                result[ "ResetCapability"] = objItem.ResetCapability
+                result["ResetCapability"] = objItem.ResetCapability
             if objItem.ResetCount != None:
-                result[ "ResetCount"] = objItem.ResetCount
+                result["ResetCount"] = objItem.ResetCount
             if objItem.ResetLimit != None:
-                result[ "ResetLimit"] = objItem.ResetLimit
+                result["ResetLimit"] = objItem.ResetLimit
 
             strList = "null"
             try :
@@ -2200,32 +2200,32 @@ def information_machine():
                 strList = ",".join([ str(x) for x in objItem.SupportContactDescription])
             except:
                 pass
-            result[ "SupportContactDescription"] = strList
+            result["SupportContactDescription"] = strList
 
             if objItem.SystemStartupDelay != None:
-                result[ "SystemStartupDelay"] = objItem.SystemStartupDelay
+                result["SystemStartupDelay"] = objItem.SystemStartupDelay
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.SystemStartupOptions])
             except:
                 pass
-            result[ "SystemStartupOptions"] = strList
+            result["SystemStartupOptions"] = strList
 
             if objItem.SystemStartupSetting != None:
-                result[ "SystemStartupSetting"] = objItem.SystemStartupSetting
+                result["SystemStartupSetting"] = objItem.SystemStartupSetting
             if objItem.SystemType != None:
-                result[ "SystemType"] = objItem.SystemType
+                result["SystemType"] = objItem.SystemType
             if objItem.ThermalState != None:
-                result[ "ThermalState"] = objItem.ThermalState
+                result["ThermalState"] = objItem.ThermalState
             if objItem.TotalPhysicalMemory != None:
-                result[ "TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
+                result["TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
             if objItem.UserName != None:
-                result[ "UserName"] = objItem.UserName
+                result["UserName"] = objItem.UserName
             if objItem.WakeUpType != None:
-                result[ "WakeUpType"] = objItem.WakeUpType
+                result["WakeUpType"] = objItem.WakeUpType
             if objItem.Workgroup != None:
-                result[ "Workgroup"] = objItem.Workgroup
+                result["Workgroup"] = objItem.Workgroup
     return result
 
 def sshdup():
@@ -2382,10 +2382,10 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
             tar.extractall()
         return True
     except OSError as e:
-        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s"%(str(e),compresstype))
         return False
     except Exception as e:
-        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s"%(str(e),compresstype))
         return False
     finally:
         os.chdir(cwd)
@@ -2537,7 +2537,7 @@ def create_msg_xmpp_quick_deploy(folder, create = False):
                 "data": { "nbpart" : 1,
                           "part"   : 1,
                           "namepackage":"%s",
-                          "filebase64" : "%s"}}"""%( namepackage, dataraw )
+                          "filebase64" : "%s"}}"""%( namepackage, dataraw)
         try:
             logger.debug("Writing new quick deployment pakage %s.xmpp"%pathaqpackage)
             with open("%s.xmpp"%pathaqpackage, 'w') as f:
@@ -2838,7 +2838,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
         authorized_keys_content = file_get_contents(authorized_keys_path)
         if not key.strip(' \t\n\r') in authorized_keys_content:
             message.append('Adding key to %s' % authorized_keys_path)
-            file_put_contents_w_a( authorized_keys_path, "\n"+ key, "a" )
+            file_put_contents_w_a(authorized_keys_path, "\n"+ key, "a")
         else:
             message.append('Key is already present in %s' % authorized_keys_path)
     file_contents = file_get_contents(authorized_keys_path)

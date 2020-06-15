@@ -91,7 +91,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             machine = XmppMasterDatabase().getMachinefromjid(data['from'])
             if len(machine) != 0 and 'regcomplet' in data and data['regcomplet'] == True:
                 if showinfobool:
-                    logger.info("Performing a complete re-registration of the machine %s"%msg['from'])
+                    logger.info("Performing a complete re-registration of the machine %s" % msg['from'])
                     logger.info("Deleting machine %s in machines table" % msg['from'])
                 XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
                 machine = {}
