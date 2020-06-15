@@ -109,7 +109,7 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             start = time.time()
             func_name = decorated_function.__name__
             log = logging.getLogger(func_name)
-            
+
             filepath = os.path.basename(__file__)
             # get function params (args and kwargs)
             if para:
@@ -172,7 +172,7 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             start = time.time()
             func_name = decorated_function.__name__
             log = logging.getLogger(func_name)
-            
+
             filepath = os.path.basename(__file__)
             # get function params (args and kwargs)
             if para:
@@ -1325,11 +1325,11 @@ class protodef:
             newfingerprint = pickle.dumps(fproto) #on recalcule le proto
             if self.fingerprintproto == newfingerprint:
                 self.proto = fproto
-                return False, self.proto 
+                return False, self.proto
         self.refreshfingerprintproto()
         self.fingerprintproto = file_get_contents(self.fileprotoinfo)
         self.proto = pickle.loads(self.fingerprintproto)
-        return True, self.proto 
+        return True, self.proto
 
     def refreshfingerprintproto(self):
         fproto = protodef.protoandport()
@@ -2914,12 +2914,15 @@ def get_relayserver_reversessh_idrsa(username='reversessh'):
     idrsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     return file_get_contents(idrsa_key_path)
 
+
 class geolocalisation_agent:
-    def __init__(self, 
-                 typeuser = "public", 
-                 geolocalisation=True, 
+
+    def __init__(self,
+                 typeuser = "public",
+                 geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
+        logger.error("dede")
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public
@@ -2929,16 +2932,23 @@ class geolocalisation_agent:
         self.listgeoserver = ["http://%s/json"%x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
                                               strlistgeoserveur)  if x.strip()!=""];
         self.localisation = None
+
         self.getgeolocalisation()
         if self.localisation is None:
             self.localisation=self.getdatafilegeolocalisation()
 
     def getgeolocalisationobject(self):
-        if self.localisation is None:
+        """
+            return dict location or None
+        """
+        if self.localisation is none:
             return {}
         return self.localisation
 
-    def getdatafilegeolocalisation(self):    
+    def getdatafilegeolocalisation(self):
+        """
+            read dict location from json file if exist
+        """
         if self.geoinfoexist():
             try:
                 with open(self.filegeolocalisation) as json_data:
@@ -2950,6 +2960,9 @@ class geolocalisation_agent:
         return None
 
     def setdatafilegeolocalisation(self):
+        """
+            write dict location to json file
+        """
         if self.localisation is not None:
             try:
                 with open(self.filegeolocalisation, 'w') as json_data:
@@ -2959,37 +2972,49 @@ class geolocalisation_agent:
                 pass
 
     def geoinfoexist(self):
+        """
+            test file localisation exist
+        """
         if os.path.exists(self.filegeolocalisation):
             return True
         return False
 
     def getgeolocalisation(self):
+        """
+            return localisation
+        """
+        logger.error("getgeolocalisation")
+        if self.typeuser in ["public", "nomade", "both"]:
+            # on recherche a chaque fois les information
+            self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+            self.determination = True
+            self.setdatafilegeolocalisation()
+            return self.localisation
+        if self.localisation is not None:
+            return self.localisation
         if self.geolocalisation:
-            if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
-                # on recherche a chaque fois les information
-                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
-                self.determination = True
-                self.setdatafilegeolocalisation()
+            logger.error(" geolocalisation true")
+            # on recharge la geolocalisation
+            if self.geoinfoexist():
+                logger.error("geoinfoexist True")
+                self.getdatafilegeolocalisation()
+                self.determination = False
                 return self.localisation
             else:
-                if self.localisation is not None:
-                    if not self.geoinfoexist():
-                        self.setdatafilegeolocalisation()
-                        self.determination = False
-                    return self.localisation
-                elif not self.geoinfoexist():
-                    self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
-                    self.setdatafilegeolocalisation()
-                    self.determination = True
-                    return self.localisation
-            return None
-        else:
-            if not self.geoinfoexist():
+                logger.error("no geoinfoexist False")
                 self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
                 self.setdatafilegeolocalisation()
                 self.determination = True
                 return self.localisation
-
+        else:
+            logger.error("geolocalisation False")
+            if self.geoinfoexist():
+                logger.error("file no exist")
+                self.getdatafilegeolocalisation()
+                self.determination = False
+                return self.localisation
+            else:
+                return None
         return self.localisation
 
     def get_ip_public(self):
@@ -3024,7 +3049,7 @@ class geolocalisation_agent:
             return r.json()
         except:
             return None
-    
+
     @staticmethod
     def call_simple_page_urllib(url):
         try:
