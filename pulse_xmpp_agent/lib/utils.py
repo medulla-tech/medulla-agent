@@ -1691,7 +1691,7 @@ def loadjsonfile(filename):
         try:
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error("filename %s error decodage [%s]" % (filename ,str(e)))
+            logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
 def save_user_current(name = None):
