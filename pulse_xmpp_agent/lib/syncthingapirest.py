@@ -43,18 +43,56 @@ from lxml import etree
 import urllib
 import socket
 from threading import Lock
-from utils import Program, getRandomName, simplecommand
+from utils import Program, getRandomName, simplecommand, file_put_contents
 import logging
 import traceback
 import shutil
 import time
 import os
 import sys
+from urlparse import urlparse
 #if sys.platform.startswith('win'):
     #import win32api
     #import win32con
 
 logger = logging.getLogger()
+
+
+def read_serverannonce(configfile= "/var/lib/syncthing-depl/.config/syncthing/config.xml"):
+    tree = etree.parse(configfile)
+    root = tree.getroot()
+    pathxmldevice = ".//options/globalAnnounceServer"
+    listresult=root.xpath(pathxmldevice)
+    if listresult:
+        result = listresult[0].text
+        o = urlparse(result)
+        hostname=o.netloc
+        if o.port:
+            strport = -len(":%s"%o.port)
+            hostname=hostname[:strport]
+            return root, hostname
+    return  root, ""
+
+def conf_ars_deploy(port= 23000 ,
+                    configfile= "/var/lib/syncthing-depl/.config/syncthing/config.xml",
+                    name="pulse"):
+    root, adressurl = read_serverannonce(configfile)
+    if adressurl != "":
+        pathxmldevice = ".//device[contains(@name, '%s')]/address"%name
+        listresult=root.xpath(pathxmldevice)
+        if listresult:
+            device = listresult[0].getparent()
+            for t in listresult:
+                device.remove(t)
+            adresstcp = "tcp://%s:%s"%(adressurl, port)
+            device.append(etree.XML("<address>dynamic</address>"))
+            device.append(etree.XML("<address>%s</address>"%adresstcp))
+            save_xml_file(root, configfile)
+
+def save_xml_file(elementxml,
+                  configfile= "/var/lib/syncthing-depl/.config/syncthing/config.xml"):
+    file_put_contents(configfile,
+                      etree.tostring(elementxml, pretty_print=True))
 
 def iddevice(configfile = "/var/lib/pulse2/.config/syncthing/config.xml"):
     try:

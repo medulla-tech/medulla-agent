@@ -30,7 +30,7 @@ from lib.utils import file_put_contents, simplecommand
 from lib.managepackage import managepackage, search_list_of_deployment_packages
 from sleekxmpp import jid
 
-plugin={"VERSION": "1.070", 'VERSIONAGENT' : '2.0.0', "NAME" : "deploysyncthing", "TYPE" : "all"}
+plugin={"VERSION": "1.070", 'VERSIONAGENT' : '2.1', "NAME" : "deploysyncthing", "TYPE" : "all"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -169,7 +169,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         try:
             logger.debug("##############AGENT RELAY SERVER###################")
             """ les devices des autre ARS sont connue, on initialise uniquement le folder."""
-            basesyncthing = "/var/lib/syncthing/partagedeploy"
+            basesyncthing = objectxmpp.getsyncthingroot()
+            #basesyncthing = "/var/lib/syncthing/partagedeploy"
             if not os.path.exists(basesyncthing):
                 os.makedirs(basesyncthing)
             if "subaction" in data :
