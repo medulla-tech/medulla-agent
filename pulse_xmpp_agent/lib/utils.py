@@ -2837,7 +2837,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
         authorized_keys_content = file_get_contents(authorized_keys_path)
         if not key.strip(' \t\n\r') in authorized_keys_content:
             message.append('Adding key to %s' % authorized_keys_path)
-            file_put_contents_w_a(authorized_keys_path, "\n"+ key, "a")
+            file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
         else:
             message.append('Key is already present in %s' % authorized_keys_path)
     file_contents = file_get_contents(authorized_keys_path)
