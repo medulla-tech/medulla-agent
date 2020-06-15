@@ -164,10 +164,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         objectxmpp.session.createsessiondatainfo(sessionid,
                                                  datasession =  datasend['data'],
                                                  timevalid = 180)
-        if not 'advanced' in datasend['data']:
+        if 'advanced' not in datasend['data']:
             datasend['data']['advanced'] = {}
             datasend['data']['advanced']['exec'] = True
-        if datasend['data']['advanced']['exec'] is True or not 'advanced' in datasend['data']:
+        if datasend['data']['advanced']['exec'] is True or 'advanced' not in datasend['data']:
             # deploy directly
             datasend['data']['advanced']['scheduling'] = False
             try:

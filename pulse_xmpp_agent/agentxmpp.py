@@ -409,7 +409,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("not enable cyclic inventory")
 
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
-        if  not self.config.agenttype in ['relayserver']:
+        if self.config.agenttype not in ['relayserver']:
             self.schedule('session reload',
                           15,
                           self.reloadsesssion,
@@ -1368,16 +1368,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         listaction = [] # cette liste contient les function directement appelable depuis console.
         #check action in message
         if 'action' in dataobj:
-            if not 'sessionid' in dataobj:
+            if 'sessionid' not in dataobj:
                 dataobj['sessionid'] = getRandomName(6, dataobj["action"])
             if dataobj["action"] in listaction:
                 #call fubnction agent direct
                 func = getattr(self, dataobj["action"])
-                if "params_by_val" in dataobj and not "params_by_name" in dataobj:
+                if "params_by_val" in dataobj and "params_by_name" not in dataobj:
                     func(*dataobj["params_by_val"])
                 elif "params_by_val" in dataobj and "params_by_name" in dataobj:
                     func(*dataobj["params_by_val"], **dataobj["params_by_name"])
-                elif "params_by_name" in dataobj and not "params_by_val" in dataobj:
+                elif "params_by_name" in dataobj and "params_by_val" not in dataobj:
                     func( **dataobj["params_by_name"])
                 else :
                     func()
@@ -1539,7 +1539,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                      'ret' : 255,
                      'base64' : False}
         msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
-        if not 'data' in startparameter:
+        if 'data' not in startparameter:
             startparameter['data'] = {}
         call_plugin(startparameter["action"],
                     self,
@@ -1562,7 +1562,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         ################################### initialise syncthing ###################################
         if self.config.syncthing_on:
-            if  not self.config.agenttype in ['relayserver']:
+            if self.config.agenttype not in ['relayserver']:
                 self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
             self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
             if logger.level <= 10:
@@ -1944,7 +1944,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "data": {"msg" : ""}
         }
 
-        if not 'action' in dataobj:
+        if 'action' not in dataobj:
             logging.error("warning message action missing %s"%(msg))
             return
 
@@ -2060,7 +2060,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             mtype='chat')
                     logger.error("\n%s"%(traceback.format_exc()))
             else:
-                if not 'data' in dataobj:
+                if 'data' not in dataobj:
                     msgerr = "data section missing;  msg : %s"%(msg['body'])
                 if 'action' in dataobj:
                     act = dataobj['action']

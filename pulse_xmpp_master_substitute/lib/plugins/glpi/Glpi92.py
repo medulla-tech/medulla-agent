@@ -69,7 +69,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -611,7 +611,7 @@ class Glpi92(DatabaseHelper):
                 if filter_key == 'autoupdatesystems_id':
                     self.logger.debug('will filter %s in (%s)' % (filter_key, str(filter_values)))
                     a_filter_on.append(self.machine.c.autoupdatesystems_id.in_(filter_values))
-                if not filter_key in ('state','type','entity','autoupdatesystems_id') :
+                if filter_key not in ('state','type','entity','autoupdatesystems_id') :
                     self.logger.warn('dont know how to filter on %s' % (filter_key))
             if len(a_filter_on) == 0:
                 return None
@@ -739,7 +739,7 @@ class Glpi92(DatabaseHelper):
                     if isinstance(location, list):
                         locationids = [int(x.replace('UUID', '')) for x in location]
                         for locationid in locationids:
-                            if not locationid in locsid:
+                            if locationid not in locsid:
                                 self.logger.warn("User '%s' is trying to get the content of an unauthorized entity : '%s'" % (ctx.userid, 'UUID' + location))
                                 session.close()
                                 return None

@@ -68,7 +68,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur['sessionid'] = sessionid
     timeoutfusion = 120
     msg=[]
-    if not 'forced' in data:
+    if 'forced' not in data:
         data['forced'] = "forced"
     if data['forced'] == True:
         data['forced'] = "forced"

@@ -328,7 +328,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     data['adorgbyuser'] = base64.b64decode(data['adorgbyuser'])
                 except TypeError:
                     pass
-            if not 'keysyncthing' in data:
+            if 'keysyncthing' not in data:
                 if 'information' in data and 'keysyncthing' in data['information']:
                     data['keysyncthing'] = data['information']['keysyncthing']
                 else:
@@ -418,7 +418,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 kiosk_presence = data['kiosk_presence']
             else:
                 kiosk_presence = "False"
-            if not 'lastusersession' in data:
+            if 'lastusersession' not in data:
                 data['lastusersession'] = ""
             if showinfobool:
                 logger.info("=============")

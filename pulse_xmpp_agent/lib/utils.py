@@ -524,7 +524,7 @@ def loadModule(filename):
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
     searchPath, file = os.path.split(filename)
-    if not searchPath in sys.path:
+    if searchPath not in sys.path:
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath+"/../"))
     moduleName, ext = os.path.splitext(file)
@@ -1060,7 +1060,7 @@ def pulgindeploy1(func):
                 dataerreur,
                 result)
 
-            if not 'end' in result['data']:
+            if 'end' not in result['data']:
                 result['data']['end'] = False
 
             print "----------------------------------------------------------------"
