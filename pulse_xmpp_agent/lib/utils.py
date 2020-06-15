@@ -2382,10 +2382,10 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
             tar.extractall()
         return True
     except OSError as e:
-        logger.error("Error extracting tar.%s : %s" % (str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
         return False
     except Exception as e:
-        logger.error("Error extracting tar.%s : %s" % (str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
         return False
     finally:
         os.chdir(cwd)
