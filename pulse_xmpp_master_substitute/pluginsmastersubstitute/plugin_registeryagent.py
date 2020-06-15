@@ -432,9 +432,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 if interface['macaddress'] == data['xmppmacaddress']:
                     break
                 else:
-                # adress mac exclut alert
-                if len(data['information']["listipinfo"]):
-                    data['xmppmacaddress'] = data['information']["listipinfo"][0]['macaddress']
+                    # adress mac exclut alert
+                    if len(data['information']["listipinfo"]):
+                        data['xmppmacaddress'] = data['information']["listipinfo"][0]['macaddress']
 
 
             idmachine, msgret = XmppMasterDatabase().addPresenceMachine(data['from'],
