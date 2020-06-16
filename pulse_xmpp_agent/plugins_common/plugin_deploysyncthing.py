@@ -30,7 +30,7 @@ from lib.utils import file_put_contents, simplecommand
 from lib.managepackage import managepackage, search_list_of_deployment_packages
 from sleekxmpp import jid
 
-plugin={"VERSION": "1.070", 'VERSIONAGENT' : '2.1', "NAME" : "deploysyncthing", "TYPE" : "all"}
+plugin={"VERSION": "1.071", 'VERSIONAGENT' : '2.1', "NAME" : "deploysyncthing", "TYPE" : "all"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -233,7 +233,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                     typefolder=typefolder )
                     objectxmpp.syncthing.add_folder_dict_if_not_exist_id(newfolder)
 
-
                     #add device cluster ars in new partage folder
                     #ajoute des tas de fois cette device dans le folder.
                     for keyclustersyncthing in data['listkey']:
@@ -248,7 +247,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
                     for machine in data['machinespartage']:
                         #add device dans folder
-                        if machine['devi'] != "\"\"":
+                        if machine['devi'] != "\"\"" or machine['devi'] != "":
                             logger.info("ADD DEVICE MACHINE %s in folder %s"%(machine['devi'],
                                                                                                      data['repertoiredeploy']))
 
@@ -257,25 +256,48 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                                                     introducedBy = "")
 
                         #add device
-                        namemachine = jid.JID(machine['mach']).resource
-                        #if objectxmpp.boundjid.bare == "rspulse@pulse":
+                        namemachine = str(jid.JID(machine['mach']).user)[:-4]
+                        # if objectxmpp.boundjid.bare == "rspulse@pulse":
                         if jid.JID(machine['mach']).bare == "rspulse@pulse":
                         #if namemachine == "dev-mmc":
                             namemachine = "pulse"
                         if namemachine=="":
                             namemachine = machine['mach']
-                        if machine['devi'] != "\"\"":
-                            logger.debug("ADD DEVICE  %s in DEVICE %s"%(machine['devi'],
-                                                                        namemachine))
-
-                            #add_device_syncthing( objectxmpp.syncthing,
-                                                  #machine['devi'],
-                                                  #namemachine,
-                                                  #config)
-
+                        if machine['devi'] != "\"\"" or machine['devi'] != "":
+                            msglog = "ADD DEVICE %s in ARS %s on MACHINE %s"%(machine['devi'],
+                                                                              objectxmpp.boundjid.user,
+                                                                              namemachine)
+                            logger.debug(msglog)
+                            objectxmpp.xmpplog( msglog,
+                                                type='deploy',
+                                                sessionname=machine['ses'],
+                                                priority=-1,
+                                                action="xmpplog",
+                                                why=objectxmpp.boundjid.bare,
+                                                module="Deployment | Syncthing",
+                                                date=None)
                             objectxmpp.syncthing.add_device_syncthing(machine['devi'],
                                                   namemachine)
-
+                        else:
+                            objectxmpp.xmpplog( "<span class='log_err'>"\
+                                                    "Syncthing id device "\
+                                                    "missing for machine %s</span>"%namemachine,
+                                                type='deploy',
+                                                sessionname=machine['ses'],
+                                                priority=-1,
+                                                action="xmpplog",
+                                                why=objectxmpp.boundjid.bare,
+                                                module="Deployment | Syncthing",
+                                                date=None)
+                            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                                type = 'deploy',
+                                                sessionname=machine['ses'],
+                                                priority = -1,
+                                                action = "xmpplog",
+                                                who = objectxmpp.boundjid.bare,
+                                                module = "Deployment | Terminate"\
+                                                    " | Notify | Syncthing",
+                                                date = None)
                         #create message for machine
                         datasend = {'action' : "deploysyncthing",
                                     "sessionid" : machine['ses'],
