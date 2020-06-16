@@ -480,7 +480,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       repeat=True)
 
         self.schedule('initsyncthing',
-                      120,
+                      15,
                       self.initialise_syncthing,
                       repeat=False)
 
@@ -1571,7 +1571,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.Ctrlsyncthingprogram.restart_syncthing()
 
             try:
-                self.syncthing = syncthing(configfile = self.fichierconfsyncthing)
+                logging.debug("initialisation syncthing file conf : %s port %s" % (self.fichierconfsyncthing,
+                                                                                   self.config.syncthing_gui_port))
+                self.syncthing = syncthing(configfile = self.fichierconfsyncthing, port = self.config.syncthing_gui_port)
                 if logger.level <= 10:
                     self.syncthing.save_conf_to_file(self.tmpfile)
                 else:
@@ -1579,8 +1581,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         os.remove(self.tmpfile)
                     except :
                         pass
-                self.deviceid = self.syncthing.get_id_device_local()
-                logging.debug("device local syncthing : [%s]"%self.deviceid)
             except Exception as e:
                 logging.error("syncthing initialisation : %s" % str(e))
                 logger.error("\n%s"%(traceback.format_exc()))
@@ -2156,6 +2156,13 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart' : save_count_start(),
             'keysyncthing' : self.deviceid
         }
+        if  self.config.agenttype in ['relayserver']:
+            try:
+                dataobj['syncthing_port'] = self.config.syncthing_port
+            except Exception:
+                pass
+        if self.geodata.localisation is not None:
+            dataobj['geolocalisation'] = self.geodata.localisation
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver

@@ -126,10 +126,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 browser = True
 
             if sys.platform.startswith('linux'):
-                if self.config.agenttype in ['relayserver']:
-                    self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-                else:
-                    self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                #if self.config.agenttype in ['relayserver']:
+                    #self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                #else:
+                self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                         ".config","syncthing","config.xml")
 
                 tmpfile = "/tmp/confsyncting.txt"
@@ -159,7 +159,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     except :
                         pass
                 time.sleep(1)
-                self.deviceid = self.syncthing.get_id_device_local()
+                try:
+                    self.deviceid = iddevice(configfile = self.fichierconfsyncthing)
+                except Exception:
+                    pass
+        
+                #### self.deviceid = self.syncthing.get_id_device_local()
                 logger.debug("device local syncthing : [%s]"%self.deviceid)
             except Exception as e:
                 logger.error("syncthing initialisation : %s" % str(e))
@@ -348,12 +353,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 self.syncthing.config['options']['defaultFolderPath'] = defaultFolderPath
 
                             if self.deviceid != "":
-                                if len(data['data'][0]) == 6:
+                                if len(data['data'][0]) >= 7:
                                     for x in data['data']:
                                         if self.is_format_key_device(str(x[5])):
                                             self.adddevicesyncthing(str(x[5]),
                                                                     str(x[2]),
-                                                                    address=["tcp4://%s"%str(x[0])])
+                                                                    address=["tcp4://%s:%s"%(x[0],
+                                                                                             x[6])])
                                 logger.debug("synchro config %s"%self.syncthing.is_config_sync())
                                 logging.log(DEBUGPULSE, "write new config syncthing")
                                 self.syncthing.validate_chang_config()
