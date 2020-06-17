@@ -34,7 +34,6 @@ import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
-from lib.plugins.glpi import  Glpi
 from lib.managepackage import managepackage
 from lib.managesession import session
 from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents, file_put_contents
@@ -122,11 +121,9 @@ def scheduledeploy(self):
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
         if resultpresence[UUID][1] == 0:
             sessiondeployementless = name_random(5, "missingagent")
-            # machine dans GLPI mais pas enregistré sur tavle machine xmpp.
             listobjnoexist.append(deployobject)
-            machine = Glpi().getMachineByUUID(UUID)
-            #incrition dans deploiement cette machine sans agent
 
+            # inscription dans deploiement cette machine sans agent
             XmppMasterDatabase().adddeploy(deployobject['commandid'],
                                             deployobject['name'],
                                             deployobject['name'],
