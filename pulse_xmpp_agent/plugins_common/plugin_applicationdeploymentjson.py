@@ -43,7 +43,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "5.0", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "5.1", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -665,7 +665,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 objectxmpp.Deploybasesched.set_sesionscheduler(sessionid,json.dumps(datasend))
         else:
             objectxmpp.session.sessionsetdata(sessionid, datasend) #save data in session
-            grafcetdeploy.grafcetdeploy.grafcet(objectxmpp, datasend) #grafcet will use the session
+            grafcetdeploy.grafcet(objectxmpp, datasend) #grafcet will use the session
             logger.debug("outing graphcet phase1")
     else:
         logger.debug("###################################################")
@@ -2222,7 +2222,7 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
             traceback.print_exc(file=sys.stdout)
     else:
         logger.warning("launcher command missing for kiosk")
-    grafcetdeploy.grafcetdeploy.grafcet(objectxmpp, datasend)
+    grafcetdeploy.grafcet(objectxmpp, datasend)
     logger.debug("outing graphcet end initiation")
 
 def curlgetdownloadfile( destfile, urlfile, insecure = True, limit_rate_ko= None):
