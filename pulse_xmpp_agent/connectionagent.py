@@ -52,7 +52,7 @@ from optparse import OptionParser
 
 from threading import Timer
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
-from lib.syncthingapirest import syncthing, syncthingprogram
+from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
