@@ -23,10 +23,9 @@
 
 import logging
 
-from lib.utils import  simplecommand
+from lib import utils
 import os
 import json
-from lib.utils import file_put_contents
 import time
 import socket
 import traceback
@@ -34,7 +33,7 @@ import traceback
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = { "VERSION" : "2.0", "NAME" : "downloadfileexpert", "TYPE" : "relayserver" }
+plugin = { "VERSION" : "3.0", "NAME" : "downloadfileexpert", "TYPE" : "relayserver" }
 paramglobal = {"timeupreverssh" : 30 , "portsshmaster" : 22, "filetmpconfigssh" : "/tmp/tmpsshconf", "remoteport" : 22, "server_ssh_user" : "pulsetransfert"}
 
 def get_free_tcp_port():
@@ -227,7 +226,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         time.sleep(paramglobal['timeupreverssh'])
     finally:
         sock.close()
-    file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
+    utils.file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
     ##scp file from 2 hosts
     #------------------------------------------------- ssh------------------------------------
     #####
@@ -297,7 +296,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     touser = "")
 
 
-        z = simplecommand(command)
+        z = utils.simplecommand(command)
         print z['result']
         print z['code']
         print "----------------------------"
@@ -362,7 +361,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 date = None ,
                                 fromuser = "",
                                 touser = "")
-            z = simplecommand(cmd)
+            z = utils.simplecommand(cmd)
             if z['code'] == 0:
                 objectxmpp.xmpplog( 'Transfer result : ' + '\n'.join(z['result']),
                                     type = 'noset',

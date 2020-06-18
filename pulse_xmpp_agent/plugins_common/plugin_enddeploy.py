@@ -21,12 +21,12 @@
 # file : plugin_enddeploy.py
 
 import logging
-from lib.utils import simplecommand, encode_strconsole, _path_packagequickaction
+from lib import utils
 import time
 
 import os
 import json
-plugin = {"VERSION" : "1.5", "NAME" : "enddeploy",  "TYPE" : "all"}
+plugin = {"VERSION" : "2.0", "NAME" : "enddeploy",  "TYPE" : "all"}
 
 logger = logging.getLogger()
 
@@ -38,7 +38,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         try:
             objectxmpp.mutexslotquickactioncount.acquire()
             #convention 1 ban
-            pathfile = _path_packagequickaction()
+            pathfile = utils._path_packagequickaction()
             filedeploy = [x for x in os.listdir(pathfile) if x.endswith("QDeploy")]
             logging.getLogger().debug("filedeploy %s"%filedeploy)
             ## remove all pool files
@@ -50,7 +50,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 try:
                     if sessionid == sessionfile:
                         os.remove(os.path.join(pathfile, filledeployement))
-                        res = simplecommand("ls %s | wc -l"%os.path.join(_path_packagequickaction(),"*.QDeploy"))
+                        res = utils.simplecommand("ls %s | wc -l"%os.path.join(utils._path_packagequickaction(),"*.QDeploy"))
                         if res['code'] == 0:
                             nbpool = res['result']
                         else:
@@ -75,7 +75,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         if objectxmpp.session.isexist(sessionid):
             datesession = objectxmpp.session.sessionfromsessiondata(sessionid).getdatasession()
-            result = simplecommand(encode_strconsole("netstat -tpn | grep -v tcp6 | grep -v sshd | grep ssh | grep ESTABLISHED | grep '%s'"%datesession['ipmachine']))
+            result = utils.simplecommand(utils.encode_strconsole("netstat -tpn | grep -v tcp6 | grep -v sshd | grep ssh | grep ESTABLISHED | grep '%s'"%datesession['ipmachine']))
             if result['code'] == 0:
                 # termine ssh connection to AM
                 for connection_ssh in result['result']:
@@ -99,7 +99,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             date = None ,
                                             fromuser = datesession['login'],
                                             touser = "")
-                        result1 = simplecommand(encode_strconsole("kill -6 %s"%processus))
+                        result1 = utils.simplecommand(utils.encode_strconsole("kill -6 %s"%processus))
                         if result1['code'] != 0:
                             logger.error(str(result1['result']))
         # add session id pour clear interdiction apres un certain momment

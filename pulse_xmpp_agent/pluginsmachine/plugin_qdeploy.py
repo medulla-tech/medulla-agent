@@ -23,17 +23,13 @@
 import base64
 import json
 import sys, os
-from lib.managepackage import managepackage, search_list_of_deployment_packages
+from lib import managepackage, \
+                grafcetdeploy, \
+                utils
 import socket
-from lib.grafcetdeploy import grafcet
 import logging
 import pycurl
 import platform
-from lib.utils import simplecommandstr, \
-                      simplecommand, \
-                      encode_strconsole, \
-                      file_get_contents, \
-                      extract_file
 import copy
 import traceback
 import time
@@ -45,7 +41,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.06", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "2.0", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -86,7 +82,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                       'data' :  data['descriptor'],
                       'ret' : 0,
                       'base64' : False}
-        packagedir = os.path.join( managepackage.packagedir(), namefolder)
+        packagedir = os.path.join( managepackage.managepackage.packagedir(), namefolder)
         logger.debug("packagedir %s"%packagedir)
         ###"filebase64":
         filetmp =  os.path.join(tempfile.gettempdir(), "%s.gz"%namefolder)
@@ -103,7 +99,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         fromuser = datasend['data']['advanced']['login'])
         with open(filetmp, 'wb') as f:
             f.write(base64.b64decode(data['filebase64']))
-        if extract_file(filetmp, to_directory = managepackage.packagedir(), compresstype="gz"):
+        if utils.extract_file(filetmp, to_directory = managepackage.managepackage.packagedir(), compresstype="gz"):
             objectxmpp.xmpplog('Package extraction successful',
                         type = 'deploy',
                         sessionname = sessionid,
@@ -136,7 +132,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if os.path.exists(filetmp):
             os.remove(filetmp)
 
-        datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),
+        datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.managepackage.packagedir(),
                                                                  namefolder )
         # on prepare sequence en fonction de l'os.
         if not cleandescriptor(datasend['data']):
@@ -313,5 +309,5 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
             traceback.print_exc(file=sys.stdout)
     else:
         logger.warning("launcher command missing for kiosk")
-    grafcet(objectxmpp, datasend)
+    grafcetdeploy.grafcet(objectxmpp, datasend)
     logger.debug("outing graphcet end initiation")

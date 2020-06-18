@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 # file : plugin_inventory.py
 
-from  lib.utils import simplecommand, file_put_contents_w_a, file_get_contents
+from lib import utils
 import os, sys, platform
 import zlib
 import base64
@@ -32,13 +32,13 @@ import lxml.etree as ET
 import hashlib
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
-    from lib.registerwindows import constantregisterwindows
+    from lib import registerwindows
     import _winreg
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.232", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "2.0", "NAME" :"inventory", "TYPE":"machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -74,10 +74,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         data['forced'] = "forced"
     if data['forced'] == False:
         data['forced'] = "noforced"
-    
+
     if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
         inventoryfile = os.path.join("/","tmp","inventory.txt")
-    elif sys.platform.startswith('win'): 
+    elif sys.platform.startswith('win'):
         inventoryfile = os.path.join(os.environ["ProgramFiles"],
                                     'Pulse',
                                     'tmp',
@@ -106,7 +106,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 cmd = "fusioninventory-agent --backend-collect-timeout=%s --local=%s"%(timeoutfusion,
                                                                                        inventoryfile)
                 msg.append(cmd)
-                obj = simplecommand(cmd)
+                obj = utils.simplecommand(cmd)
                 msg.append("result code error %s result cmd %s"%(obj['code'],
                                                                  obj['result']))
                 if obj['code'] == 0:
@@ -195,7 +195,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                                                            inventoryfile)
                 msg.append(cmd)
                 logger.debug(cmd)
-                obj = simplecommand(cmd)
+                obj = utils.simplecommand(cmd)
                 msg.append("result code error %s result cmd %s"%(obj['code'],
                                                                  obj['result']))
                 if obj['code'] == 0:
@@ -247,7 +247,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             logging.log(DEBUGPULSEPLUGIN, "hive: %s" % hive)
                             logging.log(DEBUGPULSEPLUGIN, "path: %s" % path)
                             logging.log(DEBUGPULSEPLUGIN, "sub_key: %s" % sub_key)
-                            reg_constants = constantregisterwindows()
+                            reg_constants = registerwindows.constantregisterwindows()
                             try:
                                 key = _winreg.OpenKey(reg_constants.getkey(hive),
                                                     path,
@@ -336,7 +336,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                                            inventoryfile)
                 msg.append(cmd)
                 logger.debug(cmd)
-                obj = simplecommand(cmd)
+                obj = utils.simplecommand(cmd)
                 msg.append("result code error %s result cmd %s"%(obj['code'],
                                                                  obj['result']))
                 if obj['code'] == 0:
@@ -450,7 +450,7 @@ def compact_xml(inputfile, graine=""):
     xmlTree = ET.parse(inputfile, parser=parser)
     strinventorysave  =  '<?xml version="1.0" encoding="UTF-8" ?>' + \
                             ET.tostring(xmlTree, pretty_print=False)
-    file_put_contents_w_a(inputfile, strinventorysave)
+    utils.file_put_contents_w_a(inputfile, strinventorysave)
     # fingerprint
     listxpath=['/REQUEST/CONTENT/ACCESSLOG',
                '/REQUEST/CONTENT/BIOS',
@@ -478,7 +478,7 @@ def compact_xml(inputfile, graine=""):
     #namefilecompare = "%s.xml1"%inputfile
     #if os.path.exists(namefilecompare):
         #os.rename(namefilecompare, "%s.back"%namefilecompare)
-    #file_put_contents_w_a(namefilecompare, strinventory)
+    #utils.file_put_contents_w_a(namefilecompare, strinventory)
     # -----end debug file compare------
     fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
     # on recupere ancienne fingerprint
@@ -486,11 +486,11 @@ def compact_xml(inputfile, graine=""):
                                                 'fingerprintinventory')
     oldfingerprintinventory = ""
     if os.path.exists(manefilefingerprintinventory):
-        oldfingerprintinventory = file_get_contents(manefilefingerprintinventory)
-    file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
+        oldfingerprintinventory = utils.file_get_contents(manefilefingerprintinventory)
+    utils.file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
     if fingerprintinventory == oldfingerprintinventory:
         logger.debug("no significant change in inventory.")
-        
+
         return strinventorysave, False
     logger.debug("inventory is modify.")
     return strinventorysave, True

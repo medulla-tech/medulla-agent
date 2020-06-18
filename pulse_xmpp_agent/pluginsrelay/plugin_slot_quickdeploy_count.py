@@ -26,12 +26,11 @@ import json
 import logging
 import traceback
 import time
+from lib import utils
 
-from lib.utils import _path_packagequickaction, simplecommand
-###
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "slot_quickdeploy_count", "TYPE": "relayserver"}
+plugin = {"VERSION": "2.0", "NAME": "slot_quickdeploy_count", "TYPE": "relayserver"}
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur ):
     logger.debug("#################################################")
@@ -72,7 +71,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
             finally:
                 objectxmpp.mutex.release()
             nbdeploy = len(objectxmpp.concurrentquickdeployments)
-            pathfile = _path_packagequickaction()
+            pathfile = utils._path_packagequickaction()
             if nbdeploy == 0:
                 time.sleep(3)
             replay(objectxmpp, sessionid)
@@ -93,7 +92,7 @@ def replay(objectxmpp, sessionid):
         nbdeploy = len(objectxmpp.concurrentquickdeployments)
         logger.debug("Resource status: %s/%s"%(nbdeploy, objectxmpp.config.nbconcurrentquickdeployments))
         # charge les fichiers terminant par QDeploy
-        pathfile = _path_packagequickaction()
+        pathfile = utils._path_packagequickaction()
         filedeploy = [os.path.join(pathfile, x) for x in os.listdir(pathfile) if x.endswith("QDeploy")]
         if nbdeploy >= 0 and \
             nbdeploy < objectxmpp.config.nbconcurrentquickdeployments and \
@@ -116,7 +115,7 @@ def replay(objectxmpp, sessionid):
                         break
                     finally:
                         os.remove(pathnamefile)
-                        res = simplecommand("ls %s | wc -l"%os.path.join(_path_packagequickaction(),"*.QDeploy"))
+                        res = utils.simplecommand("ls %s | wc -l"%os.path.join(utils._path_packagequickaction(),"*.QDeploy"))
                         if res['code'] == 0:
                             nbpool = res['result']
                         else:
