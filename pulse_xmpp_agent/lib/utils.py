@@ -2938,7 +2938,6 @@ class geolocalisation_agent:
                  geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
-        logger.error("dede")
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public
@@ -2999,7 +2998,6 @@ class geolocalisation_agent:
         """
             return localisation
         """
-        logger.error("getgeolocalisation")
         if self.typeuser in ["public", "nomade", "both"]:
             # on recherche a chaque fois les information
             self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
