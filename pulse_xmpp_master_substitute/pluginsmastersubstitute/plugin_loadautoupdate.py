@@ -83,7 +83,7 @@ def read_conf_remote_update(objectxmpp):
         objectxmpp.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
         objectxmpp.autoupdate = True
         objectxmpp.generate_baseagent_fingerprint_interval = 900
-        objectxmpp.autoupdatebyrelay = False
+        objectxmpp.autoupdatebyrelay = True
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -102,7 +102,7 @@ def read_conf_remote_update(objectxmpp):
         if Config.has_option("parameters", "autoupdatebyrelay"):
             objectxmpp.autoupdatebyrelay = Config.getboolean('parameters', 'autoupdatebyrelay')
         else:
-            objectxmpp.autoupdatebyrelay = False
+            objectxmpp.autoupdatebyrelay = True
         if Config.has_option("parameters", "generate_baseagent_fingerprint_interval"):
             objectxmpp.generate_baseagent_fingerprint_interval = Config.getint('parameters', 'generate_baseagent_fingerprint_interval')
         else:
