@@ -22,9 +22,9 @@
 this plugin process inventory from crontab descriptor time
 """
 import logging
-from  lib.utils import getRandomName, call_plugin
+from lib import utils
 
-plugin = { "VERSION" : "1.3", "NAME" : "scheduling_inv", "TYPE" : "machine" , "SCHEDULED" : True }
+plugin = { "VERSION" : "1.4", "NAME" : "scheduling_inv", "TYPE" : "machine" , "SCHEDULED" : True }
 SCHEDULE = { "schedule" : "$[0,59] $[8,17] * * *", "nb" : -1 } # nb  -1 infinie
 def schedule_main(objectxmpp):
     if objectxmpp.config.inventory_interval != 0:
@@ -35,7 +35,7 @@ def schedule_main(objectxmpp):
     msg={ 'from' : "master@pulse/MASTER",
             'to': objectxmpp.boundjid.bare
             }
-    sessionid = getRandomName(6, "inventory")
+    sessionid = utils.getRandomName(6, "inventory")
     dataerreur = {}
     dataerreur['action']= "resultinventory"
     dataerreur['data']={}
@@ -43,7 +43,7 @@ def schedule_main(objectxmpp):
     dataerreur['sessionid'] = sessionid
     dataerreur['ret'] = 255
     dataerreur['base64'] = False
-    call_plugin("inventory",
+    utils.call_plugin("inventory",
                     objectxmpp,
                     "inventory",
                     sessionid,

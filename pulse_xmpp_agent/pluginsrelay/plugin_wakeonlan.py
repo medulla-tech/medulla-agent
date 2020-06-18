@@ -19,11 +19,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from  lib.utils import pluginprocess
+from lib import utils
 from wakeonlan import wol
 
-plugin={"VERSION": "1.2", "NAME" :"wakeonlan","TYPE":"relayserver"}
-@pluginprocess
+plugin={"VERSION": "1.3", "NAME" :"wakeonlan","TYPE":"relayserver"}
+@utils.pluginprocess
 def action( objectxmpp, action, sessionid, data, message, dataerreur,result):
     print data
     if hasattr(objectxmpp.config, 'wol_port'):

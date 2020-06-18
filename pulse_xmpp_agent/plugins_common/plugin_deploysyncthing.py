@@ -25,12 +25,11 @@ import os
 import logging
 import json
 import traceback
-from lib.utils import file_put_contents, simplecommand
-#from lib.update_remote_agent import Update_Remote_Agent
-from lib.managepackage import managepackage, search_list_of_deployment_packages
+from lib import utils, \
+                managepackage
 from sleekxmpp import jid
 
-plugin={"VERSION": "1.070", 'VERSIONAGENT' : '2.0.0', "NAME" : "deploysyncthing", "TYPE" : "all"}
+plugin={"VERSION": "1.500", 'VERSIONAGENT' : '2.0.0', "NAME" : "deploysyncthing", "TYPE" : "all"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -93,7 +92,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 # savedata fichier sessionid.ars
                 namesessionidars = os.path.join(objectxmpp.dirsyncthing,
                                                 "%s.ars"%sessionid)
-                file_put_contents(namesessionidars, datastring)
+                utils.file_put_contents(namesessionidars, datastring)
                 logger.debug("Creating file %s"%namesessionidars)
                 objectxmpp.xmpplog("Creating ars file %s"%namesessionidars,
                                     type='deploy',
@@ -151,7 +150,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     signalendsessionforARS(data , objectxmpp, sessionid, error = True)
                     return
             namesessioniddescriptor = os.path.join(objectxmpp.dirsyncthing,"%s.descriptor"%sessionid)
-            file_put_contents(namesessioniddescriptor, json.dumps(data, indent =4))
+            utils.file_put_contents(namesessioniddescriptor, json.dumps(data, indent =4))
             logger.debug("creation file %s"%namesessioniddescriptor)
             objectxmpp.xmpplog( "Creating descriptor file %s"%namesessioniddescriptor,
                                 type='deploy',
@@ -175,18 +174,18 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             if "subaction" in data :
                 logger.debug("subaction : %s"%data['subaction'])
                 if data['subaction'] == "syncthingdeploycluster":
-                    packagedir = managepackage.packagedir()
+                    packagedir = managepackage.managepackage.packagedir()
                     # creation fichier de partages syncthing
                     repertorypartage = os.path.join(basesyncthing,data['repertoiredeploy'] )
                     if not os.path.exists(repertorypartage):
                         os.makedirs(repertorypartage)
                     cmd = "touch %s"%os.path.join(repertorypartage,'.stfolder')
                     logger.debug("cmd : %s"%cmd)
-                    obj = simplecommand(cmd)
+                    obj = utils.simplecommand(cmd)
                     if int(obj['code']) != 0:
                         logger.warning(obj['result'])
                     list_of_deployment_packages =\
-                        search_list_of_deployment_packages(data['packagedeploy']).\
+                        managepackage.search_list_of_deployment_packages(data['packagedeploy']).\
                             search()
                     logger.warning("copy to repertorypartage")
                     #on copy les packages dans le repertoire de  partages"
@@ -194,7 +193,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         repsrc = os.path.join(packagedir,str(z) )
                         cmd = "rsync -r %s %s/"%( repsrc , repertorypartage)
                         logger.debug("cmd : %s"%cmd)
-                        obj = simplecommand(cmd)
+                        obj = utils.simplecommand(cmd)
                         if int(obj['code']) != 0:
                             logger.warning(obj['result'])
                         else:
@@ -213,7 +212,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 touser="")
                     cmd ="chown syncthing:syncthing -R %s"%repertorypartage
                     logger.debug("cmd : %s"%cmd)
-                    obj = simplecommand(cmd)
+                    obj = utils.simplecommand(cmd)
                     if int(obj['code']) != 0:
                         logger.warning(obj['result'])
                     # creation fichier .stfolder

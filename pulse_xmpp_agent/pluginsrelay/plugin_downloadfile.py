@@ -23,17 +23,16 @@
 
 import logging
 
-from lib.utils import  simplecommand
+from lib import utils
 import os
 import json
-from lib.utils import file_put_contents
 import time
 import socket
 import traceback
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "2.6", "NAME" : "downloadfile", "TYPE" : "relayserver" }
+plugin = { "VERSION" : "2.7", "NAME" : "downloadfile", "TYPE" : "relayserver" }
 paramglobal = {"timeupreverssh" : 20 , "portsshmaster" : 22, "filetmpconfigssh" : "/tmp/tmpsshconf", "remoteport" : 22}
 
 def get_free_tcp_port():
@@ -209,7 +208,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
         cretefileconfigrescp = "Host %s\nPort %s\nHost %s\nPort %s\n"%(data['ipmaster'], paramglobal['portsshmaster'], data['ipmachine'], localport)
-        file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
+        utils.file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
     else:
         if str(data['osmachine']).startswith('Linux'):
             source = create_path(type = "linux", host = profiluserpulse, ipordomain="localhost", path = r'%s'%data['path_src_machine'])
@@ -220,7 +219,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
         cretefileconfigrescp = "Host %s\nPort %s\nHost %s\nPort %s\n"%(data['ipmaster'], paramglobal['portsshmaster'], "localhost", localport)
-        file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
+        utils.file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
 
     dest = create_path(type ="linux",
                        host="root",
@@ -275,7 +274,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 touser = "")
 
 
-    z = simplecommand(command)
+    z = utils.simplecommand(command)
     print z['result']
     print z['code']
     print "----------------------------"
@@ -340,7 +339,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             date = None ,
                             fromuser = "",
                             touser = "")
-        z = simplecommand(cmd)
+        z = utils.simplecommand(cmd)
         if z['code'] == 0:
             objectxmpp.xmpplog( 'Transfer result : ' + '\n'.join(z['result']),
                                 type = 'noset',

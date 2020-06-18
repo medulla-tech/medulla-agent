@@ -23,15 +23,15 @@
 #This plugin needs to call back the plugin that made the request to return the result
 
 import json
-from lib.managepackage import managepackage
+from lib import managepackage, \
+                utils
 import logging
 import platform
 import sys
-from lib.utils import protoandport, restartsshd
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "1.5", "NAME" : "requestinfo", "TYPE" : "all" }
+plugin = { "VERSION" : "1.6", "NAME" : "requestinfo", "TYPE" : "all" }
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("call %s from %s"%(plugin,message['from']))
@@ -57,18 +57,18 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     if 'dataask' in data:
         for informations in data['dataask']:
             if informations == "folders_packages":
-                result['data']["folders_packages"] = managepackage.packagedir()
+                result['data']["folders_packages"] = managepackage.managepackage.packagedir()
             if informations == "os":
                 result['data']["os"] = sys.platform
                 result['data']["os_version"] = platform.platform()
             if informations == "ssh_port":
-                remoteservices = protoandport()
+                remoteservices = utils.protoandport()
                 result['data']["ssh_port"] = remoteservices['ssh']
             if informations == "cpu_arch":
                 result['data']["cpu_arch"] = platform.machine()
             if informations == "sshd_on":
                 try:
-                    restartsshd()
+                    utils.restartsshd()
                     result['data']["sshd_on"] = "actionstartsshd"
                 except Exception:
                     pass

@@ -26,10 +26,10 @@ import json
 import zlib
 import base64
 import traceback
-from lib.utils import file_put_contents, getRandomName
-from lib.update_remote_agent import Update_Remote_Agent
+from lib import utils, \
+                update_remote_agent
 
-plugin={"VERSION": "1.36", 'VERSIONAGENT' : '2.0',  "NAME" : "updateagent", "TYPE" : "all", "waittingmax" : 35, "waittingmin" : 5}
+plugin={"VERSION": "1.50", 'VERSIONAGENT' : '2.0',  "NAME" : "updateagent", "TYPE" : "all", "waittingmax" : 35, "waittingmin" : 5}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -44,15 +44,15 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if data['subaction'] == "descriptor":
             difference = { }
             supprimefileimage = []
-            file_put_contents(os.path.join(objectxmpp.pathagent, "BOOL_UPDATE_AGENT"),
+            utils.file_put_contents(os.path.join(objectxmpp.pathagent, "BOOL_UPDATE_AGENT"),
                               "use file boolean update. enable verify update.")
             if 'version' in data['descriptoragent']:
                 #copy version agent master to image
                 vers = (data['descriptoragent']['version']).replace("\n","").replace("\r","").strip()
-                file_put_contents(os.path.join(objectxmpp.img_agent, "agentversion"),vers)
-                file_put_contents(os.path.join(objectxmpp.pathagent, "agentversion"),vers)
+                utils.file_put_contents(os.path.join(objectxmpp.img_agent, "agentversion"),vers)
+                utils.file_put_contents(os.path.join(objectxmpp.pathagent, "agentversion"),vers)
             # on genere descriptor actuel de l image
-            objdescriptorimage = Update_Remote_Agent(objectxmpp.img_agent)
+            objdescriptorimage = update_remote_agent.Update_Remote_Agent(objectxmpp.img_agent)
             descriptorimage = objdescriptorimage.get_md5_descriptor_agent()
             # on recoit le nouveau descripteur depuis base de l'agent.
             objectxmpp.descriptor_master = data['descriptoragent']
@@ -86,10 +86,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
             if len(supprimefileimage) != 0:
                 #on genere le descripteur de l'image, on a supprimer les fichiers qui sont dans l'image et pas dans la l'agent base
-                objdescriptorimage = Update_Remote_Agent(objectxmpp.img_agent)
+                objdescriptorimage = update_remote_agent.Update_Remote_Agent(objectxmpp.img_agent)
                 descriptorimage = objdescriptorimage.get_md5_descriptor_agent()
 
-                objectxmpp.Update_Remote_Agentlist = Update_Remote_Agent(objectxmpp.pathagent)
+                objectxmpp.Update_Remote_Agentlist = update_remote_agent.Update_Remote_Agent(objectxmpp.pathagent)
                 descriptoragent = objectxmpp.Update_Remote_Agentlist.get_md5_descriptor_agent()
 
                 # on regarde si il y a des diff entre img, base, et agent
@@ -126,10 +126,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                              mtype='chat')
                     return
                 else:
-                    objdescriptorimage = Update_Remote_Agent(objectxmpp.img_agent)
+                    objdescriptorimage = update_remote_agent.Update_Remote_Agent(objectxmpp.img_agent)
                     descriptorimage = objdescriptorimage.get_md5_descriptor_agent()
 
-                    objectxmpp.Update_Remote_Agentlist = Update_Remote_Agent(objectxmpp.pathagent)
+                    objectxmpp.Update_Remote_Agentlist = update_remote_agent.Update_Remote_Agent(objectxmpp.pathagent)
                     descriptoragent = objectxmpp.Update_Remote_Agentlist.get_md5_descriptor_agent()
 
                     # on regarde si il y a des diff entre img, base, et agent
@@ -217,7 +217,7 @@ def dump_file_in_img(objectxmpp, namescript, content, typescript):
         filescript = open(file_mane, "wb")
         filescript.write(content)
         filescript.close()
-        newobjdescriptorimage = Update_Remote_Agent(objectxmpp.img_agent)
+        newobjdescriptorimage = update_remote_agent.Update_Remote_Agent(objectxmpp.img_agent)
         if newobjdescriptorimage.get_fingerprint_agent_base() == objectxmpp.descriptor_master['fingerprint']:
             objectxmpp.reinstall_agent()
     else:
@@ -228,7 +228,7 @@ def senddescriptormd5(objectxmpp, data):
     send the agent's figerprint  descriptor in database to the machine for update
     Update remote agent
     """
-    objectxmpp.Update_Remote_Agentbase = Update_Remote_Agent(objectxmpp.config.diragentbase)
+    objectxmpp.Update_Remote_Agentbase = update_remote_agent.Update_Remote_Agent(objectxmpp.config.diragentbase)
     descriptoragentbase = objectxmpp.Update_Remote_Agentbase.get_md5_descriptor_agent()
     datasend = {"action": "updateagent",
                 "data": { 'subaction': 'descriptor',
@@ -236,7 +236,7 @@ def senddescriptormd5(objectxmpp, data):
                           'ars_update' : data['ars_update']
                           },
                 'ret': 0,
-                'sessionid': getRandomName(5, "updateagent")}
+                'sessionid': utils.getRandomName(5, "updateagent")}
     # Send catalog of files.
     logger.debug("Send descriptor to agent [%s] for update" % data['jidagent'])
     objectxmpp.send_message(data['jidagent'],

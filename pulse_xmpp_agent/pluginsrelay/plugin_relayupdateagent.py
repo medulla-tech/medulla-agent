@@ -29,12 +29,12 @@ import sys
 import logging
 import zlib
 from time import sleep
-from utils import file_get_contents, getRandomName
+from lib import utils
 import traceback
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "relayupdateagent", "TYPE": "relayserver"}
+plugin = {"VERSION": "1.1", "NAME": "relayupdateagent", "TYPE": "relayserver"}
 
 def action( xmppobject, action, sessionid, data, message, dataerreur ):
     logger.debug("#################################################")
@@ -44,7 +44,7 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
     if "subaction" in data:
         if data['subaction'] == "update_me":
             # load version agent agentversion
-            version = file_get_contents(os.path.join(
+            version = utils.file_get_contents(os.path.join(
                 xmppobject.config.diragentbase, "agentversion")).replace("\n","").replace("\r","").strip()
             if 'descriptoragent' in data:
                 if 'program_agent' in data['descriptoragent'] and len(data['descriptoragent']['program_agent']) != 0:
@@ -72,7 +72,7 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
 
 def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
     msg_script_file_to_remote_agent = {"action": "updateagent",
-                                       "sessionid": getRandomName(3, "update_script_agent"),
+                                       "sessionid": utils.getRandomName(3, "update_script_agent"),
                                        "data": {"version": version}}
     if type == "program_agent":
         namescriptfile = os.path.join(xmppobject.config.diragentbase, filename)

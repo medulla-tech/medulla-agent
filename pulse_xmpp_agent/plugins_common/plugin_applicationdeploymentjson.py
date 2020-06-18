@@ -23,18 +23,13 @@
 import base64
 import json
 import sys, os
-from lib.managepackage import managepackage, search_list_of_deployment_packages
 import socket
-from lib.grafcetdeploy import grafcet
 import logging
 import pycurl
 import platform
-from lib.utils import save_back_to_deploy, \
-                      cleanbacktodeploy, \
-                      simplecommandstr, \
-                      simplecommand, \
-                      encode_strconsole, \
-                      file_get_contents
+from lib import utils, \
+                managepackage, \
+                grafcetdeploy
 import copy
 import traceback
 import time
@@ -48,7 +43,7 @@ elif sys.platform.startswith('win'):
 
 
 
-plugin = {"VERSION" : "4.19", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
+plugin = {"VERSION" : "4.20", "NAME" : "applicationdeploymentjson", "VERSIONAGENT" : "2.0.0", "TYPE" : "all"}
 
 Globaldata = { 'port_local' : 22 }
 logger = logging.getLogger()
@@ -227,7 +222,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             #clean session
             objectxmpp.session.clearnoevent(sessionid)
             #clean if not session
-            cleanbacktodeploy(objectxmpp)
+            utils.cleanbacktodeploy(objectxmpp)
             return
 
         # condition for quit deploy reinjection de message avec condition error
@@ -274,7 +269,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     fromuser = "AM %s"% strjidagent,
                                     touser = "")
                     objectxmpp.session.clearnoevent(sessionid)
-                    cleanbacktodeploy(objectxmpp)
+                    utils.cleanbacktodeploy(objectxmpp)
                     return
 
             #signal deploy terminate si session n'ai pas dans back_to_deploy
@@ -294,7 +289,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                     fromuser = "AM %s"% strjidagent,
                                     touser = "")
                 objectxmpp.session.clearnoevent(sessionid)
-                cleanbacktodeploy(objectxmpp)
+                utils.cleanbacktodeploy(objectxmpp)
                 return
 
             if sessionid in objectxmpp.back_to_deploy and 'Dependency' in objectxmpp.back_to_deploy[sessionid]:
@@ -320,7 +315,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     del(objectxmpp.back_to_deploy[sessionid]['packagelist'][loaddependency])
                     if len(objectxmpp.back_to_deploy[sessionid]['Dependency']) == 0:
                         del(objectxmpp.back_to_deploy[sessionid])
-                    save_back_to_deploy(objectxmpp.back_to_deploy)
+                    utils.save_back_to_deploy(objectxmpp.back_to_deploy)
                     objectxmpp.session.sessionsetdata(sessionid, data)
                     #objectxmpp.session.clearnoevent(sessionid)
 
@@ -428,7 +423,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                     mbody = json.dumps(datasend),
                                                     mtype = 'chat')
                         if sessionid in objectxmpp.back_to_deploy:
-                            save_back_to_deploy(objectxmpp.back_to_deploy)
+                            utils.save_back_to_deploy(objectxmpp.back_to_deploy)
                         return
                 else:
                     # All dependencies are taken into account.
@@ -480,7 +475,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     except Exception:
                         pass
                     del(objectxmpp.back_to_deploy[sessionid]['packagelist'][firstinstall])
-                    save_back_to_deploy(objectxmpp.back_to_deploy)
+                    utils.save_back_to_deploy(objectxmpp.back_to_deploy)
             #########################################################
             except Exception as e:
                 logger.error(str(e))
@@ -572,7 +567,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 'ret' : 0,
                                 'base64' : False
                 }
-            datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),data['path'].split('/')[-1])
+            datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.managepackage.packagedir(),data['path'].split('/')[-1])
 
             # le transfert pull direct ou pullcurl doit etre traite ici
             if data['transfert'] and \
@@ -628,7 +623,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     # clean session
                     objectxmpp.session.clearnoevent(sessionid)
                     # clean if not session
-                    cleanbacktodeploy(objectxmpp)
+                    utils.cleanbacktodeploy(objectxmpp)
                     return
                 else:
                     # Pull transfer complete
@@ -670,7 +665,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 objectxmpp.Deploybasesched.set_sesionscheduler(sessionid,json.dumps(datasend))
         else:
             objectxmpp.session.sessionsetdata(sessionid, datasend) #save data in session
-            grafcet(objectxmpp, datasend) #grafcet will use the session
+            grafcetdeploy.grafcet(objectxmpp, datasend) #grafcet will use the session
             logger.debug("outing graphcet phase1")
     else:
         logger.debug("###################################################")
@@ -1095,7 +1090,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             while True:
                 try:
                     time.sleep(1)
-                    obcmd = simplecommandstr(cmdreverse)
+                    obcmd = utils.simplecommandstr(cmdreverse)
                     if obcmd['code'] == 0:
                         if str(remoteport) in obcmd['result']:
                             objectxmpp.xmpplog('Reverse ssh tunnel mounted after %s sec for port %s'%(timeattente, remoteport),
@@ -1169,7 +1164,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 install_key_by_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
                 #logger.debug("Install ARS key in authorized_keys on client machine")
                 #file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
-                #key = file_get_contents(file_key_pub_ars)
+                #key = utils.file_get_contents(file_key_pub_ars)
                 #time_out_install_key = 60
                 #resultiqstr = objectxmpp.iqsendpulse( data['jidmachine'],
                                                      #{"action": "keyinstall",
@@ -1322,7 +1317,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 # You have to prepare the transfer of packages.
                 # You must have a list of all the packages to install.
                 # Because pakages can have dependencies
-                list_of_deployment_packages = search_list_of_deployment_packages(data_in_session['path'].split('/')[-1]).search()
+                list_of_deployment_packages = managepackage.search_list_of_deployment_packages(data_in_session['path'].split('/')[-1]).search()
                 #Install packages
                 #logger.debug("#################LIST PACKAGE DEPLOY SESSION #######################")
                 # saves the list of packages to be transferred in the session.
@@ -1347,7 +1342,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
                     if 'transferfiles' in data_in_session and len ( data_in_session['transferfiles']) != 0:
                         uuidpackages = data_in_session['transferfiles'].pop(0)
-                        pathin = managepackage.getpathpackage(uuidpackages)
+                        pathin = managepackage.managepackage.getpathpackage(uuidpackages)
                         #This variable will be in the future used for the transferrt version of rsync files
                         #pathout = "%s/%s"%(data_in_session['folders_packages'],pathin.split('/')[-1])
                         # Update the session for the next call.
@@ -1497,7 +1492,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 date = None ,
                                                 fromuser = data_in_session['login'],
                                                 touser = "")
-                            obcmd = simplecommandstr(cmdexec)
+                            obcmd = utils.simplecommandstr(cmdexec)
                             if obcmd['code'] != 0:
                                 objectxmpp.xmpplog('<span class="log_err">%s transfer error : %s </span>'%(objectxmpp.config.pushmethod,
                                                                                                                             obcmd['result']),
@@ -1525,7 +1520,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 date = None ,
                                                 fromuser = data_in_session['login'],
                                                 touser = "")
-                                obcmd = simplecommandstr(cmdexec)
+                                obcmd = utils.simplecommandstr(cmdexec)
                             objectxmpp.xmpplog( msg,
                                                 type = 'deploy',
                                                 sessionname = sessionid,
@@ -1630,17 +1625,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             mbody = json.dumps(create_message_self_for_transfertfile(sessionid)),
                                             mtype = 'chat')
                     else:
-                        ##uninstall keypublic on machine after transfert package
-                        #keypublic = get_keypub_ssh()
-                        #uninstallkeypub = {
-                                            #'action': "setkeypubliconauthorizedkeys",
-                                            #'sessionid': sessionid,
-                                            #'data' : {'keypub' : keypublic, 'install' : False},
-                                            #'ret' : 0,
-                                            #'base64' : False }
-                        #objectxmpp.send_message(mto = data_in_session['jidmachine'],
-                                            #mbody = json.dumps(uninstallkeypub),
-                                            #mtype = 'chat')
                         # Creation of the message from depoy to machine
                         logger.debug("APPEL PLUGIN FOR DEPLOY ON MACHINE")
                         #del reversessh
@@ -1725,9 +1709,9 @@ def changown_dir_of_file(dest, nameuser = None):
     elif sys.platform.startswith('win'):
         try:
             check_output(["icacls",
-                          encode_strconsole(dest),
+                          utils.encode_strconsole(dest),
                           "/setowner",
-                          encode_strconsole(nameuser),
+                          utils.encode_strconsole(nameuser),
                           "/t"], stderr=STDOUT)
 
         except Exception as e:
@@ -1780,7 +1764,7 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         module = "Deployment | Install",
                                         date = None )
                     os.makedirs(os.path.dirname(file_key_reverse_private_ars))
-                obj = simplecommand("grep reversessh /etc/passwd | awk  -F \":\"  '{print $1;}'")
+                obj = utils.simplecommand("grep reversessh /etc/passwd | awk  -F \":\"  '{print $1;}'")
                 for lineresult in obj['result']:
                     if str(lineresult) == "reversessh":
                         objectxmpp.xmpplog( "reversessh user present on relay server",
@@ -1801,7 +1785,7 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         who = fromrelay,
                                         module = "Deployment | Install",
                                         date = None )
-                    obj = simplecommand("adduser --system --quiet " \
+                    obj = utils.simplecommand("adduser --system --quiet " \
                                         "--home /var/lib/pulse2/clients/reversessh " \
                                         "--shell /bin/rbash " \
                                         "--disabled-password " \
@@ -1823,7 +1807,7 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         who = fromrelay,
                                         module = "Deployment | Install",
                                         date = None )
-                    obj = simplecommand("ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
+                    obj = utils.simplecommand("ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
                     objectxmpp.xmpplog( str(obj['result']),
                                 type = 'deploy',
                                 sessionname = sessionid,
@@ -1841,15 +1825,15 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         who = fromrelay,
                                         module = "Deployment | Install",
                                         date = None )
-                    simplecommand("cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-                    simplecommand("chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh")
-                    simplecommand("chmod 700 /var/lib/pulse2/clients/reversessh/.ssh")
-                    simplecommand("chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
+                    utils.simplecommand("cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
+                    utils.simplecommand("chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh")
+                    utils.simplecommand("chmod 700 /var/lib/pulse2/clients/reversessh/.ssh")
+                    utils.simplecommand("chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
         finally:
             logger.debug("libere mutex")
             objectxmpp.mutex.release()
-    keyreversessh = file_get_contents(file_key_reverse_private_ars)
-    key = file_get_contents(file_key_pub_ars)
+    keyreversessh = utils.file_get_contents(file_key_reverse_private_ars)
+    key = utils.file_get_contents(file_key_pub_ars)
     time_out_install_key = 60
     resultiqstr = objectxmpp.iqsendpulse( tomachine,
                                           { "action": "keyinstall",
@@ -1985,7 +1969,7 @@ def ARSremovereversessh(objectxmpp,
     if sessionid in objectxmpp.reversedelpoy:
         remoteport = objectxmpp.reversedelpoy[sessionid]
         cmd="""kill -9 $(lsof -i -n | grep  reversessh| grep %s | awk '{print $2}' | sort | uniq)"""%remoteport
-        simplecommandstr(cmd)
+        utils.simplecommandstr(cmd)
         if sessionid in objectxmpp.reversedelpoy:
             del objectxmpp.reversedelpoy[sessionid]
         objectxmpp.xmpplog( "Closing reverse ssh tunnel for remote port %s"%remoteport,
@@ -2133,7 +2117,7 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
             traceback.print_exc(file=sys.stdout)
     else:
         logger.warning("launcher command missing for kiosk")
-    grafcet(objectxmpp, datasend)
+    grafcetdeploy.grafcet(objectxmpp, datasend)
     logger.debug("outing graphcet end initiation")
 
 def curlgetdownloadfile( destfile, urlfile, insecure = True, limit_rate_ko= None):
@@ -2173,7 +2157,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         error=False
         if sys.platform.startswith('linux'):
             path_key_priv =  os.path.join("/", "var", "lib", "pulse2", ".ssh", "id_rsa")
-            localdest = " '%s/%s'"%(managepackage.packagedir(), packagename)
+            localdest = " '%s/%s'"%(managepackage.managepackage.packagedir(), packagename)
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
@@ -2181,7 +2165,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             except:
                 #path_key_priv = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', "id_rsa")
                 path_key_priv = os.path.join("c:\progra~1", "pulse" ,'.ssh', "id_rsa")
-            localdest = " \"%s/%s\""%(managepackage.packagedir(), packagename)
+            localdest = " \"%s/%s\""%(managepackage.managepackage.packagedir(), packagename)
             if platform.machine().endswith('64'):
                 execrsync = "C:\\\\Windows\\\\SysWOW64\\\\rsync.exe"
             else:
@@ -2189,7 +2173,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             execscp   = '"c:\progra~1\OpenSSH\scp.exe"'
         elif sys.platform.startswith('darwin'):
             path_key_priv =  os.path.join("/", "var", "root", ".ssh", "id_rsa")
-            localdest = " '%s/%s'"%(managepackage.packagedir(), packagename)
+            localdest = " '%s/%s'"%(managepackage.managepackage.packagedir(), packagename)
         else :
             return False
 
@@ -2215,7 +2199,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
                     module = "Deployment | Download | Transfer",
                     date = None ,
                     fromuser = datasend['data']['advanced']['login'])
-        obj = simplecommand(cmdexec)
+        obj = utils.simplecommand(cmdexec)
 
         if obj['code'] != 0:
             objectxmpp.xmpplog("Transfer error: \n %s"%obj['result'],

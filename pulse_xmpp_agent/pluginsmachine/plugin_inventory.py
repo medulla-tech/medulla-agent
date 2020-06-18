@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 # file : plugin_inventory.py
 
-from  lib.utils import simplecommand, file_put_contents_w_a
+from lib import utils
 import os, sys, platform
 import zlib
 import base64
@@ -32,19 +32,19 @@ import lxml.etree as ET
 
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
-    from lib.registerwindows import constantregisterwindows
+    from lib import registerwindows
     import _winreg
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.19", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "1.50", "NAME" :"inventory", "TYPE":"machine"}
 
 def compact_xml(inputfile):
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
     xmlTree = ET.parse(inputfile, parser=parser)
     strinventory  =  ET.tostring(xmlTree, pretty_print=False)
-    file_put_contents_w_a(inputfile, '<?xml version="1.0" encoding="UTF-8" ?>' + strinventory)
+    utils.file_put_contents_w_a(inputfile, '<?xml version="1.0" encoding="UTF-8" ?>' + strinventory)
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -75,7 +75,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     if sys.platform.startswith('linux'):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
-            simplecommand("fusioninventory-agent --local=%s"%inventoryfile)
+            utils.simplecommand("fusioninventory-agent --local=%s"%inventoryfile)
             compact_xml(inventoryfile)
             Fichier = open(inventoryfile, 'r')
             result['data']['inventory'] = Fichier.read()
@@ -100,7 +100,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             program = os.path.join(os.environ["ProgramFiles"], 'FusionInventory-Agent', 'fusioninventory-agent.bat')
             namefile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
             cmd = """\"%s\" --config=none --scan-profiles --local=\"%s\""""%(program, namefile)
-            simplecommand(cmd)
+            utils.simplecommand(cmd)
             try:
                 compact_xml(namefile)
             except:
@@ -168,7 +168,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
             ## attention this command has been tested on only 1 Mac
-            simplecommand("/opt/fusioninventory-agent/bin/fusioninventory-inventory > %s"%inventoryfile)
+            utils.simplecommand("/opt/fusioninventory-agent/bin/fusioninventory-inventory > %s"%inventoryfile)
             compact_xml(inventoryfile)
             Fichier = open(inventoryfile, 'r')
             result['data']['inventory'] = Fichier.read()
