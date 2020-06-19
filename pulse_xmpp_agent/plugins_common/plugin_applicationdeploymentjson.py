@@ -1272,12 +1272,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 #file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
                 #key = utils.file_get_contents(file_key_pub_ars)
                 #time_out_install_key = 60
-                #resultiqstr = objectxmpp.iqsendpulse( data['jidmachine'],
-                                                     #{"action": "keyinstall",
-                                                      #"data":{"key" : key,
-                                                      #"sessionid" : sessionid,
-                                                      #"from" : strjidagent}
-                                                      #}, time_out_install_key)
+                #resultiqstr = objectxmpp.iqsendpulse(data['jidmachine'],
+                                                        # {"action": "keyinstall",
+                                                        # "data":{"key" : key,
+                                                        # "sessionid" : sessionid,
+                                                        # "from" : strjidagent}
+                                                        # }, time_out_install_key)
                 #resultiq = json.loads(resultiqstr)
                 #msglogbool = False
                 #if 'ret' in resultiq and resultiq['ret'] != 0:
