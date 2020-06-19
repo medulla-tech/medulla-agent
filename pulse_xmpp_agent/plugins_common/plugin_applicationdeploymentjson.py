@@ -392,7 +392,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     objectxmpp.back_to_deploy[sessionid]['count'] = 0
                 # Then we look in the list of descriptors if these data of each dependence are present
                 for dependency in objectxmpp.back_to_deploy[sessionid]['Dependency']:
-                    if dependency == "": continue
+                    if dependency == "":
+                        continue
 
                     if not dependency in objectxmpp.back_to_deploy[sessionid]['packagelist']:
                         #on demande a (rs pakage server) de nous envoyé le descripteurs de ce package
@@ -1271,12 +1272,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 #file_key_pub_ars = os.path.join('/', 'root', '.ssh', 'id_rsa.pub')
                 #key = utils.file_get_contents(file_key_pub_ars)
                 #time_out_install_key = 60
-                #resultiqstr = objectxmpp.iqsendpulse( data['jidmachine'],
-                                                     #{"action": "keyinstall",
-                                                      #"data":{"key" : key,
-                                                      #"sessionid" : sessionid,
-                                                      #"from" : strjidagent}
-                                                      #}, time_out_install_key)
+                #resultiqstr = objectxmpp.iqsendpulse(data['jidmachine'],
+                                                        # {"action": "keyinstall",
+                                                        # "data":{"key" : key,
+                                                        # "sessionid" : sessionid,
+                                                        # "from" : strjidagent}
+                                                        # }, time_out_install_key)
                 #resultiq = json.loads(resultiqstr)
                 #msglogbool = False
                 #if 'ret' in resultiq and resultiq['ret'] != 0:

@@ -258,7 +258,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         namemachine = jid.JID(machine['mach']).resource
                         #if objectxmpp.boundjid.bare == "rspulse@pulse":
                         if jid.JID(machine['mach']).bare == "rspulse@pulse":
-                        #if namemachine == "dev-mmc":
                             namemachine = "pulse"
                         if namemachine=="":
                             namemachine = machine['mach']
@@ -266,10 +265,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             logger.debug("ADD DEVICE  %s in DEVICE %s"%(machine['devi'],
                                                                         namemachine))
 
-                            #add_device_syncthing( objectxmpp.syncthing,
-                                                  #machine['devi'],
-                                                  #namemachine,
-                                                  #config)
+                            #add_device_syncthing(objectxmpp.syncthing,
+                                                    # machine['devi'],
+                                                    # namemachine,
+                                                    # config)
 
                             objectxmpp.syncthing.add_device_syncthing(machine['devi'],
                                                   namemachine)

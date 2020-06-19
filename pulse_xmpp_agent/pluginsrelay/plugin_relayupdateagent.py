@@ -47,21 +47,21 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
             version = utils.file_get_contents(os.path.join(
                 xmppobject.config.diragentbase, "agentversion")).replace("\n","").replace("\r","").strip()
             if 'descriptoragent' in data:
-                if 'program_agent' in data['descriptoragent'] and len(data['descriptoragent']['program_agent']) != 0:
+                if 'program_agent' in data['descriptoragent'] and data['descriptoragent']['program_agent']:
                     logger.debug("Update program script in remote agent [%s]" % message['from'])
                     for script_program_file in data['descriptoragent']['program_agent']:
                         logger.debug("\t- Update program script [%s]" % (script_program_file))
                         sleep(2)
                         load_and_send_remote_agent_file(
                             xmppobject, message['from'], script_program_file, "program_agent", version)
-                if 'lib_agent' in data['descriptoragent'] and len(data['descriptoragent']['lib_agent']) != 0:
+                if 'lib_agent' in data['descriptoragent'] and data['descriptoragent']['lib_agent']:
                     logger.debug("Update lib script in remote agent [%s]" % message['from'])
                     for script_lib_file in data['descriptoragent']['lib_agent']:
                         logger.debug("\t- Update lib script [%s]" % (script_lib_file))
                         sleep(2)
                         load_and_send_remote_agent_file(
                             xmppobject, message['from'], script_lib_file, "lib_agent", version)
-                if 'script_agent' in data['descriptoragent'] and len(data['descriptoragent']['script_agent']) != 0:
+                if 'script_agent' in data['descriptoragent'] and data['descriptoragent']['script_agent']:
                     logger.debug("Update script in remote agent [%s]" % message['from'])
                     for script_script_file in data['descriptoragent']['script_agent']:
                         logger.debug("\t- Update script [%s]" % (script_script_file))
