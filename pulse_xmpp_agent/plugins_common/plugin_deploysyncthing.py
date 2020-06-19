@@ -258,7 +258,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         namemachine = jid.JID(machine['mach']).resource
                         #if objectxmpp.boundjid.bare == "rspulse@pulse":
                         if jid.JID(machine['mach']).bare == "rspulse@pulse":
-                        #if namemachine == "dev-mmc":
                             namemachine = "pulse"
                         if namemachine=="":
                             namemachine = machine['mach']
