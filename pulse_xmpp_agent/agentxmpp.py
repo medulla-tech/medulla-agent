@@ -744,8 +744,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if not self.config.syncthing_on:
             return
         self.clean_old_partage_syncting()
-        #rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               #"syncthingdescriptor")
         self.clean_old_descriptor_syncting(self.dirsyncthing)
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
             for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
