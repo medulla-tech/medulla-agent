@@ -301,7 +301,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
         try:
-            self.deviceid = iddevice(configfile = self.fichierconfsyncthing)
+            hostnameiddevice = None
+            if self.boundjid.domain == "pulse":
+                hostnameiddevice = "pulse"
+            self.deviceid = iddevice(configfile = self.fichierconfsyncthing, hostname=hostnameiddevice)
         except Exception:
             pass
 
@@ -687,6 +690,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         except Exception:
             return
         duration = 3. # durée de vie max d'un partage 3 heures
+        ### var/lib/pulse2/syncthing
         syncthingroot = self.getsyncthingroot()
         if not os.path.exists(syncthingroot):
             os.makedirs(syncthingroot)
@@ -744,27 +748,24 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if not self.config.syncthing_on:
             return
         self.clean_old_partage_syncting()
-        rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                               "syncthingdescriptor")
-        self.clean_old_descriptor_syncting(rootsyncthingdescriptor)
+        #rootsyncthingdescriptor = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                               #"syncthingdescriptor")
+        self.clean_old_descriptor_syncting(self.dirsyncthing)
         listfilearssyncthing =  [os.path.join(self.dirsyncthing, x) \
             for x in os.listdir(self.dirsyncthing) if x.endswith("ars")]
-        # Here we get all the syncthingdescriptor/*.ars files.
-        #listfilearssyncthing =
-        #[/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/syncthingdescriptor/
-        #commandf79b0750a13c4de09a.ars']
+
         # get the root for the sync folders
-        syncthingroot = self.getsyncthingroot()
+        syncthingroot = self.getsyncthingroot() # /var/lib/pulse2/syncthing
+
         for filears in listfilearssyncthing:
             try:
                 syncthingtojson = managepackage.loadjsonfile(filears)
             except:
                 syncthingtojson = None
-            #print self.syncthing.get_db_completion(syncthingtojson['id_deploy'],
-            #                                       self.syncthing.device_id )
+
             if syncthingtojson != None:
                 namesearch = os.path.join( syncthingroot ,
-                                           syncthingtojson['id_deploy'])
+                                           syncthingtojson['objpartage']['repertoiredeploy'])
                 #verify le contenue de namesearch
                 if os.path.isdir(namesearch):
                     logging.debug("deploy transfert syncthing : %s"%namesearch)
@@ -785,6 +786,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             #clean the dest package to be sure
                             try:
                                 shutil.rmtree(os.path.join(packagedir,dirname))
+                                logging.debug("clean package before copy %s"%(os.path.join(packagedir,dirname)))
                             except:
                                 pass
                             try:
@@ -802,18 +804,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             fromuser="",
                                             touser="")
                                 res = shutil.copytree(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname))
-                                logging.debug("copy %s to %s"%(dirname, packagedir))
-                                # Delete filears and filedeploy
-                                os.remove(filears)
-                                logging.debug("delete %s"%filears)
-                                os.remove(filedeploy)
-                                logging.debug("delete %s"%filedeploy)
 
-                                senddata = deploytojson
-                                senddata['cluster'] = syncthingtojson['ARS']
-                                senddata['transfert'] = 'pushrsync'
-                                senddata['pathpackageonmachine']= os.path.join(packagedir,
-                                                                               dirname)
+
+                                logging.debug("copy %s to %s"%(os.path.join(namesearch,dirname), os.path.join(packagedir,dirname)))
+                                # Delete filears and filedeploy
+                                try:
+                                    logging.debug("delete %s"%filears)
+                                    os.remove(filears)
+                                except Exception:
+                                    logging.warning("%s no exist"%filears)
+                                try:
+                                    logging.debug("delete %s"%filedeploy)
+                                    os.remove(filedeploy)
+                                except Exception:
+                                    logging.warning("%s no exist"%filedeploy)
+
+                                #senddata = deploytojson
+                                #senddata['cluster'] = syncthingtojson['ARS']
+                                #senddata['transfert'] = 'pushrsync'
+                                #senddata['pathpackageonmachine']= os.path.join(packagedir,
+                                                                               #dirname)
 
                                 dataerreur={
                                     "action": "resultapplicationdeploymentjson",
@@ -829,10 +839,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     'data' : deploytojson,
                                     'ret' : 0,
                                     'base64' : False }
-                                msg = {'from' : syncthingtojson['ARS'],
+                                msg = {'from' : syncthingtojson['objpartage']['cluster']['elected'],
                                        "to" : self.boundjid.bare,
                                        'type' : 'chat' }
-
+                                logging.debug("call  applicationdeploymentjson")
+                                logging.debug("%s "%json.dumps(transfertdeploy, indent=4))
                                 call_plugin(transfertdeploy["action"],
                                             self,
                                             transfertdeploy["action"],
@@ -847,34 +858,38 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 datasend={ 'action': "deploysyncthing",
                                            'sessionid': syncthingtojson['sessionid'],
                                            'data' : { "subaction" : "counttransfertterminate",
-                                                      "iddeploybase" : syncthingtojson["iddeploybase"]},
+                                                      "iddeploybase" : syncthingtojson['objpartage']["syncthing_deploy_group"]},
                                            'ret' : 0,
                                            'base64' : False }
                                 strr = json.dumps(datasend)
                                 logging.warning("SEND MASTER %s : "%strr)
+                                logging.error("send to master")
+                                logging.error("%s "%strr)
+
                                 self.send_message(  mto = self.agentmaster,
                                                     mbody = strr,
                                                     mtype = 'chat')
-                            except:
+                            except Exception:
                                 logging.error("The package's copy %s to %s failed"%(dirname, packagedir))
+                                logger.error("\n%s"%(traceback.format_exc()))
                 else:
                     # on cherche si on a des informations sur ce transfert
                     #print self.syncthing.get_db_status(syncthingtojson['id_deploy'])
                     logging.debug("Recherche la completion de transfert %s"%namesearch)
-                    result = self.syncthing.get_db_completion(syncthingtojson['id_deploy'],
+                    result = self.syncthing.get_db_completion(syncthingtojson['objpartage']['repertoiredeploy'],
                                                               self.syncthing.device_id )
-                    if 'id_deploy' in syncthingtojson and len(self.syncthing.device_id ) > 40:
+                    if 'syncthing_deploy_group' in syncthingtojson['objpartage'] and len(self.syncthing.device_id ) > 40:
                         if 'completion' in result and result['completion'] != 0:
                             datasend={ 'action': "deploysyncthing",
                                        'sessionid': syncthingtojson['sessionid'],
                                        'data' : { "subaction" : "completion",
-                                                  "iddeploybase" : syncthingtojson["iddeploybase"],
-                                                  "iddeploy" : syncthingtojson['id_deploy'],
-                                                  "jidfull" : self.boundjid.full },
+                                                  "iddeploybase" : syncthingtojson['objpartage']["syncthing_deploy_group"],
+                                                  "completion" : result['completion'],
+                                                  "jidfull" : self.boundjid.full},
                                        'ret' : 0,
                                        'base64' : False }
                             strr = json.dumps(datasend)
-                            self.send_message( mto = self.agentmaster,
+                            self.send_message( mto = syncthingtojson['objpartage']["agentdeploy"] ,
                                                mbody = strr,
                                                mtype = 'chat')
             else:

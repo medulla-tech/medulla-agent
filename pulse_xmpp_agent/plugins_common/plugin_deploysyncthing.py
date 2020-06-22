@@ -87,6 +87,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     signalendsessionforARS(data , objectxmpp, sessionid, error = True)
                     return
 
+                dataobjpartage = data['objpartage']
                 objectxmpp.syncthing.get_db_completion(data['id_deploy'],
                                                        objectxmpp.syncthing.device_id)
                 # savedata fichier sessionid.ars
@@ -117,38 +118,224 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     #objectxmpp.syncthing.del_folder(data['iddeploy'])
                     objectxmpp.syncthing.delete_folder_pulse_deploy(data['iddeploy'])
                     #call function nettoyage old partage files.
+            elif data['subaction'] == "create_partage":
+                dataobjpartage = data['objpartage']
+                data['ARS']=str(message['from'])
+                ###################################################################
+                ### create Folder partage
+                ###################################################################
+                #creation du folder
+                # creation fichier de partages syncthing
+                repertorypartage = os.path.join(objectxmpp.getsyncthingroot(),
+                                                dataobjpartage['repertoiredeploy'] )
+                if not os.path.exists(repertorypartage):
+                    os.makedirs(repertorypartage)
+                    utils.file_put_contents(os.path.join(repertorypartage,'.stfolder'), '')
+                    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+                        cmd = 'chown -R pulseuser:pulseuser %s'%repertorypartage
+                        obj = utils.simplecommand(cmd)
+                newfolder = objectxmpp.syncthing.\
+                    create_template_struct_folder( dataobjpartage['repertoiredeploy'],
+                                                   repertorypartage,
+                                                   id=dataobjpartage['repertoiredeploy'],
+                                                   typefolder="slave" )
+                msg = "Folder partage  %s "\
+                        "package %s machine %s"%(repertorypartage,
+                                                 dataobjpartage['packagedeploy'],
+                                                 objectxmpp.boundjid.bare)
+                logger.info(msg)
+                objectxmpp.xmpplog( msg,
+                                    type='deploy',
+                                    sessionname=sessionid,
+                                    priority=-1,
+                                    action="xmpplog",
+                                    why=objectxmpp.boundjid.bare,
+                                    module="Deployment | Syncthing",
+                                    date=None,
+                                    fromuser="",
+                                    touser="")
+                objectxmpp.syncthing.add_folder_dict_if_not_exist_id(newfolder)
+                ###################################################################
+                ### create device ars et add this device das folder
+                ###################################################################
+                devicenamelist=[]
+                logger.debug("******** CREATION DEVICES SHARE ARS *********")
+                for ars in dataobjpartage['cluster']['arslist']:
+                    if ars != "\"\"" or ars != "":
+                        if str(jid.JID(ars).domain) == "pulse":
+                            name = "pulse"
+                        else:
+                            name = str(jid.JID(ars).user)
+                        devicenamelist.append(name)
+                        msglog = "ADD DEVICE ARS %s device id : %s"%(name,
+                                                                     dataobjpartage['cluster']['arslist'][ars])
+                        logger.debug(msglog)
+                        #objectxmpp.xmpplog( msglog,
+                                            #type='deploy',
+                                            #sessionname= sessionid,
+                                            #priority=-1,
+                                            #action="xmpplog",
+                                            #why=objectxmpp.boundjid.bare,
+                                            #module="Deployment | Syncthing",
+                                            #date=None)
+                        try:
+                            objectxmpp.syncthing.add_device_syncthing(dataobjpartage['cluster']['arslist'][ars],
+                                                                    name,
+                                                                    address=dataobjpartage['cluster']['arsip'][ars])
+                        except Exception:
+                              logger.error("error %s"%(traceback.format_exc()))
+
+                        msg = "ADD DEVICE ARS %s in folder %s"%(dataobjpartage['cluster']['arslist'][ars],
+                                                                dataobjpartage['repertoiredeploy'])
+
+                        objectxmpp.syncthing.add_device_in_folder_if_not_exist( dataobjpartage['repertoiredeploy'],
+                                                                                dataobjpartage['cluster']['arslist'][ars],
+                                                                                introducedBy = "")
+                        logger.debug(msg)
+                        #objectxmpp.xmpplog( msglog,
+                                            #type='deploy',
+                                            #sessionname= sessionid,
+                                            #priority=-1,
+                                            #action="xmpplog",
+                                            #why=objectxmpp.boundjid.bare,
+                                            #module="Deployment | Syncthing",
+                                            #date=None)
+
+                ###################################################################
+                ### create device machine partage and add this device in folder
+                ###################################################################
+                # add devices des machines
+                logger.debug("******** CREATION DEVICES SHARE MACHINE *********")
+                for machine in dataobjpartage['machines']:
+                    if str(jid.JID(machine['mach']).bare) == str(objectxmpp.boundjid.bare):
+                        # je ne sais plus si on doit mettre la device de la machine dans le partage.
+                        continue
+                    try:
+                        namemachine = str(jid.JID(machine['mach']).user)[:-4]
+                        if namemachine != "":
+                            msglog = "CREATE DEVICE MACHINE %s deviceid %s"%(namemachine,
+                                                                             machine['devi'])
+                            logger.debug(msglog)
+                            #objectxmpp.xmpplog( msglog,
+                                                #type='deploy',
+                                                #sessionname= sessionid,
+                                                #priority=-1,
+                                                #action="xmpplog",
+                                                #why=objectxmpp.boundjid.bare,
+                                                #module="Deployment | Syncthing",
+                                                #date=None)
+                            devicenamelist.append(namemachine)
+                            objectxmpp.syncthing.add_device_syncthing(machine['devi'],
+                                                                    namemachine)
+                            msglog = "***ADD THIS DEVICE MACHINE IN FOLDER %s ***"%dataobjpartage['repertoiredeploy']
+                            logger.debug(msglog)
+                            #objectxmpp.xmpplog( msglog,
+                                                #type='deploy',
+                                                #sessionname= sessionid,
+                                                #priority=-1,
+                                                #action="xmpplog",
+                                                #why=objectxmpp.boundjid.bare,
+                                                #module="Deployment | Syncthing",
+                                                #date=None)
+                            objectxmpp.syncthing.add_device_in_folder_if_not_exist( dataobjpartage['repertoiredeploy'],
+                                                                                    machine['devi'],
+                                                                                    introducedBy = "")
+                        else:
+                            objectxmpp.xmpplog( "<span class='log_err'>"\
+                                                    "Syncthing id device "\
+                                                    "missing for machine %s</span>"%namemachine,
+                                                type='deploy',
+                                                sessionname= sessionid,
+                                                priority=-1,
+                                                action="xmpplog",
+                                                why=objectxmpp.boundjid.bare,
+                                                module="Deployment | Syncthing",
+                                                date=None)
+                            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                                type = 'deploy',
+                                                sessionname = sessionid,
+                                                priority = -1,
+                                                action = "xmpplog",
+                                                who = objectxmpp.boundjid.bare,
+                                                module = "Deployment | Terminate"\
+                                                    " | Notify | Syncthing",
+                                                date = None)
+                    except Exception:
+                        messageerror = "remote error%s"%(traceback.format_exc())
+                        logger.error(messageerror)
+                        objectxmpp.xmpplog( "<span class='log_err'>"\
+                                                    "Create Syncthing Share"\
+                                                    "%s\n%s </span>"%(namemachine,
+                                                                        messageerror),
+                                                type='deploy',
+                                                sessionname= machine['ses'],
+                                                priority=-1,
+                                                action="xmpplog",
+                                                why=objectxmpp.boundjid.bare,
+                                                module="Deployment | Syncthing",
+                                                date=None)
+                        objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                            type = 'deploy',
+                                            sessionname = machine['ses'],
+                                            priority = -1,
+                                            action = "xmpplog",
+                                            who = objectxmpp.boundjid.bare,
+                                            module = "Deployment | Terminate"\
+                                                " | Notify | Syncthing",
+                                            date = None)
+                msgpartage = "sharing folder  %s "\
+                        "package %s between (%s)"%(repertorypartage,
+                                                 dataobjpartage['packagedeploy'],
+                                                 ", ".join(devicenamelist))
+                objectxmpp.xmpplog( msgpartage,
+                                    type='deploy',
+                                    sessionname= sessionid,
+                                    priority=-1,
+                                    action="xmpplog",
+                                    why=objectxmpp.boundjid.bare,
+                                    module="Deployment | Syncthing",
+                                    date=None)
+
+                objectxmpp.syncthing.validate_chang_config()
+                # savedata fichier sessionid.ars
+                namesessionidars = os.path.join(objectxmpp.dirsyncthing,
+                                                "%s.ars"%sessionid)
+                utils.file_put_contents(namesessionidars, datastring)
+                logger.debug("Creating file %s"%namesessionidars)
+                objectxmpp.xmpplog("Creating ars file %s"%namesessionidars,
+                                    type='deploy',
+                                    sessionname=sessionid,
+                                    priority=-1,
+                                    action="xmpplog",
+                                    why=objectxmpp.boundjid.bare,
+                                    module="Deployment | Syncthing",
+                                    date=None)
         else:
+            logger.error("jfkjfkjfk")
             if not objectxmpp.config.syncthing_on:
-                    objectxmpp.xmpplog("<span class='log_err'>"\
-                        "Syncthing enabled parameter: no. "\
-                            "Not creating ars file</span>",
-                                        type='deploy',
-                                        sessionname=sessionid,
-                                        priority=-1,
-                                        action="xmpplog",
-                                        who="",
-                                        how="",
-                                        why=objectxmpp.boundjid.bare,
-                                        module="Deployment | Syncthing",
-                                        date=None,
-                                        fromuser="",
-                                        touser="")
-                    objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = -1,
-                                        action = "xmpplog",
-                                        who = objectxmpp.boundjid.bare,
-                                        how = "",
-                                        why = "",
-                                        module = "Deployment | Terminate"\
-                                            " | Notify | Syncthing",
-                                        date = None ,
-                                        fromuser = "",
-                                        touser = "")
-                    data['jidrelay'] = "%s"%message['from']
-                    signalendsessionforARS(data , objectxmpp, sessionid, error = True)
-                    return
+                objectxmpp.xmpplog("<span class='log_err'>"\
+                    "Syncthing enabled parameter: no. "\
+                        "Not creating ars file</span>",
+                                    type='deploy',
+                                    sessionname=sessionid,
+                                    priority=-1,
+                                    action="xmpplog",
+                                    why=objectxmpp.boundjid.bare,
+                                    module="Deployment | Syncthing",
+                                    date=None)
+                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                    type = 'deploy',
+                                    sessionname = sessionid,
+                                    priority = -1,
+                                    action = "xmpplog",
+                                    who = objectxmpp.boundjid.bare,
+                                    module = "Deployment | Terminate"\
+                                        " | Notify | Syncthing",
+                                    date = None )
+                data['jidrelay'] = "%s"%message['from']
+                signalendsessionforARS(data , objectxmpp, sessionid, error = True)
+                return
+
             namesessioniddescriptor = os.path.join(objectxmpp.dirsyncthing,"%s.descriptor"%sessionid)
             utils.file_put_contents(namesessioniddescriptor, json.dumps(data, indent =4))
             logger.debug("creation file %s"%namesessioniddescriptor)
@@ -175,18 +362,26 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             if "subaction" in data :
                 logger.debug("subaction : %s"%data['subaction'])
                 if data['subaction'] == "syncthingdeploycluster":
+                    data1=data['objpartage']
                     packagedir = managepackage.managepackage.packagedir()
                     # creation fichier de partages syncthing
-                    repertorypartage = os.path.join(basesyncthing,data['repertoiredeploy'] )
+                    repertorypartage = os.path.join(basesyncthing,data1['repertoiredeploy'] )
                     if not os.path.exists(repertorypartage):
                         os.makedirs(repertorypartage)
-                    cmd = "touch %s"%os.path.join(repertorypartage,'.stfolder')
+                    #create message for machines Ici
+                    datasend = {'action' : "deploysyncthing",
+                                "ret" : 0,
+                                "base64" : False,
+                                "data" : { "subaction" : "create_partage",
+                                           'objpartage' : data1}}
+                    folderreppart = os.path.join(repertorypartage,'.stfolder')
+                    cmd = "touch %s"%(folderreppart)
                     logger.debug("cmd : %s"%cmd)
                     obj = utils.simplecommand(cmd)
                     if int(obj['code']) != 0:
                         logger.warning(obj['result'])
                     list_of_deployment_packages =\
-                        managepackage.search_list_of_deployment_packages(data['packagedeploy']).\
+                        managepackage.search_list_of_deployment_packages(data1['packagedeploy']).\
                             search()
                     logger.warning("copy to repertorypartage")
                     #on copy les packages dans le repertoire de  partages"
@@ -211,7 +406,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                 date=None,
                                                 fromuser="",
                                                 touser="")
-                    cmd ="chown syncthing:syncthing -R %s"%repertorypartage
+                    cmd ="chown syncthing-depl:syncthing-depl -R %s"%repertorypartage
                     logger.debug("cmd : %s"%cmd)
                     obj = utils.simplecommand(cmd)
                     if int(obj['code']) != 0:
@@ -220,102 +415,196 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
                     #addition des devices. add device ARS si non exist.
                     #creation du partage pour cet
-                    if data['elected'].split('/')[0] == objectxmpp.boundjid.bare:
-                        typefolder="master"
-                    else:
-                        typefolder="slave"
+                    #typefolder="slave"
+                    #if data1['cluster']['elected'] == objectxmpp.boundjid.bare:
+                        #typefolder="all"
+                    #else:
+                        #typefolder="slave"
+                    typefolder="all"
                     #creation du folder
+                    logger.info("******** CREATION FOLDER share %s for package %s*********"%(repertorypartage,
+                                                                                             data1['packagedeploy']))
                     newfolder = objectxmpp.syncthing.\
-                        create_template_struct_folder(data['repertoiredeploy'], # or data['packagedeploy']
+                        create_template_struct_folder(data1['repertoiredeploy'],
                                                     repertorypartage,
-                                                    id=data['repertoiredeploy'],
+                                                    id=data1['repertoiredeploy'],
                                                     typefolder=typefolder )
+
                     objectxmpp.syncthing.add_folder_dict_if_not_exist_id(newfolder)
+
 
                     #add device cluster ars in new partage folder
                     #ajoute des tas de fois cette device dans le folder.
-                    for keyclustersyncthing in data['listkey']:
-                        if keyclustersyncthing != "\"\"":
-                            logger.info("\n ADD DEVICE IN FOLDER %s  %s\n"%(keyclustersyncthing,
-                                                                            data['repertoiredeploy']))
-                            logger.info("ADD DEVICE ARS %s in folder %s"%(keyclustersyncthing,
-                                                                        data['repertoiredeploy']))
-                            objectxmpp.syncthing.add_device_in_folder_if_not_exist( data['repertoiredeploy'],
-                                                                                    keyclustersyncthing,
-                                                                                    introducedBy = "")
+                    for keyclustersyncthing in data1['cluster']['arslist']:
+                        if str(jid.JID(keyclustersyncthing).bare) == str(objectxmpp.boundjid.bare):
+                            continue
+                        if keyclustersyncthing != "\"\"" or keyclustersyncthing != "":
+                            if str(jid.JID(keyclustersyncthing).domain) == "pulse":
+                                name = "pulse"
+                            else:
+                                name = str(jid.JID(keyclustersyncthing).user)
 
-                    for machine in data['machinespartage']:
-                        #add device dans folder
-                        if machine['devi'] != "\"\"" or machine['devi'] != "":
-                            logger.info("ADD DEVICE MACHINE %s in folder %s"%(machine['devi'],
-                                                                                                     data['repertoiredeploy']))
 
-                            objectxmpp.syncthing.add_device_in_folder_if_not_exist( data['repertoiredeploy'],
-                                                                                    machine['devi'],
-                                                                                    introducedBy = "")
-
-                        #add device
-                        namemachine = str(jid.JID(machine['mach']).user)[:-4]
-                        # if objectxmpp.boundjid.bare == "rspulse@pulse":
-                        if jid.JID(machine['mach']).bare == "rspulse@pulse":
-                            namemachine = "pulse"
-                        if namemachine=="":
-                            namemachine = machine['mach']
-                        if machine['devi'] != "\"\"" or machine['devi'] != "":
-                            msglog = "ADD DEVICE %s in ARS %s on MACHINE %s"%(machine['devi'],
-                                                                              objectxmpp.boundjid.user,
-                                                                              namemachine)
+                            msglog = "ADD DEVICE ARS %s device id : %s (%s)"%(name,
+                                                                        data1['cluster']['arslist'][keyclustersyncthing],
+                                                                        data1['cluster']['arsip'][keyclustersyncthing])
                             logger.debug(msglog)
                             objectxmpp.xmpplog( msglog,
                                                 type='deploy',
-                                                sessionname=machine['ses'],
+                                                sessionname= sessionid,
                                                 priority=-1,
                                                 action="xmpplog",
                                                 why=objectxmpp.boundjid.bare,
                                                 module="Deployment | Syncthing",
                                                 date=None)
-                            objectxmpp.syncthing.add_device_syncthing(machine['devi'],
-                                                  namemachine)
-                        else:
-                            objectxmpp.xmpplog( "<span class='log_err'>"\
-                                                    "Syncthing id device "\
-                                                    "missing for machine %s</span>"%namemachine,
+                            introducer = False
+                            if data1['cluster']['elected'] == objectxmpp.boundjid.bare:
+                                introducer = True
+
+                            objectxmpp.syncthing.add_device_syncthing(data1['cluster']['arslist'][keyclustersyncthing],
+                                                                      name,
+                                                                      introducer = introducer,
+                                                                      address=data1['cluster']['arsip'][keyclustersyncthing])
+
+                            logger.info("******** DEVICE ARS APPENNED*************")
+
+
+
+
+                            msg = "ADD THIS DEVICE ARS %s in folder %s"%(data1['cluster']['arslist'][keyclustersyncthing],
+                                                                    data1['repertoiredeploy'])
+
+
+
+
+
+
+                            objectxmpp.syncthing.add_device_in_folder_if_not_exist( data1['repertoiredeploy'],
+                                                                                    data1['cluster']['arslist'][keyclustersyncthing],
+                                                                                    introducedBy = "")
+                            logger.info(msg)
+                            objectxmpp.xmpplog( msglog,
                                                 type='deploy',
-                                                sessionname=machine['ses'],
+                                                sessionname= sessionid,
                                                 priority=-1,
                                                 action="xmpplog",
                                                 why=objectxmpp.boundjid.bare,
                                                 module="Deployment | Syncthing",
                                                 date=None)
+
+                            logger.info("******** ADD DEVICE ARS IN FOLDER %s *********"%data1['repertoiredeploy'])
+                            logger.info("ADD DEVICE ARS %s in folder %s"%(data1['cluster']['arslist'][keyclustersyncthing],
+                                                                        data1['repertoiredeploy']))
+
+                            objectxmpp.syncthing.add_device_in_folder_if_not_exist( data1['repertoiredeploy'],
+                                                                                    data1['cluster']['arslist'][keyclustersyncthing],
+                                                                                    introducedBy = "")
+
+                            logger.info("ADD DEVICE ARS %s in folder %s"%(data1['cluster']['arslist'][keyclustersyncthing],
+                                                                        data1['repertoiredeploy']))
+
+                            objectxmpp.syncthing.add_device_in_folder_if_not_exist( data1['repertoiredeploy'],
+                                                                                    data1['cluster']['arslist'][keyclustersyncthing],
+                                                                                    introducedBy = "")
+
+                    # add devices des machines
+                    logger.info("******** CREATION DEVICES SHARE MACHINE *********")
+                    for machine in data1['machines']:
+                        try:
+                            namemachine = str(jid.JID(machine['mach']).user)[:-4]
+                            if machine['devi'] != "\"\"" or machine['devi'] != "":
+                                msglog = "DEVICE MACHINE %s deviceid %s"%(namemachine,
+                                                                machine['devi'])
+                                logger.debug(msglog)
+                                objectxmpp.xmpplog( msglog,
+                                                    type='deploy',
+                                                    sessionname= machine['ses'],
+                                                    priority=-1,
+                                                    action="xmpplog",
+                                                    why=objectxmpp.boundjid.bare,
+                                                    module="Deployment | Syncthing",
+                                                    date=None)
+                                objectxmpp.syncthing.add_device_syncthing(machine['devi'],
+                                                                        namemachine)
+                                msglog = "******** ADD THIS DEVICE MACHINE IN FOLDER %s *********"%data1['repertoiredeploy']
+                                logger.info(msglog)
+                                objectxmpp.xmpplog( msglog,
+                                                    type='deploy',
+                                                    sessionname= machine['ses'],
+                                                    priority=-1,
+                                                    action="xmpplog",
+                                                    why=objectxmpp.boundjid.bare,
+                                                    module="Deployment | Syncthing",
+                                                    date=None)
+                                objectxmpp.syncthing.add_device_in_folder_if_not_exist( data1['repertoiredeploy'],
+                                                                                        machine['devi'],
+                                                                                        introducedBy = "")
+                            else:
+                                objectxmpp.xmpplog( "<span class='log_err'>"\
+                                                        "Syncthing id device "\
+                                                        "missing for machine %s</span>"%namemachine,
+                                                    type='deploy',
+                                                    sessionname= machine['ses'],
+                                                    priority=-1,
+                                                    action="xmpplog",
+                                                    why=objectxmpp.boundjid.bare,
+                                                    module="Deployment | Syncthing",
+                                                    date=None)
+                                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                                                    type = 'deploy',
+                                                    sessionname = machine['ses'],
+                                                    priority = -1,
+                                                    action = "xmpplog",
+                                                    who = objectxmpp.boundjid.bare,
+                                                    module = "Deployment | Terminate"\
+                                                        " | Notify | Syncthing",
+                                                    date = None)
+                            #create message for machine Ici
+                            datasend["sessionid"] = machine['ses']
+                            #datasend = {'action' : "deploysyncthing",
+                                        #"sessionid" :machine['ses'] ,
+                                        #"ret" : 0,
+                                        #"base64" : False,
+                                        #"data" : { "subaction" : "notify_machine_deploy_syncthing",
+                                                #"id_deploy" : data1['repertoiredeploy'],
+                                                #"namedeploy" : data1['namedeploy'],
+                                                #"packagedeploy" : data1['packagedeploy'],
+                                                #"ARS" : machine['rel'],
+                                                #"mach" : machine['mach'],
+                                                #"iddeploybase" : data['id'],
+                                                #'objpartage' : data1}}
+                            if data1['cluster']['elected'] == objectxmpp.boundjid.bare:
+                                logger.debug("SEND ARS FILE SYNCTHING TO MACHINE %s"%machine['mach'])
+                                objectxmpp.send_message(mto=machine['mach'],
+                                                        mbody=json.dumps(datasend),
+                                                        mtype='chat')
+                                #logger.debug("add device %s for machine %s"%(machine['devi'],
+                                                                             #machine['mach']))
+
+                        except Exception:
+                            messageerror = "remote error%s"%(traceback.format_exc())
+                            logger.error(messageerror)
+                            objectxmpp.xmpplog( "<span class='log_err'>"\
+                                                        "Create Syncthing Share"\
+                                                        "%s\n%s </span>"%(namemachine,
+                                                                          messageerror),
+                                                    type='deploy',
+                                                    sessionname= machine['ses'],
+                                                    priority=-1,
+                                                    action="xmpplog",
+                                                    why=objectxmpp.boundjid.bare,
+                                                    module="Deployment | Syncthing",
+                                                    date=None)
                             objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                                                 type = 'deploy',
-                                                sessionname=machine['ses'],
+                                                sessionname = machine['ses'],
                                                 priority = -1,
                                                 action = "xmpplog",
                                                 who = objectxmpp.boundjid.bare,
                                                 module = "Deployment | Terminate"\
                                                     " | Notify | Syncthing",
                                                 date = None)
-                        #create message for machine
-                        datasend = {'action' : "deploysyncthing",
-                                    "sessionid" : machine['ses'],
-                                    "ret" : 0,
-                                    "base64" : False,
-                                    "data" : { "subaction" : "notify_machine_deploy_syncthing",
-                                               "id_deploy" : data['repertoiredeploy'],
-                                               "namedeploy" : data['namedeploy'],
-                                               "packagedeploy" : data['packagedeploy'],
-                                               "ARS" : machine['rel'],
-                                               "mach" : machine['mach'],
-                                               "iddeploybase" : data['id']}}
-                        logger.debug("SEND ARS FILE SYNCTHING TO MACHINE %s"%machine['mach'])
-                        objectxmpp.send_message(mto=machine['mach'],
-                                                mbody=json.dumps(datasend),
-                                                mtype='chat')
-                        logger.debug("add device %s for machine %s"%(machine['devi'],
-                                                                          machine['mach']))
                     objectxmpp.syncthing.maxSendKbps( kb=0)
-
                     objectxmpp.syncthing.validate_chang_config()
                 elif data['subaction'] == "cleandeploy":
                     objectxmpp.syncthing.maxSendKbps( kb=0)
