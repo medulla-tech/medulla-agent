@@ -8,12 +8,12 @@ foreach ($profile in $profiles) {
       $profilefound = $true
       try {
        $profile.delete()
+       Start-Sleep -Seconds 1.5
        Write-Host "The profile $profilename is successfully deleted"
       } catch {
        Write-Host "Failed"
       }
   }
  }
-
 
 if(!$profilefound) { write-Host "No profile" }
