@@ -29,6 +29,7 @@ import json
 import logging
 import subprocess
 import lxml.etree as ET
+from lib.registerwindows import constantregisterwindows
 
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
