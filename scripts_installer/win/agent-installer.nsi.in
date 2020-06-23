@@ -1378,6 +1378,7 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
   ; Stop all Pulse services
   Call un.StopPulseServices
 
