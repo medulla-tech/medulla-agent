@@ -94,8 +94,11 @@ def save_xml_file(elementxml,
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
 
-def iddevice(configfile = "/var/lib/pulse2/.config/syncthing/config.xml"):
+def iddevice(configfile = "/var/lib/pulse2/.config/syncthing/config.xml", 
+             hostname = None):
     try:
+        if hostname is None:
+            hostname = socket.gethostname()
         hostname = socket.gethostname()
         if hostname != "":
             logger.info("xml conf : %s device id for hostname machine %s"%(configfile, hostname))

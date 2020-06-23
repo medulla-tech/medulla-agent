@@ -301,7 +301,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
         try:
-            self.deviceid = iddevice(configfile = self.fichierconfsyncthing)
+            hostnameiddevice = None
+            if self.boundjid.domain == "pulse":
+                hostnameiddevice = "pulse"
+            self.deviceid = iddevice(configfile = self.fichierconfsyncthing,
+                                     hostname=hostnameiddevice)
         except Exception:
             pass
 
