@@ -246,6 +246,11 @@ update_config_file() {
 update_generation_options_file() {
     # Save arguments to file for future use
     echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} " > .generation_options
+    # Update generation_options var
+    if [ -e .generation_options ]; then
+       colored_echo blue "Extracting parameters from previous options file (.generation_options)."
+       GENERATION_OPTIONS=$(cat .generation_options)
+    fi
 }
 
 extract_parameters() {
