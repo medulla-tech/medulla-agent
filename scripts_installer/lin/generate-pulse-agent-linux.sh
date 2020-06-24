@@ -27,8 +27,10 @@
 # TODO: Create rpm and deb repositories
 #				Manage inventory tags
 
+. /etc/os-release
+
 # To be defined
-AGENT_VERSION="2.0.8"
+AGENT_VERSION="2.1.0"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
@@ -70,6 +72,10 @@ check_arguments() {
                 SSH_PORT="${i#*=}"
                 shift
                 ;;
+            --linux-distros*)
+                DISTROS="${i#*=}"
+                shift
+                ;;
 			*)
         		# unknown option
         		display_usage
@@ -88,6 +94,7 @@ check_arguments() {
 		fi
 	fi
 	if [[ ! ${MINIMAL} ]]; then
+        echo "we only support minimal installer"
 		exit 0 # Remove when we support full version as well
 	fi
 }
@@ -175,6 +182,101 @@ generate_agent_package() {
 	colored_echo green "### INFO  Generating agent package... Done"
 }
 
+check_linux_distribution() {
+    if [[ $ID == "centos" ]]; then
+        LINUX_DISTRO="rhel"
+    else
+        LINUX_DISTRO=$ID
+    fi
+
+    DISTRO_VERSION=$VERSION_ID
+
+    case ${LINUX_DISTRO} in
+        "debian"|"mageia"|"rhel")
+            ;;
+
+        *)
+            echo "We only support Debian, Mageia, and rhel"
+            exit 1
+            ;;
+    esac
+}
+
+install_package() {
+    case ${LINUX_DISTRO} in
+        "debian")
+            apt -y install "$@"
+            ;;
+        "mageia")
+            urpmi --auto "$@"
+            ;;
+        "rhel")
+            yum -y install "$@"
+            ;;
+        *)
+            ;;
+    esac
+}
+
+remove_package() {
+    case ${LINUX_DISTRO} in
+        "debian")
+            apt -y remove "$@"
+            ;;
+        "mageia")
+            urpme --auto "$@"
+            ;;
+        "rhel")
+            yum -y remove "$@"
+            ;;
+        *)
+            ;;
+    esac
+}
+
+install_repos() {
+    if [[ $LINUX_DISTRO == "debian" ]]; then
+        INSTALLED_REPOS=`dpkg -l |grep pulse-agent-linux-repo|awk '{print $2}'`
+    else
+        INSTALLED_REPOS=`rpm -qa --queryformat "%-30{NAME} \n" |grep pulse-agent-linux-repo`
+    fi
+    echo $INSTALLED_REPOS
+
+    for distro in $(echo ${DISTROS} | sed "s/,/ /g")
+    do
+        echo "$distro"
+        case $distro in
+            debian-buster)
+                install_package pulse-agent-linux-repo-buster
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-buster}" )
+                ;;
+            debian-stretch)
+                install_package pulse-agent-linux-repo-stretch
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-stretch}" )
+                ;;
+            ubuntu-bionic)
+                install_package pulse-agent-linux-repo-bionic
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-bionic}" )
+                ;;
+            ubuntu-eoan)
+                install_package pulse-agent-linux-repo-eoan
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-eoan}" )
+                ;;
+            ubuntu-xenial)
+                install_package pulse-agent-linux-repo-xenial
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-xenial}" )
+                ;;
+            *)
+                echo "the distribution $distro is not yet supported"
+                ;;
+        esac
+    done
+    if [ $LINUX_DISTRO == "debian" ]; then
+        remove_package $INSTALLED_REPOS -y
+    fi
+
+}
+
 build_deb() {
 	pushd /var/lib/pulse2/clients/lin/deb/pulse-agent-linux/
 		dpkg-buildpackage
@@ -200,6 +302,14 @@ build_deb() {
             popd
         fi
 
+        if [ -d "ubuntu/18.04" ]; then
+            cp -fv *.deb ubuntu/18.04
+            pushd ubuntu/18.04
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
+            popd
+        fi
+
+
         if [ -d "ubuntu/19.10" ]; then
             cp -fv *.deb ubuntu/19.10
             pushd ubuntu/19.10
@@ -207,11 +317,19 @@ build_deb() {
             popd
         fi
 
+        if [ -d "ubuntu/20.04" ]; then
+            cp -fv *.deb ubuntu/20.04
+            pushd ubuntu/20.04
+                dpkg-scanpackages -m . /dev/null | gzip -9c > Packages.gz
+            popd
+        fi
 	popd
 }
 
 # Run the script
 check_arguments "$@"
+check_linux_distribution
 update_installer_scripts
 generate_agent_package
+install_repos
 build_deb

@@ -35,7 +35,6 @@ from agentconffile import conffilename
 from sleekxmpp import jid
 from agentconffile import directoryconffile
 from utils import ipfromdns
-from sleekxmpp import jid
 import re
 
 logger = logging.getLogger()
@@ -402,7 +401,12 @@ class confParameter:
                 self.packageserver["port"] = int(packageserver["port"])
         self.public_ip = ""
         self.public_ip_relayserver = ""
+        self.geoservers = "ifconfig.co, if.siveo.net"
         self.geolocalisation = True
+        
+        if Config.has_option("type", "public_ip"):
+            self.public_ip = Config.get('type', 'public_ip')
+
         if self.agenttype == "relayserver":
             if Config.has_option("type", "request_type"):
                 self.request_type = Config.get('type', 'request_type')
@@ -411,8 +415,16 @@ class confParameter:
                     self.public_ip_relayserver = ipfromdns(
                         Config.get('type', 'public_ip'))
                     self.packageserver["public_ip"] = self.public_ip_relayserver
-            if Config.has_option("type", "geolocalisation"):
-                self.geolocalisation = Config.getboolean("type", "geolocalisation")
+        else:
+            if Config.has_option("type", "request_type"):
+                self.request_type = Config.get('type', 'request_type')
+            else:
+                self.request_type = "public"
+        if Config.has_option("type", "geolocalisation"):
+            self.geolocalisation = Config.getboolean("type", "geolocalisation")
+
+        if Config.has_option("type", "geoservers"):
+            self.geoserversstr = Config.get("type", "geoservers")
 
         pluginlist = Config.get('plugin', 'pluginlist').split(",")
         # par convention :
@@ -529,8 +541,10 @@ class confParameter:
                 if len(self.timealternatif) < 2:
                     raise
                 else:
-                    if self.timealternatif[0] < 2: self.timealternatif[0] = 2
-                    if self.timealternatif[1] > 30 : self.timealternatif[1] = 30
+                    if self.timealternatif[0] < 2:
+                        self.timealternatif[0] = 2
+                    if self.timealternatif[1] > 30:
+                        self.timealternatif[1] = 30
             except Exception:
                 self.timealternatif=[2,30]
                 logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
@@ -693,7 +707,7 @@ def listMacAdressMacOs():
     ifconfig = os.popen('/sbin/ifconfig').readlines()
     for line in ifconfig:
         if line.startswith(' ') or line.startswith(
-                "\t") and not "ether" in line:
+                "\t") and "ether" not in line:
             pass
         else:
             if "ether" not in line:

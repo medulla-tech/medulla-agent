@@ -27,9 +27,9 @@ xmppmaster database handler
 
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
-from sqlalchemy.orm import sessionmaker;
+from sqlalchemy.orm import sessionmaker, Query
 #Session = sessionmaker()
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from datetime import date, datetime, timedelta
 
 
@@ -43,8 +43,6 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Cluster_resources,\
     Syncthing_machine,\
     Substituteconf,\
-    Agentsubscription,\
-    Subscription,\
     Agentsubscription,\
     Subscription,\
     Syncthing_deploy_group,\
@@ -63,9 +61,7 @@ import re
 import uuid
 from lib.configuration import confParameter
 import functools
-from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.exc import NoSuchTableError
+
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -77,7 +73,7 @@ import random
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -899,11 +895,12 @@ class XmppMasterDatabase(DatabaseHelper):
             if min is not None and max is not None:
                 result = result.offset(int(min)).limit(int(max)-int(min))
                 ret['limit'] = int(max)-int(min)
-
-
-            if min : ret['min'] = min
-            if max : ret['max'] = max
-            if filt : ret['filt'] = filt
+            if min:
+                ret['min'] = min
+            if max:
+                ret['max'] = max
+            if filt:
+                ret['filt'] = filt
             result = result.all()
             session.commit()
             session.flush()
@@ -4023,11 +4020,11 @@ class XmppMasterDatabase(DatabaseHelper):
         return False
 
     @DatabaseHelper._sessionm
-    def addguacamoleidforiventoryid(self, session, idinventory, idguacamole):
+    def addguacamoleidformachineid(self, session, machine_id, idguacamole):
         try:
             hasguacamole = Has_guacamole()
             hasguacamole.idguacamole=idguacamole
-            hasguacamole.idinventory=idinventory
+            hasguacamole.machine_id=machine_id
             session.add(hasguacamole)
             session.commit()
             session.flush()
@@ -4036,7 +4033,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def addlistguacamoleidforiventoryid(self, session, idinventory, connection):
+    def addlistguacamoleidformachineid(self, session, machine_id, connection):
         # objet connection: {u'VNC': 60, u'RDP': 58, u'SSH': 59}}
         if len(connection) == 0:
             # on ajoute 1 protocole inexistant pour signaler que guacamle est configure.
@@ -4044,7 +4041,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
         sql  = """DELETE FROM `xmppmaster`.`has_guacamole`
                     WHERE
-                        `xmppmaster`.`has_guacamole`.`idinventory` = '%s';"""%idinventory
+                        `xmppmaster`.`has_guacamole`.`machine_id` = '%s';"""%machine_id
         session.execute(sql)
         session.commit()
         session.flush()
@@ -4053,7 +4050,7 @@ class XmppMasterDatabase(DatabaseHelper):
             try:
                 hasguacamole = Has_guacamole()
                 hasguacamole.idguacamole=connection[idguacamole]
-                hasguacamole.idinventory=idinventory
+                hasguacamole.machine_id=machine_id
                 hasguacamole.protocol=idguacamole
                 session.add(hasguacamole)
                 session.commit()
@@ -4061,6 +4058,7 @@ class XmppMasterDatabase(DatabaseHelper):
             except Exception, e:
                 #logging.getLogger().error("addPresenceNetwork : %s " % new_network)
                 logging.getLogger().error(str(e))
+
     @DatabaseHelper._sessionm
     def listserverrelay(self, session, moderelayserver = "static"):
         sql = """SELECT
@@ -4141,6 +4139,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updateMachineidinventory(self, session, id_machineinventory, idmachine):
+        updatedb=-1
         try:
             sql = """UPDATE `machines`
                     SET
@@ -4157,18 +4156,19 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updateMachinejidGuacamoleGroupdeploy(self, session, jid, urlguacamole, groupdeploy, idmachine):
-       try:
-           sql = """UPDATE machines
-                    SET
-                        jid = '%s', urlguacamole = '%s', groupdeploy = '%s'
-                    WHERE
-                        id = '%s';"""%(jid, urlguacamole, groupdeploy, idmachine)
-           updatedb = session.execute(sql)
-           session.commit()
-           session.flush()
-       except Exception, e:
-           logging.getLogger().error(str(e))
-       return updatedb
+        updatedb=-1
+        try:
+            sql = """UPDATE machines
+                        SET
+                            jid = '%s', urlguacamole = '%s', groupdeploy = '%s'
+                        WHERE
+                            id = '%s';"""%(jid, urlguacamole, groupdeploy, idmachine)
+            updatedb = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception, e:
+            logging.getLogger().error(str(e))
+        return updatedb
 
     @DatabaseHelper._sessionm
     def getPresenceuuid(self, session, uuid):
@@ -4563,6 +4563,105 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
+    def getGuacamoleRelayServerMachineHostname(self, session, hostname, enable = 1):
+        querymachine = session.query(Machines)
+        if enable == None:
+            querymachine = querymachine.filter(Machines.hostname == hostname)
+        else:
+            querymachine = querymachine.filter(and_(Machines.hostname == hostname,
+                                                    Machines.enabled == enable))
+        machine = querymachine.one()
+        session.commit()
+        session.flush()
+        try:
+            result = {  "uuid" : machine.uuid_inventorymachine,
+                        "jid" : machine.jid,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "hostname" : machine.hostname,
+                        "platform" : machine.platform,
+                        "macaddress" : machine.macaddress,
+                        "archi" : machine.archi,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "agenttype" : machine.agenttype,
+                        "keysyncthing" :  machine.keysyncthing,
+                        "enabled" : machine.enabled
+                        }
+            for i in result:
+                if result[i] == None:
+                    result[i] = ""
+        except Exception:
+            result = {  "uuid" : -1,
+                        "jid" : "",
+                        "groupdeploy" : "",
+                        "urlguacamole" : "",
+                        "subnetxmpp" : "",
+                        "hostname" : "",
+                        "platform" : "",
+                        "macaddress" : "",
+                        "archi" : "",
+                        "uuid_inventorymachine" : "",
+                        "ip_xmpp" : "",
+                        "agenttype" : "",
+                        "keysyncthing" :  "",
+                        "enabled" : 0
+                    }
+        return result
+
+    @DatabaseHelper._sessionm
+    def getGuacamoleRelayServerMachineJiduser(self, session, userjid, enable = 1):
+        user = str(userjid).split("@")[0]
+        querymachine = session.query(Machines)
+        if enable == None:
+            querymachine = querymachine.filter(Machines.jid.like("%s%%"%user))
+        else:
+            querymachine = querymachine.filter(and_(Machines.jid.like("%s%%"%user),
+                                                    Machines.enabled == enable))
+        machine = querymachine.one()
+        session.commit()
+        session.flush()
+        try:
+            result = {
+                        "uuid" : uuid,
+                        "jid" : machine.jid,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "hostname" : machine.hostname,
+                        "platform" : machine.platform,
+                        "macaddress" : machine.macaddress,
+                        "archi" : machine.archi,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "agenttype" : machine.agenttype,
+                        "keysyncthing" :  machine.keysyncthing,
+                        "enabled" : machine.enabled
+                        }
+            for i in result:
+                if result[i] == None:
+                    result[i] = ""
+        except Exception:
+            result = {
+                        "uuid" : uuid,
+                        "jid" : "",
+                        "groupdeploy" : "",
+                        "urlguacamole" : "",
+                        "subnetxmpp" : "",
+                        "hostname" : "",
+                        "platform" : "",
+                        "macaddress" : "",
+                        "archi" : "",
+                        "uuid_inventorymachine" : "",
+                        "ip_xmpp" : "",
+                        "agenttype" : "",
+                        "keysyncthing" :  "",
+                        "enabled" : 0
+                    }
+        return result
+    
+    @DatabaseHelper._sessionm
     def getGuacamoleidforUuid(self, session, uuid, existtest = None):
         """
             if existtest is None
@@ -4587,6 +4686,38 @@ class XmppMasterDatabase(DatabaseHelper):
             ret=session.query(Has_guacamole.idguacamole).\
                 filter(Has_guacamole.idinventory == uuid.replace('UUID','')).first()
             if ret:
+                return True
+            return False
+
+    @DatabaseHelper._sessionm
+    def getGuacamoleIdForHostname(self, session, host, existtest = None):
+        """
+            if existtest is None
+             this function return the list of protocole for 1 machine
+             if existtest is not None:
+             this function return True if guacamole is configured
+             or false si guacamole is not configued.
+        """   
+        if existtest is None:
+            protocole = session.query(Has_guacamole.idguacamole,Has_guacamole.protocol).\
+                    join(Machines, Machines.id == Has_guacamole.machine_id)
+                    
+            protocole = protocole.filter(and_(Has_guacamole.protocol != "INF",
+                                          Machines.hostname == host))
+            protocole = protocole.all()
+            session.commit()
+            session.flush()
+            if protocole:
+                return [(m[1],m[0]) for m in protocole]
+            else:
+                return []
+        else:
+            protocole = session.query(Has_guacamole.idguacamole).\
+                    join(Machines, Machines.id == Has_guacamole.machine_id)
+            protocole = protocole.filter(Machines.hostname == host)
+            
+            protocole = protocole.first()
+            if protocole:
                 return True
             return False
 
@@ -5194,3 +5325,64 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             traceback.print_exc(file=sys.stdout)
             return result
+
+
+    @DatabaseHelper._sessionm
+    def call_reconfiguration_machine(self, session, limit=None, typemachine="machine"):
+        if typemachine in ["machine", "relay"]:
+            res = session.query(Machines.id, Machines.jid).\
+                filter(and_( Machines.need_reconf == '1',
+                            Machines.enabled == '1',
+                            Machines.agenttype.like(typemachine)))
+        elif typemachine is None or typemachine=="all":
+            res = session.query(Machines.id, Machines.jid).\
+                filter(and_( Machines.need_reconf == '1',
+                            Machines.enabled == '1'))
+        if limit is not None:
+            res = res.limit(int(limit))
+        res= res.all()
+        listjid = []
+        if res is not None:
+            for machine in res:
+                listjid.append( [machine.id,machine.jid])
+        session.commit()
+        session.flush()
+        return listjid
+
+    @DatabaseHelper._sessionm
+    def call_acknowledged_reconficuration(self, session, listmachine=[]):
+        listjid = []
+        if len(listmachine) == 0:
+            return listjid
+        res = session.query(Machines.id,
+                            Machines.need_reconf).filter(and_(Machines.need_reconf == '0',
+                                                            Machines.id.in_(listmachine))).all()
+        if res is not None:
+            for machine in res:
+                listjid.append(machine.id)
+        session.commit()
+        session.flush()
+        return listjid
+
+    @DatabaseHelper._sessionm
+    def call_set_list_machine(self, session, listmachine=[], valueset=0):
+        """
+            initialise presence on list id machine
+        """
+        if len(listmachine) == 0:
+            return False
+        try:
+            liststr =  ",".join([ "'%s'"%x for x in listmachine])
+            
+            sql = """UPDATE `xmppmaster`.`machines` 
+                    SET 
+                        `enabled` = '%s'
+                    WHERE
+                        `id` IN (%s);"""%(valueset, liststr)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception, e:
+            logging.getLogger().error("call_set_list_machine: %s"%str(e))
+            return False

@@ -373,7 +373,6 @@ class functionsynchroxmpp:
                                     touser = "")
                 logger.warning("key ARS [%s] : is already installed."%data['data']['from'])
                 msgaction.append("key ARS [%s] : is already installed."%data['data']['from'])
-            ####### jfkjfk
             data['action'] = "resultkeyinstall"
             data['ret'] = 0
             data['data'] = { "msg_action" : msgaction}

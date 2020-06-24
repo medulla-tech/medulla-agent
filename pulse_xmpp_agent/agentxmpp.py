@@ -53,13 +53,14 @@ from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, searchippublic, subnetnetwork,\
-                        protoandport, createfingerprintnetwork, isWinUserAdmin,\
+                        createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, is_connectedServer,  testagentconf, \
-                        Setdirectorytempinfo, setgetcountcycle, setgetrestart
+                        Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
+                        protodef, geolocalisation_agent
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -335,18 +336,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         15,
                         self.QDeployfile,
                         repeat=True)
+
         if not hasattr(self.config, 'geolocalisation'):
             self.config.geolocalisation = True
-        # use public_ip for localisation
-        if self.config.public_ip == "":
-            try:
-                if self.config.agenttype in ['relayserver']:
-                    if self.config.geolocalisation:
-                        self.config.public_ip = searchippublic()
-                else:
-                    self.config.public_ip = searchippublic()
-            except Exception:
-                pass
+        if not hasattr(self.config, 'request_type'):
+            self.config.request_type = "public"
+
+        self.geodata = None
+        if  self.config.geolocalisation:
+            self.geodata = geolocalisation_agent(typeuser = self.config.request_type,
+                                                geolocalisation=self.config.geolocalisation,
+                                                ip_public=self.config.public_ip,
+                                                strlistgeoserveur=self.config.geoservers    )
+
+            self.config.public_ip = self.geodata.get_ip_public()
         if self.config.public_ip == "" or self.config.public_ip == None:
             self.config.public_ip = None
 
@@ -408,7 +411,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("not enable cyclic inventory")
 
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
-        if  not self.config.agenttype in ['relayserver']:
+        if self.config.agenttype not in ['relayserver']:
             self.schedule('session reload',
                           15,
                           self.reloadsesssion,
@@ -1368,16 +1371,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
         listaction = [] # cette liste contient les function directement appelable depuis console.
         #check action in message
         if 'action' in dataobj:
-            if not 'sessionid' in dataobj:
+            if 'sessionid' not in dataobj:
                 dataobj['sessionid'] = getRandomName(6, dataobj["action"])
             if dataobj["action"] in listaction:
                 #call fubnction agent direct
                 func = getattr(self, dataobj["action"])
-                if "params_by_val" in dataobj and not "params_by_name" in dataobj:
+                if "params_by_val" in dataobj and "params_by_name" not in dataobj:
                     func(*dataobj["params_by_val"])
                 elif "params_by_val" in dataobj and "params_by_name" in dataobj:
                     func(*dataobj["params_by_val"], **dataobj["params_by_name"])
-                elif "params_by_name" in dataobj and not "params_by_val" in dataobj:
+                elif "params_by_name" in dataobj and "params_by_val" not in dataobj:
                     func( **dataobj["params_by_name"])
                 else :
                     func()
@@ -1462,7 +1465,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         keyroster = str(self.boundjid.bare)
         if keyroster in self.roster:
             for t in self.roster[keyroster]:
-                if t == self.boundjid.bare or t in [self.sub_subscribe] : continue
+                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                    continue
                 logger.info("unsubscribe %s"%self.sub_subscribe)
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
                 #self.del_roster_item(t)
@@ -1538,7 +1542,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                      'ret' : 255,
                      'base64' : False}
         msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
-        if not 'data' in startparameter:
+        if 'data' not in startparameter:
             startparameter['data'] = {}
         call_plugin(startparameter["action"],
                     self,
@@ -1561,7 +1565,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         ################################### initialise syncthing ###################################
         if self.config.syncthing_on:
-            if  not self.config.agenttype in ['relayserver']:
+            if self.config.agenttype not in ['relayserver']:
                 self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
             self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
             if logger.level <= 10:
@@ -1653,7 +1657,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
-        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if sessionname == "":
+            sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
@@ -1677,14 +1682,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody=json.dumps(msgbody),
                             mtype='chat')
 
-    def handleinventory(self):
+    def handleinventory(self, forced = "forced", sessionid = None):
         msg={ 'from' : "master@pulse/MASTER",
               'to': self.boundjid.bare
             }
-        sessionid = getRandomName(6, "inventory")
+        datasend = {"forced" : "forced"}
+        if forced == "forced" or forced == True:
+            datasend = {"forced" : "forced"}
+        else:
+            datasend = {"forced" : "noforced" }
+        if sessionid == None:
+            sessionid = getRandomName(6, "inventory")
         dataerreur = {}
-        dataerreur['action']= "resultinventory"
-        dataerreur['data']={}
+        dataerreur['action'] = "resultinventory"
+        dataerreur['data']= datasend
         dataerreur['data']['msg'] = "ERROR : inventory"
         dataerreur['sessionid'] = sessionid
         dataerreur['ret'] = 255
@@ -1703,12 +1714,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             module = "Inventory | Inventory reception | Planned",
                                             fromuser = "",
                                             touser = "")
-
         call_plugin("inventory",
                     self,
                     "inventory",
-                    getRandomName(6, "inventory"),
-                    {},
+                    sessionid,
+                    datasend,
                     msg,
                     dataerreur)
 
@@ -1801,8 +1811,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if os.path.isfile(namefilebool):
                     os.remove(namefilebool)
 
-                args = ['python', nameprogconnection, '-t', 'machine']
-                subprocess.call(args)
+                connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
+                subprocess.call(connectionagentArgs)
 
                 for i in range(15):
                     if os.path.isfile(namefilebool):
@@ -1826,9 +1836,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
         except:
             pass
-        cmd = "python %s"%(os.path.join(self.pathagent, "replicator.py"))
-        logger.debug("cmd : %s"%(cmd))
-        result = simplecommand(cmd)
+        replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
+        logger.debug("cmd : %s" % (replycatorcmd))
+        result = simplecommand(replycatorcmd)
         if result['code'] == 0:
             logger.warning("the agent is already installed for version  %s"%(versiondata))
         elif result['code'] == 1:
@@ -1937,7 +1947,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "data": {"msg" : ""}
         }
 
-        if not 'action' in dataobj:
+        if 'action' not in dataobj:
             logging.error("warning message action missing %s"%(msg))
             return
 
@@ -2053,7 +2063,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             mtype='chat')
                     logger.error("\n%s"%(traceback.format_exc()))
             else:
-                if not 'data' in dataobj:
+                if 'data' not in dataobj:
                     msgerr = "data section missing;  msg : %s"%(msg['body'])
                 if 'action' in dataobj:
                     act = dataobj['action']
@@ -2119,6 +2129,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
 
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
+        remoteservice = protodef()
+        # if regcomplet = True then register agent reconfigure complet of agent
+        self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
         dataobj = {
             'action' : 'infomachine',
             'from' : self.config.jidagent,
@@ -2148,7 +2161,9 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'portconnection':portconnection,
             'classutil' : self.config.classutil,
             'ippublic' : self.config.public_ip,
-            'remoteservice' : protoandport(),
+            'geolocalisation' : {},
+            'remoteservice' : remoteservice.proto,
+            'regcomplet' : self.regcomplet,
             'packageserver' : self.config.packageserver,
             'adorgbymachine' : base64.b64encode(organizationbymachine()),
             'adorgbyuser' : '',
@@ -2246,7 +2261,6 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
     """
     try:
         if sys.platform.startswith('win'):
-            import multiprocessing
             p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
             p.daemon = True
             p.start()
@@ -2277,7 +2291,8 @@ def tgconf(optstypemachine):
         if tg.Server == "" or tg.Port == "":
             logger.error("Error config ; Parameter Connection missing")
             sys.exit(1)
-        if ipfromdns(tg.Server) != "" and   check_exist_ip_port(ipfromdns(tg.Server), tg.Port): break
+        if ipfromdns(tg.Server) != "" and check_exist_ip_port(ipfromdns(tg.Server), tg.Port):
+            break
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.Server,
                                               tg.Port,
@@ -2490,7 +2505,7 @@ class process_xmpp_agent():
             if xmpp.config.agenttype in ['relayserver']:
                 terminateserver(xmpp)
 
-            if setgetrestart(-1) == 1:
+            if setgetrestart(-1) == 0:
                 logging.log(DEBUGPULSE,"not restart")
                 # verify if signal stop
                 # verify if alternative connection

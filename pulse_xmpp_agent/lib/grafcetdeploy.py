@@ -64,7 +64,7 @@ class grafcet:
         self.sessionid = datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
 
-        if not 'stepcurrent' in self.data:
+        if 'stepcurrent' not in self.data:
             return
         try:
             # search section in sequence
@@ -72,7 +72,7 @@ class grafcet:
             # attribute step curent in function section
             if int(self.data['stepcurrent']) == 0:
                 mesg_install = ""
-                if not "section" in self.parameterdynamic:
+                if "section" not in self.parameterdynamic:
                     self.parameterdynamic['section'] = "install"
                 if "section" in self.parameterdynamic:
                     strsection = str(self.parameterdynamic['section']).lower()
@@ -118,7 +118,6 @@ class grafcet:
                     self.datasend,
                     indent=4,
                     sort_keys=True))
-
             if 'jidmaster' in self.datasend['data']:
                 # retourne resultat error to master for end session on master.
                 self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
@@ -136,7 +135,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Execution",
                                     date = None ,
-                                    fromuser = self.datasend['data']['login'],
+                                    fromuser = "",
                                     touser = "")
             self.objectxmpp.xmpplog('<span class="log_err">'+str(e)+'</span>',
                                     type = 'deploy',
@@ -148,7 +147,7 @@ class grafcet:
                                     why = self.data['name'],
                                     module = "Deployment | Error | Execution",
                                     date = None ,
-                                    fromuser = self.datasend['data']['login'],
+                                    fromuser = self.data['login'],
                                     touser = "")
             self.terminate(-1, True, "end error initialisation deploy")
 
@@ -174,7 +173,7 @@ class grafcet:
 
     def __Next_Step__(self):
         # next Step for xmpp message
-        if not 'stepcurrent' in self.data:
+        if 'stepcurrent' not in self.data:
             return
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
         self.sendnextstep()
@@ -185,7 +184,7 @@ class grafcet:
                                      mtype='chat')
 
     def __Etape_Next_in__(self):
-        if not 'stepcurrent' in self.data:
+        if 'stepcurrent' not in self.data:
             return
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
         self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -435,7 +434,7 @@ class grafcet:
             send msg to log sequence
             Clean client disk packages (ie clear)
         """
-        login = self.datasend['data']['login']
+        login = self.data['login']
         restarmachine = False
         shutdownmachine = False
         #print "TERMINATE %s"%json.dumps(self.datasend, indent = 4)
@@ -453,7 +452,7 @@ class grafcet:
                                     why = "",
                                     module = "Deployment|Terminate|Execution|Restart|Notify",
                                     date = None ,
-                                    fromuser = self.datasend['data']['login'],
+                                    fromuser = self.data['login'],
                                     touser = "")
 
         if not shutdownmachine and 'advanced' in self.datasend['data'] \
@@ -470,7 +469,7 @@ class grafcet:
                                     why = "",
                                     module = "Deployment|Terminate|Execution|Restart|Notify",
                                     date = None ,
-                                    fromuser = self.datasend['data']['login'],
+                                    fromuser = self.data['login'],
                                     touser = "")
         datas = {}
         datas = self.datasend
@@ -497,7 +496,7 @@ class grafcet:
                                     "terminate install package %s" %
                                     self.datasend['data']['descriptor']['info']['name'])
             self.datasend['action'] = "result" + self.datasend['action']
-            if not "quitonerror" in self.datasend['data']['descriptor']['info']:
+            if "quitonerror" not in self.datasend['data']['descriptor']['info']:
                 quiterror = True
             else:
                 quiterror = self.datasend['data']['descriptor']['info']['quitonerror']
@@ -789,28 +788,7 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            if 'packageuuid' in self.workingstep and os.path.isdir(
-                    self.replaceTEMPLATE(self.workingstep['packageuuid'])):
-                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
-                    self.workingstep['packageuuid'])
-                os.chdir(self.workingstep['packageuuid'])
-                self.workingstep['pwd'] = os.getcwd()
-            else:
-                os.chdir(self.datasend['data']['pathpackageonmachine'])
-                self.workingstep['pwd'] = os.getcwd()
-            self.objectxmpp.xmpplog('[%s]-[%s]: Current directory %s' % ( self.data['name'], self.workingstep['step'], self.workingstep['pwd']),
-                                    type = 'deploy',
-                                    sessionname = self.sessionid,
-                                    priority = self.workingstep['step'],
-                                    action = "xmpplog",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "",
-                                    why = self.data['name'],
-                                    module = "Deployment | Execution",
-                                    date = None ,
-                                    fromuser = self.data['login'],
-                                    touser = "")
-
+            self.__alternatefolder()
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
@@ -1242,47 +1220,9 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-
-            if 'packageuuid' in self.workingstep:
-                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
-                    self.workingstep['packageuuid'])
-                if os.path.isdir(self.workingstep['packageuuid']):
-                    os.chdir(self.workingstep['packageuuid'])
-                    self.workingstep['pwd'] = os.getcwd()
-                else:
-                    self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
-                                            'directory missing!!!:  %s' % (  self.data['name'],
-                                                                             self.workingstep['step']),
-                                                                            type = 'deploy',
-                                                                            sessionname = self.sessionid,
-                                                                            priority = self.workingstep['step'],
-                                                                            action = "xmpplog",
-                                                                            who = self.objectxmpp.boundjid.bare,
-                                                                            how = "",
-                                                                            why = self.data['name'],
-                                                                            module = "Deployment | Execution | Warning",
-                                                                            date = None ,
-                                                                            fromuser = self.data['login'],
-                                                                            touser = "")
-            self.workingstep['pwd'] = os.getcwd()
-
-            self.objectxmpp.xmpplog('[%s]-[%s]: Current directory %s' % ( self.data['name'],
-                                                                         self.workingstep['step'],
-                                                                         self.workingstep['pwd']),
-                                                                        type = 'deploy',
-                                                                        sessionname = self.sessionid,
-                                                                        priority = self.workingstep['step'],
-                                                                        action = "xmpplog",
-                                                                        who = self.objectxmpp.boundjid.bare,
-                                                                        how = "",
-                                                                        why = self.data['name'],
-                                                                        module = "Deployment | Execution",
-                                                                        date = None ,
-                                                                        fromuser = self.data['login'],
-                                                                        touser = "")
-
+            self.__alternatefolder()
             zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
-            if not 'pathdirectorytounzip' in self.workingstep:
+            if 'pathdirectorytounzip' not in self.workingstep:
                 #self.datasend['data']['pathpackageonmachine'] = self.replaceTEMPLATE(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pathdirectorytounzip'] = self.replaceTEMPLATE('.')
                 zip_ref.extractall(
@@ -1369,7 +1309,7 @@ class grafcet:
                 self.workingstep['command'] = base64.b64decode(self.workingstep['command'])
             self.workingstep['command'] = self.replaceTEMPLATE(
                 self.workingstep['command'])
-            if not "timeout" in self.workingstep:
+            if "timeout" not in self.workingstep:
                 ###
                 try:
                     self.workingstep['timeout'] = int(self.objectxmpp.config.default_timeout)
@@ -1388,45 +1328,8 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-
-            if 'packageuuid' in self.workingstep:
-                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
-                    self.workingstep['packageuuid'])
-                if os.path.isdir(self.workingstep['packageuuid']):
-                    os.chdir(self.workingstep['packageuuid'])
-                    self.workingstep['pwd'] = os.getcwd()
-                else:
-                    self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
-                                            'directory missing!!!:  %s' % (  self.data['name'],
-                                                                             self.workingstep['step']),
-                                                                            type = 'deploy',
-                                                                            sessionname = self.sessionid,
-                                                                            priority = self.workingstep['step'],
-                                                                            action = "xmpplog",
-                                                                            who = self.objectxmpp.boundjid.bare,
-                                                                            how = "",
-                                                                            why = self.data['name'],
-                                                                            module = "Deployment | Execution | Warning",
-                                                                            date = None ,
-                                                                            fromuser = self.data['login'],
-                                                                            touser = "")
-            self.workingstep['pwd'] = os.getcwd()
-
-            self.objectxmpp.xmpplog('[%s]-[%s]: Current directory %s' % ( self.data['name'],
-                                                                         self.workingstep['step'],
-                                                                         self.workingstep['pwd']),
-                                                                        type = 'deploy',
-                                                                        sessionname = self.sessionid,
-                                                                        priority = self.workingstep['step'],
-                                                                        action = "xmpplog",
-                                                                        who = self.objectxmpp.boundjid.bare,
-                                                                        how = "",
-                                                                        why = self.data['name'],
-                                                                        module = "Deployment | Execution",
-                                                                        date = None ,
-                                                                        fromuser = self.data['login'],
-                                                                        touser = "")
-
+                
+            self.__alternatefolder()
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(self.workingstep['command'],
                                                                                 self.datasend,
                                                                                 self.objectxmpp.boundjid.bare,
@@ -1478,7 +1381,7 @@ class grafcet:
 
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
-            if not "timeout" in self.workingstep:
+            if "timeout" not in self.workingstep:
                 self.workingstep['timeout'] = 15
                 logging.getLogger().warn("timeout missing : default value 15s")
             re = shellcommandtimeout(
@@ -1632,7 +1535,7 @@ class grafcet:
                 self.workingstep['script'] = base64.b64decode(self.workingstep['script'])
             self.workingstep['script'] = self.replaceTEMPLATE(
                 self.workingstep['script'])
-            if not "timeout" in self.workingstep:
+            if "timeout" not in self.workingstep:
                 self.workingstep['timeout'] = 900
                 logging.getLogger().warn("timeout missing : default value 900s")
 
@@ -1640,44 +1543,7 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-
-            if 'packageuuid' in self.workingstep:
-                self.workingstep['packageuuid'] = self.replaceTEMPLATE(
-                    self.workingstep['packageuuid'])
-                if os.path.isdir(self.workingstep['packageuuid']):
-                    os.chdir(self.workingstep['packageuuid'])
-                    self.workingstep['pwd'] = os.getcwd()
-                else:
-                    self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
-                                            'directory missing!!!:  %s' % (  self.data['name'],
-                                                                             self.workingstep['step']),
-                                                                            type = 'deploy',
-                                                                            sessionname = self.sessionid,
-                                                                            priority = self.workingstep['step'],
-                                                                            action = "xmpplog",
-                                                                            who = self.objectxmpp.boundjid.bare,
-                                                                            how = "",
-                                                                            why = self.data['name'],
-                                                                            module = "Deployment | Execution | Warning",
-                                                                            date = None ,
-                                                                            fromuser = self.data['login'],
-                                                                            touser = "")
-            self.workingstep['pwd'] = os.getcwd()
-
-            self.objectxmpp.xmpplog('[%s]-[%s]: Current directory %s' % ( self.data['name'],
-                                                                         self.workingstep['step'],
-                                                                         self.workingstep['pwd']),
-                                                                        type = 'deploy',
-                                                                        sessionname = self.sessionid,
-                                                                        priority = self.workingstep['step'],
-                                                                        action = "xmpplog",
-                                                                        who = self.objectxmpp.boundjid.bare,
-                                                                        how = "",
-                                                                        why = self.data['name'],
-                                                                        module = "Deployment | Execution",
-                                                                        date = None ,
-                                                                        fromuser = self.data['login'],
-                                                                        touser = "")
+            self.__alternatefolder()
             if self.workingstep['typescript'] in extensionscriptfile:
                 suffix = extensionscriptfile[self.workingstep['typescript']]['suffix']
                 shebang = extensionscriptfile[self.workingstep['typescript']]['bang']
@@ -1764,25 +1630,43 @@ class grafcet:
         """
         inventory = True
         if 'inventory' in self.workingstep:
-            if isinstance(self.workingstep['inventory'], bool):
-                inventory = self.workingstep['inventory']
-            else:
-                self.workingstep['inventory'] = str(self.workingstep['inventory'])
-                if self.workingstep['inventory'] == "False":
-                    inventory = False
+            boolstr = str(self.workingstep['inventory'])
+            ### status inventory "No inventory / Inventory on change / Forced inventory"
+            if boolstr.lower() in ['true',
+                                    '1',
+                                    'y',
+                                    'yes',
+                                    'ok',
+                                    'forced',
+                                    'forced inventory',
+                                    ]:
+                inventory = True                
+                self.workingstep['actioninventory'] = 'forced'
+
+            if boolstr.lower() in ['false',
+                                   '0',
+                                   'n',
+                                   'no',
+                                   'ko',
+                                   'non',
+                                   'not'
+                                   'no inventory']:
+                inventory = False
+                self.workingstep['actioninventory'] = 'noforced'
+
+            if boolstr.lower() in ['Inventory on change' ,
+                                   'noforced']:
+                inventory = True
+                self.workingstep['actioninventory'] = 'noforced'
+
+
+        if 'actioninventory' not in self.workingstep:
+            logger.warning("inventory option is forced check option inventory")
+            self.workingstep['actioninventory'] = 'forced'
         inventoryfile = ""
         if inventory:
             ### genere inventaire et envoi inventaire
             #### call plugin inventory pour master.
-            if sys.platform.startswith('linux'):
-                inventoryfile = os.path.join("/","tmp","inventory.txt")
-            elif sys.platform.startswith('win'):
-                inventoryfile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
-            elif sys.platform.startswith('darwin'):
-                inventoryfile = os.path.join("/","tmp","inventory.txt")
-            if inventoryfile != "" and os.path.isfile(inventoryfile):
-                os.remove(inventoryfile)
-            ## call plugin inventory pour master.
             self.objectxmpp.xmpplog('Starting inventory',
                                         type = 'deploy',
                                         sessionname = self.sessionid,
@@ -1796,13 +1680,14 @@ class grafcet:
                                         fromuser = self.data['login'],
                                         touser = "")
             try:
-                self.objectxmpp.handleinventory()
+                self.objectxmpp.handleinventory(forced=self.workingstep['actioninventory'],
+                                                sessionid=self.sessionid)
             except Exception as e:
                 print str(e)
             #waitting active generated new inventory
             doinventory = False
             timeinventory = 0
-            for indextime in range(24):  # waitting max 2 minutes
+            for indextime in range(48):  # waitting max 2 minutes
                 if os.path.isfile(inventoryfile):
                     doinventory = True
                     timeinventory = (indextime + 1) * 5
@@ -1927,13 +1812,13 @@ class grafcet:
 
         """
         # composition command
-        if not 'title' in self.workingstep:
+        if 'title' not in self.workingstep:
             self.workingstep['title'] = "Confirmation"
-        if not 'icon' in self.workingstep:
+        if 'icon' not in self.workingstep:
             self.workingstep['icon'] = "information"
-        if not 'query' in self.workingstep:
+        if 'query' not in self.workingstep:
             self.workingstep['query'] = "Yes or No"
-        if not 'boutontype' in self.workingstep:
+        if 'boutontype' not in self.workingstep:
             self.workingstep['boutontype'] = ['yes', 'no']
 
         if sys.platform.startswith('linux'):
@@ -2031,7 +1916,7 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             # todo si action deja faite return
-            if not "waiting" in self.workingstep:
+            if "waiting" not in self.workingstep:
                 self.workingstep['waiting'] = '10'
                 logging.getLogger().warn("waiting missing : default value 180s")
             #timewaiting = int(self.workingstep['waiting']) + 180
@@ -2243,3 +2128,59 @@ class grafcet:
             return 'apt-get -q -y install '
         else:
             return ""
+
+    def __alternatefolder(self):
+        if 'packageuuid' in self.workingstep:
+            self.workingstep['packageuuid'] = self.replaceTEMPLATE(
+                self.workingstep['packageuuid'])
+            directoryworking = os.path.join(managepackage.packagedir(), 
+                                            self.workingstep['packageuuid'])
+            if os.path.isdir(directoryworking):
+                os.chdir(directoryworking)
+                self.workingstep['pwd'] = os.getcwd()
+                self.objectxmpp.xmpplog('[%s]-[%s]: Using " \
+                                            "package folder %s'% (self.data['name'],
+                                                                    self.workingstep['step'],
+                                                                    self.workingstep['packageuuid']),
+                                        type = 'deploy',
+                                        sessionname = self.sessionid,
+                                        priority = self.workingstep['step'],
+                                        action = "xmpplog",
+                                        who = self.objectxmpp.boundjid.bare,
+                                        how = "",
+                                        why = self.data['name'],
+                                        module = "Deployment | Execution | Warning",
+                                        date = None ,
+                                        fromuser = self.data['login'],
+                                        touser = "")
+            else:
+                self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '\
+                                        'directory missing!!!:  %s' % (  self.data['name'],
+                                                                            self.workingstep['step'],
+                                                                            self.workingstep['packageuuid']),
+                                                                        type = 'deploy',
+                                                                        sessionname = self.sessionid,
+                                                                        priority = self.workingstep['step'],
+                                                                        action = "xmpplog",
+                                                                        who = self.objectxmpp.boundjid.bare,
+                                                                        how = "",
+                                                                        why = self.data['name'],
+                                                                        module = "Deployment | Execution | Warning",
+                                                                        date = None ,
+                                                                        fromuser = self.data['login'],
+                                                                        touser = "")
+        self.workingstep['pwd'] = os.getcwd()
+        self.objectxmpp.xmpplog('[%s]-[%s]: Current directory %s' % ( self.data['name'],
+                                                                      self.workingstep['step'],
+                                                                      self.workingstep['pwd']),
+                                                                    type = 'deploy',
+                                                                    sessionname = self.sessionid,
+                                                                    priority = self.workingstep['step'],
+                                                                    action = "xmpplog",
+                                                                    who = self.objectxmpp.boundjid.bare,
+                                                                    how = "",
+                                                                    why = self.data['name'],
+                                                                    module = "Deployment | Execution",
+                                                                    date = None ,
+                                                                    fromuser = self.data['login'],
+                                                                    touser = "")

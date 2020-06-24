@@ -314,7 +314,7 @@ xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/pulse-filetree-generator"
 # Download, extract and copy syncthing
 curl -O ${BASE_URL}/mac/downloads/${SYNCTHING_FILENAME}
 if [[ -f ${SYNCTHING_FILENAME} ]];then
-  tar xzf ${SYNCTHING_FILENAME}
+  unzip ${SYNCTHING_FILENAME}
   cp "${SYNCTHING_FILENAME%.*}/syncthing" "${INSTALL_PATH}/bin"
   chmod +x "${INSTALL_PATH}/bin/syncthing"
   xattr -d com.apple.quarantine "${INSTALL_PATH}/bin/syncthing"

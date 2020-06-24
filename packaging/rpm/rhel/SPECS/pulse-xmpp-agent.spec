@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.0.8
+Version:	2.1.0
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -116,11 +116,17 @@ if systemctl -q is-enabled pulse-xmpp-master-substitute-logger ; then
     echo "..done"
 fi
 
+if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-reconfigurator service..."
+    systemctl restart pulse-xmpp-master-substitute-reconfigurator
+    echo "..done"
+fi
+
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
 %_prefix/lib/systemd/system/pulse-package-watching.service
-%_sysconfdir/pulse-xmpp-agent
+%dir %_sysconfdir/pulse-xmpp-agent/
 %_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/guacamoleconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/downloadfile.ini
@@ -132,19 +138,15 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %_var/log/pulse
-%dir %{python2_sitelib}/pulse_xmpp_agent
-%{python2_sitelib}/pulse_xmpp_agent/lib
+%dir %{python2_sitelib}/pulse_xmpp_agent/
+%{python2_sitelib}/pulse_xmpp_agent/lib/
 %{python2_sitelib}/pulse_xmpp_agent/*.py*
-%{python2_sitelib}/pulse_xmpp_agent/script
-%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
-%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine
-%{python2_sitelib}/pulse_xmpp_agent/script/getlastuser.ps1
-%{python2_sitelib}/pulse_xmpp_agent/script/create-profile.ps1
-%{python2_sitelib}/pulse_xmpp_agent/script/remove-profile.ps1
+%{python2_sitelib}/pulse_xmpp_agent/script/
+%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay/
+%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/
 %{python2_sitelib}/pulse_xmpp_agent/agentversion
-%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay
-%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/*.py*
-%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/*.py*
+%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
 
 #--------------------------------------------------------------------
 
@@ -168,6 +170,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 
 
 #--------------------------------------------------------------------
@@ -424,3 +427,4 @@ cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
+cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/

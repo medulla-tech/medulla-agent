@@ -19,20 +19,20 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from  lib.utils import simplecommand
+from lib import utils
 import json
 import traceback
 import sys, os
 import logging
 
-plugin = {"VERSION": "1.1", "NAME" : "asynchromeremoteshell", "TYPE" : "all"}
+plugin = {"VERSION": "2.0", "NAME" : "asynchromeremoteshell", "TYPE" : "all"}
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().info("###################################################")
     logging.getLogger().info("call %s from %s"%(plugin,message['from']))
     logging.getLogger().info("###################################################")
-    
+
     result = {
                     'action': "result%s"%action,
                     'sessionid': sessionid,
@@ -41,7 +41,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     'base64' : False
                 }
     try:
-        obj = simplecommand(data['command'])
+        obj = utils.simplecommand(data['command'])
         logging.getLogger().info("encodage result : %s"%sys.stdout.encoding)
 
         result['ret'] = 0

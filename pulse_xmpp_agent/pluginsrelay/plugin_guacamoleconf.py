@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 # file : pluginsrelay/plugin_guacamoleconf.py
 import sys
-from  lib.utils import pluginprocess
+from lib import utils
 import MySQLdb
 import traceback
 from random import randint
@@ -29,7 +29,7 @@ import socket
 import json
 import logging
 
-plugin = {"VERSION": "1.1501", "NAME" :"guacamoleconf", "TYPE":"relayserver"}
+plugin = {"VERSION": "2.0", "NAME" :"guacamoleconf", "TYPE":"relayserver"}
 logger = logging.getLogger()
 
 def get_free_tcp_port():
@@ -48,7 +48,7 @@ def deleteprotocole(protocole, hostname):
 def insertparameter(index, parameter, value):
     return """INSERT INTO guacamole_connection_parameter (connection_id, parameter_name, parameter_value) VALUES (%s, '%s', '%s');"""%(index, parameter, value)
 
-@pluginprocess
+@utils.pluginprocess
 def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
     logger.debug("###################################################")
     logger.debug("call %s from %s"%(plugin, message['from']))
@@ -66,6 +66,7 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
         raise
     cursor = db.cursor()
     result['data']['uuid'] = data['uuid']
+    result['data']['machine_id'] = data['machine_id']
     result['data']['connection'] = {}
 
     # Add only detected protocols

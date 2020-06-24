@@ -56,7 +56,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
               }
     try:
         logging.getLogger().debug("=====================================================")
-        logging.getLogger().debug(plugin)
+        logging.getLogger().debug("call %s from %s"%(plugin,msg['from']))
         logging.getLogger().debug("=====================================================")
         logger.info("Received inventory from %s in inventory substitute agent" % (msg['from']))
         try:

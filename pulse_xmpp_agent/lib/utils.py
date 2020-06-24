@@ -46,11 +46,15 @@ import psutil
 import time
 from datetime import datetime
 import imp
-
+import requests
+import uuid
+import shutil
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import zipfile
+from functools import wraps
+
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
@@ -65,8 +69,144 @@ if sys.platform.startswith('win'):
     import win32security
     import ntsecuritycon
     import win32net
+    import ctypes
     import win32com.client
     from win32com.client import GetObject
+    from ctypes.wintypes import LPCWSTR, LPCSTR
+
+if sys.platform.startswith('linux'):
+    import pwd
+    import grp
+
+if sys.platform.startswith('darwin'):
+    import pwd
+    import grp
+
+#### debug decorator #########
+def minimum_runtime(t):
+    """
+        Function decorator constrains the minimum execution time of the function
+    """
+    def decorated(f):
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            result = f(*args, **kwargs)
+            runtime = time.time() - start
+            if runtime < t:
+                time.sleep(t - runtime)
+            return result
+        return wrapper
+    return decorated
+
+def dump_parameter(para=True, out=True, timeprocess = True):
+    """
+        Function decorator logging in and out function.
+    """
+    def decorated(decorated_function):
+        @wraps(decorated_function)
+        def wrapper(*dec_fn_args, **dec_fn_kwargs):
+            # Log function entry
+            start = time.time()
+            func_name = decorated_function.__name__
+            log = logging.getLogger(func_name)
+
+            filepath = os.path.basename(__file__)
+            # get function params (args and kwargs)
+            if para:
+                arg_names = decorated_function.__code__.co_varnames
+                params = dict(
+                    args=dict(zip(arg_names, dec_fn_args)),
+                    kwargs=dec_fn_kwargs)
+                result = ', '.join([
+                        '{}={}'.format(str(k), repr(v)) for k, v in params.items()])
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+            else:
+                log.info('\n@@@ call func : {}() file {}'.format(func_name, filepath))
+            # Execute wrapped (decorated) function:
+            outfunction = decorated_function(*dec_fn_args, **dec_fn_kwargs)
+            timeruntime = time.time() - start
+            if out:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s is -->{}'.format(func_name,
+                                                                           timeruntime,
+                                                                           outfunction))
+                else:
+                    log.info('\n@@@ out func :{}() is -->{}'.format(func_name,
+                                                                    outfunction))
+            else:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s'.format(func_name,
+                                                                  timeruntime))
+                else:
+                    log.info('\n@@@ out func :{}()'.format(func_name))
+            return outfunction
+        return wrapper
+    return decorated
+###########################################
+
+#### debug decorator #########
+def minimum_runtime(t):
+    """
+        Function decorator constrains the minimum execution time of the function
+    """
+    def decorated(f):
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            result = f(*args, **kwargs)
+            runtime = time.time() - start
+            if runtime < t:
+                time.sleep(t - runtime)
+            return result
+        return wrapper
+    return decorated
+
+def dump_parameter(para=True, out=True, timeprocess = True):
+    """
+        Function decorator logging in and out function.
+    """
+    def decorated(decorated_function):
+        @wraps(decorated_function)
+        def wrapper(*dec_fn_args, **dec_fn_kwargs):
+            # Log function entry
+            start = time.time()
+            func_name = decorated_function.__name__
+            log = logging.getLogger(func_name)
+
+            filepath = os.path.basename(__file__)
+            # get function params (args and kwargs)
+            if para:
+                arg_names = decorated_function.__code__.co_varnames
+                params = dict(
+                    args=dict(zip(arg_names, dec_fn_args)),
+                    kwargs=dec_fn_kwargs)
+                result = ', '.join([
+                        '{}={}'.format(str(k), repr(v)) for k, v in params.items()])
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+            else:
+                log.info('\n@@@ call func : {}() file {}'.format(func_name, filepath))
+            # Execute wrapped (decorated) function:
+            outfunction = decorated_function(*dec_fn_args, **dec_fn_kwargs)
+            timeruntime = time.time() - start
+            if out:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s is -->{}'.format(func_name,
+                                                                           timeruntime,
+                                                                           outfunction))
+                else:
+                    log.info('\n@@@ out func :{}() is -->{}'.format(func_name,
+                                                                    outfunction))
+            else:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s'.format(func_name,
+                                                                  timeruntime))
+                else:
+                    log.info('\n@@@ out func :{}()'.format(func_name))
+            return outfunction
+        return wrapper
+    return decorated
+###########################################
 
 def Setdirectorytempinfo():
     """
@@ -221,7 +361,6 @@ def refreshfingerprint():
             'fingerprintnetwork'),
         fp)
     return fp
-
 
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
@@ -385,7 +524,7 @@ def loadModule(filename):
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
     searchPath, file = os.path.split(filename)
-    if not searchPath in sys.path:
+    if searchPath not in sys.path:
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath+"/../"))
     moduleName, ext = os.path.splitext(file)
@@ -398,17 +537,17 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
-    nameplugin = os.path.join(args[0].modulepath, "plugin_%s"%args[1])
+    nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
     #add compteur appel plugins
     count = 0
     try:
-        count = getattr(args[0], "num_call%s"%args[1])
+        count = getattr(args[0], "num_call%s" % args[1])
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s"%args[1], count)
     pluginaction = loadModule(nameplugin)
     pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s"%args[1], count + 1)
+    setattr(args[0], "num_call%s" % args[1], count + 1)
 
 #def load_plugin(name):
     #mod = __import__("plugin_%s" % name)
@@ -628,8 +767,8 @@ def windowspath(namescript):
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
-    print "powershell -ExecutionPolicy Bypass -File  %s"%namescript
-    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s"%namescript))
+    print "powershell -ExecutionPolicy Bypass -File  %s" % namescript
+    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript))
     return obj
 
 
@@ -921,7 +1060,7 @@ def pulgindeploy1(func):
                 dataerreur,
                 result)
 
-            if not 'end' in result['data']:
+            if 'end' not in result['data']:
                 result['data']['end'] = False
 
             print "----------------------------------------------------------------"
@@ -974,7 +1113,7 @@ def getIpXmppInterface(ipadress1, Port):
             DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, ipadress))
         if obj['code'] != 0:
-            logging.getLogger().error('error command netstat : %s'%obj['result'])
+            logging.getLogger().error('error command netstat : %s' % obj['result'])
             logging.getLogger().error('error install package net-tools')
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1057,7 +1196,7 @@ def searchippublic(site=1):
             if is_valid_ipv4(objip['ip']):
                 return objip['ip']
             else:
-                return searchippublic(2)
+                return searchippublic(3)
         except BaseException:
             return searchippublic(2)
     elif site == 2:
@@ -1168,77 +1307,109 @@ def portline(result):
     print column
     return column[-2:-1][0].split(':')[1]
 
+class protodef:
+    def __init__(self):
+        self.fileprotoinfo = os.path.join(Setdirectorytempinfo(),
+                                          'fingerprintproto')
+        self.boolchangerproto , self.proto = self.protochanged()
 
-def protoandport():
-    protport = {}
-    if sys.platform.startswith('win'):
-        for process in psutil.process_iter():
-            if 'tvnserver.exe' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['vnc'] = cux.laddr.port
-            elif 'sshd.exe' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['ssh'] = cux.laddr.port
-        for service in psutil.win_service_iter():
-            if 'TermService' in service.name():
-                service_handler = psutil.win_service_get('TermService')
-                if service_handler.status() == 'running':
-                    pid = service_handler.pid()
-                    process_handler = psutil.Process(pid)
+    def protoinfoexist(self):
+        if os.path.exists(self.fileprotoinfo):
+            return True
+        return False
+
+    def protochanged(self):
+        if self.protoinfoexist():
+            fproto = protodef.protoandport()
+            self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+            newfingerprint = pickle.dumps(fproto) #on recalcule le proto
+            if self.fingerprintproto == newfingerprint:
+                self.proto = fproto
+                return False, self.proto
+        self.refreshfingerprintproto()
+        self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+        self.proto = pickle.loads(self.fingerprintproto)
+        return True, self.proto
+
+    def refreshfingerprintproto(self):
+        fproto = protodef.protoandport()
+        with open(self.fileprotoinfo, 'wb') as handle:
+            pickle.dump(fproto, handle)
+        return fproto
+
+    @staticmethod
+    def protoandport():
+        protport = {}
+        if sys.platform.startswith('win'):
+            for process in psutil.process_iter():
+                if 'tvnserver.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
                     for cux in process_handler.connections():
                         if cux.status == psutil.CONN_LISTEN:
-                            protport['rdp'] = cux.laddr.port
+                            protport['vnc'] = cux.laddr.port
+                elif 'sshd.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['ssh'] = cux.laddr.port
+            for service in psutil.win_service_iter():
+                if 'TermService' in service.name():
+                    service_handler = psutil.win_service_get('TermService')
+                    if service_handler.status() == 'running':
+                        pid = service_handler.pid()
+                        process_handler = psutil.Process(pid)
+                        for cux in process_handler.connections():
+                            if cux.status == psutil.CONN_LISTEN:
+                                protport['rdp'] = cux.laddr.port
 
-    elif sys.platform.startswith('linux'):
-        for process in psutil.process_iter():
-            if 'x11vnc' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['vnc'] = port
-            elif 'sshd' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['ssh'] = port
-            elif 'xrdp' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['rdp'] = port
+        elif sys.platform.startswith('linux'):
+            for process in psutil.process_iter():
+                if process.name() == 'x11vnc':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['vnc'] = port
+                elif process.name() == 'sshd':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['ssh'] = port
+                elif process.name() == 'xrdp':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and (ip == "0.0.0.0" or ip == "::"):
+                            protport['rdp'] = port
 
-    elif sys.platform.startswith('darwin'):
-        for process in psutil.process_iter():
-            if 'ARDAgent' in process.name():
-                protport['vnc'] = '5900'
-        for cux in psutil.net_connections():
-            if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
-                protport['ssh'] = '22'
+        elif sys.platform.startswith('darwin'):
+            for process in psutil.process_iter():
+                if 'ARDAgent' in process.name():
+                    protport['vnc'] = '5900'
+            for cux in psutil.net_connections():
+                if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
+                    protport['ssh'] = '22'
 
-    return protport
+        return protport
 
+def protoandport():
+    return protodef.protoandport()
 
 def ipfromdns(name_domaine_or_ip):
     """ This function converts a dns to ipv4
@@ -1258,6 +1429,16 @@ def ipfromdns(name_domaine_or_ip):
         except Exception:
             return ""
     return ""
+
+
+def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
+    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+        sessionid = action.strip().replace(" ", "")
+    return { 'action' : action,
+             'data' : data,
+             'ret' : 0,
+             "base64" : False,
+             "sessionid" : getRandomName(4,sessionid)}
 
 
 def check_exist_ip_port(name_domaine_or_ip, port):
@@ -1413,21 +1594,21 @@ def shutdown_command(time = 0, msg=''):
         if int(time) == 0 or msg =='':
             cmd = "shutdown now"
         else:
-            cmd = "shutdown -P -f -t %s %s"%(time, msg)
+            cmd = "shutdown -P -f -t %s %s" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     elif sys.platform.startswith('win'):
         if int(time) == 0 or msg =='':
             cmd = "shutdown /p"
         else:
-            cmd = "shutdown /s /t %s /c %s"%(time, msg)
+            cmd = "shutdown /s /t %s /c %s" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     elif sys.platform.startswith('darwin'):
         if int(time) == 0 or msg =='':
             cmd = "shutdown -h now"
         else:
-            cmd = "shutdown -h +%s \"%s\""%(time, msg)
+            cmd = "shutdown -h +%s \"%s\"" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     return
@@ -1510,7 +1691,7 @@ def loadjsonfile(filename):
         try:
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error("filename %s error decodage [%s]"%(filename ,str(e)))
+            logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
 def save_user_current(name = None):
@@ -1612,7 +1793,7 @@ def keypub():
         except:
             pathkey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
         if not os.path.isfile(os.path.join(pathkey , "id_rsa")):
-            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""'%os.path.join(pathkey, "id_rsa"))
+            obj = simplecommand('"C:\Program Files\OpenSSH\ssh-keygen.exe" -b 2048 -t rsa -f "%s" -q -N ""' % os.path.join(pathkey, "id_rsa"))
         return file_get_contents(os.path.join(pathkey, "id_rsa.pub"))
     elif sys.platform.startswith('darwin'):
         if not os.path.isfile("/var/root/.ssh/id_rsa"):
@@ -1623,24 +1804,24 @@ def keypub():
 def deletekey(file, key, back = True):
     if os.path.isfile(file):
         if back:
-            simplecommand("sed -i.bak '/%s/d' %s"%( key, file))
+            simplecommand("sed -i.bak '/%s/d' %s" % (key, file))
         else:
-            simplecommand("sed -i '/%s/d' %s"%( key, file))
+            simplecommand("sed -i '/%s/d' %s" % (key, file))
 
 def installkey(file, key, back = True):
     deletekey(file, key, back = back)
-    simplecommand('echo "%s" >> %s'%( key, file))
+    simplecommand('echo "%s" >> %s' % (key, file))
 
 def connection_established(Port):
     """ verify connection etablish
         return true if etablish
     """
     if sys.platform.startswith('linux'):
-        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED | grep -v tcp6" %(Port))
+        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED | grep -v tcp6" % (Port))
     elif sys.platform.startswith('win'):
-        obj = simplecommandstr("netstat -an | findstr %s | findstr ESTABLISHED"%Port)
+        obj = simplecommandstr("netstat -an | findstr %s | findstr ESTABLISHED" % Port)
     elif sys.platform.startswith('darwin'):
-        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED" %(Port))
+        obj = simplecommandstr("netstat -an |grep %s | grep ESTABLISHED" % (Port))
     if "ESTABLISHED" in obj['result']:
         return True
     else:
@@ -1652,11 +1833,11 @@ def showlinelog(nbline = 200):
     if sys.platform.startswith('win'):
         na = os.path.join(os.environ['ProgramFiles'], "Pulse", "var", "log","xmpp-agent.log")
         if os.path.isfile(na):
-            obj = simplecommandstr(encode_strconsole("powershell \"Get-Content '%s' | select -last %s\""%(na, nbline)))
+            obj = simplecommandstr(encode_strconsole("powershell \"Get-Content '%s' | select -last %s\"" % (na, nbline)))
     elif sys.platform.startswith('linux'):
         na = os.path.join("/", "var", "log", "pulse", "xmpp-agent.log")
         if os.path.isfile(na):
-            obj = simplecommandstr("cat %s | tail -n %s"%(na, nbline))
+            obj = simplecommandstr("cat %s | tail -n %s" % (na, nbline))
     return obj['result']
 
 def is_findHostfromHostname(hostname):
@@ -1795,48 +1976,65 @@ def setgetrestart(data = None):
 def detectantivirus():
     def SECURITY_PROVIDER(keyobject, data):
         str = data[0:2]
-        if str   == "00" : return "NONE"
-        elif str == "01" : return "FIREWALL"
-        elif str == "02" : return "AUTOUPDATE_SETTINGS"
-        elif str == "04" : return "ANTIVIRUS"
-        elif str == "08" : return "ANTISPYWARE"
-        elif str == "16" : return "INTERNET_SETTINGS"
-        elif str == "32" : return "USER_ACCOUNT_CONTROL"
-        elif str == "64" : return "SERVICE"
-        else : return keyobject.upper()
+        if str == "00":
+            return "NONE"
+        elif str == "01":
+            return "FIREWALL"
+        elif str == "02":
+            return "AUTOUPDATE_SETTINGS"
+        elif str == "04":
+            return "ANTIVIRUS"
+        elif str == "08":
+            return "ANTISPYWARE"
+        elif str == "16":
+            return "INTERNET_SETTINGS"
+        elif str == "32":
+            return "USER_ACCOUNT_CONTROL"
+        elif str == "64":
+            return "SERVICE"
+        else:
+            return keyobject.upper()
 
     def SECURITY_PRODUCT_STATE(data):
         str = data[2:4]
-        if str   == "00" : return "OFF"
-        elif str == "01" : return "EXPIRED"
-        elif str == "10" : return "ON"
-        elif str == "11" : return "SNOOZED"
-        else :  return "UNKNOWN"
+        if str == "00":
+            return "OFF"
+        elif str == "01":
+            return "EXPIRED"
+        elif str == "10":
+            return "ON"
+        elif str == "11":
+            return "SNOOZED"
+        else:
+            return "UNKNOWN"
 
     def SECURITY_SIGNATURE_STATUS(data):
         str = data[4:6]
-        if str    =="00" : return "UP_TO_DATE"
-        elif str == "10" : return "OUT_OF_DATE"
-        else : return "UNKNOWN"
+        if str == "00":
+            return "UP_TO_DATE"
+        elif str == "10":
+            return "OUT_OF_DATE"
+        else:
+            return "UNKNOWN"
 
     def elemenstructure():
         return {
-            "displayName" : "",
-            "instanceGuid" : "",
-            "pathToSignedProductExe" : "",
-            "pathToSignedReportingExe" : "",
-            "productState" : 0,
-            "hex" : "000000",
-            "SECURITY_PROVIDER" : "NONE",
-            "SECURITY_PRODUCT_STATE" : "UNKNOWN",
-            "SECURITY_SIGNATURE_STATUS" : "UNKNOWN",
-            "timestamp" : "",
+            "displayName": "",
+            "instanceGuid": "",
+            "pathToSignedProductExe": "",
+            "pathToSignedReportingExe": "",
+            "productState": 0,
+            "hex": "000000",
+            "SECURITY_PROVIDER": "NONE",
+            "SECURITY_PRODUCT_STATE": "UNKNOWN",
+            "SECURITY_SIGNATURE_STATUS": "UNKNOWN",
+            "timestamp": "",
             }
     if sys.platform.startswith('win'):
         result={}
-        objWMI = {"Antivirus" : GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct'),
-                  "Firewall" : GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('FirewallProduct'),
-                  "AntiSpyware" :  GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')}
+        objWMI = {"Antivirus": GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiVirusProduct'),
+                  "Firewall": GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('FirewallProduct'),
+                  "AntiSpyware":  GetObject('winmgmts:\\\\.\\root\\SecurityCenter2').InstancesOf('AntiSpywareProduct')}
         for key in objWMI:
             result[key]=[]
             for i in objWMI[key]:
@@ -1859,7 +2057,7 @@ def detectantivirus():
                     pass
                 try:
                     infoprotection['productState'] = i.productState
-                    infoprotection['hex'] = "%06x"%i.productState
+                    infoprotection['hex'] = "%06x" % i.productState
                     infoprotection['SECURITY_PROVIDER'] = SECURITY_PROVIDER(key, infoprotection['hex'])
                     infoprotection['SECURITY_PRODUCT_STATE'] = SECURITY_PRODUCT_STATE(infoprotection['hex'])
                     infoprotection['SECURITY_SIGNATURE_STATUS'] = SECURITY_SIGNATURE_STATUS(infoprotection['hex'])
@@ -1895,114 +2093,114 @@ def information_machine():
         colItems = objSWbemServices.ExecQuery("SELECT * FROM Win32_ComputerSystem")
         for objItem in colItems:
             if objItem.AdminPasswordStatus != None:
-                result[ "AdminPasswordStatus"] = objItem.AdminPasswordStatus
+                result["AdminPasswordStatus"] = objItem.AdminPasswordStatus
             if objItem.AutomaticResetBootOption != None:
-                result[ "AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
+                result["AutomaticResetBootOption"] = objItem.AutomaticResetBootOption
             if objItem.AutomaticResetCapability != None:
-                result[ "AutomaticResetCapability"] = objItem.AutomaticResetCapability
+                result["AutomaticResetCapability"] = objItem.AutomaticResetCapability
             if objItem.BootOptionOnLimit != None:
-                result[ "BootOptionOnLimit"] = objItem.BootOptionOnLimit
+                result["BootOptionOnLimit"] = objItem.BootOptionOnLimit
             if objItem.BootOptionOnWatchDog != None:
-                result[ "BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
+                result["BootOptionOnWatchDog"] = objItem.BootOptionOnWatchDog
             if objItem.BootROMSupported != None:
-                result[ "BootROMSupported"] = objItem.BootROMSupported
+                result["BootROMSupported"] = objItem.BootROMSupported
             if objItem.BootupState != None:
-                result[ "BootupState"] = objItem.BootupState
+                result["BootupState"] = objItem.BootupState
             if objItem.Caption != None:
-                result[ "Caption"] = objItem.Caption
+                result["Caption"] = objItem.Caption
             if objItem.ChassisBootupState != None:
-                result[ "ChassisBootupState"] = objItem.ChassisBootupState
+                result["ChassisBootupState"] = objItem.ChassisBootupState
             if objItem.CreationClassName != None:
-                result[ "CreationClassName"] = objItem.CreationClassName
+                result["CreationClassName"] = objItem.CreationClassName
             if objItem.CurrentTimeZone != None:
-                result[ "CurrentTimeZone"] = objItem.CurrentTimeZone
+                result["CurrentTimeZone"] = objItem.CurrentTimeZone
             if objItem.DaylightInEffect != None:
-                result[ "DaylightInEffect"] = objItem.DaylightInEffect
+                result["DaylightInEffect"] = objItem.DaylightInEffect
             if objItem.Description != None:
-                result[ "Description"] = objItem.Description
+                result["Description"] = objItem.Description
             if objItem.DNSHostName != None:
-                result[ "DNSHostName"] = objItem.DNSHostName
+                result["DNSHostName"] = objItem.DNSHostName
             if objItem.Domain != None:
-                result[ "Domain"] = objItem.Domain
+                result["Domain"] = objItem.Domain
             if objItem.DomainRole != None:
-                result[ "DomainRole"] = objItem.DomainRole
+                result["DomainRole"] = objItem.DomainRole
             if objItem.EnableDaylightSavingsTime != None:
-                result[ "EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
+                result["EnableDaylightSavingsTime"] = objItem.EnableDaylightSavingsTime
             if objItem.FrontPanelResetStatus != None:
-                result[ "FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
+                result["FrontPanelResetStatus"] = objItem.FrontPanelResetStatus
             if objItem.InfraredSupported != None:
-                result[ "InfraredSupported"] = objItem.InfraredSupported
+                result["InfraredSupported"] = objItem.InfraredSupported
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.InitialLoadInfo])
             except:
                 pass
-            result[ "InitialLoadInfo"] = strList
+            result["InitialLoadInfo"] = strList
 
             if objItem.InstallDate != None:
-                result[ "InstallDate"] + WMIDateStringToDate(objItem.InstallDate)
+                result["InstallDate"] + WMIDateStringToDate(objItem.InstallDate)
             if objItem.KeyboardPasswordStatus != None:
-                result[ "KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
+                result["KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
             if objItem.LastLoadInfo != None:
-                result[ "LastLoadInfo"] = objItem.LastLoadInfo
+                result["LastLoadInfo"] = objItem.LastLoadInfo
             if objItem.Manufacturer != None:
-                result[ "Manufacturer"] = objItem.Manufacturer
+                result["Manufacturer"] = objItem.Manufacturer
             if objItem.Model != None:
-                result[ "Model"] = objItem.Model
+                result["Model"] = objItem.Model
             if objItem.Name != None:
-                result[ "Name"] = objItem.Name
+                result["Name"] = objItem.Name
             if objItem.NameFormat != None:
-                result[ "NameFormat"] = objItem.NameFormat
+                result["NameFormat"] = objItem.NameFormat
             if objItem.NetworkServerModeEnabled != None:
-                result[ "NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
+                result["NetworkServerModeEnabled"] = objItem.NetworkServerModeEnabled
             if objItem.NumberOfProcessors != None:
-                result[ "NumberOfProcessors"] = objItem.NumberOfProcessors
+                result["NumberOfProcessors"] = objItem.NumberOfProcessors
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.OEMLogoBitmap])
             except:
                 pass
-            result[ "OEMLogoBitmap"] = strList
+            result["OEMLogoBitmap"] = strList
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.OEMStringArray])
             except:
                 pass
-            result[ "OEMStringArray"] = strList
+            result["OEMStringArray"] = strList
 
             if objItem.PartOfDomain != None:
-                result[ "PartOfDomain"] = objItem.PartOfDomain
+                result["PartOfDomain"] = objItem.PartOfDomain
             if objItem.PauseAfterReset != None:
-                result[ "PauseAfterReset"] = objItem.PauseAfterReset
+                result["PauseAfterReset"] = objItem.PauseAfterReset
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.PowerManagementCapabilities])
             except:
                 pass
-            result[ "PowerManagementCapabilities"] = strList
+            result["PowerManagementCapabilities"] = strList
 
             if objItem.PowerManagementSupported != None:
-                result[ "PowerManagementSupported"] = objItem.PowerManagementSupported
+                result["PowerManagementSupported"] = objItem.PowerManagementSupported
             if objItem.PowerOnPasswordStatus != None:
-                result[ "PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
+                result["PowerOnPasswordStatus"] = objItem.PowerOnPasswordStatus
             if objItem.PowerState != None:
-                result[ "PowerState"] = objItem.PowerState
+                result["PowerState"] = objItem.PowerState
             if objItem.PowerSupplyState != None:
-                result[ "PowerSupplyState"] = objItem.PowerSupplyState
+                result["PowerSupplyState"] = objItem.PowerSupplyState
             if objItem.PrimaryOwnerContact != None:
-                result[ "PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
+                result["PrimaryOwnerContact"] = objItem.PrimaryOwnerContact
             if objItem.PrimaryOwnerName != None:
-                result[ "PrimaryOwnerName"] = objItem.PrimaryOwnerName
+                result["PrimaryOwnerName"] = objItem.PrimaryOwnerName
             if objItem.ResetCapability != None:
-                result[ "ResetCapability"] = objItem.ResetCapability
+                result["ResetCapability"] = objItem.ResetCapability
             if objItem.ResetCount != None:
-                result[ "ResetCount"] = objItem.ResetCount
+                result["ResetCount"] = objItem.ResetCount
             if objItem.ResetLimit != None:
-                result[ "ResetLimit"] = objItem.ResetLimit
+                result["ResetLimit"] = objItem.ResetLimit
 
             strList = "null"
             try :
@@ -2019,32 +2217,32 @@ def information_machine():
                 strList = ",".join([ str(x) for x in objItem.SupportContactDescription])
             except:
                 pass
-            result[ "SupportContactDescription"] = strList
+            result["SupportContactDescription"] = strList
 
             if objItem.SystemStartupDelay != None:
-                result[ "SystemStartupDelay"] = objItem.SystemStartupDelay
+                result["SystemStartupDelay"] = objItem.SystemStartupDelay
 
             strList = "null"
             try :
                 strList = ",".join([ str(x) for x in objItem.SystemStartupOptions])
             except:
                 pass
-            result[ "SystemStartupOptions"] = strList
+            result["SystemStartupOptions"] = strList
 
             if objItem.SystemStartupSetting != None:
-                result[ "SystemStartupSetting"] = objItem.SystemStartupSetting
+                result["SystemStartupSetting"] = objItem.SystemStartupSetting
             if objItem.SystemType != None:
-                result[ "SystemType"] = objItem.SystemType
+                result["SystemType"] = objItem.SystemType
             if objItem.ThermalState != None:
-                result[ "ThermalState"] = objItem.ThermalState
+                result["ThermalState"] = objItem.ThermalState
             if objItem.TotalPhysicalMemory != None:
-                result[ "TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
+                result["TotalPhysicalMemory"] = objItem.TotalPhysicalMemory
             if objItem.UserName != None:
-                result[ "UserName"] = objItem.UserName
+                result["UserName"] = objItem.UserName
             if objItem.WakeUpType != None:
-                result[ "WakeUpType"] = objItem.WakeUpType
+                result["WakeUpType"] = objItem.WakeUpType
             if objItem.Workgroup != None:
-                result[ "Workgroup"] = objItem.Workgroup
+                result["Workgroup"] = objItem.Workgroup
     return result
 
 def sshdup():
@@ -2087,7 +2285,7 @@ def restartsshd():
                 try:
                     nameservice = result['result'][0].split()[1]
                     #restart service windows.
-                    cmd='sc start \"%s\"'%nameservice
+                    cmd='sc start \"%s\"' % nameservice
                     result = simplecommand(cmd)
                 except Exception:
                     pass
@@ -2125,11 +2323,11 @@ def install_key_ssh_relayserver(keypriv, private=False):
         except:
             filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', keyname)
 
-        logger.debug("filekey  %s"%filekey)
-        logger.debug("chang permition to user %s"%userprogram)
+        logger.debug("filekey  %s" % filekey)
+        logger.debug("chang permition to user %s" % userprogram)
 
         if os.path.isfile(filekey):
-            logger.warning("change permition to %s"%userprogram)
+            logger.warning("change permition to %s" % userprogram)
             user, domain, type = win32security.LookupAccountName ("", userprogram)
             sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
             dacl = win32security.ACL ()
@@ -2141,7 +2339,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
             sd.SetSecurityDescriptorDacl(1, dacl, 0)
             win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
         else:
-            logger.debug("filekey not exist %s"%filekey)
+            logger.debug("filekey not exist %s" % filekey)
 
     elif sys.platform.startswith('darwin'):
         if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh")):
@@ -2154,13 +2352,13 @@ def install_key_ssh_relayserver(keypriv, private=False):
         try:
             os.remove(filekey)
         except:
-            logger.warning("remove %s key impossible"%filekey)
+            logger.warning("remove %s key impossible" % filekey)
 
-    logger.debug("CREATION DU FICHIER %s"%filekey)
+    logger.debug("CREATION DU FICHIER %s" % filekey)
     try:
         file_put_contents(filekey, keypriv)
     except:
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
 
     if sys.platform.startswith('win'):
         user, domain, type = win32security.LookupAccountName ("", userprogram)
@@ -2181,11 +2379,11 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
         compresstype "gz" or "bz2"
     """
     try:
-        with tarfile.open(output_file_gz_bz2, "w:%s"%compresstype) as tar:
+        with tarfile.open(output_file_gz_bz2, "w:%s" % compresstype) as tar:
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        logger.error("Error creating tar.%s archive : %s"%(compresstype, str(e)))
+        logger.error("Error creating tar.%s archive : %s" % (compresstype, str(e)))
         return False
 
 def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
@@ -2197,14 +2395,14 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
     absolutepath = os.path.abspath(imput_file__gz_bz2)
     try:
         os.chdir(to_directory)
-        with tarfile.open(absolutepath, "r:%s"%compresstype) as tar:
+        with tarfile.open(absolutepath, "r:%s" % compresstype) as tar:
             tar.extractall()
         return True
     except OSError as e:
-        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
         return False
     except Exception as e:
-        logger.error( "Error extracting tar.%s : %s"%(str(e),compresstype))
+        logger.error("Error extracting tar.%s : %s" % (str(e), compresstype))
         return False
     finally:
         os.chdir(cwd)
@@ -2247,77 +2445,76 @@ def _path_packagequickaction():
         try:
             os.makedirs(pathqd)
         except OSError as e:
-            logger.error("Error creating folder for quick deployment packages : %s"%(str(e)))
+            logger.error("Error creating folder for quick deployment packages : %s" % (str(e)))
     return pathqd
 
 def qdeploy_generate(folder, max_size_stanza_xmpp):
     try:
         namepackage = os.path.basename(folder)
         pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-        pathxmpppackage = "%s.xmpp"%pathaqpackage
+        pathxmpppackage = "%s.xmpp" % pathaqpackage
 
         # if dependency in package do not generate the qpackage
         with open(os.path.join(folder, 'xmppdeploy.json')) as json_data:
             data_dict = json.load(json_data)
         if len(data_dict['info']['Dependency'])>0:
-            logger.debug("Package %s has dependencies. Quick deployment package not generated."%(pathxmpppackage))
-            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
+            logger.debug("Package %s has dependencies. Quick deployment package not generated." % (pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s" % (pathxmpppackage))
             try:
                 if "qpackages" in pathaqpackage:
-                    simplecommand("rm %s.*"%pathaqpackage)
+                    simplecommand("rm %s.*" % pathaqpackage)
             except Exception:
                 pass
             return 3
 
         if os.path.exists(pathxmpppackage) and \
             int((time.time()-os.stat(pathxmpppackage).st_mtime))/60 < 10:
-            logger.debug("No need to generate quick deployment package %s"%(pathxmpppackage))
-            simplecommand("touch -c %s"%pathxmpppackage)
+            logger.debug("No need to generate quick deployment package %s" % (pathxmpppackage))
+            simplecommand("touch -c %s" % pathxmpppackage)
             return 2
         else:
-            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s" % (pathxmpppackage))
             try:
                 if "qpackages" in pathaqpackage:
-                    simplecommand("rm %s.*"%pathaqpackage)
+                    simplecommand("rm %s.*" % pathaqpackage)
             except Exception:
                 pass
         logger.debug("Checking if quick deployment package needs to be generated")
 
-        result = simplecommand("du -b %s"%folder)
-        #logger.debug("cmd %s"%"du -b %s"%folder)
+        result = simplecommand("du -b %s" % folder)
         taillebytefolder = int(result['result'][0].split()[0])
         if taillebytefolder > max_size_stanza_xmpp:
             logger.debug("Package is too large for quick deployment.\n%s"\
-                " greater than defined max_size_stanza_xmpp %s"%(taillebytefolder,
+                " greater than defined max_size_stanza_xmpp %s" % (taillebytefolder,
                                                          max_size_stanza_xmpp))
-            logger.debug("Deleting quick deployment package if found %s"%(pathxmpppackage))
+            logger.debug("Deleting quick deployment package if found %s" % (pathxmpppackage))
             try:
                 if "qpackages" in pathaqpackage:
-                    simplecommand("rm %s.*"%pathaqpackage)
+                    simplecommand("rm %s.*" % pathaqpackage)
             except Exception:
                 pass
             return 6
             ### creation d'un targetos
-        logger.debug("Preparing quick deployment package for package %s"%(namepackage))
+        logger.debug("Preparing quick deployment package for package %s" % (namepackage))
         calculemd5 = md5folder(pathaqpackage)
 
-        if os.path.exists("%s.md5"%pathaqpackage):
-            content = file_get_contents("%s.md5"%pathaqpackage)
+        if os.path.exists("%s.md5" % pathaqpackage):
+            content = file_get_contents("%s.md5" % pathaqpackage)
             if content==calculemd5:
                 #pas de modifications du package
                 logger.debug("Quick deployment package found")
                 #creation only si if fille missing
                 create_msg_xmpp_quick_deploy(folder, create = False)
                 return 1
-        file_put_contents("%s.md5"%pathaqpackage, calculemd5)
+        file_put_contents("%s.md5" % pathaqpackage, calculemd5)
         create_msg_xmpp_quick_deploy(folder, create = True)
         return 0
     except Exception:
-        logger.error("Error generating quick deployment package : %s"%folder)
-        logger.error("%s"%(traceback.format_exc()))
+        logger.error("Error generating quick deployment package : %s" % folder)
+        logger.error("%s" % (traceback.format_exc()))
         try:
             if "qpackages" in pathaqpackage:
-                simplecommand("rm %s.*"%pathaqpackage)
+                simplecommand("rm %s.*" % pathaqpackage)
         except Exception:
             pass
         return 100
@@ -2326,7 +2523,7 @@ def get_message_xmpp_quick_deploy(folder, sessionid):
     # read le fichier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-    with open("%s.xmpp"%pathaqpackage, 'r') as f:
+    with open("%s.xmpp" % pathaqpackage, 'r') as f:
         data = f.read()
     return data.replace("@-TEMPLSESSQUICKDEPLOY@", sessionid, 1)
 
@@ -2334,7 +2531,7 @@ def get_template_message_xmpp_quick_deploy(folder):
     # read le fichier
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
-    with open("%s.xmpp"%pathaqpackage, 'r') as f:
+    with open("%s.xmpp" % pathaqpackage, 'r') as f:
         data = f.read()
     return data
 
@@ -2346,25 +2543,546 @@ def create_msg_xmpp_quick_deploy(folder, create = False):
     namepackage = os.path.basename(folder)
     pathaqpackage = os.path.join(_path_packagequickaction(), namepackage)
     # create compress file folder
-    if not os.path.exists("%s.xmpp"%pathaqpackage) or create:
-        logger.debug("Creating compressed archive %s.gz"%pathaqpackage)
-        make_tarfile("%s.gz"%pathaqpackage, folder, compresstype="gz")
-        with open("%s.gz"%pathaqpackage, 'rb') as f:
+    if not os.path.exists("%s.xmpp" % pathaqpackage) or create:
+        logger.debug("Creating compressed archive %s.gz" % pathaqpackage)
+        make_tarfile("%s.gz" % pathaqpackage, folder, compresstype="gz")
+        with open("%s.gz" % pathaqpackage, 'rb') as f:
             dataraw = base64.b64encode(f.read())
         msgxmpptemplate= """{  "sessionid" : "@-TEMPLSESSQUICKDEPLOY@",
                 "action" : "qdeploy",
                 "data": { "nbpart" : 1,
                           "part"   : 1,
                           "namepackage":"%s",
-                          "filebase64" : "%s"}}"""%( namepackage, dataraw )
+                          "filebase64" : "%s"}}""" % (namepackage, dataraw)
         try:
-            logger.debug("Writing new quick deployment pakage %s.xmpp"%pathaqpackage)
+            logger.debug("Writing new quick deployment pakage %s.xmpp" % pathaqpackage)
             with open("%s.xmpp"%pathaqpackage, 'w') as f:
                 f.write(msgxmpptemplate)
             #le fichier compresser est inutile
-            if os.path.exists("%s.gz"%pathaqpackage):
-                os.remove("%s.gz"%pathaqpackage)
+            if os.path.exists("%s.gz" % pathaqpackage):
+                os.remove("%s.gz" % pathaqpackage)
         except Exception:
-            logger.error("%s"%(traceback.format_exc()))
+            logger.error("%s" % (traceback.format_exc()))
     else:
-        logger.debug("Quick deployment package %s.xmpp found"%pathaqpackage)
+        logger.debug("Quick deployment package %s.xmpp found" % pathaqpackage)
+
+def pulseuser_useraccount_mustexist(username='pulseuser'):
+    message = []
+    if sys.platform.startswith('linux'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
+        except Exception:
+            adduser_cmd = 'adduser --system --quiet --group '\
+                '--home /var/lib/pulse2 --shell /bin/rbash '\
+                '--disabled-password %s' % username
+    elif sys.platform.startswith('win'):
+        try:
+            win32net.NetUserGetInfo('',username,0)
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
+        except Exception:
+            userpassword = uuid.uuid4().hex[:14]
+            adduser_cmd = 'net user "%s" "%s" /ADD /COMMENT:"Pulse '\
+                'user with admin rights on the system"' % (username, userpassword)
+    elif sys.platform.startswith('darwin'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            message.append('%s user account already exists. Nothing to do.' % username)
+            return False, message
+        except Exception:
+            userpassword = uuid.uuid4().hex[:14]
+            adduser_cmd = 'dscl . -create /Users/%s '\
+                'UserShell /usr/local/bin/rbash && '\
+                'dscl . -passwd /Users/%s %s' % (username, username, userpassword)
+    # Create the account
+    result = simplecommand(encode_strconsole(adduser_cmd))
+    if result['code'] == 0:
+        message.append('Creation of %s user account successful: %s' % (username, result))
+        # Other operations specific to Windows
+        if sys.platform.startswith('win'):
+            result = simplecommand(encode_strconsole('wmic useraccount where "Name=\'%s\'" set PasswordExpires=False' % username))
+            message.append('Setting %s user account to not expire: %s' % (username, result))
+            adminsgrpsid = win32security.ConvertStringSidToSid('S-1-5-32-544')
+            adminsgroup = win32security.LookupAccountSid('',adminsgrpsid)[0]
+            result = simplecommand(encode_strconsole('net localgroup %s "%s" /ADD' % (adminsgroup, username)))
+            message.append('Adding %s account to administrators group: %s' % (username, result))
+        return True, message
+    else:
+        message.append('Creation of %s user account failed: %s' % (username, result))
+        return False, message
+
+def pulseuser_profile_mustexist(username='pulseuser'):
+    message = []
+    if sys.platform.startswith('win'):
+        # Initialise userenv.dll
+        userenvdll = ctypes.WinDLL('userenv.dll')
+        # Define profile path that is needed
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username)
+        # Get user profile as created on the machine
+        profile_location = os.path.normpath(get_user_profile(username))
+        if not profile_location or profile_location != defined_profilepath:
+            # Delete all profiles if found
+            delete_profile(username)
+            # Create the profile
+            usersid = get_user_sid(username)
+            ptr_profilepath = ctypes.create_unicode_buffer(260)
+            userenvdll.CreateProfile(LPCWSTR(usersid),
+                                     LPCWSTR(username),
+                                     ptr_profilepath,
+                                     240)
+            if os.path.normpath(ptr_profilepath.value) == defined_profilepath:
+                message.append('%s profile created successfully.' % username)
+                message.append('%s profile location: %s' % (username, ptr_profilepath.value))
+                return True, message
+            else:
+                message.append('Error creating %s profile.' % username)
+                message.append('%s profile location: %s' % (username, ptr_profilepath.value))
+                return False, message
+        else:
+            # Profile found
+            message.append('%s profile already exists. Nothing to do.' % username)
+            message.append('%s profile location: %s' % (username, profile_location))
+    elif sys.platform.startswith('linux'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            homedir = os.path.expanduser(username)
+        except Exception as e:
+            message.append('Error getting information for creating home folder '\
+                           'for user %s' % username)
+            return False, message
+        if not os.path.isdir(homedir):
+            message.append('Creating %s home folder %s' % (username, homedir))
+            os.makedirs(homedir, 0751)
+        os.chmod(homedir, 0751)
+        os.chown(homedir, uid, gid)
+        packagedir = os.path.join(homedir, 'packages')
+        if not os.path.isdir(packagedir):
+            message.append('Creating packages folder %s' % packagedir)
+            os.makedirs(packagedir, 0764)
+        gidroot = grp.getgrnam("root").gr_gid
+        os.chmod(packagedir, 0764)
+        os.chown(packagedir, uid, gidroot)
+    elif sys.platform.startswith('darwin'):
+        try:
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+            homedir = os.path.expanduser(username)
+        except Exception as e:
+            message.append('Error getting information for creating home folder '\
+                           'for user %s' % username)
+            return False, message
+        if not os.path.isdir(homedir):
+            message.append('Creating %s home folder %s' % (username, homedir))
+            os.makedirs(homedir, 0751)
+        os.chmod(homedir, 0751)
+        os.chown(homedir, uid, gid)
+        packagedir = os.path.join(homedir, 'packages')
+        if not os.path.isdir(packagedir):
+            message.append('Creating packages folder %s' % packagedir)
+            os.makedirs(packagedir, 0764)
+        gidroot = grp.getgrnam("root").gr_gid
+        os.chmod(packagedir, 0764)
+        os.chown(packagedir, uid, gidroot)
+    return True, message
+
+def get_user_profile(username='pulseuser'):
+    usersid = get_user_sid(username)
+    if not usersid:
+        logger.error('Error obtaining %s user sid' % username)
+        logger.error('User %s probably does not exist' % username)
+        return ''
+    check_profile_cmd = 'powershell "Get-ItemProperty '\
+    '-Path \'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*\' '\
+    '| Where-Object { $_.PSChildName -eq \'%s\' } '\
+    '| Select -ExpandProperty ProfileImagePath"' % usersid
+    result = simplecommand(encode_strconsole(check_profile_cmd))
+    if result['code'] == 0 and result['result']:
+        logger.info('%s profile location: %s' % (username, result['result'][0]))
+        return result['result'][0]
+    else:
+        return ''
+
+def get_user_sid(username='pulseuser'):
+    try:
+        usersid = win32security.ConvertSidToStringSid(
+            win32security.LookupAccountName(None, username)[0])
+        logger.info('%s user sid: %s' % (username, usersid))
+        return usersid
+    except Exception as e:
+        logger.error('Error obtaining %s user sid: \n %s' % (username, str(e)))
+        return False
+
+def delete_profile(username='pulseuser'):
+    if sys.platform.startswith('win'):
+        # Delete profile folder in C:\Users if any
+        try:
+            for name in os.listdir('C:/Users/'):
+                if name.startswith(username):
+                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
+                    result = simplecommand(encode_strconsole(delete_folder_cmd))
+                    if result['code'] == 0:
+                        logger.info('Deleted %s folder' % os.path.join('C:/Users/', name))
+                    else:
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
+        except Exception as e:
+            pass
+        # Delete profile
+        userenvdll = ctypes.WinDLL('userenv.dll')
+        usersid = get_user_sid(username)
+        delete_profile_result = userenvdll.DeleteProfileA(LPCSTR(usersid))
+        if delete_profile_result == 0:
+            logger.info('%s profile deleted.' % username)
+        else:
+            logger.error('Error deleting %s profile: %s' % (username, delete_profile_result))
+    return True
+
+def create_idrsa_on_client(username='pulseuser', key=''):
+    """
+    Used on client machine for connecting to relay server
+    """
+    message = []
+    if sys.platform.startswith('win'):
+        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
+    else:
+        id_rsa_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
+    result = simplecommand(encode_strconsole(delete_keyfile_cmd))
+    message.append('Creating id_rsa file in %s' % id_rsa_path)
+    if not os.path.isdir(os.path.dirname(id_rsa_path)):
+        os.makedirs(os.path.dirname(id_rsa_path), 0700)
+    file_put_contents(id_rsa_path, key)
+    file_contents = file_get_contents(id_rsa_path)
+    logger.debug('%s contents: \n %s' % (id_rsa_path, file_contents))
+    result, logs = apply_perms_sshkey(id_rsa_path, True)
+    message.append(logs)
+    return message
+
+def apply_perms_sshkey(path, private=True):
+    """
+    Apply permissions on ssh key.
+    If private = True, the permissions are based on the user that is executing Pulse Agent
+    If private = False, the permissions are based on pulseuser
+    """
+    message = []
+    if not os.path.isfile(path):
+        message.append('Error: File %s does not exist' % path)
+        return False
+    if sys.platform.startswith('win'):
+        if private == True:
+            # We are using id_rsa. The owner must be the user running the Agent
+            username = win32api.GetUserName().lower()
+        else:
+            # The owner must be pulseuser
+            username = 'pulseuser'
+        try:
+            sd = win32security.GetFileSecurity(path,
+                                               win32security.DACL_SECURITY_INFORMATION)
+            dacl = win32security.ACL ()
+            user, domain, type = win32security.LookupAccountName ("", username)
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                     ntsecuritycon.FILE_ALL_ACCESS,
+                                     user)
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            win32security.SetFileSecurity(path,
+                                          win32security.DACL_SECURITY_INFORMATION,
+                                          sd)
+            if private == False:
+                user, domain, type = win32security.LookupAccountName ("", "system")
+                dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                         ntsecuritycon.FILE_ALL_ACCESS,
+                                         user)
+                sd.SetSecurityDescriptorDacl(1, dacl, 0)
+                win32security.SetFileSecurity(path,
+                                              win32security.DACL_SECURITY_INFORMATION,
+                                              sd)
+        except Exception as e:
+            message.append('Error setting permissions on %s for user %s' % (path, user))
+            message.append('Error details: %s' % str(e))
+            return False, message
+    else:
+        if private == True:
+            # We are using id_rsa. The owner must be the user running the Agent
+            uid = os.geteuid()
+            gid = os.getegid()
+        else:
+            # The owner must be pulseuser
+            username = 'pulseuser'
+            uid = pwd.getpwnam(username).pw_uid
+            gid = grp.getgrnam(username).gr_gid
+        try:
+            os.chown(os.path.dirname(path), uid, gid)
+            os.chown(path, uid, gid)
+            os.chmod(os.path.dirname(path), 0700)
+            os.chmod(path, 0600)
+        except Exception as e:
+            message.append('Error setting permissions on %s for user %s' % (path,
+                                                                   pwd.getpwuid(uid).pw_name))
+            message.append('Error details: %s' % str(e))
+            return False, message
+    if sys.platform.startswith('win'):
+        list_perms_cmd = 'powershell "(get-acl %s).access '\
+        '| ft IdentityReference,FileSystemRights,AccessControlType"' % path
+    elif sys.platform.startswith('linux'):
+        list_perms_cmd = 'getfacl %s' % path
+    elif sys.platform.startswith('darwin'):
+        list_perms_cmd = 'ls -e -l %s' % path
+    result = simplecommand(encode_strconsole(list_perms_cmd))
+    message.append('Permissions on file %s:' % path)
+    message.append("%s" % ''.join(result['result']))
+    return True, message
+
+def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
+    """
+    Used on client machine for allowing connections from relay server
+    """
+    message = []
+    if sys.platform.startswith('win'):
+        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys' )
+    else:
+        authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
+    if not os.path.isfile(authorized_keys_path):
+        message.append('Creating authorized_keys file in %s' % authorized_keys_path)
+        if not os.path.isdir(os.path.dirname(authorized_keys_path)):
+            os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+        file_put_contents(authorized_keys_path, key)
+    else:
+        authorized_keys_content = file_get_contents(authorized_keys_path)
+        if not key.strip(' \t\n\r') in authorized_keys_content:
+            message.append('Adding key to %s' % authorized_keys_path)
+            file_put_contents_w_a(authorized_keys_path, "\n" + key, "a")
+        else:
+            message.append('Key is already present in %s' % authorized_keys_path)
+    file_contents = file_get_contents(authorized_keys_path)
+    message.append('%s contents: \n %s' %(authorized_keys_path, file_contents))
+    result, logs = apply_perms_sshkey(authorized_keys_path, False)
+    message.append(logs)
+    return message
+
+def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
+    message = []
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+        message.append('%s user account already exists. Nothing to do.' % username)
+        return False, message
+    except Exception:
+        adduser_cmd = 'adduser --system --quiet --group '\
+            '--home /var/lib/pulse2/clients/reversessh '\
+            '--shell /bin/rbash --disabled-password %s' % username
+    result = simplecommand(encode_strconsole(adduser_cmd))
+    if result['code'] == 0:
+        message.append('Creation of %s user account successful: %s' % (username, result))
+        return True, message
+    else:
+        message.append('Creation of %s user account failed: %s' % (username, result))
+        return False, message
+
+def reversessh_keys_mustexist_on_relay(username='reversessh'):
+    message = []
+    try:
+        uid = pwd.getpwnam(username).pw_uid
+        gid = grp.getgrnam(username).gr_gid
+        homedir = os.path.expanduser(username)
+    except Exception as e:
+        message.append('Error getting information for creating home folder '\
+                       'for user %s' % username)
+        return False, message
+    if not os.path.isdir(homedir):
+        message.append('Creating %s home folder %s' % (username, homedir))
+        os.makedirs(homedir, 0751)
+    os.chmod(homedir, 0751)
+    os.chown(homedir, uid, gid)
+    # Check keys
+    id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
+    keycheck_cmd = 'ssh-keygen -y -e -f %s > %s' % (id_rsa_key_path, public_key_path)
+    result = simplecommand(encode_strconsole(keycheck_cmd))
+    if result['code'] != 0:
+        message.append('Creating id_rsa file in %s' % id_rsa_key_path)
+        if not os.path.isdir(os.path.dirname(id_rsa_key_path)):
+            os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
+        keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
+        result = simplecommand(encode_strconsole(keygen_cmd))
+    os.chmod(os.path.dirname(id_rsa_key_path), 0700)
+    os.chown(os.path.dirname(id_rsa_key_path), uid, gid)
+    os.chmod(id_rsa_key_path, 0600)
+    os.chown(id_rsa_key_path, uid, gid)
+    os.chmod(public_key_path, 0644)
+    os.chown(public_key_path, uid, gid)
+    return True, message
+
+def get_relayserver_pubkey(username='root'):
+    """
+        returns relayserver's root public key
+    """
+    public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
+    return file_get_contents(public_key_path)
+
+def get_relayserver_reversessh_idrsa(username='reversessh'):
+    """
+        returns relayserver's reversessh private key
+    """
+    idrsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
+    return file_get_contents(idrsa_key_path)
+
+
+class geolocalisation_agent:
+
+    def __init__(self,
+                 typeuser = "public",
+                 geolocalisation=True,
+                 ip_public=None,
+                 strlistgeoserveur=""):
+        self.determination = False
+        self.geolocalisation = geolocalisation
+        self.ip_public = ip_public
+        self.typeuser = typeuser
+        self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
+                                          'filegeolocalisation')
+        self.listgeoserver = ["http://%s/json" % x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
+                                              strlistgeoserveur)  if x.strip()!=""];
+        self.localisation = None
+
+        self.getgeolocalisation()
+        if self.localisation is None:
+            self.localisation=self.getdatafilegeolocalisation()
+
+    def getgeolocalisationobject(self):
+        """
+            return dict location or None
+        """
+        if self.localisation is None:
+            return {}
+        return self.localisation
+
+    def getdatafilegeolocalisation(self):
+        """
+            read dict location from json file if exist
+        """
+        if self.geoinfoexist():
+            try:
+                with open(self.filegeolocalisation) as json_data:
+                    self.localisation=json.load(json_data)
+                self.determination = False
+                return self.localisation
+            except Exception:
+                pass
+        return None
+
+    def setdatafilegeolocalisation(self):
+        """
+            write dict location to json file
+        """
+        if self.localisation is not None:
+            try:
+                with open(self.filegeolocalisation, 'w') as json_data:
+                    json.dump(self.localisation, json_data, indent=4)
+                self.determination = True
+            except Exception:
+                pass
+
+    def geoinfoexist(self):
+        """
+            test file localisation exist
+        """
+        if os.path.exists(self.filegeolocalisation):
+            return True
+        return False
+
+    def getgeolocalisation(self):
+        """
+            return localisation
+        """
+        if self.typeuser in ["public", "nomade", "both"]:
+            # on recherche a chaque fois les information
+            self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+            self.determination = True
+            self.setdatafilegeolocalisation()
+            return self.localisation
+        if self.localisation is not None:
+            return self.localisation
+        if self.geolocalisation:
+            logger.error(" geolocalisation true")
+            # on recharge la geolocalisation
+            if self.geoinfoexist():
+                logger.error("geoinfoexist True")
+                self.getdatafilegeolocalisation()
+                self.determination = False
+                return self.localisation
+            else:
+                logger.error("no geoinfoexist False")
+                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                self.setdatafilegeolocalisation()
+                self.determination = True
+                return self.localisation
+        else:
+            logger.error("geolocalisation False")
+            if self.geoinfoexist():
+                logger.error("file no exist")
+                self.getdatafilegeolocalisation()
+                self.determination = False
+                return self.localisation
+            else:
+                return None
+        return self.localisation
+
+    def get_ip_public(self):
+        if self.geolocalisation:
+            if self.localisation is  None:
+                self.getgeolocalisation()
+            if self.localisation is not None and is_valid_ipv4(self.localisation['ip']):
+                if not self.determination:
+                    logger.warning("Determination use file")
+                self.ip_public = self.localisation['ip']
+                return self.localisation['ip']
+            else :
+                return None
+        else:
+            if not self.determination:
+                logger.warning("use old determination ip_public")
+            if self.localisation is  None:
+                if self.geoinfoexist():
+                    logger.warning("coucou")
+                    dd=self.getdatafilegeolocalisation()
+                    logger.warning("%s" % dd)
+                    if  self.localisation is  not None:
+                        return self.localisation['ip']
+            else:
+                return self.localisation['ip']
+        return self.ip_public
+
+    @staticmethod
+    def call_simple_page(url):
+        try:
+            r = requests.get(url)
+            return r.json()
+        except:
+            return None
+
+    @staticmethod
+    def call_simple_page_urllib(url):
+        try:
+            objip = json.loads(urllib.urlopen(url).read())
+            return objip
+        except:
+            return None
+
+    @staticmethod
+    def searchgeolocalisation(http_url_list_geo_server):
+        """
+            return objet
+        """
+        for url in http_url_list_geo_server:
+            try:
+                objip = geolocalisation_agent.call_simple_page(url)
+                if  objip is None:
+                    raise
+                return objip
+            except BaseException:
+                pass
+        return None

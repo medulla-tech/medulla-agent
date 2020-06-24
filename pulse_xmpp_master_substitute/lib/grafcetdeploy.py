@@ -26,7 +26,6 @@ import sys
 import os
 import platform
 import os.path
-import os
 import json
 from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64
 from configuration import setconfigfile
@@ -65,7 +64,7 @@ class grafcet:
         self.sessionid = datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
 
-        if not 'stepcurrent' in self.data:
+        if 'stepcurrent' not in self.data:
             return
         try:
             # search section in sequence
@@ -73,7 +72,7 @@ class grafcet:
             # attribute step curent in function section
             if int(self.data['stepcurrent']) == 0:
                 mesg_install = ""
-                if not "section" in self.parameterdynamic:
+                if "section" not in self.parameterdynamic:
                     self.parameterdynamic['section'] = "install"
                 if "section" in self.parameterdynamic:
                     strsection = str(self.parameterdynamic['section']).lower()
@@ -175,7 +174,7 @@ class grafcet:
 
     def __Next_Step__(self):
         # next Step for xmpp message
-        if not 'stepcurrent' in self.data:
+        if 'stepcurrent' not in self.data:
             return
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
         self.sendnextstep()
@@ -186,7 +185,7 @@ class grafcet:
                                      mtype='chat')
 
     def __Etape_Next_in__(self):
-        if not 'stepcurrent' in self.data:
+        if 'stepcurrent' not in self.data:
             return
         self.data['stepcurrent'] = self.data['stepcurrent'] + 1
         self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -469,7 +468,7 @@ class grafcet:
                                     "terminate install package %s" %
                                     self.datasend['data']['descriptor']['info']['name'])
             self.datasend['action'] = "result" + self.datasend['action']
-            if not "quitonerror" in self.datasend['data']['descriptor']['info']:
+            if "quitonerror" not in self.datasend['data']['descriptor']['info']:
                 quiterror = True
             else:
                 quiterror = self.datasend['data']['descriptor']['info']['quitonerror']
@@ -1241,7 +1240,7 @@ class grafcet:
                                                                         touser = "")
 
             zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
-            if not 'pathdirectorytounzip' in self.workingstep:
+            if 'pathdirectorytounzip' not in self.workingstep:
                 #self.datasend['data']['pathpackageonmachine'] = self.replaceTEMPLATE(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pathdirectorytounzip'] = self.replaceTEMPLATE('.')
                 zip_ref.extractall(
@@ -1328,7 +1327,7 @@ class grafcet:
                 self.workingstep['command'] = base64.b64decode(self.workingstep['command'])
             self.workingstep['command'] = self.replaceTEMPLATE(
                 self.workingstep['command'])
-            if not "timeout" in self.workingstep:
+            if "timeout" not in self.workingstep:
                 self.workingstep['timeout'] = 900
                 logger.warn("timeout missing : default value 900s")
             # working Step recup from process et session
@@ -1452,7 +1451,7 @@ class grafcet:
 
             # self.objectxmpp.logtopulse("action_command_natif_shell")
             # todo si action deja faite return
-            if not "timeout" in self.workingstep:
+            if "timeout" not in self.workingstep:
                 self.workingstep['timeout'] = 15
                 logger.warn("timeout missing : default value 15s")
             re = shellcommandtimeout(
@@ -1606,7 +1605,7 @@ class grafcet:
                 self.workingstep['script'] = base64.b64decode(self.workingstep['script'])
             self.workingstep['script'] = self.replaceTEMPLATE(
                 self.workingstep['script'])
-            if not "timeout" in self.workingstep:
+            if "timeout" not in self.workingstep:
                 self.workingstep['timeout'] = 900
                 logger.warn("timeout missing : default value 900s")
             self.workingstep['pwd'] = ""
@@ -1898,13 +1897,13 @@ class grafcet:
 
         """
         # composition command
-        if not 'title' in self.workingstep:
+        if 'title' not in self.workingstep:
             self.workingstep['title'] = "Confirmation"
-        if not 'icon' in self.workingstep:
+        if 'icon' not in self.workingstep:
             self.workingstep['icon'] = "information"
-        if not 'query' in self.workingstep:
+        if 'query' not in self.workingstep:
             self.workingstep['query'] = "Yes or No"
-        if not 'boutontype' in self.workingstep:
+        if 'boutontype' not in self.workingstep:
             self.workingstep['boutontype'] = ['yes', 'no']
 
         if sys.platform.startswith('linux'):
@@ -2002,7 +2001,7 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             # todo si action deja faite return
-            if not "waiting" in self.workingstep:
+            if "waiting" not in self.workingstep:
                 self.workingstep['waiting'] = '10'
                 logger.warn("waiting missing : default value 180s")
             timewaiting = int(self.workingstep['waiting']) + 180
