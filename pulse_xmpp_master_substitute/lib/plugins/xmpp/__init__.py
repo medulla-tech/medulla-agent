@@ -4798,9 +4798,10 @@ class XmppMasterDatabase(DatabaseHelper):
                         'lastuser': machine.lastuser}
         return result
 
+##jfkjfk
     @DatabaseHelper._sessionm
     def getRelayServerfromjid(self, session, jid):
-        relayserver = session.query(RelayServer).filter(RelayServer.jid == jid)
+        relayserver = session.query(RelayServer).filter(RelayServer.jid.like("%s%%" % jid))
         relayserver = relayserver.first()
         session.commit()
         session.flush()
@@ -4824,7 +4825,9 @@ class XmppMasterDatabase(DatabaseHelper):
                         'groupdeploy' : relayserver.groupdeploy,
                         'package_server_ip' : relayserver.package_server_ip,
                         'package_server_port' : relayserver.package_server_port,
-                        'moderelayserver' : relayserver.moderelayserver
+                        'moderelayserver' : relayserver.moderelayserver,
+                        'keysyncthing' : relayserver.keysyncthing,
+                        'syncthing_port' : relayserver.syncthing_port
             }
         except Exception:
             result = {}
