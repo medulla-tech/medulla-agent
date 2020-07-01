@@ -211,7 +211,7 @@ def scheduledeploy(self):
             del self.machineDeploy[objsupp]
         except Exception:
             pass
-
+    self.syncthingdeploy()
 
 def scheduledeployrecoveryjob(self):
     msglog=[]
@@ -371,7 +371,7 @@ def scheduledeployrecoveryjob(self):
                     self.callpluginsubstitute("deploysyncthing",
                                                 data,
                                                 sessionid = machine['sessionid'])
-                    self.syncthingdeploy()
+                    #self.syncthingdeploy()
                 else:
                     datasession = self.session.sessiongetdata(machine['sessionid'])
                     msglog.append("Starting deployment on machine %s from ARS %s" %(machine['jidmachine'],
@@ -956,27 +956,32 @@ def applicationdeploymentjson(self,
                                                     login=login,
                                                     startcmd = start_date,
                                                     endcmd = end_date)
-    self.syncthingdeploy()
+    #self.syncthingdeploy()
     return sessionid
 
 def totimestamp(self, dt, epoch=datetime.datetime(1970,1,1)):
     td = dt - epoch
     # return td.total_seconds()
     return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
-
+###jfkjfk
 def syncthingdeploy(self):
+    logging.debug("syncthingdeploy")
     #nanlyse la table deploy et recupere les deployement syncthing.
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
     if len(iddeploylist)!= 0:
         for iddeploy in iddeploylist:
-            # les tables sont create
+            logging.debug("*** initialisation deploy syncthing group%s"%iddeploy)
+            # les tables sont creates
             # maintenant on appelle le plugin master de syncthing
             data = { "subaction" : "initialisation",
                         "iddeploy" : iddeploy }
+            logging.debug("*** Call plugin deploysyncthing")
             self.callpluginsubstitute("deploysyncthing",
                                             data,
                                             sessionid = name_randomplus(25,
                                             pref="deploysyncthing"))
+    else:
+        logging.debug("not initialisation")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid == None:
@@ -1172,7 +1177,12 @@ def read_conf_loaddeployment(objectxmpp):
     objectxmpp._sendwolgroup = types.MethodType(_sendwolgroup, objectxmpp)
     objectxmpp._addsetwol = types.MethodType(_addsetwol, objectxmpp)
 
+###jfkjfk
     objectxmpp.syncthingdeploy = types.MethodType(syncthingdeploy, objectxmpp)
+    #objectxmpp.schedule('syncthing_deploy',
+                    #50,
+                    #objectxmpp.syncthingdeploy,
+                    #repeat=True)
 
     objectxmpp.callpluginsubstitute = types.MethodType(callpluginsubstitute, objectxmpp)
 

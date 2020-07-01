@@ -94,7 +94,7 @@ def save_xml_file(elementxml,
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
 
-def iddevice(configfile = "/var/lib/pulse2/.config/syncthing/config.xml", 
+def iddevice(configfile = "/var/lib/pulse2/.config/syncthing/config.xml",
              hostname = None):
     try:
         if hostname is None:
@@ -983,9 +983,9 @@ class syncthingapi():
             self.mutex.release()
         return False
 
-    def add_device_in_folder_if_not_exist(self, 
-                                          folderid, 
-                                          keydevice, 
+    def add_device_in_folder_if_not_exist(self,
+                                          folderid,
+                                          keydevice,
                                           introducedBy = ""):
         result = False
         self.mutex.acquire()
@@ -997,7 +997,7 @@ class syncthingapi():
                         if device['deviceID'] == keydevice:
                             #device existe
                             result = False
-                    new_device = {"deviceID": keydevice, 
+                    new_device = {"deviceID": keydevice,
                                   "introducedBy": introducedBy}
                     if not new_device in folder['devices']:
                         folder['devices'].append(new_device)
@@ -1008,9 +1008,9 @@ class syncthingapi():
             return result
         return False
 
-    def add_device_in_folder(self, 
-                             folderjson, 
-                             keydevice, 
+    def add_device_in_folder(self,
+                             folderjson,
+                             keydevice,
                              introducedBy = ""):
         """add device sur structure folder """
         result = False
@@ -1074,9 +1074,11 @@ class syncthingapi():
         if id  is None:
             id = getRandomName(15, pref="auto_")
         if typefolder.lower() == "slave":
-            typefolder = "sendreceive"
+            typefolder = "receiveonly"
         elif typefolder.lower() == "master":
             typefolder = "sendonly"
+        elif typefolder.lower() == "all":
+            typefolder = "sendreceive"
         return {
             "copyOwnershipFromParent": False,
             "useLargeBlocks": False,
@@ -1119,7 +1121,7 @@ class syncthingapi():
             }
         }
 
-    
+
 
     def del_device_from_folder(self, folderid, deviceid):
         """Dissociate the device from the folder.
@@ -1325,6 +1327,20 @@ class syncthing(syncthingapi):
         self.del_folder(id)
         listdeviceutil = self.get_list_device_used_in_folder()
         self.delete_device_is_not_list(listdeviceutil)
+
+    def ignore_shareid(self, shareid, reload = True):
+        if reload:
+            self.reload_config()
+        #for i, elem in enumerate(self.devices):
+            #if elem["name"] == "pulse": continue
+            #if not elem["deviceID"] in listdeviceutil:
+                #to_delete.append(i)
+        #to_delete.reverse()
+        #for i in to_delete:
+            #del self.devices[i]
+
+        #listdeviceutil = self.get_list_device_used_in_folder()
+        #self.delete_device_is_not_list(listdeviceutil)
 
 class syncthingprogram(Program):
     def __init__(self,
