@@ -1831,7 +1831,7 @@ FunctionEnd
   ; Remove Pulse profile
   SetOutPath "$INSTDIR\tmp"
   File "${REMOVE_PROFILE_FILENAME}"
-  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
+  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}i 2>$null"
   Pop $R0
   ${If} $R0 == "Failed"
     ${IfNot} ${Silent}
