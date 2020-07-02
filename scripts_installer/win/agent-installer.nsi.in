@@ -295,9 +295,6 @@ Section "OpenSSH" sec_openssh
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
 
-  ; Stop all services
-  Call StopPulseServices
-
   ; Remove previous Pulse profile and account
   Call DeletePulseProfile
 
