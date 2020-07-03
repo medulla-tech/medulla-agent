@@ -1155,9 +1155,9 @@ class XmppMasterDatabase(DatabaseHelper):
                 logging.getLogger().error(str(e))
                 msg=str(e)
                 return -1, msg
-            
+
             return new_machine.id, msg
-        
+
     @DatabaseHelper._sessionm
     def checknewjid(self, session, newjidmachine):
         try:
@@ -2267,7 +2267,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                 INNER JOIN
                             xmppmaster.cluster_ars ON xmppmaster.cluster_ars.id = xmppmaster.has_cluster_ars.id_cluster
                         WHERE
-                            relayserver.jid like '%s%%' 
+                            relayserver.jid like '%s%%'
                             AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
                             LIMIT 1);"""%jidars
         listars = session.execute(sql)
@@ -2715,8 +2715,10 @@ class XmppMasterDatabase(DatabaseHelper):
                     `state` = '%s'
                 WHERE
                     (deploy.sessionid = '%s'
-                        AND `state` NOT IN ('DEPLOYMENT SUCCESS' , 'ABORT DEPLOYMENT CANCELLED BY USER')
-                        AND `state` REGEXP '^(\?!ERROR)^(\?!SUCCESS)^(\?!ABORT)');
+                        AND ( `state` NOT IN ('DEPLOYMENT SUCCESS' ,
+                                              'ABORT DEPLOYMENT CANCELLED BY USER')
+                                OR
+                              `state` REGEXP '^(?!ERROR)^(?!SUCCESS)^(?!ABORT)'));
                 """%(state,sessionid)
             result = session.execute(sql)
             session.commit()
@@ -3853,7 +3855,7 @@ class XmppMasterDatabase(DatabaseHelper):
             Field "netmaskaddress" is used to define the net mask address for association
             Field "relayserver_id" is used to define the Relayserver to be assigned to the machines matching that rule
             enabled = 1 Only on active relayserver.
-            If classutilMachine is deprived then the choice of relayserver 
+            If classutilMachine is deprived then the choice of relayserver
                 will be in the relayserver reserve to a use of the private machine.
         """
         if classutilMachine == "private":
@@ -4675,7 +4677,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         "enabled" : 0
                     }
         return result
-    
+
     @DatabaseHelper._sessionm
     def getGuacamoleidforUuid(self, session, uuid, existtest = None):
         """
@@ -4712,11 +4714,11 @@ class XmppMasterDatabase(DatabaseHelper):
              if existtest is not None:
              this function return True if guacamole is configured
              or false si guacamole is not configued.
-        """   
+        """
         if existtest is None:
             protocole = session.query(Has_guacamole.idguacamole,Has_guacamole.protocol).\
                     join(Machines, Machines.id == Has_guacamole.machine_id)
-                    
+
             protocole = protocole.filter(and_(Has_guacamole.protocol != "INF",
                                           Machines.hostname == host))
             protocole = protocole.all()
@@ -4730,7 +4732,7 @@ class XmppMasterDatabase(DatabaseHelper):
             protocole = session.query(Has_guacamole.idguacamole).\
                     join(Machines, Machines.id == Has_guacamole.machine_id)
             protocole = protocole.filter(Machines.hostname == host)
-            
+
             protocole = protocole.first()
             if protocole:
                 return True
@@ -5092,7 +5094,7 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         user = str(jid).split("@")[0]
         try:
-            sql = """UPDATE `xmppmaster`.`machines` 
+            sql = """UPDATE `xmppmaster`.`machines`
                          SET `need_reconf` = '%s'
                      WHERE
                          `xmppmaster`.`machines`.jid like('%s@%%')"""%(status,
@@ -5385,9 +5387,9 @@ class XmppMasterDatabase(DatabaseHelper):
             return False
         try:
             liststr =  ",".join([ "'%s'"%x for x in listmachine])
-            
-            sql = """UPDATE `xmppmaster`.`machines` 
-                    SET 
+
+            sql = """UPDATE `xmppmaster`.`machines`
+                    SET
                         `enabled` = '%s'
                     WHERE
                         `id` IN (%s);"""%(valueset, liststr)
