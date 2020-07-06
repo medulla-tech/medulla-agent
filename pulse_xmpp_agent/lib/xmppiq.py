@@ -88,7 +88,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "remotexmppmonitoring",
                          "keypub",
                          "information",
-                         "keyinstall"]
+                         "keyinstall",
+                         "packageslist"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
         result = callXmppFunctionIq(data['action'],  xmppobject = xmppobject, data = data )
@@ -549,3 +550,58 @@ class functionsynchroxmpp:
         else:
             data['data'] = { "result" : "error action remotefileeditaction parameter incorrect", "error" : True , 'numerror' : 132 }
         return json.dumps(data)
+
+    @staticmethod
+    def packageslist(xmppobject, data):
+        result = []
+
+        packages_path = os.path.join('/','var', 'lib', 'pulse2', 'packages')
+        tail=len(packages_path)
+        packages_list = {'total' : 0, 'datas' : []}
+        total = 0
+        for folder, sub_folders, files in os.walk(packages_path):
+            size_bytes = 0
+            _files = []
+            count_files = 0
+            if files:
+                total += 1
+                for f in files:
+                    count_files += 1
+                    path = os.path.join(folder, f)
+                    size_bytes += os.stat(path).st_size
+                    _files.append((f, os.stat(path).st_size))
+
+                with open(os.path.join(folder, 'conf.json'), 'r') as conf_file:
+                    conf_json = json.load(conf_file)
+                    name = conf_json['name']
+                    if 'licenses' in conf_json:
+                        licenses = conf_json['licenses']
+                    else:
+                        licenses = ""
+                    if 'metagenerator' in conf_json:
+                        metagenerator = conf_json['metagenerator']
+                    else:
+                        metagenerator = ''
+                    description = conf_json['description']
+                    version = conf_json['version']
+                    targetos = conf_json['targetos']
+
+                with open(os.path.join(folder, 'xmppdeploy.json'), 'r') as deploy_file:
+                    deploy_json = json.load(deploy_file)
+                    methodtransfer = deploy_json['info']['methodetransfert']
+                packages_list['datas'].append({
+                    'uuid': folder,
+                    'size': size_bytes,
+                    'targetos': targetos,
+                    'version' : version,
+                    'description' : description,
+                    'metagenerator' : metagenerator,
+                    'licenses' : licenses,
+                    'name': name,
+                    'methodtransfer' : methodtransfer,
+                    'files' : _files,
+                    'count_files' : count_files,
+                })
+
+        packages_list['total'] = total
+        return json.dumps(packages_list, indent=4)
