@@ -555,9 +555,9 @@ class functionsynchroxmpp:
     def packageslist(xmppobject, data):
         result = []
 
-        packages_path = os.path.join('/','var', 'lib', 'pulse2', 'packages')
-        tail=len(packages_path)
-        packages_list = {'total' : 0, 'datas' : []}
+        packages_path = os.path.join('/', 'var', 'lib', 'pulse2', 'packages')
+        tail = len(packages_path)
+        packages_list = {'total': 0, 'datas': []}
         total = 0
         for folder, sub_folders, files in os.walk(packages_path):
             size_bytes = 0
@@ -593,14 +593,14 @@ class functionsynchroxmpp:
                     'uuid': folder,
                     'size': size_bytes,
                     'targetos': targetos,
-                    'version' : version,
-                    'description' : description,
-                    'metagenerator' : metagenerator,
-                    'licenses' : licenses,
+                    'version': version,
+                    'description': description,
+                    'metagenerator': metagenerator,
+                    'licenses': licenses,
                     'name': name,
-                    'methodtransfer' : methodtransfer,
-                    'files' : _files,
-                    'count_files' : count_files,
+                    'methodtransfer': methodtransfer,
+                    'files': _files,
+                    'count_files': count_files,
                 })
 
         packages_list['total'] = total
