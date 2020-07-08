@@ -561,7 +561,7 @@ class functionsynchroxmpp:
             size_bytes = 0
             _files = []
             count_files = 0
-            if files:
+            if files and os.path.isfile(os.path.join(folder, 'conf.json')) or os.path.isfile(os.path.join(folder, 'xmppdeploy.json')):
                 total += 1
                 for f in files:
                     count_files += 1
@@ -569,36 +569,50 @@ class functionsynchroxmpp:
                     size_bytes += os.stat(path).st_size
                     _files.append((f, os.stat(path).st_size))
 
-                with open(os.path.join(folder, 'conf.json'), 'r') as conf_file:
-                    conf_json = json.load(conf_file)
-                    name = conf_json['name']
-                    if 'licenses' in conf_json:
-                        licenses = conf_json['licenses']
-                    else:
-                        licenses = ""
-                    if 'metagenerator' in conf_json:
-                        metagenerator = conf_json['metagenerator']
-                    else:
-                        metagenerator = ''
-                    description = conf_json['description']
-                    version = conf_json['version']
-                    targetos = conf_json['targetos']
+                name = folder.split("/")[-1]
+                licenses = ""
+                metagenerator = ""
+                description = ""
+                version = ""
+                targetos = ""
+                methodtransfer = ""
+                try:
+                    with open(os.path.join(folder, 'conf.json'), 'r') as conf_file:
+                        conf_json = json.load(conf_file)
+                        if 'licenses' in conf_json:
+                            licenses = conf_json['licenses']
+                except:
+                    pass
 
-                with open(os.path.join(folder, 'xmppdeploy.json'), 'r') as deploy_file:
-                    deploy_json = json.load(deploy_file)
-                    methodtransfer = deploy_json['info']['methodetransfert']
+                try:
+                    with open(os.path.join(folder, 'xmppdeploy.json'), 'r') as deploy_file:
+                        deploy_json = json.load(deploy_file)
+                        if 'metagenerator' in deploy_json['info']:
+                            metagenerator = deploy_json['info']['metagenerator']
+                        if 'name' in deploy_json['info']:
+                            name = deploy_json['info']['name']
+                        if 'description' in deploy_json['info']:
+                            description = deploy_json['info']['description']
+                        if 'version' in deploy_json['info']:
+                            version = deploy_json['info']['version']
+                        if 'methodtransfer' in deploy_json['info']:
+                            methodtransfer = deploy_json['info']['methodetransfert']
+                        if 'os' in deploy_json['metaparameter']:
+                            targetos = ", ".join(deploy_json['metaparameter']['os'])
+                except:
+                    pass
                 packages_list['datas'].append({
                     'uuid': folder,
                     'size': size_bytes,
                     'targetos': targetos,
-                    'version': version,
-                    'description': description,
-                    'metagenerator': metagenerator,
-                    'licenses': licenses,
+                    'version' : version,
+                    'description' : description,
+                    'metagenerator' : metagenerator,
+                    'licenses' : licenses,
                     'name': name,
-                    'methodtransfer': methodtransfer,
-                    'files': _files,
-                    'count_files': count_files,
+                    'methodtransfer' : methodtransfer,
+                    'files' : _files,
+                    'count_files' : count_files,
                 })
 
         packages_list['total'] = total
