@@ -433,6 +433,11 @@ Section "OpenSSH" sec_openssh
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
   sleep 1000
+  ${LogString} "del /f /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+  ${LogString} "rd /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+
   Delete $INSTDIR\tmp\$OPENSSH_FILENAME
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
