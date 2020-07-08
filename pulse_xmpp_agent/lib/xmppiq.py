@@ -605,14 +605,14 @@ class functionsynchroxmpp:
                     'uuid': folder,
                     'size': size_bytes,
                     'targetos': targetos,
-                    'version' : version,
-                    'description' : description,
-                    'metagenerator' : metagenerator,
-                    'licenses' : licenses,
+                    'version': version,
+                    'description': description,
+                    'metagenerator': metagenerator,
+                    'licenses': licenses,
                     'name': name,
-                    'methodtransfer' : methodtransfer,
-                    'files' : _files,
-                    'count_files' : count_files,
+                    'methodtransfer': methodtransfer,
+                    'files': _files,
+                    'count_files': count_files,
                 })
 
         packages_list['total'] = total
