@@ -212,8 +212,7 @@ def Setdirectorytempinfo():
     """
     This functions create a temporary directory.
 
-    Returns:
-    path directory INFO Temporaly and key RSA
+    @returns path directory INFO Temporaly and key RSA
     """
     dirtempinfo = os.path.join(
         os.path.dirname(
