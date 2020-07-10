@@ -20,10 +20,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file : lib/syncthingapirest.py
+# file: lib/syncthingapirest.py
 
 """
     this class allows via a rest interface to configure syncthing.
+
     The principle, we get the active configuration in a json.
     rq: this configuration is retrieved in json, it corresponds to the syncthing conf file, which is written to it in xml.
 
@@ -58,72 +59,77 @@ from urlparse import urlparse
 logger = logging.getLogger()
 
 
-def read_serverannonce(configfile= "/var/lib/syncthing-depl/.config/syncthing/config.xml"):
+def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     tree = etree.parse(configfile)
     root = tree.getroot()
     pathxmldevice = ".//options/globalAnnounceServer"
-    listresult=root.xpath(pathxmldevice)
+    listresult = root.xpath(pathxmldevice)
     if listresult:
         result = listresult[0].text
         o = urlparse(result)
-        hostname=o.netloc
+        hostname = o.netloc
         if o.port:
-            strport = -len(":%s"%o.port)
-            hostname=hostname[:strport]
+            strport = -len(":%s" % o.port)
+            hostname = hostname[:strport]
             return root, hostname
-    return  root, ""
+    return root, ""
 
-def conf_ars_deploy(port= 23000 ,
-                    configfile= "/var/lib/syncthing-depl/.config/syncthing/config.xml",
+
+def conf_ars_deploy(port=23000,
+                    configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
                     name="pulse"):
     root, adressurl = read_serverannonce(configfile)
     if adressurl != "":
-        pathxmldevice = ".//device[contains(@name, '%s')]/address"%name
-        listresult=root.xpath(pathxmldevice)
+        pathxmldevice = ".//device[contains(@name, '%s')]/address" % name
+        listresult = root.xpath(pathxmldevice)
         if listresult:
             device = listresult[0].getparent()
             for t in listresult:
                 device.remove(t)
-            adresstcp = "tcp://%s:%s"%(adressurl, port)
+            adresstcp = "tcp://%s:%s" % (adressurl, port)
             device.append(etree.XML("<address>dynamic</address>"))
-            device.append(etree.XML("<address>%s</address>"%adresstcp))
+            device.append(etree.XML("<address>%s</address>" % adresstcp))
             save_xml_file(root, configfile)
 
+
 def save_xml_file(elementxml,
-                  configfile= "/var/lib/syncthing-depl/.config/syncthing/config.xml"):
+                  configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
 
-def iddevice(configfile = "/var/lib/pulse2/.config/syncthing/config.xml",
-             hostname = None):
+
+def iddevice(configfile="/var/lib/pulse2/.config/syncthing/config.xml",
+             hostname=None):
     try:
         if hostname is None:
             hostname = socket.gethostname()
-        hostname = socket.gethostname()
+
         if hostname != "":
-            logger.info("xml conf : %s device id for hostname machine %s"%(configfile, hostname))
+            logger.info("xml conf : %s device id for hostname machine %s" % (configfile, hostname))
             tree = etree.parse(configfile)
             root = tree.getroot()
-            pathxmldevice = ".//device[contains(@name, '%s')]"%hostname
-            listresult=root.xpath(pathxmldevice)
+            pathxmldevice = ".//device[contains(@name, '%s')]" % hostname
+            listresult = root.xpath(pathxmldevice)
             devid = listresult[0].attrib['id']
-            logger.info("find device id %s"%(devid))
+            logger.info("find device id %s" % (devid))
             return devid
         else:
             return ""
     except Exception as e :
-        logger.error("%s search iddevice syncthing %s"%(str(e), configfile))
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("%s search iddevice syncthing %s" % (str(e), configfile))
+        logger.error("\n%s" % (traceback.format_exc()))
         return ""
 
-""" class use for xmpp on each server syncthing in local """
 
+"""
+    class use for xmpp on each server syncthing in local
+"""
 class syncthingapi():
-    def __init__(   self,
-                    urlweb = 'http://localhost',
-                    port = 8384,
-                    configfile = "/var/lib/syncthing/.config/syncthing/config.xml",
-                    idapirest = None):
+    def __init__(self,
+                 urlweb='http://localhost',
+                 port=8384,
+                 configfile="/var/lib/syncthing/.config/syncthing/config.xml",
+                 idapirest=None):
         self.configfile = configfile
         self.home = os.path.basename(self.configfile)
         self.synchro = False
@@ -131,8 +137,8 @@ class syncthingapi():
         self.readingconf = 0
         self.urlweb = urlweb
         self.port = port
-        self.urlbase = "%s:%s/"%(self.urlweb,port )
-        self.urlbaserest = "%srest"%(self.urlbase)
+        self.urlbase = "%s:%s/" % (self.urlweb, port)
+        self.urlbaserest = "%srest" % (self.urlbase)
         self.device_id = None
         self.cleansharesyncthinglist=[]
         self.tailleconf = self.taille_config_xml()
@@ -143,14 +149,14 @@ class syncthingapi():
         else:
             self.idapirest = idapirest
 
-        self.headers = { 'X-API-KEY': "%s"% self.idapirest }
+        self.headers = {'X-API-KEY': "%s" % self.idapirest}
         time.sleep(5)
         self.reload_config()
         try:
             logger.info("___________________________________")
-            logger.info("Syncthing  Version %s"%self.version)
-            logger.info("Device id %s"%self.device_id)
-            logger.info("config file %s"%configfile)
+            logger.info("Syncthing  Version %s" % self.version)
+            logger.info("Device id %s" % self.device_id)
+            logger.info("config file %s" % configfile)
             logger.info("___________________________________")
         except:
             logger.error("Syncthing configuration")
@@ -165,8 +171,7 @@ class syncthingapi():
     def getidapi(self):
         return self.idapirest
 
-
-    def reload_config(self, clean = True):
+    def reload_config(self, clean=True):
         time.sleep(2)
         self.config = self.get_config() # content all config
         self.tailleconf = self.taille_config_xml()
@@ -201,7 +206,6 @@ class syncthingapi():
                     device_id_tmp  = device['deviceID']
             if self.device_id is None and device_id_tmp is not None:
                 self.device_id = device_id_tmp
-        #self.clean_pending()
         if clean:
             self.pendingdevice_accept()
             self.clean_pendingFolders_ignoredFolders_in_devices()
@@ -1328,19 +1332,19 @@ class syncthing(syncthingapi):
         listdeviceutil = self.get_list_device_used_in_folder()
         self.delete_device_is_not_list(listdeviceutil)
 
-    def ignore_shareid(self, shareid, reload = True):
+    def ignore_shareid(self, shareid, reload=True):
         if reload:
             self.reload_config()
-        #for i, elem in enumerate(self.devices):
-            #if elem["name"] == "pulse": continue
-            #if not elem["deviceID"] in listdeviceutil:
-                #to_delete.append(i)
-        #to_delete.reverse()
-        #for i in to_delete:
-            #del self.devices[i]
+        # for i, elem in enumerate(self.devices):
+        # if elem["name"] == "pulse": continue
+        # if not elem["deviceID"] in listdeviceutil:
+        # to_delete.append(i)
+        # to_delete.reverse()
+        # for i in to_delete:
+        # del self.devices[i]
 
-        #listdeviceutil = self.get_list_device_used_in_folder()
-        #self.delete_device_is_not_list(listdeviceutil)
+        # listdeviceutil = self.get_list_device_used_in_folder()
+        # self.delete_device_is_not_list(listdeviceutil)
 
 class syncthingprogram(Program):
     def __init__(self,
@@ -1357,10 +1361,8 @@ class syncthingprogram(Program):
         self.agenttype = agenttype
 
     def start_syncthing(self):
-        #print("start syncthing")
         if sys.platform.startswith('linux'):
             if self.agenttype == "relayserver":
-                #os.system("systemctl restart syncthing@syncthing.service")
                 os.system("systemctl restart syncthing@syncthing-depl.service")
             else:
                 os.system('systemctl restart syncthing@pulseuser.service')
@@ -1378,7 +1380,6 @@ class syncthingprogram(Program):
                 cmd.append('-no-console')
             if not self.browser:
                 cmd.append('-no-browser')
-            #win32api.WinExec(cmd)
             self.startprogram(cmd, "syncthing")
         elif sys.platform.startswith('darwin'):
             if self.home == "":
@@ -1393,7 +1394,6 @@ class syncthingprogram(Program):
         time.sleep(4)
 
     def stop_syncthing(self):
-        #print("stop syncthing")
         if "syncthing" in self.programlist:
             del self.programlist["syncthing"]
 
@@ -1403,13 +1403,11 @@ class syncthingprogram(Program):
             if self.agenttype == "relayserver":
                 os.system("systemctl stop syncthing@syncthing-depl.service")
             else:
-                #os.system("kill -9  `ps -aux|grep syncthing| awk -F ' ' '{print $2}'`")
                 os.system('systemctl stop syncthing@pulseuser.service')
         elif sys.platform.startswith('darwin'):
             os.system("kill -9 `ps -A|grep Syncthing| awk -F ' ' '{print $1}'`")
 
     def restart_syncthing(self):
-        #print("restart syncthing")
         self.stop_syncthing()
         self.start_syncthing()
 

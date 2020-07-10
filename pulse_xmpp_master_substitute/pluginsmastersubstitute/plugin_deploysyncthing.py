@@ -72,69 +72,64 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
             deploy_syncthing_information['namecluster'] = listclusterobjet[0][2]
             deploy_syncthing_information['repertoiredeploy'] = listclusterobjet[0][1]
 
-            clustersdata=json.loads(listclusterobjet[0][6])
-            logging.getLogger().debug(json.dumps(clustersdata, indent = 4))
+            clustersdata = json.loads(listclusterobjet[0][6])
+            logging.getLogger().debug(json.dumps(clustersdata, indent=4))
 
-            clu={}
-            clu['arslist']={}
-            #recherche ip relayserver
-            clu['arsip']={}###
-            clu['numcluster']=clustersdata['numcluster']
-            nb=random.randint(0, clu['numcluster']-1)
-            for index, value,  in enumerate(clustersdata['listarscluster']):
-                val="%s"%jid.JID(value).bare
+            clu = {}
+            clu['arslist'] = {}
+            clu['arsip'] = {}
+            clu['numcluster'] = clustersdata['numcluster']
+            nb = random.randint(0, clu['numcluster']-1)
+            for index, value, in enumerate(clustersdata['listarscluster']):
+                val = "%s" % jid.JID(value).bare
                 if index == nb:
-                    clu['elected']=val
-                clu['arslist'][val]=clustersdata['keysyncthing'][index]
+                    clu['elected'] = val
+                clu['arslist'][val] = clustersdata['keysyncthing'][index]
                 infoars = XmppMasterDatabase().getRelayServerfromjid(val)
                 keycheck = ['syncthing_port', 'ipserver', 'ipconnection']
-                if [x for x in keycheck if x in infoars] == keycheck :
-                    adressipserver = "tcp://%s:%s"%(infoars['ipserver'],
-                                              infoars['syncthing_port'])
-                    adressconnection = "tcp://%s:%s"%(infoars['ipconnection'],
-                                                infoars['syncthing_port'])
-                    clu['arsip'][val]=list(set([str(adressipserver),str(adressconnection),str('dynamic')]))
+                if [x for x in keycheck if x in infoars] == keycheck:
+                    adressipserver = "tcp://%s:%s" % (infoars['ipserver'],
+                                                      infoars['syncthing_port'])
+                    adressconnection = "tcp://%s:%s" % (infoars['ipconnection'],
+                                                        infoars['syncthing_port'])
+                    clu['arsip'][val] = list(set([str(adressipserver), str(adressconnection), str('dynamic')]))
                 else:
-                    logging.getLogger().error("verify syncthing info for ars %s"%val)
-                    clu['arsip'][val]= ['dynamic']
-            clu['namecluster']=clustersdata['namecluster']
-            deploy_syncthing_information['agentdeploy']= str(xmppobject.boundjid.bare)
+                    logging.getLogger().error("verify syncthing info for ars %s" % val)
+                    clu['arsip'][val] = ['dynamic']
+            clu['namecluster'] = clustersdata['namecluster']
+            deploy_syncthing_information['agentdeploy'] = str(xmppobject.boundjid.bare)
             deploy_syncthing_information['cluster'] = clu
             deploy_syncthing_information['packagedeploy'] = listclusterobjet[0][2]
             deploy_syncthing_information['grp'] = listclusterobjet[0][7]
             deploy_syncthing_information['cmd'] = listclusterobjet[0][8]
             deploy_syncthing_information['syncthing_deploy_group'] = data['iddeploy']
 
-            # list des machines pour ce partage
+            # List of the machines for this share
 
-            updatedata=[]
+            updatedata = []
             machines = XmppMasterDatabase().getMachine_deploy_Syncthing(data['iddeploy'],
-                                                                            ars = None,
-                                                                            status=2)
+                                                                        ars=None,
+                                                                        status=2)
 
             partagemachine = []
             for machine in machines:
-                partagemachine.append({ 'mach' : "%s"%jid.JID(machine[2]).bare,
-                                        "ses"  : machine[0],
-                                        "devi" : machine[3]})
+                partagemachine.append({"mach": "%s" % jid.JID(machine[2]).bare,
+                                       "ses": machine[0],
+                                       "devi": machine[3]})
                 updatedata.append(machine[5])
 
             deploy_syncthing_information['machines'] = partagemachine
-            # chang status machine partager
             XmppMasterDatabase().updateMachine_deploy_Syncthing(updatedata,
                                                                 statusold=2,
                                                                 statusnew=3)
 
-            datasend = {'action' : "deploysyncthing",
-                        "sessionid" : name_randomplus(30, "syncthingclusterinit"),
-                        "ret" : 0,
-                        "base64" : False,
-                        "data" : { "subaction" : "syncthingdeploycluster"
-                                }
+            datasend = {"action": "deploysyncthing",
+                        "sessionid": name_randomplus(30, "syncthingclusterinit"),
+                        "ret": 0,
+                        "base64": False,
+                        "data": {"subaction": "syncthingdeploycluster"}
                         }
             datasend['data']["objpartage"] = deploy_syncthing_information
-
-
 
             for ars in deploy_syncthing_information['cluster']['arslist']:
                 datasend['data']['ARS'] = ars

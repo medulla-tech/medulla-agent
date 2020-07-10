@@ -230,7 +230,7 @@ class RelayServer(Base, XmppMasterDBObj):
     classutil = Column(String(10))
     moderelayserver = Column(String(7))
     keysyncthing = Column(String(70), default="")
-    syncthing_port = Column(Integer, default=23000)          
+    syncthing_port = Column(Integer, default=23000)
 
 class Regles(Base, XmppMasterDBObj):
     # ====== Table name =========================

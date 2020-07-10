@@ -302,7 +302,7 @@ class confParameter:
             self.syncthing_home = Config.get('syncthing-deploy', 'syncthing_home')
 
         logger.info('activation syncthing %s'%self.syncthing_on)
-        ########## SYNCTHING #################
+        # SYNCTHING #################
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):

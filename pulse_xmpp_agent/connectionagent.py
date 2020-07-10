@@ -138,9 +138,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 browser = True
 
             if sys.platform.startswith('linux'):
-                #if self.config.agenttype in ['relayserver']:
-                    #self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-                #else:
+                # if self.config.agenttype in ['relayserver']:
+                # self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                # else:
                 self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                         ".config","syncthing","config.xml")
 
@@ -153,7 +153,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                     "etc", "syncthing", "config.xml")
                 tmpfile = "/tmp/confsyncting.txt"
 
-            #avant reinitialisation on supprime le fichier config.xml
+            # Before reinitialisation we remove the config.xml file
             try:
                 os.remove(self.fichierconfsyncthing)
             except :
@@ -172,12 +172,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         pass
                 time.sleep(1)
                 try:
-                    self.deviceid = iddevice(configfile = self.fichierconfsyncthing)
+                    self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
                 except Exception:
                     pass
-        
-                #### self.deviceid = self.syncthing.get_id_device_local()
-                logger.debug("device local syncthing : [%s]"%self.deviceid)
+
+                # self.deviceid = self.syncthing.get_id_device_local()
+                logger.debug("device local syncthing : [%s]" % self.deviceid)
             except Exception as e:
                 logger.error("syncthing initialisation : %s" % str(e))
                 informationerror = traceback.format_exc()
@@ -370,8 +370,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         if self.is_format_key_device(str(x[5])):
                                             self.adddevicesyncthing(str(x[5]),
                                                                     str(x[2]),
-                                                                    address=["tcp4://%s:%s"%(x[0],
-                                                                                             x[6])])
+                                                                    address=["tcp4://%s:%s" % (x[0],
+                                                                                               x[6])])
                                 logger.debug("synchro config %s"%self.syncthing.is_config_sync())
                                 logging.log(DEBUGPULSE, "write new config syncthing")
                                 self.syncthing.validate_chang_config()

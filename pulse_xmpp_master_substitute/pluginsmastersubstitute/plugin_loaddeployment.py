@@ -369,12 +369,11 @@ def scheduledeployrecoveryjob(self):
                     # call plugin master syncthing
                     ###initialisation deployement syncthing
                     self.callpluginsubstitute("deploysyncthing",
-                                                data,
-                                                sessionid = machine['sessionid'])
-                    #self.syncthingdeploy()
+                                              data,
+                                              sessionid=machine['sessionid'])
                 else:
                     datasession = self.session.sessiongetdata(machine['sessionid'])
-                    msglog.append("Starting deployment on machine %s from ARS %s" %(machine['jidmachine'],
+                    msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
                                                                             machine['jid_relay']))
 
                     command = {'action': "applicationdeploymentjson",
@@ -382,7 +381,7 @@ def scheduledeployrecoveryjob(self):
                             'sessionid': machine['sessionid'],
                             'data': data}
 
-                    self.send_message(mto= machine['jid_relay'],
+                    self.send_message(mto=machine['jid_relay'],
                                     mbody=json.dumps(command),
                                     mtype='chat')
                     for logmsg in msglog:
@@ -462,9 +461,9 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                         startcmd=start_date,
                                         endcmd=end_date,
                                         macadress=macadress,
-                                        result = "",
-                                        syncthing = 0)
-        msg.append("<span class='log_err'>Package identifier misssing for %s</span>"%uuidpackage)
+                                        result="",
+                                        syncthing=0)
+        msg.append("<span class='log_err'>Package identifier misssing for %s</span>" % uuidpackage)
         msg.append("Action : Check the package %s"%(uuidpackage))
         for logmsg in msg:
             self.xmpplog(logmsg,
@@ -667,8 +666,8 @@ def applicationdeployjsonuuid(self,
                                         startcmd=start_date,
                                         endcmd=end_date,
                                         macadress=macadress,
-                                        result = "",
-                                        syncthing = 0)
+                                        result="",
+                                        syncthing=0)
         msg.append("<span class='log_err'>Error creating deployment on machine %s "\
                 "[%s]</span>"%(name, uuidmachine))
         for logmsg in msg:
@@ -966,7 +965,7 @@ def syncthingdeploy(self):
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
     if len(iddeploylist)!= 0:
         for iddeploy in iddeploylist:
-            logging.debug("*** initialisation deploy syncthing group%s"%iddeploy)
+            logging.debug("*** initialisation deploy syncthing group%s" % iddeploy)
             # les tables sont creates
             # maintenant on appelle le plugin master de syncthing
             data = { "subaction" : "initialisation",
