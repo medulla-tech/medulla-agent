@@ -24,6 +24,9 @@ import sys
 import os
 
 def directoryconffile():
+    """
+        This function provide the path to the configuration files of pulse-xmpp-agent.
+    """
     if sys.platform.startswith('linux'):
         fileconf = os.path.join(
             "/",
@@ -48,14 +51,13 @@ def directoryconffile():
 
 def conffilename(agenttype):
     """
-        Function defining where the configuration file is located.
-        configuration file for the type of machine and the Operating System
+        This function define where the configuration file is located.
 
         Args:
-        agenttype: type of the agent, relay or machine or (cluster for ARS)
+            agenttype: type of the agent, relay or machine or cluster for RelayServer
 
         Returns:
-        Return the config file path
+            Return the config file path
 
     """
     if agenttype in ["machine"]:
