@@ -40,6 +40,14 @@ import re
 logger = logging.getLogger()
 
 def changeconfigurationsubtitute(conffile, confsubtitute):
+    """
+    This function allow to modify the machine agent to use substitute by default
+
+    Args:
+    conffile: the configuration file to modify
+    confsubtitute: the substitute to add in the configuration file
+
+    """
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
     if not Config.has_section('substitute'):
@@ -51,6 +59,16 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
         Config.write(configfile)
 
 def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
+    """
+        This function allow to modify default configuration.
+
+        Args:
+        conffile: the configuration file to modify
+        port: the new port to use ( section connection )
+        ipserver:  the new IP of the main server ( section connection )
+        jidrelayserver: the new jid of the relayserver ( section global )
+        baseurlguacamole: the url used for guacamole ( section type )
+    """
     Config = ConfigParser.ConfigParser()
     Config.read(conffile)
     domain = jid.JID(jidrelayserver).domain
@@ -70,6 +88,12 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
         Config.write(configfile)
 
 def alternativeclusterconnection(conffile, data):
+    """
+    This function allow to add a alternative cluster.
+    Args:
+        conffile: the configuration file in which we add the alternative cluster
+        data: the informations about the cluster
+    """
     # todo del of list the ars without ip
     #for arsdataconection in data:
         #if ipfromdns(str(arsdataconection[0])) != "" and check_exist_ip_port(ipfromdns(str(arsdataconection[0])), str(arsdataconection[1])):
@@ -93,6 +117,12 @@ def alternativeclusterconnection(conffile, data):
                 os.unlink(conffile)
 
 def nextalternativeclusterconnection(conffile):
+    """
+    This function allow to add more alternative clusters
+
+    Args:
+        conffile: the configuration file to modify
+    """
     if not os.path.isfile(conffile):
         return []
 
@@ -138,6 +168,13 @@ class SingletonDecorator:
 
 
 def infos_network_packageserver():
+    """
+    This function allow to determine the port and the IP of the package Server.
+
+    Returns:
+        the port and the public IP of the packageserver
+    """
+
     namefileconfig = os.path.join(
         'etc',
         'mmc',
@@ -168,6 +205,18 @@ def infos_network_packageserver():
 
 
 def loadparameters(namefile, group, key):
+    """
+    This function allow to obtain the parameters from group and key
+
+    Args:
+        namefile: The configuration file where are stored the informations
+        group:    The group in the config file
+        key:      The key where is stored the needed information
+
+    Returns:
+        the Value defined by the group/key couple.
+    """
+
     Config = ConfigParser.ConfigParser()
     Config.read(namefile)
     value = ""
@@ -628,6 +677,13 @@ class confParameter:
         return Config.items("parameters")
 
     def getRandomName(self, nb, pref=""):
+        """
+        This function create a random name with only letters
+
+        Returns:
+            A random name ( letters only )
+
+        """
         a = "abcdefghijklnmopqrstuvwxyz"
         d = pref
         for t in range(nb):
@@ -635,6 +691,12 @@ class confParameter:
         return d
 
     def getRandomNameID(self, nb, pref=""):
+        """
+        This function create a random name with only numbers
+
+        Returns:
+            A Random number
+        """
         a = "0123456789"
         d = pref
         for t in range(nb):
@@ -642,6 +704,12 @@ class confParameter:
         return d
 
     def get_local_ip_addresses(self):
+        """
+        This function permit to obtain all the local addresses from all the interfaces.
+
+        Returns:
+            a list of the IP addresses
+        """
         ip_addresses = list()
         interfaces = netifaces.interfaces()
         for i in interfaces:
@@ -657,8 +725,12 @@ class confParameter:
 
     def mac_for_ip(self, ip):
         """
-        Returns a list of MACs for interfaces that have given IP,
-        returns None if not found"""
+        This function permit ti have mac addresses from the IP address
+
+        Return:
+            A list of MACs for interfaces that have given IP,
+            None if not found
+        """
         for i in netifaces.interfaces():
             addrs = netifaces.ifaddresses(i)
             try:
@@ -681,8 +753,9 @@ class confParameter:
 def listMacAdressMacOs():
     """
     This function return the mac address on MAC OS
-    :returns: it returns the mac address of the MacOS machine
-    :rtype: dictionnary
+
+    Return:
+        it returns the mac address of the MacOS machine
     """
     lst = {}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
@@ -701,8 +774,9 @@ def listMacAdressMacOs():
 def listMacAdressWinOs():
     """
     This function return the mac address on MS Windows
-    :returns: it returns the mac address of the windows machine
-    :rtype: dictionnary
+
+    Return:
+        it returns the mac address of the windows machine.
     """
     lst = {}
     i = 0
@@ -722,8 +796,9 @@ def listMacAdressWinOs():
 def listMacAdressLinuxOs():
     """
     This function return the mac address on GNU/Linux
-    :returns: it returns the mac address of the linux machine
-    :rtype: dictionnary
+
+    Returns:
+        it returns the mac address of the linux machine
     """
     lst = {}
     ifconfig = os.popen('/sbin/ifconfig').readlines()
@@ -737,11 +812,16 @@ def listMacAdressLinuxOs():
 def setconfigfile(listdataconfiguration):
     """
         This function changes, adds or deletes config option in configuration file
+
         eg list data configuration
             ["add","agentconf","global","log_level","DEBUG"]
             or
             ["del","agentconf","global","log_level"]
-        :returns: it return False or True
+        Args:
+            listdataconfiguration:   A list of configuration files
+        Returns:
+            bool: False if the is less than 2 config files and config folder does not exist
+    TODO: Finish this documentation
     """
     if len (listdataconfiguration) > 1 and directoryconffile() is not None:
         fileofconf = os.path.join(directoryconffile(), listdataconfiguration[1])

@@ -624,16 +624,22 @@ def name_jid():
 
 
 def reduction_mac(mac):
+    """
+        This function reduce the format of the provided mac address by removing some caracteres.
+
+        @param   mac: mac address to reduce
+        @return  Returns a string which is the reduced mac address
+    """
     mac = mac.lower()
     mac = mac.replace(":", "")
     mac = mac.replace("-", "")
     mac = mac.replace(" ", "")
-    #mac = mac.replace("/","")
     return mac
 
 
 def is_valid_ipv4(ip):
-    """Validates IPv4 addresses.
+    """
+        Validates IPv4 addresses.
     """
     pattern = re.compile(r"""
         ^
