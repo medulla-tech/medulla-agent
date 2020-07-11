@@ -604,7 +604,14 @@ def getIPAdressList():
 
 
 def MacAdressToIp(ip):
-    'Returns a MAC for interfaces that have given IP, returns None if not found'
+    """
+    This function permit to find a macaddress based on the IP address
+
+    Args:
+        ip: the ip address used to find the macaddress
+    Return:
+        Returns a MAC for interfaces that have given IP, returns None if not found
+    """
     for i in netifaces.interfaces():
         addrs = netifaces.ifaddresses(i)
         try:
@@ -625,10 +632,12 @@ def name_jid():
 
 def reduction_mac(mac):
     """
-        This function reduce the format of the provided mac address by removing some caracteres.
+    This function reduce the format of the provided mac address by removing some caracteres.
 
-        @param   mac: mac address to reduce
-        @return  Returns a string which is the reduced mac address
+    Args:
+        mac: mac address to reduce
+    Return:
+        Returns a string which is the reduced mac address
     """
     mac = mac.lower()
     mac = mac.replace(":", "")
@@ -679,7 +688,8 @@ def is_valid_ipv4(ip):
 
 
 def is_valid_ipv6(ip):
-    """Validates IPv6 addresses.
+    """
+    Validates IPv6 addresses
     """
     pattern = re.compile(r"""
         ^
