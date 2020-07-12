@@ -2807,25 +2807,26 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def addServerRelay(self, session,
-                        urlguacamole,
-                        subnet,
-                        nameserver,
-                        groupdeploy,
-                        ipserver,
-                        ipconnection,
-                        portconnection,
-                        port,
-                        mask,
-                        jid,
-                        longitude="",
-                        latitude="",
-                        enabled = False,
-                        classutil="private",
-                        packageserverip ="",
-                        packageserverport = "",
-                        moderelayserver = "static",
-                        keysyncthing = ""
-                        ):
+                       urlguacamole,
+                       subnet,
+                       nameserver,
+                       groupdeploy,
+                       ipserver,
+                       ipconnection,
+                       portconnection,
+                       port,
+                       mask,
+                       jid,
+                       longitude="",
+                       latitude="",
+                       enabled=False,
+                       classutil="private",
+                       packageserverip="",
+                       packageserverport="",
+                       moderelayserver="static",
+                       keysyncthing="",
+                       syncthing_port=23000
+                       ):
         sql = "SELECT count(*) as nb FROM xmppmaster.relayserver where "\
               "`relayserver`.`nameserver`='%s';"%nameserver
         nb = session.execute(sql)
@@ -2853,6 +2854,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_relayserver.package_server_port = packageserverport
                 new_relayserver.moderelayserver = moderelayserver
                 new_relayserver.keysyncthing = keysyncthing
+                new_relayserver.syncthing_port = syncthing_port
                 session.add(new_relayserver)
                 session.commit()
                 session.flush()
@@ -4817,31 +4819,33 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getRelayServerfromjid(self, session, jid):
-        relayserver = session.query(RelayServer).filter(RelayServer.jid == jid)
+        relayserver = session.query(RelayServer).filter(RelayServer.jid.like("%s%%" % jid))
         relayserver = relayserver.first()
         session.commit()
         session.flush()
         try:
-            result = {  'id' :  relayserver.id,
-                        'urlguacamole': relayserver.urlguacamole,
-                        'subnet' : relayserver.subnet,
-                        'nameserver' : relayserver.nameserver,
-                        'ipserver' : relayserver.ipserver,
-                        'ipconnection' : relayserver.ipconnection,
-                        'port' : relayserver.port,
-                        'portconnection' : relayserver.portconnection,
-                        'mask' : relayserver.mask,
-                        'jid' : relayserver.jid,
-                        'longitude' : relayserver.longitude,
-                        'latitude' : relayserver.latitude,
-                        'enabled' : relayserver.enabled,
-                        'switchonoff' : relayserver.switchonoff,
-                        'mandatory' : relayserver.mandatory,
-                        'classutil' : relayserver.classutil,
-                        'groupdeploy' : relayserver.groupdeploy,
-                        'package_server_ip' : relayserver.package_server_ip,
-                        'package_server_port' : relayserver.package_server_port,
-                        'moderelayserver' : relayserver.moderelayserver
+            result = {'id': relayserver.id,
+                      'urlguacamole': relayserver.urlguacamole,
+                      'subnet': relayserver.subnet,
+                      'nameserver': relayserver.nameserver,
+                      'ipserver': relayserver.ipserver,
+                      'ipconnection': relayserver.ipconnection,
+                      'port': relayserver.port,
+                      'portconnection': relayserver.portconnection,
+                      'mask': relayserver.mask,
+                      'jid': relayserver.jid,
+                      'longitude': relayserver.longitude,
+                      'latitude': relayserver.latitude,
+                      'enabled': relayserver.enabled,
+                      'switchonoff': relayserver.switchonoff,
+                      'mandatory': relayserver.mandatory,
+                      'classutil': relayserver.classutil,
+                      'groupdeploy': relayserver.groupdeploy,
+                      'package_server_ip': relayserver.package_server_ip,
+                      'package_server_port': relayserver.package_server_port,
+                      'moderelayserver': relayserver.moderelayserver,
+                      'keysyncthing': relayserver.keysyncthing,
+                      'syncthing_port': relayserver.syncthing_port
             }
         except Exception:
             result = {}
@@ -4854,16 +4858,16 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         try:
             result = {
-                        "uuid" : uuid,
-                        "jid" : relayserver.groupdeploy
+                        "uuid": uuid,
+                        "jid": relayserver.groupdeploy
                         }
             for i in result:
                 if result[i] == None:
                     result[i] = ""
         except Exception:
             result = {
-                        "uuid" : uuid,
-                        "jid" : ""
+                        "uuid": uuid,
+                        "jid": ""
                     }
         return result
 
@@ -4903,7 +4907,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                              relayserver.port,
                                              relayserver.jid,
                                              relayserver.urlguacamole,
-                                             0 ]}
+                                             0,
+                                             relayserver.syncthing_port]}
             # search for clusters where ARS is
             clustersid = session.query(Has_cluster_ars).filter(Has_cluster_ars.id_ars == relayserver.id)
             clustersid = clustersid.all()
@@ -4931,14 +4936,16 @@ class XmppMasterDatabase(DatabaseHelper):
                                             m.jid,
                                             m.urlguacamole,
                                             0 ,
-                                            m.keysyncthing] for m in ars}
+                                            m.keysyncthing,
+                                            m.syncthing_port] for m in ars}
                     except Exception:
                         result2 = { m.jid :[m.ipconnection,
                                             m.port,
                                             m.jid,
                                             m.urlguacamole,
                                             0,
-                                            ""] for m in ars}
+                                            "",
+                                            0] for m in ars}
                     countarsclient = self.algoloadbalancerforcluster()
                     if len(countarsclient) != 0:
                         for i in countarsclient:

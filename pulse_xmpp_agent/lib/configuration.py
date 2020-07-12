@@ -325,14 +325,33 @@ class confParameter:
             self.agenttype = "machine"
 
         # syncthing true or fale
-        if self.agenttype != "relayserver":
+        self.syncthing_on = True
+        if self.agenttype == "relayserver":
+            self.syncthing_share = "/var/lib/syncthing-depl/depl_share"
+            self.syncthing_home = "/var/lib/syncthing-depl/.config/syncthing"
+
+            self.syncthing_port = 23000
+            if Config.has_option('syncthing-deploy', 'syncthing_port'):
+                self.syncthing_port = Config.getint('syncthing-deploy', 'syncthing_port')
+
+            self.syncthing_gui_port = 8385
+            if Config.has_option('syncthing-deploy', 'syncthing_gui_port'):
+                self.syncthing_gui_port = Config.getint('syncthing-deploy', 'syncthing_gui_port')
+
+            if Config.has_option('syncthing-deploy', 'syncthing_share'):
+                self.syncthing_share = Config.get('syncthing-deploy', 'syncthing_share')
+        else:
+            self.syncthing_home = "/var/lib/pulse2/.config/syncthing"
+            self.syncthing_gui_port = 8384
             if Config.has_option('syncthing', 'activation'):
                 self.syncthing_on = Config.getboolean('syncthing', 'activation')
             else:
                 self.syncthing_on = True
-        else:
-            self.syncthing_on = True
+        if Config.has_option('syncthing-deploy', 'syncthing_home'):
+            self.syncthing_home = Config.get('syncthing-deploy', 'syncthing_home')
+
         logger.info('activation syncthing %s'%self.syncthing_on)
+        # SYNCTHING #################
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
@@ -628,7 +647,7 @@ class confParameter:
             self.jidchatroomcommand = self.jidagent
         else:
             self.jidchatroomcommand = str(self.agentcommand)
-            
+
         self.max_size_stanza_xmpp = 1048576
         if Config.has_option("quick_deploy", "max_size_stanza_xmpp"):
             self.max_size_stanza_xmpp = Config.getint("quick_deploy",
