@@ -590,7 +590,7 @@ class Glpi92(DatabaseHelper):
             return query.filter(ret)
 
     def __filter_on_filter(self, query):
-        if self.config.filter_on != None:
+        if self.config.filter_on is not None:
             logging.getLogger().debug('function __filter_on_filter  self.config.filter_on is  %s'%self.config.filter_on)
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
@@ -727,7 +727,7 @@ class Glpi92(DatabaseHelper):
             else:
                 ctxlocation = None
 
-            if ctxlocation != None:
+            if ctxlocation is not None:
                 locsid = []
                 if isinstance(ctxlocation, list):
                     for loc in ctxlocation:
@@ -1463,7 +1463,7 @@ class Glpi92(DatabaseHelper):
         Give an LDAP like version of machines
         """
         ret = {}
-        if get != None:
+        if get is not None:
             for m in machines:
                 if isinstance(m, tuple):
                     m = m[0]
@@ -1589,7 +1589,7 @@ class Glpi92(DatabaseHelper):
 
         uuid = self.getMachineUUID(machine)
 
-        if get != None:
+        if get is not None:
             return self.__getAttr(machine, get)
 
         ret = {
@@ -3060,7 +3060,7 @@ class Glpi92(DatabaseHelper):
         for i in lids:
             t = []
             p = __getParent(i)
-            while p != None:
+            while p is not None:
                 t.append(p)
                 p = __getParent(p)
             ret[i] = t
@@ -3178,8 +3178,10 @@ class Glpi92(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(distinct(self.machine.c.id)))
@@ -3254,8 +3256,10 @@ class Glpi92(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(self.software.c.name))
@@ -5200,7 +5204,7 @@ def unique(s):
     except TypeError:
         t = None # move on to the next method
 
-    if t != None:
+    if t is not None:
         assert n > 0
         last = t[0]
         lasti = i = 1
