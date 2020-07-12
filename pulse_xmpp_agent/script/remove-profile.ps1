@@ -1,3 +1,4 @@
+$ErrorActionPreference = 'SilentlyContinue'
 [string]$UserName = "pulse"
 $Profiles = Get-WmiObject -Class Win32_UserProfile
 foreach ($profile in $profiles) {
