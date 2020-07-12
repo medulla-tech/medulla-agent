@@ -1657,7 +1657,7 @@ class MscDatabase(DatabaseHelper):
 
         ret = []
         for cmd, bid, target_name, cohid, gid, btitle, target_uuid, machine_pull in cmds:
-            if bid is not None: # we are in a bundle
+            if bid is not None:  # we are in a bundle
                 if gid is not None and gid != '':
                     ret.append({
                             'title':btitle,
@@ -1761,8 +1761,8 @@ class MscDatabase(DatabaseHelper):
         else:
             # If we are querying on a bundle, we also want to display the
             # commands_on_host flagged as done
-            #if params['b_id'] is None:
-            #    query = query.filter(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
+            # if params['b_id'] is None:
+            # query = query.filter(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
             pass
         query = self.__queryUsersFilter(ctx, query)
 
@@ -1781,7 +1781,7 @@ class MscDatabase(DatabaseHelper):
             filter = [self.commands.c.fk_bundle == params['b_id']]
         elif params['cmd_id'] is not None:
             filter = [self.commands.c.id == params['cmd_id']]
-        #filter.append(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
+        # filter.append(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
         query = query.filter(and_(*filter))
         how_much = query.count()
         if how_much > 0:
@@ -1801,9 +1801,7 @@ class MscDatabase(DatabaseHelper):
             query = session.query(Commands).select_from(self.commands.join(self.commands_on_host).join(self.target).outerjoin(self.pull_targets, self.pull_targets.c.target_uuid == self.target.c.target_uuid))
             query = query.add_column(self.commands_on_host.c.id).add_column(self.commands_on_host.c.current_state).add_column(PullTargets.target_uuid)
 
-
-
-        if params['cmd_id'] is not None: # COH
+        if params['cmd_id'] is not None:  # COH
             filter = [self.commands.c.id == params['cmd_id']]
             if params['b_id'] is not None:
                 filter.append(self.commands.c.fk_bundle == params['b_id'])
@@ -1813,13 +1811,13 @@ class MscDatabase(DatabaseHelper):
             group_by = True
             group_clause = self.commands.c.id
 
-        if params['gid'] is not None: # Filter on a machines group id
+        if params['gid'] is not None:  # Filter on a machines group id
             filter.append(self.target.c.id_group == params['gid'])
 
-        if params['uuid'] is not None: # Filter on a machine uuid
+        if params['uuid'] is not None:  # Filter on a machine uuid
             filter.append(self.target.c.target_uuid == params['uuid'])
 
-        if params['filt'] is not None: # Filter on a commande names
+        if params['filt'] is not None:  # Filter on a commande names
             filter.append(self.commands.c.title.like('%s%s%s' % ('%', params['filt'], '%')) | self.target.c.target_name.like('%s%s%s' % ('%', params['filt'], '%')) )
 
         # Finished param
@@ -1832,7 +1830,7 @@ class MscDatabase(DatabaseHelper):
         if 'state' in params and params['state']:
             filter.append(self.commands_on_host.c.current_state.in_(params['state']))
 
-        #if params['b_id'] is None:
+        # if params['b_id'] is None:
         #    is_done = self.__doneBundle(params, session)
             #if params['finished'] and not is_done: # Filter on finished commands only
             #    filter.append(1 == 0) # send nothing
@@ -1867,13 +1865,13 @@ class MscDatabase(DatabaseHelper):
             if max != -1 and max-1 < i:
                 break
             if i < min:
-                if fk_bundle != 'NULL' and fk_bundle is not None and not fk_bundle in defined:
+                if fk_bundle != 'NULL' and fk_bundle is not None and fk_bundle not in defined:
                     defined[fk_bundle] = id
                     i += 1
                 elif fk_bundle == 'NULL' or fk_bundle is None:
                     i += 1
                 continue
-            if fk_bundle != 'NULL' and fk_bundle is not None and not fk_bundle in defined:
+            if fk_bundle != 'NULL' and fk_bundle is not None and fk_bundle not in defined:
                 defined[fk_bundle] = id
                 ids.append(id)
                 i += 1
