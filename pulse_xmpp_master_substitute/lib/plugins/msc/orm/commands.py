@@ -40,7 +40,7 @@ from pulse2.scheduler.timeaxis import LaunchTimeResolver
 
 
 class Commands(object):
-    """ 
+    """
     Mapping between msc.commands and SA
     """
     def getId(self):
