@@ -341,7 +341,7 @@ class mannageprocess:
                         'sessionid': sessionid,
                         'result' : { 'codeerror' : 0, 'resultcommand' : '','command' : decode_strconsole(command) },
             }
-            if eventstart != False:
+            if eventstart is not False:
                 #ecrit dans queue_out_session l'evenement eventstart
                 if '_eventype' in eventstart and '_eventype' == 'TEVENT':
                     msgout['event'] = eventstart
@@ -350,9 +350,9 @@ class mannageprocess:
                     queue_out_session.put(eventstart)
             cmd = cmdx(command, timeout)
             cmddecode = decode_strconsole(cmd.stdout)
-            if cmd.code_error == 0 and eventfinish != False:
+            if cmd.code_error == 0 and eventfinish is not False:
                 ev = eventfinish
-            elif cmd.code_error != 0 and eventfinish != False:
+            elif cmd.code_error != 0 and eventfinish is not False:
                 ev = eventerror
             else:
                 ev = False
@@ -367,7 +367,7 @@ class mannageprocess:
             #print cmddecode
             #print "================================================"
 
-            if ev != False:
+            if ev is not False:
                 if '_eventype' in ev and '_eventype' == 'TEVENT':
                     #ecrit dans queue_out_session le TEVENT
                     msgout['event'] = ev

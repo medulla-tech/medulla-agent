@@ -1262,7 +1262,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         # mode push ARS to AM
         # UPLOAD FILE PACKAGE to MACHINE, all dependency
         # We are in the case where it is necessary to install all the packages for the deployment, dependency included
-        if ('pushinit' in data and data['pushinit'] == False)  or not objectxmpp.session.isexist(sessionid):
+        if ('pushinit' in data and data['pushinit'] is False)  or not objectxmpp.session.isexist(sessionid):
             data['pushinit'] = True
             objectxmpp.session.createsessiondatainfo(sessionid,  datasession = data, timevalid = 180)
             if 'methodetransfert' in data and data['methodetransfert'] == "pushrsync":
@@ -2432,7 +2432,7 @@ def signalendsessionforARS(datasend , objectxmpp, sessionid, error = False):
                         'ret' : 255,
                         'base64' : False
                         }
-        if error == False:
+        if error is False:
             msgsessionend['ret'] = 0
         datasend['endsession'] = True
         objectxmpp.send_message(mto=datasend['data']['jidrelay'],

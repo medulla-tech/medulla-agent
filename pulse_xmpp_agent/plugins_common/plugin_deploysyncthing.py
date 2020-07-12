@@ -636,7 +636,7 @@ def signalendsessionforARS(datasend, objectxmpp, sessionid, error=False):
                          'ret': 255,
                          'base64': False
                         }
-        if error == False:
+        if error is False:
             msgsessionend['ret'] = 0
         datasend['endsession'] = True
         objectxmpp.send_message(mto=datasend['jidrelay'],

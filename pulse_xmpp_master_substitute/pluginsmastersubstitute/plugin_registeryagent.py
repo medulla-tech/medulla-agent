@@ -117,7 +117,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 xmppobject.boundjid.bare)
 
             machine = XmppMasterDatabase().getMachinefromjid(data['from'])
-            if len(machine) != 0 and 'regcomplet' in data and data['regcomplet'] == True:
+            if len(machine) != 0 and 'regcomplet' in data and data['regcomplet'] is True:
                 if showinfobool:
                     logger.info("Performing a complete re-registration of the machine %s" % msg['from'])
                     logger.info("Deleting machine %s in machines table" % msg['from'])
@@ -646,7 +646,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             if showinfobool:
                                 logger.info("No computer found for mac address %s for machine %s" % (t,
                                                                                                     msg['from']))
-                        if btestfindcomputer == False:
+                        if btestfindcomputer is False:
                             if showinfobool:
                                 logger.info("** Calling inventory on %s" % msg['from'])
                             XmppMasterDatabase().setlogxmpp("Master ask inventory for registration",

@@ -70,9 +70,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     msg=[]
     if 'forced' not in data:
         data['forced'] = "forced"
-    if data['forced'] == True:
+    if data['forced'] is True:
         data['forced'] = "forced"
-    if data['forced'] == False:
+    if data['forced'] is False:
         data['forced'] = "noforced"
 
     if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
@@ -127,7 +127,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 try:
                     result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
-                    if boolchang == False:
+                    if boolchang is False:
                         xmppobject.xmpplog("no significant change in inventory.",
                                             type = 'deploy',
                                             sessionname = sessionid,
@@ -277,7 +277,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         graine = ''.join(listfinger)
                     result['data']['inventory'], boolchang = compact_xml(inventoryfile,graine=graine)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
-                    if boolchang == False:
+                    if boolchang is False:
                         xmppobject.xmpplog("no significant change in inventory.",
                                             type = 'deploy',
                                             sessionname = sessionid,
@@ -356,7 +356,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 try:
                     result['data']['inventory'], boolchang = compact_xml(inventoryfile)
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
-                    if boolchang == False:
+                    if boolchang is False:
                         xmppobject.xmpplog("no significant change in inventory.",
                                             type = 'deploy',
                                             sessionname = sessionid,

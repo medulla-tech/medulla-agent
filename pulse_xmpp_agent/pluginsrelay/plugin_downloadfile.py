@@ -198,7 +198,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             fromuser = "",
                             touser = "")
 
-    if reversessh == False:
+    if reversessh is False:
         if str(data['osmachine']).startswith('Linux'):
             source = create_path(type = "linux", host = profiluserpulse, ipordomain=data['ipmachine'], path = r'%s'%data['path_src_machine'])
         elif str(data['osmachine']).startswith('darwin'):
@@ -230,7 +230,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                        host=paramglobal['server_ssh_user'],
                        ipordomain=data['ipmaster'],
                        path=data['path_dest_master'])
-    if reversessh == False:
+    if reversessh is False:
         command = scpfile(source, dest, objectxmpp, sessionid)
     else:
         datareversessh = {

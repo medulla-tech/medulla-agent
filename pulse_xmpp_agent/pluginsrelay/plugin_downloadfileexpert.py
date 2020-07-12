@@ -235,7 +235,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
     data['path_src_machine_dir'] = data['path_src_machine_dir'] + data['path_src_machine_file']
     for directory in data['path_src_machine_dir']:
-        if reversessh == False:
+        if reversessh is False:
             if str(data['osmachine']).startswith('Linux'):
                 source = create_path(type = "linux", host = profiluserpulse, ipordomain=data['ipmachine'], path = r'%s'%directory)
             elif str(data['osmachine']).startswith('darwin'):
@@ -259,7 +259,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         host=paramglobal['server_ssh_user'],
                         ipordomain=data['ipmaster'],
                         path=data['path_dest_master'])
-        if reversessh == False:
+        if reversessh is False:
             command = scpfile(source, dest, objectxmpp, sessionid)
         else:
             # initialise se cp

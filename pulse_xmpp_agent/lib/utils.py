@@ -2788,7 +2788,7 @@ def apply_perms_sshkey(path, private=True):
         message.append('Error: File %s does not exist' % path)
         return False
     if sys.platform.startswith('win'):
-        if private == True:
+        if private is True:
             # We are using id_rsa. The owner must be the user running the Agent
             username = win32api.GetUserName().lower()
         else:
@@ -2806,7 +2806,7 @@ def apply_perms_sshkey(path, private=True):
             win32security.SetFileSecurity(path,
                                           win32security.DACL_SECURITY_INFORMATION,
                                           sd)
-            if private == False:
+            if private is False:
                 user, domain, type = win32security.LookupAccountName ("", "system")
                 dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
                                          ntsecuritycon.FILE_ALL_ACCESS,
@@ -2820,7 +2820,7 @@ def apply_perms_sshkey(path, private=True):
             message.append('Error details: %s' % str(e))
             return False, message
     else:
-        if private == True:
+        if private is True:
             # We are using id_rsa. The owner must be the user running the Agent
             uid = os.geteuid()
             gid = os.getegid()

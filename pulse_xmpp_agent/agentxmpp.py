@@ -1677,7 +1677,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
               'to': self.boundjid.bare
             }
         datasend = {"forced" : "forced"}
-        if forced == "forced" or forced == True:
+        if forced == "forced" or forced is True:
             datasend = {"forced" : "forced"}
         else:
             datasend = {"forced" : "noforced" }
