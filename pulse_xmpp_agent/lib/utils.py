@@ -2154,7 +2154,7 @@ def information_machine():
             result["InitialLoadInfo"] = strList
 
             if objItem.InstallDate != None:
-                result["InstallDate"] + WMIDateStringToDate(objItem.InstallDate)
+                result["InstallDate"] = WMIDateStringToDate(objItem.InstallDate)
             if objItem.KeyboardPasswordStatus != None:
                 result["KeyboardPasswordStatus"] = objItem.KeyboardPasswordStatus
             if objItem.LastLoadInfo != None:
