@@ -30,11 +30,21 @@ import signal
 class Daemon(object):
     """
     A generic daemon class.
-    Usage: subclass the Daemon class and override the run() method
+
+    subclass the Daemon class and override the run() method
     """
 
     def __init__(self, pidfile, stdin='/dev/null',
                  stdout='/dev/null', stderr='/dev/null'):
+        """
+        Init function
+        Args:
+            pidfile: Pid file of the daemon
+            stdin:   Tell where to redirect stdin
+            stdout:  Tell where to redirect stdout
+            stderr:  Tell where to redirect stderr
+
+        """
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -42,7 +52,8 @@ class Daemon(object):
 
     def daemonize(self):
         """
-        do the UNIX double-fork magic, see Stevens' "Advanced
+        Do the UNIX double-fork magic, see Stevens' "Advanced
+
         Programming in the UNIX Environment" for details (ISBN 0201563177)
         http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
         """
@@ -69,11 +80,18 @@ class Daemon(object):
     def attach_stream(self, name, mode):
         """
         Replaces the stream with new one
+
+        Args:
+            name: the name of the stream
+            mode: the mode to use
         """
         stream = open(getattr(self, name), mode)
         os.dup2(stream.fileno(), getattr(sys, name).fileno())
 
     def dettach_env(self):
+        """
+        This function permit to dettach the environement.
+        """
         os.chdir("/")
         os.setsid()
         os.umask(0)
@@ -91,6 +109,9 @@ class Daemon(object):
             sys.exit(1)
 
     def create_pidfile(self):
+        """
+        This function create the pid file
+        """
         atexit.register(self.delpid)
         pid = str(os.getpid())
         open(self.pidfile, 'w+').write("%s\n" % pid)
@@ -119,7 +140,10 @@ class Daemon(object):
 
     def get_pid(self):
         """
-        Returns the PID from pidfile
+        This function permit to obtain the pid of the daemon
+
+        Return:
+            the PID from pidfile
         """
         try:
             pf = open(self.pidfile, 'r')
@@ -132,6 +156,8 @@ class Daemon(object):
     def stop(self, silent=False):
         """
         Stop the daemon
+        Args:
+            silent: Set to False to have debug message
         """
         # Get the pid from the pidfile
         pid = self.get_pid()
