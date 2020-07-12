@@ -675,7 +675,7 @@ class XmppMasterDatabase(DatabaseHelper):
          # recupere id organization
         idorganization = -1
         try:
-            if organization_id != None:
+            if organization_id is not None:
                 try:
                     result_organization = session.query(Organization).filter(Organization.id == organization_id)
                     result_organization = result_organization.one()
@@ -686,7 +686,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 except Exception, e:
                     logging.getLogger().debug("organization id : %s is not exist"%organization_id)
                     return -1
-            elif organization_name != None:
+            elif organization_name is not None:
                 idorganization = self.getIdOrganization(organization_name)
                 if idorganization == -1:
                     return {"nb" : 0, "packageslist" : []}
@@ -937,7 +937,7 @@ class XmppMasterDatabase(DatabaseHelper):
         # recupere id organization
         idorganization = -1
         try:
-            if organization_id != None:
+            if organization_id is not None:
                 try:
                     result_organization = session.query(Organization).filter(Organization.id == organization_id)
                     result_organization = result_organization.one()
@@ -947,7 +947,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 except Exception, e:
                     logging.getLogger().debug("organization id : %s is not exist"%organization_id)
                     return -1
-            elif organization_name != None:
+            elif organization_name is not None:
                 idorganization = self.getIdOrganization(organization_name)
                 if idorganization == -1:
                     return -1
@@ -2570,11 +2570,8 @@ class XmppMasterDatabase(DatabaseHelper):
     def getdeployfromcommandid(self, session, command_id, uuid):
         if (uuid == "UUID_NONE"):
             relayserver = session.query(Deploy).filter(and_(Deploy.command == command_id))
-            #,Deploy.result .isnot(None)
         else:
             relayserver = session.query(Deploy).filter(and_( Deploy.inventoryuuid == uuid, Deploy.command == command_id))
-            #, Deploy.result .isnot(None)
-        #print relayserver
         relayserver = relayserver.all()
         session.commit()
         session.flush()
@@ -4921,9 +4918,9 @@ class XmppMasterDatabase(DatabaseHelper):
                     join(Has_cluster_ars, Has_cluster_ars.id_ars == RelayServer.id).\
                         join(Cluster_ars, Has_cluster_ars.id_cluster == Cluster_ars.id)
                 ars = ars.filter(Has_cluster_ars.id_cluster.in_(listcluster_id))
-                if moderelayserver != None:
+                if moderelayserver is not None:
                     ars = ars.filter(RelayServer.moderelayserver == moderelayserver)
-                if enablears != None:
+                if enablears is not None:
                     ars = ars.filter(RelayServer.enabled == enablears)
                 ars = ars.all()
                 session.commit()
