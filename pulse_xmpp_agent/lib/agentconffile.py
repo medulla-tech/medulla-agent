@@ -26,6 +26,10 @@ import os
 def directoryconffile():
     """
         This function provide the path to the configuration files of pulse-xmpp-agent.
+
+        Return:
+            it returns the path to the configuration files if it exists
+            it returns None if the path does not exist
     """
     if sys.platform.startswith('linux'):
         fileconf = os.path.join(
