@@ -970,7 +970,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     def __returntextisNone__(para, text = ""):
-        if para == None:
+        if para is None:
             return text
         else:
             return para
@@ -3115,7 +3115,7 @@ class XmppMasterDatabase(DatabaseHelper):
             ret['tabdeploy']['login'].append(linedeploy.login)
             ret['tabdeploy']['host'].append(linedeploy.host.split("@")[0][:-4])
             ret['tabdeploy']['macadress'].append(linedeploy.macadress)
-            if linedeploy.group_uuid == None:
+            if linedeploy.group_uuid is None:
                 linedeploy.group_uuid = ""
             ret['tabdeploy']['group_uuid'].append(linedeploy.group_uuid)
             ret['tabdeploy']['startcmd'].append(linedeploy.startcmd)
@@ -4534,7 +4534,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineUuid(self, session, uuid, enable = 1):
         querymachine = session.query(Machines)
-        if enable == None:
+        if enable is None:
             querymachine = querymachine.filter(Machines.uuid_inventorymachine == uuid)
         else:
             querymachine = querymachine.filter(and_(Machines.uuid_inventorymachine == uuid,
@@ -4560,7 +4560,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         "enabled" : machine.enabled
                         }
             for i in result:
-                if result[i] == None:
+                if result[i] is None:
                     result[i] = ""
         except Exception:
             result = {
@@ -4584,7 +4584,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineHostname(self, session, hostname, enable = 1):
         querymachine = session.query(Machines)
-        if enable == None:
+        if enable is None:
             querymachine = querymachine.filter(Machines.hostname == hostname)
         else:
             querymachine = querymachine.filter(and_(Machines.hostname == hostname,
@@ -4609,7 +4609,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         "enabled" : machine.enabled
                         }
             for i in result:
-                if result[i] == None:
+                if result[i] is None:
                     result[i] = ""
         except Exception:
             result = {  "uuid" : -1,
@@ -4633,7 +4633,7 @@ class XmppMasterDatabase(DatabaseHelper):
     def getGuacamoleRelayServerMachineJiduser(self, session, userjid, enable = 1):
         user = str(userjid).split("@")[0]
         querymachine = session.query(Machines)
-        if enable == None:
+        if enable is None:
             querymachine = querymachine.filter(Machines.jid.like("%s%%"%user))
         else:
             querymachine = querymachine.filter(and_(Machines.jid.like("%s%%"%user),
@@ -4659,7 +4659,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         "enabled" : machine.enabled
                         }
             for i in result:
-                if result[i] == None:
+                if result[i] is None:
                     result[i] = ""
         except Exception:
             result = {
@@ -4862,7 +4862,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         "jid": relayserver.groupdeploy
                         }
             for i in result:
-                if result[i] == None:
+                if result[i] is None:
                     result[i] = ""
         except Exception:
             result = {

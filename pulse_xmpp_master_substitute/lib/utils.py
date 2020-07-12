@@ -1197,7 +1197,6 @@ def pulginmaster(func):
 def pulginmastersessionaction(sessionaction, timeminute=10):
     def decorateur(func):
         def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
-            # avant
             if action.startswith("result"):
                 action = action[6:]
             if objetxmpp.session.isexist(sessionid):
@@ -1216,7 +1215,7 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
                 ret,
                 dataobj,
                 objsessiondata)
-            if sessionaction == "clear" and objsessiondata != None:
+            if sessionaction == "clear" and objsessiondata is not None:
                 objetxmpp.session.clear(sessionid)
             elif sessionaction == "actualise":
                 objetxmpp.session.reactualisesession(sessionid, 10)
@@ -1234,9 +1233,6 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
-    print("AAAAAAAAAAAAAAAAAA1")
-    print column
-    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
 
 def ipfromdns(name_domaine_or_ip):
@@ -1247,7 +1243,7 @@ def ipfromdns(name_domaine_or_ip):
         eg : print ipfromdns("sfr.fr")
         80.125.163.172
     """
-    if name_domaine_or_ip != "" and name_domaine_or_ip != None:
+    if name_domaine_or_ip != "" and name_domaine_or_ip is not None:
         if is_valid_ipv4(name_domaine_or_ip):
             return name_domaine_or_ip
         try:
@@ -1590,8 +1586,8 @@ def utc2local (utc):
     utc2local transform a utc datetime object to local object.
 
     Param:
-        utc datetime which is not naive (the utc timezone must be precised)
-    Returns:
+        utc: datetime which is not naive (the utc timezone must be precised)
+    Return:
         datetime in local timezone
     """
     epoch = time.mktime(utc.timetuple())
@@ -1599,7 +1595,7 @@ def utc2local (utc):
     return utc + offset
 
 def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
     return { 'action' : action,
              'data' : data,
