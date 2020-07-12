@@ -40,7 +40,8 @@ from pulse2.scheduler.timeaxis import LaunchTimeResolver
 
 
 class Commands(object):
-    """ Mapping between msc.commands and SA
+    """
+    Mapping between msc.commands and SA
     """
     def getId(self):
         result = self.id
@@ -55,7 +56,7 @@ class Commands(object):
         return result
 
     def isPartOfABundle(self):
-        result = self.fk_bundle != None
+        result = self.fk_bundle is not None
         logging.getLogger().debug("isPartOfABundle(#%s): %s" %
                                   (self.id, result))
         return result

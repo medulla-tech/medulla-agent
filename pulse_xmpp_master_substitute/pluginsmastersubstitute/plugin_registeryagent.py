@@ -588,7 +588,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         if showinfobool:
                             logger.info("Finding uuid for mac address %s for machine %s" % (t,msg['from']))
                         computer = getComputerByMac(t,showinfobool=showinfobool)
-                        if computer != None:
+                        if computer is not None:
                             computerid = str(computer.id)
                             if showinfobool:
                                 logger.info("UUID found in GLPI : UUID%s for %s on mac %s " % (computer.id, msg['from'],t))
@@ -790,7 +790,7 @@ def callinventory(xmppobject, to):
 
 
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
     return { 'action' : action,
              'data' : data,

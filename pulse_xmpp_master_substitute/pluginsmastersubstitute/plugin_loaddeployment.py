@@ -501,7 +501,7 @@ def applicationdeployjsonuuid(self,
         jidrelay = objmachine['groupdeploy']
         jidmachine = objmachine['jid']
         keysyncthing = objmachine['keysyncthing']
-        if jidmachine != None and jidmachine != "" and jidrelay != None and jidrelay != "":
+        if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
             # il y a 1 ARS pour le deploiement
             # on regarde si celui-ci est up dans la table machine
             ARSsearch = XmppMasterDatabase().getMachinefromjid(jidrelay)
@@ -807,7 +807,7 @@ def applicationdeploymentjson(self,
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
-    if jidmachine != None and jidmachine != "" and jidrelay != None and jidrelay != "":
+    if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
         userjid=jid.JID(jidrelay).user
         iprelay = XmppMasterDatabase().ipserverARS(userjid)[0]
         ippackageserver =   XmppMasterDatabase().ippackageserver(userjid)[0]
@@ -885,7 +885,7 @@ def applicationdeploymentjson(self,
         state = "DEPLOYMENT START"
         data['wol'] = 0
         #data['advanced']['syncthing'] = 1
-        if data['advanced']['grp'] != None and \
+        if data['advanced']['grp'] is not None and \
             'syncthing' in data['advanced'] and \
             data['advanced']['syncthing'] == 1 and \
                 nbdeploy > 2:
@@ -979,7 +979,7 @@ def syncthingdeploy(self):
         logging.debug("not initialisation")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
-    if sessionid == None:
+    if sessionid is None:
         sessionid = getRandomName(5, plugin)
     msg = {}
     msg['from'] = self.boundjid.bare
@@ -1036,7 +1036,7 @@ def directcallplugin(self, msg):
 def send_session_command(self, jid, action, data={}, datasession=None, encodebase64=False, time=20, eventthread=None, prefix=None):
     if prefix is None:
         prefix = "command"
-    if datasession == None:
+    if datasession is None:
         datasession = {}
     command = {'action': action,
                 'base64': encodebase64,
