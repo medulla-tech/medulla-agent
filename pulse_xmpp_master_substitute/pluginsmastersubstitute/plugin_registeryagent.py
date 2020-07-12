@@ -414,7 +414,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             ippublic = None
             if "ippublic" in data:
                 ippublic = data['ippublic']
-            if ippublic == None:
+            if ippublic is None:
                 ippublic = data['xmppip']
             kiosk_presence = ""
             if 'kiosk_presence' in data and data['kiosk_presence'] != "":
