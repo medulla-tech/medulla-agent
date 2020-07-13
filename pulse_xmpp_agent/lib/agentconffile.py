@@ -70,30 +70,15 @@ def conffilename(agenttype):
         conffilenameparameter = "cluster.ini"
     else:
         conffilenameparameter = "relayconf.ini"
-    if sys.platform.startswith('linux'):
-        fileconf = os.path.join(
-            "/",
-            "etc",
-            "pulse-xmpp-agent",
-            conffilenameparameter)
-    elif sys.platform.startswith('win'):
-        fileconf = os.path.join(
-            os.environ["ProgramFiles"],
-            "Pulse",
-            "etc",
-            conffilenameparameter)
-    elif sys.platform.startswith('darwin'):
-        fileconf = os.path.join(
-            "/",
-            "Library",
-            "Application Support",
-            "Pulse",
-            "etc",
-            conffilenameparameter)
+
+    if directoryconffile() is not None:
+        fileconf = os.path.join(directoryconffile(), conffilenameparameter)
     else:
         fileconf = conffilenameparameter
+
     if conffilenameparameter == "cluster.ini":
         return fileconf
+
     if os.path.isfile(fileconf):
         return fileconf
     else:
