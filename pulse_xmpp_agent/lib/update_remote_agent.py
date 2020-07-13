@@ -31,10 +31,17 @@ logger = logging.getLogger()
 class Update_Remote_Agent:
     """
         this class make finderspring of agent.
-        Param : dir_agent_base is location of agent
-        Param : autoupdate is switch for enable or disable remote update. 
     """
     def __init__(self, dir_agent_base, autoupdate = True):
+        """
+        Initialisation function.
+
+        It create the directory JSon Structure
+
+        Args:
+           dir_agent_base is location of agent
+           autoupdate is switch for enable or disable remote update
+        """
         self.dir_agent_base = dir_agent_base
         self.autoupdate = autoupdate
         self.directory = {  "program_agent" : {},
@@ -55,15 +62,42 @@ class Update_Remote_Agent:
             self.load_list_md5_agentbase()
 
     def get_md5_descriptor_agent(self):
+        """
+        This function allow to have the 'directory' structure in json format.
+
+        Returns:
+            It returns the whole directory
+            (program_agent, version, version_agent,
+              lib_agent, script_agent and fingerprint)
+        """
         return self.directory
 
     def md5_descriptor_agent_to_string(self):
+        """
+        This function allow to have the 'directory' structure in string format.
+
+        Returns:
+            It returns the whole directory
+            ( program_agent, version, version_agent,
+              lib_agent, script_agent and fingerprint )
+        """
+
         return json.dumps(self.get_md5_descriptor_agent(), indent = 4)
 
     def get_fingerprint_agent_base(self):
+        """
+        This function allow to have the fingerprint in json format.
+
+        Returns:
+            It returns the fingerprint
+        """
+
         return self.directory["fingerprint"]
 
     def load_list_md5_agentbase(self):
+        """
+        This function fill the directory structure with the values
+        """
         listmd5 = []
         self.directory = {  "program_agent" : {},
                             "version" : "",
@@ -76,7 +110,6 @@ class Update_Remote_Agent:
         listmd5.append(self.directory["version_agent"])
         list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
 
-        #for fichiername in [ x for x in os.listdir(self.dir_agent_base) if x[-3:]== ".py"]:
         for fichiername in list_script_python_for_update:
             self.directory["program_agent"][fichiername] = hashlib.md5(file_get_contents( os.path.join(self.dir_agent_base,fichiername))).hexdigest()
             listmd5.append(self.directory["program_agent"][fichiername])
@@ -92,8 +125,12 @@ class Update_Remote_Agent:
 def agentinfoversion(xmppobject):
     """
         return information on agent.
+
+        Returns:
+            A JSON with informations about the Agent
+            (like testmodule , pathagent, agentdescriptor, pathimg,
+              imgdescriptor, actiontxt, conf and plugins)
     """
-    #creation Repport on agent
     cmd = "python %s -i -v"%(os.path.join(xmppobject.pathagent, "replicator.py"))
     logger.debug("cmd : %s"%(cmd))
     result = simplecommand(cmd)
