@@ -824,6 +824,16 @@ class shellcommandtimeout(object):
 
 
 def servicelinuxinit(name, action):
+    """
+    This function allow to send actions to old linux init system
+
+    Args:
+        name: The name of the service
+        action: The action we want to perform (stop, start, restart, reload)
+
+    Returns:
+        The return code of the command
+    """
     obj = {}
     p = subprocess.Popen("/etc/init.d/%s %s" % (name, action),
                          shell=True,
@@ -834,10 +844,20 @@ def servicelinuxinit(name, action):
     obj['result'] = result
     return obj
 
-# restart service
+def service(name, action):
+    """
+    This function allow to send actions to the system init.
 
+    Windows, MacOS and linux are supported
 
-def service(name, action):  # start | stop | restart | reload
+    Args:
+        name: The name of the service
+        action: The action we want to perform (stop, start, restart, reload)
+
+    Returns:
+        The return code of the command
+    """
+
     obj = {}
     if sys.platform.startswith('linux'):
         system = ""
@@ -880,6 +900,10 @@ def service(name, action):  # start | stop | restart | reload
 
 
 def listservice():
+    """
+    This function lists the available windows services
+    """
+
     pythoncom.CoInitialize()
     try:
         wmi_obj = wmi.WMI()
