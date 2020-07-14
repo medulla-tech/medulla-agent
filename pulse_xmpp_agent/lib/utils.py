@@ -144,7 +144,6 @@ def dump_parameter(para=True, out=True, timeprocess = True):
         return wrapper
     return decorated
 
-# debug decorator
 def minimum_runtime(t):
     """
         Function decorator constrains the minimum execution time of the function
@@ -231,6 +230,12 @@ def cleanbacktodeploy(objectxmpp):
         save_back_to_deploy(objectxmpp.back_to_deploy)
 
 def networkinfoexist():
+    """
+    This function checks if the fingerprintnetwork file exists.
+
+    Returns:
+        it returns True if the file exists. False otherwise
+    """
     filenetworkinfo = os.path.join(
         Setdirectorytempinfo(),
         'fingerprintnetwork')
@@ -1488,8 +1493,16 @@ def check_exist_ip_port(name_domaine_or_ip, port):
 def install_or_uninstall_keypub_authorized_keys(
         install=True, keypub=None, user="pulse"):
     """
-        This function installs or uninstall the public key in the authorized_keys file for user "user"
+        This function installs or uninstall the public key in the authorized_keys file for the "user"/
+
         If keypub is not specified then the function uninstall the key for user "user"
+
+        Args:
+            install: is install is True it installs the key. If False it uninstall the key.
+            keypub: The public key to use.
+            user: user where the authorized_keys is copied to.
+
+        Returns:
     """
     path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh")
     path_authorized_keys = os.path.join(path_ssh, "authorized_keys")
@@ -1562,8 +1575,16 @@ def install_or_uninstall_keypub_authorized_keys(
 
 def get_keypub_ssh(name="id_rsa.pub", user="root"):
     """
-        return key public
-        only for linux
+        This function check the public key
+
+        This funtion can only be used on Linux
+
+        Args:
+            name: the name of public key file
+            user: the user used to check the key
+
+        Returns:
+            It retuens the public key
     """
     path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh", name)
     source = open(path_ssh, "r")
@@ -2869,6 +2890,13 @@ def apply_perms_sshkey(path, private=True):
 def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
     """
     Used on client machine for allowing connections from relay server
+
+    Args:
+        username: username where the key is copied to
+        key:      the ssh key copied in the authorized_keys file
+
+    Returns:
+        message sent telling if the key have been well copied or not.
     """
     message = []
     if sys.platform.startswith('win'):
