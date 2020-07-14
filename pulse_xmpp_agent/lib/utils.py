@@ -82,7 +82,7 @@ if sys.platform.startswith('darwin'):
     import pwd
     import grp
 
-#### debug decorator #########
+# debug decorator
 def minimum_runtime(t):
     """
         Function decorator constrains the minimum execution time of the function
@@ -143,9 +143,8 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             return outfunction
         return wrapper
     return decorated
-###########################################
 
-#### debug decorator #########
+# debug decorator
 def minimum_runtime(t):
     """
         Function decorator constrains the minimum execution time of the function
@@ -206,7 +205,6 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             return outfunction
         return wrapper
     return decorated
-###########################################
 
 def Setdirectorytempinfo():
     """
@@ -502,7 +500,6 @@ def isMacOsUserAdmin():
         return False
 
 
-#listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
@@ -537,7 +534,7 @@ def loadModule(filename):
 
 def call_plugin(name, *args, **kwargs):
     nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-    #add compteur appel plugins
+    # Add compteur appel plugins
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
@@ -723,14 +720,15 @@ def is_valid_ipv6(ip):
 def typelinux():
     """
         This function is used to tell which init system is used on the server.
-        :return: Return the used init system between init.d or systemd
+        
+        Returns:
+            Return the used init system between init.d or systemd
     """
     p = subprocess.Popen('cat /proc/1/comm',
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
-    #code_result = p.wait()
     system = result[0].rstrip('\n')
     """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
@@ -807,7 +805,6 @@ class shellcommandtimeout(object):
             self.obj['result'] = self.process.stdout.readlines()
             self.obj['code'] = self.process.wait()
             self.process.communicate()
-            # print 'Thread finished'
         thread = threading.Thread(target=target)
         thread.start()
 
@@ -815,12 +812,9 @@ class shellcommandtimeout(object):
         if thread.is_alive():
             print 'Terminating process'
             print "timeout %s" % self.obj['timeout']
-            #self.codereturn = -255
-            #self.result = "error tineour"
             self.process.terminate()
             thread.join()
 
-        #self.result = self.process.stdout.readlines()
         self.obj['codereturn'] = self.process.returncode
 
         if self.obj['codereturn'] == -15:
@@ -830,6 +824,16 @@ class shellcommandtimeout(object):
 
 
 def servicelinuxinit(name, action):
+    """
+    This function allow to send actions to old linux init system
+
+    Args:
+        name: The name of the service
+        action: The action we want to perform (stop, start, restart, reload)
+
+    Returns:
+        The return code of the command
+    """
     obj = {}
     p = subprocess.Popen("/etc/init.d/%s %s" % (name, action),
                          shell=True,
@@ -840,10 +844,20 @@ def servicelinuxinit(name, action):
     obj['result'] = result
     return obj
 
-# restart service
+def service(name, action):
+    """
+    This function allow to send actions to the system init.
 
+    Windows, MacOS and linux are supported
 
-def service(name, action):  # start | stop | restart | reload
+    Args:
+        name: The name of the service
+        action: The action we want to perform (stop, start, restart, reload)
+
+    Returns:
+        The return code of the command
+    """
+
     obj = {}
     if sys.platform.startswith('linux'):
         system = ""
@@ -852,7 +866,6 @@ def service(name, action):  # start | stop | restart | reload
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        #code_result = p.wait()
         system = result[0].rstrip('\n')
         if system == "init":
             p = subprocess.Popen("/etc/init.d/%s %s" % (name, action),
@@ -887,6 +900,10 @@ def service(name, action):  # start | stop | restart | reload
 
 
 def listservice():
+    """
+    This function lists the available windows services
+    """
+
     pythoncom.CoInitialize()
     try:
         wmi_obj = wmi.WMI()
@@ -995,8 +1012,6 @@ def pluginprocess(func):
                 message,
                 dataerreur,
                 result)
-            # encode  result['data'] si besoin
-            # print result
             if result['base64'] is True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
             print "Send message \n%s" % result
