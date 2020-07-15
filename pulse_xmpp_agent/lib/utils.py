@@ -3015,7 +3015,10 @@ class geolocalisation_agent:
 
     def getgeolocalisationobject(self):
         """
-            return dict location or None
+            This function is used to return the localisation file.
+
+            Returns:
+                It return the localisation file if it exists, None otherwise
         """
         if self.localisation is None:
             return {}
@@ -3023,7 +3026,7 @@ class geolocalisation_agent:
 
     def getdatafilegeolocalisation(self):
         """
-            read dict location from json file if exist
+            This function read the geolocalisation file if it exists
         """
         if self.geoinfoexist():
             try:
@@ -3037,7 +3040,7 @@ class geolocalisation_agent:
 
     def setdatafilegeolocalisation(self):
         """
-            write dict location to json file
+            This function write the geolocalisation file as a JSON file
         """
         if self.localisation is not None:
             try:
@@ -3049,7 +3052,10 @@ class geolocalisation_agent:
 
     def geoinfoexist(self):
         """
-            test file localisation exist
+            This function tests if the geolocalisation file exists
+
+            Returns:
+                It returns True if the file exists, False otherwise
         """
         if os.path.exists(self.filegeolocalisation):
             return True
@@ -3057,41 +3063,49 @@ class geolocalisation_agent:
 
     def getgeolocalisation(self):
         """
-            return localisation
+            This function permit to retrieve geolocalisation informations
+
+            Returns:
+                It returns geolocalisation informations if they exists
         """
         if self.typeuser in ["public", "nomade", "both"]:
-            # on recherche a chaque fois les information
+            # We search for geolocalisation informations each time
             self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
             self.determination = True
             self.setdatafilegeolocalisation()
-            return self.localisation
-        if self.localisation is not None:
-            return self.localisation
-        if self.geolocalisation:
-            # on recharge la geolocalisation
-            if self.geoinfoexist():
-                self.getdatafilegeolocalisation()
-                self.determination = False
-                return self.localisation
-            else:
-                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
-                self.setdatafilegeolocalisation()
-                self.determination = True
-                return self.localisation
         else:
-            if self.geoinfoexist():
-                logger.error("file no exist")
-                self.getdatafilegeolocalisation()
-                self.determination = False
+            if self.localisation is not None:
                 return self.localisation
+
+            if self.geolocalisation:
+                # We reload geolocalisation
+                if self.geoinfoexist():
+                    self.getdatafilegeolocalisation()
+                    self.determination = False
+                else:
+                    self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                    self.setdatafilegeolocalisation()
+                    self.determination = True
             else:
-                return None
+                if self.geoinfoexist():
+                    self.getdatafilegeolocalisation()
+                    self.determination = False
+                else:
+                    return None
+
         return self.localisation
 
     def get_ip_public(self):
+        """
+            This function is used to determine the public IP
+
+            Returns:
+                It returns the public IP
+        """
         if self.geolocalisation:
-            if self.localisation is  None:
+            if self.localisation is None:
                 self.getgeolocalisation()
+
             if self.localisation is not None and is_valid_ipv4(self.localisation['ip']):
                 if not self.determination:
                     logger.warning("Determination use file")
@@ -3101,13 +3115,12 @@ class geolocalisation_agent:
                 return None
         else:
             if not self.determination:
-                logger.warning("use old determination ip_public")
+                logger.warning("Using the old way of determination for the ip_public")
             if self.localisation is  None:
                 if self.geoinfoexist():
-                    logger.warning("coucou")
-                    dd = self.getdatafilegeolocalisation()
-                    logger.warning("%s" % dd)
-                    if  self.localisation is  not None:
+                    localisationData = self.getdatafilegeolocalisation()
+                    logger.warning("%s" % localisationData)
+                    if self.localisation is not None:
                         return self.localisation['ip']
             else:
                 return self.localisation['ip']
