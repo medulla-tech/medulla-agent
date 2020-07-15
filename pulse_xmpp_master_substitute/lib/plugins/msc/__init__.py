@@ -35,7 +35,6 @@ from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
 from sqlalchemy.orm import create_session, mapper, relation
 from sqlalchemy.exc import NoSuchTableError, TimeoutError
 from sqlalchemy.orm.exc import NoResultFound
-#from sqlalchemy.orm import sessionmaker; Session = sessionmaker()
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 import datetime
@@ -47,11 +46,8 @@ from lib.plugins.msc.orm.commands_history import CommandsHistory
 from lib.plugins.msc.orm.target import Target
 from lib.plugins.msc.orm.pull_targets import PullTargets
 from lib.plugins.msc.orm.bundle import Bundle
-# from mmc.database.database_helper import DatabaseHelper
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
-# Pulse 2 stuff
-# from pulse2.managers.location import ComputerLocationManager
 # Imported last
 import logging
 import functools
@@ -327,8 +323,6 @@ class MscDatabase(DatabaseHelper):
         )
         # FIXME: Version is missing
 
-    ####################################
-
     def getIdCommandOnHost(self, ctx, id):
         session = create_session()
         query = session.query(CommandsOnHost).select_from(self.commands_on_host.join(self.commands)).filter(self.commands.c.id == id)
@@ -421,13 +415,8 @@ class MscDatabase(DatabaseHelper):
         cmd.connect_as = connect_as
         cmd.creator = creator
         cmd.title = title
-        #cmd.do_halt = ','.join(do_halt)
-        #cmd.do_reboot = do_reboot
-        #cmd.do_wol = do_wol
-        #cmd.do_imaging_menu = do_wol_with_imaging
         cmd.next_connection_delay = next_connection_delay
         cmd.max_connection_attempt = max_connection_attempt
-        #cmd.do_inventory = do_inventory
         cmd.maxbw = maxbw
         cmd.deployment_intervals = deployment_intervals
         cmd.fk_bundle = fk_bundle
@@ -2230,7 +2219,6 @@ class MscDatabase(DatabaseHelper):
 
     def getarraystatbycmd(self, ctx, arraycmd_id):
         result = {'nbmachine' : {}}
-        #result = {'nbmachine' : {}, 'nbdeploydone' : {}}
         session = create_session()
         ret = session.query(CommandsOnHost.fk_commands.label("idcmd") ,
                             func.count(self.commands_on_host.c.current_state).label("nb")).\
@@ -2240,14 +2228,6 @@ class MscDatabase(DatabaseHelper):
         for x in ret:
             result['nbmachine'][x[0]]=x[1]
 
-        #ret = session.query(CommandsOnHost.fk_commands.label("idcmd") ,
-                            #func.count(self.commands_on_host.c.current_state).label("nb")).\
-                                #filter(and_(self.commands_on_host.c.fk_commands.in_(arraycmd_id),
-                                       #self.commands_on_host.c.current_state == "done")).\
-                                    #group_by(self.commands_on_host.c.fk_commands)
-        #ret.all()
-        #for x in ret:
-            #result['nbdeploydone'][x[0]]=x[1]
         return result
 
     def getFirstCommandsOncmd_id(self, ctx, cmd_id):

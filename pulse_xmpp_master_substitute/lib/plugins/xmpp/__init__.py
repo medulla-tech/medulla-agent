@@ -672,7 +672,7 @@ class XmppMasterDatabase(DatabaseHelper):
             or
             XmppMasterDatabase().getlistpackagefromorganization( organization_name = "name")
         """
-         # recupere id organization
+        # recupere id organization
         idorganization = -1
         try:
             if organization_id is not None:
@@ -1663,21 +1663,21 @@ class XmppMasterDatabase(DatabaseHelper):
             if t.group_uuid == "":
                 #machine doit faire partie d un grp
                 continue
-            #if command_pris_en_charge == -1:
-                ##on deploy qu'une commande sur 1 group a la fois en syncthing
-                #command_pris_en_charge = t.command
-                #gr_pris_en_charge = t.group_uuid
-            #if t.command != command_pris_en_charge or \
-               #t.group_uuid != gr_pris_en_charge:
-                #continue
-            #if t.inventoryuuid.startswith("UUID"):
-                #inventoryid = int(t.inventoryuuid[4:])
-            #else:
-                #inventoryid = int(t.inventoryuuid)
+            # if command_pris_en_charge == -1:
+            # on deploy qu'une commande sur 1 group a la fois en syncthing
+            # command_pris_en_charge = t.command
+            # gr_pris_en_charge = t.group_uuid
+            # if t.command != command_pris_en_charge or \
+            # t.group_uuid != gr_pris_en_charge:
+            # continue
+            # if t.inventoryuuid.startswith("UUID"):
+            # inventoryid = int(t.inventoryuuid[4:])
+            # else:
+            # inventoryid = int(t.inventoryuuid)
 
             e = json.loads(t.result)
             package = os.path.basename( e['path'])
-            #creation du partage si celui ci n'existe pas.
+            # creation du partage si celui ci n'existe pas.
             id_deploy = self.setSyncthing_deploy_group( t.title,
                                                         uuid.uuid4(),#namepartage
                                                         package,
@@ -4879,32 +4879,12 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         if relayserver:
-            #object complete
-            #result = [relayserver.id,
-                      #relayserver.urlguacamole,
-                      #relayserver.subnet,
-                      #relayserver.nameserver,
-                      #relayserver.ipserver,
-                      #relayserver.ipconnection,
-                      #relayserver.port,
-                      #relayserver.portconnection,
-                      #relayserver.mask,
-                      #relayserver.jid,
-                      #relayserver.longitude,
-                      #relayserver.latitude,
-                      #relayserver.enabled,
-                      #relayserver.classutil,
-                      #relayserver.groupdeploy,
-                      #relayserver.package_server_ip,
-                      #relayserver.package_server_port
-            #]
-
-            notconfars = { relayserver.jid :[relayserver.ipconnection,
-                                             relayserver.port,
-                                             relayserver.jid,
-                                             relayserver.urlguacamole,
-                                             0,
-                                             relayserver.syncthing_port]}
+            notconfars = {relayserver.jid :[relayserver.ipconnection,
+                                            relayserver.port,
+                                            relayserver.jid,
+                                            relayserver.urlguacamole,
+                                            0,
+                                            relayserver.syncthing_port]}
             # search for clusters where ARS is
             clustersid = session.query(Has_cluster_ars).filter(Has_cluster_ars.id_ars == relayserver.id)
             clustersid = clustersid.all()

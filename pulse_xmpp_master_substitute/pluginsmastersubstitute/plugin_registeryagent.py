@@ -34,11 +34,11 @@ plugin = {"VERSION": "1.51", "NAME": "registeryagent", "TYPE": "substitute"}
 # function comment for next feature
 # this functions will be used later
 # def function_dynamique_declaration_plugin(xmppobject):
-     #xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
+# xmppobject.changestatusin_plugin = types.MethodType(changestatusin_plugin, xmppobject)
 
 # def changestatusin_plugin(self, msg_changed_status):
-     #logger.debug("chang status for %s"%msg_changed_status['from'])
-     #pass
+# logger.debug("chang status for %s"%msg_changed_status['from'])
+# pass
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     try:
