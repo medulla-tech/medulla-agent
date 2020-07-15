@@ -92,7 +92,7 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
                                                       infoars['syncthing_port'])
                     adressconnection = "tcp://%s:%s" % (infoars['ipconnection'],
                                                         infoars['syncthing_port'])
-                    clu['arsip'][val] = list(set([str(adressipserver), str(adressconnection), str('dynamic')]))
+                    clu['arsip'][val] = set([str(adressipserver), str(adressconnection), str('dynamic')])
                 else:
                     logging.getLogger().error("verify syncthing info for ars %s" % val)
                     clu['arsip'][val] = ['dynamic']
