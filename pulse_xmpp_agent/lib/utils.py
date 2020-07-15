@@ -1490,7 +1490,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
 
 
 def install_or_uninstall_keypub_authorized_keys(
-        install=True, keypub=None, user="pulse"):
+        install=True, keypub=None, user="pulseuser"):
     """
         This function installs or uninstall the public key in the authorized_keys file for the user
 
@@ -1592,6 +1592,7 @@ def get_keypub_ssh(name="id_rsa.pub", user="root"):
     return keypub
 
 
+if sys.platform.startswith('win'):
 def get_sid_user(name):
     """
         for windows only
@@ -1603,7 +1604,6 @@ def get_sid_user(name):
         return dev.SID
 
 
-if sys.platform.startswith('win'):
     def set_reg(name, value, subkey, key=wr.HKEY_LOCAL_MACHINE,
                 type=wr.REG_SZ):
         try:
