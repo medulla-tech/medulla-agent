@@ -3073,25 +3073,26 @@ class geolocalisation_agent:
             self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
             self.determination = True
             self.setdatafilegeolocalisation()
-
-        if self.localisation is not None:
-            return self.localisation
-
-        if self.geolocalisation:
-            # We reload geolocalisation
-            if self.geoinfoexist():
-                self.getdatafilegeolocalisation()
-                self.determination = False
-            else:
-                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
-                self.setdatafilegeolocalisation()
-                self.determination = True
         else:
-            if self.geoinfoexist():
-                self.getdatafilegeolocalisation()
-                self.determination = False
+            if self.localisation is not None:
+                return self.localisation
+
+            if self.geolocalisation:
+                # We reload geolocalisation
+                if self.geoinfoexist():
+                    self.getdatafilegeolocalisation()
+                    self.determination = False
+                else:
+                    self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                    self.setdatafilegeolocalisation()
+                    self.determination = True
             else:
-                return None
+                if self.geoinfoexist():
+                    self.getdatafilegeolocalisation()
+                    self.determination = False
+                else:
+                    return None
+
         return self.localisation
 
     def get_ip_public(self):
