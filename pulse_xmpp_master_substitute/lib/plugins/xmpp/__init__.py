@@ -1459,11 +1459,10 @@ class XmppMasterDatabase(DatabaseHelper):
             if nowtime > result.start_exec_on_time:
                 return 'run'
         if not (result.start_exec_on_nb_deploy is None or result.start_exec_on_nb_deploy == ''):
-            #nb of deploy processing
             if result.start_exec_on_nb_deploy <= result.count_deploy_progress:
                 return 'run'
         for id in  self.sessionidforidcommand(idcommand):
-                self.updatedeploystate(id,"DEPLOYMENT DELAYED")
+            self.updatedeploystate(id,"DEPLOYMENT DELAYED")
         return "pause"
 
     @DatabaseHelper._sessionm
@@ -2068,7 +2067,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                    valuecount= [0,100]):
         setvalues =" "
         if len(valuecount) != 0:
-             setvalues = "AND xmppmaster.syncthing_machine.progress in (%s)"%",".join([str(x) for x in valuecount])
+            setvalues = "AND xmppmaster.syncthing_machine.progress in (%s)"%",".join([str(x) for x in valuecount])
         sql = """SELECT DISTINCT progress, COUNT(progress)
                     FROM
                         xmppmaster.syncthing_machine
