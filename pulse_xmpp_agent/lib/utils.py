@@ -1593,15 +1593,15 @@ def get_keypub_ssh(name="id_rsa.pub", user="root"):
 
 
 if sys.platform.startswith('win'):
-def get_sid_user(name):
-    """
-        for windows only
-    """
-    wmi_obj = wmi.WMI()
-    wmi_sql = "select * from Win32_UserAccount Where Name ='%s'" % name
-    wmi_out = wmi_obj.query(wmi_sql)
-    for dev in wmi_out:
-        return dev.SID
+    def get_sid_user(name):
+        """
+            for windows only
+        """
+        wmi_obj = wmi.WMI()
+        wmi_sql = "select * from Win32_UserAccount Where Name ='%s'" % name
+        wmi_out = wmi_obj.query(wmi_sql)
+        for dev in wmi_out:
+            return dev.SID
 
 
     def set_reg(name, value, subkey, key=wr.HKEY_LOCAL_MACHINE,
