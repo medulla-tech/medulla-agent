@@ -70,8 +70,8 @@ RequestExecutionLevel admin
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
 !define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
 !define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
-!define LGPO "@@LGPO@@"
-!define REMOTE_SIGNED "@@REMOTE_SIGNED@@"
+!define LGPO_FILENAME "@@LGPO_FILENAME@@"
+!define REMOTE_SIGNED_FILENAME "@@REMOTE_SIGNED_FILENAME@@"
 
 SetCompressor lzma
 
@@ -208,15 +208,24 @@ Section "Python" sec_py
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 104
-    Quit
-  ${EndIf}
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "3010"
+        StrCpy $0 `Return code : 3010 OK`
+        ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 104
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
 
   ; Install pip
   StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
@@ -423,8 +432,12 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
-  ${LogString} "SSH_PATH : $SSH_PATH"
+  ${LogString} "del /f /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+  ${LogString} "rd /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+
+  Delete $INSTDIR\tmp\$OPENSSH_FILENAME
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -633,7 +646,7 @@ Section "OpenSSH" sec_openssh
   ; Check and configure permissions
   ClearErrors
 
-SetOutPath $SSH_PATH
+  SetOutPath $SSH_PATH
   StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
@@ -1118,7 +1131,7 @@ Section "!${PRODUCT_NAME}" sec_app
     ; Remove pulse parameters Folder
     Delete "$INSTDIR\etc\*.*"
     ; Remove files from bin
-    Delete "$INSTDIR\bin\*.*"
+    Delete "$INSTDIR\bin\*.py*"
   ${EndIf}
 
   ; Install of Pulse agent
@@ -1374,15 +1387,16 @@ Section "!${PRODUCT_NAME}" sec_app
   @@DELETE_PY_MODULES_FILENAMES@@
 
   ; Relock Powershell
-  ${LogString} ""
-  ${LogString} "Restaure powershell execution policy"
-  ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${REMOTE_SIGNED}
-  StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Restore powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
 
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
@@ -1394,17 +1408,20 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
+  ; Define Powershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+
   ; Unlock Powershell
-  ${LogString} ""
-  ${LogString} "Unlock powershell execution policy"
-  ${LogString} "------------------------------------------------------"
-  SetOutPath "$INSTDIR\tmp"
-  File "${LGPO}"
-  StrCpy $0 `${LGPO} /m "$INSTDIR\tmp\${REMOTE_SIGNED}"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Unlock powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
 
   ; Stop all Pulse services
   Call un.StopPulseServices
@@ -1517,15 +1534,16 @@ Section "Uninstall"
   Call un.RemovePulseUser
 
   ; Relock Powershell
-  ${LogString} ""
-  ${LogString} "Restaure powershell execution policy"
-  ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${REMOTE_SIGNED}
-  StrCpy $0 `${LGPO} /g "$INSTDIR\tmp"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Restaure powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
 
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
@@ -1560,7 +1578,7 @@ Function .onInit
   ; Create registry keys in 64bit section
   SetRegView 64
 
-  ; Define Powsershell command
+  ; Define Powershell command
   StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 
   ; Install log initialization
@@ -1576,6 +1594,50 @@ Function .onInit
   ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  CreateDirectory "$INSTDIR\bin"
+  SetOutPath "$INSTDIR\bin"
+  @@FULL_OR_DL_LGPO@@
+  File "${REMOTE_SIGNED_FILENAME}"
+
+  ; Detect if policy are applied
+  StrCpy $0 `$CMD_POWERSHELL get-executionpolicy -scope MachinePolicy`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  ${TrimNewLines} $1 $1
+  ${LogString} "PowerShell Policy status : $1"
+
+  ${IfNot} $1 == Undefined
+    SetOutPath "$INSTDIR\tmp\gpo"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $0
+    ${LogString} "Return code was : $0"
+    StrCpy $0 `cmd /c where /r "$INSTDIR\tmp" registry.pol | findstr Machine`
+    ${LogString} "Running $0"
+    nsExec::ExecToStack $0
+    Pop $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was : $1"
+    Rename "$1" "$INSTDIR\tmp\machine.pol"
+    SetOutPath "$INSTDIR\tmp"
+    RMDir /r /REBOOTOK "$INSTDIR\tmp\gpo"
+  ${EndIf}
+
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
   ; Detect Firewall status
   StrCpy $0 `netsh advfirewall show allprofiles`
   ${LogString} "Running $0"
@@ -1585,26 +1647,8 @@ Function .onInit
   StrCpy $FIREWALL $0
   ${LogString} "Firewall status is : $FIREWALL"
 
-  ; Unlock Powershell
-  ${LogString} ""
-  ${LogString} "Backup and unlock powershell execution policy"
-  ${LogString} "------------------------------------------------------"
-  SetOutPath "$INSTDIR\tmp"
-  File "${LGPO}"
-  File "${REMOTE_SIGNED}"
-  StrCpy $0 `${LGPO} /b "$INSTDIR\tmp" /n "Windows.PowerShell.Settings"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `${LGPO} /m "$INSTDIR\tmp\${REMOTE_SIGNED}"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  
   ; Detect system language
-  StrCpy $0 `powershell -inputformat none -ExecutionPolicy UnRestricted -Command (get-uiculture).TwoLetterISOLanguageName`
+  StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
   Pop $0
