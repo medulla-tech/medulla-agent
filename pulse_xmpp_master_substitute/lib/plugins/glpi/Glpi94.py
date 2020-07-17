@@ -44,7 +44,7 @@ try:
     from sqlalchemy.sql.expression import ColumnOperators
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.exc import OperationalError, NoSuchTableError
+from sqlalchemy.exc import OperationalError
 
 # TODO rename location into entity (and locations in location)
 
@@ -569,7 +569,7 @@ class Glpi94(DatabaseHelper):
         The request is in OR not in AND, so be carefull with what you want
         """
         ret = self.__filter_on_filter(query)
-        if type(ret) == type(None):
+        if ret is None:
             return query
         else:
             return query.filter(ret)
