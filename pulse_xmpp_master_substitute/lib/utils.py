@@ -1840,14 +1840,14 @@ def find_files(directory, pattern):
                 yield filename
 
 def listfile(directory, abspath=True):
-    listfile=[]
+    fileList = []
     for root, dirs, files in os.walk(directory):
         for basename in files:
             if abspath:
-                listfile.append(os.path.join(root, basename))
+                fileList.append(os.path.join(root, basename))
             else:
-                listfile.append(os.path.join(basename))
-    return listfile
+                fileList.append(os.path.join(basename))
+    return fileList
 
 def md5folder(directory):
     hash = hashlib.md5()
