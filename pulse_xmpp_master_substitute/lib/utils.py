@@ -467,10 +467,10 @@ def md5(fname):
 def loadModule(filename):
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
-    #filename = "plugin_%s" % filename
-    #logger.debug("Loading module %s" % (filename))
+    # filename = "plugin_%s" % filename
+    # logger.debug("Loading module %s" % (filename))
     searchPath, file = os.path.split(filename)
-    if not searchPath in sys.path:
+    if searchPath not in sys.path:
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath+"/../"))
     moduleName, ext = os.path.splitext(file)
@@ -990,7 +990,7 @@ def pulgindeploy1(func):
                 dataerreur,
                 result)
 
-            if not 'end' in result['data']:
+            if 'end' not in result['data']:
                 result['data']['end'] = False
 
             print "----------------------------------------------------------------"
@@ -1097,12 +1097,10 @@ def getIpXmppInterface(ipadress1, Port):
 
 # 3 functions used for subnet network
 
-
 def ipV4toDecimal(ipv4):
     d = ipv4.split('.')
     return (int(d[0]) * 256 * 256 * 256) + (int(d[1])
                                             * 256 * 256) + (int(d[2]) * 256) + int(d[3])
-
 
 def decimaltoIpV4(ipdecimal):
     a = float(ipdecimal) / (256 * 256 * 256)
@@ -1110,7 +1108,6 @@ def decimaltoIpV4(ipdecimal):
     c = (b - int(b)) * 256
     d = (c - int(c)) * 256
     return "%s.%s.%s.%s" % (int(a), int(b), int(c), int(d))
-
 
 def subnetnetwork(adressmachine, mask):
     adressmachine = adressmachine.split(":")[0]

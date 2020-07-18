@@ -59,7 +59,7 @@ NB_DB_CONN_TRY = 2
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -995,7 +995,7 @@ class MscDatabase(DatabaseHelper):
                             'title': str(x.commands_title),
                             'UUID': str(x.target_target_uuid),
                             'GUID': x.target_id_group}
-            if not x.target_target_uuid in tabmachine:
+            if x.target_target_uuid not in tabmachine:
                 tabmachine.append(x.target_target_uuid)
                 #recherche machine existe pour xmpp
                 self.logger.info("deploy on machine %s [%s] -> %s"%(x.target_target_name,
@@ -1447,18 +1447,18 @@ class MscDatabase(DatabaseHelper):
                 order_by(asc(self.commands_on_host.c.next_launch_date))
         # x[0] contains a commands_on_host object x[1] contains commands
         l = []
-        for x in ret.all(): # patch to have rescheduled as a "state" ... must be emulated
-            if x[0].current_state == 'scheduled' and x[0].attempts_left != x[1].max_connection_attempt and not 'rescheduled' in l:
+        for x in ret.all():  # patch to have rescheduled as a "state" ... must be emulated
+            if x[0].current_state == 'scheduled' and x[0].attempts_left != x[1].max_connection_attempt and 'rescheduled' not in l:
                 l.append('rescheduled')
-            elif not x[0].current_state in l:
+            elif x[0].current_state not in l:
                 l.append(x[0].current_state)
         session.close()
         return l
 
-    def countAllCommandsonhostByCurrentstate(self, ctx, current_state, filt = ''): # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def countAllCommandsonhostByCurrentstate(self, ctx, current_state, filt = ''):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
-        if current_state == 'rescheduled': # patch to have rescheduled as a "state" ... must be emulated
+        if current_state == 'rescheduled':  # patch to have rescheduled as a "state" ... must be emulated
             ret = ret.filter(and_(self.commands.c.max_connection_attempt != self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
         elif current_state == 'scheduled':
             ret = ret.filter(and_(self.commands.c.max_connection_attempt == self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
@@ -1910,18 +1910,18 @@ class MscDatabase(DatabaseHelper):
 
 
 
-    def displayLogs(self, ctx, params = None): # TODO USE ctx
+    def displayLogs(self, ctx, params = None):  # TODO USE ctx
         if params is None: # do not change the default value!
             params = {}
         session = create_session()
         for i in ('b_id', 'cmd_id', 'coh_id', 'gid', 'uuid', 'filt'):
-            if not i in params or params[i] == '':
+            if i not in params or params[i] == '':
                 params[i] = None
-        if not 'min' in params:
+        if 'min' not in params:
             params['min'] = 0
-        if not 'max' in params:
+        if 'max' not in params:
             params['max'] = -1
-        #if not params.has_key('finished') or params['finished'] == '':
+        # if not params.has_key('finished') or params['finished'] == '':
         #    params['finished'] = False
         try:
             params['order_by'] = getattr(self.commands_on_host.c, params['order_by'])

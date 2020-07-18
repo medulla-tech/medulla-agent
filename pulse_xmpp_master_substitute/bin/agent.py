@@ -145,7 +145,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                      'ret' : 255,
                      'base64' : False}
         msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
-        if not 'data' in startparameter:
+        if 'data' not in startparameter:
             startparameter['data'] = {}
         module = "%s/plugin_%s.py"%(self.modulepath,  startparameter["action"])
         call_plugin( module,
@@ -304,7 +304,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     mydata = dataobj['data']
 
-                if not 'sessionid' in dataobj:
+                if 'sessionid' not in dataobj:
                     dataobj['sessionid']= getRandomName(6, "misssingid")
                     logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'], dataobj['sessionid']))
 
@@ -323,7 +323,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                      'ret' : 255,
                      'base64' : False}
                     module = "%s/plugin_%s.py"%(self.modulepath, dataobj['action'])
-                    if not 'ret' in dataobj:
+                    if 'ret' not in dataobj:
                         dataobj['ret'] = 0
                     call_plugin( module,
                                  self,

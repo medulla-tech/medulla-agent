@@ -1316,7 +1316,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                'base64' : False
                 }
                 msg = {'from' : 'console', "to" : self.boundjid.bare, 'type' : 'chat' }
-                if not 'data' in dataobj:
+                if 'data' not in dataobj:
                     dataobj['data'] = {}
                 call_plugin(dataobj["action"],
                     self,

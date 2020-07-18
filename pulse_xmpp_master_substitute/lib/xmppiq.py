@@ -182,7 +182,7 @@ class functionsynchroxmpp:
         try:
             msgaction=[]
             #logger.debug("error format message : %s"%(json.dumps(data, indent = 4)))
-            if not 'keyinstall' in data["action"]:
+            if 'keyinstall' not in data["action"]:
                 logger.error("error format message : %s"%(json.dumps(data, indent = 4)))
                 data['action'] = "resultkeyinstall"
                 data['ret'] = 20

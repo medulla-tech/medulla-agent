@@ -1001,7 +1001,7 @@ def directcallplugin(self, msg):
                 mydata = dataobj['data']
             if not dataobj.has_key('sessionid'):
                 dataobj['sessionid'] = "absent"
-            if not 'ret' in dataobj:
+            if 'ret' not in dataobj:
                 dataobj['ret'] = 0
             try:
                 logging.debug("Calling plugin %s from  %s" % (dataobj['action'], msg['from']))
