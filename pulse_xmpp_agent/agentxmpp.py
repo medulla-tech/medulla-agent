@@ -946,66 +946,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except IqError as e:
                 err_resp = e.iq
                 logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-                logger.error("\n%s"%(traceback.format_exc()))
-                return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
-
-            except IqTimeout:
-                logging.error("iqsendpulse : Timeout Error")
-                return '{"err" : "Timeout Error"}'
-        except Exception as e:
-            logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
-            logger.error("\n%s"%(traceback.format_exc()))
-            return '{"err" : "%s"}' % str(e).replace('"', "'")
-        return "{}"
-
-    def iqsendpulse(self, to, datain, timeout):
-        # send iq synchronous message
-        if type(datain) == dict or type(datain) == list:
-            try:
-                data = json.dumps(datain)
-            except Exception as e:
-                logging.error("iqsendpulse : encode json : %s" % str(e))
-                return '{"err" : "%s"}' % str(e).replace('"', "'")
-        elif type(datain) == unicode:
-            data = str(datain)
-        else:
-            data = datain
-        try:
-            data = data.encode("base64")
-        except Exception as e:
-            logging.error("iqsendpulse : encode base64 : %s" % str(e))
-            return '{"err" : "%s"}' % str(e).replace('"', "'")
-        try:
-            iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
-            itemXML = ET.Element('{%s}data' % data)
-            for child in iq.xml:
-                if child.tag.endswith('query'):
-                    child.append(itemXML)
-            try:
-                result = iq.send(timeout=timeout)
-                if result['type'] == 'result':
-                    for child in result.xml:
-                        if child.tag.endswith('query'):
-                            for z in child:
-                                if z.tag.endswith('data'):
-                                    # decode result
-                                    # TODO : Replace print by log
-                                    #print z.tag[1:-5]
-                                    return base64.b64decode(z.tag[1:-5])
-                                    try:
-                                        data = base64.b64decode(z.tag[1:-5])
-                                        # TODO : Replace print by log
-                                        #print "RECEIVED data"
-                                        #print data
-                                        return data
-                                    except Exception as e:
-                                        logging.error("iqsendpulse : %s" % str(e))
-                                        logger.error("\n%s"%(traceback.format_exc()))
-                                        return '{"err" : "%s"}' % str(e).replace('"', "'")
-                                    return "{}"
-            except IqError as e:
-                err_resp = e.iq
-                logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
                 logger.error("\n%s" % (traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
