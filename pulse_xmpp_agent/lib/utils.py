@@ -1429,15 +1429,15 @@ def check_exist_ip_port(name_domaine_or_ip, port):
 
 
 def install_or_uninstall_keypub_authorized_keys(
-        install=True, keypub=None, user="pulseuser"):
+        install=True, publicKey=None, user="pulseuser"):
     """
         This function installs or uninstall the public key in the authorized_keys file for the user
 
-        If keypub is not specified then the function uninstall the key for user "user"
+        If publicKey is not specified then the function uninstall the key for user "user"
 
         Args:
             install: is install is True it installs the key. If False it uninstall the key.
-            keypub: The public key to use.
+            publicKey: The public key to use.
             user: user where the authorized_keys is copied to.
 
         Returns:
@@ -1476,7 +1476,7 @@ def install_or_uninstall_keypub_authorized_keys(
         try:
             source = open(path_authorized_keys, "r")
             for ligne in source.readlines():
-                if ligne.startswith(keypub):
+                if ligne.startswith(publicKey):
                     addkey = False
                     break
             source.close()
@@ -1491,7 +1491,7 @@ def install_or_uninstall_keypub_authorized_keys(
             try:
                 source = open(path_authorized_keys, "a")
                 source.write('\n')
-                source.write(keypub)
+                source.write(publicKey)
                 source.close()
             except Exception as e:
                 logging.log(DEBUGPULSE, "ERROR %s" % str(e))
@@ -1503,7 +1503,7 @@ def install_or_uninstall_keypub_authorized_keys(
         for ligne in source:
             if ligne.startswith(os.sep):
                 continue
-            if not ligne.startswith(keypub):
+            if not ligne.startswith(publicKey):
                 filesouce = filesouce + ligne
         source.close()
         source = open(path_authorized_keys, "w").write(filesouce)
@@ -1526,9 +1526,9 @@ def get_keypub_ssh(name="id_rsa.pub", user="root"):
     """
     path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh", name)
     source = open(path_ssh, "r")
-    keypub = source.read().strip(" \n\t")
+    publicKey = source.read().strip(" \n\t")
     source.close()
-    return keypub
+    return publicKey
 
 
 if sys.platform.startswith('win'):
