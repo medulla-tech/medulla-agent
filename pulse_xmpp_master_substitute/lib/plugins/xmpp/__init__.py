@@ -2342,16 +2342,6 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
 
     @DatabaseHelper._sessionm
-    def sessionidforidcommand(self, session, idcommand):
-        result = session.query(Deploy.sessionid).\
-            filter(Deploy.command == idcommand).all()
-        if result:
-            a= [m[0] for m in result]
-            return a
-        else:
-            return []
-
-    @DatabaseHelper._sessionm
     def deploy_machine_partage_exist(self,
                                     session,
                                     jidmachine,
