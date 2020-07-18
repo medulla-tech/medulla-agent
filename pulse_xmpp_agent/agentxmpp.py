@@ -958,14 +958,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
 
-    def version_agent(self):
-        pathversion = os.path.join(self.pathagent, "agentversion")
-        if os.path.isfile(pathversion):
-            self.versionagent = file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
-        else :
-            self.versionagent = 0.0
-        return self.versionagent
-
     def iqsendpulse(self, to, datain, timeout):
         # send iq synchronous message
         if type(datain) == dict or type(datain) == list:
