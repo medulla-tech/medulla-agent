@@ -158,9 +158,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         paramglobal['remoteport'] = int(objectxmpp.config.clients_ssh_port)
         logger.debug("Clients SSH port %s"%paramglobal['remoteport'])
     logger.debug("Install key ARS in authorized_keys on agent machine")
-    body = {'action' : 'installkey',
+    body = {'action': 'installkey',
             'sessionid': sessionid,
-            'data' : { 'jidAM' : data['jidmachine']
+            'data': { 'jidAM': data['jidmachine']
             }
     }
     objectxmpp.send_message( mto = objectxmpp.boundjid.bare,
@@ -236,17 +236,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         datareversessh = {
             'action': 'reverse_ssh_on',
             'sessionid': sessionid,
-            'data' : {
-                    'request' : 'askinfo',
-                    'port' : localport,
-                    'host' : data['host'],
-                    'remoteport' : paramglobal['remoteport'],
-                    'reversetype' : 'R',
-                    'options' : 'createreversessh',
-                    'persistence' : 'Downloadfile'
+            'data': {
+                    'request': 'askinfo',
+                    'port': localport,
+                    'host': data['host'],
+                    'remoteport': paramglobal['remoteport'],
+                    'reversetype': 'R',
+                    'options': 'createreversessh',
+                    'persistence': 'Downloadfile'
             },
-            'ret' : 0,
-            'base64' : False }
+            'ret': 0,
+            'base64': False }
 
         objectxmpp.send_message(mto = message['to'],
                     mbody = json.dumps(datareversessh),

@@ -234,7 +234,7 @@ class CommandsOnHost(object):
         return {
             'id': self.id,
             'fk_commands': self.fk_commands,
-            'fk_target' : self.fk_target,
+            'fk_target': self.fk_target,
             'host': self.host,
             'start_date': self.start_date,
             'end_date': self.end_date,
@@ -257,7 +257,7 @@ class CommandsOnHost(object):
             'order_in_proxy': self.order_in_proxy,
             'fk_use_as_proxy': self.fk_use_as_proxy,
             'max_clients_per_proxy': self.max_clients_per_proxy,
-            'phases' : self.phases
+            'phases': self.phases
         }
 
     def setStartDate(self):

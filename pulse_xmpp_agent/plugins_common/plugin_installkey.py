@@ -40,9 +40,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     dataerreur = {  "action" : "result" + action,
                     "data" : { "msg" : "error plugin : " + action
                     },
-                    'sessionid' : sessionid,
-                    'ret' : 255,
-                    'base64' : False
+                    'sessionid': sessionid,
+                    'ret': 255,
+                    'base64': False
     }
 
     if objectxmpp.config.agenttype in ['machine']:
@@ -267,9 +267,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         datasend = {  "action" : action,
                     "data" : { "key" : key },
-                    'sessionid' : sessionid,
-                    'ret' : 255,
-                    'base64' : False
+                    'sessionid': sessionid,
+                    'ret': 255,
+                    'base64': False
         }
 
         objectxmpp.send_message_agent( data['jidAM'], datasend, mtype = 'chat')

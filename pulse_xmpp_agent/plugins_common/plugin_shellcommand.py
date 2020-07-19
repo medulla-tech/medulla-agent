@@ -29,9 +29,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     result = {
                     'action': "result%s"%action,
                     'sessionid': sessionid,
-                    'data' : {},
-                    'ret' : 0,
-                    'base64' : False
+                    'data': {},
+                    'ret': 0,
+                    'base64': False
                 }
     try:
         obj = utils.simplecommand(utils.encode_strconsole(data['cmd']))

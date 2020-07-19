@@ -38,9 +38,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     result = {
                 'action': "result%s"%action,
                 'sessionid': sessionid,
-                'data' : {},
-                'ret' : 0,
-                'base64' : False }
+                'data': {},
+                'ret': 0,
+                'base64': False }
 
     # This plugin needs to call back the plugin that made the request to return the result
     if 'actionasker' in data:

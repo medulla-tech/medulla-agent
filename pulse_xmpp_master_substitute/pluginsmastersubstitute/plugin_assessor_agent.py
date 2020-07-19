@@ -552,7 +552,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         response = {'action': 'resultconnectionconf',
                     'sessionid': data['sessionid'],
                     'data': z1,
-                    'syncthing' : objectxmpp.assessor_agent_announce_server,
+                    'syncthing': objectxmpp.assessor_agent_announce_server,
                     'ret': 0}
         if len(listars) == 0:
             logger.warning("No configuration sent to machine "\
@@ -711,7 +711,7 @@ def sendErrorConnectionConf(objectxmpp, session,  msg):
     response = {'action': 'resultconnectionconf',
                'sessionid': session,
                'data': [],
-               'syncthing' : "",
+               'syncthing': "",
                'ret': 255}
     objectxmpp.send_message(mto=msg['from'],
                         mbody=json.dumps(response),

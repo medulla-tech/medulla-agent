@@ -29,7 +29,7 @@ import traceback
 from lib import utils, \
                 update_remote_agent
 
-plugin={"VERSION": "2.0", 'VERSIONAGENT' : '2.0',  "NAME" : "updateagent", "TYPE" : "all", "waittingmax" : 35, "waittingmin" : 5}
+plugin={"VERSION": "2.0", 'VERSIONAGENT': '2.0',  "NAME" : "updateagent", "TYPE" : "all", "waittingmax" : 35, "waittingmin" : 5}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -109,10 +109,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     # call resultupdateagent
                     msgupdate_me = { 'action': "result%s"%action,
                                     'sessionid': sessionid,
-                                    'data' :  { "subaction" : "update_me",
+                                    'data':  { "subaction" : "update_me",
                                                 "descriptoragent" : difference },
-                                    'ret' : 0,
-                                    'base64' : False }
+                                    'ret': 0,
+                                    'base64': False }
                     # renvoi descriptor pour demander la mise a jour
                     try:
                         agent_installor = objectxmpp.sub_registration
@@ -232,7 +232,7 @@ def senddescriptormd5(objectxmpp, data):
     datasend = {"action": "updateagent",
                 "data": { 'subaction': 'descriptor',
                           'descriptoragent': descriptoragentbase,
-                          'ars_update' : data['ars_update']
+                          'ars_update': data['ars_update']
                           },
                 'ret': 0,
                 'sessionid': utils.getRandomName(5, "updateagent")}

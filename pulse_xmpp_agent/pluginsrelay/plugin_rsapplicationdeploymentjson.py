@@ -37,9 +37,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     datasend = {
                     'action': action,
                     'sessionid': sessionid,
-                    'data' : {},
-                    'ret' : 0,
-                    'base64' : False
+                    'data': {},
+                    'ret': 0,
+                    'base64': False
                 }
 
     logging.getLogger().debug("#################RELAY SERVER#####################")

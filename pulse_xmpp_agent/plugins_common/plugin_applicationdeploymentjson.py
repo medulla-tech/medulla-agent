@@ -1282,7 +1282,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 # data_in_session['keyinstall'] = True
                 # objsession.setdatasession(data_in_session)
 
-                if 'actiontype' in data and data['actiontype'] == 'requestinfo' :
+                if 'actiontype' in data and data['actiontype'] == 'requestinfo':
                     if 'folders_packages' in data :
                         data_in_session['folders_packages'] = data['folders_packages']
                         logger.debug("folders_packages client machine %s" % data_in_session['folders_packages'])
@@ -1491,11 +1491,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                             data_in_session['environ'] = {}
                             cleandescriptor( data_in_session )
                             datalog = {
-                                'action' : "result%s"%action,
+                                'action': "result%s"%action,
                                 'sessionid': sessionid,
-                                'ret' : 255,
-                                'base64' : False,
-                                'data' : data_in_session
+                                'ret': 255,
+                                'base64': False,
+                                'data': data_in_session
                             }
                             objectxmpp.send_message(mto="master@pulse/MASTER",
                                                     mbody=json.dumps(datalog),
@@ -1985,9 +1985,9 @@ def create_message_self_for_transfertfile(sessionid):
     return  {
         'action': plugin['NAME'],
         'sessionid': sessionid,
-        'data' :{'step' : "transferfiles"},
-        'ret' : 0,
-        'base64' : False}
+        'data':{'step': "transferfiles"},
+        'ret': 0,
+        'base64': False}
 
 def ARSremovereversessh(objectxmpp,
                         strjidagent,
@@ -2059,13 +2059,13 @@ def takeresource(datasend, objectxmpp, sessionid):
     logger.debug('Taking resource : %s'%datasendl['data']['jidrelay'])
     msgresource = {'action': "cluster",
                     'sessionid': sessionid,
-                    'data' :  {"subaction" : "takeresource",
-                                "data" : {'user' : datasendl['data']['advanced']['login'],
-                                        'machinejid' : datasendl['data']['jidmachine']
+                    'data':  {"subaction" : "takeresource",
+                                "data" : {'user': datasendl['data']['advanced']['login'],
+                                        'machinejid': datasendl['data']['jidmachine']
                                 }
                     },
-                    'ret' : 0,
-                    'base64' : False}
+                    'ret': 0,
+                    'base64': False}
     objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
                             mbody = json.dumps(msgresource),
                             mtype = 'chat')
@@ -2089,13 +2089,13 @@ def removeresource(datasend, objectxmpp, sessionid):
     logger.debug('Restoring resource : %s'%datasendl['data']['jidrelay'])
     msgresource = {'action': "cluster",
                     'sessionid': sessionid,
-                    'data' :  { "subaction" : "removeresource",
-                                "data" : {'user' : datasendl['data']['advanced']['login'],
-                                            'machinejid' : datasendl['data']['jidmachine']
+                    'data':  { "subaction" : "removeresource",
+                                "data" : {'user': datasendl['data']['advanced']['login'],
+                                            'machinejid': datasendl['data']['jidmachine']
                                 }
                     },
-                    'ret' : 0,
-                    'base64' : False}
+                    'ret': 0,
+                    'base64': False}
     objectxmpp.send_message(mto = datasendl['data']['jidrelay'],
                             mbody = json.dumps(msgresource),
                             mtype = 'chat')
