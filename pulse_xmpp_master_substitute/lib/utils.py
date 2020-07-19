@@ -72,7 +72,7 @@ if sys.platform.startswith('win'):
     import win32com.client
     from win32com.client import GetObjectif
 
-#### debug decorator #########
+# debug decorator
 def minimum_runtime(t):
     """
         Function decorator constrains the minimum execution time of the function
@@ -133,7 +133,6 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             return outfunction
         return wrapper
     return decorated
-###########################################
 
 def Setdirectorytempinfo():
     """
