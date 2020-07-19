@@ -41,7 +41,6 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
 import functools
-from sqlalchemy import func
 from sqlalchemy.orm import Query
 try:
     from sqlalchemy.orm.util import _entity_descriptor
