@@ -1003,7 +1003,7 @@ class syncthingapi():
                             result = False
                     new_device = {"deviceID": keydevice,
                                   "introducedBy": introducedBy}
-                    if not new_device in folder['devices']:
+                    if new_device not in folder['devices']:
                         folder['devices'].append(new_device)
                     self.synchro = False
                     result =  True

@@ -299,7 +299,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
 
         logger.debug("PROCESSING RELAYSERVER")
         if message['from'] == "console":
-            if not "request" in data :
+            if "request" not in data :
                 objectxmpp.send_message_agent("console", dataerreur)
                 return
             if data['request'] == "askinfo":

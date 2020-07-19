@@ -325,7 +325,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             # Not immediately deployed
             # The deployment is prepared for the next
             try:
-                if not sessionid in objectxmpp.back_to_deploy:
+                if sessionid not in objectxmpp.back_to_deploy:
                     objectxmpp.back_to_deploy[sessionid] = {}
                     objectxmpp.back_to_deploy[sessionid]['Dependency'] = []
                     objectxmpp.back_to_deploy[sessionid]['packagelist'] = {}
@@ -339,7 +339,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 #global information to keep for this session
 
 
-                if not 'ipmachine' in objectxmpp.back_to_deploy[sessionid]:
+                if 'ipmachine' not in objectxmpp.back_to_deploy[sessionid]:
                     #on les sauves
                     #toutes les dependences du packet deploye hérite des priorites de ce packet.
                     objectxmpp.back_to_deploy[sessionid]['ipmachine'] = data['ipmachine']
@@ -359,13 +359,13 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             except Exception as e:
                 logger.error(str(e))
 
-        if sessionid in objectxmpp.back_to_deploy and not 'start' in objectxmpp.back_to_deploy[sessionid]:
+        if sessionid in objectxmpp.back_to_deploy and 'start' not in objectxmpp.back_to_deploy[sessionid]:
             #create list package deploy
             try:
                 # Necessary datas are added.
                 # If we do not have these data global has all the dislocation we add them.
                 # Son applique a la dependence les proprietes du packages
-                if not 'ipmachine' in data:
+                if 'ipmachine' not in data:
                     logger.debug("addition global informations for deploy mode push dependency")
                     data['ipmachine'] = objectxmpp.back_to_deploy[sessionid]['ipmachine']
                     data['ipmaster'] = objectxmpp.back_to_deploy[sessionid]['ipmaster']
@@ -385,9 +385,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 # Verify that for each Dependency one has its descriptor
                 # Store the dependency descriptor in back_to_deploy object for the session
                 data['deploy'] = data['path'].split("/")[-1]
-                if not data['deploy'] in objectxmpp.back_to_deploy[sessionid]:
+                if data['deploy'] not in objectxmpp.back_to_deploy[sessionid]:
                     objectxmpp.back_to_deploy[sessionid]['packagelist'][data['deploy']] = data
-                if not 'count' in objectxmpp.back_to_deploy[sessionid]:
+                if 'count' not in objectxmpp.back_to_deploy[sessionid]:
                     #We use a counter to take a case where the dependencies loop.
                     objectxmpp.back_to_deploy[sessionid]['count'] = 0
                 # Then we look in the list of descriptors if these data of each dependence are present
@@ -395,7 +395,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     if dependency == "":
                         continue
 
-                    if not dependency in objectxmpp.back_to_deploy[sessionid]['packagelist']:
+                    if dependency not in objectxmpp.back_to_deploy[sessionid]['packagelist']:
                         #on demande a (rs pakage server) de nous envoyé le descripteurs de ce package
                         datasend = {
                             'action': "rsapplicationdeploymentjson",
@@ -434,7 +434,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     strdeploypack = []
                     packlistdescribemapdeploy = []
                     for k in objectxmpp.back_to_deploy[sessionid]['Dependency']:
-                        if not k in packlistdescribemapdeploy:
+                        if k not in packlistdescribemapdeploy:
                             packlistdescribemapdeploy.append(str(k))
                             strdeploypack.append(objectxmpp.back_to_deploy[sessionid]['packagelist'][k]['descriptor']['info']['software'])
                     objectxmpp.back_to_deploy[sessionid]['Dependency'] = packlistdescribemapdeploy
@@ -484,7 +484,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if sessionid in objectxmpp.back_to_deploy:
             # Necessary datas are added.
             # If one has not in data this information is added.
-            if not 'ipmachine' in data:
+            if 'ipmachine' not in data:
                 logger.debug("addition global informations for deploy")
                 data['ipmachine'] = objectxmpp.back_to_deploy[sessionid]['ipmachine']
                 data['ipmaster'] = objectxmpp.back_to_deploy[sessionid]['ipmaster']
@@ -511,7 +511,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     }
 
 
-        if not 'stepcurrent' in datasend['data']:
+        if 'stepcurrent' not in datasend['data']:
             if not cleandescriptor(data):
                 objectxmpp.xmpplog('<span class="log_err">Descriptor error: descriptor for OS %s missing</span>'%sys.platform,
                                     type = 'deploy',
@@ -640,11 +640,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             mbody = json.dumps(datasend1),
                                             mtype = 'chat')
 
-            if not 'advanced' in datasend['data']:
+            if 'advanced' not in datasend['data']:
                 datasend['data']['advanced'] = {}
                 datasend['data']['advanced']['exec'] = True
 
-            if datasend['data']['advanced']['exec'] is True or not 'advanced' in datasend['data']:
+            if datasend['data']['advanced']['exec'] is True or 'advanced' not in datasend['data']:
                 # deploy directly
                 datasend['data']['advanced']['scheduling'] = False
                 initialisesequence(datasend, objectxmpp, sessionid)
@@ -845,7 +845,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 objectxmpp.sessionaccumulator[sessionid] = time.time()
                 # the deployment message comes from the master gold deployment agent.
                 data['resource'] = False
-                if not 'cluster' in data and len(objectxmpp.jidclusterlistrelayservers) > 0:
+                if 'cluster' not in data and len(objectxmpp.jidclusterlistrelayservers) > 0:
                     # determination of ARS that deploy
                     data['cluster'] = strjidagent
                     logger.debug("list ARS concurent : %s"%objectxmpp.jidclusterlistrelayservers)
@@ -885,7 +885,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                             mbody = json.dumps(datasend),
                                             mtype = 'chat')
 
-                    if not arsselection in objectxmpp.charge_apparente_cluster:
+                    if arsselection not in objectxmpp.charge_apparente_cluster:
                         add_chargeapparente(objectxmpp, arsselection)
                     q=time.time()
                     clear_chargeapparente(objectxmpp)
@@ -1142,7 +1142,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             and data['transfert'] is True\
                 and 'methodetransfert' in data\
                     and data['methodetransfert'] in ["pullrsync", "pullscp"] \
-                        and not 'transfertpullrsync' in data:
+                        and 'transfertpullrsync' not in data:
             data['transfertpullrsync'] = True
             install_key_by_iq(objectxmpp, data['jidmachine'], sessionid, strjidagent)
             # creation d'un reverce ssh
@@ -1365,7 +1365,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     objsession.setdatasession(data_in_session)
 
                 # We verify that we have all the information for the deployment
-                if not 'folders_packages' in data_in_session or not 'os' in data_in_session:
+                if 'folders_packages' not in data_in_session or 'os' not in data_in_session:
                     # termine deploy on error
                     # We do not know folders_packages
                     logger.debug("DEPLOYMENT ABORTED: FOLDERS_PACKAGE MISSING")
@@ -1410,8 +1410,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                         message = "folders_package missing")
                     return
 
-                    #if not 'folders_packages' in data_in_session or not 'keyinstall' in data_in_session:
-                if not 'folders_packages' in data_in_session:
+                    # if not 'folders_packages' in data_in_session or not 'keyinstall' in data_in_session:
+                if 'folders_packages' not in data_in_session:
                     # If the 2 conditions are not yet satisfied:
                     # - Key public ARS installed on AM,
                     # - And return the path or install the packages.
@@ -1473,7 +1473,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             msg = "Transfer package %s to %s"%(data_in_session['name'],data_in_session['jidmachine'])
 
                         ipmachine = data_in_session['ipmachine']
-                        if not 'remoteport' in data_in_session:
+                        if 'remoteport' not in data_in_session:
                             clientssshport = Globaldata['port_local']
                         else :
                             clientssshport = data_in_session['remoteport']
@@ -1789,7 +1789,7 @@ def clear_chargeapparente(objectxmpp):
 
 def add_chargeapparente(objectxmpp, ars):
     #create structure if not exist
-    if not ars in objectxmpp.charge_apparente_cluster:
+    if ars not in objectxmpp.charge_apparente_cluster:
         objectxmpp.charge_apparente_cluster[ars] = {}
         objectxmpp.charge_apparente_cluster[ars]['charge'] = 0
         objectxmpp.charge_apparente_cluster[ars]['time'] = time.time()
@@ -2112,7 +2112,7 @@ def askinfo(to, sessionid, objectxmpp, informationasking=[], replyaction=None,
 
 def takeresource(datasend, objectxmpp, sessionid):
     datasendl = {}
-    if not 'data' in datasend:
+    if 'data' not in datasend:
         datasendl['data'] = datasend
     else:
         datasendl = datasend
@@ -2143,7 +2143,7 @@ def takeresource(datasend, objectxmpp, sessionid):
 
 def removeresource(datasend, objectxmpp, sessionid):
     datasendl = {}
-    if not 'data' in datasend:
+    if 'data' not in datasend:
         datasendl['data'] = datasend
     else:
         datasendl = datasend
