@@ -463,7 +463,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                      priority = dataobj['priority'],
                                      who = dataobj['who'])
             elif 'action' in dataobj :
-                if 'action' in dataobj and  'data' in dataobj and not "action" in dataobj['data']:
+                if 'action' in dataobj and  'data' in dataobj and 'action' not in dataobj['data']:
                     dataobj['data']['action'] = dataobj['action']
                     dataobj['data']['ret'] =  dataobj['ret']
                     dataobj['data']['sessionid'] =  dataobj['sessionid']

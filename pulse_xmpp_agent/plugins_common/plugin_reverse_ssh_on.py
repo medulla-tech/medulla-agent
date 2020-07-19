@@ -555,7 +555,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
-                if not 'persistence' in data:
+                if 'persistence' not in data:
                     data['persistence'] = "no"
                 if 'persistence' in data and data['persistence'].lower() != "no":
                     if data['persistence'] in objectxmpp.reversesshmanage:
