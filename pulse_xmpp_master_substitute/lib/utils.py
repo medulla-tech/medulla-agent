@@ -853,8 +853,6 @@ def windowsservice(name, action):
 
 
 def methodservice():
-    import pythoncom
-    import wmi
     pythoncom.CoInitialize()
     try:
         c = wmi.WMI()
