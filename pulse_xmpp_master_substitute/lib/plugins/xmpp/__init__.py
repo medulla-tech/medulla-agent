@@ -2109,7 +2109,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     }
         try:
             progress = int(float(re[2]))
-        except :
+        except ValueError:
             progress = 0
 
         return { 'package': re[0],
