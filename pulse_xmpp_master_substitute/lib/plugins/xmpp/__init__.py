@@ -3067,25 +3067,24 @@ class XmppMasterDatabase(DatabaseHelper):
         result = deploylog.all()
         session.commit()
         session.flush()
-        ret = { 'lentotal': 0,
+        ret = {'lentotal': 0,
                'lenquery': 0,
-                'tabdeploy': { 'len': [],
-                                'state': [],
-                                'pathpackage': [],
-                                'sessionid': [],
-                                'start': [],
-                                'inventoryuuid': [],
-                                'command': [],
-                                'start': [],
-                                'login': [],
-                                'host': [],
-                                'macadress': [],
-                                'group_uuid': [],
-                                'startcmd': [],
-                                'endcmd': [],
-                                'jidmachine': [],
-                                'jid_relay': [],
-                                'title': []
+                'tabdeploy': {'len': [],
+                              'state': [],
+                              'pathpackage': [],
+                              'sessionid': [],
+                              'start': [],
+                              'inventoryuuid': [],
+                              'command': [],
+                              'login': [],
+                              'host': [],
+                              'macadress': [],
+                              'group_uuid': [],
+                              'startcmd': [],
+                              'endcmd': [],
+                              'jidmachine': [],
+                              'jid_relay': [],
+                              'title': []
                 }
         }
         ret['lentotal'] = lentaillerequette[0]
@@ -3145,23 +3144,22 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         ret = { 'lentotal': 0,
                'lenquery': 0,
-                'tabdeploy': { 'len': [],
-                                'state': [],
-                                'pathpackage': [],
-                                'sessionid': [],
-                                'start': [],
-                                'inventoryuuid': [],
-                                'command': [],
-                                'start': [],
-                                'login': [],
-                                'host': [],
-                                'macadress': [],
-                                'group_uuid': [],
-                                'startcmd': [],
-                                'endcmd': [],
-                                'jidmachine': [],
-                                'jid_relay': [],
-                                'title': []
+                'tabdeploy': {'len': [],
+                              'state': [],
+                              'pathpackage': [],
+                              'sessionid': [],
+                              'start': [],
+                              'inventoryuuid': [],
+                              'command': [],
+                              'login': [],
+                              'host': [],
+                              'macadress': [],
+                              'group_uuid': [],
+                              'startcmd': [],
+                              'endcmd': [],
+                              'jidmachine': [],
+                              'jid_relay': [],
+                              'title': []
                 }
         }
         ret['lentotal'] = lentaillerequette[0]
@@ -3254,23 +3252,21 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         ret ={'total_of_rows': 0,
               'lentotal': 0,
-              'tabdeploy': {
-                                'state': [],
-                                'pathpackage': [],
-                                'sessionid': [],
-                                'start': [],
-                                'inventoryuuid': [],
-                                'command': [],
-                                'start': [],
-                                'login': [],
-                                'host': [],
-                                'macadress': [],
-                                'group_uuid': [],
-                                'startcmd': [],
-                                'endcmd': [],
-                                'jidmachine': [],
-                                'jid_relay': [],
-                                'title': []}}
+              'tabdeploy': {'state': [],
+                            'pathpackage': [],
+                            'sessionid': [],
+                            'start': [],
+                            'inventoryuuid': [],
+                            'command': [],
+                            'login': [],
+                            'host': [],
+                            'macadress': [],
+                            'group_uuid': [],
+                            'startcmd': [],
+                            'endcmd': [],
+                            'jidmachine': [],
+                            'jid_relay': [],
+                            'title': []}}
 
         ret['lentotal'] = lentaillerequette#[0]
         ret['total_of_rows'] = lenrequest[0][0]
@@ -3329,23 +3325,22 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         ret ={'lentotal': 0,
-              'tabdeploy': {   'len': [],
-                                'state': [],
-                                'pathpackage': [],
-                                'sessionid': [],
-                                'start': [],
-                                'inventoryuuid': [],
-                                'command': [],
-                                'start': [],
-                                'login': [],
-                                'host': [],
-                                'macadress': [],
-                                'group_uuid': [],
-                                'startcmd': [],
-                                'endcmd': [],
-                                'jidmachine': [],
-                                'jid_relay': [],
-                                'title': []}}
+              'tabdeploy': {'len': [],
+                            'state': [],
+                            'pathpackage': [],
+                            'sessionid': [],
+                            'start': [],
+                            'inventoryuuid': [],
+                            'command': [],
+                            'login': [],
+                            'host': [],
+                            'macadress': [],
+                            'group_uuid': [],
+                            'startcmd': [],
+                            'endcmd': [],
+                            'jidmachine': [],
+                            'jid_relay': [],
+                            'title': []}}
 
         #ret['lentotal'] = nbfilter
         ret['lentotal'] = lentaillerequette[0]
@@ -3383,14 +3378,13 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         ret ={'len': len(deploylog),
               'tabdeploy': {'state': [],
-                             'pathpackage': [],
-                             'sessionid': [],
-                             'start': [],
-                             'inventoryuuid': [],
-                             'command': [],
-                             'start': [],
-                             'login': [],
-                             'host': [] }}
+                            'pathpackage': [],
+                            'sessionid': [],
+                            'start': [],
+                            'inventoryuuid': [],
+                            'command': [],
+                            'login': [],
+                            'host': []}}
         for linedeploy in deploylog:
             ret['tabdeploy']['state'].append(linedeploy.state)
             ret['tabdeploy']['pathpackage'].append(linedeploy.pathpackage.split("/")[-1])
