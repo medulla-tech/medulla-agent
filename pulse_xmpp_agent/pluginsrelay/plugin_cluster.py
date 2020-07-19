@@ -34,10 +34,9 @@ def refreshremotears(objectxmpp, action, sessionid):
                   'action': "%s" % action,
                   'sessionid': sessionid,
                   'data':  {"subaction": "refreshload",
-                            "data": {"chargenumber": objectxmpp.checklevelcharge() +
-                                                     objectxmpp.managefifo.getcount()
-                                    }
-                        },
+                            "data": {"chargenumber": objectxmpp.checklevelcharge() + objectxmpp.managefifo.getcount()
+                                     }
+                            },
                    'ret': 0,
                    'base64': False
         }
