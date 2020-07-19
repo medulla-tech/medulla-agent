@@ -105,12 +105,13 @@ class DatabaseHelper(Singleton):
             return result
         return __sessionm
 
-#### faire un sigleton
+# faire un sigleton
 class XmppMasterDatabase(DatabaseHelper):
     """
         Singleton Class to query the xmppmaster database.
     """
     is_activated = False
+
     def activate(self):
         if self.is_activated:
             return None
@@ -562,7 +563,7 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().debug("getCommand_action_time error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
-            return {"nbtotal": 0 ,"result": result_list}
+            return {"nbtotal": 0, "result": result_list}
 
 
     @DatabaseHelper._sessionm
@@ -600,7 +601,7 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error("getCommand_qa_by_cmdid error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
-            return {"id":  "",
+            return {"id": "",
                     "command_name": "",
                     "command_action": "",
                     "command_login": "",
@@ -626,7 +627,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def logtext(self, session, text, sessionname='' , type="noset", priority=0, who=''):
+    def logtext(self, session, text, sessionname='', type="noset", priority=0, who=''):
         try:
             new_log = Logs()
             new_log.text = text
