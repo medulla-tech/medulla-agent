@@ -800,7 +800,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
         try:
             session.query(Qa_custom_command).filter(Qa_custom_command.namecmd == namecmd).\
-                                            update({Qa_custom_command.customcmd: customcmd ,
+                                            update({Qa_custom_command.customcmd: customcmd,
                                                    Qa_custom_command.description: description,
                                                    Qa_custom_command.os: osname})
             session.commit()
