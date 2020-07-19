@@ -791,7 +791,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             date=None,
                                             fromuser="",
                                             touser="")
-                                res = shutil.copytree(os.path.join(namesearch, dirname), os.path.join(packagedir, dirname))
+                                shutil.copytree(os.path.join(namesearch, dirname), os.path.join(packagedir, dirname))
 
                                 logging.debug("copy %s to %s" % (os.path.join(namesearch, dirname), os.path.join(packagedir, dirname)))
                                 try:
