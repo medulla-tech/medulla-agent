@@ -812,7 +812,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         # ainsi on assurera une persistence en cas d'arrêt de ARS. les deploiements encore dans la base seront
         # effectués a la remise en fonction de ARS.
         #initialise charge_apparente_cluster si non initialiser
-        if not "login" in data:
+        if "login" not in data:
             data['login'] = ""
         add_chargeapparente(objectxmpp, strjidagent)
         clear_chargeapparente(objectxmpp)
@@ -855,7 +855,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     arsselection = str(strjidagent)
                     # on clear all apparent loads of more than 5 seconds
                     for ars in objectxmpp.jidclusterlistrelayservers:
-                        if not ars in objectxmpp.charge_apparente_cluster:
+                        if ars not in objectxmpp.charge_apparente_cluster:
                             add_chargeapparente(objectxmpp, ars)
                         charge = objectxmpp.jidclusterlistrelayservers[ars]['chargenumber'] +\
                                  objectxmpp.charge_apparente_cluster[ars]['charge']
@@ -864,9 +864,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             arsselection = str(ars)
                     if arsselection != strjidagent:
                         logger.debug("Charge ARS ( %s ) is %s"%(strjidagent, objectxmpp.levelcharge['charge']))
-                        ###if (arsselection
                         logger.debug("DISPACHE VERS AUTRE ARS POUR LE DEPLOIEMENT : %s (charge level distant is : %s) "%(arsselection, levelchoisie) )
-                    ## modify descriptor for new ARS
+                    # modify descriptor for new ARS
                     data['jidrelay'] = str(arsselection)
                     data['iprelay'] = objectxmpp.infomain['packageserver']['public_ip']
                     data['descriptor']['jidrelay'] = str(arsselection)
@@ -894,7 +893,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     objectxmpp.charge_apparente_cluster[arsselection]['time'] = q
                     return
                 else:
-                    if not 'cluster' in data:
+                    if 'cluster' not in data:
                         data['cluster'] = strjidagent
                         data['resource'] = False
 
