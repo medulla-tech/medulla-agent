@@ -55,7 +55,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                                                                    ret = 255,
                                                                    sessionid =  plugindescriptorparameter['sessionid'])
             #call plugin start
-            msgt = {'from' : objectxmpp.boundjid.bare, "to" : objectxmpp.boundjid.bare, 'type' : 'chat' }
+            msgt = {'from': objectxmpp.boundjid.bare, "to" : objectxmpp.boundjid.bare, 'type': 'chat' }
             module = "%s/plugin_%s.py"%(objectxmpp.modulepath,  plugindescriptorparameter["action"])
             #verify si attribut compteur existe.
             #try:

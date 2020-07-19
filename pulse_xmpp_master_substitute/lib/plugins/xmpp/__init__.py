@@ -868,7 +868,7 @@ class XmppMasterDatabase(DatabaseHelper):
               'max'     : 0,
               'min'     : 0,
               'filt'    : '',
-              'command' : []}
+              'command': []}
         try:
             if edit is not None:
                 # We are in the edition view
@@ -1017,8 +1017,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         'ad_ou_machine': machine.ad_ou_machine,
                         'kiosk_presence': machine.kiosk_presence,
                         'lastuser': machine.lastuser,
-                        'keysyncthing' : machine.keysyncthing,
-                        'enabled' : machine.enabled}
+                        'keysyncthing': machine.keysyncthing,
+                        'enabled': machine.enabled}
         return result
 
     @DatabaseHelper._sessionm
@@ -1508,7 +1508,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             obj={
                     'countnb': 0,
-                    'exec' : True
+                    'exec': True
                  }
             if result.login != '':
                 obj['login'] = result.login
@@ -2090,7 +2090,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  idcmd):
 
         ddistribution = self.stat_syncthing_distributon(idgrp, idcmd)
-        distibution = {'nbvalue' : len(ddistribution), "data_dist" : ddistribution}
+        distibution = {'nbvalue': len(ddistribution), "data_dist" : ddistribution}
 
         sql = """SELECT
                     pathpackage,
@@ -2108,20 +2108,20 @@ class XmppMasterDatabase(DatabaseHelper):
         re = [x for x in result]
         re = re[0]
         if re[0] is None:
-            return {'package' : "",
-                    'nbmachine' : 0,
-                    'progresstransfert' : 0,
-                    'distibution' : distibution
+            return {'package': "",
+                    'nbmachine': 0,
+                    'progresstransfert': 0,
+                    'distibution': distibution
                     }
         try:
             progress = int(float(re[2]))
         except :
             progress = 0
 
-        return { 'package' : re[0],
-                 'nbmachine' : re[1],
-                 'progresstransfert' : progress ,
-                 'distibution' : distibution}
+        return { 'package': re[0],
+                 'nbmachine': re[1],
+                 'progresstransfert': progress ,
+                 'distibution': distibution}
 
     @DatabaseHelper._sessionm
     def getnumcluster_for_ars(self,
@@ -2314,10 +2314,10 @@ class XmppMasterDatabase(DatabaseHelper):
                 za =""
             else:
                 za = z[3]
-            cluster[z[2]] = { 'listarscluster' : z[0].split(","),
-                             'namecluster' : z[1],
-                             'numcluster' : z[2],
-                             'keysyncthing' : za.split(",")}
+            cluster[z[2]] = { 'listarscluster': z[0].split(","),
+                             'namecluster': z[1],
+                             'numcluster': z[2],
+                             'keysyncthing': za.split(",")}
         return cluster
 
     @DatabaseHelper._sessionm
@@ -2405,7 +2405,7 @@ class XmppMasterDatabase(DatabaseHelper):
         clusterresources = session.query(Cluster_resources).filter( Cluster_resources.jidmachine == str(jidmachine)).all()
         session.commit()
         session.flush()
-        ret = { 'len' : len(clusterresources) }
+        ret = { 'len': len(clusterresources) }
         arraylist=[]
         for t in clusterresources:
             obj = {}
@@ -2543,17 +2543,17 @@ class XmppMasterDatabase(DatabaseHelper):
             machineprocessdeploy   = self.get_count(machinedeploy.filter(or_(Deploy.state.like('DEPLOYMENT START%%'))))
             #count abort deploy
             machineabortdeploy   = self.get_count(machinedeploy.filter(and_(Deploy.state.startswith('ABORT'))))
-            return { 'totalmachinedeploy' : totalmachinedeploy,
-                    'machinesuccessdeploy' : machinesuccessdeploy,
-                    'machineerrordeploy' : machineerrordeploy,
-                    'machineprocessdeploy' : machineprocessdeploy,
-                    'machineabortdeploy' : machineabortdeploy }
+            return { 'totalmachinedeploy': totalmachinedeploy,
+                    'machinesuccessdeploy': machinesuccessdeploy,
+                    'machineerrordeploy': machineerrordeploy,
+                    'machineprocessdeploy': machineprocessdeploy,
+                    'machineabortdeploy': machineabortdeploy }
         except Exception:
-            return { 'totalmachinedeploy' : 0,
-                    'machinesuccessdeploy' : 0,
-                    'machineerrordeploy' : 0,
-                    'machineprocessdeploy' : 0,
-                    'machineabortdeploy' : 0 }
+            return { 'totalmachinedeploy': 0,
+                    'machinesuccessdeploy': 0,
+                    'machineerrordeploy': 0,
+                    'machineprocessdeploy': 0,
+                    'machineabortdeploy': 0 }
 
     @DatabaseHelper._sessionm
     def getdeployfromcommandid(self, session, command_id, uuid):
@@ -3067,25 +3067,24 @@ class XmppMasterDatabase(DatabaseHelper):
         result = deploylog.all()
         session.commit()
         session.flush()
-        ret = { 'lentotal' : 0,
-               'lenquery' : 0,
-                'tabdeploy' : { 'len' : [],
-                                'state' : [],
-                                'pathpackage' : [],
-                                'sessionid' : [],
-                                'start' : [],
-                                'inventoryuuid' : [],
-                                'command' : [],
-                                'start' : [],
-                                'login' : [],
-                                'host' : [],
-                                'macadress' : [],
-                                'group_uuid' : [],
-                                'startcmd' : [],
-                                'endcmd' : [],
-                                'jidmachine' : [],
-                                'jid_relay' : [],
-                                'title' : []
+        ret = {'lentotal': 0,
+               'lenquery': 0,
+                'tabdeploy': {'len': [],
+                              'state': [],
+                              'pathpackage': [],
+                              'sessionid': [],
+                              'start': [],
+                              'inventoryuuid': [],
+                              'command': [],
+                              'login': [],
+                              'host': [],
+                              'macadress': [],
+                              'group_uuid': [],
+                              'startcmd': [],
+                              'endcmd': [],
+                              'jidmachine': [],
+                              'jid_relay': [],
+                              'title': []
                 }
         }
         ret['lentotal'] = lentaillerequette[0]
@@ -3143,25 +3142,24 @@ class XmppMasterDatabase(DatabaseHelper):
         result = deploylog.all()
         session.commit()
         session.flush()
-        ret = { 'lentotal' : 0,
-               'lenquery' : 0,
-                'tabdeploy' : { 'len' : [],
-                                'state' : [],
-                                'pathpackage' : [],
-                                'sessionid' : [],
-                                'start' : [],
-                                'inventoryuuid' : [],
-                                'command' : [],
-                                'start' : [],
-                                'login' : [],
-                                'host' : [],
-                                'macadress' : [],
-                                'group_uuid' : [],
-                                'startcmd' : [],
-                                'endcmd' : [],
-                                'jidmachine' : [],
-                                'jid_relay' : [],
-                                'title' : []
+        ret = { 'lentotal': 0,
+               'lenquery': 0,
+                'tabdeploy': {'len': [],
+                              'state': [],
+                              'pathpackage': [],
+                              'sessionid': [],
+                              'start': [],
+                              'inventoryuuid': [],
+                              'command': [],
+                              'login': [],
+                              'host': [],
+                              'macadress': [],
+                              'group_uuid': [],
+                              'startcmd': [],
+                              'endcmd': [],
+                              'jidmachine': [],
+                              'jid_relay': [],
+                              'title': []
                 }
         }
         ret['lentotal'] = lentaillerequette[0]
@@ -3252,25 +3250,23 @@ class XmppMasterDatabase(DatabaseHelper):
         result = deploylog.all()
         session.commit()
         session.flush()
-        ret ={'total_of_rows' : 0,
-              'lentotal' : 0,
-              'tabdeploy' : {
-                                'state' : [],
-                                'pathpackage' : [],
-                                'sessionid' : [],
-                                'start' : [],
-                                'inventoryuuid' : [],
-                                'command' : [],
-                                'start' : [],
-                                'login' : [],
-                                'host' : [],
-                                'macadress' : [],
-                                'group_uuid' : [],
-                                'startcmd' : [],
-                                'endcmd' : [],
-                                'jidmachine' : [],
-                                'jid_relay' : [],
-                                'title' : []}}
+        ret ={'total_of_rows': 0,
+              'lentotal': 0,
+              'tabdeploy': {'state': [],
+                            'pathpackage': [],
+                            'sessionid': [],
+                            'start': [],
+                            'inventoryuuid': [],
+                            'command': [],
+                            'login': [],
+                            'host': [],
+                            'macadress': [],
+                            'group_uuid': [],
+                            'startcmd': [],
+                            'endcmd': [],
+                            'jidmachine': [],
+                            'jid_relay': [],
+                            'title': []}}
 
         ret['lentotal'] = lentaillerequette#[0]
         ret['total_of_rows'] = lenrequest[0][0]
@@ -3328,24 +3324,23 @@ class XmppMasterDatabase(DatabaseHelper):
         result = deploylog.all()
         session.commit()
         session.flush()
-        ret ={'lentotal' : 0,
-              'tabdeploy' : {   'len' : [],
-                                'state' : [],
-                                'pathpackage' : [],
-                                'sessionid' : [],
-                                'start' : [],
-                                'inventoryuuid' : [],
-                                'command' : [],
-                                'start' : [],
-                                'login' : [],
-                                'host' : [],
-                                'macadress' : [],
-                                'group_uuid' : [],
-                                'startcmd' : [],
-                                'endcmd' : [],
-                                'jidmachine' : [],
-                                'jid_relay' : [],
-                                'title' : []}}
+        ret ={'lentotal': 0,
+              'tabdeploy': {'len': [],
+                            'state': [],
+                            'pathpackage': [],
+                            'sessionid': [],
+                            'start': [],
+                            'inventoryuuid': [],
+                            'command': [],
+                            'login': [],
+                            'host': [],
+                            'macadress': [],
+                            'group_uuid': [],
+                            'startcmd': [],
+                            'endcmd': [],
+                            'jidmachine': [],
+                            'jid_relay': [],
+                            'title': []}}
 
         #ret['lentotal'] = nbfilter
         ret['lentotal'] = lentaillerequette[0]
@@ -3381,16 +3376,15 @@ class XmppMasterDatabase(DatabaseHelper):
         deploylog = deploylog.all()
         session.commit()
         session.flush()
-        ret ={'len' : len(deploylog),
-              'tabdeploy' : {'state' : [],
-                             'pathpackage' : [],
-                             'sessionid' : [],
-                             'start' : [],
-                             'inventoryuuid' : [],
-                             'command' : [],
-                             'start' : [],
-                             'login' : [],
-                             'host' : [] }}
+        ret ={'len': len(deploylog),
+              'tabdeploy': {'state': [],
+                            'pathpackage': [],
+                            'sessionid': [],
+                            'start': [],
+                            'inventoryuuid': [],
+                            'command': [],
+                            'login': [],
+                            'host': []}}
         for linedeploy in deploylog:
             ret['tabdeploy']['state'].append(linedeploy.state)
             ret['tabdeploy']['pathpackage'].append(linedeploy.pathpackage.split("/")[-1])
@@ -4770,8 +4764,8 @@ class XmppMasterDatabase(DatabaseHelper):
                         'ad_ou_machine': machine.ad_ou_machine,
                         'kiosk_presence': machine.kiosk_presence,
                         'lastuser': machine.lastuser,
-                        'keysyncthing' : machine.keysyncthing,
-                        'enabled' : machine.enabled}
+                        'keysyncthing': machine.keysyncthing,
+                        'enabled': machine.enabled}
         return result
 
     @DatabaseHelper._sessionm
@@ -5263,26 +5257,26 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         try:
             for relayserver in relayservers:
-                res = { 'id' : relayserver.id,
+                res = { 'id': relayserver.id,
                         'urlguacamole': relayserver.urlguacamole,
-                        'subnet' : relayserver.subnet,
-                        'nameserver' : relayserver.nameserver,
-                        'ipserver' : relayserver.ipserver,
-                        'ipconnection' : relayserver.ipconnection,
-                        'port' : relayserver.port,
-                        'portconnection' : relayserver.portconnection,
-                        'mask' : relayserver.mask,
-                        'jid' : relayserver.jid,
-                        'longitude' : relayserver.longitude,
-                        'latitude' : relayserver.latitude,
-                        'enabled' : relayserver.enabled,
-                        'switchonoff' : relayserver.switchonoff,
+                        'subnet': relayserver.subnet,
+                        'nameserver': relayserver.nameserver,
+                        'ipserver': relayserver.ipserver,
+                        'ipconnection': relayserver.ipconnection,
+                        'port': relayserver.port,
+                        'portconnection': relayserver.portconnection,
+                        'mask': relayserver.mask,
+                        'jid': relayserver.jid,
+                        'longitude': relayserver.longitude,
+                        'latitude': relayserver.latitude,
+                        'enabled': relayserver.enabled,
+                        'switchonoff': relayserver.switchonoff,
                         'mandatory': relayserver.mandatory,
-                        'classutil' : relayserver.classutil,
-                        'groupdeploy' : relayserver.groupdeploy,
-                        'package_server_ip' : relayserver.package_server_ip,
-                        'package_server_port' : relayserver.package_server_port,
-                        'moderelayserver' : relayserver.moderelayserver
+                        'classutil': relayserver.classutil,
+                        'groupdeploy': relayserver.groupdeploy,
+                        'package_server_ip': relayserver.package_server_ip,
+                        'package_server_port': relayserver.package_server_port,
+                        'moderelayserver': relayserver.moderelayserver
                     }
                 listrelayserver.append(res)
             return listrelayserver

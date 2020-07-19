@@ -53,7 +53,7 @@ class grafcet:
             os.makedirs(managepackage.packagedir())
         self.datasend = datasend
         self.parameterdynamic = {}
-        self.descriptorsection = { 'action_section_install' : -1 }
+        self.descriptorsection = { 'action_section_install': -1 }
         self.objectxmpp = objectxmpp
         self.data = datasend['data']
         if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):

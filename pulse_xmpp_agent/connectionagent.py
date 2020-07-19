@@ -186,7 +186,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 confsyncthing = {"action": "resultconfsyncthing",
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,
-                                "data":  { 'errorsyncthingconf' : informationerror}}
+                                "data":  { 'errorsyncthingconf': informationerror}}
                 self.send_message(mto =  self.sub_assessor,
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
@@ -216,19 +216,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
-        data = {'log' : 'xmpplog',
-                'text' : text,
+        data = {'log': 'xmpplog',
+                'text': text,
                 'type': type,
-                'sessionid' : sessionname,
+                'sessionid': sessionname,
                 'priority': priority,
-                'action' : action ,
+                'action': action ,
                 'who': who,
-                'how' : how,
-                'why' : why,
+                'how': how,
+                'why': why,
                 'module': module,
-                'date' : None ,
-                'fromuser' : fromuser,
-                'touser' : touser}
+                'date': None ,
+                'fromuser': fromuser,
+                'touser': touser}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
@@ -390,7 +390,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                                 "ret" : 0,
                                                 "base64" : False,
-                                                "data":  { 'syncthingconf' : 're-setup syncthing ok\n%s'%dataconf}}
+                                                "data":  { 'syncthingconf': 're-setup syncthing ok\n%s'%dataconf}}
 
                                 self.send_message(mto =  msg['from'],
                                                 mbody = json.dumps(confsyncthing),
@@ -399,7 +399,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             confsyncthing = {"action": "resultconfsyncthing",
                                             "sessionid" : getRandomName(6, "confsyncthing"),
                                             "ret" : 255,
-                                            "data":  { 'errorsyncthingconf' : "%s"%traceback.format_exc()}
+                                            "data":  { 'errorsyncthingconf': "%s"%traceback.format_exc()}
                                                 }
                             self.send_message(mto =  msg['from'],
                                                 mbody = json.dumps(confsyncthing),
@@ -421,7 +421,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             "sessionid" : getRandomName(6, "delconf"),
                                             "ret" : 0,
                                             "base64" : False,
-                                            "data":  { 'useraccount' : str(self.boundjid.user)}}
+                                            "data":  { 'useraccount': str(self.boundjid.user)}}
                         self.send_message(mto =  msg['from'],
                                         mbody = json.dumps(confaccountclear),
                                         mtype = 'chat')
@@ -458,11 +458,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataobj['action'] = "assessor_agent"
         dataobj['substitute'] = self.infosubstitute()
         msginfo={
-            'action' : "assessor_agent",
+            'action': "assessor_agent",
             'base64': False,
-            'sessionid' : self.session,
-            'data' : dataobj,
-            'ret' : 0
+            'sessionid': self.session,
+            'data': dataobj,
+            'ret': 0
             }
         self.config.keyAES32 = [str(x.strip()) \
             for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', self.config.keyAES32) \
@@ -498,34 +498,34 @@ class MUCBot(sleekxmpp.ClientXMPP):
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
 
         dataobj = {
-            'action' : 'connectionconf',
-            'from' : self.config.jidagent,
-            'compress' : False,
-            'deployment' : self.config.jidchatroomcommand,
+            'action': 'connectionconf',
+            'from': self.config.jidagent,
+            'compress': False,
+            'deployment': self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'platform' : platform.platform(),
-            'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
-            'plugin' : {},
-            'portxmpp' : self.config.Port,
-            'serverxmpp' : self.config.Server,
-            'agenttype' : self.config.agenttype,
+            'platform': platform.platform(),
+            'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
+            'plugin': {},
+            'portxmpp': self.config.Port,
+            'serverxmpp': self.config.Server,
+            'agenttype': self.config.agenttype,
             'baseurlguacamole': self.config.baseurlguacamole,
             'subnetxmpp':subnetreseauxmpp,
-            'xmppip' : self.config.ipxmpp,
+            'xmppip': self.config.ipxmpp,
             'xmppmask': xmppmask,
-            'xmppbroadcast' : xmppbroadcast,
-            'xmppdhcp' : xmppdhcp,
-            'xmppdhcpserver' : xmppdhcpserver,
-            'xmppgateway' : xmppgateway,
-            'xmppmacaddress' : xmppmacaddress,
-            'xmppmacnotshortened' : xmppmacnotshortened,
-            'classutil' : self.config.classutil,
-            'ippublic' : self.ippublic,
-            'geolocalisation' : {},
-            'adorgbymachine' : base64.b64encode(organizationbymachine()),
-            'adorgbyuser' : '',
-            'agent_machine_name' :self.agent_machine_name
+            'xmppbroadcast': xmppbroadcast,
+            'xmppdhcp': xmppdhcp,
+            'xmppdhcpserver': xmppdhcpserver,
+            'xmppgateway': xmppgateway,
+            'xmppmacaddress': xmppmacaddress,
+            'xmppmacnotshortened': xmppmacnotshortened,
+            'classutil': self.config.classutil,
+            'ippublic': self.ippublic,
+            'geolocalisation': {},
+            'adorgbymachine': base64.b64encode(organizationbymachine()),
+            'adorgbyuser': '',
+            'agent_machine_name':self.agent_machine_name
         }
         if self.geodata.localisation is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
@@ -643,8 +643,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0050') # Adhoc Commands
         xmpp.register_plugin('xep_0199', {'keepalive': True,
                                           'frequency':600,
-                                          'interval' : 600,
-                                          'timeout' : 500  })
+                                          'interval': 600,
+                                          'timeout': 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
 

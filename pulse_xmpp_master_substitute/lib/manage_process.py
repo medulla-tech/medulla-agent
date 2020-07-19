@@ -339,7 +339,7 @@ class mannageprocess:
             msgout = {
                         'event': "",
                         'sessionid': sessionid,
-                        'result' : { 'codeerror' : 0, 'resultcommand' : '','command' : decode_strconsole(command) },
+                        'result': { 'codeerror': 0, 'resultcommand': '','command': decode_strconsole(command) },
             }
             if eventstart is not False:
                 #ecrit dans queue_out_session l'evenement eventstart
@@ -381,12 +381,12 @@ class mannageprocess:
                     #"10@lastlines": "",
                     #"@resultcommand":""
 
-                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand' : cmd['result'],'command' : command  }
-                    ev['data']['result'] = {'codeerror': cmd.code_error,'command' : command  }
+                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
+                    ev['data']['result'] = {'codeerror': cmd.code_error,'command': command  }
                     for t in keysdescriptor:
                         if t == 'codeerror' or t=='command': 
                             pass
-                        elif t == '@resultcommand' :
+                        elif t == '@resultcommand':
                             ev['data']['result']['@resultcommand'] = cmd.stdout
                         elif  t.endswith('lastlines'):
                             nb = t.split("@")
@@ -426,7 +426,7 @@ class mannageprocess:
                     #msgout['result']['codeerror'] = cmd['code']
                     #queue_out_session.put(msgout)
                 #else:
-                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand' : cmd['result'],'command' : command  }
+                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
                     #queue_out_session.put(ev)
 
         except TimeoutError:

@@ -1009,9 +1009,9 @@ def directcallplugin(self, msg):
                 del dataobj['data']
                 dataerreur={ "action" : "result" + dataobj['action'],
                      "data" : { "msg" : "error plugin : " + dataobj['action']},
-                     'sessionid' : dataobj['sessionid'],
-                     'ret' : 255,
-                     'base64' : False}
+                     'sessionid': dataobj['sessionid'],
+                     'ret': 255,
+                     'base64': False}
                 module = "%s/plugin_%s.py"%(self.modulepath, dataobj['action'])
                 call_plugin(module,
                             self,

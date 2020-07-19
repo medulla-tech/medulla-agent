@@ -1516,8 +1516,8 @@ def save_user_current(name = None):
 
     if not os.path.exists(loginuser):
         result = { name : 1,
-                  'suite' : [name],
-                  'curent' : name}
+                  'suite': [name],
+                  'curent': name}
         savejsonfile(loginuser,result)
         return  result['curent']
 
@@ -1594,9 +1594,9 @@ def utc2local (utc):
 def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0,
+    return { 'action': action,
+             'data': data,
+             'ret': 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
 

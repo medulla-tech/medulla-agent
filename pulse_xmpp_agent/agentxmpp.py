@@ -501,13 +501,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         transfertdeploy = {
             'action': "slot_quickdeploy_count",
             "sessionid" : sessioniddata,
-            'data' : { "subaction" : "deployfile"},
-            'ret' : 0,
-            'base64' : False }
+            'data': { "subaction" : "deployfile"},
+            'ret': 0,
+            'base64': False }
 
-        msg = {'from' : self.boundjid.bare,
+        msg = {'from': self.boundjid.bare,
                 "to" : self.boundjid.bare,
-                'type' : 'chat' }
+                'type': 'chat' }
         call_plugin(transfertdeploy["action"],
                     self,
                     transfertdeploy["action"],
@@ -1199,7 +1199,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" : getRandomName(6, "eventwin"),
                     "ret" : 0,
                     "base64" : False,
-                    'data' : { 'machine' : self.boundjid.jid,
+                    'data': { 'machine': self.boundjid.jid,
                                'event'   : "CTRL_C_EVENT" }
                     }
         self.send_message_subcripted_agent(msgevt)
@@ -1227,7 +1227,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" : getRandomName(6, "eventwin"),
                     "ret" : 0,
                     "base64" : False,
-                    'data' : { 'machine' : self.boundjid.jid }
+                    'data': { 'machine': self.boundjid.jid }
                     }
             if evt == win32con.CTRL_SHUTDOWN_EVENT:
                 msgevt['data']['event'] = "SHUTDOWN_EVENT"
@@ -1311,11 +1311,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 dataerreur = { "action" : "result" + dataobj["action"],
                                "data" : { "msg" : "error plugin : "+ dataobj["action"]
                                },
-                               'sessionid' : dataobj['sessionid'],
-                               'ret' : 255,
-                               'base64' : False
+                               'sessionid': dataobj['sessionid'],
+                               'ret': 255,
+                               'base64': False
                 }
-                msg = {'from' : 'console', "to" : self.boundjid.bare, 'type' : 'chat' }
+                msg = {'from': 'console', "to" : self.boundjid.bare, 'type': 'chat' }
                 if 'data' not in dataobj:
                     dataobj['data'] = {}
                 call_plugin(dataobj["action"],
@@ -1428,14 +1428,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     touser = "")
         #notify master conf error in AM
         dataerrornotify = {
-                            'to' : self.boundjid.bare,
+                            'to': self.boundjid.bare,
                             'action': "notify",
                             "sessionid" : getRandomName(6, "notify"),
-                            'data' : { 'msg' : "",
+                            'data': { 'msg': "",
                                        'type': 'error'
                                       },
-                            'ret' : 0,
-                            'base64' : False
+                            'ret': 0,
+                            'base64': False
                     }
 
         if not os.path.isdir(self.config.defaultdir):
@@ -1460,10 +1460,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             "data" : {}}
         dataerreur={ "action" : "result" + startparameter["action"],
                      "data" : { "msg" : "error plugin : "+ startparameter["action"]},
-                     'sessionid' : startparameter['sessionid'],
-                     'ret' : 255,
-                     'base64' : False}
-        msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
+                     'sessionid': startparameter['sessionid'],
+                     'ret': 255,
+                     'base64': False}
+        msg = {'from': self.boundjid.bare, "to" : self.boundjid.bare, 'type': 'chat' }
         if 'data' not in startparameter:
             startparameter['data'] = {}
         call_plugin(startparameter["action"],
@@ -1550,9 +1550,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
-        data = {'log' : 'xmpplog',
-                'action' : 'xmpplog',
-                'text' : text,
+        data = {'log': 'xmpplog',
+                'action': 'xmpplog',
+                'text': text,
                 'type':type,
                 'sessionid':sessionname,
                 'session':sessionname,
@@ -1584,19 +1584,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
-        data = {'log' : 'xmpplog',
-                'text' : text,
+        data = {'log': 'xmpplog',
+                'text': text,
                 'type': type,
-                'sessionid' : sessionname,
+                'sessionid': sessionname,
                 'priority': priority,
-                'action' : action ,
+                'action': action ,
                 'who': who,
-                'how' : how,
-                'why' : why,
+                'how': how,
+                'why': why,
                 'module': module,
-                'date' : None ,
-                'fromuser' : fromuser,
-                'touser' : touser}
+                'date': None ,
+                'fromuser': fromuser,
+                'touser': touser}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
@@ -1605,7 +1605,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mtype='chat')
 
     def handleinventory(self, forced = "forced", sessionid = None):
-        msg={ 'from' : "master@pulse/MASTER",
+        msg={ 'from': "master@pulse/MASTER",
               'to': self.boundjid.bare
             }
         datasend = {"forced" : "forced"}
@@ -1673,7 +1673,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         for i in self.session.sessiondata:
             logging.log(DEBUGPULSE,"DEPLOYMENT AFTER RESTART OU RESTART BOT")
             msg={
-                'from' : self.boundjid.bare,
+                'from': self.boundjid.bare,
                 'to': self.boundjid.bare
             }
             call_plugin( i.datasession['action'],
@@ -1697,7 +1697,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 mto = '%s/MASTER'%self.agentmaster,
                                 mtype ='chat')
         except Exception as e:
-            logging.error("message log to '%s/MASTER' : %s " %  ( self.agentmaster,str(e)))
+            logging.error("message log to '%s/MASTER': %s " %  ( self.agentmaster,str(e)))
             logger.error("\n%s"%(traceback.format_exc()))
             return
 
@@ -1941,12 +1941,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if 'Dtypequery' in mydata and mydata['Dtypequery'] == 'TEVENT' and self.session.isexist(dataobj['sessionid']):
                     mydata['Dtypequery'] = 'TR'
                     datacontinue = {
-                            'to' : self.boundjid.bare,
+                            'to': self.boundjid.bare,
                             'action': dataobj['action'],
                             'sessionid': dataobj['sessionid'],
-                            'data' : dict(self.session.sessionfromsessiondata(dataobj['sessionid']).datasession.items() + mydata.items()),
-                            'ret' : 0,
-                            'base64' : False
+                            'data': dict(self.session.sessionfromsessiondata(dataobj['sessionid']).datasession.items() + mydata.items()),
+                            'ret': 0,
+                            'base64': False
                     }
                     #add Tevent gestion event
                     self.eventmanage.addevent(datacontinue)
@@ -2055,43 +2055,43 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         # if regcomplet = True then register agent reconfigure complet of agent
         self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
         dataobj = {
-            'action' : 'infomachine',
-            'from' : self.config.jidagent,
-            'compress' : False,
-            'deployment' : self.config.jidchatroomcommand,
+            'action': 'infomachine',
+            'from': self.config.jidagent,
+            'compress': False,
+            'deployment': self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'platform' : platform.platform(),
-            'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
-            'plugin' : {},
-            'pluginscheduled' : {},
-            'versionagent' : self.version_agent(),
-            'portxmpp' : self.config.Port,
-            'serverxmpp' : self.config.Server,
-            'agenttype' : self.config.agenttype,
+            'platform': platform.platform(),
+            'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
+            'plugin': {},
+            'pluginscheduled': {},
+            'versionagent': self.version_agent(),
+            'portxmpp': self.config.Port,
+            'serverxmpp': self.config.Server,
+            'agenttype': self.config.agenttype,
             'baseurlguacamole': self.config.baseurlguacamole,
             'subnetxmpp':subnetreseauxmpp,
-            'xmppip' : self.config.ipxmpp,
+            'xmppip': self.config.ipxmpp,
             'xmppmask': xmppmask,
-            'xmppbroadcast' : xmppbroadcast,
-            'xmppdhcp' : xmppdhcp,
-            'xmppdhcpserver' : xmppdhcpserver,
-            'xmppgateway' : xmppgateway,
-            'xmppmacaddress' : xmppmacaddress,
-            'xmppmacnotshortened' : xmppmacnotshortened,
+            'xmppbroadcast': xmppbroadcast,
+            'xmppdhcp': xmppdhcp,
+            'xmppdhcpserver': xmppdhcpserver,
+            'xmppgateway': xmppgateway,
+            'xmppmacaddress': xmppmacaddress,
+            'xmppmacnotshortened': xmppmacnotshortened,
             'ipconnection':self.ipconnection,
             'portconnection':portconnection,
-            'classutil' : self.config.classutil,
-            'ippublic' : self.config.public_ip,
-            'geolocalisation' : {},
-            'remoteservice' : remoteservice.proto,
-            'regcomplet' : self.regcomplet,
-            'packageserver' : self.config.packageserver,
-            'adorgbymachine' : base64.b64encode(organizationbymachine()),
-            'adorgbyuser' : '',
-            'kiosk_presence' : test_kiosk_presence(),
-            'countstart' : save_count_start(),
-            'keysyncthing' : self.deviceid
+            'classutil': self.config.classutil,
+            'ippublic': self.config.public_ip,
+            'geolocalisation': {},
+            'remoteservice': remoteservice.proto,
+            'regcomplet': self.regcomplet,
+            'packageserver': self.config.packageserver,
+            'adorgbymachine': base64.b64encode(organizationbymachine()),
+            'adorgbyuser': '',
+            'kiosk_presence': test_kiosk_presence(),
+            'countstart': save_count_start(),
+            'keysyncthing': self.deviceid
         }
         if self.config.agenttype in ['relayserver']:
             try:
@@ -2386,10 +2386,10 @@ class process_xmpp_agent():
             xmpp.register_plugin('xep_0045') # Multi-User Chat
             xmpp.register_plugin('xep_0004') # Data Forms
             xmpp.register_plugin('xep_0050') # Adhoc Commands
-            xmpp.register_plugin('xep_0199', {'keepalive' : True,
-                                              'frequency' : 600,
-                                              'interval' : 600,
-                                              'timeout' : 500  })
+            xmpp.register_plugin('xep_0199', {'keepalive': True,
+                                              'frequency': 600,
+                                              'interval': 600,
+                                              'timeout': 500  })
             xmpp.register_plugin('xep_0077') # In-band Registration
             xmpp['xep_0077'].force_registration = True
 

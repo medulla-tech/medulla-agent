@@ -488,10 +488,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                          {  'hostname': data['information']['info']['hostname'],
                                             'machine_ip': data['xmppip'],
                                             'uuid': -1,
-                                            'machine_id' : idmachine,
+                                            'machine_id': idmachine,
                                             'remoteservice': data['remoteservice'],
-                                            'platform' : data['platform'],
-                                            'os' : data['information']['info']['os']},
+                                            'platform': data['platform'],
+                                            'os': data['information']['info']['os']},
                                          showinfobool=showinfobool)
                 XmppMasterDatabase().setlogxmpp("configuration guacamole " \
                                                 "for machine %s"%(data['information']['info']['hostname']),
@@ -792,9 +792,9 @@ def callinventory(xmppobject, to):
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0,
+    return { 'action': action,
+             'data': data,
+             'ret': 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid) }
 
@@ -819,7 +819,7 @@ def handlerkioskpresence(xmppobject,
     structuredatakiosk = get_packages_for_machine(machine,
                                                   showinfobool=showinfobool)
     datas = {'subaction':'initialisation_kiosk',
-             'data' : structuredatakiosk}
+             'data': structuredatakiosk}
     message_to_machine = data_struct_message("kiosk",
                                              data = datas,
                                              ret = 0,

@@ -3299,7 +3299,7 @@ class Glpi92(DatabaseHelper):
 
 
         if int(count) == 1:
-            return {'count' : int(query.scalar())}
+            return {'count': int(query.scalar())}
         elif int(count) == 2:
             return query.all()
         else:
@@ -4443,15 +4443,15 @@ class Glpi92(DatabaseHelper):
 
 
         # it s shit do it from dict directly
-        #{'ranking' : 2, 'sub_type': 'PluginFusioninventoryInventoryRuleEntity',
+        #{'ranking': 2, 'sub_type': 'PluginFusioninventoryInventoryRuleEntity',
         # date_mod: NOW(),
 
         # criteria
         # {'criteria': 'ip', // 'name' => hostanme, 'domain', 'serial', 'subnet', 'tag',
         #'condition': 0=is, 1=is_not, 2=contains, 3=doesnt contain,  4=start with, 5= finishes by
         # 6=regex_check, 7=not_regex, 8=exists, 9=doesnt eixts
-        # 'pattern' : 192.168.44.,
-        # 'rules_id' : rule_id
+        # 'pattern': 192.168.44.,
+        # 'rules_id': rule_id
 
         # rule actions
         # { 'rules_id', rid
@@ -4618,10 +4618,10 @@ class Glpi92(DatabaseHelper):
         entities = []
         for profile in session.query(UserProfile).filter_by(users_id = user_id):
             entities += [{
-                            'entity_id' : profile.entities_id,
+                            'entity_id': profile.entities_id,
                             'profile': profile.profiles_id,
-                            'is_recursive' : profile.is_recursive,
-                            'is_dynamic' : profile.is_dynamic
+                            'is_recursive': profile.is_recursive,
+                            'is_dynamic': profile.is_dynamic
                         }]
         return entities
 

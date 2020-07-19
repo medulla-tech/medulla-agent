@@ -87,17 +87,17 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
         datareversessh = {
                 'action': 'reverse_ssh_on',
                 'sessionid': sessionid,
-                'data' : {
-                        'request' : 'askinfo',
-                        'port' : localport,
-                        'host' : data['uuid'],
-                        'remoteport' : remoteport,
-                        'reversetype' : reversetype,
-                        'options' : 'createreversessh',
-                        'persistence' : data['cux_type']
+                'data': {
+                        'request': 'askinfo',
+                        'port': localport,
+                        'host': data['uuid'],
+                        'remoteport': remoteport,
+                        'reversetype': reversetype,
+                        'options': 'createreversessh',
+                        'persistence': data['cux_type']
                 },
-                'ret' : 0,
-                'base64' : False }
+                'ret': 0,
+                'base64': False }
         xmppobject.send_message(mto = message['to'],
                     mbody = json.dumps(datareversessh),
                     mtype = 'chat')
@@ -111,11 +111,11 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
             datavnc = {
                 'action': 'guacamole',
                 'sessionid': sessionid,
-                'data' : {
-                    'options' : 'vnclistenmode'
+                'data': {
+                    'options': 'vnclistenmode'
                 },
-                'ret' : 0,
-                'base64' : False
+                'ret': 0,
+                'base64': False
             }
             xmppobject.send_message(mto = data['jidmachine'],
                 mbody = json.dumps(datavnc),

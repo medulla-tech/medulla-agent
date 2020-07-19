@@ -261,11 +261,11 @@ class substitutelist:
 
     def parameterssubtitute(self):
         conflist = []
-        data={ 'subscription' : self.sub_subscribe,
-               'inventory' : self.sub_inventory,
-               'registration' : self.sub_registration,
-               'assessor' : self.sub_assessor,
-               'logger' : self.sub_logger}
+        data={ 'subscription': self.sub_subscribe,
+               'inventory': self.sub_inventory,
+               'registration': self.sub_registration,
+               'assessor': self.sub_assessor,
+               'logger': self.sub_logger}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -426,7 +426,7 @@ class confParameter:
             self.defaultdir = Config.get('browserfile', 'defaultdir')
         if Config.has_option("browserfile", "rootfilesystem"):
             self.rootfilesystem = Config.get('browserfile', 'rootfilesystem')
-        if self.rootfilesystem[-1] == '\\' :
+        if self.rootfilesystem[-1] == '\\':
             self.rootfilesystem = self.rootfilesystem[:-1]
         if self.rootfilesystem[-1] == "/" and len(self.rootfilesystem) > 1:
             self.rootfilesystem = self.rootfilesystem[:-1]

@@ -141,10 +141,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             "data" : {}}
         dataerreur={ "action" : "result" + startparameter["action"],
                      "data" : { "msg" : "error plugin : " + startparameter["action"]},
-                     'sessionid' : startparameter['sessionid'],
-                     'ret' : 255,
-                     'base64' : False}
-        msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
+                     'sessionid': startparameter['sessionid'],
+                     'ret': 255,
+                     'base64': False}
+        msg = {'from': self.boundjid.bare, "to" : self.boundjid.bare, 'type': 'chat' }
         if 'data' not in startparameter:
             startparameter['data'] = {}
         module = "%s/plugin_%s.py"%(self.modulepath,  startparameter["action"])
@@ -164,7 +164,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" : getRandomName(6, "eventwin"),
                     "ret" : 0,
                     "base64" : False,
-                    'data' : { 'machine' : self.boundjid.jid ,
+                    'data': { 'machine': self.boundjid.jid ,
                                'event'   : "CTRL_C_EVENT" }
                     }
         self.send_message_to_master(msgevt)
@@ -217,20 +217,20 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             fromuser= fromuser)
         else:
             msgbody = {"action" : 'xmpplog',
-                    'sessionid' : sessionname}
-            msgbody['data'] =  {'log' : 'xmpplog',
-                                'text' : text,
+                    'sessionid': sessionname}
+            msgbody['data'] =  {'log': 'xmpplog',
+                                'text': text,
                                 'type': type,
-                                'session' : sessionname,
+                                'session': sessionname,
                                 'priority': priority,
-                                'action' : action ,
+                                'action': action ,
                                 'who': who,
-                                'how' : how,
-                                'why' : why,
+                                'how': how,
+                                'why': why,
                                 'module': module,
-                                'date' : None ,
-                                'fromuser' : fromuser,
-                                'touser' : touser
+                                'date': None ,
+                                'fromuser': fromuser,
+                                'touser': touser
                                 }
             self.send_message(  mto = jid.JID(self.config.sub_logger),
                                 mbody=json.dumps(msgbody),
@@ -283,10 +283,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
 
         if 'action' in dataobj and dataobj['action'] == 'infomachine':
-            dd ={'data' : dataobj,
-                 'action' : dataobj['action'],
-                 'sessionid' : getRandomName(6, "registration"),
-                'ret' : 0
+            dd ={'data': dataobj,
+                 'action': dataobj['action'],
+                 'sessionid': getRandomName(6, "registration"),
+                'ret': 0
                  }
             dataobj = dd
 
@@ -319,9 +319,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
                     dataerreur={ "action" : "result" + dataobj['action'],
                      "data" : { "msg" : "error plugin : " + dataobj['action']},
-                     'sessionid' : getRandomName(6, "misssingid"),
-                     'ret' : 255,
-                     'base64' : False}
+                     'sessionid': getRandomName(6, "misssingid"),
+                     'ret': 255,
+                     'base64': False}
                     module = "%s/plugin_%s.py"%(self.modulepath, dataobj['action'])
                     if 'ret' not in dataobj:
                         dataobj['ret'] = 0

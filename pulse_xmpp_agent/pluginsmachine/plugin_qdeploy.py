@@ -79,9 +79,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         #creation session
         datasend = {  'action': "applicationdeploymentjson",
                       'sessionid': sessionid,
-                      'data' :  data['descriptor'],
-                      'ret' : 0,
-                      'base64' : False}
+                      'data':  data['descriptor'],
+                      'ret': 0,
+                      'base64': False}
         packagedir = os.path.join( managepackage.managepackage.packagedir(), namefolder)
         logger.debug("packagedir %s"%packagedir)
         ###"filebase64":

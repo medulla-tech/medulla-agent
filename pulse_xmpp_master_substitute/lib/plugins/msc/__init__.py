@@ -308,17 +308,17 @@ class MscDatabase(DatabaseHelper):
         mapper(CommandsOnHostPhase, self.commands_on_host_phase)
         mapper(PullTargets, self.pull_targets)
         mapper(CommandsOnHost, self.commands_on_host, properties = {
-            'historys' : relation(CommandsHistory),
+            'historys': relation(CommandsHistory),
             }
         )
         mapper(Target, self.target, properties = {
-            'commandsonhosts' : relation(CommandsOnHost)
+            'commandsonhosts': relation(CommandsOnHost)
             }
         )
         mapper(Bundle, self.bundle, properties = {})
         mapper(Commands, self.commands, properties = {
-            'commandsonhosts' : relation(CommandsOnHost),
-            'bundle' : relation(Bundle),
+            'commandsonhosts': relation(CommandsOnHost),
+            'bundle': relation(Bundle),
             }
         )
         # FIXME: Version is missing
@@ -983,7 +983,7 @@ class MscDatabase(DatabaseHelper):
             self.logger.debug("machine %s [%s] presente for deploy package %s"%(x.target_target_name,
                                                                                     x.target_target_uuid,
                                                                                     x.commands_package_id))
-            deployobject = {'name' : str(x.target_target_name)[:-1],
+            deployobject = {'name': str(x.target_target_name)[:-1],
                             'pakkageid': str(x.commands_package_id),
                             'commandid':  x.commands_id,
                             'mac': str(x.target_target_macaddr),
@@ -2218,7 +2218,7 @@ class MscDatabase(DatabaseHelper):
         return { "nbmachine" : nbmachinegroupe, "nbdeploydone" : nbdeploydone  }
 
     def getarraystatbycmd(self, ctx, arraycmd_id):
-        result = {'nbmachine' : {}}
+        result = {'nbmachine': {}}
         session = create_session()
         ret = session.query(CommandsOnHost.fk_commands.label("idcmd") ,
                             func.count(self.commands_on_host.c.current_state).label("nb")).\

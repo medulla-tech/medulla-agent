@@ -46,8 +46,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0, 
+    return { 'action': action,
+             'data': data,
+             'ret': 0, 
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
