@@ -137,8 +137,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             else:
                 user = "master"
             objectxmpp.xmpplog('Cluster plugin : ARS (%s) load : %s' % (objectxmpp.boundjid.bare, 
-                                                                        objectxmpp.checklevelcharge() +
-                                                                        objectxmpp.managefifo.getcount()),
+                                                                        objectxmpp.checklevelcharge() + objectxmpp.managefifo.getcount()),
                                 type='deploy',
                                 sessionname=sessionid,
                                 priority=-1,
