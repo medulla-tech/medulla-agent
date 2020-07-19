@@ -28,7 +28,6 @@ xmppmaster database handler
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
 from sqlalchemy.orm import sessionmaker, Query
-#Session = sessionmaker()
 from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from datetime import date, datetime, timedelta
 
@@ -78,23 +77,23 @@ class Singleton(object):
         return type._the_instance
 
 class DatabaseHelper(Singleton):
-        ## Session decorator to create and close session automatically
+    # Session decorator to create and close session automatically
     @classmethod
     def _sessionxmpp(self, func):
         @functools.wraps(func)
         def __session(self, *args, **kw):
-            created = False
+            created=False
             if not self.sessionxmpp:
                 self.sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
-                created = True
+                created=True
             result = func(self, self.session, *args, **kw)
             if created:
                 self.sessionxmpp.close()
-                self.sessionxmpp = None
+                self.sessionxmpp=None
             return result
         return __session
 
-    ## Session decorator to create and close session automatically
+    # Session decorator to create and close session automatically
     @classmethod
     def _sessionm(self, func):
         @functools.wraps(func)
@@ -111,8 +110,8 @@ class XmppMasterDatabase(DatabaseHelper):
     """
         Singleton Class to query the xmppmaster database.
     """
-    is_activated = False
-    def activate(self):#jid, password, room, nick):
+    is_activated=False
+    def activate(self):
         if self.is_activated:
             return None
         self.logger = logging.getLogger()
@@ -123,29 +122,27 @@ class XmppMasterDatabase(DatabaseHelper):
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
-        #utilisation xmppmaster
-        self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.xmpp_dbuser,
-                                                                self.config.xmpp_dbpasswd,
-                                                                self.config.xmpp_dbhost,
-                                                                self.config.xmpp_dbport,
-                                                                self.config.xmpp_dbname),
-                                    pool_recycle = self.config.dbpoolrecycle,
-                                    pool_size = self.config.dbpoolsize
+        # utilisation xmppmaster
+        self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
+                                                                                 self.config.xmpp_dbpasswd,
+                                                                                 self.config.xmpp_dbhost,
+                                                                                 self.config.xmpp_dbport,
+                                                                                 self.config.xmpp_dbname),
+                                                     pool_recycle=self.config.dbpoolrecycle,
+                                                     pool_size=self.config.dbpoolsize
         )
         self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
         self.is_activated = True
         self.logger.debug("xmpp finish activation")
 
-    # =====================================================================
     # xmppmaster FUNCTIONS
-    # =====================================================================
 
     # xmppmaster FUNCTIONS FOR Subscription
 
     @DatabaseHelper._sessionm
-    def setagentsubscription( self,
-                            session,
-                            name):
+    def setagentsubscription(self,
+                             session,
+                             name):
         """
             this functions addition a log line in table log xmpp.
         """
@@ -162,7 +159,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def deAgentsubscription( self,
+    def deAgentsubscription(self,
                             session,
                             name):
         """
@@ -173,9 +170,9 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
 
     @DatabaseHelper._sessionm
-    def setupagentsubscription( self,
-                            session,
-                            name):
+    def setupagentsubscription(self,
+                               session,
+                               name):
         """
             this functions addition ou update table in table log xmpp.
         #"""
@@ -194,7 +191,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def setSubscription( self,
+    def setSubscription(self,
                         session,
                         macadress,
                         idagentsubscription):
@@ -214,7 +211,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return None
 
     @DatabaseHelper._sessionm
-    def setupSubscription( self,
+    def setupSubscription(self,
                           session,
                           macadress,
                           idagentsubscription):
@@ -237,7 +234,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def setuplistSubscription( self,
+    def setuplistSubscription(self,
                               session,
                               listmacadress,
                               agentsubscription):
@@ -248,7 +245,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     self.setupSubscription(macadress, id)
                 return id
             else:
-                logging.getLogger().error("setup or create record for agent subscription%s"%agentsubscription)
+                logging.getLogger().error("setup or create record for agent subscription%s" % agentsubscription)
                 return None
         except Exception, e:
             logging.getLogger().error(str(e))
@@ -256,9 +253,9 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def delSubscriptionmacadress( self,
-                                session,
-                                macadress):
+    def delSubscriptionmacadress(self,
+                                 session,
+                                 macadress):
         """
             this functions addition a log line in table log xmpp.
         """
@@ -272,11 +269,10 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def update_enable_for_agent_subscription(self,
-                                            session,
-                                            agentsubtitutename,
-                                            status = '0',
-                                            agenttype = 'machine'
-                                            ):
+                                             session,
+                                             agentsubtitutename,
+                                             status='0',
+                                             agenttype='machine'):
         try:
             sql="""
             UPDATE `xmppmaster`.`machines`
@@ -288,31 +284,31 @@ class XmppMasterDatabase(DatabaseHelper):
                 `xmppmaster`.`machines`.`enabled` = '%s'
             WHERE
                 `xmppmaster`.`machines`.agenttype = '%s'
-                    AND `xmppmaster`.`agent_subscription`.`name` = '%s';"""%(status,
-                                                                            agenttype,
-                                                                            agentsubtitutename)
+                    AND `xmppmaster`.`agent_subscription`.`name` = '%s';""" % (status,
+                                                                               agenttype,
+                                                                               agentsubtitutename)
             machines = session.execute(sql)
             session.commit()
             session.flush()
         except Exception, e:
-            self.logger.error("\n%s"%(traceback.format_exc()))
+            self.logger.error("\n%s" % (traceback.format_exc()))
 
-    ##########################################
 
 
     @DatabaseHelper._sessionm
-    def setlogxmpp( self,
-                    session,
-                    text,
-                    type = "noset",
-                    sessionname = '' ,
-                    priority = 0,
-                    who = '',
-                    how = '',
-                    why = '',
-                    module = '',
-                    action = '',
-                    touser =  '', fromuser = ''):
+    def setlogxmpp(self,
+                   session,
+                   text,
+                   type="noset",
+                   sessionname='' ,
+                   priority=0,
+                   who='',
+                   how='',
+                   why='',
+                   module='',
+                   action='',
+                   touser='',
+                   fromuser=''):
         """
             this functions addition a log line in table log xmpp.
         """
@@ -345,38 +341,38 @@ class XmppMasterDatabase(DatabaseHelper):
                 WHERE
                     state LIKE '%s%%' AND
                     '%s' BETWEEN startcmd AND
-                    endcmd;"""%(state, dateend);
+                    endcmd;""" % (state, dateend);
         machines = session.execute(sql)
         session.commit()
         session.flush()
-        result =  [x for x in machines]
+        result = [x for x in machines]
         resultlist = []
         for t in result:
-            listresult = {  "id" : t[0],
-                            "title" : t[1],
-                            "jidmachine" : t[2],
-                            "jid_relay" : t[3],
-                            "pathpackage" : t[4],
-                            "state" : t[5],
-                            "sessionid" : t[6],
-                            "start" : str(t[7]),
-                            "startcmd" : str(t[8]),
-                            "endcmd" : str(t[9]),
-                            "inventoryuuid" : t[10],
-                            "host" : t[11],
-                            "user" : t[12],
-                            "command" : t[13],
-                            "group_uuid" : t[14],
-                            "login" : t[15],
-                            "macadress" : t[16],
-                            "syncthing" : t[17],
-                            "result" : t[18]}
+            listresult = {"id": t[0],
+                          "title": t[1],
+                          "jidmachine": t[2],
+                          "jid_relay": t[3],
+                          "pathpackage": t[4],
+                          "state": t[5],
+                          "sessionid": t[6],
+                          "start": str(t[7]),
+                          "startcmd": str(t[8]),
+                          "endcmd": str(t[9]),
+                          "inventoryuuid": t[10],
+                          "host": t[11],
+                          "user": t[12],
+                          "command": t[13],
+                          "group_uuid": t[14],
+                          "login": t[15],
+                          "macadress": t[16],
+                          "syncthing": t[17],
+                          "result": t[18]}
             resultlist.append(listresult)
         return resultlist
 
     @DatabaseHelper._sessionm
     def Timeouterrordeploy(self, session):
-        ### test les evenements states qui ne sont plus valides sur intervalle de deployement.
+        # test les evenements states qui ne sont plus valides sur intervalle de deployement.
         Stateforupdateontimeout=["'WOL 1'",
                                  "'WOL 2'",
                                  "'WOL 3'",
@@ -404,25 +400,25 @@ class XmppMasterDatabase(DatabaseHelper):
             resultlist = []
             for t in result:
                 self.update_state_deploy( t[0], 'ABORT ON TIMEOUT')
-                listresult = {  "id" : t[0],
-                                "title" : t[1],
-                                "jidmachine" : t[2],
-                                "jid_relay" : t[3],
-                                "pathpackage" : t[4],
-                                "state" : t[5],
-                                "sessionid" : t[6],
-                                "start" : str(t[7]),
-                                "startcmd" : str(t[8]),
-                                "endcmd" : str(t[9]),
-                                "inventoryuuid" : t[10],
-                                "host" : t[11],
-                                "user" : t[12],
-                                "command" : t[13],
-                                "group_uuid" : t[14],
-                                "login" : t[15],
-                                "macadress" : t[16],
-                                "syncthing" : t[17],
-                                "result" : t[18]}
+                listresult = {"id": t[0],
+                              "title": t[1],
+                              "jidmachine": t[2],
+                              "jid_relay": t[3],
+                              "pathpackage": t[4],
+                              "state": t[5],
+                              "sessionid": t[6],
+                              "start": str(t[7]),
+                              "startcmd": str(t[8]),
+                              "endcmd": str(t[9]),
+                              "inventoryuuid": t[10],
+                              "host": t[11],
+                              "user": t[12],
+                              "command": t[13],
+                              "group_uuid": t[14],
+                              "login": t[15],
+                              "macadress": t[16],
+                              "syncthing": t[17],
+                              "result": t[18]}
                 resultlist.append(listresult)
             return resultlist
         except Exception, e:
@@ -437,7 +433,7 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `state`='%s'
-                     WHERE `id`='%s';"""%(state, id)
+                     WHERE `id`='%s';""" % (state, id)
             session.execute(sql)
             session.commit()
             session.flush()
@@ -449,7 +445,7 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `state`='%s'
-                     WHERE `sessionid`='%s';"""%(status, sessionid)
+                     WHERE `sessionid`='%s';""" % (status, sessionid)
             session.execute(sql)
             session.commit()
             session.flush()
@@ -457,11 +453,11 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def updatedeploytosyncthing(self, session, sessionid, syncthing = 1 ):
+    def updatedeploytosyncthing(self, session, sessionid, syncthing=1):
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `syncthing`='%s'
-                     WHERE `sessionid`='%s';"""%(syncthing, sessionid)
+                     WHERE `sessionid`='%s';""" % (syncthing, sessionid)
             print sql
             session.execute(sql)
             session.commit()
@@ -478,7 +474,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         deploy
                     WHERE
                         group_uuid = %s AND command = %s
-                            AND syncthing > 1;"""%(grp, cmd)
+                            AND syncthing > 1;""" % (grp, cmd)
             req = session.execute(sql)
             session.commit()
             session.flush()
@@ -499,11 +495,11 @@ class XmppMasterDatabase(DatabaseHelper):
             listcommand = []
             for command in command_action:
                 action = []
-                action.append( command.command_id )
-                action.append( str(command.date) )
-                action.append( command.session_id )
-                action.append( command.typemessage )
-                action.append( command.command_result )
+                action.append(command.command_id)
+                action.append(str(command.date))
+                action.append(command.session_id)
+                action.append(command.typemessage)
+                action.append(command.command_result)
                 listcommand.append(action)
             return listcommand
         except Exception, e:
@@ -512,7 +508,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return []
 
     @DatabaseHelper._sessionm
-    def getCommand_action_time(self, session, during_the_last_seconds, start, stop, filter = None):
+    def getCommand_action_time(self, session, during_the_last_seconds, start, stop, filter=None):
         try:
             command_qa = session.query(distinct(Command_qa.id).label("id"),
                                        Command_qa.command_name.label("command_name"),
@@ -522,14 +518,14 @@ class XmppMasterDatabase(DatabaseHelper):
                                        Command_qa.command_grp.label("command_grp"),
                                        Command_qa.command_machine.label("command_machine"),
                                        Command_action.target.label("target")).join(Command_action,
-                                                                        Command_qa.id == Command_action.command_id)
-            ##si on veut passer par les groupe avant d'aller sur les machine.
-            ## command_qa = command_qa.group_by(Command_qa.id)
+                                       Command_qa.id == Command_action.command_id)
+            #si on veut passer par les groupe avant d'aller sur les machine.
+            # command_qa = command_qa.group_by(Command_qa.id)
             command_qa = command_qa.order_by(desc(Command_qa.id))
             if during_the_last_seconds:
                 command_qa = command_qa.filter( Command_qa.command_start >= (datetime.now() - timedelta(seconds=during_the_last_seconds)))
-            #nb = self.get_count(deploylog)
-        #lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
+            # nb = self.get_count(deploylog)
+            # lentaillerequette = session.query(func.count(distinct(Deploy.title)))[0]
 
             nbtotal = self.get_count(command_qa)
             if start != "" and stop != "":
@@ -537,7 +533,7 @@ class XmppMasterDatabase(DatabaseHelper):
             command_qa = command_qa.all()
             session.commit()
             session.flush()
-            ## creation des list pour affichage web organiser par colone
+            # creation des list pour affichage web organiser par colone
             result_list = []
             command_id_list = []
             command_name_list = []
@@ -566,9 +562,9 @@ class XmppMasterDatabase(DatabaseHelper):
             result_list.append(command_target_list)
             return {"nbtotal" :nbtotal ,"result" : result_list}
         except Exception, e:
-            logging.getLogger().debug("getCommand_action_time error %s->"%str(e))
+            logging.getLogger().debug("getCommand_action_time error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
-            return {"nbtotal" :0 ,"result" : result_list}
+            return {"nbtotal": 0 ,"result": result_list}
 
 
     @DatabaseHelper._sessionm
@@ -595,25 +591,25 @@ class XmppMasterDatabase(DatabaseHelper):
             command_qa = command_qa.first()
             session.commit()
             session.flush()
-            return { "id" :  command_qa.id,
+            return {"id": command_qa.id,
                     "command_name": command_qa.command_name,
                     "command_action": command_qa.command_action,
                     "command_login": command_qa.command_login,
                     "command_os": command_qa.command_os,
                     "command_start": str(command_qa.command_start),
-                    "command_grp" : command_qa.command_grp,
-                    "command_machine" : command_qa.command_machine }
+                    "command_grp": command_qa.command_grp,
+                    "command_machine": command_qa.command_machine}
         except Exception, e:
-            logging.getLogger().error("getCommand_qa_by_cmdid error %s->"%str(e))
+            logging.getLogger().error("getCommand_qa_by_cmdid error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
-            return { "id" :  "",
+            return {"id":  "",
                     "command_name": "",
                     "command_action": "",
                     "command_login": "",
                     "command_os": "",
                     "command_start": "",
-                    "command_grp" : "",
-                    "command_machine" : "" }
+                    "command_grp": "",
+                    "command_machine": ""}
 
     @DatabaseHelper._sessionm
     def setCommand_action(self, session, target, command_id, sessionid, command_result="", typemessage="log"):
@@ -632,7 +628,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def logtext(self, session, text, sessionname='' , type = "noset",priority = 0, who = ''):
+    def logtext(self, session, text, sessionname='' , type="noset", priority=0, who=''):
         try:
             new_log = Logs()
             new_log.text = text
@@ -648,7 +644,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
-    def log(self, session, msg, type = "info"):
+    def log(self, session, msg, type="info"):
         try:
             new_log = UserLog()
             new_log.msg = msg
@@ -661,10 +657,10 @@ class XmppMasterDatabase(DatabaseHelper):
 
     #
     @DatabaseHelper._sessionm
-    def getlistpackagefromorganization( self,
-                                        session,
-                                        organization_name = None,
-                                        organization_id   = None):
+    def getlistpackagefromorganization(self,
+                                       session,
+                                       organization_name=None,
+                                       organization_id=None):
         """
             return list package an organization
             eg call function example:
@@ -684,14 +680,14 @@ class XmppMasterDatabase(DatabaseHelper):
                     idorganization = result_organization.id
 
                 except Exception, e:
-                    logging.getLogger().debug("organization id : %s is not exist"%organization_id)
+                    logging.getLogger().debug("organization id : %s is not exist" % organization_id)
                     return -1
             elif organization_name is not None:
                 idorganization = self.getIdOrganization(organization_name)
                 if idorganization == -1:
-                    return {"nb" : 0, "packageslist" : []}
+                    return {"nb": 0, "packageslist": []}
             else:
-                return {"nb" : 0, "packageslist" : []}
+                return {"nb": 0, "packageslist": []}
             result = session.query(Packages_list.id.label("id"),
                                 Packages_list.packageuuid.label("packageuuid"),
                                 Packages_list.organization_id.label("idorganization"),
@@ -701,19 +697,19 @@ class XmppMasterDatabase(DatabaseHelper):
             nb = self.get_count(result)
             result = result.all()
 
-            list_result = [{"id" : x.id ,
-                            "packageuuid" : x.packageuuid,
-                            "idorganization" : x.idorganization,
-                            "name" :  x.name }  for x in result]
-            return {"nb" : nb, "packageslist" : list_result}
+            list_result = [{"id": x.id,
+                            "packageuuid": x.packageuuid,
+                            "idorganization": x.idorganization,
+                            "name":  x.name }  for x in result]
+            return {"nb": nb, "packageslist": list_result}
         except Exception, e:
-            logging.getLogger().debug("load packages for organization id : %s is error : %s"%(organization_id,str(e)))
-            return {"nb" : 0, "packageslist" : []}
+            logging.getLogger().debug("load packages for organization id : %s is error : %s" % (organization_id,str(e)))
+            return {"nb": 0, "packageslist": []}
 
     @DatabaseHelper._sessionm
-    def getIdOrganization(  self,
-                            session,
-                            name_organization):
+    def getIdOrganization(self,
+                          session,
+                          name_organization):
         """
             return id organization suivant le Name
             On error return -1
@@ -726,13 +722,13 @@ class XmppMasterDatabase(DatabaseHelper):
             return result_organization.id
         except Exception, e:
             logging.getLogger().error(str(e))
-            logging.getLogger().debug("organization name : %s is not exist"%name_organization)
+            logging.getLogger().debug("organization name : %s is not exist" % name_organization)
             return -1
 
     @DatabaseHelper._sessionm
-    def addOrganization( self,
-                          session,
-                          name_organization):
+    def addOrganization(self,
+                        session,
+                        name_organization):
         """
             creation d'une organization
         """
@@ -748,9 +744,9 @@ class XmppMasterDatabase(DatabaseHelper):
             return id
 
     @DatabaseHelper._sessionm
-    def delOrganization( self,
-                          session,
-                          name_organization):
+    def delOrganization(self,
+                        session,
+                        name_organization):
         """
             del organization name
         """
@@ -764,15 +760,15 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
 
-    #################Custom Command Quick Action################################
+    # Custom Command Quick Action
     @DatabaseHelper._sessionm
-    def create_Qa_custom_command( self,
-                                  session,
-                                  user,
-                                  osname,
-                                  namecmd,
-                                  customcmd,
-                                  description = ""):
+    def create_Qa_custom_command(self,
+                                 session,
+                                 user,
+                                 osname,
+                                 namecmd,
+                                 customcmd,
+                                 description = ""):
         """
             create Qa_custom_command
         """
@@ -793,7 +789,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
-    def updateName_Qa_custom_command( self,
+    def updateName_Qa_custom_command(self,
                                      session,
                                      user,
                                      osname,
@@ -806,22 +802,22 @@ class XmppMasterDatabase(DatabaseHelper):
 
         try:
             session.query(Qa_custom_command).filter( Qa_custom_command.namecmd == namecmd).\
-                                            update( { Qa_custom_command.customcmd : customcmd ,
-                                                        Qa_custom_command.description : description,
-                                                        Qa_custom_command.os : osname })
+                                            update( {Qa_custom_command.customcmd: customcmd ,
+                                                     Qa_custom_command.description: description,
+                                                     Qa_custom_command.os: osname})
             session.commit()
             session.flush()
             return 1
         except Exception, e:
-            logging.getLogger().debug("updateName_Qa_custom_command error %s->"%str(e))
+            logging.getLogger().debug("updateName_Qa_custom_command error %s->" % str(e))
             return -1
 
     @DatabaseHelper._sessionm
-    def delQa_custom_command( self,
-                              session,
-                              user,
-                              osname,
-                              namecmd):
+    def delQa_custom_command(self,
+                             session,
+                             user,
+                             osname,
+                             namecmd):
         """
             del Qa_custom_command
         """
@@ -834,7 +830,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             return 1
         except Exception, e:
-            logging.getLogger().debug("delQa_custom_command error %s ->"%str(e))
+            logging.getLogger().debug("delQa_custom_command error %s ->" % str(e))
             return -1
 
     @DatabaseHelper._sessionm
@@ -3142,24 +3138,24 @@ class XmppMasterDatabase(DatabaseHelper):
         result = deploylog.all()
         session.commit()
         session.flush()
-        ret = { 'lentotal': 0,
+        ret = {'lentotal': 0,
                'lenquery': 0,
-                'tabdeploy': {'len': [],
-                              'state': [],
-                              'pathpackage': [],
-                              'sessionid': [],
-                              'start': [],
-                              'inventoryuuid': [],
-                              'command': [],
-                              'login': [],
-                              'host': [],
-                              'macadress': [],
-                              'group_uuid': [],
-                              'startcmd': [],
-                              'endcmd': [],
-                              'jidmachine': [],
-                              'jid_relay': [],
-                              'title': []
+               'tabdeploy': {'len': [],
+                             'state': [],
+                             'pathpackage': [],
+                             'sessionid': [],
+                             'start': [],
+                             'inventoryuuid': [],
+                             'command': [],
+                             'login': [],
+                             'host': [],
+                             'macadress': [],
+                             'group_uuid': [],
+                             'startcmd': [],
+                             'endcmd': [],
+                             'jidmachine': [],
+                             'jid_relay': [],
+                             'title': []
                 }
         }
         ret['lentotal'] = lentaillerequette[0]
