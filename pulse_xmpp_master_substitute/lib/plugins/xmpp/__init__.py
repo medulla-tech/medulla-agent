@@ -82,14 +82,14 @@ class DatabaseHelper(Singleton):
     def _sessionxmpp(self, func):
         @functools.wraps(func)
         def __session(self, *args, **kw):
-            created=False
+            created = False
             if not self.sessionxmpp:
                 self.sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
-                created=True
+                created = True
             result = func(self, self.session, *args, **kw)
             if created:
                 self.sessionxmpp.close()
-                self.sessionxmpp=None
+                self.sessionxmpp = None
             return result
         return __session
 
@@ -110,7 +110,7 @@ class XmppMasterDatabase(DatabaseHelper):
     """
         Singleton Class to query the xmppmaster database.
     """
-    is_activated=False
+    is_activated = False
     def activate(self):
         if self.is_activated:
             return None
@@ -293,14 +293,12 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             self.logger.error("\n%s" % (traceback.format_exc()))
 
-
-
     @DatabaseHelper._sessionm
     def setlogxmpp(self,
                    session,
                    text,
                    type="noset",
-                   sessionname='' ,
+                   sessionname='',
                    priority=0,
                    who='',
                    how='',
@@ -341,7 +339,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 WHERE
                     state LIKE '%s%%' AND
                     '%s' BETWEEN startcmd AND
-                    endcmd;""" % (state, dateend);
+                    endcmd;""" % (state, dateend)
         machines = session.execute(sql)
         session.commit()
         session.flush()
@@ -518,8 +516,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                        Command_qa.command_grp.label("command_grp"),
                                        Command_qa.command_machine.label("command_machine"),
                                        Command_action.target.label("target")).join(Command_action,
-                                       Command_qa.id == Command_action.command_id)
-            #si on veut passer par les groupe avant d'aller sur les machine.
+                                                                                   Command_qa.id == Command_action.command_id)
+            # si on veut passer par les groupe avant d'aller sur les machine.
             # command_qa = command_qa.group_by(Command_qa.id)
             command_qa = command_qa.order_by(desc(Command_qa.id))
             if during_the_last_seconds:
@@ -700,10 +698,10 @@ class XmppMasterDatabase(DatabaseHelper):
             list_result = [{"id": x.id,
                             "packageuuid": x.packageuuid,
                             "idorganization": x.idorganization,
-                            "name":  x.name }  for x in result]
+                            "name": x.name} for x in result]
             return {"nb": nb, "packageslist": list_result}
         except Exception, e:
-            logging.getLogger().debug("load packages for organization id : %s is error : %s" % (organization_id,str(e)))
+            logging.getLogger().debug("load packages for organization id : %s is error : %s" % (organization_id, str(e)))
             return {"nb": 0, "packageslist": []}
 
     @DatabaseHelper._sessionm
@@ -768,7 +766,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  osname,
                                  namecmd,
                                  customcmd,
-                                 description = ""):
+                                 description=""):
         """
             create Qa_custom_command
         """
@@ -801,10 +799,10 @@ class XmppMasterDatabase(DatabaseHelper):
         """
 
         try:
-            session.query(Qa_custom_command).filter( Qa_custom_command.namecmd == namecmd).\
-                                            update( {Qa_custom_command.customcmd: customcmd ,
-                                                     Qa_custom_command.description: description,
-                                                     Qa_custom_command.os: osname})
+            session.query(Qa_custom_command).filter(Qa_custom_command.namecmd == namecmd).\
+                                            update({Qa_custom_command.customcmd: customcmd ,
+                                                   Qa_custom_command.description: description,
+                                                   Qa_custom_command.os: osname})
             session.commit()
             session.flush()
             return 1
