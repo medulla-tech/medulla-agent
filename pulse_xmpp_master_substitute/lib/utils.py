@@ -1903,8 +1903,8 @@ class protodef:
                     for cux in process_handler.connections():
                         if cux.status == psutil.CONN_LISTEN:
                             protport['ssh'] = cux.laddr.port
-            for service in psutil.win_service_iter():
-                if 'TermService' in service.name():
+            for services in psutil.win_service_iter():
+                if 'TermService' in services.name():
                     service_handler = psutil.win_service_get('TermService')
                     if service_handler.status() == 'running':
                         pid = service_handler.pid()
