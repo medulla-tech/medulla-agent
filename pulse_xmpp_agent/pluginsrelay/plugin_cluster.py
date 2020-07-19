@@ -121,7 +121,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 how="",
                                 why="",
                                 module="Deployment | Cluster | Notify",
-                                date=None ,
+                                date=None,
                                 fromuser=user,
                                 touser="")
         elif data['subaction'] == "takeresource":
@@ -147,6 +147,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 how="",
                                 why="",
                                 module="Deployment | Cluster | Notify",
-                                date=None ,
+                                date=None,
                                 fromuser=user,
                                 touser="")
