@@ -423,7 +423,6 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             logging.getLogger().error("fn Timeouterrordeploy on sql %s"(sql))
-            return resultlist
 
             return resultlist
 
@@ -1441,7 +1440,7 @@ class XmppMasterDatabase(DatabaseHelper):
         except :
             # error case command supp base nunualy
             return 'abandonmentdeploy'
-            pass
+
         if not (deployresult.startcmd <= nowtime and deployresult.endcmd >= nowtime):
             #we are more in the range of deployments.
             #abandonmentdeploy
