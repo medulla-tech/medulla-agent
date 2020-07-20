@@ -68,7 +68,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         try:
             response = urllib2.urlopen(request)
-        except URLError:
+        except urllib2.URLError:
             logger.info("The inventory server is not reachable. Please check pulse2-inventory-server service")
 
         machine = XmppMasterDatabase().getMachinefromjid(msg['from'])
