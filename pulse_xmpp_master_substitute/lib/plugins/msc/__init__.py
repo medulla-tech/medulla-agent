@@ -2091,7 +2091,7 @@ class MscDatabase(DatabaseHelper):
                 ret = session.query(Commands.type).\
                     filter_by(id=idcmd).one()
                 result[idcmd] = int(ret[0])
-            except:
+            except ValueError:
                 pass
         return result
 
@@ -2543,7 +2543,7 @@ class MscDatabase(DatabaseHelper):
 
         try:
             total = int(query.scalar())
-        except:
+        except ValueError:
             total = 0
 
         ret = {

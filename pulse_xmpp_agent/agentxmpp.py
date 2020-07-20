@@ -712,7 +712,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 try:
                     logger.debug("Removing the shared folder %s" % deletedfolder)
                     shutil.rmtree(deletedfolder)
-                except:
+                except OSError:
                     logger.error("Error while removing the shared folder %s" % (deletedfolder))
                     logger.error("\n%s" % (traceback.format_exc()))
 
@@ -775,7 +775,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             try:
                                 shutil.rmtree(os.path.join(packagedir,dirname))
                                 logging.debug("clean package before copy %s" % (os.path.join(packagedir, dirname)))
-                            except:
+                            except OSError:
                                 pass
                             try:
                                 self.xmpplog("Transfer complete on machine %s\n " \
@@ -1505,7 +1505,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     try:
                         os.remove(self.tmpfile)
-                    except :
+                    except OSError:
                         pass
             except Exception as e:
                 logging.error("syncthing initialisation : %s" % str(e))
@@ -1754,10 +1754,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                         self.boundjid.bare ))
         agentversion = os.path.join(self.pathagent, "agentversion")
         versiondata = file_get_contents(os.path.join(self.img_agent, "agentversion")).replace("\n","").replace("\r","").strip()
+
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
-        except:
+        except OSError:
             pass
+
         replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
         logger.debug("cmd : %s" % (replycatorcmd))
         result = simplecommand(replycatorcmd)
