@@ -76,6 +76,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     if sys.platform.startswith('linux'):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
+
+            if os.path.exists(inventoryfile):
+                os.remove(inventoryfile)
+
             utils.simplecommand("fusioninventory-agent --local=%s"%inventoryfile)
             compact_xml(inventoryfile)
             Fichier = open(inventoryfile, 'r')
@@ -100,6 +104,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             # run the inventory
             program = os.path.join(os.environ["ProgramFiles"], 'FusionInventory-Agent', 'fusioninventory-agent.bat')
             namefile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
+
+            if os.path.exists(namefile):
+                os.remove(namefile)
+
             cmd = """\"%s\" --config=none --scan-profiles --local=\"%s\" """ % (program, namefile)
             utils.simplecommand(cmd)
             try:
@@ -168,6 +176,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     elif sys.platform.startswith('darwin'):
         try:
             inventoryfile = os.path.join("/","tmp","inventory.txt")
+
+            if os.path.exists(inventoryfile):
+                os.remove(inventoryfile)
+
             ## attention this command has been tested on only 1 Mac
             utils.simplecommand("/opt/fusioninventory-agent/bin/fusioninventory-inventory > %s"%inventoryfile)
             compact_xml(inventoryfile)
