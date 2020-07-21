@@ -547,17 +547,6 @@ Section "OpenSSH" sec_openssh
   ${Else}
     ${LogString} "Return code was: $0"
   ${EndIf}
-  Pop $R0
-  ${If} $R0 == error
-    Pop $R0
-    ${LogString} "AccessControl error: $R0"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Setting permissions on pulseuser profile folder failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 116
-    Quit
-  ${EndIf}
 
   ; Set pulse account password to not expire
   StrCpy $0 `wmic useraccount where "Name='pulseuser'" set PasswordExpires=False`
