@@ -319,7 +319,7 @@ class syncthingapi():
             for e in re:
                 for t in kk:
                     try:
-                     del e['data'][t]
+                        del e['data'][t]
                     except KeyError:
                         pass
         return re
@@ -973,7 +973,7 @@ class syncthingapi():
     def is_exist_folder_id(self, idfolder):
         for folder in self.folders:
             if folder['id'] == idfolder:
-             return True
+                return True
         return False
 
     def add_folder_dict_if_not_exist_id(self, dictaddfolder):

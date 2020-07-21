@@ -523,7 +523,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def is_exist_folder_id(self, idfolder, config):
         for folder in config['folders']:
             if folder['id'] == idfolder:
-             return True
+                return True
         return False
 
     def add_folder_dict_if_not_exist_id(self, dictaddfolder, config):
