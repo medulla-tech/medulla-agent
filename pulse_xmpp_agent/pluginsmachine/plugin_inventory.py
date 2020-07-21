@@ -100,7 +100,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             # run the inventory
             program = os.path.join(os.environ["ProgramFiles"], 'FusionInventory-Agent', 'fusioninventory-agent.bat')
             namefile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
-            cmd = """\"%s\" --config=none --scan-profiles --local=\"%s\""""%(program, namefile)
+            cmd = """\"%s\" --config=none --scan-profiles --local=\"%s\" """ % (program, namefile)
             utils.simplecommand(cmd)
             try:
                 compact_xml(namefile)
