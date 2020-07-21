@@ -1290,7 +1290,7 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         try:
             session.query(Organization_ad).filter(Organization_ad.id_inventory == self.uuidtoid(id_inventory)).\
-                                                                                update({ Organization_ad.jiduser: jiduser,
+                                                                                update({Organization_ad.jiduser: jiduser,
                                                                                 Organization_ad.id_inventory: self.uuidtoid(id_inventory),
                                                                                 Organization_ad.ouuser: ouuser,
                                                                                 Organization_ad.oumachine: oumachine,
@@ -4662,7 +4662,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getGuacamoleidforUuid(self, session, uuid, existtest = None):
+    def getGuacamoleidforUuid(self, session, machineUuid, existtest=None):
         """
             if existtest is None
              this function return the list of protocole for 1 machine
@@ -4672,19 +4672,19 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         if existtest is None:
 
-            ret=session.query(Has_guacamole.idguacamole,
-                              Has_guacamole.protocol).\
+            ret = session.query(Has_guacamole.idguacamole,
+                                Has_guacamole.protocol).\
                 filter(and_(Has_guacamole.idinventory == uuid.replace('UUID',''),
                             Has_guacamole.protocol != "INF")).all()
             session.commit()
             session.flush()
             if ret:
                 return [(m[1],m[0]) for m in ret]
-            else:
-                return []
+                
+            return []
         else:
-            ret=session.query(Has_guacamole.idguacamole).\
-                filter(Has_guacamole.idinventory == uuid.replace('UUID','')).first()
+            ret = session.query(Has_guacamole.idguacamole).\
+                  filter(Has_guacamole.idinventory == uuid.replace('UUID','')).first()
             if ret:
                 return True
             return False
@@ -4770,32 +4770,32 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getMachinefromuuid(self, session, uuid):
+    def getMachinefromuuid(self, session, machineUuid):
         """ information machine"""
-        machine = session.query(Machines).filter(Machines.uuid_inventorymachine == uuid).first()
+        machine = session.query(Machines).filter(Machines.uuid_inventorymachine == machineUuid).first()
         session.commit()
         session.flush()
         result = {}
         if machine:
-            result = {  "id" : machine.id,
-                        "jid" : machine.jid,
-                        "platform" : machine.platform,
-                        "archi" : machine.archi,
-                        "hostname" : machine.hostname,
-                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
-                        "ip_xmpp" : machine.ip_xmpp,
-                        "ippublic" : machine.ippublic,
-                        "macaddress" : machine.macaddress,
-                        "subnetxmpp" : machine.subnetxmpp,
-                        "agenttype" : machine.agenttype,
-                        "classutil" : machine.classutil,
-                        "groupdeploy" : machine.groupdeploy,
-                        "urlguacamole" : machine.urlguacamole,
-                        "picklekeypublic" : machine.picklekeypublic,
-                        'ad_ou_user': machine.ad_ou_user,
-                        'ad_ou_machine': machine.ad_ou_machine,
-                        'kiosk_presence': machine.kiosk_presence,
-                        'lastuser': machine.lastuser}
+            result = {"id": machine.id,
+                      "jid": machine.jid,
+                      "platform": machine.platform,
+                      "archi": machine.archi,
+                      "hostname": machine.hostname,
+                      "uuid_inventorymachine": machine.uuid_inventorymachine,
+                      "ip_xmpp": machine.ip_xmpp,
+                      "ippublic": machine.ippublic,
+                      "macaddress": machine.macaddress,
+                      "subnetxmpp": machine.subnetxmpp,
+                      "agenttype": machine.agenttype,
+                      "classutil": machine.classutil,
+                      "groupdeploy": machine.groupdeploy,
+                      "urlguacamole": machine.urlguacamole,
+                      "picklekeypublic" : machine.picklekeypublic,
+                      'ad_ou_user': machine.ad_ou_user,
+                      'ad_ou_machine': machine.ad_ou_machine,
+                      'kiosk_presence': machine.kiosk_presence,
+                      'lastuser': machine.lastuser}
         return result
 
     @DatabaseHelper._sessionm
