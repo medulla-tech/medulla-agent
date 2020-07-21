@@ -4833,13 +4833,23 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getRelayServerForMachineUuid(self, session, uuid):
-        relayserver = session.query(Machines).filter(Machines.uuid_inventorymachine == uuid).one()
+    def getRelayServerForMachineUuid(self, session, machineUuid):
+        """
+            This function helps to obtain the server relay of a machine.
+
+            Args:
+                session: the SqlAlchemy session
+                machineUuid: The uuid of the machine we need to know the RS
+
+            Returns:
+                It returns the relay server associated to a machine
+        """
+        relayserver = session.query(Machines).filter(Machines.uuid_inventorymachine == machineUuid).one()
         session.commit()
         session.flush()
         try:
             result = {
-                        "uuid": uuid,
+                        "uuid": machineUuid,
                         "jid": relayserver.groupdeploy
                         }
             for i in result:
@@ -4847,7 +4857,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     result[i] = ""
         except Exception:
             result = {
-                        "uuid": uuid,
+                        "uuid": machineUuid,
                         "jid": ""
                     }
         return result
