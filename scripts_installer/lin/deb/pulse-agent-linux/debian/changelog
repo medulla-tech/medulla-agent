@@ -1,3 +1,15 @@
+pulse-agent-linux (2.1.0-1) unstable; urgency=medium
+  
+ * New release 2.1.0
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  thu, 30 Apr 2020 17:27:04 +0100
+
+pulse-agent-linux (2.0.8-1) unstable; urgency=medium
+
+ * New release 2.0.8
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  thu, 30 Apr 2020 17:27:04 +0100
+
 pulse-agent-linux (2.0.0-1) unstable; urgency=medium
 
  * New release 2.0.0

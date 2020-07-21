@@ -110,6 +110,7 @@ SetCompressor lzma
 
 Var OS_LANGUAGE
 Var CMD_POWERSHELL
+Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -827,22 +828,24 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Setup of Windows firewall to allow ssh
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
     ${EndIf}
-    SetErrorLevel 121
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 121
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ; Install of rsync
@@ -904,22 +907,24 @@ Section "RDP Setup" sec_rdp
   ${EndIf}
 
   ; Setup of Windows firewall to allow rdp
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
     ${EndIf}
-    SetErrorLevel 124
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 124
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
@@ -1009,22 +1014,24 @@ Section "VNC Setup" sec_vnc
   ${EndIf}
 
   ; Setup of Windows firewall to allow vnc
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
     ${EndIf}
-    SetErrorLevel 126
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 126
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
@@ -1185,22 +1192,24 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Setup of Windows firewall to allow Syncthing
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
     ${EndIf}
-    SetErrorLevel 132
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 132
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ; Copy of agent config file
@@ -1604,7 +1613,7 @@ Function .onInit
   ${TrimNewLines} $1 $1
   ${LogString} "PowerShell Policy status : $1"
 
-  ${IfNot} $1 == Undefined 
+  ${IfNot} $1 == Undefined
     SetOutPath "$INSTDIR\tmp\gpo"
     StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
     ${LogString} "Running $0"
@@ -1630,6 +1639,15 @@ Function .onInit
     ${LogString} "Return code was: $1"
   ${EndIf}
 
+  ; Detect Firewall status
+  StrCpy $0 `netsh advfirewall show allprofiles`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  StrCpy $FIREWALL $0
+  ${LogString} "Firewall status is : $FIREWALL"
+
   ; Detect system language
   StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
   ${LogString} "Running $0"
@@ -1638,7 +1656,6 @@ Function .onInit
   Pop $1
   ${TrimNewLines} $1 $OS_LANGUAGE
   ${LogString} "System language is : $OS_LANGUAGE"
-
   ; Stop the agent if it is already running and kill all python tasks
   ${LogString} ""
   ${LogString} "Detect previous installation and stop service"

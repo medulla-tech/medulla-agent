@@ -63,7 +63,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.0.7"
+AGENT_VERSION="2.1.0"
 HOMEBREW_VERSION="1.5.12"
 FUSION_INVENTORY_AGENT_NAME="FusionInventory-Agent"
 FUSION_INVENTORY_AGENT_VERSION="2.4-1"
@@ -120,7 +120,7 @@ VNC_SERVER_VERSION="5.2.1"
 VNC_SERVER_MOUNTED="VineServer"
 VNC_SERVER_APP="Vine Server.app"
 SYNCTHING_NAME="syncthing"
-SYNCTHING_VERSION="1.1.0"
+SYNCTHING_VERSION="1.6.1"
 VNC_PORT="5900"
 SSH_PORT="22"
 
@@ -156,6 +156,9 @@ check_arguments() {
                 SSH_PORT="${i#*=}"
                 shift
                 ;;
+            --linux-distros*)
+                shift
+                ;;
 			*)
                 # unknown option
                 display_usage
@@ -173,6 +176,7 @@ check_arguments() {
 		fi
 	fi
 	if [[ ! ${MINIMAL} ]]; then
+        echo "we only support minimal installer"
 		exit 0 # Remove when we support full version as well
 	fi
 }
@@ -209,7 +213,7 @@ compute_parameters() {
 	FUSION_INVENTORY_AGENT_PKG="${FUSION_INVENTORY_AGENT_NAME}-${FUSION_INVENTORY_AGENT_VERSION}.pkg"
 	FUSION_INVENTORY_AGENT_ARCHIVE="${FUSION_INVENTORY_AGENT_PKG}.tar.gz"
 	VNC_SERVER_FILENAME="${VNC_SERVER_NAME}-${VNC_SERVER_VERSION}.dmg"
-    SYNCTHING_FILENAME="${SYNCTHING_NAME}-macos-amd64-v${SYNCTHING_VERSION}.tar.gz"
+    SYNCTHING_FILENAME="${SYNCTHING_NAME}-macos-amd64-v${SYNCTHING_VERSION}.zip"
 	V_MAJOR=`echo ${AGENT_VERSION} | cut -d. -f1`
 	V_MINOR=`echo ${AGENT_VERSION} | cut -d. -f2`
 	BUILD_DATE=$(date +'%Y-%m-%dT%H:%M:%SZ')

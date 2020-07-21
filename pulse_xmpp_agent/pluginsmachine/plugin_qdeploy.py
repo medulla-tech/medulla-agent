@@ -23,22 +23,17 @@
 import base64
 import json
 import sys, os
-from lib.managepackage import managepackage, search_list_of_deployment_packages
+from lib import managepackage, \
+                grafcetdeploy, \
+                utils
 import socket
-from lib.grafcetdeploy import grafcet
 import logging
 import pycurl
 import platform
-from lib.utils import simplecommandstr, \
-                      simplecommand, \
-                      encode_strconsole, \
-                      file_get_contents, \
-                          extract_file
 import copy
 import traceback
 import time
 from subprocess import STDOUT, check_output
-from lib.grafcetdeploy import grafcet
 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
     import grp
     import pwd
@@ -46,7 +41,7 @@ elif sys.platform.startswith('win'):
     import win32net
 
 import tempfile
-plugin = {"VERSION" : "1.03", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
+plugin = {"VERSION" : "2.0", "NAME" : "qdeploy", "VERSIONAGENT" : "2.0.0", "TYPE" : "machine"}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -84,16 +79,16 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         #creation session
         datasend = {  'action': "applicationdeploymentjson",
                       'sessionid': sessionid,
-                      'data' :  data['descriptor'],
-                      'ret' : 0,
-                      'base64' : False}
-        packagedir = os.path.join( managepackage.packagedir(), namefolder)
+                      'data':  data['descriptor'],
+                      'ret': 0,
+                      'base64': False}
+        packagedir = os.path.join( managepackage.managepackage.packagedir(), namefolder)
         logger.debug("packagedir %s"%packagedir)
         ###"filebase64":
         filetmp =  os.path.join(tempfile.gettempdir(), "%s.gz"%namefolder)
         # ecrit file gz
         logger.debug("create file %s"%filetmp)
-        objectxmpp.xmpplog('Transfer terminate',
+        objectxmpp.xmpplog('<span class="log_ok">Transfer complete</span>',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
@@ -104,8 +99,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         fromuser = datasend['data']['advanced']['login'])
         with open(filetmp, 'wb') as f:
             f.write(base64.b64decode(data['filebase64']))
-        if extract_file(filetmp, to_directory = managepackage.packagedir(), compresstype="gz"):
-            objectxmpp.xmpplog('Package decompress Ok',
+        if utils.extract_file(filetmp, to_directory = managepackage.managepackage.packagedir(), compresstype="gz"):
+            objectxmpp.xmpplog('Package extraction successful',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
@@ -115,7 +110,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
         else:
-            objectxmpp.xmpplog('decompression archive Package KO',
+            objectxmpp.xmpplog('<span class="log_err">Package execution cancelled: extraction error</span>',
                     type = 'deploy',
                     sessionname = sessionid,
                     priority = -1,
@@ -124,7 +119,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     module = "Deployment| Notify | Transfer",
                     date = None ,
                     fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('TERMINATE DEPLOY',
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                     type = 'deploy',
                     sessionname = sessionid,
                     priority = -1,
@@ -137,69 +132,79 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         if os.path.exists(filetmp):
             os.remove(filetmp)
 
-
-        datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.packagedir(),
+        datasend['data']['pathpackageonmachine'] = os.path.join( managepackage.managepackage.packagedir(),
                                                                  namefolder )
-
         # on prepare sequence en fonction de l'os.
         if not cleandescriptor(datasend['data']):
-            objectxmpp.xmpplog('This package is not intended for the operating system. %s'%sys.platform,
+            objectxmpp.xmpplog('<span class="log_err">Descriptor error: This package is not intended for the OS of the machine. %s</span>'%sys.platform,
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
                         action = "xmpplog",
                         who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
+                        module = "Deployment| Notify | BadOS",
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('TERMINATE DEPLOY',
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                         type = 'deploy',
                         sessionname = sessionid,
                         priority = -1,
                         action = "xmpplog",
                         who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
+                        module = "Deployment | Notify | BadOS",
                         date = None ,
                         fromuser = datasend['data']['advanced']['login'])
             return
-        objectxmpp.xmpplog('Transfer terminate',
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment| Notify | Transfer",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-        logger.debug("pakage sequence : %s"%json.dumps(datasend, indent=4))
+        logger.debug("package sequence : %s"%json.dumps(datasend, indent=4))
 
         objectxmpp.session.createsessiondatainfo(sessionid,
                                                  datasession =  datasend['data'],
                                                  timevalid = 180)
-        try:
-            initialisesequence(datasend, objectxmpp, sessionid )
-        except Exception as e:
-            objectxmpp.xmpplog('Initialisation Dployement error %s'%str(e),
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-            objectxmpp.xmpplog('TERMINATE DEPLOY',
-                        type = 'deploy',
-                        sessionname = sessionid,
-                        priority = -1,
-                        action = "xmpplog",
-                        who = strjidagent,
-                        module = "Deployment| Notify | BADOS",
-                        date = None ,
-                        fromuser = datasend['data']['advanced']['login'])
-            return
-        #grafcet(objectxmpp,datasend) #grafcet will use the session
-        logger.debug("outing graphcet phase1")
+        if 'advanced' not in datasend['data']:
+            datasend['data']['advanced'] = {}
+            datasend['data']['advanced']['exec'] = True
+        if datasend['data']['advanced']['exec'] is True or 'advanced' not in datasend['data']:
+            # deploy directly
+            datasend['data']['advanced']['scheduling'] = False
+            try:
+                initialisesequence(datasend, objectxmpp, sessionid )
+            except Exception as e:
+                objectxmpp.xmpplog('<span class="log_err">Error initializing grafcet %s</span>'%str(e),
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Deployment | Notify",
+                            date = None ,
+                            fromuser = datasend['data']['advanced']['login'])
+                objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                            type = 'deploy',
+                            sessionname = sessionid,
+                            priority = -1,
+                            action = "xmpplog",
+                            who = strjidagent,
+                            module = "Deployment | Notify",
+                            date = None ,
+                            fromuser = datasend['data']['advanced']['login'])
+                return
+            logger.debug("outing graphcet phase1")
+        else:
+            # schedule deployment
+            objectxmpp.xmpplog('Package deployment paused : %s'%datasend['data']['name'],
+                                type = 'deploy',
+                                sessionname = sessionid,
+                                priority = -1,
+                                action = "xmpplog",
+                                who = strjidagent,
+                                how = "",
+                                why = "",
+                                module = "Deployment | Notify",
+                                date = None ,
+                                fromuser = datasend['data']['advanced']['login'],
+                                touser = "")
+            datasend['data']['advanced']['scheduling'] = True
+            objectxmpp.Deploybasesched.set_sesionscheduler(sessionid,json.dumps(datasend))
 
 def cleandescriptor(datasend):
     if sys.platform.startswith('linux'):
@@ -304,5 +309,5 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
             traceback.print_exc(file=sys.stdout)
     else:
         logger.warning("launcher command missing for kiosk")
-    grafcet(objectxmpp, datasend)
+    grafcetdeploy.grafcet(objectxmpp, datasend)
     logger.debug("outing graphcet end initiation")

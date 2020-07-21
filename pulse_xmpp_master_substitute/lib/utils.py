@@ -19,6 +19,10 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+#
+# file : pulse_xmpp_master_substitute/lib/utils.py
+#
+
 
 import netifaces
 import json
@@ -44,6 +48,7 @@ import psutil
 import time
 from datetime import datetime
 import imp
+import requests 
 from functools import wraps # This convenience func preserves name and docstring
 import uuid
 
@@ -66,6 +71,68 @@ if sys.platform.startswith('win'):
     import win32net
     import win32com.client
     from win32com.client import GetObjectif
+
+# debug decorator
+def minimum_runtime(t):
+    """
+        Function decorator constrains the minimum execution time of the function
+    """
+    def decorated(f):
+        def wrapper(*args, **kwargs):
+            start = time.time()
+            result = f(*args, **kwargs)
+            runtime = time.time() - start
+            if runtime < t:
+                time.sleep(t - runtime)
+            return result
+        return wrapper
+    return decorated
+
+def dump_parameter(para=True, out=True, timeprocess = True):
+    """
+        Function decorator logging in and out function.
+    """
+    def decorated(decorated_function):
+        @wraps(decorated_function)
+        def wrapper(*dec_fn_args, **dec_fn_kwargs):
+            # Log function entry
+            start = time.time()
+            func_name = decorated_function.__name__
+            log = logging.getLogger(func_name)
+            
+            filepath = os.path.basename(__file__)
+            # get function params (args and kwargs)
+            if para:
+                arg_names = decorated_function.__code__.co_varnames
+                params = dict(
+                    args=dict(zip(arg_names, dec_fn_args)),
+                    kwargs=dec_fn_kwargs)
+                result = ', '.join([
+                        '{}={}'.format(str(k), repr(v)) for k, v in params.items()])
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+            else:
+                log.info('\n@@@ call func : {}() file {}'.format(func_name, filepath))
+            # Execute wrapped (decorated) function:
+            outfunction = decorated_function(*dec_fn_args, **dec_fn_kwargs)
+            timeruntime = time.time() - start
+            if out:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s is -->{}'.format(func_name,
+                                                                           timeruntime,
+                                                                           outfunction))
+                else:
+                    log.info('\n@@@ out func :{}() is -->{}'.format(func_name,
+                                                                    outfunction))
+            else:
+                if timeprocess:
+                    log.info('\n@@@ out func :{}() in {}s'.format(func_name,
+                                                                  timeruntime))
+                else:
+                    log.info('\n@@@ out func :{}()'.format(func_name))
+            return outfunction
+        return wrapper
+    return decorated
 
 def Setdirectorytempinfo():
     """
@@ -399,10 +466,10 @@ def md5(fname):
 def loadModule(filename):
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
-    #filename = "plugin_%s" % filename
-    #logger.debug("Loading module %s" % (filename))
+    # filename = "plugin_%s" % filename
+    # logger.debug("Loading module %s" % (filename))
     searchPath, file = os.path.split(filename)
-    if not searchPath in sys.path:
+    if searchPath not in sys.path:
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath+"/../"))
     moduleName, ext = os.path.splitext(file)
@@ -786,8 +853,6 @@ def windowsservice(name, action):
 
 
 def methodservice():
-    import pythoncom
-    import wmi
     pythoncom.CoInitialize()
     try:
         c = wmi.WMI()
@@ -922,7 +987,7 @@ def pulgindeploy1(func):
                 dataerreur,
                 result)
 
-            if not 'end' in result['data']:
+            if 'end' not in result['data']:
                 result['data']['end'] = False
 
             print "----------------------------------------------------------------"
@@ -1058,7 +1123,7 @@ def searchippublic(site=1):
             if is_valid_ipv4(objip['ip']):
                 return objip['ip']
             else:
-                return searchippublic(2)
+                return searchippublic(3)
         except BaseException:
             return searchippublic(2)
     elif site == 2:
@@ -1129,7 +1194,6 @@ def pulginmaster(func):
 def pulginmastersessionaction(sessionaction, timeminute=10):
     def decorateur(func):
         def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
-            # avant
             if action.startswith("result"):
                 action = action[6:]
             if objetxmpp.session.isexist(sessionid):
@@ -1148,7 +1212,7 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
                 ret,
                 dataobj,
                 objsessiondata)
-            if sessionaction == "clear" and objsessiondata != None:
+            if sessionaction == "clear" and objsessiondata is not None:
                 objetxmpp.session.clear(sessionid)
             elif sessionaction == "actualise":
                 objetxmpp.session.reactualisesession(sessionid, 10)
@@ -1166,71 +1230,7 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
-    print("AAAAAAAAAAAAAAAAAA1")
-    print column
-    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
-
-
-def protoandport():
-    protport = {}
-    if sys.platform.startswith('win'):
-        for process in psutil.process_iter():
-            if 'tvnserver.exe' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['vnc'] = cux.laddr.port
-            elif 'sshd.exe' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    if cux.status == psutil.CONN_LISTEN:
-                        protport['ssh'] = cux.laddr.port
-        for service in psutil.win_service_iter():
-            if 'TermService' in service.name():
-                service_handler = psutil.win_service_get('TermService')
-                if service_handler.status() == 'running':
-                    pid = service_handler.pid()
-                    process_handler = psutil.Process(pid)
-                    for cux in process_handler.connections():
-                        if cux.status == psutil.CONN_LISTEN:
-                            protport['rdp'] = cux.laddr.port
-
-    elif sys.platform.startswith('linux'):
-        for process in psutil.process_iter():
-            if 'Xvnc' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['vnc'] = port
-            elif 'sshd' in process.name():
-                process_handler = psutil.Process(process.pid)
-                for cux in process_handler.connections():
-                    try:
-                        ip = cux.laddr[0]
-                        port = cux.laddr[1]
-                    except Exception:
-                        ip = cux.laddr.ip
-                        port = cux.laddr.port
-                    if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
-                        protport['ssh'] = port
-
-    elif sys.platform.startswith('darwin'):
-        for process in psutil.process_iter():
-            if 'ARDAgent' in process.name():
-                protport['vnc'] = '5900'
-        for cux in psutil.net_connections():
-            if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
-                protport['ssh'] = '22'
-
-    return protport
-
 
 def ipfromdns(name_domaine_or_ip):
     """ This function converts a dns to ipv4
@@ -1240,7 +1240,7 @@ def ipfromdns(name_domaine_or_ip):
         eg : print ipfromdns("sfr.fr")
         80.125.163.172
     """
-    if name_domaine_or_ip != "" and name_domaine_or_ip != None:
+    if name_domaine_or_ip != "" and name_domaine_or_ip is not None:
         if is_valid_ipv4(name_domaine_or_ip):
             return name_domaine_or_ip
         try:
@@ -1516,8 +1516,8 @@ def save_user_current(name = None):
 
     if not os.path.exists(loginuser):
         result = { name : 1,
-                  'suite' : [name],
-                  'curent' : name}
+                  'suite': [name],
+                  'curent': name}
         savejsonfile(loginuser,result)
         return  result['curent']
 
@@ -1583,8 +1583,8 @@ def utc2local (utc):
     utc2local transform a utc datetime object to local object.
 
     Param:
-        utc datetime which is not naive (the utc timezone must be precised)
-    Returns:
+        utc: datetime which is not naive (the utc timezone must be precised)
+    Return:
         datetime in local timezone
     """
     epoch = time.mktime(utc.timetuple())
@@ -1592,11 +1592,11 @@ def utc2local (utc):
     return utc + offset
 
 def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0,
+    return { 'action': action,
+             'data': data,
+             'ret': 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
 
@@ -1837,14 +1837,14 @@ def find_files(directory, pattern):
                 yield filename
 
 def listfile(directory, abspath=True):
-    listfile=[]
+    fileList = []
     for root, dirs, files in os.walk(directory):
         for basename in files:
             if abspath:
-                listfile.append(os.path.join(root, basename))
+                fileList.append(os.path.join(root, basename))
             else:
-                listfile.append(os.path.join(basename))
-    return listfile
+                fileList.append(os.path.join(basename))
+    return fileList
 
 def md5folder(directory):
     hash = hashlib.md5()
@@ -1853,3 +1853,243 @@ def md5folder(directory):
         for basename in files:
             hash.update(md5(os.path.join(root, basename)))
     return hash.hexdigest()
+
+
+class protodef:
+    def __init__(self):
+        self.fileprotoinfo = os.path.join(Setdirectorytempinfo(),
+                                          'fingerprintproto')
+        self.boolchangerproto , self.proto = self.protochanged()
+
+    def protoinfoexist(self):
+        if os.path.exists(self.fileprotoinfo):
+            return True
+        return False
+
+    def protochanged(self):
+        if self.protoinfoexist():
+            fproto = protodef.protoandport()
+            self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+            newfingerprint = pickle.dumps(fproto) #on recalcule le proto
+            if self.fingerprintproto == newfingerprint:
+                self.proto = fproto
+                return False, self.proto 
+        self.refreshfingerprintproto()
+        self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+        self.proto = pickle.loads(self.fingerprintproto)
+        return True, self.proto 
+
+    def refreshfingerprintproto(self):
+        fproto = protodef.protoandport()
+        with open(self.fileprotoinfo, 'wb') as handle:
+            pickle.dump(fproto, handle)
+        return fproto
+
+    @staticmethod
+    def protoandport():
+        protport = {}
+        if sys.platform.startswith('win'):
+            for process in psutil.process_iter():
+                if 'tvnserver.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['vnc'] = cux.laddr.port
+                elif 'sshd.exe' in process.name():
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        if cux.status == psutil.CONN_LISTEN:
+                            protport['ssh'] = cux.laddr.port
+            for services in psutil.win_service_iter():
+                if 'TermService' in services.name():
+                    service_handler = psutil.win_service_get('TermService')
+                    if service_handler.status() == 'running':
+                        pid = service_handler.pid()
+                        process_handler = psutil.Process(pid)
+                        for cux in process_handler.connections():
+                            if cux.status == psutil.CONN_LISTEN:
+                                protport['rdp'] = cux.laddr.port
+
+        elif sys.platform.startswith('linux'):
+            for process in psutil.process_iter():
+                if process.name() == 'x11vnc':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['vnc'] = port
+                elif process.name() == 'sshd':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and ip == "0.0.0.0":
+                            protport['ssh'] = port
+                elif process.name() == 'xrdp':
+                    process_handler = psutil.Process(process.pid)
+                    for cux in process_handler.connections():
+                        try:
+                            ip = cux.laddr[0]
+                            port = cux.laddr[1]
+                        except Exception:
+                            ip = cux.laddr.ip
+                            port = cux.laddr.port
+                        if cux.status == psutil.CONN_LISTEN and (ip == "0.0.0.0" or ip == "::"):
+                            protport['rdp'] = port
+
+        elif sys.platform.startswith('darwin'):
+            for process in psutil.process_iter():
+                if 'ARDAgent' in process.name():
+                    protport['vnc'] = '5900'
+            for cux in psutil.net_connections():
+                if cux.laddr.port == 22 and cux.status == psutil.CONN_LISTEN:
+                    protport['ssh'] = '22'
+
+        return protport
+
+def protoandport():
+    return protodef.protoandport()
+
+
+class geolocalisation_agent:
+    def __init__(self, 
+                 typeuser = "public", 
+                 geolocalisation=True, 
+                 ip_public=None,
+                 strlistgeoserveur=""):
+        self.determination = False
+        self.geolocalisation = geolocalisation
+        self.ip_public = ip_public
+        self.typeuser = typeuser
+        self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
+                                          'filegeolocalisation')
+        self.listgeoserver = ["http://%s/json"%x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
+                                              strlistgeoserveur)  if x.strip()!=""];
+        self.localisation = None
+        self.getgeolocalisation()
+        if self.localisation is None:
+            self.localisation=self.getdatafilegeolocalisation()
+
+    def getgeolocalisationobject(self):
+        if self.localisation is None:
+            return {}
+        return self.localisation
+
+    def getdatafilegeolocalisation(self):    
+        if self.geoinfoexist():
+            try:
+                with open(self.filegeolocalisation) as json_data:
+                    self.localisation=json.load(json_data)
+                self.determination = False
+                return self.localisation
+            except Exception:
+                pass
+        return None
+
+    def setdatafilegeolocalisation(self):
+        if self.localisation is not None:
+            try:
+                with open(self.filegeolocalisation, 'w') as json_data:
+                    json.dump(self.localisation, json_data, indent=4)
+                self.determination = True
+            except Exception:
+                pass
+
+    def geoinfoexist(self):
+        if os.path.exists(self.filegeolocalisation):
+            return True
+        return False
+
+    def getgeolocalisation(self):
+        if self.geolocalisation:
+            if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
+                # on recherche a chaque fois les information
+                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                self.determination = True
+                self.setdatafilegeolocalisation()
+                return self.localisation
+            else:
+                if self.localisation is not None:
+                    if not self.geoinfoexist():
+                        self.setdatafilegeolocalisation()
+                        self.determination = False
+                    return self.localisation
+                elif not self.geoinfoexist():
+                    self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                    self.setdatafilegeolocalisation()
+                    self.determination = True
+                    return self.localisation
+            return None
+        else:
+            if not self.geoinfoexist():
+                self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
+                self.setdatafilegeolocalisation()
+                self.determination = True
+                return self.localisation
+
+        return self.localisation
+
+    def get_ip_public(self):
+        if self.geolocalisation:
+            if self.localisation is  None:
+                self.getgeolocalisation()
+            if self.localisation is not None and is_valid_ipv4(self.localisation['ip']):
+                if not self.determination:
+                    logger.warning("Determination use file")
+                self.ip_public = self.localisation['ip']
+                return self.localisation['ip']
+            else :
+                return None
+        else:
+            if not self.determination:
+                logger.warning("use old determination ip_public")
+            if self.localisation is  None:
+                if self.geoinfoexist():
+                    logger.warning("coucou")
+                    dd=self.getdatafilegeolocalisation()
+                    logger.warning("%s"%dd)
+                    if  self.localisation is  not None:
+                        return self.localisation['ip']
+            else:
+                return self.localisation['ip']
+        return self.ip_public
+
+    @staticmethod
+    def call_simple_page(url):
+        try:
+            r = requests.get(url)
+            return r.json()
+        except:
+            return None
+    
+    @staticmethod
+    def call_simple_page_urllib(url):
+        try:
+            objip = json.loads(urllib.urlopen(url).read())
+            return objip
+        except:
+            return None
+
+    @staticmethod
+    def searchgeolocalisation(http_url_list_geo_server):
+        """
+            return objet
+        """
+        for url in http_url_list_geo_server:
+            try:
+                objip = geolocalisation_agent.call_simple_page(url)
+                if  objip is None:
+                    raise
+                return objip
+            except BaseException:
+                pass
+        return None

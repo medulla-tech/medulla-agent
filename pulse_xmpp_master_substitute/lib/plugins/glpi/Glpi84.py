@@ -69,7 +69,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -403,7 +403,7 @@ class Glpi84(DatabaseHelper):
         # glpi_plugin_fusioninventory_agents
         self.fusionagents = None
 
-        if self.fusionantivirus is not None: # Fusion is not installed
+        if self.fusionantivirus is not None:  # Fusion is not installed
             self.logger.debug('Load glpi_plugin_fusioninventory_locks')
             self.fusionlocks = Table('glpi_plugin_fusioninventory_locks', self.metadata,
                 Column('items_id', Integer, ForeignKey('glpi_computers.id')),
@@ -585,7 +585,7 @@ class Glpi84(DatabaseHelper):
             return query.filter(ret)
 
     def __filter_on_filter(self, query):
-        if self.config.filter_on != None:
+        if self.config.filter_on is not None:
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
                 if filter_key == 'state':
@@ -600,7 +600,7 @@ class Glpi84(DatabaseHelper):
                 if filter_key == 'autoupdatesystems_id':
                     self.logger.debug('will filter %s in (%s)' % (filter_key, str(filter_values)))
                     a_filter_on.append(self.machine.c.autoupdatesystems_id.in_(filter_values))
-                if not filter_key in ('state','type','entity','autoupdatesystems_id') :
+                if filter_key not in ('state','type','entity','autoupdatesystems_id') :
                     self.logger.warn('dont know how to filter on %s' % (filter_key))
             if len(a_filter_on) == 0:
                 return None
@@ -646,7 +646,7 @@ class Glpi84(DatabaseHelper):
         Get the sqlalchemy query to get a list of computers with some filters
         If displayList is True, we are displaying computers list
         """
-        if session == None:
+        if session is None:
             session = create_session()
 
         query = (count and session.query(func.count(Machine.id))) or session.query(Machine)
@@ -718,7 +718,7 @@ class Glpi84(DatabaseHelper):
                     if isinstance(location, list):
                         locationids = [int(x.replace('UUID', '')) for x in location]
                         for locationid in locationids:
-                            if not locationid in locsid:
+                            if locationid not in locsid:
                                 self.logger.warn("User '%s' is trying to get the content of an unauthorized entity : '%s'" % (ctx.userid, 'UUID' + location))
                                 session.close()
                                 return None
@@ -1243,7 +1243,7 @@ class Glpi84(DatabaseHelper):
                 displayList = True
 
         ret = self.__getRestrictedComputersListQuery(ctx, filt, session, displayList, count=True)
-        if ret == None:
+        if ret is None:
             return 0
         session.close()
         return ret
@@ -1306,7 +1306,7 @@ class Glpi84(DatabaseHelper):
                 displayList = True
 
         query = self.__getRestrictedComputersListQuery(ctx, filt, session, displayList)
-        if query == None:
+        if query is None:
             return {}
 
         query = query.distinct()
@@ -1417,7 +1417,7 @@ class Glpi84(DatabaseHelper):
         Give an LDAP like version of machines
         """
         ret = {}
-        if get != None:
+        if get is not None:
             for m in machines:
                 if isinstance(m, tuple):
                     m = m[0]
@@ -1532,7 +1532,7 @@ class Glpi84(DatabaseHelper):
 
         uuid = self.getMachineUUID(machine)
 
-        if get != None:
+        if get is not None:
             return self.__getAttr(machine, get)
 
         ret = {
@@ -1542,7 +1542,7 @@ class Glpi84(DatabaseHelper):
         }
         if advanced:
             (ret['macAddress'], ret['ipHostNumber'], ret['subnetMask'], domain, ret['networkUuids']) = self.orderIpAdresses(uuid, machine.name, self.getMachineNetwork(uuid))
-            if domain == None:
+            if domain is None:
                 domain = ''
             elif domain != '':
                 domain = '.'+domain
@@ -1585,7 +1585,7 @@ class Glpi84(DatabaseHelper):
         """
         session = create_session()
         qprofile = session.query(Profile).select_from(self.profile.join(self.userprofile).join(self.user)).filter(self.user.c.name == user).first()
-        if qprofile == None:
+        if qprofile is None:
             ret = None
         else:
             ret= qprofile.name
@@ -1631,7 +1631,7 @@ class Glpi84(DatabaseHelper):
         """
         session = create_session()
         qentities = session.query(Entities).select_from(self.entities.join(self.userprofile).join(self.user)).filter(self.user.c.name == user).first()
-        if qentities == None:
+        if qentities is None:
             ret = None
         else:
             ret = qentities.name
@@ -1744,7 +1744,7 @@ class Glpi84(DatabaseHelper):
         Returns all users name that share the same locations with the given
         user
         """
-        if locations == None:
+        if locations is None:
             locations = self.getUserLocations(userid)
         ret = []
         if locations:
@@ -3082,7 +3082,7 @@ class Glpi84(DatabaseHelper):
 
 
         if int(count) == 1:
-            return {'count' : int(query.scalar())}
+            return {'count': int(query.scalar())}
         elif int(count) == 2:
             return query.all()
         else:
@@ -4022,15 +4022,15 @@ class Glpi84(DatabaseHelper):
 
 
         # it s shit do it from dict directly
-        #{'ranking' : 2, 'sub_type': 'PluginFusioninventoryInventoryRuleEntity',
+        #{'ranking': 2, 'sub_type': 'PluginFusioninventoryInventoryRuleEntity',
         # date_mod: NOW(),
 
         # criteria
         # {'criteria': 'ip', // 'name' => hostanme, 'domain', 'serial', 'subnet', 'tag',
         #'condition': 0=is, 1=is_not, 2=contains, 3=doesnt contain,  4=start with, 5= finishes by
         # 6=regex_check, 7=not_regex, 8=exists, 9=doesnt eixts
-        # 'pattern' : 192.168.44.,
-        # 'rules_id' : rule_id
+        # 'pattern': 192.168.44.,
+        # 'rules_id': rule_id
 
         # rule actions
         # { 'rules_id', rid
@@ -4197,10 +4197,10 @@ class Glpi84(DatabaseHelper):
         entities = []
         for profile in session.query(UserProfile).filter_by(users_id = user_id):
             entities += [{
-                            'entity_id' : profile.entities_id,
+                            'entity_id': profile.entities_id,
                             'profile': profile.profiles_id,
-                            'is_recursive' : profile.is_recursive,
-                            'is_dynamic' : profile.is_dynamic
+                            'is_recursive': profile.is_recursive,
+                            'is_dynamic': profile.is_dynamic
                         }]
         return entities
 

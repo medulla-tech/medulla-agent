@@ -1,5 +1,5 @@
 import os
-from lib.utils import shellcommandtimeout
+from lib import utils
 
 # nb  -1 infinie
 # all tuesday at 22h30
@@ -18,7 +18,7 @@ def schedule_main(objectxmpp):
         os.makedirs("/var/lib/pulse2/Wsusscn2", 0700)
     except OSError:
         pass
-    re = shellcommandtimeout("wget -O Wsusscn2.cab -P /var/lib/pulse2/Wsusscn2 http://go.microsoft.com/fwlink/p/?LinkID=74689", 600).run()
+    re = utils.shellcommandtimeout("wget -O Wsusscn2.cab -P /var/lib/pulse2/Wsusscn2 http://go.microsoft.com/fwlink/p/?LinkID=74689", 600).run()
     print re['codereturn']
     result  = [x.strip('\n') for x in re['result'] if x !='']
     print result

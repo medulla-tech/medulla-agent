@@ -49,7 +49,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.0.7"
+AGENT_VERSION="2.1.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 PYTHON32_FILENAME="python-2.7.9.msi"
@@ -103,8 +103,8 @@ VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
 VNC_PORT="5900"
 SSH_PORT="22"
-SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.1.0.zip"
-SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.1.0.zip"
+SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.6.1.zip"
+SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.6.1.zip"
 SYNCTHING32_FILENAME="syncthing32.exe"
 SYNCTHING64_FILENAME="syncthing64.exe"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
@@ -168,6 +168,9 @@ check_arguments() {
                 ;;
             --disable-inventory*)
                 DISABLE_INVENTORY=1
+                shift
+                ;;
+            --linux-distros*)
                 shift
                 ;;
             *)
@@ -360,7 +363,8 @@ prepare_mandatory_includes() {
 		pushd ${DOWNLOADS_DIR}
 		unzip -q ${LGPO_DL_FILENAME}
         cp LGPO.exe bin/${LGPO_FILENAME}
-        rm -rf ${LGPO_DL_FILENAME::-4}.*
+        rm -rf ${LGPO_DL_FILENAME::-4}.pdf
+        rm -rf ${LGPO_DL_FILENAME::-4}.exe
 		popd
     else
         colored_echo red "${LGPO_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."

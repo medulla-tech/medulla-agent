@@ -17,4 +17,5 @@ foreach ($profile in $profiles) {
   }
  }
 
+
 if(!$profilefound) { write-Host "No profile" }

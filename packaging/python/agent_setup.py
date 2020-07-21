@@ -20,13 +20,19 @@
 
 from setuptools import setup
 import sys
+from distutils.command.install import INSTALL_SCHEMES
+
+import os
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = os.path.join(scheme['purelib'], "pulse_xmpp_agent")
+
 setup(
     name="pulse_xmpp_agent",
-    version="2.0.7",
+    version="2.1.0",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Agent for pulse",
