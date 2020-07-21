@@ -138,6 +138,7 @@ override_dh_auto_install:
 	cp scripts_installer/win/agent-installer.nsi.in $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/pulse-agent-task.xml $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
 	cp scripts_installer/win/pulse-filetree-generator.exe $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
+	cp scripts_installer/win/powershell-policy-remotesigned.pol $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/generate-pulse-agent-win.sh
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	cp scripts_installer/lin/generate-pulse-agent-linux.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
