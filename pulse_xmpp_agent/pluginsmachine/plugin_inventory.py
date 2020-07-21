@@ -39,7 +39,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "1.50", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "1.501", "NAME" :"inventory", "TYPE":"machine"}
 
 def compact_xml(inputfile):
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
