@@ -851,8 +851,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                   session,
                                   user,
                                   osname=None,
-                                  min=None,
-                                  max=None,
+                                  minimum=None,
+                                  maximum=None,
                                   filt=None,
                                   edit=None):
         ret={'len': 0,
@@ -885,13 +885,13 @@ class XmppMasterDatabase(DatabaseHelper):
 
             nbfilter = self.get_count(result)
 
-            if min is not None and max is not None:
-                result = result.offset(int(min)).limit(int(max)-int(min))
-                ret['limit'] = int(max) - int(min)
-            if min:
-                ret['min'] = min
-            if max:
-                ret['max'] = max
+            if minimum is not None and maximum is not None:
+                result = result.offset(int(minimum)).limit(int(maximum) - int(minimum))
+                ret['limit'] = int(maximum) - int(minimum)
+            if minimum:
+                ret['min'] = minimum
+            if maximum:
+                ret['max'] = maximum
             if filt:
                 ret['filt'] = filt
             result = result.all()
@@ -992,7 +992,7 @@ class XmppMasterDatabase(DatabaseHelper):
         if machine:
             result = {"id": machine.id,
                       "jid": machine.jid,
-                      "platform" : machine.platform,
+                      "platform": machine.platform,
                       "archi": machine.archi,
                       "hostname": machine.hostname,
                       "uuid_inventorymachine": machine.uuid_inventorymachine,
@@ -1002,9 +1002,9 @@ class XmppMasterDatabase(DatabaseHelper):
                       "subnetxmpp": machine.subnetxmpp,
                       "agenttype": machine.agenttype,
                       "classutil": machine.classutil,
-                      "groupdeploy" : machine.groupdeploy,
-                      "urlguacamole" : machine.urlguacamole,
-                      "picklekeypublic" : machine.picklekeypublic,
+                      "groupdeploy": machine.groupdeploy,
+                      "urlguacamole": machine.urlguacamole,
+                      "picklekeypublic": machine.picklekeypublic,
                       'ad_ou_user': machine.ad_ou_user,
                       'ad_ou_machine': machine.ad_ou_machine,
                       'kiosk_presence': machine.kiosk_presence,
@@ -1157,7 +1157,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 if agenttype == "relayserver":
                     sql = "UPDATE `xmppmaster`.`relayserver` \
                                 SET `enabled`='1' \
-                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'" % hostname;
+                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'" % hostname
                     session.execute(sql)
                     session.commit()
                     session.flush()
@@ -1187,7 +1187,7 @@ class XmppMasterDatabase(DatabaseHelper):
             FROM
                  xmppmaster.organization_ad
              WHERE
-              jiduser LIKE ('%s');"""% ( jiduser)
+              jiduser LIKE ('%s');""" % (jiduser)
         req = session.execute(sql)
         session.commit()
         session.flush()
@@ -1289,7 +1289,7 @@ class XmppMasterDatabase(DatabaseHelper):
             update Organization_ad table in base xmppmaster
         """
         try:
-            session.query(Organization_ad).filter(Organization_ad.id_inventory ==  self.uuidtoid(id_inventory)).\
+            session.query(Organization_ad).filter(Organization_ad.id_inventory == self.uuidtoid(id_inventory)).\
                     update({ Organization_ad.jiduser: jiduser,
                              Organization_ad.id_inventory: self.uuidtoid(id_inventory),
                              Organization_ad.ouuser: ouuser,
