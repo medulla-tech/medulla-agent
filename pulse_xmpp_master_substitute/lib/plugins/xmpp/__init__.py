@@ -557,7 +557,7 @@ class XmppMasterDatabase(DatabaseHelper):
             result_list.append(command_grp_list)
             result_list.append(command_machine_list)
             result_list.append(command_target_list)
-            return {"nbtotal": nbtotal ,"result": result_list}
+            return {"nbtotal": nbtotal, "result": result_list}
         except Exception, e:
             logging.getLogger().debug("getCommand_action_time error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
@@ -855,13 +855,13 @@ class XmppMasterDatabase(DatabaseHelper):
                                   maximum=None,
                                   filt=None,
                                   edit=None):
-        ret={'len': 0,
-             'nb': 0,
-             'limit': 0,
-             'max': 0,
-             'min': 0,
-             'filt': '',
-             'command': []}
+        ret = {'len': 0,
+               'nb': 0,
+               'limit': 0,
+               'max': 0,
+               'min': 0,
+               'filt': '',
+               'command': []}
         try:
             if edit is not None:
                 # We are in the edition view
@@ -1290,12 +1290,12 @@ class XmppMasterDatabase(DatabaseHelper):
         """
         try:
             session.query(Organization_ad).filter(Organization_ad.id_inventory == self.uuidtoid(id_inventory)).\
-                    update({ Organization_ad.jiduser: jiduser,
-                             Organization_ad.id_inventory: self.uuidtoid(id_inventory),
-                             Organization_ad.ouuser: ouuser,
-                             Organization_ad.oumachine: oumachine,
-                             Organization_ad.hostname: hostname,
-                             Organization_ad.username: username})
+                                                                                update({ Organization_ad.jiduser: jiduser,
+                                                                                Organization_ad.id_inventory: self.uuidtoid(id_inventory),
+                                                                                Organization_ad.ouuser: ouuser,
+                                                                                Organization_ad.oumachine: oumachine,
+                                                                                Organization_ad.hostname: hostname,
+                                                                                Organization_ad.username: username})
             session.commit()
             session.flush()
             return 1
@@ -1509,9 +1509,9 @@ class XmppMasterDatabase(DatabaseHelper):
             result = result.one()
             session.commit()
             session.flush()
-            obj={'countnb': 0,
-                 'exec': True
-                 }
+            obj = {'countnb': 0,
+                   'exec': True
+                   }
             if result.login != '':
                 obj['login'] = result.login
             obj['idcmd'] = result.command
@@ -1555,7 +1555,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     obj['paramdeploy'] = json.loads(params)
                 except Exception, e:
                     logging.getLogger().error("[the avanced parameters must be"\
-                        " declared in a json dictionary] : " + str(e))
+                                              " declared in a json dictionary] : " + str(e))
             return obj
         except Exception, e:
             logging.getLogger().error("[ obj commandid missing] : " + str(e))
@@ -4849,17 +4849,17 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         try:
             result = {
-                        "uuid": machineUuid,
-                        "jid": relayserver.groupdeploy
-                        }
+                      "uuid": machineUuid,
+                      "jid": relayserver.groupdeploy
+                      }
             for i in result:
                 if result[i] is None:
                     result[i] = ""
         except Exception:
             result = {
-                        "uuid": machineUuid,
-                        "jid": ""
-                    }
+                      "uuid": machineUuid,
+                      "jid": ""
+                      }
         return result
 
     @DatabaseHelper._sessionm
