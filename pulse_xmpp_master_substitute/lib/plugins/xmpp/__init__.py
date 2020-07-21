@@ -130,7 +130,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                                                                  self.config.xmpp_dbname),
                                                      pool_recycle=self.config.dbpoolrecycle,
                                                      pool_size=self.config.dbpoolsize
-                                                    )
+                                                     )
         self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
         self.is_activated = True
         self.logger.debug("xmpp finish activation")
@@ -1477,8 +1477,7 @@ class XmppMasterDatabase(DatabaseHelper):
         """ this function schedued by xmppmaster """
         datenow = datetime.now()
         result = session.query(Deploy).filter(and_(Deploy.endcmd < datenow,
-                                                   Deploy.state.like('DEPLOYMENT START%%'))
-                                             ).all()
+                                                   Deploy.state.like('DEPLOYMENT START%%'))).all()
         session.flush()
         session.close()
         for t in result:
