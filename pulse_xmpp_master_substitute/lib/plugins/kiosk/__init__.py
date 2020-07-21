@@ -25,7 +25,6 @@ kiosk database handler
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
 from sqlalchemy.orm import sessionmaker
-Session = sessionmaker()
 from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy import update
 from datetime import date, datetime, timedelta
@@ -49,6 +48,8 @@ except ImportError:
     from sqlalchemy.orm.base import _entity_descriptor
 
 from sqlalchemy.orm import scoped_session
+
+Session = sessionmaker()
 
 class Singleton(object):
 
