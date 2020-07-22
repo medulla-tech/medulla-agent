@@ -308,10 +308,13 @@ Section "OpenSSH" sec_openssh
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
   ; Create Pulse user
-  pwgen::GeneratePassword 12
+  StrCpy $0 `$CMD_POWERSHELL Add-Type -AssemblyName System.Web ; [System.Web.Security.Membership]::GeneratePassword(12,2)`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
+  Pop $1
   Var /GLOBAL Password
-  StrCpy $Password "$0"
+  StrCpy $Password "$1"
   StrCpy $0 `net user "pulseuser" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
   ${LogString} "Running net user pulseuser ************ /ADD /COMMENT:Pulse user with admin rights on the system "
   nsExec::ExecToLog $0
@@ -550,7 +553,8 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Set pulse account password to not expire
-  StrCpy $0 `wmic useraccount where "Name='pulseuser'" set PasswordExpires=False`
+  ReadRegStr $0 HKLM SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName "ComputerName"
+  StrCpy $0 `wmic useraccount where "Name='pulseuser' and Domain='$0'" set PasswordExpires=False`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
