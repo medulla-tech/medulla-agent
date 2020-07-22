@@ -553,7 +553,8 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Set pulse account password to not expire
-  StrCpy $0 `wmic useraccount where "Name='pulseuser'" set PasswordExpires=False`
+  ReadRegStr $0 HKLM SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName "ComputerName"
+  StrCpy $0 `wmic useraccount where "Name='pulseuser' and Domain='$0'" set PasswordExpires=False`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
