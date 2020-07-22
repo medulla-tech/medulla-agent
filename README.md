@@ -31,7 +31,7 @@ The complete installation procedure can be found at <https://github.com/pulse-pr
 If you find some errors, please feel free to contribute.
 
 Thanks
-  
+
 # License
 
 Pulse XMPP Agent is distributed under GPL v2. 
