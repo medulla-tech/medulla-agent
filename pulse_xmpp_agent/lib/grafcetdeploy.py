@@ -355,7 +355,7 @@ class grafcet:
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
         elif sys.platform.startswith('darwin'):
-            return os.path.join("/opt","pulse", "tmp")
+            return os.path.join("/opt", "pulse", "tmp")
 
     def __search_Next_step_int__(self, val):
         """

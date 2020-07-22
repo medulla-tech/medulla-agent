@@ -1388,7 +1388,7 @@ class syncthingprogram(Program):
                 self.logfile = "/opt/Pulse/var/log/syncthing.log"
 
             self.stop_syncthing()
-            cmd ="""export STNODEFAULTFOLDER=1;nohup /opt/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &"""%(self.home, self.logfile)
+            cmd = """export STNODEFAULTFOLDER=1;nohup /opt/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &""" % (self.home, self.logfile)
             self.startprogram(cmd, 'syncthing')
 
         time.sleep(4)

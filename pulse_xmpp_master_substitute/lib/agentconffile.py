@@ -50,6 +50,7 @@ def directoryconffile():
     else:
         return None
 
+
 def pulseTempDir():
     """
     This function permits to obtain the temporary folder.
