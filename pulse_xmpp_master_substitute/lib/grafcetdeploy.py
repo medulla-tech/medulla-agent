@@ -341,13 +341,18 @@ class grafcet:
         return cmd
 
     def tempdir(self):
-        """return directory temp for os"""
+        """
+        This function allow to obtain the path of the tmp directory
+
+        Returns:
+            It returns the path of the tmp directory in function of  the OS
+        """
         if sys.platform.startswith('linux'):
             return os.path.join("/", "tmp")
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
         elif sys.platform.startswith('darwin'):
-            return os.path.join("/", "tmp")
+            return os.path.join("/opt", "Pulse", "tmp")
 
     def __search_Next_step_int__(self, val):
         """

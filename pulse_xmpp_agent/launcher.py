@@ -73,13 +73,13 @@ if __name__ == '__main__':
     pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
     #from windows
-    #########################################
+
     launcher      = os.path.join(pathagent,"launcher.py")
     connectionagent  = os.path.join(pathagent,"connectionagent.py")
     agentxmpp = os.path.join(pathagent,"agentxmpp.py")
 
     pythonexec = "C:\\python27\\python.exe"
-    #########################################
+
     os.chdir(pathagent)
     if not opts.consoledebug:
         if opts.typemachine.lower() in ["machine"]:
@@ -88,8 +88,8 @@ if __name__ == '__main__':
                     print ('cmd Running : %s %s -t %s'%(pythonexec, connectionagent, opts.typemachine))
                     os.system('%s %s -t %s'%(pythonexec, connectionagent, opts.typemachine))
                 elif sys.platform.startswith('darwin'):
-                    print ("Running", '/usr/local/bin/python2 connectionagent.py -t %s'%opts.typemachine)
-                    os.system('/usr/local/bin/python2 connectionagent.py -t %s'%opts.typemachine)
+                    print ("Running", 'python2 connectionagent.py -t %s'%opts.typemachine)
+                    os.system('python2 connectionagent.py -t %s'%opts.typemachine)
                 else:
                     print ("Running", 'python connectionagent.py -t %s'%opts.typemachine)
                     os.system('python connectionagent.py -t %s'%opts.typemachine)
@@ -98,8 +98,8 @@ if __name__ == '__main__':
             print ('cmd Running : %s %s -t %s'%(pythonexec, agentxmpp, opts.typemachine))
             os.system('%s %s -t %s'%(pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith('darwin'):
-            print ("Running", '/usr/local/bin/python2 agentxmpp.py -t %s'%opts.typemachine)
-            os.system('/usr/local/bin/python2 agentxmpp.py -t %s'%opts.typemachine)
+            print ("Running", 'python2 agentxmpp.py -t %s'%opts.typemachine)
+            os.system('python2 agentxmpp.py -t %s'%opts.typemachine)
         else:
             print ("Running", 'python agentxmpp.py -d -t %s'%opts.typemachine)
             os.system('python agentxmpp.py -d -t %s'%opts.typemachine)
@@ -110,8 +110,8 @@ if __name__ == '__main__':
                     print ('cmd Running : %s %s -c -t %s'%(pythonexec, connectionagent, opts.typemachine))
                     os.system('%s %s -c -t %s'%(pythonexec, connectionagent, opts.typemachine))
                 elif sys.platform.startswith('darwin'):
-                    print ("Running", '/usr/local/bin/python2 connectionagent.py -c -t %s'%opts.typemachine)
-                    os.system('/usr/local/bin/python2 connectionagent.py -c -t %s'%opts.typemachine)
+                    print ("Running", 'python2 connectionagent.py -c -t %s'%opts.typemachine)
+                    os.system('python2 connectionagent.py -c -t %s'%opts.typemachine)
                 else:
                     print ("Running", 'python connectionagent.py -c -t %s'%opts.typemachine)
                     os.system('python connectionagent.py -c -t %s'%opts.typemachine)
@@ -120,7 +120,7 @@ if __name__ == '__main__':
             os.system('%s %s -c -t %s'%(pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith('darwin'):
             print ("Running", '/usr/local/bin/python2 agentxmpp.py -c -t %s'%opts.typemachine)
-            os.system('/usr/local/bin/python2 agentxmpp.py -c -t %s'%opts.typemachine)
+            os.system('python2 agentxmpp.py -c -t %s'%opts.typemachine)
         else:
             print ("Running", 'python agentxmpp.py -c -t %s'%opts.typemachine)
             os.system('python agentxmpp.py -c -t %s'%opts.typemachine)

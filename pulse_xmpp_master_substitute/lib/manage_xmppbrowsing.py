@@ -72,9 +72,9 @@ class xmppbrowsing:
                                                   "Pulse",
                                                   "bin",
                                                   "pulse-filetree-generator.exe")
-        elif sys.platform.startswith('darwin'):
-            self.jsonfile = os.path.join("/","tmp","treejson.json")
-            self.programmetreejson = os.path.join("/","Library","Application Support","Pulse","bin","pulse-filetree-generator")
+        elif sys.platform.startswith('arwin'):
+            self.jsonfile = os.path.join("/opt","Pulse", "tmp", "treejson.json")
+            self.programmetreejson = os.path.join("/opt", "Pulse", "bin", "pulse-filetree-generator")
 
         if defaultdir is not None:
             self.defaultdir = defaultdir
