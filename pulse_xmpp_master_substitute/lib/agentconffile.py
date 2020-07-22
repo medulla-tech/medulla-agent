@@ -74,8 +74,8 @@ def pulseTempDir():
             "tmp")
     if os.path.isdir(fileconf):
         return fileconf
-    else:
-        return None
+
+    return None
 
 
 def conffilename(agenttype):
