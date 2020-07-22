@@ -38,6 +38,7 @@ from tempfile import mkstemp
 import zipfile
 import base64
 import time
+from agentconffile import pulseTempDir
 
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
@@ -333,26 +334,12 @@ class grafcet:
             MacAdressToIp(
                 self.data['ipmachine']))
 
-        cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
+        cmd = cmd.replace('@@@TMP_DIR@@@', pulseTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
             cmd = cmd.replace(t, os.environ[z])
         return cmd
-
-    def tempdir(self):
-        """
-        This function allow to obtain the path of the tmp directory
-
-        Returns:
-            It returns the path of the tmp directory in function of  the OS
-        """
-        if sys.platform.startswith('linux'):
-            return os.path.join("/", "tmp")
-        elif sys.platform.startswith('win'):
-            return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
-        elif sys.platform.startswith('darwin'):
-            return os.path.join("/opt", "Pulse", "tmp")
 
     def __search_Next_step_int__(self, val):
         """

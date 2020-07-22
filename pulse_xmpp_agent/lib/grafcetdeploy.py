@@ -38,6 +38,8 @@ import zipfile
 import base64
 import time
 import copy
+from agentconffile import pulseTempDir
+
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
 
@@ -338,7 +340,7 @@ class grafcet:
         #     MacAdressToIp(
         #         self.data['ipmachine']))
 
-        cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
+        cmd = cmd.replace('@@@TMP_DIR@@@', pulseTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
@@ -347,15 +349,6 @@ class grafcet:
         # print "replace TEMPLATE ou %s"% cmd
         # print "__________________________________"
         return cmd
-
-    def tempdir(self):
-        """return directory temp for os"""
-        if sys.platform.startswith('linux'):
-            return os.path.join("/", "tmp")
-        elif sys.platform.startswith('win'):
-            return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
-        elif sys.platform.startswith('darwin'):
-            return os.path.join("/opt", "pulse", "tmp")
 
     def __search_Next_step_int__(self, val):
         """
