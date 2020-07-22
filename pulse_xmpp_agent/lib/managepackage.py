@@ -25,7 +25,7 @@ class managepackage:
                 os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages")
         elif sys.platform.startswith('darwin'):
             return os.path.join(
-                "/", "Library", "Application Support", "Pulse", "packages")
+                "/opt", "Pulse", "packages")
         else:
             return None
 

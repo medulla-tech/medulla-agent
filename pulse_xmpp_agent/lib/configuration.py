@@ -416,8 +416,8 @@ class confParameter:
             self.defaultdir     = os.path.join(os.environ["TEMP"])
             self.rootfilesystem = os.path.join(os.environ["TEMP"])
         elif sys.platform.startswith('darwin'):
-            self.defaultdir     = os.path.join("/", "tmp")
-            self.rootfilesystem = os.path.join("/", "tmp")
+            self.defaultdir     = os.path.join("/opt", "Pulse", "tmp")
+            self.rootfilesystem = os.path.join("/opt", "Pulse", "tmp")
         else:
             self.defaultdir     = os.path.join("/", "tmp")
             self.rootfilesystem = os.path.join("/", "tmp")
@@ -550,9 +550,7 @@ class confParameter:
                                 "xmpp-agent.log")
             elif sys.platform.startswith('darwin'):
                 self.logfile = os.path.join(
-                    "/",
-                    "Library",
-                    "Application Support",
+                    "/opt",
                     "Pulse",
                     "var",
                     "log",

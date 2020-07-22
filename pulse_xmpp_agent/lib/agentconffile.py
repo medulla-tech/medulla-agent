@@ -43,9 +43,7 @@ def directoryconffile():
             "etc")
     elif sys.platform.startswith('darwin'):
         fileconf = os.path.join(
-            "/",
-            "Library",
-            "Application Support",
+            "/opt",
             "Pulse",
             "etc")
     if os.path.isdir(fileconf):

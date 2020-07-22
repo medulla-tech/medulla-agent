@@ -355,7 +355,7 @@ class grafcet:
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
         elif sys.platform.startswith('darwin'):
-            return os.path.join("/", "tmp")
+            return os.path.join("/opt","pulse", "tmp")
 
     def __search_Next_step_int__(self, val):
         """
@@ -1861,7 +1861,7 @@ class grafcet:
                 " -B " + \
                 ",".join(self.workingstep['boutontype'])
         elif sys.platform.startswith('darwin'):
-            logging.debug("command on windows")
+            logging.debug("command on darwin")
             Macos_executable_dlg_confirm = "dlg_comfirm_pulse"
             command = Macos_executable_dlg_confirm + \
                 " -T " + self.workingstep['title'] + \
