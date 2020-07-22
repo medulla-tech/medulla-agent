@@ -60,23 +60,21 @@ def pulseTempDir():
         It returns the path of pulse temporary folder
     """
     if sys.platform.startswith('linux'):
-        fileconf = os.path.join(
+        tempdir = os.path.join(
             "/",
             "tmp")
     elif sys.platform.startswith('win'):
-        fileconf = os.path.join(
+        tempdir = os.path.join(
             os.environ["ProgramFiles"],
             "Pulse",
             "tmp")
     elif sys.platform.startswith('darwin'):
-        fileconf = os.path.join(
+        tempdir = os.path.join(
             "/opt",
             "Pulse",
             "tmp")
-    if os.path.isdir(fileconf):
-        return fileconf
 
-    return None
+    return tempdir
 
 
 def conffilename(agenttype):
