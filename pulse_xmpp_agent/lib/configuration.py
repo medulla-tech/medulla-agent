@@ -152,7 +152,7 @@ def nextalternativeclusterconnection(conffile):
     with open(conffile, 'wb') as configfile:
         Config.write(configfile)
 
-    return [ serverjid, server, port, guacamole_baseurl, domain, nbserver ]
+    return [serverjid, server, port, guacamole_baseurl, domain, nbserver]
 
 
 # Singleton/SingletonDecorator.py
@@ -413,13 +413,13 @@ class confParameter:
                 self.parametersscriptconnection['port'] = 5000
         #######configuration browserfile#######
         if sys.platform.startswith('win'):
-            self.defaultdir     = os.path.join(os.environ["TEMP"])
+            self.defaultdir = os.path.join(os.environ["TEMP"])
             self.rootfilesystem = os.path.join(os.environ["TEMP"])
         elif sys.platform.startswith('darwin'):
-            self.defaultdir     = os.path.join("/", "tmp")
-            self.rootfilesystem = os.path.join("/", "tmp")
+            self.defaultdir = os.path.join("/opt", "Pulse", "tmp")
+            self.rootfilesystem = os.path.join("/opt", "Pulse", "tmp")
         else:
-            self.defaultdir     = os.path.join("/", "tmp")
+            self.defaultdir = os.path.join("/", "tmp")
             self.rootfilesystem = os.path.join("/", "tmp")
 
         if Config.has_option("browserfile", "defaultdir"):
@@ -437,8 +437,8 @@ class confParameter:
         # listexclude=/usr,/etc,/var,/lib,/boot,/run,/proc,/lib64,
         # /bin,/sbin,/dev,/lost+found,/media,/mnt,/opt,/root,/srv,/sys,/vagrant
             self.listexclude = Config.get('browserfile', 'listexclude')
-        self.excludelist = [ x.strip() for x in self.listexclude.split(",") \
-            if x.strip() != "" ]
+        self.excludelist = [x.strip() for x in self.listexclude.split(",")
+                            if x.strip() != ""]
         #######end configuration browserfile#######
         if self.agenttype == "relayserver":
             packageserver = infos_network_packageserver()
@@ -550,9 +550,7 @@ class confParameter:
                                 "xmpp-agent.log")
             elif sys.platform.startswith('darwin'):
                 self.logfile = os.path.join(
-                    "/",
-                    "Library",
-                    "Application Support",
+                    "/opt",
                     "Pulse",
                     "var",
                     "log",

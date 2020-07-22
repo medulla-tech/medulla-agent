@@ -69,7 +69,7 @@ class manageschedulerdeploy:
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse","var","tmp","BDDeploy")
         elif sys.platform.startswith('darwin'):
-            return os.path.join("/", "Library", "Application Support", "Pulse", "BDDeploy")
+            return os.path.join("/opt", "Pulse", "BDDeploy")
         else:
             return None
 

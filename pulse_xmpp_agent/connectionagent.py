@@ -149,7 +149,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
                 tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
             elif sys.platform.startswith('darwin'):
-                self.fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
+                self.fichierconfsyncthing = os.path.join("/opt", "Pulse",
                                                     "etc", "syncthing", "config.xml")
                 tmpfile = "/tmp/confsyncting.txt"
 
