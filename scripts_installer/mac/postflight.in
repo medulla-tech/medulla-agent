@@ -231,6 +231,7 @@ echo
 
 # Download and install the python modules
 for MODULE_FILENAME in ${MODULES_LIST_FILENAMES}; do
+  sudo easy_install pip
   curl -O ${BASE_URL}/mac/downloads/python_modules/${MODULE_FILENAME}
   if [[ -f ${MODULE_FILENAME} ]]; then
     if [[ "${MODULE_FILENAME}" == "@@PY_CURL_FILENAME@@" ]]; then
