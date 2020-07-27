@@ -222,24 +222,3 @@ def changed_status(self, presence):
                                         '',
                                         '',
                                         self.boundjid.bare)
-
-#def presence_subscribe(self, presence):
-    #logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_subscribed(self, presence):
-    #logger.info("**********   presence_subscribed %s %s"%(presence['from'],presence['type'] ))
-
-#def changed_subscription(self, presence):
-    #logger.info("**********   changed_subscription %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_unavailable(self, presence):
-    #logger.info("**********   presence_unavailable %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_available(self, presence):
-    #logger.info("**********   presence_available %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_unsubscribe(self, presence):
-    #logger.info("**********   presence_unsubscribe %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_unsubscribed(self, presence):
-    #logger.info("**********   presence_unsubscribed %s %s"%(presence['from'],presence['type'] ))
