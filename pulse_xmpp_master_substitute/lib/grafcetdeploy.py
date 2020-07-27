@@ -2008,7 +2008,7 @@ class grafcet:
             self.terminate(-1, False, "end error in actionrestart %s step %s" %(self.workingstep['targetrestart'],
                                                                                 self.workingstep['step']))
             self.objectxmpp.xmpplog('[%s]: Error actionrestart : %s' % (self.data['name'],
-                                                                             self.workingstep['step']),
+                                                                        self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
