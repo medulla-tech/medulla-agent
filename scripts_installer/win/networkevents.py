@@ -298,7 +298,7 @@ class NetworkManager(DesignatedWrapPolicy):
                     if len(datainterface['additionalinterface'])> 0:
                         strchang ="%s+%s"%(strchang,datainterface['additionalinterface'])
                     if len(datainterface['removedinterface']) > 0:
-                        strchang ="%s-%s" % (strchang,datainterface['removedinterface'])
+                        strchang ="%s-%s" % (strchang, datainterface['removedinterface'])
                     strchang = "%s]" % (strchang)
                     # if len(datainterface['removedinterface']) > 0:
                     message = json.dumps(datainterface)
