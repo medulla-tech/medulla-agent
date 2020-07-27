@@ -26,7 +26,6 @@
 # TODO: Install freerdp
 #       Make use of deb and rpm repositories for installing packages
 
-SIVEO_BASE_URL="@@SIVEO_BASE_URL@@"
 BASE_URL="@@BASE_URL@@"
 INVENTORY_TAG="@@INVENTORY_TAG@@"
 AGENT_VERSION="@@AGENT_VERSION@@"
@@ -63,13 +62,8 @@ configure_repo() {
       mageia)
         ;;
       debian|ubuntu)
-        apt update
-        apt install -q -y apt-transport-https
-        if [[ "${BASE_URL}" != "" ]]; then
-            echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
-        fi
-        echo "deb [trusted=yes] ${SIVEO_BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" >> /etc/apt/sources.list.d/pulseagent.list
-        apt update
+        echo "deb [trusted=yes] ${BASE_URL}/lin/deb/${DISTRO}/${VERSION}/ ./" > /etc/apt/sources.list.d/pulseagent.list
+        apt update -o Dir::Etc::sourcelist="sources.list.d/pulseagent.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
         ;;
       *)
         ;;
@@ -77,7 +71,49 @@ configure_repo() {
 }
 
 install_agent() {
-    pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}`
+
+    case "$DISTRO" in
+        mageia)
+        ;;
+        debian)
+            if [[ ${VERSION} == "9" ]]; then
+                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-crypto python-pip pulse-agent-linux
+            elif [[ ${VERSION} == "10" ]]; then
+                apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux
+            fi
+        ;;
+        ubuntu)
+            apt install -y python-setuptools python-crypto python-wheel python-configparser python-croniter python-lxml python-netifaces python-psutil python-pycurl python-sftp python-sleekxmpp python-syncthing python-utils python-zipfile2 python-pip pulse-agent-linux
+
+        ;;
+        esac
+
+pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+
+[ ! -d "/var/lib/pulse2/packages" ] && mkdir -p /var/lib/pulse2/packages
+
+}
+
+create_service () {
+local PYTHON_DIR="/usr/local/lib/python2.7/dist-packages/"
+mkdir -p /usr/lib/systemd/system/
+cat <<EOF > /usr/lib/systemd/system/pulse-xmpp-agent-machine.service
+[Unit]
+Description=Pulse2 XMPP Agent ( Machine )
+After=samba.service slapd.service
+
+[Service]
+#PIDFile=/var/run/launcher.pid
+#User=pulse
+#Group=pulse
+Type=forking
+ExecStart=$PYTHON_DIR/pulse_xmpp_agent/launcher.py -t machine
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
 }
 
 configure_inventory() {
@@ -96,6 +132,9 @@ configure_inventory() {
 }
 
 start_agent() {
+    chmod +x /usr/local/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py
+    [ ! -d "/var/log/pulse" ] && mkdir /var/log/pulse
+
     # Enable and start the service
 	systemctl enable pulse-xmpp-agent-machine.service
 	systemctl start pulse-xmpp-agent-machine.service
@@ -109,4 +148,5 @@ install_agent
 if [[ ${INVENTORY_TAG} != "" ]]; then
     configure_inventory ${INVENTORY_TAG}
 fi
+create_service
 start_agent

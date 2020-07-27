@@ -515,7 +515,7 @@ def rewriteInterfaceTypeDebian(data, interface):
         inputFile.close()
         b = filecontent.split("\n")
         ll = [x.strip() for x in b if not x.startswith('auto') and
-              not 'auto' in x and not x.startswith('#') and x != '']
+              'auto' not in x and not x.startswith('#') and x != '']
         string = "\n".join(ll)
         ll = [x.strip() for x in string.split('iface') if x != '']
         for t in ll:

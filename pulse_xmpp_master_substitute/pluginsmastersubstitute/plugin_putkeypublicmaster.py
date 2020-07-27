@@ -36,18 +36,12 @@ logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION" : "1.0", "NAME" : "start", "TYPE" : "substitute"}
- #datasend = {
-                #"action": "putkeypublicmaster",
-                #"keypublicbase64": xmppobject.RSA.loadkeypublictobase64(),
-                #'ret': 0,
-                #'sessionid': name_random(5, "publickeymaster"),
-            #}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
     logger.debug("=====================================================")
-    Setdirectorytempinfo() #create directory pour install key public master.
+    Setdirectorytempinfo()  # create directory pour install key public master.
     # in starting agent ask public key of master.
     ask_key_master_public(objectxmpp)
 

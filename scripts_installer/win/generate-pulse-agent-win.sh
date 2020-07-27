@@ -49,7 +49,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.0.7"
+AGENT_VERSION="2.1.1"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 PYTHON32_FILENAME="python-2.7.9.msi"
@@ -103,8 +103,8 @@ VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
 VNC_PORT="5900"
 SSH_PORT="22"
-SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.1.0.zip"
-SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.1.0.zip"
+SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.6.1.zip"
+SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.6.1.zip"
 SYNCTHING32_FILENAME="syncthing32.exe"
 SYNCTHING64_FILENAME="syncthing64.exe"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
@@ -120,6 +120,9 @@ NETCHECK_SERVICE_DISPLAYNAME="Pulse network notify"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
+LGPO_DL_FILENAME="LGPO.zip"
+LGPO_FILENAME="lgpo.exe"
+REMOTE_SIGNED_FILENAME="powershell-policy-remotesigned.pol"
 
 # Display usage
 display_usage() {
@@ -165,6 +168,9 @@ check_arguments() {
                 ;;
             --disable-inventory*)
                 DISABLE_INVENTORY=1
+                shift
+                ;;
+            --linux-distros*)
                 shift
                 ;;
             *)
@@ -220,6 +226,7 @@ compute_parameters_full() {
     FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
     FULL_OR_DL_SYNCTHING32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING32_FILENAME}'"')
     FULL_OR_DL_SYNCTHING64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING64_FILENAME}'"')
+    FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
 
@@ -260,6 +267,7 @@ compute_parameters_dl() {
 	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
 	FULL_OR_DL_SYNCTHING32=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING32_FILENAME}' '${SYNCTHING32_FILENAME})
 	FULL_OR_DL_SYNCTHING64=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING64_FILENAME}' '${SYNCTHING64_FILENAME})
+    FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
 
@@ -350,6 +358,18 @@ prepare_mandatory_includes() {
         colored_echo red "${SYNCTHING64_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
         exit 1
     fi
+    # LGPO
+    if [ -e ${DOWNLOADS_DIR}/${LGPO_DL_FILENAME} ]; then
+		pushd ${DOWNLOADS_DIR}
+		unzip -q ${LGPO_DL_FILENAME}
+        cp LGPO.exe bin/${LGPO_FILENAME}
+        rm -rf ${LGPO_DL_FILENAME::-4}.pdf
+        rm -rf ${LGPO_DL_FILENAME::-4}.exe
+		popd
+    else
+        colored_echo red "${LGPO_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
+        exit 1
+    fi
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
@@ -408,6 +428,9 @@ update_nsi_script() {
         -e "s/@@NETCHECK_SERVICE_FILENAME@@/${NETCHECK_SERVICE_FILENAME}/" \
         -e "s/@@NETCHECK_PROGRAM_FILENAME@@/${NETCHECK_PROGRAM_FILENAME}/" \
         -e "s/@@NETCHECK_SERVICE_DISPLAYNAME@@/${NETCHECK_SERVICE_DISPLAYNAME}/" \
+        -e "s/@@LGPO_FILENAME@@/${LGPO_FILENAME}/" \
+		-e "s/@@FULL_OR_DL_LGPO@@/${FULL_OR_DL_LGPO}/" \
+        -e "s/@@REMOTE_SIGNED_FILENAME@@/${REMOTE_SIGNED_FILENAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 

@@ -1,3 +1,4 @@
+$ErrorActionPreference = 'SilentlyContinue'
 [string]$UserName = "pulse"
 $Profiles = Get-WmiObject -Class Win32_UserProfile
 foreach ($profile in $profiles) {
@@ -8,6 +9,7 @@ foreach ($profile in $profiles) {
       $profilefound = $true
       try {
        $profile.delete()
+       Start-Sleep -Seconds 1.5
        Write-Host "The profile $profilename is successfully deleted"
       } catch {
        Write-Host "Failed"

@@ -1,4 +1,4 @@
-from lib.configuration import confParameter
+from lib import configuration
 import os
 import shutil
 import logging
@@ -6,7 +6,7 @@ import datetime
 
 logger = logging.getLogger()
 
-plugin = {"VERSION" : "1.2", "NAME" : "scheduling_logsrotation",  "TYPE" : "all", "SCHEDULED" : True}
+plugin = {"VERSION" : "2.0", "NAME" : "scheduling_logsrotation",  "TYPE" : "all", "SCHEDULED" : True}
 
 # nb -1 infinie
 # everyday at 12:00
@@ -23,9 +23,9 @@ def schedule_main(objectxmpp):
     logger.debug("crontab %s"%(SCHEDULE))
     logger.debug("=====================================================")
     if objectxmpp.config.agenttype in ['relayserver']:
-        logfile = confParameter("relayserver").logfile
+        logfile = configuration.confParameter("relayserver").logfile
     else:
-        logfile = confParameter("machine").logfile
+        logfile = configuration.confParameter("machine").logfile
     if os.path.isfile(logfile): # check if we even need to rotate
         for i in range(5, 0, -1): # count backwards
             old_name = "%s.%s" % (logfile, i)
@@ -39,6 +39,3 @@ def schedule_main(objectxmpp):
         except:
             pass
         open(logfile, 'w').close() # Truncate the log file
-
-
-

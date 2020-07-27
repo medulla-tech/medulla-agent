@@ -23,17 +23,16 @@
 
 import logging
 
-from lib.utils import  simplecommand
+from lib import utils
 import os
 import json
-from lib.utils import file_put_contents
 import time
 import socket
 import traceback
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "2.6", "NAME" : "downloadfile", "TYPE" : "relayserver" }
+plugin = { "VERSION" : "3.0", "NAME" : "downloadfile", "TYPE" : "relayserver" }
 paramglobal = {"timeupreverssh" : 20 , "portsshmaster" : 22, "filetmpconfigssh" : "/tmp/tmpsshconf", "remoteport" : 22, "server_ssh_user" : "pulsetransfert"}
 
 def get_free_tcp_port():
@@ -159,9 +158,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         paramglobal['remoteport'] = int(objectxmpp.config.clients_ssh_port)
         logger.debug("Clients SSH port %s"%paramglobal['remoteport'])
     logger.debug("Install key ARS in authorized_keys on agent machine")
-    body = {'action' : 'installkey',
+    body = {'action': 'installkey',
             'sessionid': sessionid,
-            'data' : { 'jidAM' : data['jidmachine']
+            'data': { 'jidAM': data['jidmachine']
             }
     }
     objectxmpp.send_message( mto = objectxmpp.boundjid.bare,
@@ -199,7 +198,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             fromuser = "",
                             touser = "")
 
-    if reversessh == False:
+    if reversessh is False:
         if str(data['osmachine']).startswith('Linux'):
             source = create_path(type = "linux", host = profiluserpulse, ipordomain=data['ipmachine'], path = r'%s'%data['path_src_machine'])
         elif str(data['osmachine']).startswith('darwin'):
@@ -209,7 +208,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
         cretefileconfigrescp = "Host %s\nPort %s\nHost %s\nPort %s\n"%(data['ipmaster'], paramglobal['portsshmaster'], data['ipmachine'], localport)
-        file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
+        utils.file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
     else:
         if str(data['osmachine']).startswith('Linux'):
             source = create_path(type = "linux", host = profiluserpulse, ipordomain="localhost", path = r'%s'%data['path_src_machine'])
@@ -220,7 +219,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
         cretefileconfigrescp = "Host %s\nPort %s\nHost %s\nPort %s\n"%(data['ipmaster'], paramglobal['portsshmaster'], "localhost", localport)
-        file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
+        utils.file_put_contents(paramglobal['filetmpconfigssh'],  cretefileconfigrescp)
+
+    if hasattr(objectxmpp.config, 'server_ssh_user'):
+        paramglobal['server_ssh_user'] = objectxmpp.config.server_ssh_user
+    else:
+        logger.debug("We are using default pulsetransfert user.")
 
         if hasattr(objectxmpp.config, 'server_ssh_user'):
             paramglobal['server_ssh_user'] = objectxmpp.config.server_ssh_user
@@ -231,23 +235,23 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                        host=paramglobal['server_ssh_user'],
                        ipordomain=data['ipmaster'],
                        path=data['path_dest_master'])
-    if reversessh == False:
+    if reversessh is False:
         command = scpfile(source, dest, objectxmpp, sessionid)
     else:
         datareversessh = {
             'action': 'reverse_ssh_on',
             'sessionid': sessionid,
-            'data' : {
-                    'request' : 'askinfo',
-                    'port' : localport,
-                    'host' : data['host'],
-                    'remoteport' : paramglobal['remoteport'],
-                    'reversetype' : 'R',
-                    'options' : 'createreversessh',
-                    'persistence' : 'Downloadfile'
+            'data': {
+                    'request': 'askinfo',
+                    'port': localport,
+                    'host': data['host'],
+                    'remoteport': paramglobal['remoteport'],
+                    'reversetype': 'R',
+                    'options': 'createreversessh',
+                    'persistence': 'Downloadfile'
             },
-            'ret' : 0,
-            'base64' : False }
+            'ret': 0,
+            'base64': False }
 
         objectxmpp.send_message(mto = message['to'],
                     mbody = json.dumps(datareversessh),
@@ -280,7 +284,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                 touser = "")
 
 
-    z = simplecommand(command)
+    z = utils.simplecommand(command)
     print z['result']
     print z['code']
     print "----------------------------"
@@ -345,7 +349,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             date = None ,
                             fromuser = "",
                             touser = "")
-        z = simplecommand(cmd)
+        z = utils.simplecommand(cmd)
         if z['code'] == 0:
             objectxmpp.xmpplog( 'Transfer result : ' + '\n'.join(z['result']),
                                 type = 'noset',

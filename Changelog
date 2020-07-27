@@ -1,3 +1,29 @@
+pulse-xmpp-agent 2.1.1
+======================
+* [FEATURE]  Agents now use ifconfig.co webservice to find location
+* [FEATURE]  Automatic inventories are now sent only if they have changed
+* [FEATURE]  Guacamole operations are now linked to XMPP inventory instead of GLPI
+* [FEATURE]  Update synthing version used to 1.6.1
+* [FEATURE]  Add support for regular expressions for blacklisted mac addresses
+* [FEATURE]  Agents autoupdate by relay servers is now the default method
+* [FEATURE]  P2P deployment now uses separate syncthing instance
+* [BUGFIX]   Fix running of fusion inventory
+* [BUGFIX]   Fix reconfiguration of machines
+* [BUGFIX]   Fix transfer rate limitation for deployments
+* [BUGFIX]   Eliminate mac addresses that are blacklisted as soon as they are received
+* [BUGFIX]   Fix deletion of pulse user profile in agent installer
+* [BUGFIX]   Fix deletion of OpenSSH in agent installer
+* [BUGFIX]   Fix macOS installer
+
+pulse-xmpp-agent 2.1.0
+======================
+* [FEATURE]  Quick deployment: new mode for small packages
+* [FEATURE]  New reconf substitute to allow mass-reconfiguration of machine agents
+* [FEATURE]  New user for transferring files from client machine to pulse main server
+* [BUGFIX]   Improve installer when run in restricted powershell policies
+* [BUGFIX]   Fix linux installer
+* [BUGFIX]   Fix and improve configuration of remote desktop protocols
+
 pulse-xmpp-agent 2.0.7
 ======================
 * [BUGFIX]   Improve the handling of errors in the installer

@@ -54,6 +54,7 @@ display_usage() {
     echo -e "\t [--ssh-port=<Default port 22>]"
     echo -e "\t [--disable-rdp (Disable RDP setup)]"
     echo -e "\t [--disable-inventory (Disable Fusion Inventory)]"
+    echo -e "\t [--linux-distros (Used linux distros)]"
 }
 
 check_arguments() {
@@ -115,6 +116,10 @@ check_arguments() {
                 ;;
             --disable-inventory*)
                 DISABLE_INVENTORY=1
+                shift
+                ;;
+            --linux-distros*)
+                LINUX_DISTROS="--linux-distros=${i#*=}"
                 shift
                 ;;
             *)
@@ -225,6 +230,7 @@ compute_settings() {
         colored_echo green " - Fusion Inventory is disabled"
         DISABLE_INVENTORY="--disable-inventory"
     fi
+
 }
 
 update_config_file() {
@@ -245,7 +251,12 @@ update_config_file() {
 
 update_generation_options_file() {
     # Save arguments to file for future use
-    echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} " > .generation_options
+    echo "${INVENTORY_TAG_OPTIONS} ${URL_OPTION} ${DISABLE_VNC} ${VNC_PORT_OPTIONS} ${SSH_PORT_OPTIONS} ${DISABLE_RDP} ${DISABLE_INVENTORY} ${LINUX_DISTROS} " > .generation_options
+    # Update generation_options var
+    if [ -e .generation_options ]; then
+       colored_echo blue "Extracting parameters from previous options file (.generation_options)."
+       GENERATION_OPTIONS=$(cat .generation_options)
+    fi
 }
 
 extract_parameters() {

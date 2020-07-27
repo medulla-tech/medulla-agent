@@ -45,12 +45,14 @@ from lib.utils import getRandomName,\
     DEBUGPULSE, searchippublic, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher, refreshfingerprintconf
+                      AESCipher, refreshfingerprintconf, \
+                        protodef, geolocalisation_agent
+
 from optparse import OptionParser
 
 from threading import Timer
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
-from lib.syncthingapirest import syncthing, syncthingprogram
+from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
@@ -70,6 +72,7 @@ else:
 
 class MUCBot(sleekxmpp.ClientXMPP):
     def __init__(self,conf):#jid, password, room, nick):
+        self.agent_machine_name= conf.jidagent
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
         resourcejid[0]=conf.confdomain
@@ -82,9 +85,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
-        self.ippublic = searchippublic()
-        if self.ippublic == "":
-            self.ippublic == None
+        if not hasattr(self.config, 'geoservers'):
+                self.geoservers = "ifconfig.co, if.siveo.net"
+
+        self.geodata = geolocalisation_agent(typeuser = 'nomade',
+                                             geolocalisation=True, 
+                                             ip_public=None,
+                                             strlistgeoserveur=self.config.geoservers)
+
+        self.ippublic = self.geodata.get_ip_public()
+
+        if self.ippublic == "" or self.ippublic == None:
+            self.ippublic = None
 
         if not hasattr(self.config, 'sub_assessor'):
             self.sub_assessor = self.agentmaster
@@ -126,10 +138,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 browser = True
 
             if sys.platform.startswith('linux'):
-                if self.config.agenttype in ['relayserver']:
-                    self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
-                else:
-                    self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
+                # if self.config.agenttype in ['relayserver']:
+                # self.fichierconfsyncthing = "/var/lib/syncthing/.config/syncthing/config.xml"
+                # else:
+                self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                         ".config","syncthing","config.xml")
 
                 tmpfile = "/tmp/confsyncting.txt"
@@ -137,11 +149,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
                 tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
             elif sys.platform.startswith('darwin'):
-                self.fichierconfsyncthing = os.path.join("/", "Library", "Application Support", "Pulse",
+                self.fichierconfsyncthing = os.path.join("/opt", "Pulse",
                                                     "etc", "syncthing", "config.xml")
                 tmpfile = "/tmp/confsyncting.txt"
 
-            #avant reinitialisation on supprime le fichier config.xml
+            # Before reinitialisation we remove the config.xml file
             try:
                 os.remove(self.fichierconfsyncthing)
             except :
@@ -159,8 +171,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     except :
                         pass
                 time.sleep(1)
-                self.deviceid = self.syncthing.get_id_device_local()
-                logger.debug("device local syncthing : [%s]"%self.deviceid)
+                try:
+                    self.deviceid = iddevice(configfile=self.fichierconfsyncthing)
+                except Exception:
+                    pass
+
+                # self.deviceid = self.syncthing.get_id_device_local()
+                logger.debug("device local syncthing : [%s]" % self.deviceid)
             except Exception as e:
                 logger.error("syncthing initialisation : %s" % str(e))
                 informationerror = traceback.format_exc()
@@ -169,7 +186,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 confsyncthing = {"action": "resultconfsyncthing",
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,
-                                "data":  { 'errorsyncthingconf' : informationerror}}
+                                "data":  { 'errorsyncthingconf': informationerror}}
                 self.send_message(mto =  self.sub_assessor,
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
@@ -199,19 +216,19 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
-        data = {'log' : 'xmpplog',
-                'text' : text,
+        data = {'log': 'xmpplog',
+                'text': text,
                 'type': type,
-                'sessionid' : sessionname,
+                'sessionid': sessionname,
                 'priority': priority,
-                'action' : action ,
+                'action': action ,
                 'who': who,
-                'how' : how,
-                'why' : why,
+                'how': how,
+                'why': why,
                 'module': module,
-                'date' : None ,
-                'fromuser' : fromuser,
-                'touser' : touser}
+                'date': None ,
+                'fromuser': fromuser,
+                'touser': touser}
         msgbody['data'] = data
         msgbody['action'] = 'xmpplog'
         msgbody['sessionid'] = sessionname
@@ -348,12 +365,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 self.syncthing.config['options']['defaultFolderPath'] = defaultFolderPath
 
                             if self.deviceid != "":
-                                if len(data['data'][0]) == 6:
+                                if len(data['data'][0]) >= 7:
                                     for x in data['data']:
                                         if self.is_format_key_device(str(x[5])):
                                             self.adddevicesyncthing(str(x[5]),
                                                                     str(x[2]),
-                                                                    address=["tcp4://%s"%str(x[0])])
+                                                                    address=["tcp4://%s:%s" % (x[0],
+                                                                                               x[6])])
                                 logger.debug("synchro config %s"%self.syncthing.is_config_sync())
                                 logging.log(DEBUGPULSE, "write new config syncthing")
                                 self.syncthing.validate_chang_config()
@@ -372,7 +390,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                                 "ret" : 0,
                                                 "base64" : False,
-                                                "data":  { 'syncthingconf' : 're-setup syncthing ok\n%s'%dataconf}}
+                                                "data":  { 'syncthingconf': 're-setup syncthing ok\n%s'%dataconf}}
 
                                 self.send_message(mto =  msg['from'],
                                                 mbody = json.dumps(confsyncthing),
@@ -381,7 +399,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             confsyncthing = {"action": "resultconfsyncthing",
                                             "sessionid" : getRandomName(6, "confsyncthing"),
                                             "ret" : 255,
-                                            "data":  { 'errorsyncthingconf' : "%s"%traceback.format_exc()}
+                                            "data":  { 'errorsyncthingconf': "%s"%traceback.format_exc()}
                                                 }
                             self.send_message(mto =  msg['from'],
                                                 mbody = json.dumps(confsyncthing),
@@ -403,7 +421,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             "sessionid" : getRandomName(6, "delconf"),
                                             "ret" : 0,
                                             "base64" : False,
-                                            "data":  { 'useraccount' : str(self.boundjid.user)}}
+                                            "data":  { 'useraccount': str(self.boundjid.user)}}
                         self.send_message(mto =  msg['from'],
                                         mbody = json.dumps(confaccountclear),
                                         mtype = 'chat')
@@ -440,11 +458,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
         dataobj['action'] = "assessor_agent"
         dataobj['substitute'] = self.infosubstitute()
         msginfo={
-            'action' : "assessor_agent",
+            'action': "assessor_agent",
             'base64': False,
-            'sessionid' : self.session,
-            'data' : dataobj,
-            'ret' : 0
+            'sessionid': self.session,
+            'data': dataobj,
+            'ret': 0
             }
         self.config.keyAES32 = [str(x.strip()) \
             for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', self.config.keyAES32) \
@@ -480,33 +498,37 @@ class MUCBot(sleekxmpp.ClientXMPP):
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
 
         dataobj = {
-            'action' : 'connectionconf',
-            'from' : self.config.jidagent,
-            'compress' : False,
-            'deployment' : self.config.jidchatroomcommand,
+            'action': 'connectionconf',
+            'from': self.config.jidagent,
+            'compress': False,
+            'deployment': self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'platform' : platform.platform(),
-            'completedatamachine' : base64.b64encode(json.dumps(er.messagejson)),
-            'plugin' : {},
-            'portxmpp' : self.config.Port,
-            'serverxmpp' : self.config.Server,
-            'agenttype' : self.config.agenttype,
+            'platform': platform.platform(),
+            'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
+            'plugin': {},
+            'portxmpp': self.config.Port,
+            'serverxmpp': self.config.Server,
+            'agenttype': self.config.agenttype,
             'baseurlguacamole': self.config.baseurlguacamole,
             'subnetxmpp':subnetreseauxmpp,
-            'xmppip' : self.config.ipxmpp,
+            'xmppip': self.config.ipxmpp,
             'xmppmask': xmppmask,
-            'xmppbroadcast' : xmppbroadcast,
-            'xmppdhcp' : xmppdhcp,
-            'xmppdhcpserver' : xmppdhcpserver,
-            'xmppgateway' : xmppgateway,
-            'xmppmacaddress' : xmppmacaddress,
-            'xmppmacnotshortened' : xmppmacnotshortened,
-            'classutil' : self.config.classutil,
-            'ippublic' : self.ippublic,
-            'adorgbymachine' : base64.b64encode(organizationbymachine()),
-            'adorgbyuser' : ''
+            'xmppbroadcast': xmppbroadcast,
+            'xmppdhcp': xmppdhcp,
+            'xmppdhcpserver': xmppdhcpserver,
+            'xmppgateway': xmppgateway,
+            'xmppmacaddress': xmppmacaddress,
+            'xmppmacnotshortened': xmppmacnotshortened,
+            'classutil': self.config.classutil,
+            'ippublic': self.ippublic,
+            'geolocalisation': {},
+            'adorgbymachine': base64.b64encode(organizationbymachine()),
+            'adorgbyuser': '',
+            'agent_machine_name':self.agent_machine_name
         }
+        if self.geodata.localisation is not None:
+            dataobj['geolocalisation'] = self.geodata.localisation
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
             try:
@@ -621,8 +643,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         xmpp.register_plugin('xep_0050') # Adhoc Commands
         xmpp.register_plugin('xep_0199', {'keepalive': True,
                                           'frequency':600,
-                                          'interval' : 600,
-                                          'timeout' : 500  })
+                                          'interval': 600,
+                                          'timeout': 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
 

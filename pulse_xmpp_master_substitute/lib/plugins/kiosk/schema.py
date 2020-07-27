@@ -21,13 +21,13 @@
 
 from sqlalchemy import Column, String, Integer, Boolean, \
     ForeignKey, DateTime, Text, LargeBinary, Enum
-from sqlalchemy.dialects.mysql import  TINYINT
+from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
-#from mmc.database.database_helper import DBObj
 from sqlalchemy.orm import relationship
 import datetime
 
 Base = declarative_base()
+
 
 class DBObj(object):
     # Function to convert mapped object to Dict
@@ -35,7 +35,7 @@ class DBObj(object):
     def toDict(self, relations=True):
         d = self.__dict__
         # Convert relations to dict, if 'relations'
-        for k in d.keys():
+        for k in d:
             if isinstance(d[k], DBObj):
                 if relations:
                     d[k] = d[k].toDict()
@@ -47,7 +47,7 @@ class DBObj(object):
         return d
 
     def fromDict(self, d, relations=False):
-        #TODO: Test if d is dict
+        # TODO: Test if d is dict
         if '_sa_instance_state' in d:
             del d['_sa_instance_state']
         # Actually we don't support relations
@@ -57,6 +57,7 @@ class DBObj(object):
 
     def __str__(self):
         return str(self.toDict())
+
 
 class KioskDBObj(DBObj):
     # All Kiosk tables have id colmun as primary key
@@ -95,7 +96,7 @@ class Profile_has_package(Base, KioskDBObj):
     # ====== Fields =============================
     package_id = Column(Integer, nullable=False)
     profil_id = Column(Integer, nullable=False)
-    package_status = Column(Enum('allowed','restricted'))
+    package_status = Column(Enum('allowed', 'restricted'))
 
 
 class Profile_has_ou(Base, KioskDBObj):

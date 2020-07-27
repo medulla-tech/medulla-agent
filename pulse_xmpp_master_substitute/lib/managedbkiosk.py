@@ -62,7 +62,7 @@ class manageskioskdb:
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse","var","tmp","BDKiosk")
         elif sys.platform.startswith('darwin'):
-            return os.path.join("/", "Library", "Application Support", "Pulse", "BDKiosk")
+            return os.path.join("/opt", "Pulse", "BDKiosk")
         else:
             return None
 

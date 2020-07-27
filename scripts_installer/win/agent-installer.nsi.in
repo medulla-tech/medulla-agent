@@ -70,6 +70,8 @@ RequestExecutionLevel admin
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
 !define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
 !define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
+!define LGPO_FILENAME "@@LGPO_FILENAME@@"
+!define REMOTE_SIGNED_FILENAME "@@REMOTE_SIGNED_FILENAME@@"
 
 SetCompressor lzma
 
@@ -105,11 +107,10 @@ SetCompressor lzma
 !include "TextReplace.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
-!include "StrRep.nsh"
 
 Var OS_LANGUAGE
 Var CMD_POWERSHELL
-Var P_PROFILE
+Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -128,7 +129,6 @@ ShowInstDetails show
 ; Define a few settings
 Section -SETTINGS
   SetOutPath "$INSTDIR"
-  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 SectionEnd
 
 !define DownloadFile "!insertmacro DownloadFile"
@@ -208,15 +208,24 @@ Section "Python" sec_py
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 104
-    Quit
-  ${EndIf}
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "3010"
+        StrCpy $0 `Return code : 3010 OK`
+        ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 104
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
 
   ; Install pip
   StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
@@ -283,8 +292,12 @@ Section "OpenSSH" sec_openssh
   @@FULL_OR_DL_RSYNC@@
   File "${REMOVE_PROFILE_FILENAME}"
 
+
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
+
+  ; Stop all services
+  Call StopPulseServices
 
   ; Remove previous Pulse profile and account
   Call DeletePulseProfile
@@ -295,10 +308,13 @@ Section "OpenSSH" sec_openssh
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
   ; Create Pulse user
-  pwgen::GeneratePassword 12
+  StrCpy $0 `$CMD_POWERSHELL Add-Type -AssemblyName System.Web ; [System.Web.Security.Membership]::GeneratePassword(12,2)`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
+  Pop $1
   Var /GLOBAL Password
-  StrCpy $Password "$0"
+  StrCpy $Password "$1"
   StrCpy $0 `net user "pulseuser" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
   ${LogString} "Running net user pulseuser ************ /ADD /COMMENT:Pulse user with admin rights on the system "
   nsExec::ExecToLog $0
@@ -419,8 +435,13 @@ Section "OpenSSH" sec_openssh
   ; Extract OpenSSH
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  ${LogString} "TMP $INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
-  ${LogString} "SSH_PATH : $SSH_PATH"
+  sleep 1000
+  ${LogString} "del /f /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+  ${LogString} "rd /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+
+  Delete $INSTDIR\tmp\$OPENSSH_FILENAME
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
   ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
@@ -530,20 +551,10 @@ Section "OpenSSH" sec_openssh
   ${Else}
     ${LogString} "Return code was: $0"
   ${EndIf}
-  Pop $R0
-  ${If} $R0 == error
-    Pop $R0
-    ${LogString} "AccessControl error: $R0"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Setting permissions on pulseuser profile folder failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 116
-    Quit
-  ${EndIf}
 
   ; Set pulse account password to not expire
-  StrCpy $0 `wmic useraccount where "Name='pulseuser'" set PasswordExpires=False`
+  ReadRegStr $0 HKLM SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName "ComputerName"
+  StrCpy $0 `wmic useraccount where "Name='pulseuser' and Domain='$0'" set PasswordExpires=False`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -629,7 +640,7 @@ Section "OpenSSH" sec_openssh
   ; Check and configure permissions
   ClearErrors
 
-SetOutPath $SSH_PATH
+  SetOutPath $SSH_PATH
   StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
@@ -810,22 +821,24 @@ SetOutPath $SSH_PATH
   ${EndIf}
 
   ; Setup of Windows firewall to allow ssh
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
     ${EndIf}
-    SetErrorLevel 121
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 121
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ; Install of rsync
@@ -887,22 +900,24 @@ Section "RDP Setup" sec_rdp
   ${EndIf}
 
   ; Setup of Windows firewall to allow rdp
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
     ${EndIf}
-    SetErrorLevel 124
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 124
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
@@ -992,22 +1007,24 @@ Section "VNC Setup" sec_vnc
   ${EndIf}
 
   ; Setup of Windows firewall to allow vnc
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
     ${EndIf}
-    SetErrorLevel 126
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 126
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
@@ -1108,7 +1125,7 @@ Section "!${PRODUCT_NAME}" sec_app
     ; Remove pulse parameters Folder
     Delete "$INSTDIR\etc\*.*"
     ; Remove files from bin
-    Delete "$INSTDIR\bin\*.*"
+    Delete "$INSTDIR\bin\*.py*"
   ${EndIf}
 
   ; Install of Pulse agent
@@ -1168,22 +1185,24 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Setup of Windows firewall to allow Syncthing
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
     ${EndIf}
-    SetErrorLevel 132
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 132
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ; Copy of agent config file
@@ -1361,6 +1380,18 @@ Section "!${PRODUCT_NAME}" sec_app
   Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@
 
+  ; Relock Powershell
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Restore powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
   ${EndIf}
@@ -1370,6 +1401,21 @@ SectionEnd
 
 ; What needs to be done for uninstalling
 Section "Uninstall"
+
+  ; Define Powershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+
+  ; Unlock Powershell
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Unlock powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
 
   ; Stop all Pulse services
   Call un.StopPulseServices
@@ -1481,6 +1527,18 @@ Section "Uninstall"
   ; Remove pulse user
   Call un.RemovePulseUser
 
+  ; Relock Powershell
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    ${LogString} ""
+    ${LogString} "Restaure powershell execution policy"
+    ${LogString} "------------------------------------------------------"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
   RMDir /r /REBOOTOK "$INSTDIR"
@@ -1514,6 +1572,9 @@ Function .onInit
   ; Create registry keys in 64bit section
   SetRegView 64
 
+  ; Define Powershell command
+  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+
   ; Install log initialization
   !If "$PROGRAMFILES64" != ""
     StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
@@ -1527,15 +1588,67 @@ Function .onInit
   ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
   ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
 
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  CreateDirectory "$INSTDIR\bin"
+  SetOutPath "$INSTDIR\bin"
+  @@FULL_OR_DL_LGPO@@
+  File "${REMOTE_SIGNED_FILENAME}"
+
+  ; Detect if policy are applied
+  StrCpy $0 `$CMD_POWERSHELL get-executionpolicy -scope MachinePolicy`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  ${TrimNewLines} $1 $1
+  ${LogString} "PowerShell Policy status : $1"
+
+  ${IfNot} $1 == Undefined
+    SetOutPath "$INSTDIR\tmp\gpo"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $0
+    ${LogString} "Return code was : $0"
+    StrCpy $0 `cmd /c where /r "$INSTDIR\tmp" registry.pol | findstr Machine`
+    ${LogString} "Running $0"
+    nsExec::ExecToStack $0
+    Pop $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was : $1"
+    Rename "$1" "$INSTDIR\tmp\machine.pol"
+    SetOutPath "$INSTDIR\tmp"
+    RMDir /r /REBOOTOK "$INSTDIR\tmp\gpo"
+  ${EndIf}
+
+  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
+    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+  ${EndIf}
+
+  ; Detect Firewall status
+  StrCpy $0 `netsh advfirewall show allprofiles`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  StrCpy $FIREWALL $0
+  ${LogString} "Firewall status is : $FIREWALL"
+
   ; Detect system language
-  StrCpy $0 `powershell -inputformat none -ExecutionPolicy UnRestricted -Command (get-uiculture).TwoLetterISOLanguageName`
+  StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
   Pop $0
   Pop $1
   ${TrimNewLines} $1 $OS_LANGUAGE
   ${LogString} "System language is : $OS_LANGUAGE"
-
   ; Stop the agent if it is already running and kill all python tasks
   ${LogString} ""
   ${LogString} "Detect previous installation and stop service"
@@ -1736,25 +1849,18 @@ FunctionEnd
   ; Remove Pulse profile
   SetOutPath "$INSTDIR\tmp"
   File "${REMOVE_PROFILE_FILENAME}"
-  ${LogString} "Removing user profile"
-  ${StrRep} $0 ${USERDIR} "\" "\\"
-  Pop $0
-  StrCpy $P_PROFILE $0
-  StrCpy $0 `wmic /node:localhost path win32_UserProfile where "LocalPath like '$P_PROFILE\\pulse%%'" Delete`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${IfNot} $0 == 0
-    ${LogString} "Return output : $1"
+  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
+  Pop $R0
+  ${If} $R0 == "Failed"
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Profile deletion failed. It is currently being used. $\n\
-        You need to reboot and rerun the installer."
+      ${LogString} "Profile deletion failed"
+      MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
+      Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 138
     Quit
   ${EndIf}
-  ${LogString} "Return code was : $0"
+  ${LogString} `Remove Pulse profile : $R0`
   FunctionEnd
 !macroend
 !insertmacro DeletePulseProfile ""

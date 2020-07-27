@@ -171,12 +171,12 @@ def diff_interface(oldinterface, newinterface):
     del_interface=[]
     commun_interface = set()
     for t in oldinterface:
-        if not t in newinterface:
+        if t not in newinterface:
             del_interface.append(t)
         else:
             commun_interface.add(t)
     for t in newinterface:
-        if not t in oldinterface:
+        if t not in oldinterface:
             add_interface.append(t)
         else:
             commun_interface.add(t)

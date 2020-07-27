@@ -69,7 +69,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -590,7 +590,7 @@ class Glpi92(DatabaseHelper):
             return query.filter(ret)
 
     def __filter_on_filter(self, query):
-        if self.config.filter_on != None:
+        if self.config.filter_on is not None:
             logging.getLogger().debug('function __filter_on_filter  self.config.filter_on is  %s'%self.config.filter_on)
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
@@ -611,7 +611,7 @@ class Glpi92(DatabaseHelper):
                 if filter_key == 'autoupdatesystems_id':
                     self.logger.debug('will filter %s in (%s)' % (filter_key, str(filter_values)))
                     a_filter_on.append(self.machine.c.autoupdatesystems_id.in_(filter_values))
-                if not filter_key in ('state','type','entity','autoupdatesystems_id') :
+                if filter_key not in ('state','type','entity','autoupdatesystems_id') :
                     self.logger.warn('dont know how to filter on %s' % (filter_key))
             if len(a_filter_on) == 0:
                 return None
@@ -667,7 +667,7 @@ class Glpi92(DatabaseHelper):
         Get the sqlalchemy query to get a list of computers with some filters
         If displayList is True, we are displaying computers list
         """
-        if session == None:
+        if session is None:
             session = create_session()
 
         query = (count and session.query(func.count(Machine.id))) or session.query(Machine)
@@ -727,7 +727,7 @@ class Glpi92(DatabaseHelper):
             else:
                 ctxlocation = None
 
-            if ctxlocation != None:
+            if ctxlocation is not None:
                 locsid = []
                 if isinstance(ctxlocation, list):
                     for loc in ctxlocation:
@@ -739,7 +739,7 @@ class Glpi92(DatabaseHelper):
                     if isinstance(location, list):
                         locationids = [int(x.replace('UUID', '')) for x in location]
                         for locationid in locationids:
-                            if not locationid in locsid:
+                            if locationid not in locsid:
                                 self.logger.warn("User '%s' is trying to get the content of an unauthorized entity : '%s'" % (ctx.userid, 'UUID' + location))
                                 session.close()
                                 return None
@@ -1289,7 +1289,7 @@ class Glpi92(DatabaseHelper):
                 displayList = True
 
         ret = self.__getRestrictedComputersListQuery(ctx, filt, session, displayList, count=True)
-        if ret == None:
+        if ret is None:
             return 0
         session.close()
         return ret
@@ -1352,7 +1352,7 @@ class Glpi92(DatabaseHelper):
                 displayList = True
 
         query = self.__getRestrictedComputersListQuery(ctx, filt, session, displayList)
-        if query == None:
+        if query is None:
             return {}
 
         query = query.distinct()
@@ -1463,7 +1463,7 @@ class Glpi92(DatabaseHelper):
         Give an LDAP like version of machines
         """
         ret = {}
-        if get != None:
+        if get is not None:
             for m in machines:
                 if isinstance(m, tuple):
                     m = m[0]
@@ -1589,7 +1589,7 @@ class Glpi92(DatabaseHelper):
 
         uuid = self.getMachineUUID(machine)
 
-        if get != None:
+        if get is not None:
             return self.__getAttr(machine, get)
 
         ret = {
@@ -1599,7 +1599,7 @@ class Glpi92(DatabaseHelper):
         }
         if advanced:
             (ret['macAddress'], ret['ipHostNumber'], ret['subnetMask'], domain, ret['networkUuids']) = self.orderIpAdresses(uuid, machine.name, self.getMachineNetwork(uuid))
-            if domain == None:
+            if domain is None:
                 domain = ''
             elif domain != '':
                 domain = '.'+domain
@@ -1642,7 +1642,7 @@ class Glpi92(DatabaseHelper):
         """
         session = create_session()
         qprofile = session.query(Profile).select_from(self.profile.join(self.userprofile).join(self.user)).filter(self.user.c.name == user).first()
-        if qprofile == None:
+        if qprofile is None:
             ret = None
         else:
             ret= qprofile.name
@@ -1688,7 +1688,7 @@ class Glpi92(DatabaseHelper):
         """
         session = create_session()
         qentities = session.query(Entities).select_from(self.entities.join(self.userprofile).join(self.user)).filter(self.user.c.name == user).first()
-        if qentities == None:
+        if qentities is None:
             ret = None
         else:
             ret = qentities.name
@@ -1815,7 +1815,7 @@ class Glpi92(DatabaseHelper):
         Returns all users name that share the same locations with the given
         user
         """
-        if locations == None:
+        if locations is None:
             locations = self.getUserLocations(userid)
         ret = []
         if locations:
@@ -2982,14 +2982,14 @@ class Glpi92(DatabaseHelper):
         if osnames == ["other"]:
             query = query.filter(
                 or_(
-			and_(
-				not_(OS.name.like('%Windows%')), not_(OS.name.like('%Mageia%')), not_(OS.name.like('%macOS%')),
+                        and_(
+                                 not_(OS.name.like('%Windows%')), not_(OS.name.like('%Mageia%')), not_(OS.name.like('%macOS%')),
                 ), Machine.operatingsystems_id == 0,
             ))
         elif osnames == ["otherw"]:
             query = query.filter(and_(not_(OS.name.like('%Windows%10%')), not_(OS.name.like('%Windows%8%')),\
-			    not_(OS.name.like('%Windows%7%')), not_(OS.name.like('%Windows%Vista%')),\
-                not_(OS.name.like('%Windows%XP%')), OS.name.like('%Windows%')))
+                           not_(OS.name.like('%Windows%7%')), not_(OS.name.like('%Windows%Vista%')),\
+               not_(OS.name.like('%Windows%XP%')), OS.name.like('%Windows%')))
         # if osnames == ['%'], we want all machines, including machines without OS (used for reporting, per example...)
         elif osnames != ['%']:
             os_filter = [OS.name.like('%' + osname + '%') for osname in osnames]
@@ -3060,7 +3060,7 @@ class Glpi92(DatabaseHelper):
         for i in lids:
             t = []
             p = __getParent(i)
-            while p != None:
+            while p is not None:
                 t.append(p)
                 p = __getParent(p)
             ret[i] = t
@@ -3167,6 +3167,7 @@ class Glpi92(DatabaseHelper):
                 if param is not None:
                     return False
             return True
+
         def check_list(param):
             if not isinstance(param, list):
                 return [param]
@@ -3178,8 +3179,10 @@ class Glpi92(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(distinct(self.machine.c.id)))
@@ -3254,8 +3257,10 @@ class Glpi92(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(self.software.c.name))
@@ -3295,7 +3300,7 @@ class Glpi92(DatabaseHelper):
 
 
         if int(count) == 1:
-            return {'count' : int(query.scalar())}
+            return {'count': int(query.scalar())}
         elif int(count) == 2:
             return query.all()
         else:
@@ -3984,7 +3989,7 @@ class Glpi92(DatabaseHelper):
                 if not ('ifmac' in iface or iface['ifmac']):
                     continue
             if 'ifaddr' in iface and iface['ifaddr']:
-                if iface['gateway'] == None:
+                if iface['gateway'] is None:
                     ret_ifmac.append(iface['ifmac'])
                     ret_ifaddr.append(iface['ifaddr'])
                     ret_netmask.append(iface['netmask'])
@@ -4215,55 +4220,6 @@ class Glpi92(DatabaseHelper):
     def isComputerNameAvailable(self, ctx, locationUUID, name):
         raise Exception("need to be implemented when we would be able to add computers")
 
-    #def _killsession(self,sessionwebservice):
-        #"""
-        #Destroy a session identified by a session token.
-
-        #@param sessionwebservice: session var provided by initSession endpoint.
-        #@type sessionwebservice: str
-
-        #"""
-        #headers = {'content-type': 'application/json',
-                   #'Session-Token': sessionwebservice
-                   #}
-        #url = GlpiConfig.webservices['glpi_base_url'] + "killSession"
-        #r = requests.get(url, headers=headers)
-        #if r.status_code == 200 :
-            #self.logger.debug("Kill session REST: %s"%sessionwebservice)
-
-    #def delMachine(self, uuid):
-        #"""
-        #Deleting a machine in GLPI (only the flag 'is_deleted' updated)
-
-        #@param uuid: UUID of machine
-        #@type uuid: str
-
-        #@return: True if the machine successfully deleted
-        #@rtype: bool
-        #"""
-        #authtoken =  base64.b64encode(GlpiConfig.webservices['glpi_username']+":"+GlpiConfig.webservices['glpi_password'])
-        #headers = {'content-type': 'application/json',
-                   #'Authorization': "Basic " + authtoken
-                   #}
-        #url = GlpiConfig.webservices['glpi_base_url'] + "initSession"
-        #self.logger.debug("Create session REST")
-        #r = requests.get(url, headers=headers)
-        #if r.status_code == 200 :
-            #sessionwebservice =  str(json.loads(r.text)['session_token'])
-            #self.logger.debug("session %s"%sessionwebservice)
-            #url = GlpiConfig.webservices['glpi_base_url'] + "Computer/" + str(fromUUID(uuid))
-            #headers = {'content-type': 'application/json',
-                        #'Session-Token': sessionwebservice
-            #}
-            #parameters = {'force_purge': '1'}
-            #r = requests.delete(url, headers=headers, params=parameters)
-            #if r.status_code == 200 :
-                #self.logger.debug("Machine %s deleted"%str(fromUUID(uuid)))
-                #self._killsession(sessionwebservice)
-                #return True
-        #self._killsession(sessionwebservice)
-        #return False
-
     @DatabaseHelper._sessionm
     def addUser(self, session, username, password, entity_rights=None):
         # Check if the user exits or not
@@ -4429,9 +4385,9 @@ class Glpi92(DatabaseHelper):
             .filter(self.rules.c.sub_type=='PluginFusioninventoryInventoryRuleEntity')\
             .filter(self.rules.c.name != 'Root')\
             .scalar()
-	if rank is None:
-	    rank = 0
-	rule.ranking = rank + 1
+        if rank is None:
+            rank = 0
+        rule.ranking = rank + 1
         rule.name = rule_data['name']
         rule.description = rule_data['description']
         rule.match = rule_data['aggregator']
@@ -4488,15 +4444,15 @@ class Glpi92(DatabaseHelper):
 
 
         # it s shit do it from dict directly
-        #{'ranking' : 2, 'sub_type': 'PluginFusioninventoryInventoryRuleEntity',
+        #{'ranking': 2, 'sub_type': 'PluginFusioninventoryInventoryRuleEntity',
         # date_mod: NOW(),
 
         # criteria
         # {'criteria': 'ip', // 'name' => hostanme, 'domain', 'serial', 'subnet', 'tag',
         #'condition': 0=is, 1=is_not, 2=contains, 3=doesnt contain,  4=start with, 5= finishes by
         # 6=regex_check, 7=not_regex, 8=exists, 9=doesnt eixts
-        # 'pattern' : 192.168.44.,
-        # 'rules_id' : rule_id
+        # 'pattern': 192.168.44.,
+        # 'rules_id': rule_id
 
         # rule actions
         # { 'rules_id', rid
@@ -4663,10 +4619,10 @@ class Glpi92(DatabaseHelper):
         entities = []
         for profile in session.query(UserProfile).filter_by(users_id = user_id):
             entities += [{
-                            'entity_id' : profile.entities_id,
+                            'entity_id': profile.entities_id,
                             'profile': profile.profiles_id,
-                            'is_recursive' : profile.is_recursive,
-                            'is_dynamic' : profile.is_dynamic
+                            'is_recursive': profile.is_recursive,
+                            'is_dynamic': profile.is_dynamic
                         }]
         return entities
 
@@ -5200,7 +5156,7 @@ def unique(s):
     except TypeError:
         t = None # move on to the next method
 
-    if t != None:
+    if t is not None:
         assert n > 0
         last = t[0]
         lasti = i = 1
