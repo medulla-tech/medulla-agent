@@ -87,7 +87,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             showinfobool = True
         if 'action' in data and data['action'] == 'infomachine':
             if showinfobool:
-                logger.info("** Processing machine %s that sends this"\
+                logger.info("** Processing machine %s that sends this"
                             " information (mini inventory)" % msg['from'])
             if 'completedatamachine' in data:
                 info = json.loads(base64.b64decode(data['completedatamachine']))
@@ -642,7 +642,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                      uuid,
                                                      data['agenttype'],
                                                      classutil=data['classutil'],
-                                                     fromplugin=True ,
+                                                     fromplugin=True,
                                                      showinfobool=showinfobool)
                             XmppMasterDatabase().setlogxmpp("Remote Service <b>%s</b>"\
                                                             " : for [machine : %s][RS : %s]" % (data['remoteservice'],
@@ -813,7 +813,7 @@ def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
             'data': data,
             'ret': 0,
             "base64": False,
-            "sessionid": getRandomName(4,sessionid) }
+            "sessionid": getRandomName(4,sessionid)}
 
 def handlerkioskpresence(xmppobject,
                          jid,
@@ -888,10 +888,10 @@ def get_packages_for_machine(machine, showinfobool=True):
 
 def __search_software_in_glpi(list_software_glpi, packageprofile, structuredatakiosk):
     structuredatakioskelement={'name': packageprofile[0],
-                               "action" : [],
+                               "action": [],
                                'uuid':  packageprofile[6],
                                'description': packageprofile[2],
-                               "version" : packageprofile[3]}
+                               "version": packageprofile[3]}
     patternname = re.compile("(?i)" + packageprofile[0])
     for soft_glpi in list_software_glpi:
         # TODO
@@ -994,15 +994,15 @@ def read_conf_remote_registeryagent(xmppobject):
     pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("Plugin %s\nConfiguration file :" \
-                      "\n\t%s missing" \
-                      "\neg conf:\n[parameters]\n" \
-                      "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
-                      "loadautoupdate, loadshowregistration\n" \
-                      "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"\
-                      "loadautoupdate, loadshowregistration" % (plugin['NAME'], pathfileconf))
+                     "\n\t%s missing" 
+                     "\neg conf:\n[parameters]\n" 
+                     "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"
+                     "loadautoupdate, loadshowregistration\n" 
+                     "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"
+                     "loadautoupdate, loadshowregistration" % (plugin['NAME'], pathfileconf))
         logger.warning("Default value for pluginlistregistered " \
-                       "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration"\
-                       "\ndefault value for pluginlistunregistered"\
+                       "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration"
+                       "\ndefault value for pluginlistunregistered"
                        "is loadpluginlistversion, loadpluginschedulerlistversion, loadautoupdate, loadshowregistration")
         xmppobject.pluginlistregistered = ["loadpluginlistversion",
                                            "loadpluginschedulerlistversion",
@@ -1019,7 +1019,7 @@ def read_conf_remote_registeryagent(xmppobject):
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
         logger.debug("Config file %s for plugin %s" % (pathfileconf,
-                                                     plugin["NAME"]))
+                                                       plugin["NAME"]))
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
             logger.debug("read file %s.local" % pathfileconf)
