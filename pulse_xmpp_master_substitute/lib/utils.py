@@ -55,7 +55,6 @@ import uuid
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
-import zipfile
 
 logger = logging.getLogger()
 

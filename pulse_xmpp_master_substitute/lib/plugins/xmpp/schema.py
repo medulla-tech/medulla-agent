@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 
 from sqlalchemy import Column, String, Integer, Boolean, \
-    ForeignKey, DateTime, Text, LargeBinary, Enum
+    ForeignKey, DateTime, Text, Enum
 from sqlalchemy.dialects.mysql import  TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from mmc.database.database_helper import DBObj

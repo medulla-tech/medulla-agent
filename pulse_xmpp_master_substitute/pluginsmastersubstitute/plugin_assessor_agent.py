@@ -25,10 +25,7 @@ import base64
 import json
 import os
 import logging
-from lib.utils import file_get_contents, \
-                      getRandomName, \
-                      data_struct_message, \
-                      add_method, \
+from lib.utils import data_struct_message, \
                       ipfromdns, \
                       AESCipher, \
                       subnetnetwork
@@ -40,7 +37,7 @@ import operator
 import traceback
 import ConfigParser
 import netaddr
-from math import cos, sin, acos, asin, atan2, degrees, radians,sqrt
+from math import cos, sin, atan2, sqrt
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
