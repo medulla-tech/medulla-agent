@@ -44,7 +44,7 @@ from lib.agentconffile import conffilename
 from lib.utils import DEBUGPULSE, searchippublic, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher, refreshfingerprintconf, \
+                      getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent
 
 from optparse import OptionParser
