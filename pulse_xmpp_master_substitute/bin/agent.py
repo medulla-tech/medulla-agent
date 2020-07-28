@@ -22,6 +22,7 @@
 
 #fish: pulse_xmpp_master_substitute/bin/agent.py
 
+from sleekxmpp import jid
 import sys
 import os
 import logging
