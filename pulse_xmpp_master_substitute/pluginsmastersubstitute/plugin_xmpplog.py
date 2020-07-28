@@ -1,28 +1,31 @@
 # -*- coding: utf-8 -*-
 # (c) 2016 siveo, http://www.siveo.net
 # plugin register machine dans presence table xmpp.
-# TODO: Add gpl2 licence
-# file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_xmpplog.py
 #
-import zlib
-import base64
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+# file : pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_xmpplog.py
+
 import traceback
 import os
-import sys
-import urllib2
-import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.localisation import Localisation
-from lib.manageRSAsigned import MsgsignedRSA
-from sleekxmpp import jid
-from lib.utils import getRandomName
 import re
-from distutils.version import LooseVersion, StrictVersion
-import ConfigParser
 
 # this import will be used later
 # import types
@@ -104,8 +107,8 @@ def createlog(xmppobject, dataobj):
     except Exception as e:
         logger.error("Message deploy error  %s %s" % (dataobj, str(e)))
         logger.error("\n%s" % (traceback.format_exc()))
-            
-        
+
+
 def registerlogxmpp(xmppobject,
                     text,
                     type='noset',
@@ -132,7 +135,7 @@ def registerlogxmpp(xmppobject,
                                     fromuser=fromuser,
                                     touser=touser,
                                     action=action)
-        
+
 def xmpplogdeploy(xmppobject, data):
     """
         this function manage msg deploy log
@@ -160,7 +163,7 @@ def xmpplogdeploy(xmppobject, data):
                                                                                sort_keys=True))
                 else:
                     XmppMasterDatabase().updatedeployresultandstate(data['sessionid'],
-                                                                    "ABORT PACKAGE EXECUTION ERROR", 
+                                                                    "ABORT PACKAGE EXECUTION ERROR",
                                                                     json.dumps(data,
                                                                                indent=4,
                                                                                sort_keys=True))

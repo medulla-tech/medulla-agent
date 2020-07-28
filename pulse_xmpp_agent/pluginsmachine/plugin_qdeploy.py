@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -26,14 +26,8 @@ import sys, os
 from lib import managepackage, \
                 grafcetdeploy, \
                 utils
-import socket
 import logging
-import pycurl
-import platform
-import copy
 import traceback
-import time
-from subprocess import STDOUT, check_output
 if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
     import grp
     import pwd

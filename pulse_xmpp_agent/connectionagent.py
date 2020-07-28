@@ -41,12 +41,11 @@ from lib.configuration import  confParameter, changeconnection,\
     alternativeclusterconnection, nextalternativeclusterconnection,\
         substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName,\
-    DEBUGPULSE, searchippublic, getIpXmppInterface,\
+from lib.utils import DEBUGPULSE, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher, refreshfingerprintconf, \
-                        protodef, geolocalisation_agent
+                      getRandomName, AESCipher, refreshfingerprintconf, \
+                        geolocalisation_agent
 
 from optparse import OptionParser
 
@@ -89,7 +88,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.geoservers = "ifconfig.co, if.siveo.net"
 
         self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                             geolocalisation=True, 
+                                             geolocalisation=True,
                                              ip_public=None,
                                              strlistgeoserveur=self.config.geoservers)
 

@@ -7,3 +7,4 @@
 /etc/pulse-xmpp-agent/wakeonlan.ini
 /etc/pulse-xmpp-agent/relayconf.ini
 /etc/pulse-xmpp-agent/package_watching.ini
+/etc/pulse-xmpp-agent/manage_scheduler.ini

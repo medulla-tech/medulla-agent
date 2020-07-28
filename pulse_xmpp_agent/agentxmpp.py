@@ -30,8 +30,6 @@ import platform
 import base64
 import json
 import time
-import socket
-import select
 import threading
 import shutil
 import subprocess
@@ -52,13 +50,13 @@ from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
-                        call_plugin, searchippublic, subnetnetwork,\
+                        call_plugin, subnetnetwork,\
                         createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
-                        simplecommand, is_connectedServer,  testagentconf, \
+                        simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent
 from lib.manage_xmppbrowsing import xmppbrowsing
@@ -78,7 +76,7 @@ from modulefinder import ModuleFinder
 
 from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
+from sleekxmpp.xmlstream.stanzabase import ET
 from sleekxmpp import jid
 
 if sys.platform.startswith('win'):

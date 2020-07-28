@@ -29,10 +29,8 @@ import win32event
 import win32service
 import time
 import re
-from pathlib import Path
 import subprocess
 import os
-import psutil
 import sys
 import logging
 import logging.handlers

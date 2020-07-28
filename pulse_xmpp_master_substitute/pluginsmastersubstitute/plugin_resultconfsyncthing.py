@@ -24,9 +24,6 @@
 
 import logging
 import traceback
-import sys
-import json
-from utils import simplecommandstr, file_get_content, file_put_content
 
 logger = logging.getLogger()
 

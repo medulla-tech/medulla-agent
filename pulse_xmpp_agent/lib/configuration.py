@@ -452,7 +452,7 @@ class confParameter:
         self.public_ip_relayserver = ""
         self.geoservers = "ifconfig.co, if.siveo.net"
         self.geolocalisation = True
-        
+
         if Config.has_option("type", "public_ip"):
             self.public_ip = Config.get('type', 'public_ip')
 

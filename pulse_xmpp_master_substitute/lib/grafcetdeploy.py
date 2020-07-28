@@ -1532,7 +1532,7 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-            self.__alternatefolder() 
+            self.__alternatefolder()
             if self.workingstep['typescript'] in extensionscriptfile:
                 suffix = extensionscriptfile[self.workingstep['typescript']]['suffix']
                 shebang = extensionscriptfile[self.workingstep['typescript']]['bang']

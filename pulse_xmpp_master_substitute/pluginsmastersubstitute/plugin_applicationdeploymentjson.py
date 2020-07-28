@@ -22,11 +22,7 @@
 #
 # file pluginsmastersubstitute/plugin_applicationdeployment.py
 
-import base64
 import json
-import os
-import utils
-import pprint
 import logging
 import traceback
 logger = logging.getLogger()

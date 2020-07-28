@@ -48,11 +48,9 @@ from datetime import datetime
 import imp
 import requests
 import uuid
-import shutil
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
-import zipfile
 from functools import wraps
 
 logger = logging.getLogger()

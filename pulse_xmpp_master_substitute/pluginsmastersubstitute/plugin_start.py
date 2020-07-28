@@ -20,14 +20,10 @@
 # MA 02110-1301, USA.
 # file  pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_start.py
 
-import base64
 import json
-import sys, os
 import logging
-import platform
-from lib.utils import file_get_contents, getRandomName, call_plugin, data_struct_message
+from lib.utils import getRandomName, call_plugin, data_struct_message
 import traceback
-from sleekxmpp import jid
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -40,7 +36,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
-    
+
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
     # send demande module mmc actif sur master
     objectxmpp.send_message(mto=objectxmpp.agentmaster,
