@@ -31,7 +31,7 @@ logger = logging.getLogger()
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s from %s session id %s" % ( plugin, message['from'], sessionid))
+    logging.getLogger().debug("call %s from %s session id %s" % (plugin, message['from'], sessionid))
     logging.getLogger().debug("###################################################")
     if objectxmpp.config.agenttype in ['relayserver']:
         try:
@@ -49,7 +49,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 try:
                     if sessionid == sessionfile:
                         os.remove(os.path.join(pathfile, filledeployement))
-                        res = utils.simplecommand("ls %s | wc -l" % os.path.join(utils._path_packagequickaction(),"*.QDeploy"))
+                        res = utils.simplecommand("ls %s | wc -l" % os.path.join(utils._path_packagequickaction(), "*.QDeploy"))
                         if res['code'] == 0:
                             nbpool = res['result']
                         else:
