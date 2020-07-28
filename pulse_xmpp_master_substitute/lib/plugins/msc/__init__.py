@@ -2459,18 +2459,18 @@ class MscDatabase(DatabaseHelper):
         """
         try:
             for f in filter:
-                if isinstance(f[1], str): # f[1] must be a list
+                if isinstance(f[1], str):  # f[1] must be a list
                     f[1] = [f[1]]
                 if len(f) == 3:
                     if isinstance(f[2], bool):
                         if f[2]:
-                                query = query.filter(getattr(self.commands_on_host.c, f[0]).in_(f[1]))
+                            query = query.filter(getattr(self.commands_on_host.c, f[0]).in_(f[1]))
                         else:
                             query = query.filter(not_(getattr(self.commands_on_host.c, f[0]).in_(f[1])))
                     elif f[2] == '<=':
-                            query = query.filter(getattr(self.commands_on_host.c, f[0]) <= f[1][0])
+                        query = query.filter(getattr(self.commands_on_host.c, f[0]) <= f[1][0])
                     elif f[2] == '>=':
-                            query = query.filter(getattr(self.commands_on_host.c, f[0]) >= f[1][0])
+                        query = query.filter(getattr(self.commands_on_host.c, f[0]) >= f[1][0])
                 else:
                     query = query.filter(getattr(self.commands_on_host.c, f[0]).in_(f[1]))
             return int(query.scalar())

@@ -5120,54 +5120,54 @@ class XmppMasterDatabase(DatabaseHelper):
             return False
 
     @DatabaseHelper._sessionm
-    def updatedeployresultandstate(self, session, sessionid, state, result ):
-            jsonresult = json.loads(result)
-            jsonautre = copy.deepcopy(jsonresult)
-            del (jsonautre['descriptor'])
-            del (jsonautre['packagefile'])
-            #DEPLOYMENT START
-            try:
-                deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
-                if deploysession:
-                    if deploysession.result is None or \
-                        ("wol" in jsonresult and \
-                            jsonresult['wol']  >= 1 ) or \
-                        ("advanced" in jsonresult and \
-                            'syncthing' in jsonresult['advanced'] and \
-                                jsonresult['advanced']['syncthing'] == 1):
-                        jsonbase = {
-                                    "infoslist": [jsonresult['descriptor']['info']],
-                                    "descriptorslist": [jsonresult['descriptor']['sequence']],
-                                    "otherinfos" : [jsonautre],
-                                    "title" : deploysession.title,
-                                    "session" : deploysession.sessionid,
-                                    "macadress" : deploysession.macadress,
-                                    "user" : deploysession.login
-                        }
-                    else:
-                        jsonbase = json.loads(deploysession.result)
-                        jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
-                        jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
-                        jsonbase['otherinfos'].append(jsonautre)
-                    deploysession.result = json.dumps(jsonbase, indent=3)
-                    if 'infoslist' in jsonbase and \
-                        'otherinfos' in jsonbase and \
-                        len(jsonbase['otherinfos']) > 0 and \
-                        'plan' in jsonbase['otherinfos'][0] and \
-                            len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
-                            state == "DEPLOYMENT SUCCESS":
-                        state = "DEPLOYMENT PARTIAL SUCCESS"
-                    regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
-                    if regexpexlusion.match(state) is not None:
-                        deploysession.state = state
-                session.commit()
-                session.flush()
-                session.close()
-                return 1
-            except Exception, e:
-                self.logger.error(str(e))
-                self.logger.error("\n%s"%(traceback.format_exc()))
-                return -1
+    def updatedeployresultandstate(self, session, sessionid, state, result):
+        jsonresult = json.loads(result)
+        jsonautre = copy.deepcopy(jsonresult)
+        del jsonautre['descriptor']
+        del jsonautre['packagefile']
+        #DEPLOYMENT START
+        try:
+            deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
+            if deploysession:
+                if deploysession.result is None or \
+                    ("wol" in jsonresult and \
+                        jsonresult['wol']  >= 1 ) or \
+                    ("advanced" in jsonresult and \
+                        'syncthing' in jsonresult['advanced'] and \
+                            jsonresult['advanced']['syncthing'] == 1):
+                    jsonbase = {
+                                "infoslist": [jsonresult['descriptor']['info']],
+                                "descriptorslist": [jsonresult['descriptor']['sequence']],
+                                "otherinfos": [jsonautre],
+                                "title": deploysession.title,
+                                "session": deploysession.sessionid,
+                                "macadress": deploysession.macadress,
+                                "user": deploysession.login
+                                }
+                else:
+                    jsonbase = json.loads(deploysession.result)
+                    jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
+                    jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
+                    jsonbase['otherinfos'].append(jsonautre)
+                deploysession.result = json.dumps(jsonbase, indent=3)
+                if 'infoslist' in jsonbase and \
+                    'otherinfos' in jsonbase and \
+                    len(jsonbase['otherinfos']) > 0 and \
+                    'plan' in jsonbase['otherinfos'][0] and \
+                        len(jsonbase['infoslist']) != len(jsonbase['otherinfos'][0]['plan']) and \
+                        state == "DEPLOYMENT SUCCESS":
+                    state = "DEPLOYMENT PARTIAL SUCCESS"
+                regexpexlusion = re.compile("^(?!abort)^(?!success)^(?!error)",re.IGNORECASE)
+                if regexpexlusion.match(state) is not None:
+                    deploysession.state = state
+            session.commit()
+            session.flush()
+            session.close()
+            return 1
+        except Exception, e:
+            self.logger.error(str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+            return -1
 
     @DatabaseHelper._sessionm
     def get_syncthing_deploy_to_clean(self, session):
