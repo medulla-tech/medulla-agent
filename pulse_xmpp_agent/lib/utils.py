@@ -2067,6 +2067,7 @@ def detectantivirus():
 
 def information_machine():
     result = {}
+
     def WMIDateStringToDate(dtmDate):
         strDateTime = ""
         if dtmDate[4] == 0:

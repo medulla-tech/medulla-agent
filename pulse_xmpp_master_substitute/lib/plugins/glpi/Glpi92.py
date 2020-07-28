@@ -3167,6 +3167,7 @@ class Glpi92(DatabaseHelper):
                 if param is not None:
                     return False
             return True
+
         def check_list(param):
             if not isinstance(param, list):
                 return [param]

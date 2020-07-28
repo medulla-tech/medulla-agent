@@ -33,7 +33,7 @@ import random
 logger = logging.getLogger()
 # plugin run wake on lan on mac address
 
-plugin = {"VERSION": "1.1", "NAME": "deploysyncthing", "TYPE": "substitute"}
+plugin = {"VERSION": "1.11", "NAME": "deploysyncthing", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataobj):
@@ -92,7 +92,7 @@ def action(xmppobject, action, sessionid, data, message, dataobj):
                                                       infoars['syncthing_port'])
                     adressconnection = "tcp://%s:%s" % (infoars['ipconnection'],
                                                         infoars['syncthing_port'])
-                    clu['arsip'][val] = set([str(adressipserver), str(adressconnection), str('dynamic')])
+                    clu['arsip'][val] = [str(adressipserver), str(adressconnection), str('dynamic')]
                 else:
                     logging.getLogger().error("verify syncthing info for ars %s" % val)
                     clu['arsip'][val] = ['dynamic']

@@ -287,9 +287,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.fichierconfsyncthing = "%s\\pulse\\etc\\syncthing\\config.xml"%os.environ['programfiles']
             self.tmpfile = "%s\\Pulse\\tmp\\confsyncting.txt"%os.environ['programfiles']
         elif sys.platform.startswith('darwin'):
-            self.fichierconfsyncthing = os.path.join("/",
-                                                "Library",
-                                                "Application Support",
+            self.fichierconfsyncthing = os.path.join("/opt",
                                                 "Pulse",
                                                 "etc",
                                                 "syncthing",
@@ -523,7 +521,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def is_exist_folder_id(self, idfolder, config):
         for folder in config['folders']:
             if folder['id'] == idfolder:
-             return True
+                return True
         return False
 
     def add_folder_dict_if_not_exist_id(self, dictaddfolder, config):
@@ -712,7 +710,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 try:
                     logger.debug("Removing the shared folder %s" % deletedfolder)
                     shutil.rmtree(deletedfolder)
-                except:
+                except OSError:
                     logger.error("Error while removing the shared folder %s" % (deletedfolder))
                     logger.error("\n%s" % (traceback.format_exc()))
 
@@ -726,9 +724,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             elif sys.platform.startswith('linux'):
                 syncthingroot = os.path.join(os.path.expanduser('~pulseuser'), "syncthing")
             elif sys.platform.startswith('darwin'):
-                syncthingroot = os.path.join("/",
-                                            "Library",
-                                            "Application Support",
+                syncthingroot = os.path.join("/opt",
                                             "Pulse",
                                             "var",
                                             "syncthing")
@@ -775,7 +771,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             try:
                                 shutil.rmtree(os.path.join(packagedir,dirname))
                                 logging.debug("clean package before copy %s" % (os.path.join(packagedir, dirname)))
-                            except:
+                            except OSError:
                                 pass
                             try:
                                 self.xmpplog("Transfer complete on machine %s\n " \
@@ -1505,7 +1501,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     try:
                         os.remove(self.tmpfile)
-                    except :
+                    except OSError:
                         pass
             except Exception as e:
                 logging.error("syncthing initialisation : %s" % str(e))
@@ -1754,10 +1750,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                         self.boundjid.bare ))
         agentversion = os.path.join(self.pathagent, "agentversion")
         versiondata = file_get_contents(os.path.join(self.img_agent, "agentversion")).replace("\n","").replace("\r","").strip()
+
         try:
             os.remove(os.path.join(self.pathagent, "BOOL_UPDATE_AGENT"))
-        except:
+        except OSError:
             pass
+
         replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
         logger.debug("cmd : %s" % (replycatorcmd))
         result = simplecommand(replycatorcmd)
