@@ -28,7 +28,6 @@ import json
 import hashlib
 from optparse import OptionParser
 import traceback
-from datetime import datetime
 import time
 import urllib2
 import signal
