@@ -2097,9 +2097,6 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-
-
-
     # WIP
     def getpackagemanager(self):
         """
