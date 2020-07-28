@@ -130,7 +130,8 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             #event for quit loop server tcpserver for kiosk
-        if xmpp.shutdown:break
+        if xmpp.shutdown:
+            break
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:

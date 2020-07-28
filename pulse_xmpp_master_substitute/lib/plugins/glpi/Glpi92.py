@@ -570,7 +570,7 @@ class Glpi92(DatabaseHelper):
             autoload = True)
         mapper(RegContents, self.regcontents)
 
-    ##################### internal query generators
+    # Internal query generators
     def __filter_on(self, query):
         """
         Use the glpi.ini conf parameter filter_on to filter machines on some parameters
@@ -589,7 +589,8 @@ class Glpi92(DatabaseHelper):
             for filter_key, filter_values in self.config.filter_on.items():
                 try:
                     re = [x for x in filter_values if x.strip() != ""]
-                    if len(re) == 0 : continue
+                    if len(re) == 0:
+                        continue
                 except Exception:
                     pass
                 if filter_key == 'state':
@@ -942,7 +943,8 @@ class Glpi92(DatabaseHelper):
                         )
                     )
 
-        if count: query = query.scalar()
+        if count: 
+            query = query.scalar()
         return query
 
 
@@ -960,7 +962,8 @@ class Glpi92(DatabaseHelper):
             return obj.name
         if type(obj) == str and re.match('UUID', obj):
             l = self.getLocation(obj)
-            if l: return l.name
+            if l:
+                return l.name
         return obj
 
     def __addQueryFilter(self, query_filter, eq):
