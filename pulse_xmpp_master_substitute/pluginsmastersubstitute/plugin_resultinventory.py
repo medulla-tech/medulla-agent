@@ -34,11 +34,11 @@ def XmppUpdateInventoried(jid, machine):
         for t in results:
             logger.debug("Processing mac address")
             computer = getComputerByMac(t)
-            if computer != None:
+            if computer is not None:
                 uuid = 'UUID' + str(computer.id)
                 logger.debug("** Update uuid %s for machine %s " % (uuid, machine['jid']))
                 if machine['uuid_inventorymachine'] != "" and \
-                            machine['uuid_inventorymachine'] != None:
+                            machine['uuid_inventorymachine'] is not None:
                     logger.debug("** Update in Organization_ad uuid %s to %s " % (machine['uuid_inventorymachine'],
                                                                                     uuid))
                     XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
@@ -65,7 +65,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             url = "http://localhost:9999/"
         inventory = zlib.decompress(base64.b64decode(data['inventory']))
         request = urllib2.Request(url, inventory, HEADER)
-        response = urllib2.urlopen(request)
+
+        try:
+            response = urllib2.urlopen(request)
+        except urllib2.URLError:
+            logger.info("The inventory server is not reachable. Please check pulse2-inventory-server service")
+
         machine = XmppMasterDatabase().getMachinefromjid(msg['from'])
         nbsize = len(inventory)
         XmppMasterDatabase().setlogxmpp("Received inventory from machine %s" % msg['from'],

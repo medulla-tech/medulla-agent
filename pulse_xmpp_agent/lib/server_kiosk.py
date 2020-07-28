@@ -131,8 +131,8 @@ class process_serverPipe():
                             self.logger.debug("_____________%s"%data[1])
                             # result = json.loads(data[1])
                             # self.logger.debug("_____________%s"%result)
-                            # sendinterfacedata ={'interface' : True,
-                                                # 'data' : result }
+                            # sendinterfacedata ={'interface': True,
+                                                # 'data': result }
                             # self.logger.debug("_____________%s"%sendinterfacedata)
                             self.queue_recv_tcp_to_xmpp.put(data[1])
                         except Exception as e:
@@ -304,7 +304,7 @@ class manage_kiosk_message:
     def handle_client_connection(self, recv_msg_from_kiosk):
         try:
             self.logger.info('Received {}'.format(recv_msg_from_kiosk))
-            datasend = { 'action' : "resultkiosk",
+            datasend = { 'action': "resultkiosk",
                         "sessionid" : getRandomName(6, "kioskGrub"),
                         "ret" : 0,
                         "base64" : False,

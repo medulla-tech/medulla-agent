@@ -163,9 +163,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     #--------------------search si besoin d'un reverse ssh------------------------------------
     #
     logger.debug("Install key ARS in authorized_keys on agent machine")
-    body = {'action' : 'installkey',
+    body = {'action': 'installkey',
             'sessionid': sessionid,
-            'data' : { 'jidAM' : data['jidmachine']
+            'data': { 'jidAM': data['jidmachine']
             }
     }
     objectxmpp.send_message( mto = objectxmpp.boundjid.bare,
@@ -207,17 +207,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         datareversessh = {
             'action': 'reverse_ssh_on',
             'sessionid': sessionid,
-            'data' : {
-                    'request' : 'askinfo',
-                    'port' : localport,
-                    'host' : data['host'],
-                    'remoteport' : paramglobal['remoteport'],
-                    'reversetype' : 'R',
-                    'options' : 'createreversessh',
-                    'persistence' : 'Downloadfile'
+            'data': {
+                    'request': 'askinfo',
+                    'port': localport,
+                    'host': data['host'],
+                    'remoteport': paramglobal['remoteport'],
+                    'reversetype': 'R',
+                    'options': 'createreversessh',
+                    'persistence': 'Downloadfile'
             },
-            'ret' : 0,
-            'base64' : False }
+            'ret': 0,
+            'base64': False }
         #self call plugin creation reverse ssh for host data['host']
         objectxmpp.send_message(mto = message['to'],
                                 mbody = json.dumps(datareversessh),
@@ -235,7 +235,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
     data['path_src_machine_dir'] = data['path_src_machine_dir'] + data['path_src_machine_file']
     for directory in data['path_src_machine_dir']:
-        if reversessh == False:
+        if reversessh is False:
             if str(data['osmachine']).startswith('Linux'):
                 source = create_path(type = "linux", host = profiluserpulse, ipordomain=data['ipmachine'], path = r'%s'%directory)
             elif str(data['osmachine']).startswith('darwin'):
@@ -259,7 +259,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         host=paramglobal['server_ssh_user'],
                         ipordomain=data['ipmaster'],
                         path=data['path_dest_master'])
-        if reversessh == False:
+        if reversessh is False:
             command = scpfile(source, dest, objectxmpp, sessionid)
         else:
             # initialise se cp

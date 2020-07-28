@@ -219,7 +219,7 @@ class MyEventHandler(pyinotify.ProcessEvent):
         if event.dir:
             listexistwatch = pathlist(self.wm.watches)
             for z in listdirectory:
-                if not z in listexistwatch:
+                if z not in listexistwatch:
                     self.wm.add_watch(z, self.mask, rec=True)
                     diadd.append(z)
             datasend['data'] = { "adddir"    : diadd,

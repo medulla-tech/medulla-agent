@@ -40,29 +40,29 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     dataerreur = {  "action" : "result" + action,
                     "data" : { "msg" : "error plugin : " + action
                     },
-                    'sessionid' : sessionid,
-                    'ret' : 255,
-                    'base64' : False
+                    'sessionid': sessionid,
+                    'ret': 255,
+                    'base64': False
     }
 
     if objectxmpp.config.agenttype in ['machine']:
         logging.getLogger().debug("#######################################################")
         logging.getLogger().debug("##############AGENT INSTALL KEY MACHINE################")
         logging.getLogger().debug("#######################################################")
-        if not 'key' in data:
+        if 'key' not in data:
             objectxmpp.send_message_agent(message['from'], dataerreur, mtype = 'chat')
             return
-        #install keypub on AM
+        # install keypub on AM
         if sys.platform.startswith('linux'):
             import pwd
             import grp
-            #verify compte pulse exist
+            # We check if the pulseuser account exists
             try:
                 uid = pwd.getpwnam("pulseuser").pw_uid
                 gid = grp.getgrnam("pulseuser").gr_gid
                 gidroot = grp.getgrnam("root").gr_gid
-            except:
-                #le compte n'existe pas
+            except KeyError:
+                # the pulseuser account does not exists
                 result = utils.simplecommand(utils.encode_strconsole("adduser --system --group --home /var/lib/pulse2 '\
                     '--shell /bin/rbash --disabled-password pulseuser"))
             uid = pwd.getpwnam("pulseuser").pw_uid
@@ -260,16 +260,16 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             dataerreur['data']['msg'] = "ARS key %s missing"%dataerreur['data']['msg']
             objectxmpp.send_message_agent(message['from'], dataerreur, mtype = 'chat')
             return
-        if not 'jidAM' in data:
+        if 'jidAM' not in data:
             dataerreur['data']['msg'] = "Machine JID %s missing"%dataerreur['data']['msg']
             objectxmpp.send_message_agent(message['from'], dataerreur, mtype = 'chat')
             return
 
         datasend = {  "action" : action,
                     "data" : { "key" : key },
-                    'sessionid' : sessionid,
-                    'ret' : 255,
-                    'base64' : False
+                    'sessionid': sessionid,
+                    'ret': 255,
+                    'base64': False
         }
 
         objectxmpp.send_message_agent( data['jidAM'], datasend, mtype = 'chat')

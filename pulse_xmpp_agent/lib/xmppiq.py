@@ -172,9 +172,9 @@ class functionsynchroxmpp:
         logger.debug("iq keypub")
         # verify relayserver
         try:
-            result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror' : 0 }
+            result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror': 0 }
         except Exception:
-            result =  { "result" : { "key" : "" }, "error" : True , 'numerror' : 2 }
+            result =  { "result" : { "key" : "" }, "error" : True , 'numerror': 2 }
         return json.dumps(result)
 
     @staticmethod
@@ -183,7 +183,7 @@ class functionsynchroxmpp:
         try:
             msgaction=[]
             #logger.debug("error format message : %s"%(json.dumps(data, indent = 4)))
-            if not 'keyinstall' in data["action"]:
+            if 'keyinstall' not in data["action"]:
                 logger.error("error format message : %s"%(json.dumps(data, indent = 4)))
                 data['action'] = "resultkeyinstall"
                 data['ret'] = 20
@@ -390,7 +390,7 @@ class functionsynchroxmpp:
     @staticmethod
     def information( xmppobject, data ):
         logger.debug("iq information")
-        result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
+        result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror': 0 }
         for info_ask in data['data']['listinformation']:
             try:
                 if info_ask == "force_reconf": #force reconfiguration immedialy
@@ -514,20 +514,20 @@ class functionsynchroxmpp:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
                         filedata = file_get_contents(filename)
-                        data['data'] = { "result" : filedata, "error" : False , 'numerror' : 0  }
+                        data['data'] = { "result" : filedata, "error" : False , 'numerror': 0  }
                         return json.dumps(data)
                     else:
-                        data['data'] = { "result" : "error file missing",  "error" : True , 'numerror' : 128}
+                        data['data'] = { "result" : "error file missing",  "error" : True , 'numerror': 128}
                 else:
                     data['data'] = { "result" : "error name file missing" }
             elif data['data']['action'] == 'create':
                 if 'file' in data['data'] and data['data']['file'] != "" and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     file_put_contents(filename,  data['data']['content'])
-                    data['data'] = { "result" : "create file %s"%filename, "error" : False , 'numerror' : 0 }
+                    data['data'] = { "result" : "create file %s"%filename, "error" : False , 'numerror': 0 }
                     return json.dumps(data)
                 else:
-                    data['data'] = { "result" : "error create file : name file missing", "error" : True , 'numerror' : 129 }
+                    data['data'] = { "result" : "error create file : name file missing", "error" : True , 'numerror': 129 }
             elif data['data']['action'] == 'save':
                 if 'file' in data['data'] and data['data']['file'] != "" \
                         and 'content' in data['data']:
@@ -537,18 +537,18 @@ class functionsynchroxmpp:
                         #newfilename = filename[:-4] + "_" + datestr
                         #copyfile(filename, newfilename)
                         file_put_contents(filename,  data['data']['content'])
-                        data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror' : 0 }
+                        data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror': 0 }
                         return json.dumps(data)
                     else:
-                        data['data'] = { "result" : "error save config file %s missing"%filename, "error" : True , 'numerror' : 130 }
+                        data['data'] = { "result" : "error save config file %s missing"%filename, "error" : True , 'numerror': 130 }
             elif data['data']['action'] == 'listconfigfile':
                 listfileedit = [ x for x in os.listdir(directoryconffile()) if (x.endswith(".ini") or x.endswith(".ini.local"))]
-                data['data'] = { "result" : listfileedit, "error" : False , 'numerror' : 0 }
+                data['data'] = { "result" : listfileedit, "error" : False , 'numerror': 0 }
                 return json.dumps(data)
             else:
-                data['data'] = { "result" : "error the action parameter is not correct ", "error" : True , 'numerror' : 131 }
+                data['data'] = { "result" : "error the action parameter is not correct ", "error" : True , 'numerror': 131 }
         else:
-            data['data'] = { "result" : "error action remotefileeditaction parameter incorrect", "error" : True , 'numerror' : 132 }
+            data['data'] = { "result" : "error action remotefileeditaction parameter incorrect", "error" : True , 'numerror': 132 }
         return json.dumps(data)
 
     @staticmethod

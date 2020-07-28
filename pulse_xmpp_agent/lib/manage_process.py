@@ -330,9 +330,9 @@ class mannageprocess:
             msgout = {
                         'event': "",
                         'sessionid': sessionid,
-                        'result' : { 'codeerror' : 0, 'resultcommand' : '','command' : decode_strconsole(command) },
+                        'result': { 'codeerror': 0, 'resultcommand': '','command': decode_strconsole(command) },
             }
-            if eventstart != False:
+            if eventstart is not False:
                 #ecrit dans queue_out_session l'evenement eventstart
                 if '_eventype' in eventstart and '_eventype' == 'TEVENT':
                     msgout['event'] = eventstart
@@ -341,9 +341,9 @@ class mannageprocess:
                     queue_out_session.put(eventstart)
             cmd = cmdx(command, timeout)
             cmddecode = decode_strconsole(cmd.stdout)
-            if cmd.code_error == 0 and eventfinish != False:
+            if cmd.code_error == 0 and eventfinish is not False:
                 ev = eventfinish
-            elif cmd.code_error != 0 and eventfinish != False:
+            elif cmd.code_error != 0 and eventfinish is not False:
                 ev = eventerror
             else:
                 ev = False
@@ -351,7 +351,7 @@ class mannageprocess:
             logging.debug(" execution command in process")
             logging.debug("================================================")
            
-            if ev != False:
+            if ev is not False:
                 if '_eventype' in ev and '_eventype' == 'TEVENT':
                     #ecrit dans queue_out_session le TEVENT
                     msgout['event'] = ev
@@ -365,12 +365,12 @@ class mannageprocess:
                     #"10@lastlines": "",
                     #"@resultcommand":""
 
-                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand' : cmd['result'],'command' : command  }
-                    ev['data']['result'] = {'codeerror': cmd.code_error,'command' : command  }
+                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
+                    ev['data']['result'] = {'codeerror': cmd.code_error,'command': command  }
                     for t in keysdescriptor:
                         if t == 'codeerror' or t=='command': 
                             pass
-                        elif t == '@resultcommand' :
+                        elif t == '@resultcommand':
                             ev['data']['result']['@resultcommand'] = cmd.stdout
                         elif  t.endswith('lastlines'):
                             nb = t.split("@")

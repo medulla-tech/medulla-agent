@@ -1,7 +1,7 @@
 #!/bin/bash
 PREFIX="$1/Contents/Resources"
 MACOS_VERSION=$(sw_vers |grep ProductVersion|awk '{print $2}'|awk -F "." '{print $1"."$2}')
-INSTALL_PATH="/Library/Application Support/Pulse"
+INSTALL_PATH="/opt/Pulse"
 VNC_PASSWORD=$(uuidgen | sed 's/-//g')
 VNC_PORT="@@VNC_PORT@@"
 BASE_URL="@@BASE_URL@@"
@@ -37,6 +37,7 @@ MODULES_LIST_FILENAMES="@@PY_NETIFACES_FILENAME@@
                         @@PY_CRON_DEPS_1_FILENAME@@
                         @@PY_REQUESTS_FILENAME@@"
 PULSE_AGENT_FILENAME="@@PULSE_AGENT_FILENAME@@"
+AGENT_PLUGINS_FILENAME="@@AGENT_PLUGINS_FILENAME@@"
 PULSE_AGENT_CONFFILE_FILENAME="@@PULSE_AGENT_CONFFILE_FILENAME@@"
 PULSE_SCHEDULER_CONFFILE_FILENAME="@@PULSE_SCHEDULER_CONFFILE_FILENAME@@"
 PULSE_INVENTORY_CONFFILE_FILENAME="@@PULSE_INVENTORY_CONFFILE_FILENAME@@"
@@ -230,17 +231,18 @@ echo
 
 # Download and install the python modules
 for MODULE_FILENAME in ${MODULES_LIST_FILENAMES}; do
+  sudo easy_install pip
   curl -O ${BASE_URL}/mac/downloads/python_modules/${MODULE_FILENAME}
   if [[ -f ${MODULE_FILENAME} ]]; then
     if [[ "${MODULE_FILENAME}" == "@@PY_CURL_FILENAME@@" ]]; then
       export PYCURL_SSL_LIBRARY=openssl
       export LDFLAGS=-L/usr/local/opt/openssl/lib
       export CPPFLAGS=-I/usr/local/opt/openssl/include
-      /usr/local/bin/pip2 install --upgrade --no-deps --install-option="--with-openssl" --install-option="--openssl-dir=/usr/local/opt/openssl" @@PY_CURL_FILENAME@@
+      python2 -m pip install --upgrade --no-deps --install-option="--with-openssl" --install-option="--openssl-dir=/usr/local/opt/openssl" @@PY_CURL_FILENAME@@
     elif [[ "${MODULE_FILENAME}" == "@@PY_CRON_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_CRON_DEPS_1_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_SFTP_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_SFTP_DEPS_1_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_4_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_3_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_1_FILENAME@@" ]]; then
-      /usr/local/bin/pip2 install --upgrade --no-deps --ignore-installed --no-index --find-links="." ${MODULE_FILENAME}
+      python2 -m pip install --upgrade --no-deps --ignore-installed --no-index --find-links="." ${MODULE_FILENAME}
     else
-      /usr/local/bin/pip2 install --upgrade --no-deps --no-index --find-links="." ${MODULE_FILENAME}
+      python2 -m pip install --upgrade --no-deps --no-index --find-links="." ${MODULE_FILENAME}
     fi
   else
     echo "ERROR: downloaded package ${MODULE_FILENAME} not found"
@@ -262,8 +264,10 @@ echo
 
 # Download and install agent
 curl -O ${BASE_URL}/${PULSE_AGENT_FILENAME}
+curl -O ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+
 if [[ -f ${PULSE_AGENT_FILENAME} ]]; then
-  /usr/local/bin/pip2 install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME}
+  python2 -m pip install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
 else
   echo "ERROR: downloaded package ${PULSE_AGENT_FILENAME} not found"
   exit 1

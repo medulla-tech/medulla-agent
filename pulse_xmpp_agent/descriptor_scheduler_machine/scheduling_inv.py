@@ -32,7 +32,7 @@ def schedule_main(objectxmpp):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug("call %s ",plugin )
     logging.getLogger().debug("###################################################")
-    msg={ 'from' : "master@pulse/MASTER",
+    msg={ 'from': "master@pulse/MASTER",
             'to': objectxmpp.boundjid.bare
             }
     sessionid = utils.getRandomName(6, "inventory")
