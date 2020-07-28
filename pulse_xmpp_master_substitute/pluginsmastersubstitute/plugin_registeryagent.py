@@ -989,10 +989,10 @@ def read_conf_remote_registeryagent(xmppobject):
     pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("Plugin %s\nConfiguration file :" \
-                     "\n\t%s missing" 
-                     "\neg conf:\n[parameters]\n" 
+                     "\n\t%s missing"
+                     "\neg conf:\n[parameters]\n"
                      "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"
-                     "loadautoupdate, loadshowregistration\n" 
+                     "loadautoupdate, loadshowregistration\n"
                      "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"
                      "loadautoupdate, loadshowregistration" % (plugin['NAME'], pathfileconf))
         logger.warning("Default value for pluginlistregistered " \
