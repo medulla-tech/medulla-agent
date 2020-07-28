@@ -80,27 +80,27 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message, threaded=True)
-        #self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
-        #self.add_event_handler("loginfotomaster", self.loginfotomaster)
-        #self.add_event_handler('changed_status', self.changed_status)
+        # self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
+        # self.add_event_handler("loginfotomaster", self.loginfotomaster)
+        # self.add_event_handler('changed_status', self.changed_status)
         self.add_event_handler("restartmachineasynchrone",
                                self.restartmachineasynchrone, threaded=True)
 
-        #self.register_handler(handler.Callback(
-                                    #'CustomXEP Handler',
-                                    #matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
-                                    #self._handle_custom_iq))
+        # self.register_handler(handler.Callback(
+        # 'CustomXEP Handler',
+        # matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
+        # self._handle_custom_iq))
 
     def send_message_to_master(self , msg):
         self.send_message(  mbody = json.dumps(msg),
                             mto = '%s/MASTER'%self.agentmaster,
                             mtype ='chat')
 
-    #def changed_status(self, message):
-        ##print "%s %s"%(message['from'], message['type'])
-        #if message['from'].user == 'master':
-            #if message['type'] == 'available':
-               #pass
+    # def changed_status(self, message):
+    # print "%s %s"%(message['from'], message['type'])
+    # if message['from'].user == 'master':
+    # if message['type'] == 'available':
+    # pass
 
     def start(self, event):
         self.shutdown = False

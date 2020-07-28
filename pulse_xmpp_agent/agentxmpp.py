@@ -481,11 +481,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       self.initialise_syncthing,
                       repeat=False)
 
-        #self.schedule('initialise_tcp_kiosk',
-                      #80,
-                      #self.initialise_tcp_kiosk,
-                      #repeat=False)
-
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
         dataerreur={"action": "resultqdeploy",
