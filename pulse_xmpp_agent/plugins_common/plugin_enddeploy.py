@@ -25,7 +25,6 @@ from lib import utils
 import time
 
 import os
-import json
 plugin = {"VERSION" : "2.0", "NAME" : "enddeploy",  "TYPE" : "all"}
 
 logger = logging.getLogger()

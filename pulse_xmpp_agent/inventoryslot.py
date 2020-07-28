@@ -17,19 +17,16 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
 import sys, os
 import logging
 import ConfigParser
-import sleekxmpp
 import netifaces
 import random
-from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp.exceptions import IqError
 import json
 import hashlib
-import datetime
 from optparse import OptionParser
-import base64
-import copy
 import traceback
 from datetime import datetime
 import time

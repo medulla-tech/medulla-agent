@@ -47,14 +47,10 @@ from threading import Lock
 from utils import Program, getRandomName, simplecommand, file_put_contents
 import logging
 import traceback
-import shutil
 import time
 import os
 import sys
 from urlparse import urlparse
-#if sys.platform.startswith('win'):
-    #import win32api
-    #import win32con
 
 logger = logging.getLogger()
 

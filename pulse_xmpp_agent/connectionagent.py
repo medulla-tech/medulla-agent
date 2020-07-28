@@ -41,12 +41,11 @@ from lib.configuration import  confParameter, changeconnection,\
     alternativeclusterconnection, nextalternativeclusterconnection,\
         substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName,\
-    DEBUGPULSE, searchippublic, getIpXmppInterface,\
+from lib.utils import DEBUGPULSE, searchippublic, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       AESCipher, refreshfingerprintconf, \
-                        protodef, geolocalisation_agent
+                        geolocalisation_agent
 
 from optparse import OptionParser
 
