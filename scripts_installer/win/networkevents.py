@@ -24,23 +24,18 @@
 
 """Implementation of ISesNework in Python."""
 from __future__ import print_function
-import win32evtlogutil
-import win32evtlog
 from  collections  import  deque
-# From UbuntuOne
 import pprint
 import logging
 import logging.handlers
-from threading import Thread, current_thread
+from threading import Thread
 import pythoncom
-import win32pipe
 import win32file
 import time
 import ctypes
 import json
 from win32com.server.policy import DesignatedWrapPolicy
 from win32com.client import Dispatch
-import win32gui
 import win32api
 import socket
 import struct

@@ -23,7 +23,6 @@ import logging
 import ConfigParser
 import netifaces
 import random
-from sleekxmpp.exceptions import IqError
 import json
 import hashlib
 from optparse import OptionParser

@@ -41,7 +41,7 @@ from lib.configuration import  confParameter, changeconnection,\
     alternativeclusterconnection, nextalternativeclusterconnection,\
         substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
-from lib.utils import DEBUGPULSE, searchippublic, getIpXmppInterface,\
+from lib.utils import DEBUGPULSE, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \

@@ -27,7 +27,6 @@ from lib.utils import getRandomName
 import types
 import ConfigParser
 from lib.plugins.xmpp import XmppMasterDatabase
-from sleekxmpp import jid
 import time
 
 logger = logging.getLogger()

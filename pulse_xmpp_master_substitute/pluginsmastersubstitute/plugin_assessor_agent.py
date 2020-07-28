@@ -25,8 +25,7 @@ import base64
 import json
 import os
 import logging
-from lib.utils import data_struct_message, \
-                      ipfromdns, \
+from lib.utils import ipfromdns, \
                       AESCipher, \
                       subnetnetwork
 from lib.localisation import Point

@@ -24,7 +24,6 @@ import base64
 import json
 import os
 import logging
-import platform
 import traceback
 import types
 import ConfigParser

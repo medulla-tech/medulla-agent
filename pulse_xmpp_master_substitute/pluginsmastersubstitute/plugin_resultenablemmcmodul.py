@@ -20,14 +20,10 @@
 # MA 02110-1301, USA.
 # file /pluginsmastersubstitute/plugin_resultenablemmcmodul.py
 
-import base64
 import json
-import sys, os
+import os
 import logging
-import platform
-from lib.utils import file_get_contents, getRandomName
-import traceback
-from sleekxmpp import jid
+from lib.utils import getRandomName
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

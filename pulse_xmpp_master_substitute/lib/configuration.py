@@ -26,7 +26,6 @@ import logging
 import ConfigParser
 from ConfigParser import  NoOptionError
 import random
-from sleekxmpp import jid
 from utils import ipfromdns
 
 # Singleton/SingletonDecorator.py
