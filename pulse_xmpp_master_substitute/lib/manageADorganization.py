@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
-# 
+#
 # (c) 2016-2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
