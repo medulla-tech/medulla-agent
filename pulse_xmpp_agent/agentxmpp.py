@@ -1898,8 +1898,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if dataobj.has_key('base64') and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
-                        #data in base 64
-                        mydata = json.loads(base64.b64decode(dataobj['data']))
+                    # data in base 64
+                    mydata = json.loads(base64.b64decode(dataobj['data']))
                 else:
                     mydata = dataobj['data']
 

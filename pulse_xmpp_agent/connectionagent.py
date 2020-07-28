@@ -85,7 +85,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
         if not hasattr(self.config, 'geoservers'):
-                self.geoservers = "ifconfig.co, if.siveo.net"
+            self.geoservers = "ifconfig.co, if.siveo.net"
 
         self.geodata = geolocalisation_agent(typeuser = 'nomade',
                                              geolocalisation=True,
@@ -623,7 +623,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     while True:
         if ipfromdns(tg.confserver) != "" and \
             check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
-                break
+            break
         logging.log(DEBUGPULSE,"ERROR CONNECTOR")
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.confserver,
