@@ -1044,7 +1044,7 @@ def read_conf_remote_registeryagent(xmppobject):
             blacklisted_mac_addresses = Config.get('parameters', 'blacklisted_mac_addresses')
         else:
             blacklisted_mac_addresses = "00\:00\:00\:00\:00\:00"
-            
+
         blacklisted_mac_addresseslist = [x.strip() for x in blacklisted_mac_addresses.split(',')]
         # Unique regexp identique
         blacklisted_mac_addresseslist = list(set(blacklisted_mac_addresseslist))

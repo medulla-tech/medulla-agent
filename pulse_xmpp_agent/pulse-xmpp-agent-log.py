@@ -310,7 +310,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.getLogger().error(str(e))
 
     def get_log_status(self):
-        """ 
+        """
             get complete table
         """
         session = self.Session()
@@ -322,15 +322,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if ret is None:
                 resultat = []
             else:
-                resultat = [{'index':id, 
+                resultat = [{'index':id,
                             "id" : regle.id,
-                            'regexplog':regle.regex_logmessage, 
+                            'regexplog':regle.regex_logmessage,
                             'status':regle.status} for id, regle in enumerate(ret)]
-            return resultat     
+            return resultat
         except Exception, e:
             traceback.print_exc(file=sys.stdout)
             return resultat
-        
+
     def updatedeployresultandstate(self, sessionid, state, result ):
         session = self.Session()
         jsonresult = json.loads(result)
@@ -497,7 +497,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" in dataobj['data']:
                 re_status = self.searchstatus(dataobj['data']['text'])
                 if re_status['status'] != "":
-                    self.updatedeploytosessionid( re_status['status'], 
+                    self.updatedeploytosessionid( re_status['status'],
                                                  dataobj['data']['sessionid'])
                     logger.debug("apply status %s for sessionid %s"%(re_status['status'],
                                                                      dataobj['data']['sessionid']))
@@ -506,7 +506,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             #rend agent log compatible standart stucture messages
             if "sessionid" in dataobj :  dataobj["session"] = dataobj["sessionid"]
             if 'data' in dataobj:
-                if "sessionid" in dataobj['data'] :  
+                if "sessionid" in dataobj['data'] :
                     dataobj["data"]["session"] = dataobj["sessionid"]
         except Exception as e:
             logger.error("bad struct Message %s %s " %(msg['from'], str(e)))

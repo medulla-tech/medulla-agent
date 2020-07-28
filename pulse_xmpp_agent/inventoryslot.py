@@ -10189,7 +10189,7 @@ class actiontest(Thread):
             d+=1
             if maxthread < d:
                 maxthread = d
-            
+
             request = urllib2.Request(self.url, globaltest, self.HEADER)
             response = urllib2.urlopen(request)
         except Exception, exc:
@@ -10377,7 +10377,7 @@ if __name__ == '__main__':
     optp.add_option("-T", "--nbthreadmax",
                 dest="nbthreadmax", default=None,
                 help="nomber thread maximun")
-    
+
     #optp.add_option("-p", "--password",
                 #dest="password", default=None,
                 #help="password connection xmpp")

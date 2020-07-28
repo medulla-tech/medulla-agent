@@ -209,7 +209,7 @@ def changed_status(self, presence):
                 XmppMasterDatabase().updateMachinereconf(presence['from'])
             except Exception:
                 logger.error("\n%s" % (traceback.format_exc()))
-            
+
         XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
                                         "info",
                                         '',

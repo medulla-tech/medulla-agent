@@ -40,7 +40,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
-    
+
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
     # send demande module mmc actif sur master
     objectxmpp.send_message(mto=objectxmpp.agentmaster,

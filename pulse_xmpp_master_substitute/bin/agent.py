@@ -108,7 +108,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        
+
         self.xmpplog("Starting substitute agent",
                     type = 'info',
                     sessionname = "",
@@ -416,4 +416,4 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s"%(traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
-    
+

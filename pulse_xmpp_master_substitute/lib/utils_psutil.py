@@ -47,7 +47,7 @@ def sensors_battery():
         va ="status:     %s" % (
             "charging" if batt.percent < 100 else "fully charged")
         vb ="plugged in: yes"
-        return result + "\n" + va + "\n" + vb 
+        return result + "\n" + va + "\n" + vb
     else:
         va = "left:       %s" % secs2hours(batt.secsleft)
         vb = "status:     %s" % "discharging"
@@ -177,7 +177,7 @@ def clone_ps_aux():
                 ctime,
                 cputime,
                 pinfo['name'].strip() or '?')
-    result = result + "\n"     
+    result = result + "\n"
     return result
 
 

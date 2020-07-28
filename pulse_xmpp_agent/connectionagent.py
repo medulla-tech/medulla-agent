@@ -88,7 +88,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.geoservers = "ifconfig.co, if.siveo.net"
 
         self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                             geolocalisation=True, 
+                                             geolocalisation=True,
                                              ip_public=None,
                                              strlistgeoserveur=self.config.geoservers)
 
