@@ -90,11 +90,11 @@ def distHaversine(p1, p2):
     """
       Calculate the distance (in km) between 2 points specified by their
       latitude/longitude using Haversine formula
-    
+
        de : Haversine formula - R. W. Sinnott, "Virtues of the Haversine",
             Sky and Telescope, vol 68, no 2, 1984
             http://www.census.gov/cgi-bin/geo/gisfaq?Q5.1
-    
+
     """
     rt = 6371  # Mean Earth radius in km
     # We consider latitude at rt whatever the point
