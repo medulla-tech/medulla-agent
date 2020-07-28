@@ -21,14 +21,11 @@
 # file  pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_start.py
 # recuper les key de master.
 # this plugin calling from starting function agent
-import base64
+
 import json
-import sys, os
+import os
 import logging
-import platform
-import traceback
-from sleekxmpp import jid
-from lib.utils import file_get_contents, getRandomName
+from lib.utils import getRandomName
 
 
 logger = logging.getLogger()

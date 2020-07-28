@@ -56,7 +56,7 @@ def processcommand(command , queue_out_session, messagestr, timeout):
         logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
         queue_out_session.put(msgoutsucces)
         #logging.debug("code error  %s"% cmd.code_error)
-        #logging.debug("result  %s"% cmd.stdout) 
+        #logging.debug("result  %s"% cmd.stdout)
         logging.debug("================================================")
 
     except TimeoutError:
@@ -166,7 +166,7 @@ class process_on_end_send_message_xmpp:
         if tosucces is None and toerror is None:
             logging.error("any agent to process result from queue")
             return False
- 
+
         message['data']['tosucces'] = tosucces
         message['data']['toerror']  = toerror
 
@@ -219,7 +219,7 @@ class process_on_end_send_message_xmpp:
                 cmd = cmdx(command, timeout)
                 workingstep['codereturn'] = cmd.code_error
                 workingstep['completed'] = 1
-                
+
                 cmddecode = decode_strconsole(cmd.stdout)
                 result = cmddecode.split('\n')
                 result  = [x.strip() for x in result if x !='']
@@ -297,7 +297,7 @@ class process_on_end_send_message_xmpp:
             logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
             queue_out_session.put(msgoutsucces)
             #logging.debug("code error  %s"% cmd.code_error)
-            #logging.debug("result  %s"% cmd.stdout) 
+            #logging.debug("result  %s"% cmd.stdout)
             logging.debug("================================================")
 
         except TimeoutError:
@@ -311,7 +311,7 @@ class process_on_end_send_message_xmpp:
             sys.exit(0)
 
 
- 
+
 class mannageprocess:
 
     def __init__(self, queue_out_session) :
@@ -384,7 +384,7 @@ class mannageprocess:
                     #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
                     ev['data']['result'] = {'codeerror': cmd.code_error,'command': command  }
                     for t in keysdescriptor:
-                        if t == 'codeerror' or t=='command': 
+                        if t == 'codeerror' or t=='command':
                             pass
                         elif t == '@resultcommand':
                             ev['data']['result']['@resultcommand'] = cmd.stdout

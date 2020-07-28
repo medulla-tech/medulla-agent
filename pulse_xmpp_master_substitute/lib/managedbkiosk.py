@@ -129,7 +129,7 @@ class manageskioskdb:
         self.closebase()
         return result
     ################################################################################################
-    # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage 
+    # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage
     def get_obj_ref(self):
         str_name_idpackage = {}
         strjson = self.get_cmd_launch("str_json_name_id_package")

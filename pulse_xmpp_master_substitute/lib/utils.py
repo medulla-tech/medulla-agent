@@ -48,14 +48,13 @@ import psutil
 import time
 from datetime import datetime
 import imp
-import requests 
+import requests
 from functools import wraps # This convenience func preserves name and docstring
 import uuid
 
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
-import zipfile
 
 logger = logging.getLogger()
 
@@ -99,7 +98,7 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             start = time.time()
             func_name = decorated_function.__name__
             log = logging.getLogger(func_name)
-            
+
             filepath = os.path.basename(__file__)
             # get function params (args and kwargs)
             if para:
@@ -1873,11 +1872,11 @@ class protodef:
             newfingerprint = pickle.dumps(fproto) #on recalcule le proto
             if self.fingerprintproto == newfingerprint:
                 self.proto = fproto
-                return False, self.proto 
+                return False, self.proto
         self.refreshfingerprintproto()
         self.fingerprintproto = file_get_contents(self.fileprotoinfo)
         self.proto = pickle.loads(self.fingerprintproto)
-        return True, self.proto 
+        return True, self.proto
 
     def refreshfingerprintproto(self):
         fproto = protodef.protoandport()
@@ -1961,9 +1960,9 @@ def protoandport():
 
 
 class geolocalisation_agent:
-    def __init__(self, 
-                 typeuser = "public", 
-                 geolocalisation=True, 
+    def __init__(self,
+                 typeuser = "public",
+                 geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
         self.determination = False
@@ -1984,7 +1983,7 @@ class geolocalisation_agent:
             return {}
         return self.localisation
 
-    def getdatafilegeolocalisation(self):    
+    def getdatafilegeolocalisation(self):
         if self.geoinfoexist():
             try:
                 with open(self.filegeolocalisation) as json_data:
@@ -2070,7 +2069,7 @@ class geolocalisation_agent:
             return r.json()
         except:
             return None
-    
+
     @staticmethod
     def call_simple_page_urllib(url):
         try:

@@ -137,6 +137,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/wakeonlan.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler.ini
 %_var/log/pulse
 %dir %{python2_sitelib}/pulse_xmpp_agent/
 %{python2_sitelib}/pulse_xmpp_agent/lib/
@@ -313,6 +314,7 @@ cp pulse_xmpp_agent/config/reverse_ssh_on.ini %buildroot%_sysconfdir/pulse-xmpp-
 cp pulse_xmpp_agent/config/wakeonlan.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/

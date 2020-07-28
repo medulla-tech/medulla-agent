@@ -22,6 +22,7 @@
 
 #fish: pulse_xmpp_master_substitute/bin/agent.py
 
+from sleekxmpp import jid
 import sys
 import os
 import logging
@@ -30,26 +31,14 @@ import json
 import time
 import sleekxmpp
 from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp import jid
-from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
+from sleekxmpp.xmlstream.stanzabase import ET
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.utils import DEBUGPULSE, getRandomName, call_plugin
 
 import traceback
-from optparse import OptionParser
-from multiprocessing import Queue
-from multiprocessing.managers import SyncManager
-import psutil
 import signal
-from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, DateTime, Text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-import imp
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
 
 import random
 
@@ -119,7 +108,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        
+
         self.xmpplog("Starting substitute agent",
                     type = 'info',
                     sessionname = "",
@@ -427,4 +416,4 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s"%(traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
-    
+

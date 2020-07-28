@@ -22,9 +22,8 @@
 # file pluginsmastersubstitute/plugin_loadpluginsubscribe.py
 
 import json
-import os
 import logging
-from lib.utils import file_get_contents, getRandomName, data_struct_message, name_random
+from lib.utils import name_random
 import traceback
 from sleekxmpp import jid
 import types
@@ -210,7 +209,7 @@ def changed_status(self, presence):
                 XmppMasterDatabase().updateMachinereconf(presence['from'])
             except Exception:
                 logger.error("\n%s" % (traceback.format_exc()))
-            
+
         XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
                                         "info",
                                         '',

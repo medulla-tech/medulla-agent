@@ -25,7 +25,7 @@ import glob
 import os
 import json
 import logging
-from utils import decode_strconsole, loadjsonfile
+from utils import loadjsonfile
 
 class Session(Exception):
     pass

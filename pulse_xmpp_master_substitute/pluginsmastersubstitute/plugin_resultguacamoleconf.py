@@ -23,9 +23,9 @@
 # file pluginsmaster/plugin_resultguacamoleconf.py
 
 import traceback
-import sys
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
+
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.11", "NAME": "resultguacamoleconf", "TYPE": "substitute"}

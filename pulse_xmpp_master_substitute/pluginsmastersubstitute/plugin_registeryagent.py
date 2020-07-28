@@ -22,24 +22,19 @@
 # plugin register machine dans presence table xmpp.
 # file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_registeryagent.py
 #
-import zlib
 import base64
 import traceback
 import os
-import sys
-import urllib2
-import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
-from lib.localisation import Localisation
 from lib.manageRSAsigned import MsgsignedRSA
 from sleekxmpp import jid
 from lib.utils import getRandomName
 import re
-from distutils.version import LooseVersion, StrictVersion
+from distutils.version import LooseVersion
 import ConfigParser
 
 # this import will be used later
@@ -994,10 +989,10 @@ def read_conf_remote_registeryagent(xmppobject):
     pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("Plugin %s\nConfiguration file :" \
-                     "\n\t%s missing" 
-                     "\neg conf:\n[parameters]\n" 
+                     "\n\t%s missing"
+                     "\neg conf:\n[parameters]\n"
                      "pluginlistregistered = loadpluginlistversion, loadpluginschedulerlistversion,"
-                     "loadautoupdate, loadshowregistration\n" 
+                     "loadautoupdate, loadshowregistration\n"
                      "pluginlistunregistered = loadpluginlistversion, loadpluginschedulerlistversion,"
                      "loadautoupdate, loadshowregistration" % (plugin['NAME'], pathfileconf))
         logger.warning("Default value for pluginlistregistered " \
@@ -1049,7 +1044,7 @@ def read_conf_remote_registeryagent(xmppobject):
             blacklisted_mac_addresses = Config.get('parameters', 'blacklisted_mac_addresses')
         else:
             blacklisted_mac_addresses = "00\:00\:00\:00\:00\:00"
-            
+
         blacklisted_mac_addresseslist = [x.strip() for x in blacklisted_mac_addresses.split(',')]
         # Unique regexp identique
         blacklisted_mac_addresseslist = list(set(blacklisted_mac_addresseslist))

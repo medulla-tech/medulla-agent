@@ -17,21 +17,16 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
 import sys, os
 import logging
 import ConfigParser
-import sleekxmpp
 import netifaces
 import random
-from sleekxmpp.exceptions import IqError, IqTimeout
 import json
 import hashlib
-import datetime
 from optparse import OptionParser
-import base64
-import copy
 import traceback
-from datetime import datetime
 import time
 import urllib2
 import signal
@@ -10193,7 +10188,7 @@ class actiontest(Thread):
             d+=1
             if maxthread < d:
                 maxthread = d
-            
+
             request = urllib2.Request(self.url, globaltest, self.HEADER)
             response = urllib2.urlopen(request)
         except Exception, exc:
@@ -10381,7 +10376,7 @@ if __name__ == '__main__':
     optp.add_option("-T", "--nbthreadmax",
                 dest="nbthreadmax", default=None,
                 help="nomber thread maximun")
-    
+
     #optp.add_option("-p", "--password",
                 #dest="password", default=None,
                 #help="password connection xmpp")

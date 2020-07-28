@@ -26,7 +26,7 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64
 from configuration import setconfigfile
 import traceback
 import logging
@@ -1320,7 +1320,7 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-                
+
             self.__alternatefolder()
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(self.workingstep['command'],
                                                                                 self.datasend,
@@ -1632,7 +1632,7 @@ class grafcet:
                                     'forced',
                                     'forced inventory',
                                     ]:
-                inventory = True                
+                inventory = True
                 self.workingstep['actioninventory'] = 'forced'
 
             if boolstr.lower() in ['false',
@@ -2125,7 +2125,7 @@ class grafcet:
         if 'packageuuid' in self.workingstep:
             self.workingstep['packageuuid'] = self.replaceTEMPLATE(
                 self.workingstep['packageuuid'])
-            directoryworking = os.path.join(managepackage.packagedir(), 
+            directoryworking = os.path.join(managepackage.packagedir(),
                                             self.workingstep['packageuuid'])
             if os.path.isdir(directoryworking):
                 os.chdir(directoryworking)

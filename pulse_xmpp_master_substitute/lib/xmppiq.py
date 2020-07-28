@@ -23,7 +23,9 @@
 # file pulse_xmpp_agent/lib/xmppiq.py
 #
 
-import os, sys, platform
+import os
+import sys
+import platform
 import json
 import logging
 from utils import   shellcommandtimeout, \
@@ -33,15 +35,11 @@ from utils import   shellcommandtimeout, \
                     decode_strconsole, \
                     encode_strconsole, \
                     keypub, \
-                    showlinelog, \
                     simplecommand, \
-                    sshdup, \
                     restartsshd, \
                     install_key_ssh_relayserver
 
 from  agentconffile import  directoryconffile
-from shutil import copyfile, move
-import datetime
 import zlib
 import re
 import base64
@@ -58,8 +56,7 @@ from utils_psutil import sensors_battery,\
                          mmemory,\
                          ifconfig,\
                          cpu_num,\
-                         netstat,\
-                         cputimes
+                         netstat
 from lib.update_remote_agent import agentinfoversion
 if sys.platform.startswith('win'):
     import win32net
