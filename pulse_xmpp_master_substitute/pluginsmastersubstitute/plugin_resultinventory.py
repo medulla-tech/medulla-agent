@@ -24,7 +24,6 @@
 import zlib
 import base64
 import traceback
-import os
 import urllib2
 import time
 import json

@@ -25,7 +25,6 @@
 """Implementation of ISesNework in Python."""
 from __future__ import print_function
 from  collections  import  deque
-import pprint
 import logging
 import logging.handlers
 from threading import Thread

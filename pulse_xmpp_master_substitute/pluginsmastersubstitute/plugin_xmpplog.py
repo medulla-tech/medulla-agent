@@ -22,7 +22,6 @@
 
 import traceback
 import os
-import time
 import json
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
