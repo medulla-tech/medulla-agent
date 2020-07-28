@@ -20,7 +20,6 @@
 # MA 02110-1301, USA.
 # file /pluginsmastersubstitute/plugin_resultenablemmcmodul.py
 
-import os
 import logging
 from lib.utils import getRandomName
 
