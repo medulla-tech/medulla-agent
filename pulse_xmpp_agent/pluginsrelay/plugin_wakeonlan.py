@@ -22,7 +22,7 @@
 from lib import utils
 from wakeonlan import wol
 
-plugin={"VERSION": "1.3", "NAME" :"wakeonlan","TYPE":"relayserver"}
+plugin={"VERSION": "2.0", "NAME" :"wakeonlan","TYPE":"relayserver"}
 @utils.pluginprocess
 def action( objectxmpp, action, sessionid, data, message, dataerreur,result):
     print data

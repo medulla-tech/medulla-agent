@@ -28,6 +28,8 @@ from lib.utils import file_get_contents, getRandomName, data_struct_message
 from lib.update_remote_agent import Update_Remote_Agent
 import types
 import ConfigParser
+from lib.plugins.xmpp import XmppMasterDatabase
+from sleekxmpp import jid
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -81,7 +83,7 @@ def read_conf_remote_update(objectxmpp):
         objectxmpp.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
         objectxmpp.autoupdate = True
         objectxmpp.generate_baseagent_fingerprint_interval = 900
-        objectxmpp.autoupdatebyrelay = False
+        objectxmpp.autoupdatebyrelay = True
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -100,7 +102,7 @@ def read_conf_remote_update(objectxmpp):
         if Config.has_option("parameters", "autoupdatebyrelay"):
             objectxmpp.autoupdatebyrelay = Config.getboolean('parameters', 'autoupdatebyrelay')
         else:
-            objectxmpp.autoupdatebyrelay = False
+            objectxmpp.autoupdatebyrelay = True
         if Config.has_option("parameters", "generate_baseagent_fingerprint_interval"):
             objectxmpp.generate_baseagent_fingerprint_interval = Config.getint('parameters', 'generate_baseagent_fingerprint_interval')
         else:
@@ -125,6 +127,10 @@ def senddescriptormd5(self, to):
                 'sessionid': getRandomName(5, "updateagent")}
     # Send catalog of files.
     logger.debug("Send descriptor to agent [%s] for update" % to)
+    if self.autoupdatebyrelay:
+        relayjid = XmppMasterDatabase().groupdeployfromjid(to)
+        relayjid = jid.JID(str(relayjid[0])).bare
+        datasend['data']['ars_update'] = relayjid
     self.send_message(to,
                       mbody=json.dumps(datasend),
                       mtype='chat')

@@ -26,7 +26,7 @@ from lib import utils
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "1.20", "NAME" : "start", "TYPE" : "all"}
+plugin = {"VERSION" : "2.0", "NAME" : "start", "TYPE" : "all"}
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -57,7 +57,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         elif sys.platform.startswith('linux') :
             pass
         elif sys.platform.startswith('darwin'):
-           pass
+            pass
     else:
         logger.debug("###################################################")
         logger.debug("##############AGENT RELAY SERVER###################")

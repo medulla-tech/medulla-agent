@@ -103,7 +103,7 @@ class manage_event:
     def manage_event_loop(self):
         # traitement message interne
         for i in self.event:
-            if not 'event' in i:
+            if 'event' not in i:
                 # message de type loop
                 jidto = jid.JID(str(i['to'])).bare
                 msg = {
@@ -130,7 +130,7 @@ class manage_event:
     def delmessage_loop(self, devent):
         # supprime message loop devent
         for i in self.event:
-            if not 'event' in i:
+            if 'event' not in i:
                 if i['data']['Devent'] == devent:
                     self.event.remove(i)
                     break
@@ -138,7 +138,7 @@ class manage_event:
     def delmessage_loop_Dtypequery(self, Dtypequery):
         # supprime message loop devent
         for i in self.event:
-            if not 'event' in i:
+            if 'event' not in i:
                 if i['data']['Dtypequery'] == Dtypequery:
                     self.event.remove(i)
                     break

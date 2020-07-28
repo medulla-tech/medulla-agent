@@ -138,21 +138,21 @@ class CommandsOnHost(object):
         # I'm a client if:
         # fk_use_as_proxy is set (ie I found a proxy server)
         # fk_use_as_proxy is not equal to my id (ie the proxy server is not me)
-        result = (self.fk_use_as_proxy != None and self.fk_use_as_proxy != self.id)
+        result = (self.fk_use_as_proxy is not None and self.fk_use_as_proxy != self.id)
         logging.getLogger().debug("isProxyClient(#%s): %s" % (self.getId(), result))
         return result
     def isProxyServer(self):
         # I'm a server if:
         # order_in_proxy is set (ie I have chance to become a server)
         # fk_use_as_proxy is equal to my id (ie the proxy server is me)
-        result = (self.order_in_proxy != None and self.fk_use_as_proxy == self.id)
+        result = (self.order_in_proxy is not None and self.fk_use_as_proxy == self.id)
         logging.getLogger().debug("isProxyServer(#%s): %s" % (self.getId(), result))
         return result
     def isLocalProxy(self):
         # I'm a server if:
         # order_in_proxy is set (ie I have chance to become a server)
         # fk_use_as_proxy is equal to my id (ie the proxy server is me)
-        result = (self.order_in_proxy != None)
+        result = (self.order_in_proxy is not None)
         logging.getLogger().debug("isLocalProxy(#%s): %s" % (self.getId(), result))
         return result
 
@@ -234,7 +234,7 @@ class CommandsOnHost(object):
         return {
             'id': self.id,
             'fk_commands': self.fk_commands,
-            'fk_target' : self.fk_target,
+            'fk_target': self.fk_target,
             'host': self.host,
             'start_date': self.start_date,
             'end_date': self.end_date,
@@ -257,7 +257,7 @@ class CommandsOnHost(object):
             'order_in_proxy': self.order_in_proxy,
             'fk_use_as_proxy': self.fk_use_as_proxy,
             'max_clients_per_proxy': self.max_clients_per_proxy,
-            'phases' : self.phases
+            'phases': self.phases
         }
 
     def setStartDate(self):

@@ -77,18 +77,13 @@ class confParameter:
     #}
 
     def __init__(self, namefileconfig):
-        #self.pathdirconffile = os.path.dirname(os.path.realpath(__file__))
         self.pathdirconffile =  os.path.dirname(os.path.realpath(namefileconfig))
         Config = ConfigParser.ConfigParser()
-        #namefileconfig = os.path.join( '/',
-                                       #'etc',
-                                       #'pulse-xmpp-agent_master_inv',
-                                       #'agentmasterinv.ini')
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
         self.packageserver = {}
-        #CONNECTION XMPP
+        # CONNECTION XMPP
         self.Port = "5222"
         if Config.has_option("connection", "port"):
             self.Port = Config.get('connection', 'port')

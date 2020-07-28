@@ -64,6 +64,13 @@ echo
 
 systemctl enable xrdp
 
+# Set permissions on the ssl keys
+usermod -aG ssl-cert xrdp
+chown root:ssl-cert /etc/xrdp/*.pem
+
+# Start the service
+systemctl restart xrdp
+
 # Open firewall port 3389 - TODO
 # if shorewall
 # echo "ACCEPT net fw tcp 3389" >> /etc/shorewall/rules

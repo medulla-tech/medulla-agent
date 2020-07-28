@@ -28,7 +28,7 @@ import traceback
 
 logger = logging.getLogger()
 
-plugin={"VERSION": "1.1", "NAME" :"wakeonlangroup","TYPE":"relayserver"}
+plugin={"VERSION": "2.0", "NAME" :"wakeonlangroup","TYPE":"relayserver"}
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")

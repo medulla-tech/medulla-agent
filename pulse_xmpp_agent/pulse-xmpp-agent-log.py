@@ -49,7 +49,6 @@ Base = declarative_base()
 
 VERSIONLOG = 1.0
 
-#jfkjfk
 class Logs(Base):
     # ====== Table name =========================
     __tablename__ = 'logs'
@@ -464,7 +463,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                      priority = dataobj['priority'],
                                      who = dataobj['who'])
             elif 'action' in dataobj :
-                if 'action' in dataobj and  'data' in dataobj and not "action" in dataobj['data']:
+                if 'action' in dataobj and  'data' in dataobj and 'action' not in dataobj['data']:
                     dataobj['data']['action'] = dataobj['action']
                     dataobj['data']['ret'] =  dataobj['ret']
                     dataobj['data']['sessionid'] =  dataobj['sessionid']
@@ -575,7 +574,7 @@ def doTask(opts, conf):
     xmpp = MUCBot(conf)
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0045') # Multi-User Chat
-    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600, 'interval' : 600, 'timeout' : 500  })
+    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600, 'interval': 600, 'timeout': 500  })
     xmpp.register_plugin('xep_0077') # In-band Registration
     xmpp['xep_0077'].force_registration = True
 

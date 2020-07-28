@@ -6,7 +6,7 @@ import datetime
 
 logger = logging.getLogger()
 
-plugin = {"VERSION" : "1.3", "NAME" : "scheduling_logsrotation",  "TYPE" : "all", "SCHEDULED" : True}
+plugin = {"VERSION" : "2.0", "NAME" : "scheduling_logsrotation",  "TYPE" : "all", "SCHEDULED" : True}
 
 # nb -1 infinie
 # everyday at 12:00

@@ -6,15 +6,15 @@
 	<string>net.siveo.pulse_xmpp_agent</string>
 	<key>ProgramArguments</key>
 		<array>
-			<string>/Library/Application Support/Pulse/bin/runpulseagent</string>
+			<string>/opt/Pulse/bin/runpulseagent</string>
 		</array>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>UserName</key>
 	<string>root</string>
 	<key>StandardOutPath</key>
-	<string>/tmp/net.siveo.pulse_xmpp_agent.log</string>
+	<string>/opt/Pulse/tmp/net.siveo.pulse_xmpp_agent.log</string>
 	<key>StandardErrorPath</key>
-	<string>/tmp/net.siveo.pulse_xmpp_agent.log</string>
+	<string>/opt/Pulse/tmp/net.siveo.pulse_xmpp_agent.log</string>
 </dict>
 </plist>

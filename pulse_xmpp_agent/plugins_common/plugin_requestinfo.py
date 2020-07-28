@@ -31,16 +31,16 @@ import sys
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "1.6", "NAME" : "requestinfo", "TYPE" : "all" }
+plugin = { "VERSION" : "2.0", "NAME" : "requestinfo", "TYPE" : "all" }
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("call %s from %s"%(plugin,message['from']))
     result = {
                 'action': "result%s"%action,
                 'sessionid': sessionid,
-                'data' : {},
-                'ret' : 0,
-                'base64' : False }
+                'data': {},
+                'ret': 0,
+                'base64': False }
 
     # This plugin needs to call back the plugin that made the request to return the result
     if 'actionasker' in data:

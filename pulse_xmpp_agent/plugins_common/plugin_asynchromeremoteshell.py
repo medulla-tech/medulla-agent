@@ -25,7 +25,7 @@ import traceback
 import sys, os
 import logging
 
-plugin = {"VERSION": "1.2", "NAME" : "asynchromeremoteshell", "TYPE" : "all"}
+plugin = {"VERSION": "2.0", "NAME" : "asynchromeremoteshell", "TYPE" : "all"}
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
@@ -36,9 +36,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     result = {
                     'action': "result%s"%action,
                     'sessionid': sessionid,
-                    'data' : {},
-                    'ret' : 0,
-                    'base64' : False
+                    'data': {},
+                    'ret': 0,
+                    'base64': False
                 }
     try:
         obj = utils.simplecommand(data['command'])

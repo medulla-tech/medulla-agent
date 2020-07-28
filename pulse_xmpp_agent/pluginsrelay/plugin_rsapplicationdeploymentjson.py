@@ -27,7 +27,7 @@ import logging
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION" : "1.2", "NAME" : "rsapplicationdeploymentjson", "TYPE" : "relayserver"}
+plugin = {"VERSION" : "2.0", "NAME" : "rsapplicationdeploymentjson", "TYPE" : "relayserver"}
 
 
 
@@ -37,9 +37,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     datasend = {
                     'action': action,
                     'sessionid': sessionid,
-                    'data' : {},
-                    'ret' : 0,
-                    'base64' : False
+                    'data': {},
+                    'ret': 0,
+                    'base64': False
                 }
 
     logging.getLogger().debug("#################RELAY SERVER#####################")
