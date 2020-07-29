@@ -523,7 +523,7 @@ def extend_xmlfile(xmppobject):
     dataFileCleaned = dataFileCleaned.replace("},]", "}]")
     dataFileCleaned = dataFileCleaned.replace("    ", " ")
     dataFileCleaned = dataFileCleaned.replace("  ", " ")
-    logger.debug(dataFileCleaned)
+    logger.debug("The informations that will be loaded by json are: %s", dataFileCleaned)
     data = json.loads(dataFileCleaned)
     if "action" in data:
         if data['action'] == "HwInfo":
