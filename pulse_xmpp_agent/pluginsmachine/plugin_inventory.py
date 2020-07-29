@@ -518,13 +518,13 @@ def extend_xmlfile(xmppobject):
     """
     datafile = file_get_contents(xmppobject.config.json_file_extend_inventory)
     datafile = datafile.replace("\n", "")
-    ddd = [x.strip() for x in datafile.split(',') if x.strip() != ""]
-    eee = ','.join(ddd)
-    eee = eee.replace("},]", "}]")
-    eee = eee.replace("    ", " ")
-    eee = eee.replace("  ", " ")
-    logger.debug(eee)
-    data = json.loads(eee)
+    dataStripped = [x.strip() for x in datafile.split(',') if x.strip() != ""]
+    dataFileCleaned = ','.join(dataStripped)
+    dataFileCleaned = dataFileCleaned.replace("},]", "}]")
+    dataFileCleaned = dataFileCleaned.replace("    ", " ")
+    dataFileCleaned = dataFileCleaned.replace("  ", " ")
+    logger.debug(dataFileCleaned)
+    data = json.loads(dataFileCleaned)
     if "action" in data:
         if data['action'] == "HwInfo":
             """ add printer """
