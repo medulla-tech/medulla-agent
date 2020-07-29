@@ -46,6 +46,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True # initialisation de boolchang. True si inventory modifier
+
+    if os.path.exists(xmppobject.config.json_file_extend_inventory):
+        dd = extend_xmlfile(xmppobject)
+        root = ET.fromstring(dd)
+        strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
+        namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
+        file_put_contents_w_a(namefilexml, strxml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
         if compteurcallplugin == 0:
@@ -105,8 +112,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s"%(nbcmd,
                                                                 timeoutfusion))
-                cmd = "fusioninventory-agent --backend-collect-timeout=%s --local=%s"%(timeoutfusion,
-                                                                                       inventoryfile)
+                if os.path.exists(namefilexml):
+                    cmd = "fusioninventory-agent --backend-collect-timeout=%s "\
+                        "--additional-content=%s --local=%s" % (timeoutfusion,
+                                                                namefilexml,
+                                                                inventoryfile)
+                    logger.debug("commande %s" % cmd)
+                else:
+                    cmd = "fusioninventory-agent --backend-collect-timeout=%s --local=%s" % (timeoutfusion,
+                                                                                             inventoryfile)
                 msg.append(cmd)
                 obj = utils.simplecommand(cmd)
                 msg.append("result code error %s result cmd %s"%(obj['code'],
@@ -496,3 +510,113 @@ def compact_xml(inputfile, graine=""):
         return strinventorysave, False
     logger.debug("inventory is modify.")
     return strinventorysave, True
+
+
+def extend_xmlfile(xmppobject):
+    """
+        generation xml extend from json
+    """
+    datafile = file_get_contents(xmppobject.config.json_file_extend_inventory)
+    datafile = datafile.replace("\n", "")
+    dataStripped = [x.strip() for x in datafile.split(',') if x.strip() != ""]
+    dataFileCleaned = ','.join(dataStripped)
+    dataFileCleaned = dataFileCleaned.replace("},]", "}]")
+    dataFileCleaned = dataFileCleaned.replace("    ", " ")
+    dataFileCleaned = dataFileCleaned.replace("  ", " ")
+    logger.debug("The informations that will be loaded by json are: %s", dataFileCleaned)
+    data = json.loads(dataFileCleaned)
+    if "action" in data:
+        if data['action'] == "HwInfo":
+            """ add printer """
+            xmlstring = """
+                           <REQUEST>
+                           <CONTENT>"""
+            if "peripherals" in data and data['peripherals']:
+                # il y a des printers a ajouter.
+                for printer in data['peripherals']:
+                    # add printer
+                    xmlstring = xmlstring + \
+                        printer_string(data['terminal'],
+                                       printer['type'],
+                                       printer['serial'],
+                                       description="%s_%s_%s_%s_%s" % (data['terminal'],
+                                                                       printer['type'],
+                                                                       printer['serial'],
+                                                                       printer['manufacturer'],
+                                                                       printer['model'])) + \
+                        usbdevice_string(data['terminal'],
+                                         "%s_%s_%s" % (printer['type'],
+                                                       printer['model'],
+                                                       printer['serial']),
+                                         printer['serial'],
+                                         printer['manufacturer'],
+                                         productid=printer['pid'],
+                                         vendorid=printer['vid'])
+
+            xmlstring = xmlstring + """\n</CONTENT>
+            </REQUEST>"""
+            return xmlstring
+
+
+def usbdevice_string(terminal,
+                     name,
+                     serial,
+                     manufacturer,
+                     productid="",
+                     vendorid="",
+                     caption=None,
+                     classname=None,
+                     subclass=None):
+    if caption is None:
+        caption = "%s_%s" % (name, terminal)
+    xmlprinter = """\n<USBDEVICES>
+    <CAPTION>%s</CAPTION>
+    <NAME>%s</NAME>
+    <MANUFACTURER>%s</MANUFACTURER>
+    <SERIAL>%s</SERIAL>
+    <PRODUCTID>%s</PRODUCTID>
+    <VENDORID>%s</VENDORID>""" % (caption.strip(),
+                                  name.strip(),
+                                  manufacturer.strip(),
+                                  serial.strip(),
+                                  productid.strip(),
+                                  vendorid.strip())
+    if classname is not None:
+        xmlprinter = "%s\n<CLASS>%s</CLASS>" % (xmlprinter, classname)
+        if subclass is not None:
+            xmlprinter = "%s\n<SUBCLASS>%s</SUBCLASS>" % (xmlprinter, subclass)
+    return "%s\n</USBDEVICES>" % (xmlprinter)
+
+
+def printer_string(terminal,
+                   name,
+                   serial,
+                   description=None,
+                   driver=None,
+                   port="USB",
+                   network=None,
+                   printprocessor=None,
+                   resolution=None,
+                   shared=None,
+                   status=None):
+    if driver is None:
+        driver = "%s_%s" % (name, terminal)
+    if description is None:
+        description = "%s_%s_%s" % (name, serial, terminal)
+    xmlprinter = """\n<PRINTERS>
+    <DRIVER>%s</DRIVER>
+    <NAME>%s</NAME>
+    <SERIAL>%s</SERIAL>
+    <DESCRIPTION>%s</DESCRIPTION>
+    <PORT>%s</PORT>""" % (driver, name, serial, description, port)
+    if network is not None:
+        xmlprinter = " %s\n<NETWORK>%s</NETWORK>" % (xmlprinter, network)
+    if printprocessor is not None:
+        xmlprinter = "%s\n<PRINTPROCESSOR>%s</PRINTPROCESSOR>" % (xmlprinter, printprocessor)
+    if resolution is not None:
+        xmlprinter = "%s\n<RESOLUTION>%s</RESOLUTION>" % (xmlprinter, resolution)
+    if shared is not None:
+        xmlprinter = "%s\n<SHARED>%s</SHARED>" % (xmlprinter, shared)
+    if status is not None:
+        xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
+    return "%s\n</PRINTERS>" % (xmlprinter)
