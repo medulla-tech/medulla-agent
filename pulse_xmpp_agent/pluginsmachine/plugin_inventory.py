@@ -553,7 +553,7 @@ def extend_xmlfile(xmppobject):
                                          productid=printer['pid'],
                                          vendorid=printer['vid'])
 
-            xmlstring=xmlstring + """\n</CONTENT>
+            xmlstring = xmlstring + """\n</CONTENT>
             </REQUEST>"""
             return xmlstring
 
