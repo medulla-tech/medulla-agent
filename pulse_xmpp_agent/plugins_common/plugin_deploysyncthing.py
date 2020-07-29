@@ -586,19 +586,19 @@ def add_device_in_folder_if_not_exist(folderid,
                                       keydevice,
                                       config,
                                       introducedBy=""):
-        result = False
-        for folder in config['folders']:
-            if folderid == folder['id']:
-                #folder trouve
-                for device in folder['devices']:
-                    if device['deviceID'] == keydevice:
-                        #device existe
-                        result = False
-                new_device = {"deviceID": keydevice,
-                              "introducedBy": introducedBy}
-                folder['devices'].append(new_device)
-                result = True
-        return result
+    result = False
+    for folder in config['folders']:
+        if folderid == folder['id']:
+            # Folder trouve
+            for device in folder['devices']:
+                if device['deviceID'] == keydevice:
+                    # Device existe
+                    result = False
+            new_device = {"deviceID": keydevice,
+                          "introducedBy": introducedBy}
+            folder['devices'].append(new_device)
+            result = True
+    return result
 
 
 def add_device_syncthing(objctsycthing,

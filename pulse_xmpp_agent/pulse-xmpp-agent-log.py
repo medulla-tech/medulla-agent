@@ -487,7 +487,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def message(self, msg):
-        #save log message
+        # save log message
         try :
             dataobj = json.loads(msg['body'])
             if 'data' in dataobj and\
@@ -501,10 +501,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                  dataobj['data']['sessionid'])
                     logger.debug("apply status %s for sessionid %s"%(re_status['status'],
                                                                      dataobj['data']['sessionid']))
-                #else:
-                    #logger.debug("apply pas de status for sessionid %s"%(dataobj['data']['sessionid']))
-            #rend agent log compatible standart stucture messages
-            if "sessionid" in dataobj :  dataobj["session"] = dataobj["sessionid"]
+            if "sessionid" in dataobj:
+                dataobj["session"] = dataobj["sessionid"]
             if 'data' in dataobj:
                 if "sessionid" in dataobj['data'] :
                     dataobj["data"]["session"] = dataobj["sessionid"]
@@ -559,7 +557,7 @@ def doTask(opts, conf):
 
 
     if opts.consoledebug :
-            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, logging.INFO)

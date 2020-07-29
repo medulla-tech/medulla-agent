@@ -96,7 +96,7 @@ class xmppbrowsing:
         obj = simplecommand(cmd)
         if obj['code'] != 0 :
             logger.error(obj['result'])
-            if self.objectxmpp != None:
+            if self.objectxmpp is not None:
                 self.objectxmpp.xmpplog("Error generating tree for machine %s [command :%s]" % (self.objectxmpp.boundjid.bare,
                                                                                                 cmd),
                                         type='noset',
@@ -110,19 +110,19 @@ class xmppbrowsing:
                                         fromuser="",
                                         touser="")
             return
-        if self.objectxmpp != None:
-                self.objectxmpp.xmpplog("Generating tree for machine %s [command :%s]"%(self.objectxmpp.boundjid.bare,
-                                                                                  cmd),
-                                        type = 'noset',
-                                        sessionname = '',
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = self.objectxmpp.boundjid.bare,
-                                        how = "Remote",
-                                        why = "",
-                                        module = "Error| Notify | browsing",
-                                        fromuser = "",
-                                        touser = "")
+        if self.objectxmpp is not None:
+            self.objectxmpp.xmpplog("Generating tree for machine %s [command :%s]" % (self.objectxmpp.boundjid.bare,
+                                                                                      cmd),
+                                    type='noset',
+                                    sessionname='',
+                                    priority=0,
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="Remote",
+                                    why="",
+                                    module="Error| Notify | browsing",
+                                    fromuser="",
+                                    touser="")
         logger.debug(msg)
 
     def _convert_size(self, size_bytes):
