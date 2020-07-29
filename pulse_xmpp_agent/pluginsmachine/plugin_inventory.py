@@ -120,7 +120,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     logger.debug("commande %s" % cmd)
                 else:
                     cmd = "fusioninventory-agent --backend-collect-timeout=%s --local=%s" % (timeoutfusion,
-                                                                                           inventoryfile)
+                                                                                             inventoryfile)
                 msg.append(cmd)
                 obj = utils.simplecommand(cmd)
                 msg.append("result code error %s result cmd %s"%(obj['code'],
@@ -543,7 +543,7 @@ def extend_xmlfile(xmppobject):
                                                                        printer['type'],
                                                                        printer['serial'],
                                                                        printer['manufacturer'],
-                                                                       printer['model']) ) + \
+                                                                       printer['model'])) + \
                         usbdevice_string(data['terminal'],
                                          "%s_%s_%s" % (printer['type'],
                                                        printer['model'],
@@ -569,7 +569,7 @@ def usbdevice_string(terminal,
                      subclass=None):
     if caption is None:
         caption = "%s_%s" % (name, terminal)
-    xmlprinter="""\n<USBDEVICES>
+    xmlprinter = """\n<USBDEVICES>
     <CAPTION>%s</CAPTION>
     <NAME>%s</NAME>
     <MANUFACTURER>%s</MANUFACTURER>
@@ -582,10 +582,10 @@ def usbdevice_string(terminal,
                                   productid.strip(),
                                   vendorid.strip())
     if classname is not None:
-        xmlprinter="%s\n<CLASS>%s</CLASS>" % (xmlprinter, classname)
+        xmlprinter = "%s\n<CLASS>%s</CLASS>" % (xmlprinter, classname)
         if subclass is not None:
-            xmlprinter="%s\n<SUBCLASS>%s</SUBCLASS>" % (xmlprinter, subclass)
-    return "%s\n</USBDEVICES>"%(xmlprinter)
+            xmlprinter = "%s\n<SUBCLASS>%s</SUBCLASS>" % (xmlprinter, subclass)
+    return "%s\n</USBDEVICES>" % (xmlprinter)
 
 
 def printer_string(terminal,
@@ -602,21 +602,21 @@ def printer_string(terminal,
     if driver is None:
         driver = "%s_%s" % (name, terminal)
     if description is None:
-        description="%s_%s_%s" % (name, serial, terminal)
-    xmlprinter="""\n<PRINTERS>
+        description = "%s_%s_%s" % (name, serial, terminal)
+    xmlprinter = """\n<PRINTERS>
     <DRIVER>%s</DRIVER>
     <NAME>%s</NAME>
     <SERIAL>%s</SERIAL>
     <DESCRIPTION>%s</DESCRIPTION>
     <PORT>%s</PORT>""" % (driver, name, serial, description, port)
     if network is not None:
-        xmlprinter=" %s\n<NETWORK>%s</NETWORK>" % (xmlprinter, network)
+        xmlprinter = " %s\n<NETWORK>%s</NETWORK>" % (xmlprinter, network)
     if printprocessor is not None:
-        xmlprinter="%s\n<PRINTPROCESSOR>%s</PRINTPROCESSOR>" % (xmlprinter, printprocessor)
+        xmlprinter = "%s\n<PRINTPROCESSOR>%s</PRINTPROCESSOR>" % (xmlprinter, printprocessor)
     if resolution is not None:
-        xmlprinter="%s\n<RESOLUTION>%s</RESOLUTION>" % (xmlprinter, resolution)
+        xmlprinter = "%s\n<RESOLUTION>%s</RESOLUTION>" % (xmlprinter, resolution)
     if shared is not None:
-        xmlprinter="%s\n<SHARED>%s</SHARED>" % (xmlprinter, shared)
+        xmlprinter = "%s\n<SHARED>%s</SHARED>" % (xmlprinter, shared)
     if status is not None:
-        xmlprinter="%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
+        xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
     return "%s\n</PRINTERS>" % (xmlprinter)
