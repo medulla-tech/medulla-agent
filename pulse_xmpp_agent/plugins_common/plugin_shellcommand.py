@@ -50,9 +50,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                             mbody=json.dumps(dataerreur),
                                             mtype='chat')
     except Exception:
-            traceback.print_exc(file=sys.stdout)
-            dataerreur['ret'] = -255
-            dataerreur['data']['msg'] = "Erreur commande\n %s"%data['cmd']
-            objectxmpp.send_message(mto=message['from'],
-                                    mbody=json.dumps(dataerreur),
-                                    mtype='chat')
+        traceback.print_exc(file=sys.stdout)
+        dataerreur['ret'] = -255
+        dataerreur['data']['msg'] = "Erreur commande\n %s" % data['cmd']
+        objectxmpp.send_message(mto=message['from'],
+                                mbody=json.dumps(dataerreur),
+                                mtype='chat')

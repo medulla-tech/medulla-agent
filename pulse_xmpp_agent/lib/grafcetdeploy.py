@@ -2097,10 +2097,7 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-
-
-
-  # WIP
+    # WIP
     def getpackagemanager(self):
         """
             This function helps to find the update manager

@@ -86,5 +86,6 @@ class CommandsOnHostPhase(object):
 
     def toDict(self, relations = False):
         d = self.__dict__
-        if '_sa_instance_state' in d: del d['_sa_instance_state']
+        if '_sa_instance_state' in d:
+            del d['_sa_instance_state']
         return d
