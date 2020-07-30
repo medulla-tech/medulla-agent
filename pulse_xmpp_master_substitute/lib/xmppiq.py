@@ -265,8 +265,8 @@ class functionsynchroxmpp:
                     # on configure le compte pulseuser
                     logger.info("Creating authorized_keys file in pulseuser account")
                     msgaction.append("Creating authorized_keys file in pulseuser account")
-                    authorized_keys_path = os.path.join("c:", "Users", "pulseuser", '.ssh','authorized_keys' )
-                    reverse_ssh_key_privat_path = os.path.join("c:", "Users", "pulseuser", '.ssh','id_rsa' )
+                    authorized_keys_path = os.path.join("C:", "Users", "pulseuser", '.ssh', 'authorized_keys')
+                    reverse_ssh_key_privat_path = os.path.join("C:", "Users", "pulseuser", '.ssh', 'id_rsa')
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                         os.makedirs(os.path.dirname(authorized_keys_path), 0700)
                     if not os.path.isfile(authorized_keys_path):
