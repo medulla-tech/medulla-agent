@@ -1095,7 +1095,7 @@ class grafcet:
                 return
             self.__action_completed__(self.workingstep)
             if 'set' in self.workingstep:
-                if isinstance(self.workingstep['set'], (str, unicode)): 
+                if isinstance(self.workingstep['set'], (str, unicode)):
                     self.workingstep['set'] = str(self.workingstep['set'])
                     if self.workingstep['set'] != "":
                         dataconfiguration = self.workingstep['set'].split("@__@")
