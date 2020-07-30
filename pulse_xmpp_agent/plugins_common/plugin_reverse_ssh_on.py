@@ -109,8 +109,7 @@ def prepare_ssh_repertoire_window_user_pulse():
             # permision total for les user pulse, userconnecter, system, et administrators.
             userprogram = win32api.GetUserName().lower()
 
-            filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
-            filekey = os.path.join("c:\progra~1", "pulse" ,'.ssh')
+            filekey = os.path.join("c:", "progra~1", "pulse", '.ssh')
 
             user, domain, type = win32security.LookupAccountName ("", userprogram)
             user1, domain, type = win32security.LookupAccountName ("", "pulse")
