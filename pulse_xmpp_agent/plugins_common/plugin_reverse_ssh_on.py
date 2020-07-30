@@ -109,7 +109,7 @@ def prepare_ssh_repertoire_window_user_pulse():
             # permision total for les user pulse, userconnecter, system, et administrators.
             userprogram = win32api.GetUserName().lower()
 
-            filekey = os.path.join("c:", "progra~1", "pulse", '.ssh')
+            filekey = os.path.join("C:", "progra~1", "pulse", '.ssh')
 
             user, domain, type = win32security.LookupAccountName ("", userprogram)
             user1, domain, type = win32security.LookupAccountName ("", "pulse")
@@ -178,7 +178,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
         # check if pulse account exists
         try:
             win32net.NetUserGetInfo('','pulseuser',0)
-            filekey = os.path.join("c:\Users\pulseuser", ".ssh", keyname)
+            filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", keyname)
         except:
             filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', keyname)
 
@@ -238,7 +238,7 @@ def set_authorized_keys(keypub):
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
-                file_authorized_keys = os.path.join("c:\Users\pulseuser", ".ssh", "authorized_keys")
+                file_authorized_keys = os.path.join("C:", "Users", "pulseuser", ".ssh", "authorized_keys")
             except:
                 file_authorized_keys = os.path.join(os.environ["ProgramFiles"],
                                                     "pulse" ,
@@ -448,7 +448,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 ################# win reverse #################
                 try:
                     win32net.NetUserGetInfo('','pulseuser',0)
-                    filekey = os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+                    filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
                 except:
                     filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
                 # il faut adapter les droit du fichier idrsa suivant si console administrator ou system.
