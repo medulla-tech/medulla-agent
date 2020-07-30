@@ -1375,7 +1375,7 @@ if sys.platform.startswith('win'):
             wr.SetValueEx(registry_key, name, 0, type, value)
             wr.CloseKey(registry_key)
             return True
-        except WindowsError:
+        except WindowsError:  # skipcq: PYL-E0602
             return False
 
     def get_reg(name, subkey, key=wr.HKEY_LOCAL_MACHINE):
@@ -1387,7 +1387,7 @@ if sys.platform.startswith('win'):
             value, regtype = wr.QueryValueEx(registry_key, name)
             wr.CloseKey(registry_key)
             return value
-        except WindowsError:
+        except WindowsError:  # skipcq: PYL-E0602
             return None
 
 def shutdown_command(time = 0, msg=''):
