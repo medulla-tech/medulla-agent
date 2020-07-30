@@ -296,9 +296,6 @@ Section "OpenSSH" sec_openssh
   ${LogString} "pulseuser user creation...."
   ${LogString} "------------------------------------------------------"
 
-  ; Stop all services
-  Call StopPulseServices
-
   ; Remove previous Pulse profile and account
   Call DeletePulseProfile
 
@@ -624,18 +621,22 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Hide the account
-  StrCpy $0 `WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0`
+  StrCpy $0 `REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" /v "pulseuser" /t REG_DWORD /d 0 /f`
   ${LogString} "Running $0"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
-  ${If} ${Errors}
+  nsExec::ExecToLog $0
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${LogString} "Return output 0 : $0"
+    ${LogString} "Return output 1 : $1"
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error hiding pulse account. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-    ${LogString} "Error hiding pulse account."
     SetErrorLevel 140
     Quit
   ${EndIf}
+  ${LogString} "Return code was : $0"
 
   ; Check and configure permissions
   ClearErrors
@@ -1746,10 +1747,74 @@ FunctionEnd
 !insertmacro RemovePulseUser ""
 !insertmacro RemovePulseUser "un."
 
-
 ; Macro Stop all Pulse services
 !macro StopPulseServices UN
   Function ${UN}StopPulseServices
+
+  StrCpy $0 `sc query sshd`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop sshd`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old sshd agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query ssh-agent`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop ssh-agent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old ssh-agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
   StrCpy $0 `sc query pulseagent`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1777,7 +1842,7 @@ FunctionEnd
             MessageBox MB_OK|MB_ICONSTOP "Pulse agent stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
-        SetErrorLevel 102
+        SetErrorLevel 144
         Quit
   ${EndSwitch}
   ${LogString} $0
@@ -1805,12 +1870,12 @@ FunctionEnd
         ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
-	${LogString} $0
+        ${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse network notify stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
-        SetErrorLevel 102
+        SetErrorLevel 145
         Quit
   ${EndSwitch}
   ${LogString} $0
@@ -1829,12 +1894,12 @@ FunctionEnd
         ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
-	${LogString} $0
+        ${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
-        SetErrorLevel 102
+        SetErrorLevel 146
         Quit
   ${EndSwitch}
   ${LogString} $0

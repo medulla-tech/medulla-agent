@@ -52,7 +52,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         root = ET.fromstring(dd)
         strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
         namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
-        file_put_contents_w_a(namefilexml, strxml)
+        utils.file_put_contents_w_a(namefilexml, strxml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
         if compteurcallplugin == 0:
@@ -516,7 +516,7 @@ def extend_xmlfile(xmppobject):
     """
         generation xml extend from json
     """
-    datafile = file_get_contents(xmppobject.config.json_file_extend_inventory)
+    datafile = utils.file_get_contents(xmppobject.config.json_file_extend_inventory)
     datafile = datafile.replace("\n", "")
     dataStripped = [x.strip() for x in datafile.split(',') if x.strip() != ""]
     dataFileCleaned = ','.join(dataStripped)
