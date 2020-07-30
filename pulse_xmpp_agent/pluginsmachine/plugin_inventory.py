@@ -42,10 +42,10 @@ plugin = {"VERSION": "2.0", "NAME" :"inventory", "TYPE":"machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s"%(plugin,message['from']))
+    logger.debug("call %s from %s" % (plugin,message['from']))
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
-    boolchang = True # initialisation de boolchang. True si inventory modifier
+    boolchang = True
 
     if os.path.exists(xmppobject.config.json_file_extend_inventory):
         dd = extend_xmlfile(xmppobject)
@@ -54,9 +54,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
         utils.file_put_contents_w_a(namefilexml, strxml)
     try:
-        compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
+        compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
         if compteurcallplugin == 0:
-            logger.debug("configure plugin %s"%action)
+            logger.debug("configure plugin %s" % action)
     except:
         pass
     try:
@@ -88,30 +88,30 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
     elif sys.platform.startswith('win'):
         inventoryfile = os.path.join(os.environ["ProgramFiles"],
-                                    'Pulse',
-                                    'tmp',
-                                    'inventory.txt')
+                                     'Pulse',
+                                     'tmp',
+                                     'inventory.txt')
     else:
         logger.error("undefined OS")
-        xmppobject.xmpplog( "undefined OS",
-                            type = 'deploy',
-                            sessionname = sessionid,
-                            priority = -1,
-                            action = "xmpplog",
-                            who = strjidagent,
-                            module = "Notify | Inventory | Error",
-                            date = None )
+        xmppobject.xmpplog("undefined OS",
+                           type='deploy',
+                           sessionname=sessionid,
+                           priority=-1,
+                           action="xmpplog",
+                           who=strjidagent,
+                           module="Notify | Inventory | Error",
+                           date=None)
         return
     if os.path.exists(inventoryfile):
-        if os.path.exists("%s.back"%inventoryfile):
-            os.remove("%s.back"%inventoryfile)
-        os.rename(inventoryfile, "%s.back"%inventoryfile)
+        if os.path.exists("%s.back" % inventoryfile):
+            os.remove("%s.back" % inventoryfile)
+        os.rename(inventoryfile, "%s.back" % inventoryfile)
 
     if sys.platform.startswith('linux'):
         try:
             for nbcmd in range(1, 4):
-                logger.debug("process inventory %s timeout %s"%(nbcmd,
-                                                                timeoutfusion))
+                logger.debug("process inventory %s timeout %s" % (nbcmd,
+                                                                  timeoutfusion))
                 if os.path.exists(namefilexml):
                     cmd = "fusioninventory-agent --backend-collect-timeout=%s "\
                         "--additional-content=%s --local=%s" % (timeoutfusion,
@@ -123,21 +123,21 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                                                                              inventoryfile)
                 msg.append(cmd)
                 obj = utils.simplecommand(cmd)
-                msg.append("result code error %s result cmd %s"%(obj['code'],
-                                                                 obj['result']))
+                msg.append("result code error %s result cmd %s" % (obj['code'],
+                                                                   obj['result']))
                 if obj['code'] == 0:
                     break
                 timeoutfusion = timeoutfusion + 60
             for mesg in msg:
                 logger.debug(mesg)
-                xmppobject.xmpplog( mesg,
-                                    type = 'deploy',
-                                    sessionname = sessionid,
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Notify | Inventory | Error",
-                                    date = None )
+                xmppobject.xmpplog(mesg,
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None)
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
@@ -145,53 +145,53 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     if boolchang is False:
                         xmppobject.xmpplog("no significant change in inventory.",
-                                            type = 'deploy',
-                                            sessionname = sessionid,
-                                            priority = -1,
-                                            action = "xmpplog",
-                                            who = strjidagent,
-                                            module = "Notify | Inventory",
-                                            date = None )
+                                           type='deploy',
+                                           sessionname=sessionid,
+                                           priority=-1,
+                                           action="xmpplog",
+                                           who=strjidagent,
+                                           module="Notify | Inventory",
+                                           date=None )
                     else:
                         xmppobject.xmpplog("inventory changed",
-                                            type = 'deploy',
-                                            sessionname = sessionid,
-                                            priority = -1,
-                                            action = "xmpplog",
-                                            who = strjidagent,
-                                            module = "Notify | Inventory",
-                                            date = None )
+                                           type='deploy',
+                                           sessionname=sessionid,
+                                           priority=-1,
+                                           action="xmpplog",
+                                           who=strjidagent,
+                                           module="Notify | Inventory",
+                                           date=None )
                 except Exception as e:
-                    logger.error("\n%s"%(traceback.format_exc()))
-                    xmppobject.xmpplog( "error inventory %s "%str(e),
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = -1,
-                                        action = "xmpplog",
-                                        who = strjidagent,
-                                        module = "Notify | Inventory | Error",
-                                        date = None )
+                    logger.error("\n%s" % (traceback.format_exc()))
+                    xmppobject.xmpplog("error inventory %s " % str(e),
+                                       type='deploy',
+                                       sessionname=sessionid,
+                                       priority=-1,
+                                       action="xmpplog",
+                                       who=strjidagent,
+                                       module="Notify | Inventory | Error",
+                                       date=None )
                     raise Exception(str(e))
             else:
                 raise Exception('file inventory no exits')
         except Exception as e:
-            dataerreur['data']['msg'] = "pulgin inventory %s : [ %s]"%(dataerreur['data']['msg'],str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            dataerreur['data']['msg'] = "pulgin inventory %s : [ %s]" % (dataerreur['data']['msg'],str(e))
+            logger.error("\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(mto=xmppobject.sub_inventory,
-                                   mbody=json.dumps(dataerreur),
-                                   mtype='chat')
+                                    mbody=json.dumps(dataerreur),
+                                    mtype='chat')
             msg.append(dataerreur['data']['msg'] )
             for mesg in msg:
                 logger.debug(mesg)
-                xmppobject.xmpplog( mesg,
-                                    type = 'deploy',
-                                    sessionname = sessionid,
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Notify | Inventory | Error",
-                                    date = None )
+                xmppobject.xmpplog(mesg,
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None )
             return
     elif sys.platform.startswith('win'):
         try:
@@ -206,32 +206,32 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    'fusioninventory-agent.bat')
             for nbcmd in range(3):
                 cmd = """\"%s\" --config=none --scan-profiles """ \
-                        """--backend-collect-timeout=%s --local=\"%s\""""%(program,
-                                                                           timeoutfusion,
-                                                                           inventoryfile)
+                        """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
+                                                                             timeoutfusion,
+                                                                             inventoryfile)
                 msg.append(cmd)
                 logger.debug(cmd)
                 obj = utils.simplecommand(cmd)
-                msg.append("result code error %s result cmd %s"%(obj['code'],
+                msg.append("result code error %s result cmd %s" % (obj['code'],
                                                                  obj['result']))
                 if obj['code'] == 0:
                     break
                 timeoutfusion = timeoutfusion + 60
             for mesg in msg:
-                xmppobject.xmpplog( mesg,
-                                    type = 'deploy',
-                                    sessionname = sessionid,
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Notify | Inventory | Error",
-                                    date = None )
+                xmppobject.xmpplog(mesg,
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None )
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
                     # read max_key_index parameter to find out the number of keys
                     # Registry keys that need to be pushed in an inventory
-                    graine =""
+                    graine = ""
                     listfinger = []
                     if hasattr(xmppobject.config, 'max_key_index'):
                         result['data']['reginventory'] = {}
@@ -240,24 +240,24 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         nb_iter = int(xmppobject.config.max_key_index) + 1
                         # get the value of each key and create the json file
                         for num in range(1, nb_iter):
-                            reg_key_num = 'reg_key_'+str(num)
+                            reg_key_num = 'reg_key_' + str(num)
                             result['data']['reginventory'][reg_key_num] = {}
                             registry_key = getattr(xmppobject.config, reg_key_num)
                             result['data']['reginventory'][reg_key_num]['key'] = registry_key
                             hive = registry_key.split('\\')[0].strip('"')
                             sub_key = registry_key.split('\\')[-1].strip('"')
-                            path = registry_key.replace(hive+'\\', '').replace('\\'+sub_key, '').strip('"')
+                            path = registry_key.replace(hive + '\\', '').replace('\\' + sub_key, '').strip('"')
                             if hive == 'HKEY_CURRENT_USER':
                                 if hasattr(xmppobject.config, 'current_user'):
-                                    process = subprocess.Popen( "wmic useraccount where name='%s' " \
-                                                                    "get sid"%xmppobject.config.current_user,
-                                                                shell=True,
-                                                                stdout=subprocess.PIPE,
-                                                                stderr=subprocess.STDOUT)
+                                    process = subprocess.Popen("wmic useraccount where name = '%s' " \
+                                                               "get sid" % xmppobject.config.current_user,
+                                                               shell=True,
+                                                               stdout=subprocess.PIPE,
+                                                               stderr=subprocess.STDOUT)
                                     output = process.stdout.readlines()
                                     sid = output[1].rstrip(' \t\n\r')
                                     hive = 'HKEY_USERS'
-                                    path = sid+'\\'+path
+                                    path = sid+'\\' + path
                                 else:
                                     logging.log(DEBUGPULSEPLUGIN, "HKEY_CURRENT_USER hive defined but current_user config parameter is not")
                             logging.log(DEBUGPULSEPLUGIN, "hive: %s" % hive)
@@ -266,9 +266,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             reg_constants = registerwindows.constantregisterwindows()
                             try:
                                 key = _winreg.OpenKey(reg_constants.getkey(hive),
-                                                    path,
-                                                    0,
-                                                    _winreg.KEY_READ | other_view_flag)
+                                                      path,
+                                                      0,
+                                                      _winreg.KEY_READ | other_view_flag)
                                 key_value = _winreg.QueryValueEx(key, sub_key)
                                 logging.log(DEBUGPULSEPLUGIN,"key_value: %s" % str(key_value[0]))
                                 result['data']['reginventory'][reg_key_num]['value'] = str(key_value[0])
@@ -295,78 +295,78 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     if boolchang is False:
                         xmppobject.xmpplog("no significant change in inventory.",
-                                            type = 'deploy',
-                                            sessionname = sessionid,
-                                            priority = -1,
-                                            action = "xmpplog",
-                                            who = strjidagent,
-                                            module = "Notify | Inventory",
-                                            date = None )
+                                           type='deploy',
+                                           sessionname=sessionid,
+                                           priority=-1,
+                                           action="xmpplog",
+                                           who=strjidagent,
+                                           module="Notify | Inventory",
+                                           date=None)
                     else:
                         xmppobject.xmpplog("inventory changed",
-                                            type = 'deploy',
-                                            sessionname = sessionid,
-                                            priority = -1,
-                                            action = "xmpplog",
-                                            who = strjidagent,
-                                            module = "Notify | Inventory",
-                                            date = None )
+                                           type='deploy',
+                                           sessionname=sessionid,
+                                           priority=-1,
+                                           action="xmpplog",
+                                           who=strjidagent,
+                                           module="Notify | Inventory",
+                                           date=None)
                 except Exception as e:
-                    logger.error("\n%s"%(traceback.format_exc()))
-                    xmppobject.xmpplog( "error inventory %s "%str(e),
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = -1,
-                                        action = "xmpplog",
-                                        who = strjidagent,
-                                        module = "Notify | Inventory | Error",
-                                        date = None )
+                    logger.error("\n%s" % (traceback.format_exc()))
+                    xmppobject.xmpplog("error inventory %s " % str(e),
+                                       type='deploy',
+                                       sessionname=sessionid,
+                                       priority=-1,
+                                       action="xmpplog",
+                                       who=strjidagent,
+                                       module="Notify | Inventory | Error",
+                                       date=None)
                     raise Exception(str(e))
             else:
                 raise Exception('file inventory no exits')
         except Exception as e:
-            dataerreur['data']['msg'] = "pulgin inventory %s : [ %s]"%(dataerreur['data']['msg'],str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            dataerreur['data']['msg'] = "pulgin inventory %s : [ %s]" % (dataerreur['data']['msg'],str(e))
+            logger.error("\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(mto=xmppobject.sub_inventory,
-                                   mbody=json.dumps(dataerreur),
-                                   mtype='chat')
+                                    mbody=json.dumps(dataerreur),
+                                    mtype='chat')
             msg.append(dataerreur['data']['msg'] )
             for mesg in msg:
                 logger.debug(mesg)
-                xmppobject.xmpplog( mesg,
-                                    type = 'deploy',
-                                    sessionname = sessionid,
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Notify | Inventory | Error",
-                                    date = None )
+                xmppobject.xmpplog(mesg,
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None )
             return
     elif sys.platform.startswith('darwin'):
         try:
             for nbcmd in range(3):
                 ## attention this command has been tested on only 1 Mac
                 cmd = "/opt/fusioninventory-agent/bin/fusioninventory-inventory " \
-                      "--backend-collect-timeout=%s > %s"%(timeoutfusion,
-                                                           inventoryfile)
+                      "--backend-collect-timeout=%s > %s" % (timeoutfusion,
+                                                             inventoryfile)
                 msg.append(cmd)
                 logger.debug(cmd)
                 obj = utils.simplecommand(cmd)
-                msg.append("result code error %s result cmd %s"%(obj['code'],
-                                                                 obj['result']))
+                msg.append("result code error %s result cmd %s" % (obj['code'],
+                                                                   obj['result']))
                 if obj['code'] == 0:
                     break
                 timeoutfusion = timeoutfusion + 60
             for mesg in msg:
-                xmppobject.xmpplog( mesg,
-                                    type = 'deploy',
-                                    sessionname = sessionid,
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Notify | Inventory | Error",
-                                    date = None )
+                xmppobject.xmpplog(mesg,
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None)
             msg=[]
             if os.path.exists(inventoryfile):
                 try:
@@ -374,53 +374,53 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
                     if boolchang is False:
                         xmppobject.xmpplog("no significant change in inventory.",
-                                            type = 'deploy',
-                                            sessionname = sessionid,
-                                            priority = -1,
-                                            action = "xmpplog",
-                                            who = strjidagent,
-                                            module = "Notify | Inventory",
-                                            date = None )
+                                           type='deploy',
+                                           sessionname=sessionid,
+                                           priority=-1,
+                                           action="xmpplog",
+                                           who=strjidagent,
+                                           module="Notify | Inventory",
+                                           date=None)
                     else:
                         xmppobject.xmpplog("inventory changed",
-                                            type = 'deploy',
-                                            sessionname = sessionid,
-                                            priority = -1,
-                                            action = "xmpplog",
-                                            who = strjidagent,
-                                            module = "Notify | Inventory",
-                                            date = None )
+                                           type='deploy',
+                                           sessionname=sessionid,
+                                           priority=-1,
+                                           action="xmpplog",
+                                           who=strjidagent,
+                                           module="Notify | Inventory",
+                                           date=None)
                 except Exception as e:
-                    logger.error("\n%s"%(traceback.format_exc()))
-                    xmppobject.xmpplog( "error inventory %s "%str(e),
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = -1,
-                                        action = "xmpplog",
-                                        who = strjidagent,
-                                        module = "Notify | Inventory | Error",
-                                        date = None )
+                    logger.error("\n%s" % (traceback.format_exc()))
+                    xmppobject.xmpplog("error inventory %s "%str(e),
+                                       type='deploy',
+                                       sessionname=sessionid,
+                                       priority=-1,
+                                       action="xmpplog",
+                                       who=strjidagent,
+                                       module="Notify | Inventory | Error",
+                                       date=None)
                     raise Exception(str(e))
             else:
                 raise Exception('file inventory no exits')
         except Exception as e:
-            dataerreur['data']['msg'] = "pulgin inventory %s : [ %s]"%(dataerreur['data']['msg'],str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            dataerreur['data']['msg'] = "pulgin inventory %s : [ %s]" % (dataerreur['data']['msg'],str(e))
+            logger.error("\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(mto=xmppobject.sub_inventory,
-                                   mbody=json.dumps(dataerreur),
-                                   mtype='chat')
+                                    mbody=json.dumps(dataerreur),
+                                    mtype='chat')
             msg.append(dataerreur['data']['msg'] )
             for mesg in msg:
                 logger.debug(mesg)
-                xmppobject.xmpplog( mesg,
-                                    type = 'deploy',
-                                    sessionname = sessionid,
-                                    priority = -1,
-                                    action = "xmpplog",
-                                    who = strjidagent,
-                                    module = "Notify | Inventory | Error",
-                                    date = None )
+                xmppobject.xmpplog(mesg,
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None )
             return
 
     if result['base64'] is True:
@@ -430,23 +430,23 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                 mbody=json.dumps(result),
                                 mtype='chat')
         xmppobject.xmpplog("inventory is injected",
-                            type = 'deploy',
-                            sessionname = sessionid,
-                            priority = -1,
-                            action = "xmpplog",
-                            who = strjidagent,
-                            module = "Notify | Inventory",
-                            date = None )
+                           type='deploy',
+                           sessionname=sessionid,
+                           priority=-1,
+                           action="xmpplog",
+                           who=strjidagent,
+                           module="Notify | Inventory",
+                           date=None)
     else:
         logger.debug("inventory is not injected")
         xmppobject.xmpplog("inventory is not injected",
-                            type = 'deploy',
-                            sessionname = sessionid,
-                            priority = -1,
-                            action = "xmpplog",
-                            who = strjidagent,
-                            module = "Notify | Inventory",
-                            date = None )
+                           type='deploy',
+                           sessionname=sessionid,
+                           priority=-1,
+                           action="xmpplog",
+                           who=strjidagent,
+                           module="Notify | Inventory",
+                           date=None)
 
 def Setdirectorytempinfo():
     """
@@ -491,9 +491,9 @@ def compact_xml(inputfile, graine=""):
             t.getparent().remove(t);
     strinventory  =  ET.tostring(xmlTree, pretty_print=True)
     # -----debug file compare------
-    #namefilecompare = "%s.xml1"%inputfile
+    #namefilecompare = "%s.xml1" % inputfile
     #if os.path.exists(namefilecompare):
-        #os.rename(namefilecompare, "%s.back"%namefilecompare)
+        #os.rename(namefilecompare, "%s.back" % namefilecompare)
     #utils.file_put_contents_w_a(namefilecompare, strinventory)
     # -----end debug file compare------
     fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
