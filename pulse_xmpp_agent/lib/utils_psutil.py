@@ -47,7 +47,7 @@ def sensors_battery():
         va ="status:     %s" % (
             "charging" if batt.percent < 100 else "fully charged")
         vb ="plugged in: yes"
-        return result + "\n" + va + "\n" + vb 
+        return result + "\n" + va + "\n" + vb
     else:
         va = "left:       %s" % secs2hours(batt.secsleft)
         vb = "status:     %s" % "discharging"
@@ -57,7 +57,7 @@ def sensors_battery():
 
 def winservices():
     """
-    $ function winservices return string of List all Windows services installed.
+    function winservices return string of List all Windows services installed.
     AeLookupSvc (Application Experience)
     status: stopped, start: manual, username: localSystem, pid: None
     binpath: C:\Windows\system32\svchost.exe -k netsvcs
@@ -177,7 +177,7 @@ def clone_ps_aux():
                 ctime,
                 cputime,
                 pinfo['name'].strip() or '?')
-    result = result + "\n"     
+    result = result + "\n"
     return result
 
 
@@ -209,7 +209,7 @@ def disk_usage():
     """
         List all mounted disk partitions a-la "df -h" command.
 
-        $ python scripts/disk_usage.py
+        python scripts/disk_usage.py
         Device               Total     Used     Free  Use %      Type  Mount
         /dev/sdb3            18.9G    14.7G     3.3G    77%      ext4  /
         /dev/sda6           345.9G    83.8G   244.5G    24%      ext4  /home
@@ -258,7 +258,7 @@ def mmemory():
     """
         A clone of 'free' cmdline utility.
 
-        $ python scripts/free.py
+        python scripts/free.py
                     total       used       free     shared    buffers      cache
         Mem:      10125520    8625996    1499524          0     349500    3307836
         Swap:            0          0          0
@@ -304,7 +304,7 @@ def ifconfig():
     """
         A clone of 'ifconfig' on UNIX.
 
-        $ python scripts/ifconfig.py
+        python scripts/ifconfig.py
         lo:
             stats          : speed=0MB, duplex=?, mtu=65536, up=yes
             incoming       : bytes=1.95M, pkts=22158, errs=0, drops=0
@@ -476,7 +476,7 @@ def cputimes (percpu = False ):
     result = {}
     infocpu =  psutil.cpu_times( percpu = False)
     result['allcpu'] = __dictdata(infocpu)
-    if percpu == False:
+    if percpu is False:
         #global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
     elif percpu is True:

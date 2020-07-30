@@ -109,8 +109,7 @@ def prepare_ssh_repertoire_window_user_pulse():
             # permision total for les user pulse, userconnecter, system, et administrators.
             userprogram = win32api.GetUserName().lower()
 
-            filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh')
-            filekey = os.path.join("c:\progra~1", "pulse" ,'.ssh')
+            filekey = os.path.join("C:", "progra~1", "pulse", '.ssh')
 
             user, domain, type = win32security.LookupAccountName ("", userprogram)
             user1, domain, type = win32security.LookupAccountName ("", "pulse")
@@ -179,7 +178,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
         # check if pulse account exists
         try:
             win32net.NetUserGetInfo('','pulseuser',0)
-            filekey = os.path.join("c:\Users\pulseuser", ".ssh", keyname)
+            filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", keyname)
         except:
             filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', keyname)
 
@@ -239,7 +238,7 @@ def set_authorized_keys(keypub):
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
-                file_authorized_keys = os.path.join("c:\Users\pulseuser", ".ssh", "authorized_keys")
+                file_authorized_keys = os.path.join("C:", "Users", "pulseuser", ".ssh", "authorized_keys")
             except:
                 file_authorized_keys = os.path.join(os.environ["ProgramFiles"],
                                                     "pulse" ,
@@ -265,7 +264,7 @@ def set_authorized_keys(keypub):
         else:
             try:
                 content = file_get_contents(file_authorized_keys)
-                if not keypub.strip('\n\r\t ') in content:
+                if keypub.strip('\n\r\t ') not in content:
                     file_put_contents_w_a(file_authorized_keys, keypub, option = "a")
                     logger.debug("add key in authorized_keys %s"%keypub)
             except:
@@ -299,7 +298,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
 
         logger.debug("PROCESSING RELAYSERVER")
         if message['from'] == "console":
-            if not "request" in data :
+            if "request" not in data :
                 objectxmpp.send_message_agent("console", dataerreur)
                 return
             if data['request'] == "askinfo":
@@ -325,7 +324,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 objectxmpp.send_message_agent("console", returnmessage)
                 return
         if message['from'].bare == message['to'].bare:
-            if not "request" in data :
+            if "request" not in data :
                 objectxmpp.send_message_agent(message['to'], dataerreur)
                 return
             if data['request'] == "askinfo":
@@ -406,7 +405,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
-                if not 'persistence' in data:
+                if 'persistence' not in data:
                     data['persistence'] = "no"
                 if 'persistence' in data and data['persistence'].lower() != "no":
                     if data['persistence'] in objectxmpp.reversesshmanage:
@@ -449,7 +448,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 ################# win reverse #################
                 try:
                     win32net.NetUserGetInfo('','pulseuser',0)
-                    filekey = os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+                    filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
                 except:
                     filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
                 # il faut adapter les droit du fichier idrsa suivant si console administrator ou system.
@@ -497,7 +496,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 if not os.path.exists(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")):
                     os.makedirs(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin"))
                 file_put_contents(reversesshbat,  dd)
-                if not 'persistence' in data:
+                if 'persistence' not in data:
                     data['persistence'] = "no"
                 # clear tout les reverse ssh
                 searchreversesshprocess = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
@@ -555,7 +554,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
-                if not 'persistence' in data:
+                if 'persistence' not in data:
                     data['persistence'] = "no"
                 if 'persistence' in data and data['persistence'].lower() != "no":
                     if data['persistence'] in objectxmpp.reversesshmanage:

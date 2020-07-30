@@ -35,7 +35,6 @@ from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
 from sqlalchemy.orm import create_session, mapper, relation
 from sqlalchemy.exc import NoSuchTableError, TimeoutError
 from sqlalchemy.orm.exc import NoResultFound
-#from sqlalchemy.orm import sessionmaker; Session = sessionmaker()
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
 import datetime
@@ -47,11 +46,8 @@ from lib.plugins.msc.orm.commands_history import CommandsHistory
 from lib.plugins.msc.orm.target import Target
 from lib.plugins.msc.orm.pull_targets import PullTargets
 from lib.plugins.msc.orm.bundle import Bundle
-# from mmc.database.database_helper import DatabaseHelper
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
-# Pulse 2 stuff
-# from pulse2.managers.location import ComputerLocationManager
 # Imported last
 import logging
 import functools
@@ -63,7 +59,7 @@ NB_DB_CONN_TRY = 2
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -312,22 +308,20 @@ class MscDatabase(DatabaseHelper):
         mapper(CommandsOnHostPhase, self.commands_on_host_phase)
         mapper(PullTargets, self.pull_targets)
         mapper(CommandsOnHost, self.commands_on_host, properties = {
-            'historys' : relation(CommandsHistory),
+            'historys': relation(CommandsHistory),
             }
         )
         mapper(Target, self.target, properties = {
-            'commandsonhosts' : relation(CommandsOnHost)
+            'commandsonhosts': relation(CommandsOnHost)
             }
         )
         mapper(Bundle, self.bundle, properties = {})
         mapper(Commands, self.commands, properties = {
-            'commandsonhosts' : relation(CommandsOnHost),
-            'bundle' : relation(Bundle),
+            'commandsonhosts': relation(CommandsOnHost),
+            'bundle': relation(Bundle),
             }
         )
         # FIXME: Version is missing
-
-    ####################################
 
     def getIdCommandOnHost(self, ctx, id):
         session = create_session()
@@ -421,13 +415,8 @@ class MscDatabase(DatabaseHelper):
         cmd.connect_as = connect_as
         cmd.creator = creator
         cmd.title = title
-        #cmd.do_halt = ','.join(do_halt)
-        #cmd.do_reboot = do_reboot
-        #cmd.do_wol = do_wol
-        #cmd.do_imaging_menu = do_wol_with_imaging
         cmd.next_connection_delay = next_connection_delay
         cmd.max_connection_attempt = max_connection_attempt
-        #cmd.do_inventory = do_inventory
         cmd.maxbw = maxbw
         cmd.deployment_intervals = deployment_intervals
         cmd.fk_bundle = fk_bundle
@@ -994,7 +983,7 @@ class MscDatabase(DatabaseHelper):
             self.logger.debug("machine %s [%s] presente for deploy package %s"%(x.target_target_name,
                                                                                     x.target_target_uuid,
                                                                                     x.commands_package_id))
-            deployobject = {'name' : str(x.target_target_name)[:-1],
+            deployobject = {'name': str(x.target_target_name)[:-1],
                             'pakkageid': str(x.commands_package_id),
                             'commandid':  x.commands_id,
                             'mac': str(x.target_target_macaddr),
@@ -1006,7 +995,7 @@ class MscDatabase(DatabaseHelper):
                             'title': str(x.commands_title),
                             'UUID': str(x.target_target_uuid),
                             'GUID': x.target_id_group}
-            if not x.target_target_uuid in tabmachine:
+            if x.target_target_uuid not in tabmachine:
                 tabmachine.append(x.target_target_uuid)
                 #recherche machine existe pour xmpp
                 self.logger.info("deploy on machine %s [%s] -> %s"%(x.target_target_name,
@@ -1458,18 +1447,18 @@ class MscDatabase(DatabaseHelper):
                 order_by(asc(self.commands_on_host.c.next_launch_date))
         # x[0] contains a commands_on_host object x[1] contains commands
         l = []
-        for x in ret.all(): # patch to have rescheduled as a "state" ... must be emulated
-            if x[0].current_state == 'scheduled' and x[0].attempts_left != x[1].max_connection_attempt and not 'rescheduled' in l:
+        for x in ret.all():  # patch to have rescheduled as a "state" ... must be emulated
+            if x[0].current_state == 'scheduled' and x[0].attempts_left != x[1].max_connection_attempt and 'rescheduled' not in l:
                 l.append('rescheduled')
-            elif not x[0].current_state in l:
+            elif x[0].current_state not in l:
                 l.append(x[0].current_state)
         session.close()
         return l
 
-    def countAllCommandsonhostByCurrentstate(self, ctx, current_state, filt = ''): # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def countAllCommandsonhostByCurrentstate(self, ctx, current_state, filt = ''):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         ret = self.__queryAllCommandsonhostBy(session, ctx)
-        if current_state == 'rescheduled': # patch to have rescheduled as a "state" ... must be emulated
+        if current_state == 'rescheduled':  # patch to have rescheduled as a "state" ... must be emulated
             ret = ret.filter(and_(self.commands.c.max_connection_attempt != self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
         elif current_state == 'scheduled':
             ret = ret.filter(and_(self.commands.c.max_connection_attempt == self.commands_on_host.c.attempts_left, self.commands_on_host.c.current_state == 'scheduled'))
@@ -1500,7 +1489,7 @@ class MscDatabase(DatabaseHelper):
         l = []
         for x in ret.all():
             bundle = x[3]
-            if bundle != None:
+            if bundle is not None:
                 bundle = bundle.toH()
             l.append([x[0].toH(), x[1].toH(), x[2].toH(), bundle])
         session.close()
@@ -1542,7 +1531,7 @@ class MscDatabase(DatabaseHelper):
         l = []
         for x in ret.all():
             bundle = x[3]
-            if bundle != None:
+            if bundle is not None:
                 bundle = bundle.toH()
             l.append([x[0].toH(), x[1].toH(), x[2].toH(), bundle])
         session.close()
@@ -1657,8 +1646,8 @@ class MscDatabase(DatabaseHelper):
 
         ret = []
         for cmd, bid, target_name, cohid, gid, btitle, target_uuid, machine_pull in cmds:
-            if bid != None: # we are in a bundle
-                if gid != None and gid != '':
+            if bid is not None:  # we are in a bundle
+                if gid is not None and gid != '':
                     ret.append({
                             'title':btitle,
                             'creator':cmd.creator,
@@ -1699,7 +1688,7 @@ class MscDatabase(DatabaseHelper):
                             'deployment_intervals': cmd.deployment_intervals
                     })
             else: # we are not in a bundle
-                if gid != None and gid != '':
+                if gid is not None and gid != '':
                     ret.append({
                             'title':cmd.title,
                             'creator':cmd.creator,
@@ -1750,19 +1739,19 @@ class MscDatabase(DatabaseHelper):
     def __displayLogsQuery(self, ctx, params, session):
         nowsystem = time.strftime("%Y-%m-%d %H:%M:%S")
         query = session.query(Commands).select_from(self.commands.join(self.commands_on_host).join(self.target))
-        if params['gid'] != None:
+        if params['gid'] is not None:
             query = query.filter(self.target.c.id_group == params['gid'])
-        if params['uuid'] != None:
+        if params['uuid'] is not None:
             query = query.filter(self.target.c.target_uuid == params['uuid'])
-        if params['filt'] != None:
+        if params['filt'] is not None:
             query = query.filter(self.commands.c.title.like('%'+params['filt']+'%'))
         #if params['finished']:
         #    query = query.filter(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed']))
         else:
             # If we are querying on a bundle, we also want to display the
             # commands_on_host flagged as done
-            #if params['b_id'] == None:
-            #    query = query.filter(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
+            # if params['b_id'] is None:
+            # query = query.filter(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
             pass
         query = self.__queryUsersFilter(ctx, query)
 
@@ -1777,11 +1766,11 @@ class MscDatabase(DatabaseHelper):
     def __doneBundle(self, params, session):
         query = session.query(Commands).select_from(self.commands.join(self.commands_on_host))
         filter = []
-        if params['b_id'] != None:
+        if params['b_id'] is not None:
             filter = [self.commands.c.fk_bundle == params['b_id']]
-        elif params['cmd_id'] != None:
+        elif params['cmd_id'] is not None:
             filter = [self.commands.c.id == params['cmd_id']]
-        #filter.append(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
+        # filter.append(not_(self.commands_on_host.c.current_state.in_(['done', 'failed', 'over_timed'])))
         query = query.filter(and_(*filter))
         how_much = query.count()
         if how_much > 0:
@@ -1801,25 +1790,23 @@ class MscDatabase(DatabaseHelper):
             query = session.query(Commands).select_from(self.commands.join(self.commands_on_host).join(self.target).outerjoin(self.pull_targets, self.pull_targets.c.target_uuid == self.target.c.target_uuid))
             query = query.add_column(self.commands_on_host.c.id).add_column(self.commands_on_host.c.current_state).add_column(PullTargets.target_uuid)
 
-
-
-        if params['cmd_id'] != None: # COH
+        if params['cmd_id'] is not None:  # COH
             filter = [self.commands.c.id == params['cmd_id']]
-            if params['b_id'] != None:
+            if params['b_id'] is not None:
                 filter.append(self.commands.c.fk_bundle == params['b_id'])
         else: # CMD
-            if params['b_id'] != None:
+            if params['b_id'] is not None:
                 filter = [self.commands.c.fk_bundle == params['b_id']]
             group_by = True
             group_clause = self.commands.c.id
 
-        if params['gid'] != None: # Filter on a machines group id
+        if params['gid'] is not None:  # Filter on a machines group id
             filter.append(self.target.c.id_group == params['gid'])
 
-        if params['uuid'] != None: # Filter on a machine uuid
+        if params['uuid'] is not None:  # Filter on a machine uuid
             filter.append(self.target.c.target_uuid == params['uuid'])
 
-        if params['filt'] != None: # Filter on a commande names
+        if params['filt'] is not None:  # Filter on a commande names
             filter.append(self.commands.c.title.like('%s%s%s' % ('%', params['filt'], '%')) | self.target.c.target_name.like('%s%s%s' % ('%', params['filt'], '%')) )
 
         # Finished param
@@ -1832,7 +1819,7 @@ class MscDatabase(DatabaseHelper):
         if 'state' in params and params['state']:
             filter.append(self.commands_on_host.c.current_state.in_(params['state']))
 
-        #if params['b_id'] == None:
+        # if params['b_id'] is None:
         #    is_done = self.__doneBundle(params, session)
             #if params['finished'] and not is_done: # Filter on finished commands only
             #    filter.append(1 == 0) # send nothing
@@ -1867,17 +1854,17 @@ class MscDatabase(DatabaseHelper):
             if max != -1 and max-1 < i:
                 break
             if i < min:
-                if fk_bundle != 'NULL' and fk_bundle != None and not fk_bundle in defined:
+                if fk_bundle != 'NULL' and fk_bundle is not None and fk_bundle not in defined:
                     defined[fk_bundle] = id
                     i += 1
-                elif fk_bundle == 'NULL' or fk_bundle == None:
+                elif fk_bundle == 'NULL' or fk_bundle is None:
                     i += 1
                 continue
-            if fk_bundle != 'NULL' and fk_bundle != None and not fk_bundle in defined:
+            if fk_bundle != 'NULL' and fk_bundle is not None and fk_bundle not in defined:
                 defined[fk_bundle] = id
                 ids.append(id)
                 i += 1
-            elif fk_bundle == 'NULL' or fk_bundle == None:
+            elif fk_bundle == 'NULL' or fk_bundle is None:
                 ids.append(id)
                 i += 1
         return ids
@@ -1923,18 +1910,18 @@ class MscDatabase(DatabaseHelper):
 
 
 
-    def displayLogs(self, ctx, params = None): # TODO USE ctx
+    def displayLogs(self, ctx, params = None):  # TODO USE ctx
         if params is None: # do not change the default value!
             params = {}
         session = create_session()
         for i in ('b_id', 'cmd_id', 'coh_id', 'gid', 'uuid', 'filt'):
-            if not i in params or params[i] == '':
+            if i not in params or params[i] == '':
                 params[i] = None
-        if not 'min' in params:
+        if 'min' not in params:
             params['min'] = 0
-        if not 'max' in params:
+        if 'max' not in params:
             params['max'] = -1
-        #if not params.has_key('finished') or params['finished'] == '':
+        # if not params.has_key('finished') or params['finished'] == '':
         #    params['finished'] = False
         try:
             params['order_by'] = getattr(self.commands_on_host.c, params['order_by'])
@@ -2037,7 +2024,7 @@ class MscDatabase(DatabaseHelper):
     def getCommandsOnHost(self, ctx, coh_id):
         session = create_session()
         coh = session.query(CommandsOnHost).get(coh_id)
-        if coh == None:
+        if coh is None:
             self.logger.warn("User %s try to access an coh that don't exists '%s'" % (ctx.userid, coh_id))
             return False
         coh.phases = session.query(CommandsOnHostPhase).filter_by(fk_commands_on_host = coh_id).all()
@@ -2090,7 +2077,7 @@ class MscDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def isCommandsCconvergenceType(self, session, ctx, cmd_id):
-        if cmd_id == None or cmd_id == '':
+        if cmd_id is None or cmd_id == '':
             return False
         result = session.query(Commands).filter_by(id=cmd_id).one()
         return result.type
@@ -2104,13 +2091,13 @@ class MscDatabase(DatabaseHelper):
                 ret = session.query(Commands.type).\
                     filter_by(id=idcmd).one()
                 result[idcmd] = int(ret[0])
-            except:
+            except ValueError:
                 pass
         return result
 
     @DatabaseHelper._sessionm
     def getCommands(self, session, ctx, cmd_id):
-        if cmd_id == "0" or cmd_id == None or cmd_id == '':
+        if cmd_id == "0" or cmd_id is None or cmd_id == '':
             return False
         a_targets = map(lambda target:target[0], self.getTargets(cmd_id, True))
         if ComputerLocationManager().doesUserHaveAccessToMachines(ctx, a_targets):
@@ -2231,8 +2218,7 @@ class MscDatabase(DatabaseHelper):
         return { "nbmachine" : nbmachinegroupe, "nbdeploydone" : nbdeploydone  }
 
     def getarraystatbycmd(self, ctx, arraycmd_id):
-        result = {'nbmachine' : {}}
-        #result = {'nbmachine' : {}, 'nbdeploydone' : {}}
+        result = {'nbmachine': {}}
         session = create_session()
         ret = session.query(CommandsOnHost.fk_commands.label("idcmd") ,
                             func.count(self.commands_on_host.c.current_state).label("nb")).\
@@ -2242,14 +2228,6 @@ class MscDatabase(DatabaseHelper):
         for x in ret:
             result['nbmachine'][x[0]]=x[1]
 
-        #ret = session.query(CommandsOnHost.fk_commands.label("idcmd") ,
-                            #func.count(self.commands_on_host.c.current_state).label("nb")).\
-                                #filter(and_(self.commands_on_host.c.fk_commands.in_(arraycmd_id),
-                                       #self.commands_on_host.c.current_state == "done")).\
-                                    #group_by(self.commands_on_host.c.fk_commands)
-        #ret.all()
-        #for x in ret:
-            #result['nbdeploydone'][x[0]]=x[1]
         return result
 
     def getFirstCommandsOncmd_id(self, ctx, cmd_id):
@@ -2345,10 +2323,11 @@ class MscDatabase(DatabaseHelper):
         query = session.query(CommandsOnHost).add_column(self.target.c.target_uuid).select_from(self.commands_on_host.join(self.commands).join(self.target)).filter(self.commands.c.id == cmd_id).order_by(self.commands_on_host.c.host)
         ret = self.__filterOnStatus(ctx, query, state)
         session.close()
-        if max != -1: ret = ret[min:max]
+        if max != -1:
+            ret = ret[min:max]
         return map(lambda coh: {'coh_id':coh.id, 'uuid':coh.target_uuid, 'host':coh.host, 'start_date':coh.start_date, 'end_date':coh.end_date, 'current_state':coh.current_state}, ret)
 
-    def getCommandOnGroupStatus(self, ctx, cmd_id):# TODO use ComputerLocationManager().doesUserHaveAccessToMachine
+    def getCommandOnGroupStatus(self, ctx, cmd_id):  # TODO use ComputerLocationManager().doesUserHaveAccessToMachine
         session = create_session()
         query = session.query(func.count(self.commands_on_host.c.id), CommandsOnHost).select_from(self.commands_on_host.join(self.commands)).filter(self.commands.c.id == cmd_id)
         ret = self.__getStatus(ctx, query)
@@ -2358,7 +2337,7 @@ class MscDatabase(DatabaseHelper):
     def getMachineNamesOnGroupStatus(self, ctx, cmd_id, state, limit):
         session = create_session()
         query = session.query(CommandsOnHost).add_column(self.target.c.target_uuid).select_from(self.commands_on_host.join(self.commands).join(self.target)).filter(self.commands.c.id == cmd_id)
-        if state in ['success', 'paused', 'stopped', 'running', 'failure']: # Global statues
+        if state in ['success', 'paused', 'stopped', 'running', 'failure']:  # Global statues
             query = query.filter(self.commands_on_host.c.current_state.in_(self.__getAllStatus()[state]))
         # Treat failed statues
         elif state == "fail_up":
@@ -2419,7 +2398,8 @@ class MscDatabase(DatabaseHelper):
         query = session.query(CommandsOnHost).add_column(self.target.c.target_uuid).select_from(self.commands_on_host.join(self.commands).join(self.target)).filter(self.commands.c.fk_bundle == fk_bundle).order_by(self.commands_on_host.c.host)
         ret = self.__filterOnStatus(ctx, query, state)
         session.close()
-        if max != -1: ret = ret[min:max]
+        if max != -1:
+            ret = ret[min:max]
         return map(lambda coh: {'coh_id': coh.id, 'uuid':coh.target_uuid, 'host':coh.host, 'start_date':coh.start_date, 'end_date':coh.end_date, 'current_state':coh.current_state}, ret)
 
     def getCommandOnBundleStatus(self, ctx, fk_bundle):
@@ -2481,18 +2461,18 @@ class MscDatabase(DatabaseHelper):
         """
         try:
             for f in filter:
-                if isinstance(f[1], str): # f[1] must be a list
+                if isinstance(f[1], str):  # f[1] must be a list
                     f[1] = [f[1]]
                 if len(f) == 3:
                     if isinstance(f[2], bool):
                         if f[2]:
-                                query = query.filter(getattr(self.commands_on_host.c, f[0]).in_(f[1]))
+                            query = query.filter(getattr(self.commands_on_host.c, f[0]).in_(f[1]))
                         else:
                             query = query.filter(not_(getattr(self.commands_on_host.c, f[0]).in_(f[1])))
                     elif f[2] == '<=':
-                            query = query.filter(getattr(self.commands_on_host.c, f[0]) <= f[1][0])
+                        query = query.filter(getattr(self.commands_on_host.c, f[0]) <= f[1][0])
                     elif f[2] == '>=':
-                            query = query.filter(getattr(self.commands_on_host.c, f[0]) >= f[1][0])
+                        query = query.filter(getattr(self.commands_on_host.c, f[0]) >= f[1][0])
                 else:
                     query = query.filter(getattr(self.commands_on_host.c, f[0]).in_(f[1]))
             return int(query.scalar())
@@ -2565,7 +2545,7 @@ class MscDatabase(DatabaseHelper):
 
         try:
             total = int(query.scalar())
-        except:
+        except ValueError:
             total = 0
 
         ret = {
@@ -2659,61 +2639,86 @@ class MscDatabase(DatabaseHelper):
             }
         }
 
-        if verbose: # used for CSV generation
+        if verbose:  # used for CSV generation
             for coh in query:
-                if coh.current_state == 'done': # success
-                    if verbose: ret['success']['total'][1].append(coh)
-                elif coh.current_state == 'stop' or coh.current_state == 'stopped': # stopped coh
-                    if verbose: ret['stopped']['total'][1].append(coh)
+                if coh.current_state == 'done':  # success
+                    if verbose:
+                        ret['success']['total'][1].append(coh)
+                elif coh.current_state == 'stop' or coh.current_state == 'stopped':  # stopped coh
+                    if verbose:
+                        ret['stopped']['total'][1].append(coh)
                 elif coh.current_state == 'pause':
-                    if verbose: ret['paused']['total'][1].append(coh)
-                elif coh.current_state == 'over_timed': # out of the valid period of execution (= failed)
-                    if verbose: ret['failure']['total'][1].append(coh)
-                    if verbose: ret['failure']['over_timed'][1].append(coh)
-                elif coh.attempts_left == 0 and (coh.uploaded == 'FAILED' or coh.executed == 'FAILED' or coh.deleted == 'FAILED'): # failure
-                    if verbose: ret['failure']['total'][1].append(coh)
+                    if verbose:
+                        ret['paused']['total'][1].append(coh)
+                elif coh.current_state == 'over_timed':  # out of the valid period of execution (= failed)
+                    if verbose:
+                        ret['failure']['total'][1].append(coh)
+                    if verbose:
+                        ret['failure']['over_timed'][1].append(coh)
+                elif coh.attempts_left == 0 and (coh.uploaded == 'FAILED' or coh.executed == 'FAILED' or coh.deleted == 'FAILED'):  # failure
+                    if verbose:
+                        ret['failure']['total'][1].append(coh)
                     if coh.uploaded == 'FAILED':
-                        if verbose: ret['failure']['fail_up'][1].append(coh)
+                        if verbose:
+                            ret['failure']['fail_up'][1].append(coh)
                         if coh.current_state == 'not_reachable':
-                            if verbose: ret['failure']['conn_up'][1].append(coh)
+                            if verbose:
+                                ret['failure']['conn_up'][1].append(coh)
                     elif coh.executed == 'FAILED':
-                        if verbose: ret['failure']['fail_ex'][1].append(coh)
+                        if verbose:
+                            ret['failure']['fail_ex'][1].append(coh)
                         if coh.current_state == 'not_reachable':
-                            if verbose: ret['failure']['conn_ex'][1].append(coh)
+                            if verbose:
+                                ret['failure']['conn_ex'][1].append(coh)
                     elif coh.deleted == 'FAILED':
-                        if verbose: ret['failure']['fail_rm'][1].append(coh)
+                        if verbose:
+                            ret['failure']['fail_rm'][1].append(coh)
                         if coh.current_state == 'not_reachable':
-                            if verbose: ret['failure']['conn_rm'][1].append(coh)
-                elif coh.attempts_left != 0 and (coh.uploaded == 'FAILED' or coh.executed == 'FAILED' or coh.deleted == 'FAILED'): # fail but can still try again
-                    if verbose: ret['running']['total'][1].append(coh)
+                            if verbose:
+                                ret['failure']['conn_rm'][1].append(coh)
+                elif coh.attempts_left != 0 and (coh.uploaded == 'FAILED' or coh.executed == 'FAILED' or coh.deleted == 'FAILED'):  # fail but can still try again
+                    if verbose:
+                        ret['running']['total'][1].append(coh)
                     if coh.uploaded == 'FAILED':
-                        if verbose: ret['running']['wait_up'][1].append(coh)
-                        if verbose: ret['running']['sec_up'][1].append(coh)
+                        if verbose:
+                            ret['running']['wait_up'][1].append(coh)
+                        if verbose:
+                            ret['running']['sec_up'][1].append(coh)
                     elif coh.executed == 'FAILED':
-                        if verbose: ret['running']['wait_ex'][1].append(coh)
-                        if verbose: ret['running']['sec_ex'][1].append(coh)
+                        if verbose:
+                            ret['running']['wait_ex'][1].append(coh)
+                        if verbose:
+                            ret['running']['sec_ex'][1].append(coh)
                     elif coh.deleted == 'FAILED':
                         ret['running']['wait_rm'][0] += 1
                         ret['running']['sec_rm'][0] += 1
                 else: # running
-                    if verbose and coh.deleted != 'DONE' and coh.deleted != 'IGNORED': ret['running']['total'][1].append(coh)
-                    if coh.deleted == 'DONE' or coh.deleted == 'IGNORED': # done
-                        if verbose: ret['success']['total'][1].append(coh)
-                    elif coh.executed == 'DONE' or coh.executed == 'IGNORED': # delete running
+                    if verbose and coh.deleted != 'DONE' and coh.deleted != 'IGNORED':
+                        ret['running']['total'][1].append(coh)
+                    if coh.deleted == 'DONE' or coh.deleted == 'IGNORED':  # done
+                        if verbose:
+                            ret['success']['total'][1].append(coh)
+                    elif coh.executed == 'DONE' or coh.executed == 'IGNORED':  # delete running
                         if coh.deleted == 'WORK_IN_PROGRESS':
-                            if verbose: ret['running']['run_rm'][1].append(coh)
+                            if verbose:
+                                ret['running']['run_rm'][1].append(coh)
                         else:
-                            if verbose: ret['running']['wait_rm'][1].append(coh)
-                    elif coh.uploaded == 'DONE' or coh.uploaded == 'IGNORED': # exec running
+                            if verbose:
+                                ret['running']['wait_rm'][1].append(coh)
+                    elif coh.uploaded == 'DONE' or coh.uploaded == 'IGNORED':  # exec running
                         if coh.executed == 'WORK_IN_PROGRESS':
-                            if verbose: ret['running']['run_ex'][1].append(coh)
+                            if verbose:
+                                ret['running']['run_ex'][1].append(coh)
                         else:
-                            if verbose: ret['running']['wait_ex'][1].append(coh)
-                    else: # upload running
+                            if verbose:
+                                ret['running']['wait_ex'][1].append(coh)
+                    else:  # upload running
                         if coh.uploaded == 'WORK_IN_PROGRESS':
-                            if verbose: ret['running']['run_up'][1].append(coh)
+                            if verbose:
+                                ret['running']['run_up'][1].append(coh)
                         else:
-                            if verbose: ret['running']['wait_up'][1].append(coh)
+                            if verbose:
+                                ret['running']['wait_up'][1].append(coh)
 
         return ret
 

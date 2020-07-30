@@ -110,6 +110,7 @@ SetCompressor lzma
 
 Var OS_LANGUAGE
 Var CMD_POWERSHELL
+Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
 !If "${INVENTORY_TAG}" == ''
@@ -304,10 +305,13 @@ Section "OpenSSH" sec_openssh
   Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
   ; Create Pulse user
-  pwgen::GeneratePassword 12
+  StrCpy $0 `$CMD_POWERSHELL Add-Type -AssemblyName System.Web ; [System.Web.Security.Membership]::GeneratePassword(12,2)`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
   Pop $0
+  Pop $1
   Var /GLOBAL Password
-  StrCpy $Password "$0"
+  StrCpy $Password "$1"
   StrCpy $0 `net user "pulseuser" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
   ${LogString} "Running net user pulseuser ************ /ADD /COMMENT:Pulse user with admin rights on the system "
   nsExec::ExecToLog $0
@@ -429,6 +433,11 @@ Section "OpenSSH" sec_openssh
   ClearErrors
   ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
   sleep 1000
+  ${LogString} "del /f /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+  ${LogString} "rd /s /q $PROGRAMFILES\OpenSSH"
+  nsExec::ExecToStack $0
+
   Delete $INSTDIR\tmp\$OPENSSH_FILENAME
   Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
   ; Update service installer and uninstaller scripts
@@ -539,20 +548,10 @@ Section "OpenSSH" sec_openssh
   ${Else}
     ${LogString} "Return code was: $0"
   ${EndIf}
-  Pop $R0
-  ${If} $R0 == error
-    Pop $R0
-    ${LogString} "AccessControl error: $R0"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Setting permissions on pulseuser profile folder failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 116
-    Quit
-  ${EndIf}
 
   ; Set pulse account password to not expire
-  StrCpy $0 `wmic useraccount where "Name='pulseuser'" set PasswordExpires=False`
+  ReadRegStr $0 HKLM SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName "ComputerName"
+  StrCpy $0 `wmic useraccount where "Name='pulseuser' and Domain='$0'" set PasswordExpires=False`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -622,18 +621,22 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Hide the account
-  StrCpy $0 `WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0`
+  StrCpy $0 `REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" /v "pulseuser" /t REG_DWORD /d 0 /f`
   ${LogString} "Running $0"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" "pulseuser" 0
-  ${If} ${Errors}
+  nsExec::ExecToLog $0
+  Pop $0
+  Pop $1
+  ${IfNot} $0 == 0
+    ${LogString} "Return output 0 : $0"
+    ${LogString} "Return output 1 : $1"
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Error hiding pulse account. $\n\
         Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-    ${LogString} "Error hiding pulse account."
     SetErrorLevel 140
     Quit
   ${EndIf}
+  ${LogString} "Return code was : $0"
 
   ; Check and configure permissions
   ClearErrors
@@ -819,22 +822,24 @@ Section "OpenSSH" sec_openssh
   ${EndIf}
 
   ; Setup of Windows firewall to allow ssh
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
     ${EndIf}
-    SetErrorLevel 121
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 121
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ; Install of rsync
@@ -896,22 +901,24 @@ Section "RDP Setup" sec_rdp
   ${EndIf}
 
   ; Setup of Windows firewall to allow rdp
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
     ${EndIf}
-    SetErrorLevel 124
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 124
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
@@ -1001,22 +1008,24 @@ Section "VNC Setup" sec_vnc
   ${EndIf}
 
   ; Setup of Windows firewall to allow vnc
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
     ${EndIf}
-    SetErrorLevel 126
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 126
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
@@ -1177,22 +1186,24 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Setup of Windows firewall to allow Syncthing
-  ${If} ${IsWinXP}
-    StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
-  ${Else}
-    StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
-  ${EndIf}
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+  ${IfNot} $FIREWALL == 1
+    ${If} ${IsWinXP}
+      StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
+    ${Else}
+      StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
     ${EndIf}
-    SetErrorLevel 132
-    Quit
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+    Pop $1 # return value/error/timeout
+    ${LogString} "Return code was: $1"
+    ${IfNot} $1 == 0
+      ${IfNot} ${Silent}
+          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
+          Please check the logs in $INSTDIR\tmp\install.log"
+      ${EndIf}
+      SetErrorLevel 132
+      Quit
+    ${EndIf}
   ${EndIf}
 
   ; Copy of agent config file
@@ -1622,6 +1633,15 @@ Function .onInit
     ${LogString} "Return code was: $1"
   ${EndIf}
 
+  ; Detect Firewall status
+  StrCpy $0 `netsh advfirewall show allprofiles`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  StrCpy $FIREWALL $0
+  ${LogString} "Firewall status is : $FIREWALL"
+
   ; Detect system language
   StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
   ${LogString} "Running $0"
@@ -1630,7 +1650,6 @@ Function .onInit
   Pop $1
   ${TrimNewLines} $1 $OS_LANGUAGE
   ${LogString} "System language is : $OS_LANGUAGE"
-
   ; Stop the agent if it is already running and kill all python tasks
   ${LogString} ""
   ${LogString} "Detect previous installation and stop service"
@@ -1728,10 +1747,74 @@ FunctionEnd
 !insertmacro RemovePulseUser ""
 !insertmacro RemovePulseUser "un."
 
-
 ; Macro Stop all Pulse services
 !macro StopPulseServices UN
   Function ${UN}StopPulseServices
+
+  StrCpy $0 `sc query sshd`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop sshd`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old sshd agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query ssh-agent`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop ssh-agent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old ssh-agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
   StrCpy $0 `sc query pulseagent`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -1759,7 +1842,7 @@ FunctionEnd
             MessageBox MB_OK|MB_ICONSTOP "Pulse agent stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
-        SetErrorLevel 102
+        SetErrorLevel 144
         Quit
   ${EndSwitch}
   ${LogString} $0
@@ -1787,12 +1870,12 @@ FunctionEnd
         ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
-	${LogString} $0
+        ${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Pulse network notify stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
-        SetErrorLevel 102
+        SetErrorLevel 145
         Quit
   ${EndSwitch}
   ${LogString} $0
@@ -1811,12 +1894,12 @@ FunctionEnd
         ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
-	${LogString} $0
+        ${LogString} $0
         ${IfNot} ${Silent}
             MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
-        SetErrorLevel 102
+        SetErrorLevel 146
         Quit
   ${EndSwitch}
   ${LogString} $0

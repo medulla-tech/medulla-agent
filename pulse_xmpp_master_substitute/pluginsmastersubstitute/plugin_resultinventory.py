@@ -1,9 +1,29 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8; -*-
+#
+# (c) 2016-2017 siveo, http://www.siveo.net
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+
 import zlib
 import base64
 import traceback
-import os
-import sys
 import urllib2
 import time
 import json
@@ -34,11 +54,11 @@ def XmppUpdateInventoried(jid, machine):
         for t in results:
             logger.debug("Processing mac address")
             computer = getComputerByMac(t)
-            if computer != None:
+            if computer is not None:
                 uuid = 'UUID' + str(computer.id)
                 logger.debug("** Update uuid %s for machine %s " % (uuid, machine['jid']))
                 if machine['uuid_inventorymachine'] != "" and \
-                            machine['uuid_inventorymachine'] != None:
+                            machine['uuid_inventorymachine'] is not None:
                     logger.debug("** Update in Organization_ad uuid %s to %s " % (machine['uuid_inventorymachine'],
                                                                                     uuid))
                     XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
@@ -65,7 +85,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             url = "http://localhost:9999/"
         inventory = zlib.decompress(base64.b64decode(data['inventory']))
         request = urllib2.Request(url, inventory, HEADER)
-        response = urllib2.urlopen(request)
+
+        try:
+            response = urllib2.urlopen(request)
+        except urllib2.URLError:
+            logger.info("The inventory server is not reachable. Please check pulse2-inventory-server service")
+
         machine = XmppMasterDatabase().getMachinefromjid(msg['from'])
         nbsize = len(inventory)
         XmppMasterDatabase().setlogxmpp("Received inventory from machine %s" % msg['from'],

@@ -21,16 +21,12 @@
 #
 # file manage_xmppbrowsing.py
 
-import os, sys
-import json, re
+import os
+import sys
 import logging
-from utils import shellcommandtimeout, \
-                  file_get_content, \
+from utils import file_get_content, \
                   simplecommand, \
-                  decode_strconsole, \
-                  encode_strconsole
-import zlib
-import base64
+                  decode_strconsole
 import math
 import traceback
 
@@ -73,8 +69,8 @@ class xmppbrowsing:
                                                   "bin",
                                                   "pulse-filetree-generator.exe")
         elif sys.platform.startswith('darwin'):
-            self.jsonfile = os.path.join("/","tmp","treejson.json")
-            self.programmetreejson = os.path.join("/","Library","Application Support","Pulse","bin","pulse-filetree-generator")
+            self.jsonfile = os.path.join("/opt", "Pulse", "tmp", "treejson.json")
+            self.programmetreejson = os.path.join("/opt", "Pulse", "bin", "pulse-filetree-generator")
 
         if defaultdir is not None:
             self.defaultdir = defaultdir
@@ -109,7 +105,7 @@ class xmppbrowsing:
         obj = simplecommand(cmd)
         if obj['code'] != 0 :
             logger.error(obj['result'])
-            if self.objectxmpp != None:
+            if self.objectxmpp is not None:
                 self.objectxmpp.xmpplog("Error generating tree for machine %s [command :%s]"%(self.objectxmpp.boundjid.bare,
                                                                                          cmd),
                                         type = 'noset',
@@ -123,19 +119,19 @@ class xmppbrowsing:
                                         fromuser = "",
                                         touser = "")
             return
-        if self.objectxmpp != None:
-                self.objectxmpp.xmpplog("Generating tree for machine %s [command :%s]"%(self.objectxmpp.boundjid.bare,
-                                                                                  cmd),
-                                        type = 'noset',
-                                        sessionname = '',
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = self.objectxmpp.boundjid.bare,
-                                        how = "Remote",
-                                        why = "",
-                                        module = "Error| Notify | browsing",
-                                        fromuser = "",
-                                        touser = "")
+        if self.objectxmpp is not None:
+            self.objectxmpp.xmpplog("Generating tree for machine %s [command :%s]" % (self.objectxmpp.boundjid.bare,
+                                                                                      cmd),
+                                    type='noset',
+                                    sessionname='',
+                                    priority=0,
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="Remote",
+                                    why="",
+                                    module="Error| Notify | browsing",
+                                    fromuser="",
+                                    touser="")
         logger.debug(msg)
 
     def _convert_size(self, size_bytes):

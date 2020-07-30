@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 
 from sqlalchemy import Column, String, Integer, Boolean, \
-    ForeignKey, DateTime, Text, LargeBinary, Enum
+    ForeignKey, DateTime, Text, Enum
 from sqlalchemy.dialects.mysql import  TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from mmc.database.database_helper import DBObj
@@ -230,7 +230,7 @@ class RelayServer(Base, XmppMasterDBObj):
     classutil = Column(String(10))
     moderelayserver = Column(String(7))
     keysyncthing = Column(String(70), default="")
-    syncthing_port = Column(Integer, default=23000)          
+    syncthing_port = Column(Integer, default=23000)
 
 class Regles(Base, XmppMasterDBObj):
     # ====== Table name =========================

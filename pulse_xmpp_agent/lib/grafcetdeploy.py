@@ -27,7 +27,7 @@ import platform
 import os.path
 import os
 import json
-from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64
 from configuration import setconfigfile
 import traceback
 import logging
@@ -39,6 +39,8 @@ import zipfile
 import base64
 import time
 import copy
+from agentconffile import pulseTempDir
+
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
 
@@ -53,7 +55,7 @@ class grafcet:
             os.makedirs(managepackage.packagedir())
         self.datasend = datasend
         self.parameterdynamic = {}
-        self.descriptorsection = { 'action_section_install' : -1 }
+        self.descriptorsection = { 'action_section_install': -1 }
         self.objectxmpp = objectxmpp
         self.data = datasend['data']
         if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):
@@ -339,7 +341,7 @@ class grafcet:
         #     MacAdressToIp(
         #         self.data['ipmachine']))
 
-        cmd = cmd.replace('@@@TMP_DIR@@@', self.tempdir())
+        cmd = cmd.replace('@@@TMP_DIR@@@', pulseTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
@@ -348,15 +350,6 @@ class grafcet:
         # print "replace TEMPLATE ou %s"% cmd
         # print "__________________________________"
         return cmd
-
-    def tempdir(self):
-        """return directory temp for os"""
-        if sys.platform.startswith('linux'):
-            return os.path.join("/", "tmp")
-        elif sys.platform.startswith('win'):
-            return os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
-        elif sys.platform.startswith('darwin'):
-            return os.path.join("/", "tmp")
 
     def __search_Next_step_int__(self, val):
         """
@@ -1103,7 +1096,7 @@ class grafcet:
                 return
             self.__action_completed__(self.workingstep)
             if 'set' in self.workingstep:
-                if isinstance(self.workingstep['set'], str) or isinstance(self.workingstep['set'], unicode):
+                if isinstance(self.workingstep['set'], (str, unicode)):
                     self.workingstep['set'] = str(self.workingstep['set'])
                     if self.workingstep['set'] != "":
                         dataconfiguration = self.workingstep['set'].split("@__@")
@@ -1328,7 +1321,7 @@ class grafcet:
             if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
-                
+
             self.__alternatefolder()
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(self.workingstep['command'],
                                                                                 self.datasend,
@@ -1640,7 +1633,7 @@ class grafcet:
                                     'forced',
                                     'forced inventory',
                                     ]:
-                inventory = True                
+                inventory = True
                 self.workingstep['actioninventory'] = 'forced'
 
             if boolstr.lower() in ['false',
@@ -1862,7 +1855,7 @@ class grafcet:
                 " -B " + \
                 ",".join(self.workingstep['boutontype'])
         elif sys.platform.startswith('darwin'):
-            logging.debug("command on windows")
+            logging.debug("command on darwin")
             Macos_executable_dlg_confirm = "dlg_comfirm_pulse"
             command = Macos_executable_dlg_confirm + \
                 " -T " + self.workingstep['title'] + \
@@ -2105,10 +2098,7 @@ class grafcet:
                                     date = None ,
                                     fromuser = self.data['login'],
                                     touser = "")
-
-
-
-  # WIP
+    # WIP
     def getpackagemanager(self):
         """
             This function helps to find the update manager
@@ -2133,7 +2123,7 @@ class grafcet:
         if 'packageuuid' in self.workingstep:
             self.workingstep['packageuuid'] = self.replaceTEMPLATE(
                 self.workingstep['packageuuid'])
-            directoryworking = os.path.join(managepackage.packagedir(), 
+            directoryworking = os.path.join(managepackage.packagedir(),
                                             self.workingstep['packageuuid'])
             if os.path.isdir(directoryworking):
                 os.chdir(directoryworking)

@@ -20,11 +20,10 @@
 # MA 02110-1301, USA.
 # file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadautoupdate.py
 
-import base64
 import json
 import os
 import logging
-from lib.utils import file_get_contents, getRandomName, data_struct_message
+from lib.utils import getRandomName
 from lib.update_remote_agent import Update_Remote_Agent
 import types
 import ConfigParser
@@ -83,7 +82,7 @@ def read_conf_remote_update(objectxmpp):
         objectxmpp.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
         objectxmpp.autoupdate = True
         objectxmpp.generate_baseagent_fingerprint_interval = 900
-        objectxmpp.autoupdatebyrelay = False
+        objectxmpp.autoupdatebyrelay = True
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -102,7 +101,7 @@ def read_conf_remote_update(objectxmpp):
         if Config.has_option("parameters", "autoupdatebyrelay"):
             objectxmpp.autoupdatebyrelay = Config.getboolean('parameters', 'autoupdatebyrelay')
         else:
-            objectxmpp.autoupdatebyrelay = False
+            objectxmpp.autoupdatebyrelay = True
         if Config.has_option("parameters", "generate_baseagent_fingerprint_interval"):
             objectxmpp.generate_baseagent_fingerprint_interval = Config.getint('parameters', 'generate_baseagent_fingerprint_interval')
         else:

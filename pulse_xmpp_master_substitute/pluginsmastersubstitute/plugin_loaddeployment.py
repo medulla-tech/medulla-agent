@@ -369,12 +369,11 @@ def scheduledeployrecoveryjob(self):
                     # call plugin master syncthing
                     ###initialisation deployement syncthing
                     self.callpluginsubstitute("deploysyncthing",
-                                                data,
-                                                sessionid = machine['sessionid'])
-                    #self.syncthingdeploy()
+                                              data,
+                                              sessionid=machine['sessionid'])
                 else:
                     datasession = self.session.sessiongetdata(machine['sessionid'])
-                    msglog.append("Starting deployment on machine %s from ARS %s" %(machine['jidmachine'],
+                    msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
                                                                             machine['jid_relay']))
 
                     command = {'action': "applicationdeploymentjson",
@@ -382,7 +381,7 @@ def scheduledeployrecoveryjob(self):
                             'sessionid': machine['sessionid'],
                             'data': data}
 
-                    self.send_message(mto= machine['jid_relay'],
+                    self.send_message(mto=machine['jid_relay'],
                                     mbody=json.dumps(command),
                                     mtype='chat')
                     for logmsg in msglog:
@@ -462,9 +461,9 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                         startcmd=start_date,
                                         endcmd=end_date,
                                         macadress=macadress,
-                                        result = "",
-                                        syncthing = 0)
-        msg.append("<span class='log_err'>Package identifier misssing for %s</span>"%uuidpackage)
+                                        result="",
+                                        syncthing=0)
+        msg.append("<span class='log_err'>Package identifier misssing for %s</span>" % uuidpackage)
         msg.append("Action : Check the package %s"%(uuidpackage))
         for logmsg in msg:
             self.xmpplog(logmsg,
@@ -502,7 +501,7 @@ def applicationdeployjsonuuid(self,
         jidrelay = objmachine['groupdeploy']
         jidmachine = objmachine['jid']
         keysyncthing = objmachine['keysyncthing']
-        if jidmachine != None and jidmachine != "" and jidrelay != None and jidrelay != "":
+        if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
             # il y a 1 ARS pour le deploiement
             # on regarde si celui-ci est up dans la table machine
             ARSsearch = XmppMasterDatabase().getMachinefromjid(jidrelay)
@@ -667,8 +666,8 @@ def applicationdeployjsonuuid(self,
                                         startcmd=start_date,
                                         endcmd=end_date,
                                         macadress=macadress,
-                                        result = "",
-                                        syncthing = 0)
+                                        result="",
+                                        syncthing=0)
         msg.append("<span class='log_err'>Error creating deployment on machine %s "\
                 "[%s]</span>"%(name, uuidmachine))
         for logmsg in msg:
@@ -808,7 +807,7 @@ def applicationdeploymentjson(self,
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
-    if jidmachine != None and jidmachine != "" and jidrelay != None and jidrelay != "":
+    if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
         userjid=jid.JID(jidrelay).user
         iprelay = XmppMasterDatabase().ipserverARS(userjid)[0]
         ippackageserver =   XmppMasterDatabase().ippackageserver(userjid)[0]
@@ -886,7 +885,7 @@ def applicationdeploymentjson(self,
         state = "DEPLOYMENT START"
         data['wol'] = 0
         #data['advanced']['syncthing'] = 1
-        if data['advanced']['grp'] != None and \
+        if data['advanced']['grp'] is not None and \
             'syncthing' in data['advanced'] and \
             data['advanced']['syncthing'] == 1 and \
                 nbdeploy > 2:
@@ -956,21 +955,17 @@ def applicationdeploymentjson(self,
                                                     login=login,
                                                     startcmd = start_date,
                                                     endcmd = end_date)
-    #self.syncthingdeploy()
     return sessionid
 
 def totimestamp(self, dt, epoch=datetime.datetime(1970,1,1)):
     td = dt - epoch
     # return td.total_seconds()
     return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
-###jfkjfk
 def syncthingdeploy(self):
-    logging.debug("syncthingdeploy")
-    #nanlyse la table deploy et recupere les deployement syncthing.
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
     if len(iddeploylist)!= 0:
         for iddeploy in iddeploylist:
-            logging.debug("*** initialisation deploy syncthing group%s"%iddeploy)
+            logging.debug("*** initialisation deploy syncthing group%s" % iddeploy)
             # les tables sont creates
             # maintenant on appelle le plugin master de syncthing
             data = { "subaction" : "initialisation",
@@ -984,7 +979,7 @@ def syncthingdeploy(self):
         logging.debug("not initialisation")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
-    if sessionid == None:
+    if sessionid is None:
         sessionid = getRandomName(5, plugin)
     msg = {}
     msg['from'] = self.boundjid.bare
@@ -1006,7 +1001,7 @@ def directcallplugin(self, msg):
                 mydata = dataobj['data']
             if not dataobj.has_key('sessionid'):
                 dataobj['sessionid'] = "absent"
-            if not 'ret' in dataobj:
+            if 'ret' not in dataobj:
                 dataobj['ret'] = 0
             try:
                 logging.debug("Calling plugin %s from  %s" % (dataobj['action'], msg['from']))
@@ -1014,9 +1009,9 @@ def directcallplugin(self, msg):
                 del dataobj['data']
                 dataerreur={ "action" : "result" + dataobj['action'],
                      "data" : { "msg" : "error plugin : " + dataobj['action']},
-                     'sessionid' : dataobj['sessionid'],
-                     'ret' : 255,
-                     'base64' : False}
+                     'sessionid': dataobj['sessionid'],
+                     'ret': 255,
+                     'base64': False}
                 module = "%s/plugin_%s.py"%(self.modulepath, dataobj['action'])
                 call_plugin(module,
                             self,
@@ -1041,7 +1036,7 @@ def directcallplugin(self, msg):
 def send_session_command(self, jid, action, data={}, datasession=None, encodebase64=False, time=20, eventthread=None, prefix=None):
     if prefix is None:
         prefix = "command"
-    if datasession == None:
+    if datasession is None:
         datasession = {}
     command = {'action': action,
                 'base64': encodebase64,
@@ -1171,7 +1166,6 @@ def read_conf_loaddeployment(objectxmpp):
     objectxmpp.applicationdeployjsonuuid = types.MethodType(applicationdeployjsonuuid, objectxmpp)
     objectxmpp.applicationdeploymentjson = types.MethodType(applicationdeploymentjson, objectxmpp)
 
-    #objectxmpp.affichelog = types.MethodType(affichelog, objectxmpp)
 
     objectxmpp._chunklist = types.MethodType(_chunklist, objectxmpp)
     objectxmpp._sendwolgroup = types.MethodType(_sendwolgroup, objectxmpp)

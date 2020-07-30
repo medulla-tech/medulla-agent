@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -27,10 +27,6 @@ import os
 import sys
 import logging
 import json
-import zlib
-import base64
-import traceback
-import random
 import hashlib
 import shutil
 import urllib2
@@ -114,7 +110,7 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
             file_supp_in_mach.append(namefichier)
     for namefichier in fromimg:
         #search fichier missing dans mach
-        if not namefichier in frommachine:
+        if namefichier not in frommachine:
             file_missing_in_mach.append(namefichier)
     #les fichiers manquant dans machine sont aussi des fichier a rajouter.
     fichier_to_copie =  list(replace_file_mach_by_file_img)

@@ -22,9 +22,8 @@
 # file pluginsmastersubstitute/plugin_loadpluginsubscribe.py
 
 import json
-import os
 import logging
-from lib.utils import file_get_contents, getRandomName, data_struct_message, name_random
+from lib.utils import name_random
 import traceback
 from sleekxmpp import jid
 import types
@@ -36,30 +35,30 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadpluginsubscribe", "TYPE" : "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
 
-    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+    compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
     if compteurcallplugin == 0:
         read_conf_load_plugin_subscribe(objectxmpp)
         objectxmpp.add_event_handler('changed_status', objectxmpp.changed_status)
 
-        XmppMasterDatabase().update_enable_for_agent_subscription(objectxmpp.boundjid.bare) # update down machine substitute manage by self agent
+        XmppMasterDatabase().update_enable_for_agent_subscription(objectxmpp.boundjid.bare)  # update down machine substitute manage by self agent
 
-        #self.add_event_handler('presence_unavailable', objectxmpp.presence_unavailable)
-        #self.add_event_handler('presence_available', objectxmpp.presence_available)
+        # self.add_event_handler('presence_unavailable', objectxmpp.presence_unavailable)
+        # self.add_event_handler('presence_available', objectxmpp.presence_available)
 
-        #self.add_event_handler('presence_subscribe', objectxmpp.presence_subscribe)
-        #self.add_event_handler('presence_subscribed', objectxmpp.presence_subscribed)
+        # self.add_event_handler('presence_subscribe', objectxmpp.presence_subscribe)
+        # self.add_event_handler('presence_subscribed', objectxmpp.presence_subscribed)
 
-        #self.add_event_handler('presence_unsubscribe', objectxmpp.presence_unsubscribe)
-        #self.add_event_handler('presence_unsubscribed', objectxmpp.presence_unsubscribed)
+        # self.add_event_handler('presence_unsubscribe', objectxmpp.presence_unsubscribe)
+        # self.add_event_handler('presence_unsubscribed', objectxmpp.presence_unsubscribed)
 
-        #self.add_event_handler('changed_subscription', objectxmpp.changed_subscription)
+        # self.add_event_handler('changed_subscription', objectxmpp.changed_subscription)
 
 
 def read_conf_load_plugin_subscribe(objectxmpp):
@@ -67,23 +66,23 @@ def read_conf_load_plugin_subscribe(objectxmpp):
         lit la configuration du plugin
         le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
     """
-    #namefichierconf = plugin['NAME'] + ".ini"
-    #pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
-    #if not os.path.isfile(pathfileconf):
-        #pass
-    #else:
-        #Config = ConfigParser.ConfigParser()
-        #Config.read(pathfileconf)
-        #if os.path.exists(pathfileconf + ".local"):
-            #Config.read(pathfileconf + ".local")
+    # namefichierconf = plugin['NAME'] + ".ini"
+    # pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
+    # if not os.path.isfile(pathfileconf):
+    # pass
+    # else:
+    # Config = ConfigParser.ConfigParser()
+    # Config.read(pathfileconf)
+    # if os.path.exists(pathfileconf + ".local"):
+    # Config.read(pathfileconf + ".local")
     objectxmpp.changed_status = types.MethodType(changed_status, objectxmpp)
-    #objectxmpp.presence_subscribe = types.MethodType(presence_subscribe, objectxmpp)
-    #objectxmpp.presence_subscribed = types.MethodType(presence_subscribed, objectxmpp)
-    #objectxmpp.changed_subscription = types.MethodType(changed_subscription, objectxmpp)
-    #objectxmpp.presence_unavailable = types.MethodType(presence_unavailable, objectxmpp)
-    #objectxmpp.presence_available = types.MethodType(presence_available, objectxmpp)
-    #objectxmpp.presence_unsubscribe = types.MethodType(presence_unsubscribe, objectxmpp)
-    #objectxmpp.presence_unsubscribed = types.MethodType(presence_unsubscribed, objectxmpp)
+    # objectxmpp.presence_subscribe = types.MethodType(presence_subscribe, objectxmpp)
+    # objectxmpp.presence_subscribed = types.MethodType(presence_subscribed, objectxmpp)
+    # objectxmpp.changed_subscription = types.MethodType(changed_subscription, objectxmpp)
+    # objectxmpp.presence_unavailable = types.MethodType(presence_unavailable, objectxmpp)
+    # objectxmpp.presence_available = types.MethodType(presence_available, objectxmpp)
+    # objectxmpp.presence_unsubscribe = types.MethodType(presence_unsubscribe, objectxmpp)
+    # objectxmpp.presence_unsubscribed = types.MethodType(presence_unsubscribed, objectxmpp)
 
 
 def changed_status(self, presence):
@@ -93,7 +92,7 @@ def changed_status(self, presence):
             logger.debug( "Message self calling not processed")
             return
     except Exception:
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
         pass
 
     if presence['type'] == 'unavailable':
@@ -115,83 +114,81 @@ def changed_status(self, presence):
                 return
             if "type" in result and result['type'] == "relayserver":
                 # recover list of cluster ARS
-                listrelayserver = XmppMasterDatabase().getRelayServerofclusterFromjidars(
-                    str(presence['from']))
+                listrelayserver = XmppMasterDatabase().getRelayServerofclusterFromjidars(str(presence['from']))
                 cluster = {'action': "cluster",
-                            'sessionid': name_random(5, "cluster"),
-                            'data': {'subaction': 'initclusterlist',
-                                        'data': listrelayserver
+                           'sessionid': name_random(5, "cluster"),
+                           'data': {'subaction': 'initclusterlist',
+                                    'data': listrelayserver
                                     }
                             }
                 # all Relays server in the cluster are notified.
-                logger.debug( "Notify to all ARS, offline ARS %s"%presence['from'])
+                logger.debug( "Notify to all ARS, offline ARS %s" % presence['from'])
                 for ARScluster in listrelayserver:
                     self.send_message(mto=ARScluster,
-                                        mbody=json.dumps(cluster),
-                                        mtype='chat')
+                                      mbody=json.dumps(cluster),
+                                      mtype='chat')
             else:
                 obj = XmppMasterDatabase().getcluster_resources(presence['from'])
                 arscluster = []
                 for t in obj['resource']:
                     if t['jidmachine'] == presence['from']:
                         logger.debug("*** resource recovery on ARS %s for deploy"\
-                            "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
-                                                                                t['sessionid'],
-                                                                                t['hostname']))
-                        arscluster.append([ t['jidrelay'],
-                                            t['sessionid'],
-                                            t['hostname'],
-                                            t['jidmachine'] ])
+                                     "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
+                                                                                         t['sessionid'],
+                                                                                         t['hostname']))
+                        arscluster.append([t['jidrelay'],
+                                           t['sessionid'],
+                                           t['hostname'],
+                                           t['jidmachine']])
 
                         ret = XmppMasterDatabase().updatedeploystate1(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
                         if ret >= 1:
-                            logger.debug("Update deploy Status for Machine OffLine %s"%t['jidmachine'])
+                            logger.debug("Update deploy Status for Machine OffLine %s" % t['jidmachine'])
                             self.xmpplog("Freeing deployment resource on ARS %s"\
-                                "sessionid %s on machine %s (connection loss)" % (t['jidrelay'],
-                                                                                    t['sessionid'],
-                                                                                    t['hostname']),
-                                type = 'deploy',
-                                sessionname = t['sessionid'],
-                                priority = -1,
-                                action = "xmpplog",
-                                who = "",
-                                how = "",
-                                why =  t['jidmachine'],
-                                module = "Deployment| Notify | Cluster",
-                                date = None,
-                                fromuser = "",
-                                touser = "")
+                                         "sessionid %s on machine %s (connection loss)" % (t['jidrelay'],
+                                                                                           t['sessionid'],
+                                                                                           t['hostname']),
+                                         type='deploy',
+                                         sessionname=t['sessionid'],
+                                         priority=-1,
+                                         action="xmpplog",
+                                         who="",
+                                         how="",
+                                         why=t['jidmachine'],
+                                         module="Deployment| Notify | Cluster",
+                                         date=None,
+                                         fromuser="",
+                                         touser="")
+
                             self.xmpplog('Waiting for reboot',
-                                type = 'deploy',
-                                sessionname = t['sessionid'],
-                                priority = -1,
-                                action = "xmpplog",
-                                who =  t['jidmachine'],
-                                how = "",
-                                why = "",
-                                module = "Deployment | Error | Terminate | Notify",
-                                date = None ,
-                                fromuser = "master",
-                                touser = "")
-                #arscluster = list(set(arscluster))
+                                         type='deploy',
+                                         sessionname=t['sessionid'],
+                                         priority=-1,
+                                         action="xmpplog",
+                                         who=t['jidmachine'],
+                                         how="",
+                                         why="",
+                                         module="Deployment | Error | Terminate | Notify",
+                                         date=None,
+                                         fromuser="master",
+                                         touser="")
                 if len(arscluster) > 0:
-                    #logger.debug("*** START SEND MSG ARS")
-                    listrelayserver = XmppMasterDatabase().getRelayServer(enable = True)
-                    cluster = { 'action': "cluster",
-                                'sessionid': name_random(5, "cluster"),
-                                'data': {'subaction': 'removeresource',
-                                            'data': { "jidmachine" :str(presence['from'])
-                                            }
-                                }
-                        }
-                    #logger.debug("*** list relayserver")
+                    listrelayserver = XmppMasterDatabase().getRelayServer(enable=True)
+                    cluster = {'action': "cluster",
+                               'sessionid': name_random(5, "cluster"),
+                               'data': {'subaction': 'removeresource',
+                                        'data': {"jidmachine" :str(presence['from'])
+                                                 }
+                                        }
+                               }
+
                     for ars in listrelayserver:
-                        logger.debug("Remove Resource on ARS %s for MACH %s "%(ars,str(presence['from'])))
+                        logger.debug("Remove Resource on ARS %s for MACH %s " % (ars, str(presence['from'])))
                         self.send_message(mto=ars['jid'],
-                                            mbody=json.dumps(cluster),
-                                            mtype='chat')
+                                          mbody=json.dumps(cluster),
+                                          mtype='chat')
         except Exception:
-            logger.error("%s"%(traceback.format_exc()))
+            logger.error("%s" % (traceback.format_exc()))
     elif presence['type'] == "available":
         logger.info("update MACH or ARS %s Online"%presence['from'])
         result = XmppMasterDatabase().initialisePresenceMachine(presence['from'],
@@ -202,17 +199,17 @@ def changed_status(self, presence):
             try:
                 if "reconf" in result and result['reconf'] == 1:
                     result1 = self.iqsendpulse(presence['from'],
-                                                    { "action": "information",
-                                                      "data": { "listinformation" : ["force_reconf"],
-                                                                "param" : {} }},
-                                                    5)
+                                                    {"action": "information",
+                                                     "data": {"listinformation": ["force_reconf"],
+                                                              "param" : {} }},
+                                               5)
             except Exception:
                 pass
             try:
                 XmppMasterDatabase().updateMachinereconf(presence['from'])
             except Exception:
-                logger.error("\n%s"%(traceback.format_exc()))
-            
+                logger.error("\n%s" % (traceback.format_exc()))
+
         XmppMasterDatabase().setlogxmpp("%s online" % presence['from'],
                                         "info",
                                         '',
@@ -224,24 +221,3 @@ def changed_status(self, presence):
                                         '',
                                         '',
                                         self.boundjid.bare)
-
-#def presence_subscribe(self, presence):
-    #logger.info("**********   presence_subscribe %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_subscribed(self, presence):
-    #logger.info("**********   presence_subscribed %s %s"%(presence['from'],presence['type'] ))
-
-#def changed_subscription(self, presence):
-    #logger.info("**********   changed_subscription %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_unavailable(self, presence):
-    #logger.info("**********   presence_unavailable %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_available(self, presence):
-    #logger.info("**********   presence_available %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_unsubscribe(self, presence):
-    #logger.info("**********   presence_unsubscribe %s %s"%(presence['from'],presence['type'] ))
-
-#def presence_unsubscribed(self, presence):
-    #logger.info("**********   presence_unsubscribed %s %s"%(presence['from'],presence['type'] ))

@@ -310,7 +310,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.getLogger().error(str(e))
 
     def get_log_status(self):
-        """ 
+        """
             get complete table
         """
         session = self.Session()
@@ -322,15 +322,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
             if ret is None:
                 resultat = []
             else:
-                resultat = [{'index':id, 
+                resultat = [{'index':id,
                             "id" : regle.id,
-                            'regexplog':regle.regex_logmessage, 
+                            'regexplog':regle.regex_logmessage,
                             'status':regle.status} for id, regle in enumerate(ret)]
-            return resultat     
+            return resultat
         except Exception, e:
             traceback.print_exc(file=sys.stdout)
             return resultat
-        
+
     def updatedeployresultandstate(self, sessionid, state, result ):
         session = self.Session()
         jsonresult = json.loads(result)
@@ -463,7 +463,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                      priority = dataobj['priority'],
                                      who = dataobj['who'])
             elif 'action' in dataobj :
-                if 'action' in dataobj and  'data' in dataobj and not "action" in dataobj['data']:
+                if 'action' in dataobj and  'data' in dataobj and 'action' not in dataobj['data']:
                     dataobj['data']['action'] = dataobj['action']
                     dataobj['data']['ret'] =  dataobj['ret']
                     dataobj['data']['sessionid'] =  dataobj['sessionid']
@@ -487,7 +487,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def message(self, msg):
-        #save log message
+        # save log message
         try :
             dataobj = json.loads(msg['body'])
             if 'data' in dataobj and\
@@ -497,16 +497,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" in dataobj['data']:
                 re_status = self.searchstatus(dataobj['data']['text'])
                 if re_status['status'] != "":
-                    self.updatedeploytosessionid( re_status['status'], 
+                    self.updatedeploytosessionid( re_status['status'],
                                                  dataobj['data']['sessionid'])
                     logger.debug("apply status %s for sessionid %s"%(re_status['status'],
                                                                      dataobj['data']['sessionid']))
-                #else:
-                    #logger.debug("apply pas de status for sessionid %s"%(dataobj['data']['sessionid']))
-            #rend agent log compatible standart stucture messages
-            if "sessionid" in dataobj :  dataobj["session"] = dataobj["sessionid"]
+            if "sessionid" in dataobj:
+                dataobj["session"] = dataobj["sessionid"]
             if 'data' in dataobj:
-                if "sessionid" in dataobj['data'] :  
+                if "sessionid" in dataobj['data'] :
                     dataobj["data"]["session"] = dataobj["sessionid"]
         except Exception as e:
             logger.error("bad struct Message %s %s " %(msg['from'], str(e)))
@@ -559,7 +557,7 @@ def doTask(opts, conf):
 
 
     if opts.consoledebug :
-            logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     else:
         stdout_logger = logging.getLogger('STDOUT')
         sl = StreamToLogger(stdout_logger, logging.INFO)
@@ -574,7 +572,7 @@ def doTask(opts, conf):
     xmpp = MUCBot(conf)
     xmpp.register_plugin('xep_0030') # Service Discovery
     xmpp.register_plugin('xep_0045') # Multi-User Chat
-    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600, 'interval' : 600, 'timeout' : 500  })
+    xmpp.register_plugin('xep_0199', {'keepalive': True, 'frequency':600, 'interval': 600, 'timeout': 500  })
     xmpp.register_plugin('xep_0077') # In-band Registration
     xmpp['xep_0077'].force_registration = True
 

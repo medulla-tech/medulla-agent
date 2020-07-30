@@ -4,7 +4,7 @@
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
-VERSION_XMPP_AGENT=2.1.0
+VERSION_XMPP_AGENT=2.1.1
 VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
 BRANCH=integration
@@ -62,6 +62,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/wakeonlan.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/relayconf.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/package_watching.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
+	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	mkdir -p $(CURDIR)/debian/tmp/etc/logrotate.d/
 	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/pulse-xmpp-agent-relay
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/

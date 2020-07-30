@@ -27,15 +27,7 @@ import win32serviceutil
 import servicemanager
 import win32event
 import win32service
-import win32evtlogutil
-import win32evtlog
-import time
-import re
-from pathlib import Path
-import subprocess
 import os
-import psutil
-import sys
 import logging
 import logging.handlers
 import urllib2
@@ -50,14 +42,14 @@ import urllib2
 # >>> DUMMY_EVT_DATA = b"Dummy event data"
 # >>>
 # >>> "Current time: {:s}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
- # 'Current time: 2018-07-18 20:03:08'
+# 'Current time: 2018-07-18 20:03:08'
 # >>>
 # >>> win32evtlogutil.ReportEvent(
 # ...     DUMMY_EVT_APP_NAME, DUMMY_EVT_ID, eventCategory=DUMMY_EVT_CATEG,
 # ...     eventType=win32evtlog.EVENTLOG_WARNING_TYPE, strings=DUMMY_EVT_STRS,
 # ...     data=DUMMY_EVT_DATA)
 
-#GLOBAL DATA
+# GLOBAL DATA
 
 log_file = os.path.join(os.environ["ProgramFiles"],
                            "Pulse",

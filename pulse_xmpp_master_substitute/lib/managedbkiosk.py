@@ -62,7 +62,7 @@ class manageskioskdb:
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse","var","tmp","BDKiosk")
         elif sys.platform.startswith('darwin'):
-            return os.path.join("/", "Library", "Application Support", "Pulse", "BDKiosk")
+            return os.path.join("/opt", "Pulse", "BDKiosk")
         else:
             return None
 
@@ -129,7 +129,7 @@ class manageskioskdb:
         self.closebase()
         return result
     ################################################################################################
-    # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage 
+    # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage
     def get_obj_ref(self):
         str_name_idpackage = {}
         strjson = self.get_cmd_launch("str_json_name_id_package")

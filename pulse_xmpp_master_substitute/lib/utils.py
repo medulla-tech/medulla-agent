@@ -48,14 +48,13 @@ import psutil
 import time
 from datetime import datetime
 import imp
-import requests 
+import requests
 from functools import wraps # This convenience func preserves name and docstring
 import uuid
 
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
-import zipfile
 
 logger = logging.getLogger()
 
@@ -72,7 +71,7 @@ if sys.platform.startswith('win'):
     import win32com.client
     from win32com.client import GetObjectif
 
-#### debug decorator #########
+# debug decorator
 def minimum_runtime(t):
     """
         Function decorator constrains the minimum execution time of the function
@@ -99,7 +98,7 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             start = time.time()
             func_name = decorated_function.__name__
             log = logging.getLogger(func_name)
-            
+
             filepath = os.path.basename(__file__)
             # get function params (args and kwargs)
             if para:
@@ -133,7 +132,6 @@ def dump_parameter(para=True, out=True, timeprocess = True):
             return outfunction
         return wrapper
     return decorated
-###########################################
 
 def Setdirectorytempinfo():
     """
@@ -467,10 +465,10 @@ def md5(fname):
 def loadModule(filename):
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
-    #filename = "plugin_%s" % filename
-    #logger.debug("Loading module %s" % (filename))
+    # filename = "plugin_%s" % filename
+    # logger.debug("Loading module %s" % (filename))
     searchPath, file = os.path.split(filename)
-    if not searchPath in sys.path:
+    if searchPath not in sys.path:
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath+"/../"))
     moduleName, ext = os.path.splitext(file)
@@ -854,8 +852,6 @@ def windowsservice(name, action):
 
 
 def methodservice():
-    import pythoncom
-    import wmi
     pythoncom.CoInitialize()
     try:
         c = wmi.WMI()
@@ -990,7 +986,7 @@ def pulgindeploy1(func):
                 dataerreur,
                 result)
 
-            if not 'end' in result['data']:
+            if 'end' not in result['data']:
                 result['data']['end'] = False
 
             print "----------------------------------------------------------------"
@@ -1197,7 +1193,6 @@ def pulginmaster(func):
 def pulginmastersessionaction(sessionaction, timeminute=10):
     def decorateur(func):
         def wrapper(objetxmpp, action, sessionid, data, message, ret, dataobj):
-            # avant
             if action.startswith("result"):
                 action = action[6:]
             if objetxmpp.session.isexist(sessionid):
@@ -1216,7 +1211,7 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
                 ret,
                 dataobj,
                 objsessiondata)
-            if sessionaction == "clear" and objsessiondata != None:
+            if sessionaction == "clear" and objsessiondata is not None:
                 objetxmpp.session.clear(sessionid)
             elif sessionaction == "actualise":
                 objetxmpp.session.reactualisesession(sessionid, 10)
@@ -1234,9 +1229,6 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
-    print("AAAAAAAAAAAAAAAAAA1")
-    print column
-    print("AAAAAAAAAAAAAAAAAA2")
     return column[-2:-1][0].split(':')[1]
 
 def ipfromdns(name_domaine_or_ip):
@@ -1247,7 +1239,7 @@ def ipfromdns(name_domaine_or_ip):
         eg : print ipfromdns("sfr.fr")
         80.125.163.172
     """
-    if name_domaine_or_ip != "" and name_domaine_or_ip != None:
+    if name_domaine_or_ip != "" and name_domaine_or_ip is not None:
         if is_valid_ipv4(name_domaine_or_ip):
             return name_domaine_or_ip
         try:
@@ -1383,7 +1375,7 @@ if sys.platform.startswith('win'):
             wr.SetValueEx(registry_key, name, 0, type, value)
             wr.CloseKey(registry_key)
             return True
-        except WindowsError:
+        except WindowsError:  # skipcq: PYL-E0602
             return False
 
     def get_reg(name, subkey, key=wr.HKEY_LOCAL_MACHINE):
@@ -1395,7 +1387,7 @@ if sys.platform.startswith('win'):
             value, regtype = wr.QueryValueEx(registry_key, name)
             wr.CloseKey(registry_key)
             return value
-        except WindowsError:
+        except WindowsError:  # skipcq: PYL-E0602
             return None
 
 def shutdown_command(time = 0, msg=''):
@@ -1523,8 +1515,8 @@ def save_user_current(name = None):
 
     if not os.path.exists(loginuser):
         result = { name : 1,
-                  'suite' : [name],
-                  'curent' : name}
+                  'suite': [name],
+                  'curent': name}
         savejsonfile(loginuser,result)
         return  result['curent']
 
@@ -1590,8 +1582,8 @@ def utc2local (utc):
     utc2local transform a utc datetime object to local object.
 
     Param:
-        utc datetime which is not naive (the utc timezone must be precised)
-    Returns:
+        utc: datetime which is not naive (the utc timezone must be precised)
+    Return:
         datetime in local timezone
     """
     epoch = time.mktime(utc.timetuple())
@@ -1599,11 +1591,11 @@ def utc2local (utc):
     return utc + offset
 
 def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return { 'action' : action,
-             'data' : data,
-             'ret' : 0,
+    return { 'action': action,
+             'data': data,
+             'ret': 0,
              "base64" : False,
              "sessionid" : getRandomName(4,sessionid)}
 
@@ -1844,14 +1836,14 @@ def find_files(directory, pattern):
                 yield filename
 
 def listfile(directory, abspath=True):
-    listfile=[]
+    fileList = []
     for root, dirs, files in os.walk(directory):
         for basename in files:
             if abspath:
-                listfile.append(os.path.join(root, basename))
+                fileList.append(os.path.join(root, basename))
             else:
-                listfile.append(os.path.join(basename))
-    return listfile
+                fileList.append(os.path.join(basename))
+    return fileList
 
 def md5folder(directory):
     hash = hashlib.md5()
@@ -1880,11 +1872,11 @@ class protodef:
             newfingerprint = pickle.dumps(fproto) #on recalcule le proto
             if self.fingerprintproto == newfingerprint:
                 self.proto = fproto
-                return False, self.proto 
+                return False, self.proto
         self.refreshfingerprintproto()
         self.fingerprintproto = file_get_contents(self.fileprotoinfo)
         self.proto = pickle.loads(self.fingerprintproto)
-        return True, self.proto 
+        return True, self.proto
 
     def refreshfingerprintproto(self):
         fproto = protodef.protoandport()
@@ -1907,8 +1899,8 @@ class protodef:
                     for cux in process_handler.connections():
                         if cux.status == psutil.CONN_LISTEN:
                             protport['ssh'] = cux.laddr.port
-            for service in psutil.win_service_iter():
-                if 'TermService' in service.name():
+            for services in psutil.win_service_iter():
+                if 'TermService' in services.name():
                     service_handler = psutil.win_service_get('TermService')
                     if service_handler.status() == 'running':
                         pid = service_handler.pid()
@@ -1968,9 +1960,9 @@ def protoandport():
 
 
 class geolocalisation_agent:
-    def __init__(self, 
-                 typeuser = "public", 
-                 geolocalisation=True, 
+    def __init__(self,
+                 typeuser = "public",
+                 geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
         self.determination = False
@@ -1991,7 +1983,7 @@ class geolocalisation_agent:
             return {}
         return self.localisation
 
-    def getdatafilegeolocalisation(self):    
+    def getdatafilegeolocalisation(self):
         if self.geoinfoexist():
             try:
                 with open(self.filegeolocalisation) as json_data:
@@ -2077,7 +2069,7 @@ class geolocalisation_agent:
             return r.json()
         except:
             return None
-    
+
     @staticmethod
     def call_simple_page_urllib(url):
         try:

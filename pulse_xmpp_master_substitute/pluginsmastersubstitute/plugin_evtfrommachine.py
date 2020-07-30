@@ -23,7 +23,6 @@
 # file pluginsmastersubstitute/plugin_evtfrommachine.py
 
 import logging
-import json
 
 
 logger = logging.getLogger()

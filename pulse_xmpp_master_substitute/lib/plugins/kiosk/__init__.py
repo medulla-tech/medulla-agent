@@ -24,7 +24,7 @@ kiosk database handler
 """
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
-from sqlalchemy.orm import sessionmaker; Session = sessionmaker()
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy import update
 from datetime import date, datetime, timedelta
@@ -41,7 +41,6 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
 import functools
-from sqlalchemy import func
 from sqlalchemy.orm import Query
 try:
     from sqlalchemy.orm.util import _entity_descriptor
@@ -49,6 +48,8 @@ except ImportError:
     from sqlalchemy.orm.base import _entity_descriptor
 
 from sqlalchemy.orm import scoped_session
+
+Session = sessionmaker()
 
 class Singleton(object):
 
@@ -133,7 +134,8 @@ class KioskDatabase(DatabaseHelper):
                 logging.getLogger().error(e)
             except Exception, e:
                 logging.getLogger().error(e)
-            if ret: break
+            if ret:
+                break
         if not ret:
             raise "Database kiosk connection error"
         return ret

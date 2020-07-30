@@ -22,17 +22,10 @@
 
 import base64
 import json
-import sys, os
+import os
 import logging
-import platform
-from lib.utils import file_get_contents, \
-                      getRandomName, \
-                      data_struct_message, \
-                      add_method
 import traceback
-from sleekxmpp import jid
 import ConfigParser
-from ConfigParser import  NoOptionError, NoSectionError
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -149,35 +142,35 @@ def remoteinstallPlugin(self):
         self.event('restartmachineasynchrone', jidmachine)
 
 def deployPlugin(self, jid, plugin):
-        content = ''
-        fichierdata = {}
-        namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
-        if os.path.isfile(namefile):
-            logger.debug("File plugin found %s" % namefile)
-        else:
-            logger.error("File plugin found %s" % namefile)
-            return
-        try:
-            fileplugin = open(namefile, "rb")
-            content = fileplugin.read()
-            fileplugin.close()
-        except:
-            logger.error("File read error\n%s"%(traceback.format_exc()))
-            return
-        fichierdata['action'] = 'installplugin'
-        fichierdata['data'] = {}
-        dd = {}
-        dd['datafile'] = content
-        dd['pluginname'] = "plugin_%s.py" % plugin
-        fichierdata['data'] = base64.b64encode(json.dumps(dd))
-        fichierdata['sessionid'] = "sans"
-        fichierdata['base64'] = True
-        try:
-            self.send_message(mto=jid,
-                              mbody=json.dumps(fichierdata),
-                              mtype='chat')
-        except:
-            logger.error("\n%s"%(traceback.format_exc()))
+    content = ''
+    fichierdata = {}
+    namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
+    if os.path.isfile(namefile):
+        logger.debug("File plugin found %s" % namefile)
+    else:
+        logger.error("File plugin found %s" % namefile)
+        return
+    try:
+        fileplugin = open(namefile, "rb")
+        content = fileplugin.read()
+        fileplugin.close()
+    except:
+        logger.error("File read error\n%s" % (traceback.format_exc()))
+        return
+    fichierdata['action'] = 'installplugin'
+    fichierdata['data'] = {}
+    dd = {}
+    dd['datafile'] = content
+    dd['pluginname'] = "plugin_%s.py" % plugin
+    fichierdata['data'] = base64.b64encode(json.dumps(dd))
+    fichierdata['sessionid'] = "sans"
+    fichierdata['base64'] = True
+    try:
+        self.send_message(mto=jid,
+                          mbody=json.dumps(fichierdata),
+                          mtype='chat')
+    except:
+        logger.error("\n%s"%(traceback.format_exc()))
 
 def plugin_loadpluginlistversion(self, msg, data):
     #function de rappel dans boucle de message.

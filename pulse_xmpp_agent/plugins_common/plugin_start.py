@@ -22,11 +22,11 @@
 
 import sys, os
 import logging
-from lib.utils import file_get_contents
+from lib import utils
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "1.11", "NAME" : "start", "TYPE" : "all"}
+plugin = {"VERSION" : "2.0", "NAME" : "start", "TYPE" : "all"}
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -40,7 +40,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             logger.debug("INJECTION KEY REGISTER VERSION")
             pathversion = os.path.join(objectxmpp.pathagent, "agentversion")
             if os.path.isfile(pathversion):
-                version = file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
+                version = utils.file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
                 if len(version) < 20:
                     logger.debug("Version AGENT is " + version)
                     import _winreg
@@ -57,7 +57,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         elif sys.platform.startswith('linux') :
             pass
         elif sys.platform.startswith('darwin'):
-           pass
+            pass
     else:
         logger.debug("###################################################")
         logger.debug("##############AGENT RELAY SERVER###################")

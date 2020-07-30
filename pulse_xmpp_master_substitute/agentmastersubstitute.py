@@ -22,7 +22,6 @@
 import sys
 import os
 import logging
-from sleekxmpp.exceptions import IqError
 from lib.configuration import confParameter
 from lib.utils import DEBUGPULSE, ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi
@@ -118,7 +117,7 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     xmpp.register_plugin('xep_0050') # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True,
                                       'frequency': 600,
-                                      'interval' : 600,
+                                      'interval': 600,
                                       'timeout'  : 500  })
     xmpp.register_plugin('xep_0077') # In-band Registration
     xmpp['xep_0077'].force_registration = True
@@ -131,7 +130,8 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             #event for quit loop server tcpserver for kiosk
-        if xmpp.shutdown:break
+        if xmpp.shutdown:
+            break
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:

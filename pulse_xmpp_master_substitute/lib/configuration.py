@@ -20,19 +20,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-import netifaces
-import json
 import sys
-import platform
 import os
 import logging
 import ConfigParser
-from ConfigParser import  NoOptionError, NoSectionError
-import utils
+from ConfigParser import  NoOptionError
 import random
-from agentconffile import conffilename
-from sleekxmpp import jid
-from agentconffile import directoryconffile
 from utils import ipfromdns
 
 # Singleton/SingletonDecorator.py
@@ -77,18 +70,13 @@ class confParameter:
     #}
 
     def __init__(self, namefileconfig):
-        #self.pathdirconffile = os.path.dirname(os.path.realpath(__file__))
         self.pathdirconffile =  os.path.dirname(os.path.realpath(namefileconfig))
         Config = ConfigParser.ConfigParser()
-        #namefileconfig = os.path.join( '/',
-                                       #'etc',
-                                       #'pulse-xmpp-agent_master_inv',
-                                       #'agentmasterinv.ini')
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
         self.packageserver = {}
-        #CONNECTION XMPP
+        # CONNECTION XMPP
         self.Port = "5222"
         if Config.has_option("connection", "port"):
             self.Port = Config.get('connection', 'port')

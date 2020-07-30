@@ -67,7 +67,7 @@ def conf_information(conffile):
     if Config.has_option("network_agent", "ip_ars"):
         configdata['ip_ars'] = Config.get('network_agent', 'ip_ars')
     else:
-        configdata['ip_ars'] = "localhost"     
+        configdata['ip_ars'] = "localhost"
     if Config.has_option("network_agent", "ip_ars"):
         configdata['port_ars'] = Config.getint('network_agent', 'port_ars')
     else:
@@ -88,7 +88,7 @@ def conf_information(conffile):
     else:
         excludelist = None
 
-    if excludelist is not None and len (excludelist) != 0: 
+    if excludelist is not None and len (excludelist) != 0:
         configdata['excludelist'] = excludelist.split(',')
     else:
         configdata['excludelist'] = None
@@ -219,7 +219,7 @@ class MyEventHandler(pyinotify.ProcessEvent):
         if event.dir:
             listexistwatch = pathlist(self.wm.watches)
             for z in listdirectory:
-                if not z in listexistwatch:
+                if z not in listexistwatch:
                     self.wm.add_watch(z, self.mask, rec=True)
                     diadd.append(z)
             datasend['data'] = { "adddir"    : diadd,

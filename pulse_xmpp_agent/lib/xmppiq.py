@@ -33,15 +33,11 @@ from utils import   shellcommandtimeout, \
                     decode_strconsole, \
                     encode_strconsole, \
                     keypub, \
-                    showlinelog, \
                     simplecommand, \
-                    sshdup, \
                     restartsshd, \
                     install_key_ssh_relayserver
 
 from  agentconffile import  directoryconffile
-from shutil import copyfile, move
-import datetime
 import zlib
 import re
 import base64
@@ -58,8 +54,7 @@ from utils_psutil import sensors_battery,\
                          mmemory,\
                          ifconfig,\
                          cpu_num,\
-                         netstat,\
-                         cputimes
+                         netstat
 from lib.update_remote_agent import agentinfoversion
 if sys.platform.startswith('win'):
     import win32net
@@ -88,7 +83,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "remotexmppmonitoring",
                          "keypub",
                          "information",
-                         "keyinstall"]
+                         "keyinstall",
+                         "packageslist"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s "%data['action'] )
         result = callXmppFunctionIq(data['action'],  xmppobject = xmppobject, data = data )
@@ -171,9 +167,9 @@ class functionsynchroxmpp:
         logger.debug("iq keypub")
         # verify relayserver
         try:
-            result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror' : 0 }
+            result =  { "result" : { "key" : keypub() }, "error" : False , 'numerror': 0 }
         except Exception:
-            result =  { "result" : { "key" : "" }, "error" : True , 'numerror' : 2 }
+            result =  { "result" : { "key" : "" }, "error" : True , 'numerror': 2 }
         return json.dumps(result)
 
     @staticmethod
@@ -182,7 +178,7 @@ class functionsynchroxmpp:
         try:
             msgaction=[]
             #logger.debug("error format message : %s"%(json.dumps(data, indent = 4)))
-            if not 'keyinstall' in data["action"]:
+            if 'keyinstall' not in data["action"]:
                 logger.error("error format message : %s"%(json.dumps(data, indent = 4)))
                 data['action'] = "resultkeyinstall"
                 data['ret'] = 20
@@ -268,8 +264,8 @@ class functionsynchroxmpp:
                     # on configure le compte pulseuser
                     logger.info("Creating authorized_keys file in pulseuser account")
                     msgaction.append("Creating authorized_keys file in pulseuser account")
-                    authorized_keys_path = os.path.join("c:\Users\pulseuser", '.ssh','authorized_keys' )
-                    reverse_ssh_key_privat_path = os.path.join("c:\Users\pulseuser", '.ssh','id_rsa' )
+                    authorized_keys_path = os.path.join("C:", "Users", "pulseuser", ".ssh", "authorized_keys")
+                    reverse_ssh_key_privat_path = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                         os.makedirs(os.path.dirname(authorized_keys_path), 0700)
                     if not os.path.isfile(authorized_keys_path):
@@ -389,7 +385,7 @@ class functionsynchroxmpp:
     @staticmethod
     def information( xmppobject, data ):
         logger.debug("iq information")
-        result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror' : 0 }
+        result =  { "result" : { "informationresult" : {} }, "error" : False , 'numerror': 0 }
         for info_ask in data['data']['listinformation']:
             try:
                 if info_ask == "force_reconf": #force reconfiguration immedialy
@@ -513,20 +509,20 @@ class functionsynchroxmpp:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
                         filedata = file_get_contents(filename)
-                        data['data'] = { "result" : filedata, "error" : False , 'numerror' : 0  }
+                        data['data'] = { "result" : filedata, "error" : False , 'numerror': 0  }
                         return json.dumps(data)
                     else:
-                        data['data'] = { "result" : "error file missing",  "error" : True , 'numerror' : 128}
+                        data['data'] = { "result" : "error file missing",  "error" : True , 'numerror': 128}
                 else:
                     data['data'] = { "result" : "error name file missing" }
             elif data['data']['action'] == 'create':
                 if 'file' in data['data'] and data['data']['file'] != "" and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     file_put_contents(filename,  data['data']['content'])
-                    data['data'] = { "result" : "create file %s"%filename, "error" : False , 'numerror' : 0 }
+                    data['data'] = { "result" : "create file %s"%filename, "error" : False , 'numerror': 0 }
                     return json.dumps(data)
                 else:
-                    data['data'] = { "result" : "error create file : name file missing", "error" : True , 'numerror' : 129 }
+                    data['data'] = { "result" : "error create file : name file missing", "error" : True , 'numerror': 129 }
             elif data['data']['action'] == 'save':
                 if 'file' in data['data'] and data['data']['file'] != "" \
                         and 'content' in data['data']:
@@ -536,16 +532,83 @@ class functionsynchroxmpp:
                         #newfilename = filename[:-4] + "_" + datestr
                         #copyfile(filename, newfilename)
                         file_put_contents(filename,  data['data']['content'])
-                        data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror' : 0 }
+                        data['data'] = { "result" : "save file %s"%filename, "error" : False , 'numerror': 0 }
                         return json.dumps(data)
                     else:
-                        data['data'] = { "result" : "error save config file %s missing"%filename, "error" : True , 'numerror' : 130 }
+                        data['data'] = { "result" : "error save config file %s missing"%filename, "error" : True , 'numerror': 130 }
             elif data['data']['action'] == 'listconfigfile':
                 listfileedit = [ x for x in os.listdir(directoryconffile()) if (x.endswith(".ini") or x.endswith(".ini.local"))]
-                data['data'] = { "result" : listfileedit, "error" : False , 'numerror' : 0 }
+                data['data'] = { "result" : listfileedit, "error" : False , 'numerror': 0 }
                 return json.dumps(data)
             else:
-                data['data'] = { "result" : "error the action parameter is not correct ", "error" : True , 'numerror' : 131 }
+                data['data'] = { "result" : "error the action parameter is not correct ", "error" : True , 'numerror': 131 }
         else:
-            data['data'] = { "result" : "error action remotefileeditaction parameter incorrect", "error" : True , 'numerror' : 132 }
+            data['data'] = { "result" : "error action remotefileeditaction parameter incorrect", "error" : True , 'numerror': 132 }
         return json.dumps(data)
+
+    @staticmethod
+    def packageslist(xmppobject, data):
+
+        packages_path = os.path.join('/', 'var', 'lib', 'pulse2', 'packages')
+        packages_list = {'total': 0, 'datas': []}
+        total = 0
+        for folder, sub_folders, files in os.walk(packages_path):
+            size_bytes = 0
+            _files = []
+            count_files = 0
+            if files and os.path.isfile(os.path.join(folder, 'conf.json')) or os.path.isfile(os.path.join(folder, 'xmppdeploy.json')):
+                total += 1
+                for f in files:
+                    count_files += 1
+                    path = os.path.join(folder, f)
+                    size_bytes += os.stat(path).st_size
+                    _files.append((f, os.stat(path).st_size))
+
+                name = folder.split("/")[-1]
+                licenses = ""
+                metagenerator = ""
+                description = ""
+                version = ""
+                targetos = ""
+                methodtransfer = ""
+                try:
+                    with open(os.path.join(folder, 'conf.json'), 'r') as conf_file:
+                        conf_json = json.load(conf_file)
+                        if 'licenses' in conf_json:
+                            licenses = conf_json['licenses']
+                except:
+                    pass
+
+                try:
+                    with open(os.path.join(folder, 'xmppdeploy.json'), 'r') as deploy_file:
+                        deploy_json = json.load(deploy_file)
+                        if 'metagenerator' in deploy_json['info']:
+                            metagenerator = deploy_json['info']['metagenerator']
+                        if 'name' in deploy_json['info']:
+                            name = deploy_json['info']['name']
+                        if 'description' in deploy_json['info']:
+                            description = deploy_json['info']['description']
+                        if 'version' in deploy_json['info']:
+                            version = deploy_json['info']['version']
+                        if 'methodtransfer' in deploy_json['info']:
+                            methodtransfer = deploy_json['info']['methodetransfert']
+                        if 'os' in deploy_json['metaparameter']:
+                            targetos = ", ".join(deploy_json['metaparameter']['os'])
+                except:
+                    pass
+                packages_list['datas'].append({
+                    'uuid': folder,
+                    'size': size_bytes,
+                    'targetos': targetos,
+                    'version': version,
+                    'description': description,
+                    'metagenerator': metagenerator,
+                    'licenses': licenses,
+                    'name': name,
+                    'methodtransfer': methodtransfer,
+                    'files': _files,
+                    'count_files': count_files,
+                })
+
+        packages_list['total'] = total
+        return json.dumps(packages_list, indent=4)

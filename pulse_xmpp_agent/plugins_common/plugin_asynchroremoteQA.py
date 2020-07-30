@@ -21,13 +21,13 @@
 # file : plugin_asynchroreremoteQA.py
 
 
-from  lib.utils import decode_strconsole, encode_strconsole,shellcommandtimeout
+from lib import utils
 import json
 import traceback
 import sys
 import logging
 
-plugin = {"VERSION": "1.0", "NAME" : "asynchroremoteQA", "TYPE" : "all"}
+plugin = {"VERSION": "2.0", "NAME" : "asynchroremoteQA", "TYPE" : "all"}
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
@@ -36,12 +36,12 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().info("###################################################")
     result = {'action': "result%s"%action,
               'sessionid': sessionid,
-              'data' : {},
-              'ret' : 0,
-              'base64' : False }
+              'data': {},
+              'ret': 0,
+              'base64': False }
     try:
-        resultcmd = shellcommandtimeout(encode_strconsole(data['data']['customcmd']), 15).run()
-        resultcmd['result'] = [decode_strconsole( x )  for x in resultcmd['result']]
+        resultcmd = utils.shellcommandtimeout(utils.encode_strconsole(data['data']['customcmd']), 15).run()
+        resultcmd['result'] = [utils.decode_strconsole( x )  for x in resultcmd['result']]
         result['data']['result'] = resultcmd
         result['data']['data'] = data
         result['ret'] = resultcmd['code']

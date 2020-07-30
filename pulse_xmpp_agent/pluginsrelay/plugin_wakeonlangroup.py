@@ -21,15 +21,13 @@
 
 # file: pulse_xmpp_agent/pluginsmachine/plugin_wakeonlangroup.py
 
-from  lib.utils import pluginprocess
 from wakeonlan import wol
-import json
 import logging
 import traceback
 
 logger = logging.getLogger()
 
-plugin={"VERSION": "1.0", "NAME" :"wakeonlangroup","TYPE":"relayserver"}
+plugin={"VERSION": "2.0", "NAME" :"wakeonlangroup","TYPE":"relayserver"}
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
