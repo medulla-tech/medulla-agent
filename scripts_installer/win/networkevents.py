@@ -141,7 +141,7 @@ def GetIpAddrTable():
                                         ctypes.byref(dwSize),
                                         0)
     if rc != 0:
-        raise WindowsError, "GetIpAddrTable returned %d" % rc
+        raise WindowsError, "GetIpAddrTable returned %d" % rc  # skipcq: PYL-E0602
 
     table = []
 
