@@ -78,6 +78,7 @@ from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream.stanzabase import ET
 from sleekxmpp import jid
+import imp
 
 if sys.platform.startswith('win'):
     import win32api
@@ -96,7 +97,7 @@ logger = logging.getLogger()
 signalint = False
 
 if sys.version_info < (3, 0):
-    reload(sys)
+    imp.reload(sys)
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
@@ -127,7 +128,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.dirsyncthing =  os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                           "syncthingdescriptor")
         if not os.path.isdir(self.dirsyncthing):
-            os.makedirs(self.dirsyncthing, 0755)
+            os.makedirs(self.dirsyncthing, 0o755)
         logger.info("start machine1  %s Type %s" % (conf.jidagent,
                                                     conf.agenttype))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(conf.jidagent),
@@ -895,7 +896,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception as e:
                 logging.error("iqsendpulse : encode json : %s" % str(e))
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
-        elif type(datain) == unicode:
+        elif type(datain) == str:
             data = str(datain)
         else:
             data = datain
@@ -961,7 +962,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # request the recv message
             recv_msg_from_kiosk = client_socket.recv(4096)
             if len(recv_msg_from_kiosk) != 0:
-                print 'Received {}'.format(recv_msg_from_kiosk)
+                print('Received {}'.format(recv_msg_from_kiosk))
                 datasend = {'action': "resultkiosk",
                             "sessionid": getRandomName(6, "kioskGrub"),
                             "ret": 0,
@@ -1326,7 +1327,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         """
         # renove if timestamp is 10000 millis seconds.
         d = time.time()
-        for sessionidban, timeban in self.banterminate.items():
+        for sessionidban, timeban in list(self.banterminate.items()):
             if (d - self.banterminate[sessionidban]) > 60:
                 del self.banterminate[sessionidban]
                 try:
@@ -1512,7 +1513,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mfrom=None,
                             mnick=None):
         if mto != "console":
-            print "send command %s"%json.dumps(mbody)
+            print("send command %s"%json.dumps(mbody))
             self.send_message(  mto,
                                 json.dumps(mbody),
                                 msubject,
@@ -1533,7 +1534,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 try :
                     q.put(json.dumps(mbody), True, 10)
                 except Exception:
-                    print "put in queue impossible"
+                    print("put in queue impossible")
 
     def logtopulse(self, text, type = 'noset', sessionname = '', priority = 0, who =""):
         if who == "":
@@ -1894,8 +1895,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.warning("filtre message from %s for action %s" % (msg['from'].bare,dataobj['action']))
             return
         try :
-            if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
-                if dataobj.has_key('base64') and \
+            if 'action' in dataobj and dataobj['action'] != "" and 'data' in dataobj:
+                if 'base64' in dataobj and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
                     # data in base 64
@@ -1903,7 +1904,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     mydata = dataobj['data']
 
-                if not dataobj.has_key('sessionid'):
+                if 'sessionid' not in dataobj:
                     dataobj['sessionid']= getRandomName(6, "xmpp")
                     logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'],
                                                                                                          dataobj['sessionid']))
@@ -1935,7 +1936,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             'to': self.boundjid.bare,
                             'action': dataobj['action'],
                             'sessionid': dataobj['sessionid'],
-                            'data': dict(self.session.sessionfromsessiondata(dataobj['sessionid']).datasession.items() + mydata.items()),
+                            'data': dict(list(self.session.sessionfromsessiondata(dataobj['sessionid']).datasession.items()) + list(mydata.items())),
                             'ret': 0,
                             'base64': False
                     }
@@ -2116,7 +2117,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             if element.endswith('.py') and element.startswith('plugin_'):
                 try:
                     mod = __import__(element[:-3])
-                    reload(mod)
+                    imp.reload(mod)
                     module = __import__(element[:-3]).plugin
                     dataobj['plugin'][module['NAME']] = module['VERSION']
                 except Exception as e:
@@ -2152,7 +2153,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         newdescriptorimage = Update_Remote_Agent(self.img_agent)
         for file in newdescriptorimage.get_md5_descriptor_agent()['program_agent']:
             finder.run_script(os.path.join(self.img_agent, file))
-            for name, mod in finder.modules.iteritems():
+            for name, mod in finder.modules.items():
                 try:
                     __import__(name.split('.', 1)[0])
                 except ImportError:
@@ -2160,7 +2161,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['lib_agent']:
             finder.run_script(os.path.join(self.img_agent, "lib", file))
-            for name, mod in finder.modules.iteritems():
+            for name, mod in finder.modules.items():
                 try:
                     __import__(name.split('.', 1)[0])
                 except ImportError:
@@ -2182,10 +2183,10 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             # Store the Fork PID
             pid = os.fork()
             if pid > 0:
-                print 'PID: %d' % pid
+                print('PID: %d' % pid)
                 os._exit(0)
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
-    except OSError, error:
+    except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
@@ -2491,13 +2492,13 @@ def terminateserver(xmpp):
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
-        print "Agent must be running as root"
+        print("Agent must be running as root")
         sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() ==0 :
-        print "Pulse agent must be running as Administrator"
+        print("Pulse agent must be running as Administrator")
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "Pulse agent must be running as root"
+        print("Pulse agent must be running as root")
         sys.exit(0)
     optp = OptionParser()
     optp.add_option("-d", "--deamon",action="store_true",
