@@ -28,7 +28,7 @@ import traceback
 import json
 import logging
 import subprocess
-import lxml.etree as ET
+import defusedxml.ElementTree as ET
 import hashlib
 logger = logging.getLogger()
 if sys.platform.startswith('win'):

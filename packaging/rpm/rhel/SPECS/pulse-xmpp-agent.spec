@@ -39,10 +39,10 @@ Requires:       python-netifaces
 Requires:       python-sleekxmpp
 Requires:       python-croniter
 Requires:       python-requests
-Requires:       python2-pysftp
+Requires:       python3-pysftp
 Requires:       python-inotify
 Requires:       python-dateutil
-Requires:       python2-psutil
+Requires:       python3-psutil
 Requires:       python-wakeonlan
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
@@ -76,8 +76,8 @@ if [ ! -f "/var/lib/pulse2/clients/reversessh/.ssh/id_rsa" ]; then
 fi
 
 %post -n pulse-xmpp-agent-relay
-if [ -f "/usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
-    rm -f /usr/lib/python2.7/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
+if [ -f "/usr/lib/python3.5/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT" ]; then
+    rm -f /usr/lib/python3.5/site-packages/pulse_xmpp_agent/BOOL_UPDATE_AGENT
 fi
 
 if systemctl -q is-enabled pulse-xmpp-master-substitute-inventory ; then
@@ -139,15 +139,15 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler.ini
 %_var/log/pulse
-%dir %{python2_sitelib}/pulse_xmpp_agent/
-%{python2_sitelib}/pulse_xmpp_agent/lib/
-%{python2_sitelib}/pulse_xmpp_agent/*.py*
-%{python2_sitelib}/pulse_xmpp_agent/script/
-%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay/
-%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/
-%{python2_sitelib}/pulse_xmpp_agent/agentversion
-%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
-%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
+%dir %{python3_sitelib}/pulse_xmpp_agent/
+%{python3_sitelib}/pulse_xmpp_agent/lib/
+%{python3_sitelib}/pulse_xmpp_agent/*.py*
+%{python3_sitelib}/pulse_xmpp_agent/script/
+%{python3_sitelib}/pulse_xmpp_agent/pluginsrelay/
+%{python3_sitelib}/pulse_xmpp_agent/pluginsmachine/
+%{python3_sitelib}/pulse_xmpp_agent/agentversion
+%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
 
 #--------------------------------------------------------------------
 
@@ -163,7 +163,7 @@ Pulse master agent substitute
 systemctl daemon-reload
 
 %files -n pulse-xmpp-master-substitute
-%{python2_sitelib}/pulse_xmpp_master_substitute/
+%{python3_sitelib}/pulse_xmpp_master_substitute/
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent-substitute/
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
@@ -262,8 +262,8 @@ Requires:   lsof
 plugins for pulse xmppmaster
 
 %files -n pulseagent-plugins-relay
-%python2_sitelib/pulse_xmpp_agent/pluginsrelay
-%python2_sitelib/pulse_xmpp_agent/descriptor_scheduler_relay
+%python3_sitelib/pulse_xmpp_agent/pluginsrelay
+%python3_sitelib/pulse_xmpp_agent/descriptor_scheduler_relay
 
 #--------------------------------------------------------------------
 
@@ -277,19 +277,19 @@ rm -rf %{tarname}.egg-info
 # Nothing to do
 
 %install
-mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_agent
-cp -fr pulse_xmpp_agent/* %buildroot%{python2_sitelib}/pulse_xmpp_agent
-rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/config
-rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_common
-rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/plugins_common
-rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py
-rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
-cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
-cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/launcher.py
+mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_agent
+cp -fr pulse_xmpp_agent/* %buildroot%{python3_sitelib}/pulse_xmpp_agent
+rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/config
+rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_common
+rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/plugins_common
+rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py
+rm -fr %buildroot%{python3_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
+cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python3_sitelib}/pulse_xmpp_agent/pluginsrelay
+cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
+chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/agentxmpp.py
+chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/package_watching.py
+chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_agent/launcher.py
 mkdir -p %buildroot%_var/log/pulse/
 mkdir -p %buildroot%_prefix/lib/systemd/system
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
@@ -317,17 +317,17 @@ cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmp
 cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
-mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
-cp pulse_xmpp_master_substitute/agentmastersubstitute.py %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
-cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
-cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
-cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
-cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
-cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+cp pulse_xmpp_master_substitute/agentmastersubstitute.py %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+cp pulse_xmpp_master_substitute/agentversion %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp -fr pulse_xmpp_master_substitute/config/systemd/* %buildroot%_prefix/lib/systemd/system
-chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
+chmod +x %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/agentmastersubstitute.py
 # We create the installer part now
 mkdir pulse-xmpp-agent-%{version}
 mkdir -p pulse-machine-plugins-%{version}/pulse_xmpp_agent/pluginsmachine
