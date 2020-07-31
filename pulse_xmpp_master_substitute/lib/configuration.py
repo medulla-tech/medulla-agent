@@ -23,10 +23,10 @@
 import sys
 import os
 import logging
-import ConfigParser
-from ConfigParser import  NoOptionError
+import configparser
+from configparser import  NoOptionError
 import random
-from utils import ipfromdns
+from .utils import ipfromdns
 
 # Singleton/SingletonDecorator.py
 class SingletonDecorator:
@@ -71,7 +71,7 @@ class confParameter:
 
     def __init__(self, namefileconfig):
         self.pathdirconffile =  os.path.dirname(os.path.realpath(namefileconfig))
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
@@ -336,7 +336,7 @@ class confParameter:
             logging.getLogger().debug("will filter machines on %s" % (str(filters)))
             return filters
 
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().warn("Parsing on filter_on failed: %s" % str(e))
             return None
 

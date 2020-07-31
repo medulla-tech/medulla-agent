@@ -270,18 +270,18 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                             reverbool = True)
 
 
-        print "source %s"%source
-        print "dest %s"%dest
-        print "command %s"%command
+        print("source %s"%source)
+        print("dest %s"%dest)
+        print("command %s"%command)
 
             #time.sleep(paramglobal['timeupreverssh'])
 
 
-        print json.dumps(data,indent=4)
-        print "----------------------------"
-        print "exec command\n %s"%command
-        print "----------------------------"
-        print "----------------------------"
+        print(json.dumps(data,indent=4))
+        print("----------------------------")
+        print("exec command\n %s"%command)
+        print("----------------------------")
+        print("----------------------------")
         objectxmpp.xmpplog( 'Copying file %s from machine %s to Master'%( os.path.basename(directory), data['hostname']),
                                     type = 'noset',
                                     sessionname = sessionid,
@@ -297,9 +297,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
         z = utils.simplecommand(command)
-        print z['result']
-        print z['code']
-        print "----------------------------"
+        print(z['result'])
+        print(z['code'])
+        print("----------------------------")
 
         if z['code'] != 0:
             objectxmpp.xmpplog( 'Error copying file %s from machine %s to Master'%( os.path.basename(directory), data['hostname']),

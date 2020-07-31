@@ -41,11 +41,11 @@ class manageskioskdb:
         path_bd = self.bddir()
         if path_bd is not None:
             if not os.path.exists(path_bd):
-                os.makedirs(path_bd, mode=0700)
+                os.makedirs(path_bd, mode=0o700)
             self.name_launch_cmd_db = os.path.join(path_bd, name_launch_cmd_db)
             if sys.platform.startswith('darwin'):
                 if not os.path.isdir(self.name_launch_cmd_db):
-                    os.makedirs(self.name_launch_cmd_db, mode=0700)
+                    os.makedirs(self.name_launch_cmd_db, mode=0o700)
 
     def openbase(self):
         if sys.platform.startswith('darwin'):
@@ -85,7 +85,7 @@ class manageskioskdb:
             if data is None:
                 data =""
         else:
-            if self.dblaunchcmd.has_key(str(idpackage)):
+            if str(idpackage) in self.dblaunchcmd:
                 data = self.dblaunchcmd[idpackage]
         self.closebase()
         return str(data)
@@ -96,7 +96,7 @@ class manageskioskdb:
         if sys.platform.startswith('darwin'):
             data = self.dblaunchcmd.delete(bytearray(idpackage))
         else:
-            if self.dblaunchcmd.has_key(idpackage):
+            if idpackage in self.dblaunchcmd:
                 del self.dblaunchcmd[idpackage]
                 self.dblaunchcmd.sync()
         self.closebase()
@@ -108,7 +108,7 @@ class manageskioskdb:
             for k, v in self.dblaunchcmd:
                 result[str(k)] = str(v)
         else:
-            for k, v in self.dblaunchcmd.iteritems():
+            for k, v in self.dblaunchcmd.items():
                 result[str(k)] = str(v)
         self.closebase()
         return result
@@ -122,7 +122,7 @@ class manageskioskdb:
                     continue
                 result[str(k)] = str(v)
         else:
-            for k, v in self.dblaunchcmd.iteritems():
+            for k, v in self.dblaunchcmd.items():
                 if str(k) == "str_json_name_id_package":
                     continue
                 result[str(k)] = str(v)

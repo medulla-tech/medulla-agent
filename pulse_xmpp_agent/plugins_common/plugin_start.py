@@ -43,17 +43,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                 version = utils.file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
                 if len(version) < 20:
                     logger.debug("Version AGENT is " + version)
-                    import _winreg
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                    import winreg
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
                                         0 ,
-                                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-                    _winreg.SetValueEx ( key,
+                                        winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
+                    winreg.SetValueEx ( key,
                                         'DisplayVersion'  ,
                                         0,
-                                        _winreg.REG_SZ,
+                                        winreg.REG_SZ,
                                         version)
-                    _winreg.CloseKey(key)
+                    winreg.CloseKey(key)
         elif sys.platform.startswith('linux') :
             pass
         elif sys.platform.startswith('darwin'):

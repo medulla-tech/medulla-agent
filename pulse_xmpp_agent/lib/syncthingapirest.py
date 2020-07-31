@@ -41,16 +41,16 @@
 import requests
 import json
 from lxml import etree
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import socket
 from threading import Lock
-from utils import Program, getRandomName, simplecommand, file_put_contents
+from .utils import Program, getRandomName, simplecommand, file_put_contents
 import logging
 import traceback
 import time
 import os
 import sys
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 logger = logging.getLogger()
 
@@ -294,14 +294,14 @@ class syncthingapi():
         def Diff(li1, li2):
             return (list(set(li1) - set(li2)))
 
-        if isinstance(type, basestring):
+        if isinstance(type, str):
             type = [type]
         datas_event = self.get_events(limit = limit, since = since)
         tablekey = ["folders", "gui", "devices", "options", "version", "ignoredDevices", "summary"]
         tabeventtype =["ConfigSaved", "DeviceConnected", "DeviceDisconnected", "DeviceDiscovered", "DevicePaused", "DeviceRejected", "DeviceResumed", "DownloadProgress", "FolderCompletion", "FolderErrors", "FolderRejected", "Folder Scan Progress", "FolderSummary", "ItemFinished", "ItemStarted", "Listen Addresses Changed", "LocalChangeDetected", "LocalIndexUpdated", "Login Attempt"," RemoteChangeDetected", "Remote Download Progress", "RemoteIndexUpdated", "Starting", "StartupComplete", "StateChanged"]
         re = [eventdata for eventdata in datas_event if eventdata['type'] in type]
         if datasection is not None:
-            if isinstance(datasection, basestring):
+            if isinstance(datasection, str):
                 datasection =[datasection]
             for section in datasection:
                 if section not in tablekey:
@@ -820,7 +820,7 @@ class syncthingapi():
         try:
             geturl = "%s%s"%(self.urlbaserest, cmd)
             if len(paramsurl) != 0:
-                string_param_url = urllib.urlencode(paramsurl)
+                string_param_url = urllib.parse.urlencode(paramsurl)
                 geturl = geturl+"?"+string_param_url
             rest = requests.get(geturl,headers=self.headers)
         except Exception as e:
@@ -861,7 +861,7 @@ class syncthingapi():
         r = None
         posturl = "%s%s"%(self.urlbaserest, cmd)
         if len(paramsurl) != 0:
-            string_param_url = urllib.urlencode(paramsurl)
+            string_param_url = urllib.parse.urlencode(paramsurl)
             posturl = posturl+"?"+string_param_url
 
         if len(dictpython) == 0:
@@ -893,7 +893,7 @@ class syncthingapi():
             return None
         self.errornb = 0
         result = analyseresult(r)
-        if isinstance(result, basestring) and "error" in result:
+        if isinstance(result, str) and "error" in result:
             logger.error("%s"%result)
         return result
 
@@ -1252,11 +1252,11 @@ class syncthingapi():
 
     def display_list_id_folder(self):
         for folder in self.config['folders']:
-            print folder["id"]
+            print(folder["id"])
 
     def display_list_id_device(self):
         for device in self.config['devices']:
-            print device["deviceID"]
+            print(device["deviceID"])
 
 
 class syncthing(syncthingapi):

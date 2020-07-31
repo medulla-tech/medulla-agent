@@ -23,7 +23,7 @@ import sys, platform
 import logging
 
 if sys.platform.startswith('win'):
-    import _winreg
+    import winreg
 
 
 def singletonclass(class_):
@@ -76,9 +76,9 @@ class constantregisterwindows:
                              }
         self.bitness = platform.architecture()[0]
         if self.bitness == '32bit':
-            self.other_view_flag = _winreg.KEY_WOW64_64KEY
+            self.other_view_flag = winreg.KEY_WOW64_64KEY
         elif self.bitness == '64bit':
-            self.other_view_flag = _winreg.KEY_WOW64_32KEY
+            self.other_view_flag = winreg.KEY_WOW64_32KEY
 
     def regkey_exists(self, key):
         """
@@ -111,71 +111,71 @@ class constantregisterwindows:
     def getType(self, registrytype):
         if registrytype in self.typeregister:
             if registrytype == 'REG_BINARY':
-                return _winreg.REG_BINARY
+                return winreg.REG_BINARY
             elif registrytype == 'REG_DWORD':
-                return _winreg.REG_DWORD
+                return winreg.REG_DWORD
             elif registrytype == 'REG_DWORD_LITTLE_ENDIAN':
-                return _winreg.REG_DWORD_LITTLE_ENDIAN
+                return winreg.REG_DWORD_LITTLE_ENDIAN
             elif registrytype == 'REG_DWORD_BIG_ENDIAN':
-                return _winreg.REG_DWORD_BIG_ENDIAN
+                return winreg.REG_DWORD_BIG_ENDIAN
             elif registrytype == 'REG_EXPAND_SZ':
-                return _winreg.REG_EXPAND_SZ
+                return winreg.REG_EXPAND_SZ
             elif registrytype == 'REG_LINK':
-                return _winreg.REG_LINK
+                return winreg.REG_LINK
             elif registrytype == 'REG_MULTI_SZ':
-                return _winreg.REG_MULTI_SZ
+                return winreg.REG_MULTI_SZ
             elif registrytype == 'REG_NONE':
-                return _winreg.REG_NONE
+                return winreg.REG_NONE
             elif registrytype == 'REG_RESOURCE_LIST':
-                return _winreg.REG_RESOURCE_LIST
+                return winreg.REG_RESOURCE_LIST
             elif registrytype == 'REG_FULL_RESOURCE_DESCRIPTOR':
-                return _winreg.REG_FULL_RESOURCE_DESCRIPTOR
+                return winreg.REG_FULL_RESOURCE_DESCRIPTOR
             elif registrytype == 'REG_RESOURCE_REQUIREMENTS_LIST':
-                return _winreg.REG_RESOURCE_REQUIREMENTS_LIST
+                return winreg.REG_RESOURCE_REQUIREMENTS_LIST
             elif registrytype == 'REG_SZ':
-                return _winreg.REG_SZ
+                return winreg.REG_SZ
         raise
 
     def getkey(self, key):
         if key in self.keysregister:
             if key == 'HKEY_CLASSES_ROOT':
-                return _winreg.HKEY_CLASSES_ROOT
+                return winreg.HKEY_CLASSES_ROOT
             elif key == 'HKEY_CURRENT_USER':
-                return _winreg.HKEY_CURRENT_USER
+                return winreg.HKEY_CURRENT_USER
             elif key == 'HKEY_LOCAL_MACHINE':
-                return _winreg.HKEY_LOCAL_MACHINE
+                return winreg.HKEY_LOCAL_MACHINE
             elif key == 'HKEY_USERS':
-                return _winreg.HKEY_USERS
+                return winreg.HKEY_USERS
             elif key == 'HKEY_PERFORMANCE_DATA':
-                return _winreg.HKEY_PERFORMANCE_DATA
+                return winreg.HKEY_PERFORMANCE_DATA
             elif key == 'HKEY_CURRENT_CONFIG':
-                return _winreg.HKEY_CURRENT_CONFIG
+                return winreg.HKEY_CURRENT_CONFIG
             elif key == 'HKEY_DYN_DATA':
-                return _winreg.HKEY_DYN_DATA
+                return winreg.HKEY_DYN_DATA
             elif key == 'KEY_ALL_ACCESS':
-                return _winreg.KEY_ALL_ACCESS
+                return winreg.KEY_ALL_ACCESS
             elif key == 'KEY_WRITE':
-                return _winreg.KEY_WRITE
+                return winreg.KEY_WRITE
             elif key == 'KEY_READ':
-                return _winreg.KEY_READ
+                return winreg.KEY_READ
             elif key == 'KEY_EXECUTE':
-                return _winreg.KEY_EXECUTE
+                return winreg.KEY_EXECUTE
             elif key == 'KEY_QUERY_VALUE':
-                return _winreg.KEY_QUERY_VALUE
+                return winreg.KEY_QUERY_VALUE
             elif key == 'KEY_SET_VALUE':
-                return _winreg.KEY_SET_VALUE
+                return winreg.KEY_SET_VALUE
             elif key == 'KEY_CREATE_SUB_KEY':
-                return _winreg.KEY_CREATE_SUB_KEY
+                return winreg.KEY_CREATE_SUB_KEY
             elif key == 'KEY_ENUMERATE_SUB_KEYS':
-                return _winreg.KEY_ENUMERATE_SUB_KEYS
+                return winreg.KEY_ENUMERATE_SUB_KEYS
             elif key == 'KEY_NOTIFY':
-                return _winreg.KEY_NOTIFY
+                return winreg.KEY_NOTIFY
             elif key == 'KEY_CREATE_LINK':
-                return _winreg.KEY_CREATE_LINK
+                return winreg.KEY_CREATE_LINK
             elif key == 'KEY_WOW64_64KEY':
-                return _winreg.KEY_WOW64_64KEY
+                return winreg.KEY_WOW64_64KEY
             elif key == 'KEY_WOW64_32KEY':
-                return _winreg.KEY_WOW64_32KEY
+                return winreg.KEY_WOW64_32KEY
         raise
 
     def getother_view_flag(self):
@@ -193,13 +193,13 @@ class RegisterWindows():
             hive = completestrkey.split('\\')[0].strip('"')
             sub_key = completestrkey.split('\\')[-1].strip('"')
             path = completestrkey.replace(hive+'\\', '').replace('\\'+sub_key, '').strip('"')
-            key = _winreg.OpenKey(reg_constants.getkey(hive),
+            key = winreg.OpenKey(reg_constants.getkey(hive),
                                   path,
                                   0,
-                                  _winreg.KEY_READ | reg_constants.getother_view_flag())
-            key_value = _winreg.QueryValueEx(key, sub_key)
+                                  winreg.KEY_READ | reg_constants.getother_view_flag())
+            key_value = winreg.QueryValueEx(key, sub_key)
             return str(key_value[0])
-        except Exception,e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return ""
 
@@ -207,13 +207,13 @@ class RegisterWindows():
     def readkeyKeyPathVariable(strkey, strpath, strnamevariable):
         reg_constants = constantregisterwindows()
         try:
-            key = _winreg.OpenKey(reg_constants.getkey(strkey),
+            key = winreg.OpenKey(reg_constants.getkey(strkey),
                                   strpath,
                                   0,
-                                  _winreg.KEY_READ | reg_constants.getother_view_flag())
-            key_value = _winreg.QueryValueEx( key, strnamevariable )
+                                  winreg.KEY_READ | reg_constants.getother_view_flag())
+            key_value = winreg.QueryValueEx( key, strnamevariable )
             return str(key_value[0])
-        except Exception,e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return ""
 

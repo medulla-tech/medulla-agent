@@ -34,7 +34,7 @@ from lib.manageADorganization import manage_fqdn_window_activedirectory
 from random import randint
 import operator
 import traceback
-import ConfigParser
+import configparser
 import netaddr
 from math import cos, sin, atan2, sqrt
 
@@ -730,7 +730,7 @@ def read_conf_assessor(objectxmpp):
         return False
     else:
         objectxmpp.assessor_agent_errorconf = False
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(objectxmpp.pathfileconf)
         if os.path.exists(objectxmpp.pathfileconf + ".local"):
             Config.read(objectxmpp.pathfileconf + ".local")

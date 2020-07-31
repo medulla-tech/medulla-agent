@@ -43,20 +43,20 @@ def schedule_main(objectxmpp):
             obj['action'] = "machineexecutionscheduler"
             del obj['data']['descriptor']
             del obj['data']['packagefile']###['descriptor']
-            print json.dumps(obj, indent = 4)
+            print(json.dumps(obj, indent = 4))
             # send message to master(plugin_machineexecutionscheduler)
             #print "SEND", json.dumps(obj, indent = 4)
             objectxmpp.send_message(mto = obj['data']['jidmaster'],
                                         mbody = json.dumps(obj),
                                         mtype = 'chat')
     else:
-        for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.iteritems():
+        for k, v in objectxmpp.Deploybasesched.dbsessionscheduler.items():
             obj = json.loads(v)
             obj['data']['fromaction'] = obj['action']
             obj['action'] = "machineexecutionscheduler"
             del obj['data']['descriptor']
             del obj['data']['packagefile']###['descriptor']
-            print json.dumps(obj, indent = 4)
+            print(json.dumps(obj, indent = 4))
             # send message to master(plugin_machineexecutionscheduler)
             #print "SEND", json.dumps(obj, indent = 4)
             objectxmpp.send_message(mto = obj['data']['jidmaster'],

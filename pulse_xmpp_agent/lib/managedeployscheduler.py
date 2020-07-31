@@ -42,14 +42,14 @@ class manageschedulerdeploy:
         path_bd = self.bddir()
         if path_bd is not None:
             if not os.path.exists(path_bd):
-                os.makedirs(path_bd, mode=0700)
+                os.makedirs(path_bd, mode=0o700)
             self.name_basesession = os.path.join(path_bd, name_basesession)
             self.name_basecmd = os.path.join(path_bd, name_basecmd)
             if sys.platform.startswith('darwin'):
                 if not os.path.isdir(self.name_basesession):
-                    os.makedirs(self.name_basesession, mode=0700)
+                    os.makedirs(self.name_basesession, mode=0o700)
                 if not os.path.isdir(self.name_basecmd):
-                    os.makedirs(self.name_basecmd, mode=0700)
+                    os.makedirs(self.name_basecmd, mode=0o700)
 
     def openbase(self):
         if sys.platform.startswith('darwin'):
@@ -92,7 +92,7 @@ class manageschedulerdeploy:
             if data is None:
                 data =""
         else:
-            if self.dbsessionscheduler.has_key(str(sessionid)):
+            if str(sessionid) in self.dbsessionscheduler:
                 data = self.dbsessionscheduler[sessionid]
         self.closebase()
         return data
@@ -104,7 +104,7 @@ class manageschedulerdeploy:
         if sys.platform.startswith('darwin'):
             data = self.dbsessionscheduler.delete(bytearray(sessionid))
         else:
-            if self.dbsessionscheduler.has_key(sessionid):
+            if sessionid in self.dbsessionscheduler:
                 del self.dbsessionscheduler[sessionid]
                 self.dbsessionscheduler.sync()
         self.closebase()

@@ -22,7 +22,7 @@
 
 import os
 import logging
-import ConfigParser
+import configparser
 import shutil
 import types
 from lib.configuration import confParameter
@@ -64,7 +64,7 @@ def read_conf_logsrotation(objectxmpp):
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathconffile)
         if os.path.exists(pathconffile + ".local"):
             Config.read(pathconffile + ".local")

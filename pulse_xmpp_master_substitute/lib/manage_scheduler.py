@@ -88,7 +88,7 @@ class manage_scheduler:
         #creation repertoire si non exist
         if not os.path.exists(self.directoryschedule):
             logging.getLogger().debug("create directory scheduler %s"%self.directoryschedule)
-            os.makedirs(self.directoryschedule, 0700 )
+            os.makedirs(self.directoryschedule, 0o700 )
         namefile = os.path.join(self.directoryschedule,"__init__.py")
         if not os.path.exists(namefile):
             fichier = open(namefile, "w")

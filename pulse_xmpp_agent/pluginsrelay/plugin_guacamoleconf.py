@@ -73,7 +73,7 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
         protos = list(set(objetxmpp.config.guacamole_protocols.split()) \
                       & set(data['remoteservice'].keys()))
     else:
-        protos = data['remoteservice'].keys()
+        protos = list(data['remoteservice'].keys())
 
     try:
         # delete connection
@@ -86,12 +86,12 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
             cursor.execute(insertprotocole(proto, data['hostname']))
             db.commit()
             result['data']['connection'][proto.upper()] = cursor.lastrowid
-    except MySQLdb.Error, e:
+    except MySQLdb.Error as e:
         db.close()
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
         traceback.print_exc(file=sys.stdout)
         raise
-    except Exception, e:
+    except Exception as e:
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
         traceback.print_exc(file=sys.stdout)
         db.close()
@@ -125,7 +125,7 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
             sock.close()
 
             # Options specific to a protocol
-            for option in objetxmpp.config.__dict__.keys():
+            for option in list(objetxmpp.config.__dict__.keys()):
                 if option.startswith(proto.lower()):
                     if option == 'ssh_keyfile':
                         # specific processing for ssh key
@@ -152,12 +152,12 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
             # Commit our queries
             db.commit()
 
-    except MySQLdb.Error, e:
+    except MySQLdb.Error as e:
         db.close()
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
         traceback.print_exc(file=sys.stdout)
         raise
-    except Exception, e:
+    except Exception as e:
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
         traceback.print_exc(file=sys.stdout)
         db.close()

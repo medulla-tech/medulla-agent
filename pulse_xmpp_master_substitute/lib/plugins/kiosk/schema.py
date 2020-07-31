@@ -49,7 +49,7 @@ class DBObj(object):
         if '_sa_instance_state' in d:
             del d['_sa_instance_state']
         # Actually we don't support relations
-        for key, value in d.iteritems():
+        for key, value in d.items():
             if key and type(value) not in [type({}), type([])]:
                 setattr(self, key, value)
 

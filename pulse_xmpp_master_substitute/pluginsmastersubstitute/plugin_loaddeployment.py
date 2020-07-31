@@ -37,7 +37,7 @@ from lib.plugins.msc import MscDatabase
 from lib.managepackage import managepackage
 from lib.managesession import session
 from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents, file_put_contents
-import ConfigParser
+import configparser
 import types
 import datetime
 #from datetime import datetime
@@ -992,14 +992,14 @@ def callpluginsubstitute(self, plugin, data, sessionid=None):
 def directcallplugin(self, msg):
     try:
         dataobj = json.loads(msg['body'])
-        if dataobj.has_key('action') and dataobj['action'] != "" and dataobj.has_key('data'):
-            if dataobj.has_key('base64') and \
+        if 'action' in dataobj and dataobj['action'] != "" and 'data' in dataobj:
+            if 'base64' in dataobj and \
                 ((isinstance(dataobj['base64'], bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'], str) and dataobj['base64'].lower() == 'true')):
                 mydata = json.loads(base64.b64decode(dataobj['data']))
             else:
                 mydata = dataobj['data']
-            if not dataobj.has_key('sessionid'):
+            if 'sessionid' not in dataobj:
                 dataobj['sessionid'] = "absent"
             if 'ret' not in dataobj:
                 dataobj['ret'] = 0
@@ -1137,7 +1137,7 @@ def read_conf_loaddeployment(objectxmpp):
         wol_interval = 60
         session_check_interval = 15
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathfileconf)
         if Config.has_option("parameters", "wol_interval"):
             objectxmpp.wol_interval =  Config.getint('parameters', 'wol_interval')

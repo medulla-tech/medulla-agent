@@ -130,9 +130,9 @@ class KioskDatabase(DatabaseHelper):
         for i in range(NB_DB_CONN_TRY):
             try:
                 ret = self.db.connect()
-            except DBAPIError, e:
+            except DBAPIError as e:
                 logging.getLogger().error(e)
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(e)
             if ret:
                 break
@@ -208,7 +208,7 @@ class KioskDatabase(DatabaseHelper):
             session.flush()
             l = [x for x in result]
             return l
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("get_profile_list_for_OUList")
             logging.getLogger().error(str(e))
             return ""
@@ -293,7 +293,7 @@ class KioskDatabase(DatabaseHelper):
         # The profile is now created, but the packages are not linked to it nor added into database.
         # If the package list is not empty, then firstly we get the status and the uuid for each packages
         if len(packages) > 0 :
-            for status in packages.keys():
+            for status in list(packages.keys()):
                 for uuid in packages[status]:
 
                     # get the package id and link it with the profile
@@ -409,7 +409,7 @@ class KioskDatabase(DatabaseHelper):
             session.flush()
             return True
 
-        except Exception, e:
+        except Exception as e:
             return False
 
     @DatabaseHelper._sessionm
@@ -557,7 +557,7 @@ class KioskDatabase(DatabaseHelper):
         # The profile is now created, but the packages are not linked to it nor added into database.
         # If the package list is not empty, then firstly we get the status and the uuid for each packages
         if len(packages) > 0:
-            for status in packages.keys():
+            for status in list(packages.keys()):
                 for uuid in packages[status]:
 
                     # get the package id and link it with the profile

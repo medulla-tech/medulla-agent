@@ -83,42 +83,42 @@ if __name__ == '__main__':
         if opts.typemachine.lower() in ["machine"]:
             if testspeedagent:
                 if sys.platform.startswith('win'):
-                    print('cmd Running : %s %s -t %s' % (pythonexec, connectionagent, opts.typemachine))
+                    print(('cmd Running : %s %s -t %s' % (pythonexec, connectionagent, opts.typemachine)))
                     os.system('%s %s -t %s' % (pythonexec, connectionagent, opts.typemachine))
                 elif sys.platform.startswith('darwin'):
-                    print("Running", 'python2 connectionagent.py -t %s' % opts.typemachine)
+                    print(("Running", 'python2 connectionagent.py -t %s' % opts.typemachine))
                     os.system('python2 connectionagent.py -t %s' % opts.typemachine)
                 else:
-                    print("Running", 'python connectionagent.py -t %s' % opts.typemachine)
+                    print(("Running", 'python connectionagent.py -t %s' % opts.typemachine))
                     os.system('python connectionagent.py -t %s' % opts.typemachine)
 
         if sys.platform.startswith('win'):
-            print('cmd Running : %s %s -t %s' % (pythonexec, agentxmpp, opts.typemachine))
+            print(('cmd Running : %s %s -t %s' % (pythonexec, agentxmpp, opts.typemachine)))
             os.system('%s %s -t %s' % (pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith('darwin'):
-            print("Running", 'python2 agentxmpp.py -t %s' % opts.typemachine)
+            print(("Running", 'python2 agentxmpp.py -t %s' % opts.typemachine))
             os.system('python2 agentxmpp.py -t %s' % opts.typemachine)
         else:
-            print("Running", 'python agentxmpp.py -d -t %s' % opts.typemachine)
+            print(("Running", 'python agentxmpp.py -d -t %s' % opts.typemachine))
             os.system('python agentxmpp.py -d -t %s' % opts.typemachine)
     else:
         if opts.typemachine.lower() in ["machine"]:
             if  testspeedagent:
                 if sys.platform.startswith('win'):
-                    print('cmd Running : %s %s -c -t %s' % (pythonexec, connectionagent, opts.typemachine))
+                    print(('cmd Running : %s %s -c -t %s' % (pythonexec, connectionagent, opts.typemachine)))
                     os.system('%s %s -c -t %s' % (pythonexec, connectionagent, opts.typemachine))
                 elif sys.platform.startswith('darwin'):
-                    print("Running", 'python2 connectionagent.py -c -t %s' % opts.typemachine)
+                    print(("Running", 'python2 connectionagent.py -c -t %s' % opts.typemachine))
                     os.system('python2 connectionagent.py -c -t %s' % opts.typemachine)
                 else:
-                    print("Running", 'python connectionagent.py -c -t %s' % opts.typemachine)
+                    print(("Running", 'python connectionagent.py -c -t %s' % opts.typemachine))
                     os.system('python connectionagent.py -c -t %s' % opts.typemachine)
         if sys.platform.startswith('win'):
-            print('cmd Running : %s %s -c -t %s' % (pythonexec, agentxmpp, opts.typemachine))
+            print(('cmd Running : %s %s -c -t %s' % (pythonexec, agentxmpp, opts.typemachine)))
             os.system('%s %s -c -t %s' % (pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith('darwin'):
-            print("Running", '/usr/local/bin/python2 agentxmpp.py -c -t %s' % opts.typemachine)
+            print(("Running", '/usr/local/bin/python2 agentxmpp.py -c -t %s' % opts.typemachine))
             os.system('python2 agentxmpp.py -c -t %s' % opts.typemachine)
         else:
-            print("Running", 'python agentxmpp.py -c -t %s' % opts.typemachine)
+            print(("Running", 'python agentxmpp.py -c -t %s' % opts.typemachine))
             os.system('python agentxmpp.py -c -t %s' % opts.typemachine)

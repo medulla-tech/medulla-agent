@@ -34,11 +34,11 @@ import select
 import threading
 from multiprocessing import Queue
 import psutil
-from utils import getRandomName, isBase64, is_connectedServer
-from configuration import confParameter
-from logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from .utils import getRandomName, isBase64, is_connectedServer
+from .configuration import confParameter
+from .logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
-from networkinfo import organizationbymachine,\
+from .networkinfo import organizationbymachine,\
                         organizationbyuser
 
 if sys.platform.startswith('win'):

@@ -28,13 +28,13 @@ import sys
 import platform
 import os
 import logging
-import ConfigParser
-import utils
+import configparser
+from . import utils
 import random
-from agentconffile import conffilename
+from .agentconffile import conffilename
 from sleekxmpp import jid
-from agentconffile import directoryconffile
-from utils import ipfromdns
+from .agentconffile import directoryconffile
+from .utils import ipfromdns
 import re
 
 logger = logging.getLogger()
@@ -48,7 +48,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     confsubtitute: the substitute to add in the configuration file
 
     """
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
@@ -69,7 +69,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
         jidrelayserver: the new jid of the relayserver ( section global )
         baseurlguacamole: the url used for guacamole ( section type )
     """
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
@@ -126,7 +126,7 @@ def nextalternativeclusterconnection(conffile):
     if not os.path.isfile(conffile):
         return []
 
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
 
     nextserver          = Config.getint('alternativelist', 'nextserver')
@@ -217,7 +217,7 @@ def loadparameters(namefile, group, key):
         the Value defined by the group/key couple.
     """
 
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(namefile)
     value = ""
     if Config.has_option("group", "key"):
@@ -226,7 +226,7 @@ def loadparameters(namefile, group, key):
 
 class substitutelist:
     def __init__(self):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         namefileconfig = conffilename('machine')
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
@@ -274,7 +274,7 @@ class substitutelist:
 
 class confParameter:
     def __init__(self, typeconf='machine'):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         namefileconfig = conffilename(typeconf)
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
@@ -687,7 +687,7 @@ class confParameter:
         self.information['archi'] = self.Architecture
 
     def loadparametersplugins(self, namefile):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(namefile)
         if os.path.isfile(namefile+".local"):
             Config.read(namefile+".local")
@@ -848,7 +848,7 @@ def setconfigfile(listdataconfiguration):
         if len(listdataconfiguration) != 5:
             return False
         if listdataconfiguration[2] != "" and listdataconfiguration[3] != "" and listdataconfiguration[4] != "":
-            fileconf = ConfigParser.ConfigParser()
+            fileconf = configparser.ConfigParser()
             fileconf.read(fileofconf)
             # test si section existe.
             if not listdataconfiguration[2] in fileconf.sections():
@@ -862,7 +862,7 @@ def setconfigfile(listdataconfiguration):
     elif listdataconfiguration[0].lower() == "del":
         if len(listdataconfiguration) < 4:
             return False
-        fileconf = ConfigParser.ConfigParser()
+        fileconf = configparser.ConfigParser()
         fileconf.read(fileofconf)
         if listdataconfiguration[2] != "" and fileconf.has_section(listdataconfiguration[2]):
             if len(fileconf.options(listdataconfiguration[2])) == 0:

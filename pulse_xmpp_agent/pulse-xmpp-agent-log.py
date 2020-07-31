@@ -21,7 +21,7 @@
 # MA 02110-1301, USA.
 import sys, os
 import logging
-import ConfigParser
+import configparser
 import sleekxmpp
 import netifaces
 import random
@@ -43,6 +43,7 @@ from sqlalchemy.orm import sessionmaker
 import re
 from sqlalchemy.ext.declarative import declarative_base
 from lib.logcolor import  add_coloring_to_emit_ansi
+import imp
 
 logger = logging.getLogger()
 Base = declarative_base()
@@ -107,7 +108,7 @@ class Def_remote_deploy_status(Base):
 
 class configuration:
     def __init__(self, configfile=""):
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read("/etc/mmc/plugins/xmppmaster.ini")
         if configfile != "" and os.path.exists(configfile):
             Config.read(configfile)
@@ -238,7 +239,7 @@ def md5(fname):
 
 
 if sys.version_info < (3, 0):
-    reload(sys)
+    imp.reload(sys)
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
@@ -267,7 +268,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        print self.boundjid
+        print(self.boundjid)
 
         self.reglestatus = []
         loggerliststatus = self.get_log_status()
@@ -306,7 +307,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     def get_log_status(self):
@@ -327,7 +328,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             'regexplog':regle.regex_logmessage,
                             'status':regle.status} for id, regle in enumerate(ret)]
             return resultat
-        except Exception, e:
+        except Exception as e:
             traceback.print_exc(file=sys.stdout)
             return resultat
 
@@ -376,7 +377,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             session.flush()
             session.close()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             return -1
@@ -542,10 +543,10 @@ def createDaemon(opts,conf):
     try:
         pid = os.fork()
         if pid > 0:
-            print 'PID: %d' % pid
+            print('PID: %d' % pid)
             os._exit(0)
         doTask(opts,conf)
-    except OSError, error:
+    except OSError as error:
         logger.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logger.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
@@ -591,11 +592,11 @@ def doTask(opts, conf):
 
 if __name__ == '__main__':
     if not sys.platform.startswith('linux'):
-        print "Agent log on systeme linux only"
+        print("Agent log on systeme linux only")
 
 
     if os.getuid() != 0:
-        print "Agent must be running as root"
+        print("Agent must be running as root")
         sys.exit(0)
 
     optp = OptionParser()
@@ -632,7 +633,7 @@ if __name__ == '__main__':
     if opts.configfile:
         configfile = opts.configfile
     if opts.version is True:
-        print VERSIONLOG
+        print(VERSIONLOG)
         sys.exit(0)
     # Setup the command line arguments.
     conf  = configuration(configfile)

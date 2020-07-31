@@ -23,7 +23,7 @@
 # file : networkevents
 
 """Implementation of ISesNework in Python."""
-from __future__ import print_function
+
 from  collections  import  deque
 import logging
 import logging.handlers
@@ -141,7 +141,7 @@ def GetIpAddrTable():
                                         ctypes.byref(dwSize),
                                         0)
     if rc != 0:
-        raise WindowsError, "GetIpAddrTable returned %d" % rc  # skipcq: PYL-E0602
+        raise WindowsError("GetIpAddrTable returned %d" % rc)  # skipcq: PYL-E0602
 
     table = []
 

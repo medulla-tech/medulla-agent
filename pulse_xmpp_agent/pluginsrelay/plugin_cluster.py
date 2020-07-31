@@ -89,8 +89,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                           'ret': 0,
                           'base64': False
                          }
-                print ars
-                print result
+                print(ars)
+                print(result)
                 objectxmpp.send_message(mto=ars,
                                         mbody=json.dumps(result),
                                         mtype='chat')

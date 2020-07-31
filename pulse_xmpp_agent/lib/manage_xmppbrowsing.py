@@ -23,7 +23,7 @@
 
 import os, sys
 import logging
-from utils import file_get_content, simplecommand, decode_strconsole
+from .utils import file_get_content, simplecommand, decode_strconsole
 import math
 import traceback
 

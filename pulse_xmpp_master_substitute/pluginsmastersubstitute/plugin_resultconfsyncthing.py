@@ -41,5 +41,5 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             logger.error("Remote Error on syncthing agent (setup) %s"%str(msg['from'].resource) )
             logger.error(data['errorsyncthingconf'])
     except Exception as e:
-        print traceback.format_exc()
+        print(traceback.format_exc())
         pass

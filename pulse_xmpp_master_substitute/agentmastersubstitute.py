@@ -48,7 +48,7 @@ def Setdirectorytempinfo():
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
-        os.makedirs(dirtempinfo, mode=0700)
+        os.makedirs(dirtempinfo, mode=0o700)
     return dirtempinfo
 
 def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
@@ -59,10 +59,10 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
         # Store the Fork PID
         pid = os.fork()
         if pid > 0:
-            print 'PID: %d' % pid
+            print('PID: %d' % pid)
             os._exit(0)
         doTask(optsconsoledebug, optsdeamon, optfileconf)
-    except OSError, error:
+    except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
@@ -135,7 +135,7 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
-        print "Agent must be running as root"
+        print("Agent must be running as root")
         sys.exit(0)
     #controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
@@ -146,8 +146,8 @@ if __name__ == '__main__':
             Setdirectorytempinfo(),
             "master-all-RSA.key" )
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileallkey)):
-        print "key missing"
-        print ("install key of master in \n\t%s\n\t%s\n\n"%(filekeypublic, fileallkey) )
+        print("key missing")
+        print(("install key of master in \n\t%s\n\t%s\n\n"%(filekeypublic, fileallkey) ))
         print("find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key ")
         sys.exit(0)
     namefileconfigdefault = os.path.join('/',

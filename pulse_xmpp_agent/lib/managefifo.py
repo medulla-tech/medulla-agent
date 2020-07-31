@@ -202,7 +202,7 @@ class fifodeploy:
 
     def displayfifo(self):
         for fifodata in self.FIFOdeploy:
-            print self.readfifo(fifodata)
+            print(self.readfifo(fifodata))
             Logger.info("%s"%(self.readfifo(fifodata)))
 
     def prioritydeploy(self, sessionid):

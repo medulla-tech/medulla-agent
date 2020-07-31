@@ -38,7 +38,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 dataerreur['ret'] = 0
                 dataerreur['data']['msg'] = "Installing plugin %s on %s"%(data['pluginname'],
                                                                        message['to'].user)
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().debug("error : %s"%str(e))
                 dataerreur['data']['msg'] = "Installing plugin %s on %s : %s"%(data['pluginname'],
                                                                             message['to'].user,

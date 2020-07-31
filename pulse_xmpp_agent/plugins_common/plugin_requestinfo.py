@@ -78,8 +78,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                              mbody=json.dumps(result),
                              mtype='chat')
 
-    print "message to %s"%message['from']
-    print "result \n%s"%json.dumps(result, indent=4)
+    print("message to %s"%message['from'])
+    print("result \n%s"%json.dumps(result, indent=4))
 
     #message
     objectxmpp.send_message( mto=message['from'],

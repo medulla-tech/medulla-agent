@@ -11,18 +11,18 @@ def schedule_main(objectxmpp):
     download file Wsusscn2.cab on link http://go.microsoft.com/fwlink/p/?LinkID=74689
 
     """
-    print "*******************************************"
-    print "*******************************************"
-    print "*******************************************"
+    print("*******************************************")
+    print("*******************************************")
+    print("*******************************************")
     try:
-        os.makedirs("/var/lib/pulse2/Wsusscn2", 0700)
+        os.makedirs("/var/lib/pulse2/Wsusscn2", 0o700)
     except OSError:
         pass
     re = utils.shellcommandtimeout("wget -O Wsusscn2.cab -P /var/lib/pulse2/Wsusscn2 http://go.microsoft.com/fwlink/p/?LinkID=74689", 600).run()
-    print re['codereturn']
+    print(re['codereturn'])
     result  = [x.strip('\n') for x in re['result'] if x !='']
-    print result
-    print "*******************************************"
-    print "*******************************************"
-    print "*******************************************"
+    print(result)
+    print("*******************************************")
+    print("*******************************************")
+    print("*******************************************")
 ### http://go.microsoft.com/fwlink/p/?LinkID=74689

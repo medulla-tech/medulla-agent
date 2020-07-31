@@ -40,7 +40,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):
         return
     try:
         XmppMasterDatabase().addlistguacamoleidformachineid(data['machine_id'], data['connection'])
-    except Exception, e:
+    except Exception as e:
         if 'msg' in data:
             logger.error("recv error from %s : %s\n"%(msg['from'],data['msg']))
         logger.error("File read error %s\n%s"%(str(e), traceback.format_exc()))

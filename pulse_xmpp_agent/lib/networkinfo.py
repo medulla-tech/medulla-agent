@@ -31,7 +31,7 @@ import psutil
 import os
 from distutils.util import strtobool
 from lib.utils import simplecommand, powerschellscriptps1
-import utils
+from . import utils
 
 if sys.platform.startswith('win'):
     import wmi
@@ -51,7 +51,7 @@ class networkagentinfo:
             d['macaddress'] = self.reduction_mac(d['macaddress'])
         if len(param) != 0 and len(self.messagejson['listipinfo']) != 0:
             dd = []
-            param1 = map(self.reduction_mac, param)
+            param1 = list(map(self.reduction_mac, param))
             for d in self.messagejson['listipinfo']:
                 e = [s for s in param1 if d['macaddress'] == s]
                 if len(e) != 0:
@@ -347,7 +347,7 @@ def powershellfqdnwindowscommand():
             return result
         else:
             return ""
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         logger.error("subproces powershellfqdnwindowscommand.output = " + e.output)
     return ""
 
@@ -366,7 +366,7 @@ def powershellfqdnwindowscommandbyuser(user):
             return result
         else:
             return ""
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         logger.error("subproces powershellfqdnwindowscommandbyuser.output = " + e.output)
     return ""
 
@@ -400,7 +400,7 @@ def isMachineInDomain():
         output = subprocess.check_output(["powershell.exe", """(gwmi win32_computersystem).partofdomain"""],
                                          shell=True)
         return bool(strtobool(output.strip()))
-    except subprocess.CalledProcessError, e:
+    except subprocess.CalledProcessError as e:
         logger.error("subproces isMachineInDomain.output = " + e.output)
     return False
 

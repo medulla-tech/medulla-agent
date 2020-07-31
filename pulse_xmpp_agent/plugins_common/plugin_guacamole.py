@@ -140,7 +140,7 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
                     simplecommand(cmd)
                     cmd = """\"%s\" -controlservice -connect localhost"""%(program)
                     simplecommand(cmd)
-                except Exception, e:
+                except Exception as e:
                     logger.error( "Error start VNC listener TightVNC: %s" % str(e))
                     logger.error("\n%s"%(traceback.format_exc()))
                     raise
@@ -148,14 +148,14 @@ def action( xmppobject, action, sessionid, data, message, dataerreur ):
                 try:
                     simplecommand("pkill OSXvnc-server -connecthost localhost")
                     simplecommand("\"/Applications/Vine Server.app/Contents/MacOS/OSXvnc-server\" -connectHost localhost")
-                except Exception, e:
+                except Exception as e:
                     logger.error( "Error start VNC listener OSXvnc-server: %s" % str(e))
                     logger.error("\n%s"%(traceback.format_exc()))
                     raise
             else:
                 try:
                     simplecommand("vncconfig -nowin -connect localhost")
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger().error( "Error start VNC listener vncconfig: %s" % str(e))
                     logger.error("\n%s"%(traceback.format_exc()))
                     raise

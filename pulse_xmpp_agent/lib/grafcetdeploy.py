@@ -26,19 +26,19 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64
-from configuration import setconfigfile
+from .utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from .configuration import setconfigfile
 import traceback
 import logging
 import netifaces
 import re
-from managepackage import managepackage
+from .managepackage import managepackage
 from tempfile import mkstemp
 import zipfile
 import base64
 import time
 import copy
-from agentconffile import pulseTempDir
+from .agentconffile import pulseTempDir
 
 if sys.platform.startswith('win'):
     from lib.registerwindows import constantregisterwindows
@@ -59,7 +59,7 @@ class grafcet:
         self.data = datasend['data']
         if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(self.data['advanced']['paramdeploy'], dict):
             # there are  dynamic parameters.
-            for k, v in self.data['advanced']['paramdeploy'].items():
+            for k, v in list(self.data['advanced']['paramdeploy'].items()):
                 self.parameterdynamic[k] = v
 
         self.sessionid = datasend['sessionid']
@@ -297,12 +297,12 @@ class grafcet:
                 logging.warning(
                     "bad descriptor : Registry update only works on Windows")
             else:
-                import _winreg
+                import winreg
                 keywindows = t.replace("@@@VRW@@@", "").split("@@K@@")
-                key = _winreg.OpenKey(constantregisterwindows.getkey(
-                    keywindows[0]), keywindows[1], 0, _winreg.KEY_READ)
-                (valeur, typevaleur) = _winreg.QueryValueEx(key, keywindows[1])
-                _winreg.CloseKey(key)
+                key = winreg.OpenKey(constantregisterwindows.getkey(
+                    keywindows[0]), keywindows[1], 0, winreg.KEY_READ)
+                (valeur, typevaleur) = winreg.QueryValueEx(key, keywindows[1])
+                winreg.CloseKey(key)
                 cmd = cmd.replace(t, str(valeur))
 
         # Replace windows registry value type in template (only for windows)
@@ -313,12 +313,12 @@ class grafcet:
                 logging.warning(
                     "bad descriptor : Registry update only works on Windows")
             else:
-                import _winreg
+                import winreg
                 keywindows = t.replace("@@@TRW@@@", "").split("@@K@@")
-                key = _winreg.OpenKey(constantregisterwindows.getkey(
-                    keywindows[0]), keywindows[1], 0, _winreg.KEY_READ)
-                (valeur, typevaleur) = _winreg.QueryValueEx(key, keywindows[1])
-                _winreg.CloseKey(key)
+                key = winreg.OpenKey(constantregisterwindows.getkey(
+                    keywindows[0]), keywindows[1], 0, winreg.KEY_READ)
+                (valeur, typevaleur) = winreg.QueryValueEx(key, keywindows[1])
+                winreg.CloseKey(key)
                 cmd = cmd.replace(t, typevaleur)
 
         cmd = cmd.replace('@@@LIST_INTERFACE_NET_NO_LOOP@@@', " ".join(
@@ -382,7 +382,7 @@ class grafcet:
                                     fromuser = self.data['login'],
                                     touser = "")
             return 5
-        elif isinstance(val,  basestring):
+        elif isinstance(val,  str):
             if val == 'next':
                 self.data['stepcurrent'] = self.data['stepcurrent'] + 1
                 self.workingstep = self.sequence[self.data['stepcurrent']]
@@ -520,8 +520,8 @@ class grafcet:
             os.chdir(managepackage.packagedir())
             if clear:
                 if sys.platform.startswith('win'):
-                    print "supprime file"
-                    print "rmdir /s /q \"%s\"" % self.datasend['data']['pathpackageonmachine']
+                    print("supprime file")
+                    print("rmdir /s /q \"%s\"" % self.datasend['data']['pathpackageonmachine'])
                     os.system("rmdir /s /q \"%s\"" %
                               self.datasend['data']['pathpackageonmachine'])
                 else:
@@ -560,7 +560,7 @@ class grafcet:
                 datapackage['msgstate'] = {
                     "msg": msgstate, "quitonerror": quiterror}
             datapackage['action'] = 'applicationdeploymentjson'
-            print "signal grafcet terminate%s" % datapackage
+            print("signal grafcet terminate%s" % datapackage)
             self.objectxmpp.send_message(mto=mach,
                                          mbody=json.dumps(datapackage,
                                                           encoding="utf-8"),
@@ -993,7 +993,7 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            print self.workingstep
+            print(self.workingstep)
             if 'comment' in self.workingstep :
                 self.workingstep['comment'] = self.replaceTEMPLATE(self.workingstep['comment'] )
             else:
@@ -1095,7 +1095,7 @@ class grafcet:
                 return
             self.__action_completed__(self.workingstep)
             if 'set' in self.workingstep:
-                if isinstance(self.workingstep['set'], (str, unicode)):
+                if isinstance(self.workingstep['set'], str):
                     self.workingstep['set'] = str(self.workingstep['set'])
                     if self.workingstep['set'] != "":
                         dataconfiguration = self.workingstep['set'].split("@__@")
@@ -1675,7 +1675,7 @@ class grafcet:
                 self.objectxmpp.handleinventory(forced=self.workingstep['actioninventory'],
                                                 sessionid=self.sessionid)
             except Exception as e:
-                print str(e)
+                print(str(e))
             #waitting active generated new inventory
             doinventory = False
             timeinventory = 0
@@ -2058,8 +2058,8 @@ class grafcet:
             ) in self.datasend['data']['pathpackageonmachine']:
                 os.chdir(managepackage.packagedir())
                 if sys.platform.startswith('win'):
-                    print "supprime file %s "
-                    print "rmdir /s /q \"%s\"" % self.datasend['data']['pathpackageonmachine']
+                    print("supprime file %s ")
+                    print("rmdir /s /q \"%s\"" % self.datasend['data']['pathpackageonmachine'])
                     os.system("rmdir /s /q \"%s\"" %
                               self.datasend['data']['pathpackageonmachine'])
                 else:

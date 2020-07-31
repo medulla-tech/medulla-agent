@@ -52,6 +52,7 @@ from optparse import OptionParser
 from threading import Timer
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
+import imp
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
@@ -64,7 +65,7 @@ logger = logging.getLogger()
 
 
 if sys.version_info < (3, 0):
-    reload(sys)
+    imp.reload(sys)
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
@@ -471,8 +472,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         msginfo['data']['codechaine'] = cipher.encrypt(str(self.boundjid))
 
         #----------------------------------
-        print "affiche object"
-        print json.dumps(dataobj, indent = 4)
+        print("affiche object")
+        print(json.dumps(dataobj, indent = 4))
         #----------------------------------
         self.send_message(mto = self.sub_assessor,
                             mbody = json.dumps(msginfo),
@@ -561,10 +562,10 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             # Store the Fork PID
             pid = os.fork()
             if pid > 0:
-                print 'PID: %d' % pid
+                print('PID: %d' % pid)
                 os._exit(0)
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
-    except OSError, error:
+    except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
@@ -669,13 +670,13 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
-        print "Agent must be running as root"
+        print("Agent must be running as root")
         sys.exit(0)
     elif sys.platform.startswith('win') and isWinUserAdmin() == 0 :
-        print "Pulse agent must be running as Administrator"
+        print("Pulse agent must be running as Administrator")
         sys.exit(0)
     elif sys.platform.startswith('darwin') and not isMacOsUserAdmin():
-        print "Pulse agent must be running as root"
+        print("Pulse agent must be running as root")
         sys.exit(0)
 
     optp = OptionParser()

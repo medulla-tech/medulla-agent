@@ -32,7 +32,7 @@ import os
 import json
 import random
 import sys
-import ConfigParser
+import configparser
 import logging
 import getopt
 import base64
@@ -59,7 +59,7 @@ class configerror(Exception):
         self.msg = msg
 
 def conf_information(conffile):
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(conffile)
     Config.read(conffile + '.local')
     configdata = {}
@@ -281,15 +281,15 @@ if __name__ == '__main__':
             logging.getLogger().info("logger mode debug")
             daemonize = False
             logging.getLogger().setLevel(logging.DEBUG)
-            print "pid file: %d\n"%os.getpid()
-            print "kill -9 %s"%os.getpid()
+            print("pid file: %d\n"%os.getpid())
+            print("kill -9 %s"%os.getpid())
         elif option == "-h":
-            print "Configure in file '%s' \n[network_agent]\nip_ars=???\nport_ars=???"%inifile
-            print "\t[-d <mode debug>]\n\t[-d] debug mode no daemonized"
+            print("Configure in file '%s' \n[network_agent]\nip_ars=???\nport_ars=???"%inifile)
+            print("\t[-d <mode debug>]\n\t[-d] debug mode no daemonized")
             sys.exit(0)
 
     if not os.path.exists(inifile):
-        print "configuration File missing '%s' does not exist." % inifile
+        print("configuration File missing '%s' does not exist." % inifile)
         sys.exit(3)
     conf = conf_information(inifile)
 
@@ -299,8 +299,8 @@ if __name__ == '__main__':
             if pid > 0:
                 # exit first parent
                 sys.exit(0)
-        except OSError, e:
-            print >>sys.stderr, "Fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+        except OSError as e:
+            print("Fork #1 failed: %d (%s)" % (e.errno, e.strerror), file=sys.stderr)
             sys.exit(1)
         # dissociate from parent environment
         os.close(sys.stdin.fileno())
@@ -323,8 +323,8 @@ if __name__ == '__main__':
                 #os.system("echo " + str(pid) + " > " + pidfile)
                 #print "echo " + str(pid) + " > " + pidfile
                 sys.exit(0)
-        except OSError, e:
-            print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
+        except OSError as e:
+            print("fork #2 failed: %d (%s)" % (e.errno, e.strerror), file=sys.stderr)
             sys.exit(1)
     else:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -335,15 +335,15 @@ if __name__ == '__main__':
         logging.getLogger().info(conf)
         pidrun = os.getpid()
         os.system("echo " + str(pidrun) + " > " + pidfile)
-        print "If in debug mode, you can stop the program by ussing CTRL+Z then one of"
-        print "the following commands"
-        print "kill -9 $(cat %s)"%pidfile
-        print  "or"
-        print "killall -9 package_watching.py"
-        print  "or"
-        print "kill %1"
-        print  "or"
-        print "kill -9 %s"%os.getpid()
+        print("If in debug mode, you can stop the program by ussing CTRL+Z then one of")
+        print("the following commands")
+        print("kill -9 $(cat %s)"%pidfile)
+        print("or")
+        print("killall -9 package_watching.py")
+        print("or")
+        print("kill %1")
+        print("or")
+        print("kill -9 %s"%os.getpid())
         logging.getLogger().info("PID file : " + str(pidrun) + " in file " + pidfile)
         logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
         logging.getLogger().info("killall package_watching.py")
@@ -351,6 +351,6 @@ if __name__ == '__main__':
         a = watchingfilepartage(conf)
         a.run()
     except KeyboardInterrupt:
-        print "interruption"
+        print("interruption")
         a.stop()
         sys.exit(3)

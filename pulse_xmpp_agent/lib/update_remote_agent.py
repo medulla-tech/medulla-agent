@@ -23,7 +23,7 @@
 import hashlib
 import os
 import logging
-from utils import file_get_contents, simplecommand
+from .utils import file_get_contents, simplecommand
 import json
 
 logger = logging.getLogger()

@@ -24,7 +24,7 @@
 import zlib
 import base64
 import traceback
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import time
 import json
 import logging
@@ -84,11 +84,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         except:
             url = "http://localhost:9999/"
         inventory = zlib.decompress(base64.b64decode(data['inventory']))
-        request = urllib2.Request(url, inventory, HEADER)
+        request = urllib.request.Request(url, inventory, HEADER)
 
         try:
-            response = urllib2.urlopen(request)
-        except urllib2.URLError:
+            response = urllib.request.urlopen(request)
+        except urllib.error.URLError:
             logger.info("The inventory server is not reachable. Please check pulse2-inventory-server service")
 
         machine = XmppMasterDatabase().getMachinefromjid(msg['from'])
@@ -185,11 +185,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     '',
                                                     xmppobject.boundjid.bare)
                     Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
-                except Exception, e:
+                except Exception as e:
                     logger.error("getting key: %s\n%s" %(str(e),traceback.format_exc()))
                     pass
         time.sleep(25)
         # restart agent
         # xmppobject.restartAgent(msg['from'])
-    except Exception, e:
+    except Exception as e:
         logger.error("%s\n%s"%(str(e), traceback.format_exc()))

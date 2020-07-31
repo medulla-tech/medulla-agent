@@ -33,7 +33,7 @@ import hashlib
 logger = logging.getLogger()
 if sys.platform.startswith('win'):
     from lib import registerwindows
-    import _winreg
+    import winreg
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
@@ -197,9 +197,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         try:
             bitness = platform.architecture()[0]
             if bitness == '32bit':
-                other_view_flag = _winreg.KEY_WOW64_64KEY
+                other_view_flag = winreg.KEY_WOW64_64KEY
             elif bitness == '64bit':
-                other_view_flag = _winreg.KEY_WOW64_32KEY
+                other_view_flag = winreg.KEY_WOW64_32KEY
             # run the inventory
             program = os.path.join(os.environ["ProgramFiles"],
                                    'FusionInventory-Agent',
@@ -265,16 +265,16 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                             logging.log(DEBUGPULSEPLUGIN, "sub_key: %s" % sub_key)
                             reg_constants = registerwindows.constantregisterwindows()
                             try:
-                                key = _winreg.OpenKey(reg_constants.getkey(hive),
+                                key = winreg.OpenKey(reg_constants.getkey(hive),
                                                       path,
                                                       0,
-                                                      _winreg.KEY_READ | other_view_flag)
-                                key_value = _winreg.QueryValueEx(key, sub_key)
+                                                      winreg.KEY_READ | other_view_flag)
+                                key_value = winreg.QueryValueEx(key, sub_key)
                                 logging.log(DEBUGPULSEPLUGIN,"key_value: %s" % str(key_value[0]))
                                 result['data']['reginventory'][reg_key_num]['value'] = str(key_value[0])
                                 listfinger.append(str(key_value[0]))
-                                _winreg.CloseKey(key)
-                            except Exception, e:
+                                winreg.CloseKey(key)
+                            except Exception as e:
                                 logging.log(ERRORPULSEPLUGIN,"Error getting key: %s" % str(e))
                                 result['data']['reginventory'][reg_key_num]['value'] = ""
                                 pass

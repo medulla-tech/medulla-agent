@@ -25,7 +25,7 @@ from wakeonlan import wol
 plugin={"VERSION": "2.0", "NAME" :"wakeonlan","TYPE":"relayserver"}
 @utils.pluginprocess
 def action( objectxmpp, action, sessionid, data, message, dataerreur,result):
-    print data
+    print(data)
     if hasattr(objectxmpp.config, 'wol_port'):
         wol_port = int(objectxmpp.config.wol_port)
     else:

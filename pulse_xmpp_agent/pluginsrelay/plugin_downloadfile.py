@@ -51,7 +51,7 @@ def create_path(type ="windows", host="", ipordomain="", path=""):
         return ""
     if type == "windows":
         if host != "" and ipordomain != "":
-            print host,ipordomain,path
+            print(host,ipordomain,path)
             return "%s@%s:\"\\\"%s\\\"\""%( host,
                                             ipordomain,
                                             path)
@@ -260,11 +260,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                           reverbool = True)
 
         time.sleep(paramglobal['timeupreverssh'])
-    print json.dumps(data,indent=4)
-    print "----------------------------"
-    print "exec command\n %s"%command
-    print "----------------------------"
-    print "----------------------------"
+    print(json.dumps(data,indent=4))
+    print("----------------------------")
+    print("exec command\n %s"%command)
+    print("----------------------------")
+    print("----------------------------")
     objectxmpp.xmpplog( 'Copying file %s from machine %s to Master'%( os.path.basename(data['path_src_machine']), data['hostname']),
                                 type = 'noset',
                                 sessionname = sessionid,
@@ -280,9 +280,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
     z = utils.simplecommand(command)
-    print z['result']
-    print z['code']
-    print "----------------------------"
+    print(z['result'])
+    print(z['code'])
+    print("----------------------------")
 
     if z['code'] != 0:
         objectxmpp.xmpplog( 'Error copying file %s from machine %s to Master'%( os.path.basename(data['path_src_machine']), data['hostname']),

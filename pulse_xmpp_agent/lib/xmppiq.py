@@ -26,7 +26,7 @@
 import os, sys, platform
 import json
 import logging
-from utils import   shellcommandtimeout, \
+from .utils import   shellcommandtimeout, \
                     file_put_contents, \
                     file_get_contents, \
                     file_put_contents_w_a, \
@@ -37,7 +37,7 @@ from utils import   shellcommandtimeout, \
                     restartsshd, \
                     install_key_ssh_relayserver
 
-from  agentconffile import  directoryconffile
+from  .agentconffile import  directoryconffile
 import zlib
 import re
 import base64
@@ -46,7 +46,7 @@ import uuid
 import subprocess
 from lib.managepackage import managepackage
 from lib.update_remote_agent import Update_Remote_Agent
-from utils_psutil import sensors_battery,\
+from .utils_psutil import sensors_battery,\
                          winservices,\
                          clone_ps_aux,\
                          disk_usage,\
@@ -124,7 +124,7 @@ class functionsynchroxmpp:
     def remotefilesimple( xmppobject, data ):
         logger.debug("iq remotefilesimple")
         datapath = data['data']
-        if type(datapath) == unicode or type(datapath) == str:
+        if type(datapath) == str or type(datapath) == str:
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
             data['data']=filesystem
@@ -134,7 +134,7 @@ class functionsynchroxmpp:
     def remotefile( xmppobject, data ):
         logger.debug("iq remotefile")
         datapath = data['data']
-        if isinstance(datapath, basestring):
+        if isinstance(datapath, str):
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
             data['data']=filesystem
@@ -210,7 +210,7 @@ class functionsynchroxmpp:
                 logger.debug("file authorized_keys is %s"%authorized_keys_path)
                 msgaction.append("file authorized_keys is %s"%authorized_keys_path)
                 if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                    os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+                    os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
 
                 if not os.path.isfile(authorized_keys_path):
                     file_put_contents(authorized_keys_path,"")
@@ -223,11 +223,11 @@ class functionsynchroxmpp:
                 if not os.path.isdir(pathuser):
                     os.chmod(pathuser, 751)
                 if not os.path.isdir(packagepath):
-                    os.makedirs(packagepath, 0764)
+                    os.makedirs(packagepath, 0o764)
                 os.chown(packagepath, uid, gidroot)
-                os.chmod(os.path.dirname(authorized_keys_path), 0700)
-                os.chmod(authorized_keys_path, 0644)
-                os.chmod(packagepath, 0764)
+                os.chmod(os.path.dirname(authorized_keys_path), 0o700)
+                os.chmod(authorized_keys_path, 0o644)
+                os.chmod(packagepath, 0o764)
                 result = simplecommand(encode_strconsole("chown -R pulseuser: '/var/lib/pulse'"))
             elif sys.platform.startswith('win'):
                 # check if pulse account exists
@@ -267,7 +267,7 @@ class functionsynchroxmpp:
                     authorized_keys_path = os.path.join("C:", "Users", "pulseuser", ".ssh", "authorized_keys")
                     reverse_ssh_key_privat_path = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                        os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+                        os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
                     if not os.path.isfile(authorized_keys_path):
                         file_put_contents(authorized_keys_path,"")
                     currentdir = os.getcwd()
@@ -308,7 +308,7 @@ class functionsynchroxmpp:
 
                     # creation if no exist
                     if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                        os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+                        os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
                     if not os.path.isfile(authorized_keys_path):
                         file_put_contents(authorized_keys_path,"")
 
@@ -496,7 +496,7 @@ class functionsynchroxmpp:
             else:
                 return ""
         except Exception as e:
-            print str(e)
+            print(str(e))
             traceback.print_exc(file=sys.stdout)
             return ""
 

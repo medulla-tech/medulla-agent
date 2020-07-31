@@ -34,7 +34,7 @@ import os
 import sys
 import logging
 import logging.handlers
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 class SMWinservice(win32serviceutil.ServiceFramework):
     '''Base class to create winservice in Python'''
@@ -111,7 +111,7 @@ logger.addHandler(handler)
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
     if (filename.find('://') > 0):
-        ret = urllib2.urlopen(filename).read()
+        ret = urllib.request.urlopen(filename).read()
         if (offset > 0):
             ret = ret[offset:]
         if (maxlen > 0):

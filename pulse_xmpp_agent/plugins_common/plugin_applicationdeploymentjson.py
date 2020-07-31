@@ -2213,7 +2213,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
-                path_key_priv =  os.path.join("c:\Users\pulseuser", ".ssh", "id_rsa")
+                path_key_priv =  os.path.join("c:\\Users\pulseuser", ".ssh", "id_rsa")
             except:
                 path_key_priv = os.path.join("c:\progra~1", "pulse", '.ssh', "id_rsa")
             localdest = " \"%s/%s\"" % (managepackage.managepackage.packagedir(), packagename)
@@ -2291,7 +2291,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
 def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0o777)
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = "https://%s:%s/mirror1_files/%s/" % (ippackage, portpackage, uuidpackage)
     takeresource(datasend, objectxmpp, sessionid)

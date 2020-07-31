@@ -37,7 +37,7 @@ import datetime
 import calendar, hashlib
 import time
 from configobj import ConfigObj
-from xmlrpclib import ProtocolError
+from xmlrpc.client import ProtocolError
 import functools
 from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
         Integer, Date, ForeignKey, asc, or_, not_, desc, func, distinct
@@ -103,9 +103,9 @@ class Glpi(object):
         )
 
         try:
-            self._glpi_version = self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
+            self._glpi_version = list(self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values())[0].replace(' ', '')
         except OperationalError:
-            self._glpi_version = self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
+            self._glpi_version = list(self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values())[0].replace(' ', '')
 
         self.Session = sessionmaker(bind=self.engine_glpi)
         self.metadata = MetaData(self.engine_glpi)

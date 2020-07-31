@@ -246,7 +246,7 @@ def sensors_fans():
     if not fans:
         result = "no fans detected"
         return result
-    for name, entries in fans.items():
+    for name, entries in list(fans.items()):
         result = result + name + "\n"
         for entry in entries:
             result = result + "    %-20s %s RPM\n" % (entry.label or name, entry.current)
@@ -342,7 +342,7 @@ def ifconfig():
     result = ""
     stats = psutil.net_if_stats()
     io_counters = psutil.net_io_counters(pernic=True)
-    for nic, addrs in psutil.net_if_addrs().items():
+    for nic, addrs in list(psutil.net_if_addrs().items()):
         result = result + "%s:" % (nic) + "\n"
         if nic in stats:
             st = stats[nic]
@@ -466,7 +466,7 @@ def netstat():
 def __dictdata(datatuple):
     result = {}
     # key du tuple
-    keyattribut = datatuple.__dict__.keys()
+    keyattribut = list(datatuple.__dict__.keys())
     for keyc in keyattribut:
         #attribut du tuple vers key du dict
         result[keyc]= getattr(datatuple,keyc)

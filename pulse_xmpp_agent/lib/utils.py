@@ -36,11 +36,11 @@ import traceback
 from pprint import pprint
 import hashlib
 import base64
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import pickle
-from agentconffile import conffilename
-import ConfigParser
+from .agentconffile import conffilename
+import configparser
 import socket
 import psutil
 import time
@@ -61,7 +61,7 @@ DEBUGPULSE = 25
 if sys.platform.startswith('win'):
     import wmi
     import pythoncom
-    import _winreg as wr
+    import winreg as wr
     #import win32netcon
     import win32api
     import win32security
@@ -113,10 +113,10 @@ def dump_parameter(para=True, out=True, timeprocess=True):
             if para:
                 arg_names = decorated_function.__code__.co_varnames
                 params = dict(
-                    args=dict(zip(arg_names, dec_fn_args)),
+                    args=dict(list(zip(arg_names, dec_fn_args))),
                     kwargs=dec_fn_kwargs)
                 result = ', '.join([
-                    '{}={}'.format(str(k), repr(v)) for k, v in params.items()])
+                    '{}={}'.format(str(k), repr(v)) for k, v in list(params.items())])
                 log.info('\n@@@ call func : {}({}) file {}'.format(func_name, result, filepath))
                 log.info('\n@@@ call func : {}({}) file {}'.format(func_name, result, filepath))
             else:
@@ -210,15 +210,15 @@ def load_back_to_deploy():
 
 def listback_to_deploy(objectxmpp):
     if len(objectxmpp.back_to_deploy) != 0:
-        print "list session pris en compte back_to_deploy"
+        print("list session pris en compte back_to_deploy")
         for u in objectxmpp.back_to_deploy:
-            print u
+            print(u)
 
 
 def testagentconf(typeconf):
     if typeconf == "relayserver":
         return True
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
     if Config.has_option("type", "guacamole_baseurl")\
@@ -304,7 +304,7 @@ def refreshfingerprint():
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
     if filename.find('://') > 0:
-        ret = urllib2.urlopen(filename).read()
+        ret = urllib.request.urlopen(filename).read()
         if offset > 0:
             ret = ret[offset:]
         if maxlen > 0:
@@ -422,7 +422,7 @@ def isWinUserAdmin():
             return ctypes.windll.shell32.IsUserAnAdmin()
         except BaseException:
             traceback.print_exc()
-            print "Admin check failed, assuming not an admin."
+            print("Admin check failed, assuming not an admin.")
             return False
     elif os.name == 'posix':
         # Check for root on Posix
@@ -460,7 +460,7 @@ def md5(fname):
 
 def loadModule(filename):
     if filename == '':
-        raise RuntimeError, 'Empty filename cannot be loaded'
+        raise RuntimeError('Empty filename cannot be loaded')
     searchPath, file = os.path.split(filename)
     if searchPath not in sys.path:
         sys.path.append(searchPath)
@@ -722,7 +722,7 @@ def windowspath(namescript):
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
-    print "powershell -ExecutionPolicy Bypass -File  %s" % namescript
+    print("powershell -ExecutionPolicy Bypass -File  %s" % namescript)
     obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript))
     return obj
 
@@ -751,8 +751,8 @@ class shellcommandtimeout(object):
 
         thread.join(self.obj['timeout'])
         if thread.is_alive():
-            print 'Terminating process'
-            print "timeout %s" % self.obj['timeout']
+            print('Terminating process')
+            print("timeout %s" % self.obj['timeout'])
             self.process.terminate()
             thread.join()
 
@@ -833,7 +833,7 @@ def service(name, action):
         finally:
             pythoncom.CoUninitialize()
         for dev in wmi_out:
-            print dev.Caption
+            print(dev.Caption)
         pass
     elif sys.platform.startswith('darwin'):
         pass
@@ -853,8 +853,8 @@ def listservice():
     finally:
         pythoncom.CoUninitialize()
     for dev in wmi_out:
-        print dev.Caption
-        print dev.DisplayName
+        print(dev.Caption)
+        print(dev.DisplayName)
 
 
 def joint_compteAD(domain, password, login, group):
@@ -864,8 +864,8 @@ def joint_compteAD(domain, password, login, group):
         c = wmi.WMI()
         for computer in c.Win32_ComputerSystem():
             if computer.PartOfDomain:
-                print computer.Domain  # DOMCD
-                print computer.SystemStartupOptions
+                print(computer.Domain)  # DOMCD
+                print(computer.SystemStartupOptions)
                 computer.JoinDomainOrWorkGroup(
                     domain, password, login, group, 3)
     finally:
@@ -877,17 +877,17 @@ def windowsservice(name, action):
     try:
         wmi_obj = wmi.WMI()
         wmi_sql = "select * from Win32_Service Where Name ='%s'" % name
-        print wmi_sql
+        print(wmi_sql)
         wmi_out = wmi_obj.query(wmi_sql)
     finally:
         pythoncom.CoUninitialize()
-    print len(wmi_out)
+    print(len(wmi_out))
     for dev in wmi_out:
-        print dev.caption
+        print(dev.caption)
         if action.lower() == "start":
             dev.StartService()
         elif action.lower() == "stop":
-            print dev.Name
+            print(dev.Name)
             dev.StopService()
         elif action.lower() == "restart":
             dev.StopService()
@@ -903,7 +903,7 @@ def methodservice():
     try:
         c = wmi.WMI()
         for method in c.Win32_Service._methods:
-            print method
+            print(method)
     finally:
         pythoncom.CoUninitialize()
 
@@ -955,12 +955,12 @@ def pluginprocess(func):
                 result)
             if result['base64'] is True:
                 result['data'] = base64.b64encode(json.dumps(result['data']))
-            print "Send message \n%s" % result
+            print("Send message \n%s" % result)
             objetxmpp.send_message(mto=message['from'],
                                    mbody=json.dumps(result),
                                    mtype='chat')
         except BaseException:
-            print "Send error message\n%s" % dataerreur
+            print("Send error message\n%s" % dataerreur)
             objetxmpp.send_message(mto=message['from'],
                                    mbody=json.dumps(dataerreur),
                                    mtype='chat')
@@ -1034,18 +1034,18 @@ def pulgindeploy1(func):
             if 'end' not in result['data']:
                 result['data']['end'] = False
 
-            print "----------------------------------------------------------------"
-            print "sent message to %s " % message['from']
+            print("----------------------------------------------------------------")
+            print("sent message to %s " % message['from'])
             if "Devent" in data:
-                print "Devent : %s" % data["Devent"]
+                print("Devent : %s" % data["Devent"])
             if "Dtypequery" in data:
-                print "Dtypequery : %s" % data["Dtypequery"]
+                print("Dtypequery : %s" % data["Dtypequery"])
             if "Deventindex" in data:
-                print "Deventindex : %s" % data["Deventindex"]
+                print("Deventindex : %s" % data["Deventindex"])
 
             if not result['data']['end']:
-                print "Envoi Message"
-                print "result", result
+                print("Envoi Message")
+                print("result", result)
                 if result['base64'] is True:
                     result['data'] = base64.b64encode(
                         json.dumps(result['data']))
@@ -1053,18 +1053,18 @@ def pulgindeploy1(func):
                                        mbody=json.dumps(result),
                                        mtype='chat')
             else:
-                print "envoi pas de message"
+                print("envoi pas de message")
         except BaseException:
             if not result['data']['end']:
-                print "Send error message"
-                print "result", dataerreur
+                print("Send error message")
+                print("result", dataerreur)
                 objetxmpp.send_message(mto=message['from'],
                                        mbody=json.dumps(dataerreur),
                                        mtype='chat')
             else:
-                print "Envoi pas de Message erreur"
+                print("Envoi pas de Message erreur")
             return
-        print "---------------------------------------------------------------"
+        print("---------------------------------------------------------------")
         return response
     return wrapper
 
@@ -1076,7 +1076,7 @@ def getIpXmppInterface(ipadress1, Port):
     ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
+        print("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress))
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, ipadress))
@@ -1095,7 +1095,7 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
+        print("netstat -an | findstr %s | findstr ESTABLISHED" % Port)
         obj = simplecommand(
             "netstat -an | findstr %s | findstr ESTABLISHED" %
             Port)
@@ -1111,7 +1111,7 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
+        print("netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress))
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
             (Port, ipadress))
@@ -1162,7 +1162,7 @@ def subnetnetwork(adressmachine, mask):
 def searchippublic(site=1):
     if site == 1:
         try:
-            page = urllib.urlopen("http://ifconfig.co/json").read()
+            page = urllib.request.urlopen("http://ifconfig.co/json").read()
             objip = json.loads(page)
             if is_valid_ipv4(objip['ip']):
                 return objip['ip']
@@ -1172,7 +1172,7 @@ def searchippublic(site=1):
             return searchippublic(2)
     elif site == 2:
         try:
-            page = urllib.urlopen("http://www.monip.org/").read()
+            page = urllib.request.urlopen("http://www.monip.org/").read()
             ip = page.split("IP : ")[1].split("<br>")[0]
             if is_valid_ipv4(ip):
                 return ip
@@ -1182,7 +1182,7 @@ def searchippublic(site=1):
             return searchippublic(3)
     elif site == 3:
         try:
-            ip = urllib.urlopen("http://ip.42.pl/raw").read()
+            ip = urllib.request.urlopen("http://ip.42.pl/raw").read()
             if is_valid_ipv4(ip):
                 return ip
             else:
@@ -1275,7 +1275,7 @@ def merge_dicts(*dict_args):
 
 def portline(result):
     column = [x.strip() for x in result.split(' ') if x != ""]
-    print column
+    print(column)
     return column[-2:-1][0].split(':')[1]
 
 class protodef:
@@ -1403,7 +1403,7 @@ def ipfromdns(name_domaine_or_ip):
 
 
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
-    if sessionid == None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid == None or sessionid == "" or not isinstance(sessionid, str):
         sessionid = action.strip().replace(" ", "")
     return {'action': action,
             'data': data,
@@ -1784,7 +1784,7 @@ def keypub():
     elif sys.platform.startswith('win'):
         try:
             win32net.NetUserGetInfo('', 'pulseuser', 0)
-            pathkey = os.path.join("c:\Users\pulseuser", ".ssh")
+            pathkey = os.path.join("c:\\Users\pulseuser", ".ssh")
         except:
             pathkey = os.path.join(os.environ["ProgramFiles"], "pulse", '.ssh')
         if not os.path.isfile(os.path.join(pathkey, "id_rsa")):
@@ -2311,7 +2311,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
         # check if pulse account exists
         try:
             win32net.NetUserGetInfo('', 'pulseuser', 0)
-            filekey = os.path.join("c:\Users\pulseuser", ".ssh", keyname)
+            filekey = os.path.join("c:\\Users\pulseuser", ".ssh", keyname)
         except:
             filekey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh", keyname)
 
@@ -2649,15 +2649,15 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             return False, message
         if not os.path.isdir(homedir):
             message.append('Creating %s home folder %s' % (username, homedir))
-            os.makedirs(homedir, 0751)
-        os.chmod(homedir, 0751)
+            os.makedirs(homedir, 0o751)
+        os.chmod(homedir, 0o751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
             message.append('Creating packages folder %s' % packagedir)
-            os.makedirs(packagedir, 0764)
+            os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
-        os.chmod(packagedir, 0764)
+        os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
     elif sys.platform.startswith('darwin'):
         try:
@@ -2670,15 +2670,15 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             return False, message
         if not os.path.isdir(homedir):
             message.append('Creating %s home folder %s' % (username, homedir))
-            os.makedirs(homedir, 0751)
-        os.chmod(homedir, 0751)
+            os.makedirs(homedir, 0o751)
+        os.chmod(homedir, 0o751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
             message.append('Creating packages folder %s' % packagedir)
-            os.makedirs(packagedir, 0764)
+            os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
-        os.chmod(packagedir, 0764)
+        os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
     return True, message
 
@@ -2715,7 +2715,7 @@ def delete_profile(username='pulseuser'):
         try:
             for name in os.listdir('C:/Users/'):
                 if name.startswith(username):
-                    delete_folder_cmd = 'rd /s /q "C:\Users\%s" ' % name
+                    delete_folder_cmd = 'rd /s /q "C:\\Users\%s" ' % name
                     result = simplecommand(encode_strconsole(delete_folder_cmd))
                     if result['code'] == 0:
                         logger.info('Deleted %s folder' % os.path.join('C:/Users/', name))
@@ -2739,14 +2739,14 @@ def create_idrsa_on_client(username='pulseuser', key=''):
     """
     message = []
     if sys.platform.startswith('win'):
-        id_rsa_path = os.path.join('C:\Users', username, '.ssh', 'id_rsa')
+        id_rsa_path = os.path.join('C:\\Users', username, '.ssh', 'id_rsa')
     else:
         id_rsa_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     delete_keyfile_cmd = 'del /f /q "%s" ' % id_rsa_path
     result = simplecommand(encode_strconsole(delete_keyfile_cmd))
     message.append('Creating id_rsa file in %s' % id_rsa_path)
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
-        os.makedirs(os.path.dirname(id_rsa_path), 0700)
+        os.makedirs(os.path.dirname(id_rsa_path), 0o700)
     file_put_contents(id_rsa_path, key)
     file_contents = file_get_contents(id_rsa_path)
     logger.debug('%s contents: \n %s' % (id_rsa_path, file_contents))
@@ -2809,8 +2809,8 @@ def apply_perms_sshkey(path, private=True):
         try:
             os.chown(os.path.dirname(path), uid, gid)
             os.chown(path, uid, gid)
-            os.chmod(os.path.dirname(path), 0700)
-            os.chmod(path, 0600)
+            os.chmod(os.path.dirname(path), 0o700)
+            os.chmod(path, 0o600)
         except Exception as e:
             message.append('Error setting permissions on %s for user %s' % (path,
                                                                             pwd.getpwuid(uid).pw_name))
@@ -2841,13 +2841,13 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
     """
     message = []
     if sys.platform.startswith('win'):
-        authorized_keys_path = os.path.join('C:\Users', username, '.ssh', 'authorized_keys')
+        authorized_keys_path = os.path.join('C:\\Users', username, '.ssh', 'authorized_keys')
     else:
         authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
     if not os.path.isfile(authorized_keys_path):
         message.append('Creating authorized_keys file in %s' % authorized_keys_path)
         if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-            os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+            os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
         file_put_contents(authorized_keys_path, key)
     else:
         authorized_keys_content = file_get_contents(authorized_keys_path)
@@ -2893,8 +2893,8 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
         return False, message
     if not os.path.isdir(homedir):
         message.append('Creating %s home folder %s' % (username, homedir))
-        os.makedirs(homedir, 0751)
-    os.chmod(homedir, 0751)
+        os.makedirs(homedir, 0o751)
+    os.chmod(homedir, 0o751)
     os.chown(homedir, uid, gid)
     # Check keys
     id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
@@ -2904,14 +2904,14 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     if result['code'] != 0:
         message.append('Creating id_rsa file in %s' % id_rsa_key_path)
         if not os.path.isdir(os.path.dirname(id_rsa_key_path)):
-            os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
+            os.makedirs(os.path.dirname(id_rsa_key_path), 0o700)
         keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
         result = simplecommand(encode_strconsole(keygen_cmd))
-    os.chmod(os.path.dirname(id_rsa_key_path), 0700)
+    os.chmod(os.path.dirname(id_rsa_key_path), 0o700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, gid)
-    os.chmod(id_rsa_key_path, 0600)
+    os.chmod(id_rsa_key_path, 0o600)
     os.chown(id_rsa_key_path, uid, gid)
-    os.chmod(public_key_path, 0644)
+    os.chmod(public_key_path, 0o644)
     os.chown(public_key_path, uid, gid)
     return True, message
 
@@ -3075,7 +3075,7 @@ class geolocalisation_agent:
     @staticmethod
     def call_simple_page_urllib(url):
         try:
-            objip = json.loads(urllib.urlopen(url).read())
+            objip = json.loads(urllib.request.urlopen(url).read())
             return objip
         except:
             return None

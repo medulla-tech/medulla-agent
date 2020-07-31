@@ -40,7 +40,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             result['ret'] = 0
             result['data']['result'] = "".join(obj['result'])
             result['data']['result'] = "".join([utils.decode_strconsole(x) for x in result['data']['result']])
-            print result['data']['result']
+            print(result['data']['result'])
             objectxmpp.send_message(mto=message['from'],
                                        mbody=json.dumps(result, sort_keys=True, indent=4),
                                        mtype='chat')

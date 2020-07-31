@@ -25,7 +25,7 @@
 import json
 from multiprocessing import TimeoutError
 import threading
-from utils import getRandomName, call_plugin
+from .utils import getRandomName, call_plugin
 from sleekxmpp import jid
 import logging
 
@@ -44,9 +44,9 @@ class manage_event:
         logging.info('manage event start')
 
     def show_eventloop(self):
-        print "boucle evenement"
+        print("boucle evenement")
         for i in self.event:
-            print '------------\n%s\n------------' % i
+            print('------------\n%s\n------------' % i)
 
     def addevent(self, event):
         self.event.append(event)
@@ -266,12 +266,12 @@ class manage_event:
                     else:
                         if 'sessionid' in event:
                             event['data'] = dict(
-                                self.objectxmpp.session.sessionfromsessiondata(
-                                    event['sessionid']).datasession.items() +
-                                event['data'].items())
+                                list(self.objectxmpp.session.sessionfromsessiondata(
+                                    event['sessionid']).datasession.items()) +
+                                list(event['data'].items()))
                         self.addevent(event)
                 except TimeoutError:
-                    print "TimeoutError"
+                    print("TimeoutError")
 
         except KeyboardInterrupt:
             pass

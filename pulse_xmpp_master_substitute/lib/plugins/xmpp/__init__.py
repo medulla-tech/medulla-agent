@@ -154,7 +154,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_agentsubscription.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return None
 
@@ -188,7 +188,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return record.id
             else:
                 return self.setagentsubscription(name)
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -207,7 +207,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_subscription.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return None
 
@@ -231,7 +231,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return record.id
             else:
                 return self.setSubscription(macadress, idagentsubscription)
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -248,7 +248,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 logging.getLogger().error("setup or create record for agent subscription%s" % agentsubscription)
                 return None
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return None
 
@@ -265,7 +265,7 @@ class XmppMasterDatabase(DatabaseHelper):
             q = q.filter(Subscription.macadress==macadress).delete()
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -291,7 +291,7 @@ class XmppMasterDatabase(DatabaseHelper):
             machines = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             self.logger.error("\n%s" % (traceback.format_exc()))
 
     @DatabaseHelper._sessionm
@@ -327,7 +327,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_log)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -420,7 +420,7 @@ class XmppMasterDatabase(DatabaseHelper):
                               "result": t[18]}
                 resultlist.append(listresult)
             return resultlist
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             logging.getLogger().error("fn Timeouterrordeploy on sql %s"(sql))
 
@@ -435,7 +435,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -447,7 +447,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -456,11 +456,11 @@ class XmppMasterDatabase(DatabaseHelper):
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `syncthing`='%s'
                      WHERE `sessionid`='%s';""" % (syncthing, sessionid)
-            print sql
+            print(sql)
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -478,7 +478,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             ret=[elt for elt in req]
             return ret[0][0]
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return 0
 
@@ -486,9 +486,9 @@ class XmppMasterDatabase(DatabaseHelper):
     def getQAforMachine(self, session, cmd_id, uuidmachine):
         try:
             command_action = session.query(Command_action).filter(and_( Command_action.command_id == cmd_id, Command_action.target == uuidmachine))
-            print command_action
-            print cmd_id
-            print uuidmachine
+            print(command_action)
+            print(cmd_id)
+            print(uuidmachine)
             command_action = command_action.all()
             listcommand = []
             for command in command_action:
@@ -500,7 +500,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 action.append(command.command_result)
                 listcommand.append(action)
             return listcommand
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             return []
@@ -559,7 +559,7 @@ class XmppMasterDatabase(DatabaseHelper):
             result_list.append(command_machine_list)
             result_list.append(command_target_list)
             return {"nbtotal" :nbtotal ,"result" : result_list}
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("getCommand_action_time error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
             return {"nbtotal": 0, "result": result_list}
@@ -579,7 +579,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_Command_qa.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -597,7 +597,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     "command_start": str(command_qa.command_start),
                     "command_grp": command_qa.command_grp,
                     "command_machine": command_qa.command_machine}
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("getCommand_qa_by_cmdid error %s->" % str(e))
             traceback.print_exc(file=sys.stdout)
             return {"id": "",
@@ -622,7 +622,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_Command_action.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -637,7 +637,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_log)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
 
@@ -650,7 +650,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_log)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     #
@@ -677,7 +677,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.flush()
                     idorganization = result_organization.id
 
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger().debug("organization id : %s is not exist" % organization_id)
                     return -1
             elif organization_name is not None:
@@ -700,7 +700,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             "idorganization": x.idorganization,
                             "name": x.name} for x in result]
             return {"nb": nb, "packageslist": list_result}
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("load packages for organization id : %s is error : %s" % (organization_id, str(e)))
             return {"nb": 0, "packageslist": []}
 
@@ -718,7 +718,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return result_organization.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             logging.getLogger().debug("organization name : %s is not exist" % name_organization)
             return -1
@@ -781,7 +781,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             logging.getLogger().debug("qa_custom_command error")
             return -1
@@ -806,7 +806,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("updateName_Qa_custom_command error %s->" % str(e))
             return -1
 
@@ -827,7 +827,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("delQa_custom_command error %s ->" % str(e))
             return -1
 
@@ -912,7 +912,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 arraylist.append(obj)
             ret['command']= arraylist
             return ret
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("getlistcommandforuserbyos error %s->"%str(e))
             return ret
 ################################################
@@ -938,7 +938,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.commit()
                     session.flush()
                     idorganization = result_organization.id
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger().debug("organization id : %s is not exist"%organization_id)
                     return -1
             elif organization_name is not None:
@@ -956,7 +956,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return packageslist.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             logging.getLogger().debug("add Package [%s] for Organization : %s%s is not exist"%( packageuuid,
                                                                                                 self.__returntextisNone__(organization_name),
@@ -1144,7 +1144,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.commit()
                     session.flush()
                 self.checknewjid(jid)
-            except Exception, e:
+            except Exception as e:
                 #logging.getLogger().error("addPresenceMachine %s" % jid)
                 logging.getLogger().error(str(e))
                 msg=str(e)
@@ -1160,7 +1160,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("sql : %s"%traceback.format_exc())
 
     @DatabaseHelper._sessionm
@@ -1255,7 +1255,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -1282,7 +1282,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -1309,7 +1309,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -1341,7 +1341,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.add(new_Organization)
                 session.commit()
                 session.flush()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error("creation Organisation_ad for jid user %s inventory uuid : %s"% (jiduser, id ))
                 logging.getLogger().error("ouuser=%s\noumachine = %s\nhostname=%s\nusername=%s"% (ouuser, oumachine, hostname, username))
                 logging.getLogger().error(str(e))
@@ -1381,7 +1381,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("delOrganization_ad : %s "%str(e))
             return False
 
@@ -1402,7 +1402,7 @@ class XmppMasterDatabase(DatabaseHelper):
             ##print result.__dict__
             l = [x[0] for x in result][0]
             return l
-        except Exception, e:
+        except Exception as e:
             #logging.getLogger().error("addPresenceMachine %s" % jid)
             logging.getLogger().error(str(e))
             return ""
@@ -1419,7 +1419,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             return -1
 
     def convertTimestampToSQLDateTime(self, value):
@@ -1479,7 +1479,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.execute(sql)
                 session.commit()
                 session.flush()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -1532,7 +1532,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     params_json = json.loads(result.params_json)
                     if 'spooling' in params_json:
                         obj['spooling'] = params_json['spooling']
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger().error("[the avanced parameters from msc] : "+str(e))
 
             if result.parameters_deploy is not None:
@@ -1545,11 +1545,11 @@ class XmppMasterDatabase(DatabaseHelper):
                     if not params.endswith('}'):
                         params = params + '}'
                     obj['paramdeploy'] = json.loads(params)
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger().error("[the avanced parameters must be"\
                         " declared in a json dictionary] : "+ str(e))
             return obj
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("[ obj commandid missing] : " + str(e))
             return {}
 
@@ -1582,8 +1582,8 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             start=int(startcmd)
             end=int(endcmd)
-            print start
-            print end
+            print(start)
+            print(end)
             startcmd = datetime.fromtimestamp(start).strftime("%Y-%m-%d %H:%M:%S")
             endcmd = datetime.fromtimestamp(end).strftime("%Y-%m-%d %H:%M:%S")
         except Exception as e:
@@ -1622,7 +1622,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_deploy)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         return new_deploy.id
 
@@ -1736,7 +1736,7 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             idpartage =  self.search_partage_for_package(packagename)
             if idpartage == -1:
-                print "add partage"
+                print("add partage")
                 #il faut cree le partage.
                 new_Syncthing_deploy_group = Syncthing_deploy_group()
                 new_Syncthing_deploy_group.namepartage = namepartage
@@ -1755,7 +1755,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return new_Syncthing_deploy_group.id
             else:
                 return idpartage
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -1994,7 +1994,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return new_Syncthing_ars_cluster.id
             else:
                 return ars_cluster_id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -2049,7 +2049,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_Syncthing_machine.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -2185,7 +2185,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     syncthing = %s
                     and
                     id in (%s);"""%(statusnew, statusold, listidmachine)
-        print sql
+        print(sql)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -2273,7 +2273,7 @@ class XmppMasterDatabase(DatabaseHelper):
             cluster['numcluster']=z[1]
             cluster['namecluster']=z[2]
             n=n+1
-            print "nb ars %s"%n
+            print("nb ars %s"%n)
         if n != 0:
             nb = random.randint(0, n-1)
             cluster['choose'] = cluster['ars'][nb]
@@ -2390,7 +2390,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_cluster_resources)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         return new_cluster_resources.id
 
@@ -2647,7 +2647,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_logincommand)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         return new_logincommand.id
 
@@ -2703,7 +2703,7 @@ class XmppMasterDatabase(DatabaseHelper):
             result = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -2721,7 +2721,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -2780,7 +2780,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_network)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             #logging.getLogger().error("addPresenceNetwork : %s " % new_network)
             logging.getLogger().error(str(e))
         #return new_network.toDict()
@@ -2838,7 +2838,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.add(new_relayserver)
                 session.commit()
                 session.flush()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
         else:
             try:
@@ -2850,7 +2850,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.execute(sql)
                 session.commit()
                 session.flush()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -2882,7 +2882,7 @@ class XmppMasterDatabase(DatabaseHelper):
             nb = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         result=[x for x in nb][0][0]
         if result == 0 :
@@ -2902,7 +2902,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return new_user.id
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
                 return -1
         else:
@@ -2925,7 +2925,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return result
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
         return -1
 
@@ -4021,7 +4021,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(hasguacamole)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             #logging.getLogger().error("addPresenceNetwork : %s " % new_network)
             logging.getLogger().error(str(e))
 
@@ -4048,7 +4048,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.add(hasguacamole)
                 session.commit()
                 session.flush()
-            except Exception, e:
+            except Exception as e:
                 #logging.getLogger().error("addPresenceNetwork : %s " % new_network)
                 logging.getLogger().error(str(e))
 
@@ -4101,7 +4101,7 @@ class XmppMasterDatabase(DatabaseHelper):
             listMacAdress = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         result=[x for x in listMacAdress][0]
         if infomac:
@@ -4121,7 +4121,7 @@ class XmppMasterDatabase(DatabaseHelper):
             jidmachine = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return ""
         try :
@@ -4143,7 +4143,7 @@ class XmppMasterDatabase(DatabaseHelper):
             updatedb = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         return updatedb
 
@@ -4159,7 +4159,7 @@ class XmppMasterDatabase(DatabaseHelper):
             updatedb = session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         return updatedb
 
@@ -4176,7 +4176,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getPresenceuuids(self, session, uuids):
-        if isinstance(uuids, basestring):
+        if isinstance(uuids, str):
             uuids=[uuids]
         result = { }
         for uuidmachine in uuids:
@@ -4192,7 +4192,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getPresenceExistuuids(self, session, uuids):
-        if isinstance(uuids, basestring):
+        if isinstance(uuids, str):
             uuids=[uuids]
         result = { }
         for uuidmachine in uuids:
@@ -4205,7 +4205,7 @@ class XmppMasterDatabase(DatabaseHelper):
             out = 0;
             if linemachine.enabled is True:
                 out = 1
-            print linemachine.uuid_inventorymachine
+            print(linemachine.uuid_inventorymachine)
             result[linemachine.uuid_inventorymachine] = [out, 1 ]
 
         return result
@@ -4440,7 +4440,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().warning("Configuration agent machine jid [%s]. "\
                                         "no jid in base for configuration"%jid)
             return {}
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return {}
         resulttypemachine={"type" : typemachine }
@@ -4499,7 +4499,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().warning("Configuration agent machine "\
                                         "jid [%s]. no jid in base for configuration"%jiduser)
             return {}
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return {}
         resulttypemachine={"type" : typemachine }
@@ -5020,7 +5020,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 result = session.execute(sql)
                 session.commit()
                 session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("substituteinfo : %s"%str(e))
         return listconfsubstitute
 
@@ -5044,7 +5044,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return [x for x in result][0]
         except IndexError:
             return None
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("GetMachine : %s"%str(e))
             return None
 
@@ -5064,7 +5064,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("updateMachinereconf : %s"%str(e))
             return False
 
@@ -5087,7 +5087,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.execute(sql)
                     session.commit()
                     session.flush()
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger().error("initialisePresenceMachine : %s"%str(e))
                 finally:
                     return { "type" : "relayserver", "reconf" : mach[3] }
@@ -5115,7 +5115,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("SetPresenceMachine : %s"%str(e))
             return False
 
@@ -5164,7 +5164,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             session.close()
             return 1
-        except Exception, e:
+        except Exception as e:
             self.logger.error(str(e))
             self.logger.error("\n%s" % (traceback.format_exc()))
             return -1
@@ -5274,7 +5274,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     }
                 listrelayserver.append(res)
             return listrelayserver
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             traceback.print_exc(file=sys.stdout)
             return listrelayserver
@@ -5297,7 +5297,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             'regexplog':regle.regex_logmessage,
                             'status':regle.status} for id, regle in enumerate(ret)]
             return result
-        except Exception, e:
+        except Exception as e:
             traceback.print_exc(file=sys.stdout)
             return result
 
@@ -5358,6 +5358,6 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("call_set_list_machine: %s"%str(e))
             return False

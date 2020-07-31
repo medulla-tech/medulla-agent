@@ -962,7 +962,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # request the recv message
             recv_msg_from_kiosk = client_socket.recv(4096)
             if len(recv_msg_from_kiosk) != 0:
-                print('Received {}'.format(recv_msg_from_kiosk))
+                print(('Received {}'.format(recv_msg_from_kiosk)))
                 datasend = {'action': "resultkiosk",
                             "sessionid": getRandomName(6, "kioskGrub"),
                             "ret": 0,
@@ -1513,7 +1513,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mfrom=None,
                             mnick=None):
         if mto != "console":
-            print("send command %s"%json.dumps(mbody))
+            print(("send command %s"%json.dumps(mbody)))
             self.send_message(  mto,
                                 json.dumps(mbody),
                                 msubject,
@@ -2153,7 +2153,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         newdescriptorimage = Update_Remote_Agent(self.img_agent)
         for file in newdescriptorimage.get_md5_descriptor_agent()['program_agent']:
             finder.run_script(os.path.join(self.img_agent, file))
-            for name, mod in finder.modules.items():
+            for name, mod in list(finder.modules.items()):
                 try:
                     __import__(name.split('.', 1)[0])
                 except ImportError:
@@ -2161,7 +2161,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     return True
         for file in newdescriptorimage.get_md5_descriptor_agent()['lib_agent']:
             finder.run_script(os.path.join(self.img_agent, "lib", file))
-            for name, mod in finder.modules.items():
+            for name, mod in list(finder.modules.items()):
                 try:
                     __import__(name.split('.', 1)[0])
                 except ImportError:
@@ -2183,7 +2183,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             # Store the Fork PID
             pid = os.fork()
             if pid > 0:
-                print('PID: %d' % pid)
+                print(('PID: %d' % pid))
                 os._exit(0)
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError as error:

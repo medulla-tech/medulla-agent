@@ -25,7 +25,7 @@ from Crypto.Util import randpool
 import pickle
 import os
 import base64
-from utils import file_get_contents
+from .utils import file_get_contents
 
 
 class MsgsignedRSA:
@@ -207,7 +207,7 @@ class MsgsignedRSA:
         """
         Function verify message with footprint
         """
-        signature = long(signed_message)
+        signature = int(signed_message)
         return keypublic.verify(msg, (signature, ))
 
     def isPublicKey(self, name):

@@ -25,7 +25,7 @@ import os
 import logging
 from lib.utils import getRandomName
 import types
-import ConfigParser
+import configparser
 from lib.plugins.xmpp import XmppMasterDatabase
 import time
 
@@ -123,7 +123,7 @@ def read_conf_loadreconf(objectxmpp):
         objectxmpp.nbconcurrentreconf = 240
         objectxmpp.timeout_reconf = 500
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathfileconf)
         logger.debug("read file %s"%pathfileconf)
         if os.path.exists(pathfileconf + ".local"):

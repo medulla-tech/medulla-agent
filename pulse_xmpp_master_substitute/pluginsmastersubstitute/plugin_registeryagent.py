@@ -35,7 +35,7 @@ from sleekxmpp import jid
 from lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion
-import ConfigParser
+import configparser
 
 # this import will be used later
 # import types
@@ -802,7 +802,7 @@ def callinventory(xmppobject, to):
 
 
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
-    if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid is None or sessionid == "" or not isinstance(sessionid, str):
         sessionid = action.strip().replace(" ", "")
     return {'action': action,
             'data': data,
@@ -1011,7 +1011,7 @@ def read_conf_remote_registeryagent(xmppobject):
         xmppobject.blacklisted_mac_addresses = ["00\:00\:00\:00\:00\:00"]
         xmppobject.registeryagent_showinfomachine = []
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathfileconf)
         logger.debug("Config file %s for plugin %s" % (pathfileconf,
                                                        plugin["NAME"]))

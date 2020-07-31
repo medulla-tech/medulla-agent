@@ -26,7 +26,7 @@ import os
 import logging
 import traceback
 import types
-import ConfigParser
+import configparser
 from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
@@ -77,7 +77,7 @@ def read_conf_showregistration(objectxmpp):
         objectxmpp.showinfomachine=[]
 
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
@@ -152,7 +152,7 @@ def plugin_loadshowregistration(self, msg, data):
             if 'plugin' in data:
                 strlistplugin += "\nlist plugins on machine %s\n"%msg['from']
                 strlistplugin += "|{0:35}|{1:10}|\n".format("Plugin Name", "Version")
-                for key, value in data['plugin'].iteritems():
+                for key, value in data['plugin'].items():
                     strlistplugin += "|{0:35}|{1:10}|\n".format(key, value)
 
 
@@ -161,7 +161,7 @@ def plugin_loadshowregistration(self, msg, data):
             if 'pluginscheduled' in data:
                 strlistplugin += "\nlist scheduled plugins on machine %s\n"%msg['from']
                 strlistplugin += "|{0:35}|{1:10}|\n".format("scheduled Plugin Name", "Version")
-                for key, value in data['pluginscheduled'].iteritems():
+                for key, value in data['pluginscheduled'].items():
                     strlistplugin += "|{0:35}|{1:10}|\n".format(key, value)
         if strlistplugin != "":
             logger.debug(strlistplugin)

@@ -62,5 +62,5 @@ def Setdirectorytempinfo():
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "INFOSTMP")
     if not os.path.exists(dirtempinfo):
-        os.makedirs(dirtempinfo, mode=0700)
+        os.makedirs(dirtempinfo, mode=0o700)
     return dirtempinfo

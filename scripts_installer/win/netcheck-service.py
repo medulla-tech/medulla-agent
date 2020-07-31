@@ -30,7 +30,7 @@ import win32service
 import os
 import logging
 import logging.handlers
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 # to had event log, do not remove
 # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library
@@ -73,7 +73,7 @@ logger.addHandler(handler)
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
     if (filename.find('://') > 0):
-        ret = urllib2.urlopen(filename).read()
+        ret = urllib.request.urlopen(filename).read()
         if (offset > 0):
             ret = ret[offset:]
         if (maxlen > 0):
@@ -180,7 +180,7 @@ class PulseAgentService(SMWinservice):
     def main(self):
         i = 0
         while self.isrunning:
-            print("lancement de : %s"%"python.exe "+os.path.join(program_dir, "networkevents.py"))
+            print(("lancement de : %s"%"python.exe "+os.path.join(program_dir, "networkevents.py")))
             os.system("python.exe \""+os.path.join(program_dir, "networkevents.py")+"\"")
 
 if __name__ == '__main__':

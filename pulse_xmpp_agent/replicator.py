@@ -29,13 +29,13 @@ import logging
 import json
 import hashlib
 import shutil
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import importlib
 
 from optparse import OptionParser
 
 if sys.platform.startswith('win'):
-    import _winreg
+    import winreg
 
 
 
@@ -121,16 +121,16 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
 def install_key_register_windows(version):
     if sys.platform.startswith('win'):
         try:
-            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                     "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
                                     0 ,
-                                    _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-            _winreg.SetValueEx ( key,
+                                    winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
+            winreg.SetValueEx ( key,
                                 'DisplayVersion'  ,
                                 0,
-                                _winreg.REG_SZ,
+                                winreg.REG_SZ,
                                 version.strip())
-            _winreg.CloseKey(key)
+            winreg.CloseKey(key)
         except Exception as e:
             return False
     return True
@@ -138,7 +138,7 @@ def install_key_register_windows(version):
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
     if (filename.find('://') > 0):
-        ret = urllib2.urlopen(filename).read()
+        ret = urllib.request.urlopen(filename).read()
         if (offset > 0):
             ret = ret[offset:]
         if (maxlen > 0):
@@ -247,14 +247,14 @@ def module_needed(agent_image, verbose = False):
             importlib.import_module('img_agent.%s'%filename[:-3])
         except Exception as e:
             if verbose:
-                print('Some python modules needed for running "%s" are missing. We will not switch to new agent' % (filename))
+                print(('Some python modules needed for running "%s" are missing. We will not switch to new agent' % (filename)))
                 error = True
             pass
     if  boolfichier:
         try:
             os.remove("img_agent/__init__.py")
         except:
-            print "Error while deleting file __init__.py"
+            print("Error while deleting file __init__.py")
     if error:
         return False
 
@@ -263,7 +263,7 @@ def module_needed(agent_image, verbose = False):
             importlib.import_module('img_agent.lib.%s'%filename)
         except ImportError:
             if verbose:
-                print('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename))
+                print(('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename)))
             return False
     return True
 
@@ -293,11 +293,11 @@ if __name__ == "__main__":
     # First check if machine has all necessary python modules to load image
     if not module_needed(img_agent, verbose = (options.verbose or options.info)):
         if options.verbose or options.info:
-            print 'KO: missing python modules in image'
+            print('KO: missing python modules in image')
         else:
             sys.exit(122)
     elif options.verbose or options.info:
-        print 'OK: no missing python modules in image'
+        print('OK: no missing python modules in image')
 
     # folder for save file supp
     rollback_pulse_xmpp_agent = os.path.abspath( os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -312,28 +312,28 @@ if __name__ == "__main__":
     descriptoragent         = objdescriptoragent.get_md5_descriptor_agent()
     descriptorimage         = objdescriptorimage.get_md5_descriptor_agent()
     if options.verbose or options.info:
-        print "--------------------------------------------"
+        print("--------------------------------------------")
         if descriptoragent['fingerprint'] != descriptorimage['fingerprint']:
-            print "The fingerprints are different between the agent and the image"
+            print("The fingerprints are different between the agent and the image")
         else:
-            print "The fingerprints are the same between the agent and the image"
-        print "--------------------------------------------"
+            print("The fingerprints are the same between the agent and the image")
+        print("--------------------------------------------")
         if descriptoragent['version'] != descriptorimage['version']:
-            print "The versions are different between the agent and the image"
+            print("The versions are different between the agent and the image")
         else:
-            print "The versions are the same between the agent and the image"
-        print "--------------------------------------------"
-        print objdescriptoragent.dir_agent_base
-        print json.dumps(descriptoragent, indent = 4)
-        print "--------------------------------------------"
-        print objdescriptorimage.dir_agent_base
-        print json.dumps(descriptorimage, indent = 4)
-        print "--------------------------------------------"
+            print("The versions are the same between the agent and the image")
+        print("--------------------------------------------")
+        print(objdescriptoragent.dir_agent_base)
+        print(json.dumps(descriptoragent, indent = 4))
+        print("--------------------------------------------")
+        print(objdescriptorimage.dir_agent_base)
+        print(json.dumps(descriptorimage, indent = 4))
+        print("--------------------------------------------")
     boolinstalldirect = True
     if  descriptorimage['fingerprint'] == descriptoragent['fingerprint']:
         if options.verbose or options.info:
-            print "No UPDATING, no diff between agent and agentimage"
-            print "Agent up to date"
+            print("No UPDATING, no diff between agent and agentimage")
+            print("Agent up to date")
         sys.exit(0)
     else:
         try:
@@ -355,14 +355,14 @@ if __name__ == "__main__":
                 supp2=[os.path.join(pathagent, dirname ,x)  for x in supp]
                 if options.verbose or options.info:
                     if len(supp2) > 0 or len(diff2) > 0:
-                        print "_______________________________________________________________________________________________"
-                        print "Action for %s"%directory_agent
+                        print("_______________________________________________________________________________________________")
+                        print("Action for %s"%directory_agent)
                         if len(diff2) > 0 :
-                            print "Replace or add agent files"
-                            print json.dumps(diff2, indent = 4,  sort_keys=True)
+                            print("Replace or add agent files")
+                            print(json.dumps(diff2, indent = 4,  sort_keys=True))
                         if len(supp2) > 0 :
-                            print "Unused agent file"
-                            print json.dumps(supp2, indent = 4,  sort_keys=True)
+                            print("Unused agent file")
+                            print(json.dumps(supp2, indent = 4,  sort_keys=True))
                 if not options.info:
                     for delfile in supp2:
                         os.remove(delfile)

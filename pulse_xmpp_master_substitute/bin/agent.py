@@ -41,11 +41,12 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 
 import random
+import imp
 
 logger = logging.getLogger()
 
 if sys.version_info < (3, 0):
-    reload(sys)
+    imp.reload(sys)
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
@@ -247,7 +248,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def __bool_data(self, variable, default = False):
         if isinstance(variable, bool):
             return variable
-        elif isinstance(variable, basestring):
+        elif isinstance(variable, str):
             if variable.lower() == "true":
                 return True
         return default
@@ -367,7 +368,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception as e:
                 logging.error("iqsendpulse : encode json : %s" % str(e))
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
-        elif type(datain) == unicode:
+        elif type(datain) == str:
             data = str(datain)
         else:
             data = datain

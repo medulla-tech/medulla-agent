@@ -38,7 +38,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     xmppobject.listmodulemmc = data
 
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
-    if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
+    if sessionid is None or sessionid == "" or not isinstance(sessionid, str):
         sessionid = action.strip().replace(" ", "")
 
     return {'action': action,

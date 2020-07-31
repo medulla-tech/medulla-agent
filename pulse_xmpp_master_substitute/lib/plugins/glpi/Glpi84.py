@@ -113,13 +113,13 @@ class DatabaseHelper(Singleton):
             # Exact filters
             if 'filters' in params and params['filters']:
                 clauses = [_entity_descriptor(query._mapper_zero(), key) == value
-                    for key, value in params['filters'].iteritems()]
+                    for key, value in params['filters'].items()]
                 if clauses:
                     query = query.filter(*clauses)
             # Like filters
             if 'like_filters' in params and params['like_filters']:
                 clauses = [_entity_descriptor(query._mapper_zero(), key).like('%' + value + '%')
-                    for key, value in params['like_filters'].iteritems()]
+                    for key, value in params['like_filters'].items()]
                 if clauses:
                     query = query.filter(*clauses)
 
@@ -144,7 +144,7 @@ class DatabaseHelper(Singleton):
                 elif isinstance(line, tuple):
                     # Fetching all tuple items
                     line_ = {}
-                    for i in xrange(len(line)):
+                    for i in range(len(line)):
                         item = line[i]
                         if isinstance(item, DBObj):
                             line_.update(item.toDict())
@@ -222,10 +222,10 @@ class Glpi84(DatabaseHelper):
 
         logging.getLogger().debug('Trying to detect if GLPI version is higher than 0.84')
         try:
-            self._glpi_version = self.db.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
+            self._glpi_version = list(self.db.execute('SELECT version FROM glpi_configs').fetchone().values())[0].replace(' ', '')
             return True
         except OperationalError:
-            self._glpi_version = self.db.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
+            self._glpi_version = list(self.db.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values())[0].replace(' ', '')
             if LooseVersion(self._glpi_version) >= LooseVersion('0.84') and LooseVersion(self._glpi_version):
                 logging.getLogger().debug('GLPI version %s found !' % self._glpi_version)
                 return True
@@ -241,7 +241,7 @@ class Glpi84(DatabaseHelper):
         return False
 
     def getTableName(self, name):
-        return ''.join(map(lambda x:x.capitalize(), name.split('_')))
+        return ''.join([x.capitalize() for x in name.split('_')])
 
     def initMappers(self):
         """
@@ -255,7 +255,7 @@ class Glpi84(DatabaseHelper):
         'glpi_domains', 'glpi_computermodels', 'glpi_networks'):
             setattr(self, i, Table(i, self.metadata, autoload = True))
             j = self.getTableName(i)
-            exec "class %s(DbTOA): pass" % j
+            exec("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, i))
             self.klass[i] = eval(j)
 
@@ -271,7 +271,7 @@ class Glpi84(DatabaseHelper):
         for i in self.devices:
             setattr(self, i, Table("glpi_%s"%i, self.metadata, autoload = True))
             j = self.getTableName(i)
-            exec "class %s(DbTOA): pass" % j
+            exec("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, i))
             self.klass[i] = eval(j)
 
@@ -280,7 +280,7 @@ class Glpi84(DatabaseHelper):
                 Column('%s_id'%i, Integer, ForeignKey('glpi_%s.id'%i)),
                 autoload = True))
             j = self.getTableName("computers_%s"%i)
-            exec "class %s(DbTOA): pass" % j
+            exec("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, "computers_%s"%i))
             self.klass["computers_%s"%i] = eval(j)
 
@@ -580,7 +580,7 @@ class Glpi84(DatabaseHelper):
     def __filter_on_filter(self, query):
         if self.config.filter_on is not None:
             a_filter_on = []
-            for filter_key, filter_values in self.config.filter_on.items():
+            for filter_key, filter_values in list(self.config.filter_on.items()):
                 if filter_key == 'state':
                     self.logger.debug('will filter %s in (%s)' % (filter_key, str(filter_values)))
                     a_filter_on.append(self.machine.c.states_id.in_(filter_values))
@@ -683,7 +683,7 @@ class Glpi84(DatabaseHelper):
             # filtering on locations
             if 'location' in filt:
                 location = filt['location']
-                if location == '' or location == u'' or not self.displayLocalisationBar:
+                if location == '' or location == '' or not self.displayLocalisationBar:
                     location = None
             else:
                 location = None
@@ -727,7 +727,7 @@ class Glpi84(DatabaseHelper):
 
             if displayList:
                 r=re.compile('reg_key_.*')
-                regs=filter(r.search, self.config.summary)
+                regs=list(filter(r.search, self.config.summary))
                 if 'os' in self.config.summary:
                     join_query = join_query.outerjoin(self.os)
                 if 'type' in self.config.summary:
@@ -818,7 +818,7 @@ class Glpi84(DatabaseHelper):
                     if 'manufacturer' in self.config.summary:
                         clauses.append(self.manufacturers.c.name.like('%'+filt['hostname']+'%'))
                     r=re.compile('reg_key_.*')
-                    regs=filter(r.search, self.config.summary)
+                    regs=list(filter(r.search, self.config.summary))
                     try:
                         if regs[0]:
                             clauses.append(self.regcontents.c.value.like('%'+filt['hostname']+'%'))
@@ -846,9 +846,9 @@ class Glpi84(DatabaseHelper):
                 gid = filt['gid']
                 machines = []
                 if ComputerGroupManager().isrequest_group(ctx, gid):
-                    machines = map(lambda m: fromUUID(m), ComputerGroupManager().requestresult_group(ctx, gid, 0, -1, ''))
+                    machines = [fromUUID(m) for m in ComputerGroupManager().requestresult_group(ctx, gid, 0, -1, '')]
                 else:
-                    machines = map(lambda m: fromUUID(m), ComputerGroupManager().result_group(ctx, gid, 0, -1, ''))
+                    machines = [fromUUID(m) for m in ComputerGroupManager().result_group(ctx, gid, 0, -1, '')]
                 query = query.filter(self.machine.c.id.in_(machines))
 
             if 'request' in filt:
@@ -857,7 +857,7 @@ class Glpi84(DatabaseHelper):
                     bool = None
                     if 'equ_bool' in filt:
                         bool = filt['equ_bool']
-                    machines = map(lambda m: fromUUID(m), ComputerGroupManager().request(ctx, request, bool, 0, -1, ''))
+                    machines = [fromUUID(m) for m in ComputerGroupManager().request(ctx, request, bool, 0, -1, '')]
                     query = query.filter(self.machine.c.id.in_(machines))
 
             if 'date' in filt:
@@ -920,14 +920,14 @@ class Glpi84(DatabaseHelper):
     def __getId(self, obj):
         if type(obj) == dict:
             return obj['uuid']
-        if type(obj) != str and type(obj) != unicode:
+        if type(obj) != str and type(obj) != str:
             return obj.id
         return obj
 
     def __getName(self, obj):
         if type(obj) == dict:
             return obj['name']
-        if type(obj) != str and type(obj) != unicode:
+        if type(obj) != str and type(obj) != str:
             return obj.name
         if type(obj) == str and re.match('UUID', obj):
             l = self.getLocation(obj)
@@ -947,9 +947,9 @@ class Glpi84(DatabaseHelper):
 
     def computersMapping(self, computers, invert = False):
         if not invert:
-            return Machine.id.in_(map(lambda x:fromUUID(x), computers))
+            return Machine.id.in_([fromUUID(x) for x in computers])
         else:
-            return Machine.id.not_(ColumnOperators.in_(map(lambda x:fromUUID(x), computers)))
+            return Machine.id.not_(ColumnOperators.in_([fromUUID(x) for x in computers]))
 
     def mappingTable(self, ctx, query):
         """
@@ -1082,7 +1082,7 @@ class Glpi84(DatabaseHelper):
                             else:
                                 ret.append(partA.like(self.encode(partB)))
                         except Exception as e:
-                            print str(e)
+                            print(str(e))
                             traceback.print_exc(file=sys.stdout)
                             ret.append(partA.like(self.encode(partB)))
             if ctx.userid != 'root':
@@ -1183,7 +1183,7 @@ class Glpi84(DatabaseHelper):
             if len(ret) > 0:
                 raise Exception("NOPERM##%s" % (ret[0][1]['fullname']))
             return False
-        return ret.values()[0]
+        return list(ret.values())[0]
 
     def getRestrictedComputersListStatesLen(self, ctx, filt, orange, red):
         """
@@ -1316,9 +1316,9 @@ class Glpi84(DatabaseHelper):
             query = query.limit(max)
 
         if justId:
-            ret = map(lambda m: self.getMachineUUID(m), query.all())
+            ret = [self.getMachineUUID(m) for m in query.all()]
         elif toH:
-            ret = map(lambda m: m.toH(), query.all())
+            ret = [m.toH() for m in query.all()]
         else:
             if filt is not None and 'get' in filt:
                 ret = self.__formatMachines(query.all(),
@@ -1668,7 +1668,7 @@ class Glpi84(DatabaseHelper):
                 ret = []
             session.close()
 
-        ret = map(lambda l: setUUID(l), ret)
+        ret = [setUUID(l) for l in ret]
         return ret
 
     def __get_all_locations(self):
@@ -1721,7 +1721,7 @@ class Glpi84(DatabaseHelper):
 
     def getMachinesLocations(self, machine_uuids):
         session = create_session()
-        q = session.query(Entities.id, Entities.name, Entities.completename, Entities.comment, Entities.level).add_column(self.machine.c.id).select_from(self.entities.join(self.machine)).filter(self.machine.c.id.in_(map(fromUUID, machine_uuids))).all()
+        q = session.query(Entities.id, Entities.name, Entities.completename, Entities.comment, Entities.level).add_column(self.machine.c.id).select_from(self.entities.join(self.machine)).filter(self.machine.c.id.in_(list(map(fromUUID, machine_uuids)))).all()
         ret = {}
         for idp, namep,namepc,commentp,levelp,machineid in q:
             val={}
@@ -1750,7 +1750,7 @@ class Glpi84(DatabaseHelper):
             q = session.query(User).select_from(self.user.join(self.userprofile).join(self.entities)).filter(self.entities.c.name.in_(inloc)).filter(self.user.c.name != userid).distinct().all()
             session.close()
             # Only returns the user names
-            ret = map(lambda u: u.name, q)
+            ret = [u.name for u in q]
         # Always append the given userid
         ret.append(userid)
         return ret
@@ -1834,7 +1834,7 @@ class Glpi84(DatabaseHelper):
         if ctx.userid == "root":
             query = self.filterOnUUID(query, a_machine_uuid)
         else:
-            a_locations = map(lambda loc:loc.name, ctx.locations)
+            a_locations = [loc.name for loc in ctx.locations]
             query = query.select_from(self.machine.join(self.entities))
             query = query.filter(self.entities.c.name.in_(a_locations))
             query = self.filterOnUUID(query, a_machine_uuid)
@@ -1843,7 +1843,7 @@ class Glpi84(DatabaseHelper):
         machines_uuid_size = len(a_machine_uuid)
         all_computers = session.query(Machine)
         all_computers = self.filterOnUUID(all_computers, a_machine_uuid).all()
-        all_computers = Set(map(lambda m:toUUID(str(m.id)), all_computers))
+        all_computers = Set([toUUID(str(m.id)) for m in all_computers])
         if len(all_computers) != machines_uuid_size:
             self.logger.info("some machines have been deleted since that list was generated (%s)"%(str(Set(a_machine_uuid) - all_computers)))
             machines_uuid_size = len(all_computers)
@@ -1856,7 +1856,7 @@ class Glpi84(DatabaseHelper):
             return True
         elif (not all) and len(ret) > 0:
             return True
-        ret = Set(map(lambda m:toUUID(str(m.id)), ret))
+        ret = Set([toUUID(str(m.id)) for m in ret])
         self.logger.info("dont have permissions on %s"%(str(Set(a_machine_uuid) - ret)))
         return False
 
@@ -1893,7 +1893,7 @@ class Glpi84(DatabaseHelper):
             ma1 = m[0].to_a()
             ma2 = []
             for x,y in ma1:
-                if x in ind.keys():
+                if x in list(ind.keys()):
                     ma2.append([x,m[ind[x]]])
                 else:
                     ma2.append([x,y])
@@ -1940,7 +1940,7 @@ class Glpi84(DatabaseHelper):
         return ''
 
     def getManufacturerWarranty(self, manufacturer, serial):
-        for manufacturer_key, manufacturer_infos in self.config.manufacturerWarranty.items():
+        for manufacturer_key, manufacturer_infos in list(self.config.manufacturerWarranty.items()):
             if manufacturer in manufacturer_infos['names']:
                 manufacturer_info = manufacturer_infos.copy()
                 manufacturer_info['url'] = manufacturer_info['url'].replace('@@SERIAL@@', serial)
@@ -1957,7 +1957,7 @@ class Glpi84(DatabaseHelper):
 
         ids = []
         dict = self.searchOptions[lang]
-        for key, value in dict.iteritems():
+        for key, value in dict.items():
             if filter.lower() in value.lower():
                 ids.append(key)
 
@@ -1969,7 +1969,7 @@ class Glpi84(DatabaseHelper):
         """
         ids = []
         dict = self.getLinkedActions()
-        for key, value in dict.iteritems():
+        for key, value in dict.items():
             if filter.lower() in value.lower():
                 ids.append(key)
 
@@ -2252,7 +2252,7 @@ class Glpi84(DatabaseHelper):
 
             session.close()
             return True
-        except Exception, e:
+        except Exception as e:
             self.logger.error(e)
             return False
 
@@ -2853,7 +2853,7 @@ class Glpi84(DatabaseHelper):
         """
         @return: all machines that have this os using LIKE
         """
-        if isinstance(osnames, basestring):
+        if isinstance(osnames, str):
             osnames = [osnames]
 
         if int(count) == 1:
@@ -3338,7 +3338,7 @@ class Glpi84(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getMachineByType(self, session, ctx, types, count=0):
         """ @return: all machines that have this type """
-        if isinstance(types, basestring):
+        if isinstance(types, str):
             types = [types]
 
         if int(count) == 1:
@@ -3744,7 +3744,7 @@ class Glpi84(DatabaseHelper):
         Get a dictionnary and return an object
         """
         from collections import namedtuple
-        o = namedtuple('dict2obj', ' '.join(d.keys()))
+        o = namedtuple('dict2obj', ' '.join(list(d.keys())))
         return o(**d)
 
     def getMachineIp(self, uuid):
@@ -3984,7 +3984,7 @@ class Glpi84(DatabaseHelper):
 
         # Adding rule criteria
 
-        for i in xrange(len(rule_data['criteria'])):
+        for i in range(len(rule_data['criteria'])):
 
             cr = RuleCriterion()
             cr.rules_id = rule.id
@@ -4103,7 +4103,7 @@ class Glpi84(DatabaseHelper):
 
         # Adding rule criteria
 
-        for i in xrange(len(rule_data['criteria'])):
+        for i in range(len(rule_data['criteria'])):
 
             cr = RuleCriterion()
             cr.rules_id = rule.id
@@ -4669,7 +4669,7 @@ def unique(s):
         u = None # move on to the next method
 
     if u is not None:
-        return u.keys()
+        return list(u.keys())
     del u
 
     # We can't hash all the elements.  Second fastest is to sort,
@@ -4707,9 +4707,9 @@ def unique(s):
 
 def same_network(ip1, ip2, netmask):
     try:
-        ip1 = map(lambda x: int(x), ip1.split('.'))
-        ip2 = map(lambda x: int(x), ip2.split('.'))
-        netmask = map(lambda x: int(x), netmask.split('.'))
+        ip1 = [int(x) for x in ip1.split('.')]
+        ip2 = [int(x) for x in ip2.split('.')]
+        netmask = [int(x) for x in netmask.split('.')]
         for i in range(4):
             if ip1[i].__and__(netmask[i]) != ip2[i].__and__(netmask[i]):
                 return False
@@ -4785,7 +4785,7 @@ class DBObj(object):
     def toDict(self, relations=True):
         d = self.__dict__
         # Convert relations to dict, if 'relations'
-        for k in d.keys():
+        for k in list(d.keys()):
             if isinstance(d[k], DBObj):
                 if relations:
                     d[k] = d[k].toDict()
@@ -4801,7 +4801,7 @@ class DBObj(object):
         if '_sa_instance_state' in d:
             del d['_sa_instance_state']
         # Actually we don't support relations
-        for key, value in d.iteritems():
+        for key, value in d.items():
             if key and type(value) not in [type({}), type([])]:
                 setattr(self, key, value)
 

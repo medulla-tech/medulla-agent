@@ -70,7 +70,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             gidroot = grp.getgrnam("root").gr_gid
             authorized_keys_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'authorized_keys')
             if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+                os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
             if not os.path.isfile(authorized_keys_path):
                 utils.file_put_contents(authorized_keys_path,"")
             os.chown(os.path.dirname(authorized_keys_path), uid, gid)
@@ -81,11 +81,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             if not os.path.isdir(pathuser):
                 os.chmod(pathuser, 751)
             if not os.path.isdir(packagepath):
-                os.makedirs(packagepath, 0764)
+                os.makedirs(packagepath, 0o764)
             os.chown(packagepath, uid, gidroot)
-            os.chmod(os.path.dirname(authorized_keys_path), 0700)
-            os.chmod(authorized_keys_path, 0644)
-            os.chmod(packagepath, 0764)
+            os.chmod(os.path.dirname(authorized_keys_path), 0o700)
+            os.chmod(authorized_keys_path, 0o644)
+            os.chmod(packagepath, 0o764)
             result = utils.simplecommand(utils.encode_strconsole("chown -R pulseuser: '/var/lib/pulse'"))
         elif sys.platform.startswith('win'):
             import win32net
@@ -145,9 +145,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
 
                 logging.getLogger().info("Creating authorized_keys file in pulseuser account")
-                authorized_keys_path = os.path.join("c:\Users\pulseuser", '.ssh','authorized_keys' )
+                authorized_keys_path = os.path.join("c:\\Users\pulseuser", '.ssh','authorized_keys' )
                 if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                    os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+                    os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
                 if not os.path.isfile(authorized_keys_path):
                     utils.file_put_contents(authorized_keys_path,"")
                 currentdir = os.getcwd()
@@ -187,7 +187,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                                     'authorized_keys' )
                 # creation if no exist
                 if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                    os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+                    os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
                 if not os.path.isfile(authorized_keys_path):
                     utils.file_put_contents(authorized_keys_path,"")
 

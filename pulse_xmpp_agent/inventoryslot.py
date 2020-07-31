@@ -20,7 +20,7 @@
 
 import sys, os
 import logging
-import ConfigParser
+import configparser
 import netifaces
 import random
 import json
@@ -28,13 +28,14 @@ import hashlib
 from optparse import OptionParser
 import traceback
 import time
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import signal
 from threading import Thread
+import imp
 
 logger = logging.getLogger()
 if sys.version_info < (3, 0):
-    reload(sys)
+    imp.reload(sys)
     sys.setdefaultencoding('utf8')
 else:
     raw_input = input
@@ -9886,7 +9887,7 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
         load content file or simple url
     """
     if (filename.find('://') > 0):
-        ret = urllib2.urlopen(filename).read()
+        ret = urllib.request.urlopen(filename).read()
         if (offset > 0):
             ret = ret[offset:]
         if (maxlen > 0):
@@ -10034,7 +10035,7 @@ class configuration:
         self.log_level = "INFO"
         self.Jid = "%s@%s"%(self.Agentname, self.Domain)
         self.Url = "http://localhost:9999/"
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         if fileconf is None:
             if os.path.exists("/etc/mmc/plugins/xmppmaster.ini"):
                 Config.read("/etc/mmc/plugins/xmppmaster.ini")
@@ -10048,7 +10049,7 @@ class configuration:
                 Config.read(fileconf + ".local")
             self._config = True
         else:
-            print "error no file configuration"
+            print("error no file configuration")
             self._config = False
         if self._config:
             self.charge_conf(Config)
@@ -10159,10 +10160,10 @@ class action(Thread):
         """Code à exécuter pendant l'exécution du thread."""
         global nbthread
         try:
-            print self.url
-            request = urllib2.Request(self.url, self.content, self.HEADER)
-            response = urllib2.urlopen(request)
-        except Exception, exc:
+            print(self.url)
+            request = urllib.request.Request(self.url, self.content, self.HEADER)
+            response = urllib.request.urlopen(request)
+        except Exception as exc:
             logger.warning("Unable to send inventory to GLPI")
             logger.warning('Response was: %s' % str(exc))
         nbthread-=1
@@ -10189,19 +10190,19 @@ class actiontest(Thread):
             if maxthread < d:
                 maxthread = d
 
-            request = urllib2.Request(self.url, globaltest, self.HEADER)
-            response = urllib2.urlopen(request)
-        except Exception, exc:
+            request = urllib.request.Request(self.url, globaltest, self.HEADER)
+            response = urllib.request.urlopen(request)
+        except Exception as exc:
             logger.warning("Unable to send inventory to GLPI")
             logger.warning('Response was: %s' % str(exc))
         end = time.time()
         nbthread-=1
-        print "Thread %d nbrmax %s inventory %s start %s end %s duration %s"%(d,
+        print("Thread %d nbrmax %s inventory %s start %s end %s duration %s"%(d,
                                                                               maxthread,
                                                                               self.number,
                                                                               g,
                                                                               end,
-                                                                              end-g)
+                                                                              end-g))
 
 
 class inventoryinject:
@@ -10289,10 +10290,10 @@ def createDaemon(opts, conf):
     try:
         pid = os.fork()
         if pid > 0:
-            print 'PID: %d' % pid
+            print('PID: %d' % pid)
             os._exit(0)
         doTask(opts,conf)
-    except OSError, error:
+    except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         traceback.print_exc(file=sys.stdout)
         os._exit(1)
@@ -10316,25 +10317,25 @@ def doTask(opts, conf):
     ###start programme
     if  conf.testmode:
         startprog = time.time()
-        print "nb injection %s"%conf.Numbercycles
-        print "START %s"% startprog
-        print "--------------------------"
+        print("nb injection %s"%conf.Numbercycles)
+        print("START %s"% startprog)
+        print("--------------------------")
     prog = inventoryinject(conf)
     prog.execprog()
     if  conf.testmode:
-        print "--------------------------"
+        print("--------------------------")
         end = time.time()
-        print "STOP %s"% end
+        print("STOP %s"% end)
         duration = end-startprog
-        print "Duration %s"%(duration)
-        print "real nb/s %s"%(duration/conf.Numbercycles)
-        print "interval is %s"%prog.conf.nbmessagebyseconde
+        print("Duration %s"%(duration))
+        print("real nb/s %s"%(duration/conf.Numbercycles))
+        print("interval is %s"%prog.conf.nbmessagebyseconde)
 
 if __name__ == '__main__':
     if not sys.platform.startswith('linux'):
-        print "Agent log on systeme linux only"
+        print("Agent log on systeme linux only")
     if os.getuid() != 0:
-        print "Agent must be running as root"
+        print("Agent must be running as root")
         sys.exit(0)
 
     optp = OptionParser()
