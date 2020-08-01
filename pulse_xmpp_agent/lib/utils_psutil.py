@@ -165,25 +165,23 @@ def clone_ps_aux():
             memp = pinfo['memory_percent'] and \
                 round(pinfo['memory_percent'], 1) or '?'
             status = PROC_STATUSES_RAW.get(pinfo['status'], pinfo['status'])
-            result = result  + templ % (
-                user[:10],
-                pinfo['pid'],
-                pinfo['cpu_percent'],
-                memp,
-                vms,
-                rss,
-                pinfo.get('terminal', '') or '?',
-                status,
-                ctime,
-                cputime,
-                pinfo['name'].strip() or '?')
+            result = result  + templ % (user[:10],
+                                        pinfo['pid'],
+                                        pinfo['cpu_percent'],
+                                        memp,
+                                        vms,
+                                        rss,
+                                        pinfo.get('terminal', '') or '?',
+                                        status,
+                                        ctime,
+                                        cputime,
+                                        pinfo['name'].strip() or '?')
     result = result + "\n"
     return result
 
 
 def bytes2human(n):
     """
-
     Convert n bytes into a human readable string based on format.
     see: http://goo.gl/kTQMs
     see: http://code.activestate.com/recipes/578019
@@ -383,7 +381,7 @@ def cpu_num():
         result = result + "cpu_count on platform not supported"
         return result
     total = psutil.cpu_count()
-    result = result + "%s cpu"%total
+    result = result + "%s cpu" % total
 
     #if hasattr(psutil.Process, "cpu_num"):
         #while True:
@@ -442,9 +440,12 @@ def netstat():
     """
     result = ""
     templ = "%-5s %-30s %-30s %-13s %-6s %s\n"
-    result = result + templ % (
-        "Proto", "Local address", "Remote address", "Status", "PID",
-        "Program name")
+    result = result + templ % ("Proto",
+                               "Local address",
+                               "Remote address",
+                               "Status",
+                               "PID",
+                               "Program name")
     proc_names = {}
     for p in psutil.process_iter():
         proc_names[p.pid] = p.name()
@@ -472,17 +473,17 @@ def __dictdata(datatuple):
         result[keyc]= getattr(datatuple,keyc)
     return result
 
-def cputimes (percpu = False ):
+def cputimes (percpu=False):
     result = {}
-    infocpu =  psutil.cpu_times( percpu = False)
+    infocpu =  psutil.cpu_times(percpu=False)
     result['allcpu'] = __dictdata(infocpu)
     if percpu is False:
-        #global time (all cpu)
+        # global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
     elif percpu is True:
-        infocpu =  psutil.cpu_times( percpu = percpu)
+        infocpu =  psutil.cpu_times(percpu=percpu)
         nbcpu = len(infocpu)
         result['nbcpu'] = nbcpu
-        for cpu_nb in range(0,nbcpu):
+        for cpu_nb in range(0, nbcpu):
             result['cpu%s'% cpu_nb] = __dictdata(infocpu[cpu_nb])
     return result
