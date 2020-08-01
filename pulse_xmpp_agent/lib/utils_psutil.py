@@ -440,9 +440,12 @@ def netstat():
     """
     result = ""
     templ = "%-5s %-30s %-30s %-13s %-6s %s\n"
-    result = result + templ % (
-        "Proto", "Local address", "Remote address", "Status", "PID",
-        "Program name")
+    result = result + templ % ("Proto",
+                               "Local address",
+                               "Remote address",
+                               "Status",
+                               "PID",
+                               "Program name")
     proc_names = {}
     for p in psutil.process_iter():
         proc_names[p.pid] = p.name()
@@ -472,13 +475,13 @@ def __dictdata(datatuple):
 
 def cputimes (percpu = False ):
     result = {}
-    infocpu =  psutil.cpu_times( percpu = False)
+    infocpu =  psutil.cpu_times(percpu=False)
     result['allcpu'] = __dictdata(infocpu)
     if percpu is False:
         # global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
     elif percpu is True:
-        infocpu =  psutil.cpu_times( percpu = percpu)
+        infocpu =  psutil.cpu_times(percpu=percpu)
         nbcpu = len(infocpu)
         result['nbcpu'] = nbcpu
         for cpu_nb in range(0, nbcpu):
