@@ -165,25 +165,23 @@ def clone_ps_aux():
             memp = pinfo['memory_percent'] and \
                 round(pinfo['memory_percent'], 1) or '?'
             status = PROC_STATUSES_RAW.get(pinfo['status'], pinfo['status'])
-            result = result  + templ % (
-                user[:10],
-                pinfo['pid'],
-                pinfo['cpu_percent'],
-                memp,
-                vms,
-                rss,
-                pinfo.get('terminal', '') or '?',
-                status,
-                ctime,
-                cputime,
-                pinfo['name'].strip() or '?')
+            result = result  + templ % (user[:10],
+                                        pinfo['pid'],
+                                        pinfo['cpu_percent'],
+                                        memp,
+                                        vms,
+                                        rss,
+                                        pinfo.get('terminal', '') or '?',
+                                        status,
+                                        ctime,
+                                        cputime,
+                                        pinfo['name'].strip() or '?')
     result = result + "\n"
     return result
 
 
 def bytes2human(n):
     """
-
     Convert n bytes into a human readable string based on format.
     see: http://goo.gl/kTQMs
     see: http://code.activestate.com/recipes/578019
@@ -383,7 +381,7 @@ def cpu_num():
         result = result + "cpu_count on platform not supported"
         return result
     total = psutil.cpu_count()
-    result = result + "%s cpu"%total
+    result = result + "%s cpu" % total
 
     #if hasattr(psutil.Process, "cpu_num"):
         #while True:
@@ -477,12 +475,12 @@ def cputimes (percpu = False ):
     infocpu =  psutil.cpu_times( percpu = False)
     result['allcpu'] = __dictdata(infocpu)
     if percpu is False:
-        #global time (all cpu)
+        # global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
     elif percpu is True:
         infocpu =  psutil.cpu_times( percpu = percpu)
         nbcpu = len(infocpu)
         result['nbcpu'] = nbcpu
-        for cpu_nb in range(0,nbcpu):
+        for cpu_nb in range(0, nbcpu):
             result['cpu%s'% cpu_nb] = __dictdata(infocpu[cpu_nb])
     return result
