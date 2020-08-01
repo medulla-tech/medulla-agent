@@ -40,7 +40,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION" : "2.16", "NAME": "reverse_ssh_on",  "TYPE": "all"}
+plugin = {"VERSION": "2.16", "NAME": "reverse_ssh_on",  "TYPE": "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
@@ -68,8 +68,10 @@ def genratekeyforARSreverseSSH():
                                     ".ssh",
                                     "id_rsa.pub")):
         os.system("useradd reversessh -md /var/lib/pulse2/clients/reversessh -s /bin/rbash")
+
         if not os.path.isdir(os.path.join("/","var","lib","pulse2","clients","reversessh",".ssh")):
             os.makedirs(os.path.join("/","var","lib","pulse2","clients","reversessh",".ssh"))
+
         os.system("ssh-keygen -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa -q -N \"\"")
         shutil.copyfile("/var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub",
                         "/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
@@ -98,7 +100,7 @@ def load_key_ssh_relayserver(private=False, user="reversessh"):
     return file_get_contents(filekey)
 
 def runProcess(cmd, shell=False, envoption=os.environ):
-    logger.debug("START COMMAND %s"%cmd)
+    logger.debug("START COMMAND %s" % cmd)
     args = shlex.split(cmd)
     return Popen(args, env=envoption, shell=shell).pid
 
@@ -347,7 +349,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 logger.debug("%s" % json.dumps(returnmessage, indent=4))
                 objectxmpp.send_message_agent("master@pulse/MASTER",
                                               returnmessage,
-                                              mtype = 'chat')
+                                              mtype='chat')
                 return
     else:
         logger.debug("PROCESSING MACHINE")
