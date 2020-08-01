@@ -191,8 +191,8 @@ def install_key_ssh_relayserver(keypriv, private=False):
             sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
             dacl = win32security.ACL ()
             dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                     ntsecuritycon.FILE_GENERIC_READ | \
-                                        ntsecuritycon.FILE_GENERIC_WRITE | \
+                                     ntsecuritycon.FILE_GENERIC_READ |
+                                        ntsecuritycon.FILE_GENERIC_WRITE |
                                             ntsecuritycon.FILE_ALL_ACCESS,
                                      user)
             sd.SetSecurityDescriptorDacl(1, dacl, 0)
@@ -317,7 +317,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 returnmessage['action'] = "askinfo"
                 del returnmessage['data']['request']
                 logger.debug("Send master this data")
-                logger.debug("%s" % json.dumps(returnmessage, indent = 4))
+                logger.debug("%s" % json.dumps(returnmessage, indent=4))
                 objectxmpp.send_message_agent("master@pulse/MASTER",
                                               returnmessage,
                                               mtype='chat')
@@ -344,7 +344,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 returnmessage['sessionid'] = sessionid
                 del returnmessage['data']['request']
                 logger.debug( "Send relayagent this data")
-                logger.debug("%s" % json.dumps(returnmessage, indent = 4))
+                logger.debug("%s" % json.dumps(returnmessage, indent=4))
                 objectxmpp.send_message_agent("master@pulse/MASTER",
                                               returnmessage,
                                               mtype = 'chat')
@@ -382,7 +382,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
             except Exception:
                 reversessh_server_port = 22
 
-            objectxmpp.xmpplog('Creating reverse ssh tunnel from machine : %s '\
+            objectxmpp.xmpplog('Creating reverse ssh tunnel from machine : %s '
                                '[type: %s / port :%s]' % (message['to'], reversetype, data['port']),
                                type='noset',
                                sessionname=sessionid,
@@ -431,7 +431,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 else:
                     objectxmpp.reversesshmanage['other'] = str(result.pid)
                 logger.info("creation reverse ssh pid = %s"% str(result.pid))
-                objectxmpp.xmpplog('Creating reverse ssh tunnel from machine : %s '\
+                objectxmpp.xmpplog('Creating reverse ssh tunnel from machine : %s '
                                    '[type: %s / port :%s]' % (message['to'], reversetype, data['port']),
                                    type='noset',
                                    sessionname=sessionid,
