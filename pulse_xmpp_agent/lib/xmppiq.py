@@ -64,6 +64,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSE = 25
 logger = logging.getLogger()
 
+
 def callXmppFunctionIq(functionname, *args, **kwargs):
     logger.debug("**call function %s %s %s" % (functionname, args, kwargs))
     return getattr(functionsynchroxmpp,functionname)(*args, **kwargs)
@@ -87,13 +88,13 @@ def dispach_iq_command(xmppobject, jsonin):
                          "keyinstall",
                          "packageslist"]
     if data['action'] in listactioncommand:
-        logging.log(DEBUGPULSE,"call function %s " % data['action'] )
-        result = callXmppFunctionIq(data['action'], xmppobject=xmppobject, data=data )
+        logging.log(DEBUGPULSE,"call function %s " % data['action'])
+        result = callXmppFunctionIq(data['action'], xmppobject=xmppobject, data=data)
         if type(result) != str:
             logging.getLogger().warning("function %s not return str json" % data['action'])
         return result
     else:
-        logging.log(DEBUGPULSE,"function %s missing in list listactioncommand" % data['action'] )
+        logging.log(DEBUGPULSE,"function %s missing in list listactioncommand" % data['action'])
         return ""
 
 
@@ -159,7 +160,7 @@ class functionsynchroxmpp:
     def remotecommandshell(xmppobject, data):
         logger.debug("iq remotecommandshell")
         result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
-        re = [ decode_strconsole(x).strip(os.linesep) + "\n" for x in result['result'] ]
+        re = [ decode_strconsole(x).strip(os.linesep) + "\n" for x in result['result']]
         result['result'] = re
         return json.dumps(result)
 
@@ -168,7 +169,7 @@ class functionsynchroxmpp:
         logger.debug("iq keypub")
         # verify relayserver
         try:
-            result =  {"result": {"key": keypub() }, "error": False, 'numerror': 0}
+            result = {"result": {"key": keypub() }, "error": False, 'numerror': 0}
         except Exception:
             result =  {"result": {"key": ""}, "error": True, 'numerror': 2}
         return json.dumps(result)
@@ -288,7 +289,7 @@ class functionsynchroxmpp:
                     logger.info("path compte is  pathcompte : %s " % pathcompte)
                     msgaction.append("path compte is  pathcompte : %s " % pathcompte)
                     cmd = 'REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" '\
-                        '/v "ProfileImagePath" /t REG_SZ  /d "%s" /f'% (sid,
+                        '/v "ProfileImagePath" /t REG_SZ  /d "%s" /f' % (sid,
                                                                         pathcompte)
                     result = simplecommand(encode_strconsole(cmd))
                     logger.info("Creating authorized_keys file in pulse account")
@@ -387,8 +388,8 @@ class functionsynchroxmpp:
                 if info_ask == "force_reconf":  # force reconfiguration immedialy
                     filedata=["BOOLCONNECTOR", "action_force_reconfiguration"]
                     for filename in  filedata:
-                        file = open( os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                  "..", filename),"w")
+                        file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                 "..", filename), "w")
                         file.close()
                         xmppobject.networkMonitor()
                     result['result']['informationresult'][info_ask] = "action force " \
@@ -422,7 +423,7 @@ class functionsynchroxmpp:
                 if info_ask == "netstat":
                     result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
                 if info_ask == "profiluserpulse":
-                    profilname ='pulseuser'
+                    profilname = 'pulseuser'
                     if sys.platform.startswith('win'):
                         # check if pulse account exists
                         try:
@@ -515,7 +516,7 @@ class functionsynchroxmpp:
                 if 'file' in data['data'] and data['data']['file'] != "" and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     file_put_contents(filename, data['data']['content'])
-                    data['data'] = {"result": "create file %s" % filename, "error": False , 'numerror': 0}
+                    data['data'] = {"result": "create file %s" % filename, "error": False, 'numerror': 0}
                     return json.dumps(data)
                 else:
                     data['data'] = {"result": "error create file : name file missing", "error": True, 'numerror': 129}
