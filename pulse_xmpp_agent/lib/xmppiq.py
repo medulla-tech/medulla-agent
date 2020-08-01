@@ -169,7 +169,7 @@ class functionsynchroxmpp:
         logger.debug("iq keypub")
         # verify relayserver
         try:
-            result = {"result": {"key": keypub() }, "error": False, 'numerror': 0}
+            result = {"result": {"key": keypub()}, "error": False, 'numerror': 0}
         except Exception:
             result =  {"result": {"key": ""}, "error": True, 'numerror': 2}
         return json.dumps(result)
@@ -290,7 +290,7 @@ class functionsynchroxmpp:
                     msgaction.append("path compte is  pathcompte : %s " % pathcompte)
                     cmd = 'REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" '\
                         '/v "ProfileImagePath" /t REG_SZ  /d "%s" /f' % (sid,
-                                                                        pathcompte)
+                                                                         pathcompte)
                     result = simplecommand(encode_strconsole(cmd))
                     logger.info("Creating authorized_keys file in pulse account")
                     msgaction.append("Creating authorized_keys file in pulse account")
