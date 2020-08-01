@@ -473,7 +473,7 @@ def __dictdata(datatuple):
         result[keyc]= getattr(datatuple,keyc)
     return result
 
-def cputimes (percpu = False ):
+def cputimes (percpu=False):
     result = {}
     infocpu =  psutil.cpu_times(percpu=False)
     result['allcpu'] = __dictdata(infocpu)
