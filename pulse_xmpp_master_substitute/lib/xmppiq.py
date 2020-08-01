@@ -170,7 +170,7 @@ class functionsynchroxmpp:
         try:
             result = {"result": {"key": keypub()}, "error": False, 'numerror': 0}
         except Exception:
-            result = {"result": { "key": ""}, "error": True , 'numerror': 2}
+            result = {"result": {"key": ""}, "error": True, 'numerror': 2}
         return json.dumps(result)
 
     @staticmethod
