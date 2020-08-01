@@ -168,9 +168,9 @@ class functionsynchroxmpp:
         logger.debug("iq keypub")
         # verify relayserver
         try:
-            result = { "result": { "key": keypub() }, "error": False , 'numerror': 0 }
+            result = {"result": {"key": keypub()}, "error": False, 'numerror': 0}
         except Exception:
-            result = { "result": { "key": "" }, "error": True , 'numerror': 2 }
+            result = {"result": { "key": ""}, "error": True , 'numerror': 2}
         return json.dumps(result)
 
     @staticmethod
@@ -179,7 +179,7 @@ class functionsynchroxmpp:
         try:
             msgaction=[]
             if 'keyinstall' not in data["action"]:
-                logger.error("error format message : %s" % (json.dumps(data, indent = 4)))
+                logger.error("error format message : %s" % (json.dumps(data, indent=4)))
                 data['action'] = "resultkeyinstall"
                 data['ret'] = 20
                 data['data']["msg_error"] = ["error format message"]
@@ -287,13 +287,13 @@ class functionsynchroxmpp:
                                                stderr=subprocess.STDOUT)
                     output = process.stdout.readlines()
                     sid = output[1].rstrip(' \t\n\r')
-                    logger.info("SID compte Pulse : %s "% sid)
-                    msgaction.append("path compte is  pathcompte : %s "% pathcompte)
-                    logger.info("path compte is  pathcompte : %s "% pathcompte)
-                    msgaction.append("path compte is  pathcompte : %s "% pathcompte)
+                    logger.info("SID compte Pulse : %s " % sid)
+                    msgaction.append("path compte is  pathcompte : %s " % pathcompte)
+                    logger.info("path compte is  pathcompte : %s " % pathcompte)
+                    msgaction.append("path compte is  pathcompte : %s " % pathcompte)
                     cmd = 'REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" '\
-                        '/v "ProfileImagePath" /t REG_SZ  /d "%s" /f'% (sid,
-                                                                        pathcompte)
+                        '/v "ProfileImagePath" /t REG_SZ  /d "%s" /f' % (sid,
+                                                                         pathcompte)
                     result = simplecommand(encode_strconsole(cmd))
                     logger.info("Creating authorized_keys file in pulse account")
                     msgaction.append("Creating authorized_keys file in pulse account")
@@ -385,7 +385,7 @@ class functionsynchroxmpp:
     @staticmethod
     def information( xmppobject, data ):
         logger.debug("iq information")
-        result = {"result": {"informationresult": {}}, "error": False, 'numerror': 0 }
+        result = {"result": {"informationresult": {}}, "error": False, 'numerror': 0}
         for info_ask in data['data']['listinformation']:
             try:
                 if info_ask == "force_reconf":  # force reconfiguration immedialy
@@ -507,12 +507,12 @@ class functionsynchroxmpp:
                     else:
                         data['data'] = {"result": "error file missing", "error": True, 'numerror': 128}
                 else:
-                    data['data'] = {"result": "error name file missing" }
+                    data['data'] = {"result": "error name file missing"}
             elif data['data']['action'] == 'create':
                 if 'file' in data['data'] and data['data']['file'] != "" and 'content' in data['data']:
                     filename = os.path.join(directoryconffile(), data['data']['file'])
                     file_put_contents(filename, data['data']['content'])
-                    data['data'] = {"result": "create file %s" % filename, "error": False, 'numerror': 0 }
+                    data['data'] = {"result": "create file %s" % filename, "error": False, 'numerror': 0}
                     return json.dumps(data)
                 else:
                     data['data'] = {"result": "error create file : name file missing", "error": True, 'numerror': 129}
@@ -525,7 +525,7 @@ class functionsynchroxmpp:
                         data['data'] = {"result": "save file %s" % filename, "error": False, 'numerror': 0}
                         return json.dumps(data)
                     else:
-                        data['data'] = {"result" : "error save config file %s missing" % filename, "error": True, 'numerror': 130}
+                        data['data'] = {"result": "error save config file %s missing" % filename, "error": True, 'numerror': 130}
             elif data['data']['action'] == 'listconfigfile':
                 listfileedit = [ x for x in os.listdir(directoryconffile()) if (x.endswith(".ini") or x.endswith(".ini.local"))]
                 data['data'] = {"result": listfileedit, "error": False, 'numerror': 0}
