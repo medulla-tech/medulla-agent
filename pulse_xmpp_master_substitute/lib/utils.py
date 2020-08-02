@@ -317,7 +317,7 @@ def file_put_contents(filename, data):
 
 def file_put_contents_w_a(filename, data, option="w"):
     if option == "a" or  option == "w":
-        f = open( filename, option )
+        f = open(filename, option)
         f.write(data)
         f.close()
 
@@ -1520,7 +1520,7 @@ def save_user_current(name = None):
         name = "system"
 
     if not os.path.exists(loginuser):
-        result = { name : 1,
+        result = {name: 1,
                   'suite': [name],
                   'curent': name}
         savejsonfile(loginuser,result)
@@ -1567,9 +1567,9 @@ def test_kiosk_presence():
                 os.path.join(os.environ["ProgramFiles"], "Python36-32", "Lib", "site-packages")
             ]
         elif sys.platform == "darwin":
-            list = ["usr","local","lib","python3.6","dist-packages"]
+            list = ["usr", "local", "lib", "python3.6", "dist-packages"]
         elif sys.platform == "linux":
-            list = ["usr","lib","python3.6","dist-packages",
+            list = ["usr", "lib", "python3.6", "dist-packages",
                     "usr", "lib", "python3.5", "dist-packages"]
 
         for element in list:
@@ -1596,14 +1596,14 @@ def utc2local (utc):
     offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
     return utc + offset
 
-def data_struct_message(action, data = {}, ret=0, base64 = False, sessionid = None):
+def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, basestring):
         sessionid = action.strip().replace(" ", "")
-    return { 'action': action,
-             'data': data,
-             'ret': 0,
-             "base64" : False,
-             "sessionid" : getRandomName(4,sessionid)}
+    return {'action': action,
+            'data': data,
+            'ret': 0,
+            "base64": False,
+            "sessionid": getRandomName(4,sessionid)}
 
 
 def add_method(cls):
@@ -1649,24 +1649,24 @@ def is_connectedServer(ip, port):
 unpad = lambda s : s[0:-ord(s[-1])]
 class AESCipher:
 
-    def __init__( self, key , BS = 32):
+    def __init__(self, key , BS=32):
         self.key = key
         self.BS = BS
 
     def _pad(self, s):
         return s + (self.BS - len(s) % self.BS) * chr(self.BS - len(s) % self.BS)
 
-    def encrypt( self, raw ):
+    def encrypt(self, raw):
         raw = self._pad(raw)
-        iv = Random.new().read( AES.block_size )
-        cipher = AES.new( self.key, AES.MODE_CBC, iv )
-        return base64.b64encode( iv + cipher.encrypt( raw ) )
+        iv = Random.new().read(AES.block_size)
+        cipher = AES.new( self.key, AES.MODE_CBC, iv)
+        return base64.b64encode(iv + cipher.encrypt(raw))
 
-    def decrypt( self, enc ):
+    def decrypt(self, enc):
         enc = base64.b64decode(enc)
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv )
-        return unpad(cipher.decrypt( enc[16:] ))
+        return unpad(cipher.decrypt(enc[16:]))
 
 
 def sshdup():
@@ -1756,10 +1756,10 @@ def install_key_ssh_relayserver(keypriv, private=False):
             sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
             dacl = win32security.ACL ()
             dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                    ntsecuritycon.FILE_GENERIC_READ | \
+                                     ntsecuritycon.FILE_GENERIC_READ | \
                                         ntsecuritycon.FILE_GENERIC_WRITE | \
                                             ntsecuritycon.FILE_ALL_ACCESS,
-                                    user)
+                                     user)
             sd.SetSecurityDescriptorDacl(1, dacl, 0)
             win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
         else:
@@ -1789,8 +1789,8 @@ def install_key_ssh_relayserver(keypriv, private=False):
         sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
         dacl = win32security.ACL ()
         dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
-                                user)
+                                 ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
+                                 user)
         sd.SetSecurityDescriptorDacl(1, dacl, 0)
         win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
     else:
@@ -1822,10 +1822,10 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
             tar.extractall()
         return True
     except OSError as e:
-        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        logger.error("error extract tar.%s %s"%(str(e),compresstype))
         return False
     except Exception as e:
-        logger.error( "error extract tar.%s %s"%(str(e),compresstype))
+        logger.error("error extract tar.%s %s"%(str(e),compresstype))
         return False
     finally:
         os.chdir(cwd)
@@ -2021,8 +2021,8 @@ class geolocalisation_agent:
             return True
         return False
 
-    def getgeolocalisation(self)
-    """
+    def getgeolocalisation(self):
+        """
         This function is used to obtain geolocalisationof the machine.
         If the machine has the type: public, nomade of both of if
         self.localisation is set to None, we search for geolocalisation
@@ -2030,7 +2030,7 @@ class geolocalisation_agent:
 
         Returns:
             It returns the geolocalistion of the machine if any.
-    """
+        """
         if self.geolocalisation:
             if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
                 self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
