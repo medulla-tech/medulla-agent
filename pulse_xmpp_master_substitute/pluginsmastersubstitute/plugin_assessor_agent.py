@@ -520,7 +520,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                "stopped." % (data['information']['info']['hostname'], result[2]))
                 logger.warning("ACTION: Re-start the ARS on %s." % (result[2]))
                 logger.warning("try to apply the configuration on agent "\
-                               "%s of down default ars."%(data['information']['info']['hostname']))
+                               "%s of down default ars." % (data['information']['info']['hostname']))
         except (RuntimeError, TypeError, NameError):
             msglog = "Verify configuration assessor file name assessor_agent.ini.local."\
                 "\n\terror parameter serverip "\
@@ -573,15 +573,15 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 " the agent to run its reconfiguration."%(result[2]))
             objectxmpp.xmpplog("No configuration sent to machine " \
                 "agent %s. ARS %s is found but it is stopped." % (result[2],
-                                                                  data['information']['info']['hostname'] ),
-                                                                  type = 'conf',
-                                                                  sessionname =  sessionid,
-                                                                  priority = -1,
-                                                                  action = "xmpplog",
-                                                                  who = data['information']['info']['hostname'],
-                                                                  module = "Configuration | Notify | Assessor",
-                                                                  date = None,
-                                                                  fromuser = objectxmpp.boundjid.bare)
+                                                                  data['information']['info']['hostname']),
+                                                                  type='conf',
+                                                                  sessionname=sessionid,
+                                                                  priority=-1,
+                                                                  action="xmpplog",
+                                                                  who=data['information']['info']['hostname'],
+                                                                  module="Configuration | Notify | Assessor",
+                                                                  date=None,
+                                                                  fromuser=objectxmpp.boundjid.bare)
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
 
@@ -593,8 +593,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                                           z1[0][2])
             response["substitute"]["ars_chooose_for_substitute"] = z1[0][2]
             if showinfomachine:
-                logger.info("substitute resend to agent : %s" % json.dumps(response["substitute"],indent=4))
-                logger.info("substitute resend to agent : %s" % json.dumps(response["substitute"]['subscription'],indent=4))
+                logger.info("substitute resend to agent : %s" % json.dumps(response["substitute"], indent=4))
+                logger.info("substitute resend to agent : %s" % json.dumps(response["substitute"]['subscription'], indent=4))
             if "subscription" in response["substitute"]:
                 agentsubscription = response["substitute"]['subscription'][0]
                 listmacadress=[]
@@ -824,7 +824,7 @@ def read_conf_assessor(objectxmpp):
                     objectxmpp.assessor_agent_errorconf = True
             else:
                 logger.error("see parameter [guacamole_baseurl] "
-                             "missing in file : %s "% objectxmpp.pathfileconf)
+                             "missing in file : %s " % objectxmpp.pathfileconf)
                 objectxmpp.assessor_agent_errorconf = True
 
         else:
