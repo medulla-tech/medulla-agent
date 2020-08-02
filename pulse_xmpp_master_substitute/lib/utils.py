@@ -638,7 +638,7 @@ def is_valid_ipv6(ip):
 def typelinux():
     """
         This function is used to tell which init system is used on the server.
-        
+
         Returns:
             Return the used init system between init.d or systemd
     """
@@ -759,8 +759,8 @@ def servicelinuxinit(name, action):
 
 
 def service(name, action):
-    """ 
-    TODO: Write doc, possible actions 
+    """
+    TODO: Write doc, possible actions
         start | stop | restart | reload
     """
     obj = {}
