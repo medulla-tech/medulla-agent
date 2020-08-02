@@ -1833,7 +1833,7 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
 
 def find_files(directory, pattern):
     """
-        use f
+
     """
     for root, dirs, files in os.walk(directory):
         for basename in files:
@@ -1875,7 +1875,7 @@ class protodef:
         if self.protoinfoexist():
             fproto = protodef.protoandport()
             self.fingerprintproto = file_get_contents(self.fileprotoinfo)
-            newfingerprint = pickle.dumps(fproto) #on recalcule le proto
+            newfingerprint = pickle.dumps(fproto)  # on recalcule le proto
             if self.fingerprintproto == newfingerprint:
                 self.proto = fproto
                 return False, self.proto
@@ -1967,7 +1967,7 @@ def protoandport():
 
 class geolocalisation_agent:
     def __init__(self,
-                 typeuser = "public",
+                 typeuser="public",
                  geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
@@ -1976,9 +1976,9 @@ class geolocalisation_agent:
         self.ip_public = ip_public
         self.typeuser = typeuser
         self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
-                                          'filegeolocalisation')
-        self.listgeoserver = ["http://%s/json"%x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
-                                              strlistgeoserveur)  if x.strip()!=""];
+                                                'filegeolocalisation')
+        self.listgeoserver = ["http://%s/json" % x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
+                                                                     strlistgeoserveur)  if x.strip()!=""];
         self.localisation = None
         self.getgeolocalisation()
         if self.localisation is None:
@@ -2014,7 +2014,7 @@ class geolocalisation_agent:
             return True
         return False
 
-    def getgeolocalisation(self):
+    def getgeolocalisation(self)
         if self.geolocalisation:
             if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
                 # on recherche a chaque fois les information
@@ -2045,7 +2045,7 @@ class geolocalisation_agent:
 
     def get_ip_public(self):
         if self.geolocalisation:
-            if self.localisation is  None:
+            if self.localisation is None:
                 self.getgeolocalisation()
             if self.localisation is not None and is_valid_ipv4(self.localisation['ip']):
                 if not self.determination:
@@ -2057,12 +2057,12 @@ class geolocalisation_agent:
         else:
             if not self.determination:
                 logger.warning("use old determination ip_public")
-            if self.localisation is  None:
+            if self.localisation is None:
                 if self.geoinfoexist():
                     logger.warning("coucou")
                     dd=self.getdatafilegeolocalisation()
                     logger.warning("%s"%dd)
-                    if  self.localisation is  not None:
+                    if self.localisation is not None:
                         return self.localisation['ip']
             else:
                 return self.localisation['ip']
