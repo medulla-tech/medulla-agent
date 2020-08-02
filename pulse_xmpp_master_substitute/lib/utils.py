@@ -49,16 +49,12 @@ import time
 from datetime import datetime
 import imp
 import requests
-from functools import wraps # This convenience func preserves name and docstring
+from functools import wraps  # This convenience func preserves name and docstring
 import uuid
 
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
-
-logger = logging.getLogger()
-
-DEBUGPULSE = 25
 
 if sys.platform.startswith('win'):
     import wmi
@@ -70,6 +66,10 @@ if sys.platform.startswith('win'):
     import win32net
     import win32com.client
     from win32com.client import GetObjectif
+
+logger = logging.getLogger()
+
+DEBUGPULSE = 25
 
 # debug decorator
 def minimum_runtime(t):
@@ -87,7 +87,7 @@ def minimum_runtime(t):
         return wrapper
     return decorated
 
-def dump_parameter(para=True, out=True, timeprocess = True):
+def dump_parameter(para=True, out=True, timeprocess=True):
     """
         Function decorator logging in and out function.
     """
@@ -108,8 +108,8 @@ def dump_parameter(para=True, out=True, timeprocess = True):
                     kwargs=dec_fn_kwargs)
                 result = ', '.join([
                         '{}={}'.format(str(k), repr(v)) for k, v in list(params.items())])
-                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
-                log.info('\n@@@ call func : {}({}) file {}'.format(func_name,result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name, result, filepath))
+                log.info('\n@@@ call func : {}({}) file {}'.format(func_name, result, filepath))
             else:
                 log.info('\n@@@ call func : {}() file {}'.format(func_name, filepath))
             # Execute wrapped (decorated) function:
@@ -176,7 +176,7 @@ def save_count_start():
     try:
         if countstart != "":
             countstart = int(countstart.strip())
-            countstart +=1
+            countstart += 1
         else:
             countstart = 1
     except ValueError:
@@ -260,18 +260,16 @@ def confchanged(typeconf):
 
 def refreshfingerprintconf(typeconf):
     fp = createfingerprintconf(typeconf)
-    file_put_contents(
-        os.path.join(
-            Setdirectorytempinfo(),
-            'fingerprintconf'),
-        fp)
+    file_put_contents(os.path.join(Setdirectorytempinfo(),
+                      'fingerprintconf'),
+                      fp)
     return fp
 
 
 def networkchanged():
     if networkinfoexist():
-        fingerprintnetwork = file_get_contents(os.path.join(
-            Setdirectorytempinfo(), 'fingerprintnetwork'))
+        fingerprintnetwork = file_get_contents(os.path.join(Setdirectorytempinfo(),
+                                                            'fingerprintnetwork'))
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
             return False
@@ -281,16 +279,18 @@ def networkchanged():
 
 def refreshfingerprint():
     fp = createfingerprintnetwork()
-    file_put_contents(
-        os.path.join(
-            Setdirectorytempinfo(),
-            'fingerprintnetwork'),
-        fp)
+    file_put_contents(os.path.join(Setdirectorytempinfo(),
+                                   'fingerprintnetwork'),
+                      fp)
     return fp
 
 
-def file_get_contents(filename, use_include_path=0,
-                      context=None, offset=-1, maxlen=-1):
+def file_get_contents(filename,
+                      use_include_path=0,
+                      context=None,
+                      offset=-1,
+                      maxlen=-1):
+
     if (filename.find('://') > 0):
         ret = urllib.request.urlopen(filename).read()
         if (offset > 0):
@@ -315,7 +315,7 @@ def file_put_contents(filename, data):
     f.close()
 
 
-def file_put_contents_w_a(filename, data, option = "w"):
+def file_put_contents_w_a(filename, data, option="w"):
     if option == "a" or  option == "w":
         f = open( filename, option )
         f.write(data)
@@ -386,9 +386,8 @@ class StreamToLogger(object):
 def get_connection_name_from_guid(iface_guids):
     iface_names = ['(unknown)' for i in range(len(iface_guids))]
     reg = wr.ConnectRegistry(None, wr.HKEY_LOCAL_MACHINE)
-    reg_key = wr.OpenKey(
-        reg,
-        r'SYSTEM\CurrentControlSet\Control\Network\{4d36e972-e325-11ce-bfc1-08002be10318}')
+    reg_key = wr.OpenKey(reg,
+                         r'SYSTEM\CurrentControlSet\Control\Network\{4d36e972-e325-11ce-bfc1-08002be10318}')
     for i in range(len(iface_guids)):
         try:
             reg_subkey = wr.OpenKey(reg_key, iface_guids[i] + r'\Connection')
@@ -412,9 +411,8 @@ def isWinUserAdmin():
         # Check for root on Posix
         return os.getuid() == 0
     else:
-        raise RuntimeError(
-            "Unsupported operating system for this module: %s" %
-            (os.name,))
+        raise RuntimeError("Unsupported operating system for this module: %s" %
+                           (os.name,))
 
 
 def isMacOsUserAdmin():
@@ -426,7 +424,7 @@ def isMacOsUserAdmin():
         return False
 
 
-#listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
+# listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
@@ -470,7 +468,7 @@ def loadModule(filename):
     searchPath, file = os.path.split(filename)
     if searchPath not in sys.path:
         sys.path.append(searchPath)
-        sys.path.append(os.path.normpath(searchPath+"/../"))
+        sys.path.append(os.path.normpath(searchPath + "/../"))
     moduleName, ext = os.path.splitext(file)
     fp, pathName, description = imp.find_module(moduleName, [searchPath,])
     try:
@@ -481,16 +479,16 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
-    #add compteur appel plugins
+    # add compteur appel plugins
     count = 0
     try:
-        count = getattr(args[0], "num_call%s"%args[1])
+        count = getattr(args[0], "num_call%s" % args[1])
     except AttributeError:
         count = 0
-        setattr(args[0], "num_call%s"%args[1], count)
+        setattr(args[0], "num_call%s" % args[1], count)
     pluginaction = loadModule(name)
     pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s"%args[1], count +1)
+    setattr(args[0], "num_call%s" % args[1], count +1)
 
 def getshortenedmacaddress():
     listmacadress = {}
@@ -533,7 +531,9 @@ def getIPAdressList():
 
 
 def MacAdressToIp(ip):
-    'Returns a MAC for interfaces that have given IP, returns None if not found'
+    """
+    Returns a MAC for interfaces that have given IP, returns None if not found
+    """
     for i in netifaces.interfaces():
         addrs = netifaces.ifaddresses(i)
         try:
@@ -557,12 +557,13 @@ def reduction_mac(mac):
     mac = mac.replace(":", "")
     mac = mac.replace("-", "")
     mac = mac.replace(" ", "")
-    #mac = mac.replace("/","")
+    # mac = mac.replace("/","")
     return mac
 
 
 def is_valid_ipv4(ip):
-    """Validates IPv4 addresses.
+    """
+    Validates IPv4 addresses.
     """
     pattern = re.compile(r"""
         ^
@@ -602,7 +603,8 @@ def is_valid_ipv4(ip):
 
 
 def is_valid_ipv6(ip):
-    """Validates IPv6 addresses.
+    """
+    Validates IPv6 addresses.
     """
     pattern = re.compile(r"""
         ^
@@ -636,7 +638,9 @@ def is_valid_ipv6(ip):
 def typelinux():
     """
         This function is used to tell which init system is used on the server.
-        :return: Return the used init system between init.d or systemd
+
+        Returns:
+            Return the used init system between init.d or systemd
     """
     p = subprocess.Popen('cat /proc/1/comm',
                          shell=True,
@@ -695,8 +699,8 @@ def windowspath(namescript):
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
-    print("powershell -ExecutionPolicy Bypass -File  %s"%namescript)
-    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s"%namescript))
+    print("powershell -ExecutionPolicy Bypass -File  %s" % namescript)
+    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript))
     return obj
 
 
@@ -712,7 +716,6 @@ class shellcommandtimeout(object):
 
     def run(self):
         def target():
-            # print 'Thread started'
             self.process = subprocess.Popen(self.obj['cmd'],
                                             shell=True,
                                             stdout=subprocess.PIPE,
@@ -720,7 +723,6 @@ class shellcommandtimeout(object):
             self.obj['result'] = self.process.stdout.readlines()
             self.obj['code'] = self.process.wait()
             self.process.communicate()
-            # print 'Thread finished'
         thread = threading.Thread(target=target)
         thread.start()
 
@@ -728,12 +730,10 @@ class shellcommandtimeout(object):
         if thread.is_alive():
             print('Terminating process')
             print("timeout %s" % self.obj['timeout'])
-            #self.codereturn = -255
-            #self.result = "error tineour"
             self.process.terminate()
             thread.join()
 
-        #self.result = self.process.stdout.readlines()
+        # self.result = self.process.stdout.readlines()
         self.obj['codereturn'] = self.process.returncode
 
         if self.obj['codereturn'] == -15:
@@ -756,7 +756,11 @@ def servicelinuxinit(name, action):
 # restart service
 
 
-def service(name, action):  # start | stop | restart | reload
+def service(name, action):
+    """
+    TODO: Write doc, possible actions
+        start | stop | restart | reload
+    """
     obj = {}
     if sys.platform.startswith('linux'):
         system = ""
@@ -765,7 +769,7 @@ def service(name, action):  # start | stop | restart | reload
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        #code_result = p.wait()
+        # code_result = p.wait()
         system = result[0].rstrip('\n')
         if system == "init":
             p = subprocess.Popen("/etc/init.d/%s %s" % (name, action),
@@ -1827,7 +1831,7 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
 
 def find_files(directory, pattern):
     """
-        use f
+
     """
     for root, dirs, files in os.walk(directory):
         for basename in files:
@@ -1869,7 +1873,7 @@ class protodef:
         if self.protoinfoexist():
             fproto = protodef.protoandport()
             self.fingerprintproto = file_get_contents(self.fileprotoinfo)
-            newfingerprint = pickle.dumps(fproto) #on recalcule le proto
+            newfingerprint = pickle.dumps(fproto)  # on recalcule le proto
             if self.fingerprintproto == newfingerprint:
                 self.proto = fproto
                 return False, self.proto
@@ -1961,22 +1965,23 @@ def protoandport():
 
 class geolocalisation_agent:
     def __init__(self,
-                 typeuser = "public",
+                 typeuser="public",
                  geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
+
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public
         self.typeuser = typeuser
         self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
-                                          'filegeolocalisation')
-        self.listgeoserver = ["http://%s/json"%x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
-                                              strlistgeoserveur)  if x.strip()!=""];
+                                                'filegeolocalisation')
+        self.listgeoserver = ["http://%s/json" % x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
+                                                                     strlistgeoserveur)  if x.strip()!=""];
         self.localisation = None
         self.getgeolocalisation()
         if self.localisation is None:
-            self.localisation=self.getdatafilegeolocalisation()
+            self.localisation = self.getdatafilegeolocalisation()
 
     def getgeolocalisationobject(self):
         if self.localisation is None:
@@ -1987,7 +1992,7 @@ class geolocalisation_agent:
         if self.geoinfoexist():
             try:
                 with open(self.filegeolocalisation) as json_data:
-                    self.localisation=json.load(json_data)
+                    self.localisation = json.load(json_data)
                 self.determination = False
                 return self.localisation
             except Exception:
@@ -2004,14 +2009,28 @@ class geolocalisation_agent:
                 pass
 
     def geoinfoexist(self):
+        """
+        This function is used to determine if the geolocalisation file is present.
+
+        Returns:
+            It returns True if the file exists, False otherwise
+        """
         if os.path.exists(self.filegeolocalisation):
             return True
         return False
 
-    def getgeolocalisation(self):
+    def getgeolocalisation(self)
+    """
+        This function is used to obtain geolocalisationof the machine.
+        If the machine has the type: public, nomade of both of if
+        self.localisation is set to None, we search for geolocalisation
+        each time.
+
+        Returns:
+            It returns the geolocalistion of the machine if any.
+    """
         if self.geolocalisation:
             if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
-                # on recherche a chaque fois les information
                 self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
                 self.determination = True
                 self.setdatafilegeolocalisation()
@@ -2039,7 +2058,7 @@ class geolocalisation_agent:
 
     def get_ip_public(self):
         if self.geolocalisation:
-            if self.localisation is  None:
+            if self.localisation is None:
                 self.getgeolocalisation()
             if self.localisation is not None and is_valid_ipv4(self.localisation['ip']):
                 if not self.determination:
@@ -2051,12 +2070,12 @@ class geolocalisation_agent:
         else:
             if not self.determination:
                 logger.warning("use old determination ip_public")
-            if self.localisation is  None:
+            if self.localisation is None:
                 if self.geoinfoexist():
                     logger.warning("coucou")
                     dd=self.getdatafilegeolocalisation()
                     logger.warning("%s"%dd)
-                    if  self.localisation is  not None:
+                    if self.localisation is not None:
                         return self.localisation['ip']
             else:
                 return self.localisation['ip']
