@@ -88,7 +88,7 @@ def loadreconf(self, objectxmpp):
             objectxmpp.listconcurentreconf = [ x for x in objectxmpp.listconcurentreconf \
                                             if x[0] not in resultacquite]
         if len(result) == 0:
-            result =  XmppMasterDatabase().call_reconfiguration_machine(limit = objectxmpp.nbconcurrentreconf)
+            result =  XmppMasterDatabase().call_reconfiguration_machine(limit=objectxmpp.nbconcurrentreconf)
             if len(result) == 0:
                 return
         list_updatenopresence = []
