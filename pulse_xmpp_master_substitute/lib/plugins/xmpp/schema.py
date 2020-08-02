@@ -143,7 +143,7 @@ class Syncthing_machine(Base, XmppMasterDBObj):
     pathpackage = Column(String(100), nullable=False)
     state = Column(String(45), nullable=False)
     sessionid = Column(String(45), nullable=False)
-    start= Column(DateTime, nullable=False)
+    start = Column(DateTime, nullable=False)
     startcmd = Column(DateTime, nullable=False)
     endcmd = Column(DateTime, nullable=False)
     user = Column(String(45), nullable=False)
@@ -154,7 +154,7 @@ class Syncthing_machine(Base, XmppMasterDBObj):
     syncthing = Column(Integer, nullable=False)
     result = Column(Text, nullable=False)
     comment = Column(String(255))
-    progress = Column(Integer, nullable=False, default = 0)
+    progress = Column(Integer, nullable=False, default=0)
     fk_arscluster = Column(Integer, ForeignKey('syncthing_ars_cluster.id'), nullable=False)
     syncthing_ars_cluster = relationship(Syncthing_ars_cluster)
 
@@ -479,6 +479,7 @@ class Subscription(Base, XmppMasterDBObj):
     # ====== ForeignKey =============================
     idagentsubscription   = Column(Integer, ForeignKey('agent_subscription.id'), nullable=False)
     agent_subscription = relationship(Agentsubscription)
+
 
 class Def_remote_deploy_status(Base, XmppMasterDBObj):
     # ====== Table name =========================
