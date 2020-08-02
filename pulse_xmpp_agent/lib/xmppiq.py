@@ -184,7 +184,7 @@ class functionsynchroxmpp:
                 data['action'] = "resultkeyinstall"
                 data['ret'] = 20
                 data['data']["msg_error"] = ["error format message"]
-                return json.dumps(data, indent = 4)
+                return json.dumps(data, indent=4)
             # Install keypub on AM
             if sys.platform.startswith('linux'):
                 import pwd
