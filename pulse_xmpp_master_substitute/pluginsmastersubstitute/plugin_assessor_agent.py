@@ -45,7 +45,7 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
-plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor" }
+plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
@@ -58,7 +58,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
             read_conf_assessor(objectxmpp)
 
         if objectxmpp.assessor_agent_errorconf:
-            logger.error("error configuration no process action %s for machine %s" % (action , msg['from']))
+            logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
             sendErrorConnectionConf(objectxmpp,sessionid,msg)
             return
 
@@ -249,7 +249,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                                               tabinformation['latitude'],
                                                                               tabinformation['longitude']))
 
-                    pointmachine = Point(float(tabinformation['latitude']), float( tabinformation['longitude']))
+                    pointmachine = Point(float(tabinformation['latitude']), float(tabinformation['longitude']))
                     distance = 40000000000
                     listeserver = set()
                     relayserver = -1
