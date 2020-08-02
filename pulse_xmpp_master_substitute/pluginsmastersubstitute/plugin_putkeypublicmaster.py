@@ -32,11 +32,11 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "1.0", "NAME" : "start", "TYPE" : "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "start", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
     Setdirectorytempinfo()  # create directory pour install key public master.
     # in starting agent ask public key of master.
@@ -47,14 +47,13 @@ def ask_key_master_public(self, objectxmpp):
     """
         ask public key on master
     """
-    datasend = {
-        "action": "ask_key_public_master",
-        "data": {},
-        'ret': 0,
-        'sessionid': getRandomName(5, "ask_key_public_master")}
-    self.send_message(mto = self.agentmaster,
-                        mbody=json.dumps(datasend),
-                        mtype='chat')
+    datasend = {"action": "ask_key_public_master",
+                "data": {},
+                'ret': 0,
+                'sessionid': getRandomName(5, "ask_key_public_master")}
+    self.send_message(mto=self.agentmaster,
+                      mbody=json.dumps(datasend),
+                      mtype='chat')
 
 def Setdirectorytempinfo():
     """
