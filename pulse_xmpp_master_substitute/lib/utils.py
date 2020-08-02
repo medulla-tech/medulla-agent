@@ -1971,6 +1971,7 @@ class geolocalisation_agent:
                  geolocalisation=True,
                  ip_public=None,
                  strlistgeoserveur=""):
+
         self.determination = False
         self.geolocalisation = geolocalisation
         self.ip_public = ip_public
@@ -1982,7 +1983,7 @@ class geolocalisation_agent:
         self.localisation = None
         self.getgeolocalisation()
         if self.localisation is None:
-            self.localisation=self.getdatafilegeolocalisation()
+            self.localisation = self.getdatafilegeolocalisation()
 
     def getgeolocalisationobject(self):
         if self.localisation is None:
@@ -1993,7 +1994,7 @@ class geolocalisation_agent:
         if self.geoinfoexist():
             try:
                 with open(self.filegeolocalisation) as json_data:
-                    self.localisation=json.load(json_data)
+                    self.localisation = json.load(json_data)
                 self.determination = False
                 return self.localisation
             except Exception:
@@ -2010,14 +2011,28 @@ class geolocalisation_agent:
                 pass
 
     def geoinfoexist(self):
+        """
+        This function is used to determine if the geolocalisation file is present.
+
+        Returns:
+            It returns True if the file exists, False otherwise
+        """
         if os.path.exists(self.filegeolocalisation):
             return True
         return False
 
     def getgeolocalisation(self)
+    """
+        This function is used to obtain geolocalisationof the machine.
+        If the machine has the type: public, nomade of both of if
+        self.localisation is set to None, we search for geolocalisation
+        each time.
+
+        Returns:
+            It returns the geolocalistion of the machine if any.
+    """
         if self.geolocalisation:
             if self.typeuser in ["public", "nomade", "both"] or self.localisation is None:
-                # on recherche a chaque fois les information
                 self.localisation = geolocalisation_agent.searchgeolocalisation(self.listgeoserver)
                 self.determination = True
                 self.setdatafilegeolocalisation()
