@@ -253,7 +253,7 @@ class MscDatabase(DatabaseHelper):
             self.commands_history = Table("commands_history",
                                           self.metadata,
                                           Column('fk_commands_on_host',
-                                          Integer, ForeignKey('commands_on_host.id')),
+                                                 Integer, ForeignKey('commands_on_host.id')),
                                           autoload=True)
             # target
             self.target = Table("target", self.metadata, autoload=True)
@@ -295,7 +295,7 @@ class MscDatabase(DatabaseHelper):
         mapper(PullTargets, self.pull_targets)
         mapper(CommandsOnHost,
                self.commands_on_host,
-               properties={'historys': relation(CommandsHistory),}
+               properties={'historys': relation(CommandsHistory), }
                )
 
         mapper(Target,
@@ -306,7 +306,7 @@ class MscDatabase(DatabaseHelper):
         mapper(Bundle, self.bundle, properties={})
         mapper(Commands,
                self.commands,
-               properties = {'commandsonhosts': relation(CommandsOnHost),
+               properties={'commandsonhosts': relation(CommandsOnHost),
                              'bundle': relation(Bundle),
                              }
                )
@@ -514,15 +514,15 @@ class MscDatabase(DatabaseHelper):
         session.add(target)
         session.flush()
         session.close()
-        result = {"id" : target.id,
-                  "target_macaddr" : target.target_macaddr,
-                  "id_group" : target.id_group,
-                  "target_uuid" : target.target_uuid,
-                  "target_bcast" : target.target_bcast,
-                  "target_name" : target.target_name,
-                  "target_ipaddr" : target.target_ipaddr,
-                  "mirrors" : target.mirrors,
-                  "target_network" : target.target_network }
+        result = {"id": target.id,
+                  "target_macaddr": target.target_macaddr,
+                  "id_group": target.id_group,
+                  "target_uuid": target.target_uuid,
+                  "target_bcast": target.target_bcast,
+                  "target_name": target.target_name,
+                  "target_ipaddr": target.target_ipaddr,
+                  "mirrors": target.mirrors,
+                  "target_network": target.target_network}
         return result
 
     def uuidtoid(self, uuid):
@@ -833,7 +833,7 @@ class MscDatabase(DatabaseHelper):
                                 })
             session.flush()
             session.query(CommandsOnHostPhase).filter(CommandsOnHostPhase.fk_commands_on_host == x.CommandsOnHost.id ).\
-                update({ CommandsOnHostPhase.state: "done" })
+                update({ CommandsOnHostPhase.state: "done"})
             session.flush()
         session.flush()
         session.close()
@@ -893,7 +893,7 @@ class MscDatabase(DatabaseHelper):
                     AND
                 `phase`.`state` = 'ready'
                     AND
-                    '%s' BETWEEN commands.start_date AND commands.end_date;""" % (datenow);
+                    '%s' BETWEEN commands.start_date AND commands.end_date;""" % (datenow)
         resultsql = session.execute(sqlselect)
         session.commit()
         session.flush()
@@ -955,8 +955,8 @@ class MscDatabase(DatabaseHelper):
                                        'package_uuid': element[4],
                                        'date_start': element[5],
                                        'date_end': element[6],
-                                       'machine_name':element[8],
-                                       'uuid_inventory':element[9],
+                                       'machine_name': element[8],
+                                       'uuid_inventory': element[9],
                                        'gid': element[10],
                                        'mac_address': element[11]})
         return result
@@ -1005,7 +1005,7 @@ class MscDatabase(DatabaseHelper):
                     SET
                         `phase`.`state` = 'done'
                     WHERE
-                        `phase`.`fk_commands_on_host` = %s;""" % x.commands_on_host_id;
+                        `phase`.`fk_commands_on_host` = %s;""" % x.commands_on_host_id
                 session.execute(sql)
                 session.commit()
                 session.flush()
@@ -1306,7 +1306,7 @@ class MscDatabase(DatabaseHelper):
                   "target_bcast": targetBCast,
                   "target_network": targetNetmask,
                   "mirrors": mirror,
-                  "id_group": groupID }
+                  "id_group": groupID}
         return target
 
     def getCommandsonhostsAndSchedulersOnBundle(self, fk_bundle):
@@ -1705,7 +1705,7 @@ class MscDatabase(DatabaseHelper):
                                 'status': {},
                                 'deployment_intervals': cmd.deployment_intervals,
                                 'type': cmd.type
-                    })
+                                })
 
         return [size, ret]
 
@@ -2066,7 +2066,7 @@ class MscDatabase(DatabaseHelper):
                               'do_reboot': 'reboot',
                               'do_halt': 'halt',
                               'do_windows_update': 'windows_update',
-                }
+                              }
                 # for step in ['do_wol', 'clean_on_success', 'do_inventory', 'do_reboot', 'do_halt']:
                 for step in __statuses.keys():
                     setattr(command, step, __statuses[step] in phases and 'enable' or 'disable')
@@ -2451,10 +2451,10 @@ class MscDatabase(DatabaseHelper):
         return {'success': ['done'],
                 'paused': ['paused', 'pause'],
                 'stopped': ['stopped', 'stop'],
-                'running': ['wol_in_progress', 'upload_in_progress', 'upload_done', 'execution_in_progress', 'execution_done', 'delete_in_progress', 'delete_done', \
-                            'inventory_in_progress', 'inventory_done', 'reboot_in_progress', 'reboot_done', 'scheduled', 're_scheduled', \
+                'running': ['wol_in_progress', 'upload_in_progress', 'upload_done', 'execution_in_progress', 'execution_done', 'delete_in_progress', 'delete_done',
+                            'inventory_in_progress', 'inventory_done', 'reboot_in_progress', 'reboot_done', 'scheduled', 're_scheduled',
                             'halt_in_progress', 'halt_done'],
-                'failure': ['failed', 'upload_failed', 'execution_failed', 'delete_failed', 'inventory_failed', 'reboot_failed', 'halt_failed', \
+                'failure': ['failed', 'upload_failed', 'execution_failed', 'delete_failed', 'inventory_failed', 'reboot_failed', 'halt_failed',
                             'not_reachable'],
                 }
 
