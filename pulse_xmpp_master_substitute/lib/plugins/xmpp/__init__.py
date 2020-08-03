@@ -389,7 +389,7 @@ class XmppMasterDatabase(DatabaseHelper):
                          xmppmaster.deploy
                      WHERE
                          state in (%s) AND
-                         '%s' > endcmd;"""%(set_search, nowdate);
+                         '%s' > endcmd;""" % (set_search, nowdate)
             machines = session.execute(sql)
             session.commit()
             session.flush()
@@ -916,13 +916,12 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().debug("getlistcommandforuserbyos error %s->" % str(e))
             return ret
 
-
     @DatabaseHelper._sessionm
     def addPackageByOrganization(self,
                                  session,
                                  packageuuid,
                                  organization_name=None,
-                                 organization_id=None ):
+                                 organization_id=None):
         """
         addition reference package in packages table for organization id
             the organization input parameter is either organization name or either organization id
@@ -1063,27 +1062,27 @@ class XmppMasterDatabase(DatabaseHelper):
                 "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
                 "by\n" \
                 "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|" % (machineforupdate['id'],
-                                                  maxlenhostname, "hostname",
-                                                  maxlenjid, "jid",
-                                                  maxmacadress, "macaddress",
-                                                  maxip_xmpp, "ip_xmpp",
-                                                  maxsubnetxmpp, "subnetxmpp",
-                                                  maxonoff, "On/OFF",
-                                                  maxuuid,"UUID",
-                                                  maxlenhostname, machineforupdate['hostname'],
-                                                  maxlenjid, machineforupdate['jid'],
-                                                  maxmacadress, machineforupdate['macaddress'],
-                                                  maxip_xmpp, machineforupdate['ip_xmpp'],
-                                                  maxsubnetxmpp, machineforupdate['subnetxmpp'],
-                                                  maxonoff, machineforupdate['enabled'],
-                                                  maxuuid, uuidold,
-                                                  maxlenhostname, hostname,
-                                                  maxlenjid, jid,
-                                                  maxmacadress, macaddress,
-                                                  maxip_xmpp, ip_xmpp,
-                                                  maxsubnetxmpp, subnetxmpp,
-                                                  maxonoff, "1",
-                                                  6, uuidnew)
+                                                   maxlenhostname, "hostname",
+                                                   maxlenjid, "jid",
+                                                   maxmacadress, "macaddress",
+                                                   maxip_xmpp, "ip_xmpp",
+                                                   maxsubnetxmpp, "subnetxmpp",
+                                                   maxonoff, "On/OFF",
+                                                   maxuuid, "UUID",
+                                                   maxlenhostname, machineforupdate['hostname'],
+                                                   maxlenjid, machineforupdate['jid'],
+                                                   maxmacadress, machineforupdate['macaddress'],
+                                                   maxip_xmpp, machineforupdate['ip_xmpp'],
+                                                   maxsubnetxmpp, machineforupdate['subnetxmpp'],
+                                                   maxonoff, machineforupdate['enabled'],
+                                                   maxuuid, uuidold,
+                                                   maxlenhostname, hostname,
+                                                   maxlenjid, jid,
+                                                   maxmacadress, macaddress,
+                                                   maxip_xmpp, ip_xmpp,
+                                                   maxsubnetxmpp, subnetxmpp,
+                                                   maxonoff, "1",
+                                                   6, uuidnew)
             self.logger.warning(msg)
             session.query(Machines).filter( Machines.id == pe).\
                        update({Machines.jid: jid,
@@ -1140,7 +1139,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 if agenttype == "relayserver":
                     sql = "UPDATE `xmppmaster`.`relayserver` \
                                 SET `enabled`='1' \
-                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'" % hostname;
+                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'" % hostname
                     session.execute(sql)
                     session.commit()
                     session.flush()
@@ -1166,7 +1165,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def is_jiduser_organization_ad(self, session, jiduser):
-        """ 
+        """
         if user exist return True
         """
         sql = """SELECT COUNT(jiduser) AS nb
@@ -1275,7 +1274,7 @@ class XmppMasterDatabase(DatabaseHelper):
             update Organization_ad table in base xmppmaster
         """
         try:
-            session.query(Organization_ad).filter(Organization_ad.id_inventory ==  self.uuidtoid(id_inventory)).\
+            session.query(Organization_ad).filter(Organization_ad.id_inventory == self.uuidtoid(id_inventory)).\
                     update({Organization_ad.jiduser: jiduser,
                             Organization_ad.id_inventory: self.uuidtoid(id_inventory),
                             Organization_ad.ouuser: ouuser,
@@ -1706,8 +1705,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                       t.group_uuid,
                                       t.result,
                                       ars_cluster_id,
-                                      syncthing = t.syncthing,
-                                      state =t.state,
+                                      syncthing=t.syncthing,
+                                      state=t.state,
                                       user=t.user,
                                       type_partage="",
                                       title=t.title,
@@ -2058,7 +2057,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                    session,
                                    idgrp,
                                    idcmd,
-                                   valuecount=[0,100]):
+                                   valuecount=[0, 100]):
         setvalues =" "
         if len(valuecount) != 0:
             setvalues = "AND xmppmaster.syncthing_machine.progress in (%s)" % ",".join([str(x) for x in valuecount])
@@ -2084,7 +2083,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  idcmd):
 
         ddistribution = self.stat_syncthing_distributon(idgrp, idcmd)
-        distibution = {'nbvalue': len(ddistribution), 
+        distibution = {'nbvalue': len(ddistribution),
                        "data_dist": ddistribution}
 
         sql = """SELECT
@@ -2115,7 +2114,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
         return {'package': re[0],
                 'nbmachine': re[1],
-                'progresstransfert': progress ,
+                'progresstransfert': progress,
                 'distibution': distibution}
 
     @DatabaseHelper._sessionm
@@ -2269,7 +2268,7 @@ class XmppMasterDatabase(DatabaseHelper):
         session.flush()
         cluster={"ars": [],
                  "numcluster": -1,
-                 "namecluster":"",
+                 "namecluster": "",
                  "choose": ""}
         n = 0
         for z in listars:
@@ -2403,7 +2402,7 @@ class XmppMasterDatabase(DatabaseHelper):
         clusterresources = session.query(Cluster_resources).filter( Cluster_resources.jidmachine == str(jidmachine)).all()
         session.commit()
         session.flush()
-        ret = {'len': len(clusterresources) }
+        ret = {'len': len(clusterresources)}
         arraylist = []
         for t in clusterresources:
             obj = {}
@@ -2510,7 +2509,7 @@ class XmppMasterDatabase(DatabaseHelper):
             obj['inventoryuuid'] = t.inventoryuuid
             obj['jidmachine'] = t.jidmachine
             obj['state'] = t.state
-            obj['sessionid'] =t.sessionid
+            obj['sessionid'] = t.sessionid
             obj['start'] = t.start
             obj['startcmd'] = t.startcmd
             obj['endcmd'] = t.endcmd
