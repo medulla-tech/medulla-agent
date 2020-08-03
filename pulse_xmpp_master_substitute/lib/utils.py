@@ -1030,7 +1030,11 @@ def getIpXmppInterface(ipadress1, Port):
     ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+<<<<<<< HEAD
         print("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress))
+=======
+        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
+>>>>>>> origin/integration
         obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
                             (Port, ipadress))
         logging.log(DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
@@ -1047,7 +1051,11 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+<<<<<<< HEAD
         print("netstat -an | findstr %s | findstr ESTABLISHED" % Port)
+=======
+        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
+>>>>>>> origin/integration
         obj = simplecommand("netstat -an | findstr %s | findstr ESTABLISHED" %
                             Port)
         logging.log(DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
@@ -1061,7 +1069,11 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+<<<<<<< HEAD
         print("netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress))
+=======
+        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
+>>>>>>> origin/integration
         obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED" %
                             (Port, ipadress))
         logging.log(DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
@@ -1964,7 +1976,7 @@ class geolocalisation_agent:
         self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
                                                 'filegeolocalisation')
         self.listgeoserver = ["http://%s/json" % x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
-                                                                     strlistgeoserveur) if x.strip()!=""];
+                                                                     strlistgeoserveur) if x.strip() != ""]
         self.localisation = None
         self.getgeolocalisation()
         if self.localisation is None:
