@@ -76,7 +76,7 @@ class UserLog(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     msg = Column(String(255), nullable=False)
     datelog = Column(DateTime, default=datetime.datetime.now)
-    type =  Column(String(10), nullable=False,default = "info")
+    type =  Column(String(10), nullable=False, default="info")
 
 
 class Syncthingsync(Base, XmppMasterDBObj):
@@ -331,9 +331,9 @@ class Deploy(Base, XmppMasterDBObj):
     start = Column(DateTime, default=datetime.datetime.now)
     startcmd = Column(DateTime, default=None)
     endcmd = Column(DateTime, default=None)
-    result = Column(Text )
+    result = Column(Text)
     host = Column(String(45), nullable=False)
-    user = Column(String(45), nullable=False, default = "")
+    user = Column(String(45), nullable=False, default="")
     login = Column(String(45), nullable=False)
     command = Column(Integer)
     macadress=Column(String(255))
@@ -477,7 +477,7 @@ class Subscription(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     macadress = Column(String(15), nullable=False)
     # ====== ForeignKey =============================
-    idagentsubscription   = Column(Integer, ForeignKey('agent_subscription.id'), nullable=False)
+    idagentsubscription  = Column(Integer, ForeignKey('agent_subscription.id'), nullable=False)
     agent_subscription = relationship(Agentsubscription)
 
 
