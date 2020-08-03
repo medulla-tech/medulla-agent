@@ -4287,7 +4287,7 @@ class XmppMasterDatabase(DatabaseHelper):
         # pp.pprint(builddatajson)
 
         with open(pathfile, 'w') as outfile:
-            json.dump(builddatajson,  outfile, indent = 4)
+            json.dump(builddatajson,  outfile, indent=4)
         os.chmod(pathfile, 0o777)
         uid, gid =  pwd.getpwnam('root').pw_uid, pwd.getpwnam('root').pw_gid
         os.chown(pathfile, uid, gid)
