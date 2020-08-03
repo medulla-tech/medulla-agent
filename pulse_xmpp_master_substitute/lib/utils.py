@@ -141,9 +141,8 @@ def Setdirectorytempinfo():
     path directory INFO Temporaly and key RSA
     """
     dirtempinfo = os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
-        "INFOSTMP")
+                               os.path.dirname(os.path.realpath(__file__)),
+                               "INFOSTMP")
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0o007)
     return dirtempinfo
@@ -160,9 +159,8 @@ def cleanbacktodeploy(objectxmpp):
 
 
 def networkinfoexist():
-    filenetworkinfo = os.path.join(
-        Setdirectorytempinfo(),
-        'fingerprintnetwork')
+    filenetworkinfo = os.path.join(Setdirectorytempinfo(),
+                                   'fingerprintnetwork')
     if os.path.exists(filenetworkinfo):
         return True
     return False
@@ -509,8 +507,7 @@ def getMacAdressList():
     listmacadress = []
     for interfacenet in netifaces.interfaces():
         try:
-            macadress = netifaces.ifaddresses(
-                interfacenet)[netifaces.AF_LINK][0]['addr']
+            macadress = netifaces.ifaddresses(interfacenet)[netifaces.AF_LINK][0]['addr']
             if macadress != "00:00:00:00:00:00":
                 listmacadress.append(macadress)
         except BaseException:
@@ -710,7 +707,7 @@ class shellcommandtimeout(object):
         self.obj = {}
         self.obj['timeout'] = timeout
         self.obj['cmd'] = cmd
-        self.obj['result']="result undefined"
+        self.obj['result'] = "result undefined"
         self.obj['code'] = 255
         self.obj['separateurline'] = os.linesep
 
@@ -881,12 +878,12 @@ def file_put_content(filename, contents, mode="w"):
 
 # windows
 # def listusergroup():
-    #import wmi
-    #c = wmi.WMI()
-    # for group in c.Win32_Group():
-    # print group.Caption
-    # for user in group.associators("Win32_GroupUser"):
-    # print "  ", user.Caption
+# import wmi
+# c = wmi.WMI()
+# for group in c.Win32_Group():
+# print group.Caption
+# for user in group.associators("Win32_GroupUser"):
+# print "  ", user.Caption
 
 # decorateur pour simplifier les plugins
 
@@ -904,14 +901,13 @@ def pluginprocess(func):
         dataerreur['data']['msg'] = "ERROR : %s" % action
         dataerreur['sessionid'] = sessionid
         try:
-            response = func(
-                objetxmpp,
-                action,
-                sessionid,
-                data,
-                message,
-                dataerreur,
-                result)
+            response = func(objetxmpp,
+                            action,
+                            sessionid,
+                            data,
+                            message,
+                            dataerreur,
+                            result)
             # encode  result['data'] si besoin
             # print result
             if result['base64'] is True:
@@ -983,14 +979,13 @@ def pulgindeploy1(func):
         dataerreur['data']['msg'] = "ERROR : %s" % action
         dataerreur['sessionid'] = sessionid
         try:
-            response = func(
-                objetxmpp,
-                action,
-                sessionid,
-                data,
-                message,
-                dataerreur,
-                result)
+            response = func(objetxmpp,
+                            action,
+                            sessionid,
+                            data,
+                            message,
+                            dataerreur,
+                            result)
 
             if 'end' not in result['data']:
                 result['data']['end'] = False
@@ -1038,14 +1033,12 @@ def getIpXmppInterface(ipadress1, Port):
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
-        obj = simplecommand(
-            "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
+        obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
+                            (Port, ipadress))
+        logging.log(DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
+                    (Port, ipadress))
         if obj['code'] != 0:
-            logging.getLogger().error('error command netstat : %s'%obj['result'])
+            logging.getLogger().error('error command netstat : %s' % obj['result'])
             logging.getLogger().error('error install package net-tools')
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1057,12 +1050,10 @@ def getIpXmppInterface(ipadress1, Port):
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
-        obj = simplecommand(
-            "netstat -an | findstr %s | findstr ESTABLISHED" %
-            Port)
-        logging.log(
-            DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
-            Port)
+        obj = simplecommand("netstat -an | findstr %s | findstr ESTABLISHED" %
+                            Port)
+        logging.log(DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
+                    Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
@@ -1073,12 +1064,10 @@ def getIpXmppInterface(ipadress1, Port):
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
-        obj = simplecommand(
-            "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
+        obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED" %
+                            (Port, ipadress))
+        logging.log(DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
+                    (Port, ipadress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
@@ -1184,14 +1173,13 @@ def pulginmaster(func):
                 sessionid)
         else:
             objsessiondata = None
-        response = func(
-            objetxmpp,
-            action,
-            sessionid,
-            data,
-            message,
-            ret,
-            objsessiondata)
+        response = func(objetxmpp,
+                        action,
+                        sessionid,
+                        data,
+                        message,
+                        ret,
+                        objsessiondata)
         return response
     return wrapper
 
@@ -1208,15 +1196,14 @@ def pulginmastersessionaction(sessionaction, timeminute=10):
                     sessionid)
             else:
                 objsessiondata = None
-            response = func(
-                objetxmpp,
-                action,
-                sessionid,
-                data,
-                message,
-                ret,
-                dataobj,
-                objsessiondata)
+            response = func(objetxmpp,
+                            action,
+                            sessionid,
+                            data,
+                            message,
+                            ret,
+                            dataobj,
+                            objsessiondata)
             if sessionaction == "clear" and objsessiondata is not None:
                 objetxmpp.session.clear(sessionid)
             elif sessionaction == "actualise":
@@ -1271,8 +1258,9 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
-def install_or_uninstall_keypub_authorized_keys(
-        install=True, keypub=None, user="pulse"):
+def install_or_uninstall_keypub_authorized_keys(install=True,
+                                                keypub=None,
+                                                user="pulse"):
     """
         This function installs or uninstall the public key in the authorized_keys file for user "user"
         If keypub is not specified then the function uninstall the key for user "user"
@@ -1299,10 +1287,8 @@ def install_or_uninstall_keypub_authorized_keys(
                 os.chown(path_authorized_keys, int(obj['result']), -1)
         except Exception as e:
             logging.log(DEBUGPULSE, "ERROR %s" % str(e))
-            logging.log(
-                DEBUGPULSE,
-                "error create file : %s" %
-                path_authorized_keys)
+            logging.log(DEBUGPULSE, "error create file : %s" %
+                        path_authorized_keys)
             return False
     if install:
         logging.log(DEBUGPULSE, "install key if key missing")
@@ -1319,10 +1305,8 @@ def install_or_uninstall_keypub_authorized_keys(
             logging.log(DEBUGPULSE, "ERROR %s" % str(e))
             return False
         if addkey:
-            logging.log(
-                DEBUGPULSE,
-                "key missing, install key in  %s" %
-                path_authorized_keys)
+            logging.log(DEBUGPULSE, "key missing, install key in  %s" %
+                        path_authorized_keys)
             try:
                 source = open(path_authorized_keys, "a")
                 source.write('\n')
@@ -1396,7 +1380,7 @@ if sys.platform.startswith('win'):
         except WindowsError:  # skipcq: PYL-E0602
             return None
 
-def shutdown_command(time = 0, msg=''):
+def shutdown_command(time=0, msg=''):
     """
         This  function allow to shutdown a machine, and if needed
         to display a message
@@ -1410,26 +1394,26 @@ def shutdown_command(time = 0, msg=''):
         if int(time) == 0 or msg =='':
             cmd = "shutdown now"
         else:
-            cmd = "shutdown -P -f -t %s %s"%(time, msg)
+            cmd = "shutdown -P -f -t %s %s" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     elif sys.platform.startswith('win'):
         if int(time) == 0 or msg =='':
             cmd = "shutdown /p"
         else:
-            cmd = "shutdown /s /t %s /c %s"%(time, msg)
+            cmd = "shutdown /s /t %s /c %s" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     elif sys.platform.startswith('darwin'):
         if int(time) == 0 or msg =='':
             cmd = "shutdown -h now"
         else:
-            cmd = "shutdown -h +%s \"%s\""%(time, msg)
+            cmd = "shutdown -h +%s \"%s\"" % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
     return
 
-def vnc_set_permission(askpermission = 1):
+def vnc_set_permission(askpermission=1):
     """
     This function allows to change the setting of VNC to ask for
     permission from user before connecting to Windows machines
@@ -1474,13 +1458,15 @@ def isBase64(s):
     return False;
 
 def decode_strconsole(x):
-    """ imput str decode to default coding python(# -*- coding: utf-8; -*-)"""
+    """
+    input str decode to default coding python(# -*- coding: utf-8; -*-)
+    """
     if sys.platform.startswith('linux'):
-        return x.decode('utf-8','ignore')
+        return x.decode('utf-8', 'ignore')
     elif sys.platform.startswith('win'):
-        return x.decode('cp850','ignore')
+        return x.decode('cp850', 'ignore')
     elif sys.platform.startswith('darwin'):
-        return x.decode('utf-8','ignore')
+        return x.decode('utf-8', 'ignore')
     else:
         return x
 
@@ -1496,7 +1482,7 @@ def encode_strconsole(x):
         return x
 
 
-def savejsonfile(filename, data, indent = 4):
+def savejsonfile(filename, data, indent=4):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
 
@@ -1507,10 +1493,10 @@ def loadjsonfile(filename):
         try:
             return json.loads(decode_strconsole(dd))
         except Exception as e:
-            logger.error("filename %s error decodage [%s]"%(filename ,str(e)))
+            logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
-def save_user_current(name = None):
+def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
     if name is None:
         userlist = list(set([users[0]  for users in psutil.users()]))
@@ -1524,7 +1510,7 @@ def save_user_current(name = None):
                   'suite': [name],
                   'curent': name}
         savejsonfile(loginuser,result)
-        return  result['curent']
+        return result['curent']
 
     datauseruser = loadjsonfile(loginuser)
     if name in datauseruser:
@@ -1547,14 +1533,15 @@ def save_user_current(name = None):
 
 
 def test_kiosk_presence():
-    """Test if the kiosk is installed in the machine.
+    """
+    Test if the kiosk is installed in the machine.
+
     Returns:
-        string "True" if the directory is founded
-        or
-        string "False" if the directory is not founded"""
+        True if the directory is found, False otherwise
+        """
 
     def _get_kiosk_path():
-        """This private function find the path for the pytho3 install.
+        """This private function find the path for the python3 install.
         If no installation is found the the function returns  None.
         Returns:
             string: the path of python3/site-packages
@@ -1593,7 +1580,7 @@ def utc2local (utc):
         datetime in local timezone
     """
     epoch = time.mktime(utc.timetuple())
-    offset = datetime.fromtimestamp (epoch) - datetime.utcfromtimestamp (epoch)
+    offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
     return utc + offset
 
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
@@ -1671,7 +1658,7 @@ class AESCipher:
 
 def sshdup():
     if sys.platform.startswith('linux'):
-        #verify sshd up
+        # verify sshd up
         cmd = "ps aux | grep sshd | grep -v grep | grep -v pts"
         result = simplecommand(cmd)
         if result['code'] == 0:
@@ -1708,7 +1695,7 @@ def restartsshd():
             if len(result['result'])>0:
                 try:
                     nameservice = result['result'][0].split()[1]
-                    #restart service windows.
+                    # restart service windows.
                     cmd='sc start \"%s\"'%nameservice
                     result = simplecommand(cmd)
                 except Exception:
@@ -1747,11 +1734,11 @@ def install_key_ssh_relayserver(keypriv, private=False):
         except:
             filekey = os.path.join(os.environ["ProgramFiles"], "pulse" ,'.ssh', keyname)
 
-        logger.debug("filekey  %s"%filekey)
-        logger.debug("chang permition to user %s"%userprogram)
+        logger.debug("filekey  %s" % filekey)
+        logger.debug("Changing permission to user %s" % userprogram)
 
         if os.path.isfile(filekey):
-            logger.warning("change permition to %s"%userprogram)
+            logger.warning("Changing permission to user %s" % userprogram)
             user, domain, type = win32security.LookupAccountName ("", userprogram)
             sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
             dacl = win32security.ACL ()
@@ -1763,7 +1750,7 @@ def install_key_ssh_relayserver(keypriv, private=False):
             sd.SetSecurityDescriptorDacl(1, dacl, 0)
             win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
         else:
-            logger.debug("filekey not exist %s"%filekey)
+            logger.debug("filekey %s does not exists" % filekey)
 
     elif sys.platform.startswith('darwin'):
         if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh")):
@@ -1776,13 +1763,13 @@ def install_key_ssh_relayserver(keypriv, private=False):
         try:
             os.remove(filekey)
         except:
-            logger.warning("remove %s key impossible"%filekey)
+            logger.warning("remove %s key impossible" % filekey)
 
-    logger.debug("CREATION DU FICHIER %s"%filekey)
+    logger.debug("CREATION DU FICHIER %s" % filekey)
     try:
         file_put_contents(filekey, keypriv)
     except:
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
 
     if sys.platform.startswith('win'):
         user, domain, type = win32security.LookupAccountName ("", userprogram)
@@ -1802,11 +1789,11 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
         compresstype "gz" or "bz2"
     """
     try:
-        with tarfile.open(output_file_gz_bz2, "w:%s"%compresstype) as tar:
+        with tarfile.open(output_file_gz_bz2, "w:%s" % compresstype) as tar:
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        logger.error("error create archive tar.%s %s"%(str(e),compresstype))
+        logger.error("error create archive tar.%s %s" % (str(e), compresstype))
         return False
 
 def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
@@ -1822,10 +1809,10 @@ def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
             tar.extractall()
         return True
     except OSError as e:
-        logger.error("error extract tar.%s %s"%(str(e), compresstype))
+        logger.error("error extract tar.%s %s" % (str(e), compresstype))
         return False
     except Exception as e:
-        logger.error("error extract tar.%s %s"%(str(e), compresstype))
+        logger.error("error extract tar.%s %s" % (str(e), compresstype))
         return False
     finally:
         os.chdir(cwd)
@@ -1864,7 +1851,7 @@ class protodef:
     def __init__(self):
         self.fileprotoinfo = os.path.join(Setdirectorytempinfo(),
                                           'fingerprintproto')
-        self.boolchangerproto , self.proto = self.protochanged()
+        self.boolchangerproto, self.proto = self.protochanged()
 
     def protoinfoexist(self):
         if os.path.exists(self.fileprotoinfo):
@@ -1979,7 +1966,7 @@ class geolocalisation_agent:
         self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
                                                 'filegeolocalisation')
         self.listgeoserver = ["http://%s/json" % x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
-                                                                     strlistgeoserveur)  if x.strip()!=""]
+                                                                     strlistgeoserveur) if x.strip() != ""]
         self.localisation = None
         self.getgeolocalisation()
         if self.localisation is None:
