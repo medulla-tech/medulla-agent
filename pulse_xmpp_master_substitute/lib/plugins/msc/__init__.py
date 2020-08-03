@@ -307,8 +307,8 @@ class MscDatabase(DatabaseHelper):
         mapper(Commands,
                self.commands,
                properties={'commandsonhosts': relation(CommandsOnHost),
-                             'bundle': relation(Bundle),
-                             }
+                           'bundle': relation(Bundle),
+                           }
                )
 
         # FIXME: Version is missing
