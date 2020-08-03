@@ -58,7 +58,7 @@ class Logs(Base, XmppMasterDBObj):
     date = Column(DateTime, default=datetime.datetime.now)
     text = Column(Text, nullable=False)
     sessionname = Column(String(20), nullable=False, default="")
-    priority = Column(Integer, default = 0)
+    priority = Column(Integer, default=0)
     who = Column(String(45), nullable=False, default="")
     how = Column(String(255), nullable=False, default="")
     why = Column(String(255), nullable=False, default="")
@@ -359,7 +359,7 @@ class Command_qa(Base, XmppMasterDBObj):
     # Notice that each column is also a normal Python instance attribute.
     # id = Column(Integer, primary_key=True)
     # Warning, if you modify the wrapper, you also have to change it in log.py
-    command_name = Column(String(45), nullable=False, default = "")
+    command_name = Column(String(45), nullable=False, default="")
     command_action = Column(String(500), nullable=False)
     command_login = Column(String(45), nullable=False)
     command_os = Column(String(45))
@@ -455,7 +455,7 @@ class Substituteconf(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     type = Column(String(45), nullable=False)
     jidsubtitute = Column(String(255), nullable=False)
-    countsub =  Column(Integer, nullable=False, default = 0)
+    countsub =  Column(Integer, nullable=False, default=0)
     relayserver_id   = Column(Integer, ForeignKey('relayserver.id'), nullable=False)
     relayserver = relationship(RelayServer)
 
