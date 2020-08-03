@@ -1966,7 +1966,7 @@ class geolocalisation_agent:
         self.filegeolocalisation = os.path.join(Setdirectorytempinfo(),
                                                 'filegeolocalisation')
         self.listgeoserver = ["http://%s/json" % x for x in re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\&\-\$\|\s]',
-                                                                     strlistgeoserveur)  if x.strip()!=""]
+                                                                     strlistgeoserveur) if x.strip()!=""]
         self.localisation = None
         self.getgeolocalisation()
         if self.localisation is None:
