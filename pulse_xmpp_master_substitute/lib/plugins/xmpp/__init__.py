@@ -2528,8 +2528,7 @@ class XmppMasterDatabase(DatabaseHelper):
     def getstatdeployfromcommandidstartdate(self, session, command_id, datestart):
         try:
             machinedeploy = session.query(Deploy).filter(and_(Deploy.command == command_id,
-                                                         Deploy.startcmd == datestart)
-)
+                                                         Deploy.startcmd == datestart))
             totalmachinedeploy =  self.get_count(machinedeploy)
             # count success deploy
             machinesuccessdeploy = self.get_count(machinedeploy.filter(and_(Deploy.state == 'DEPLOYMENT SUCCESS')))
@@ -2667,7 +2666,7 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             a = []
             for t in presencelist:
-                a.append({'jid': t[0],'type': t[1], 'hostname': t[2]})
+                a.append({'jid': t[0], 'type': t[1], 'hostname': t[2]})
                 logging.getLogger().debug("t %s" % t)
             # a = {"jid": x, for x, y ,z in presencelist}
             logging.getLogger().debug("a %s" % a)
@@ -2701,7 +2700,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                               'ABORT DEPLOYMENT CANCELLED BY USER')
                                 OR
                               `state` REGEXP '^(?!ERROR)^(?!SUCCESS)^(?!ABORT)'));
-                """ % (state,sessionid)
+                """ % (state, sessionid)
             result = session.execute(sql)
             session.commit()
             session.flush()
@@ -3263,7 +3262,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             'jid_relay': [],
                             'title': []}}
 
-        ret['lentotal'] = lentaillerequette  #[0]
+        ret['lentotal'] = lentaillerequette  # [0]
         ret['total_of_rows'] = lenrequest[0][0]
         for linedeploy in result:
             ret['tabdeploy']['state'].append(linedeploy.state)
@@ -3448,7 +3447,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return [x for x in result]
 
     @DatabaseHelper._sessionm
-    def listmachinesfromRSdeploy(self, session, groupdeploy ):
+    def listmachinesfromRSdeploy(self, session, groupdeploy):
         """ return les machine suivie par un RS """
         sql = """SELECT
                     *
@@ -3926,7 +3925,7 @@ class XmppMasterDatabase(DatabaseHelper):
                  FROM
                     xmppmaster.relayserver
                  WHERE
-                    id = %s;""" % id;
+                    id = %s;""" % id
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -3940,7 +3939,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 FROM
                     xmppmaster.relayserver
                 WHERE
-                    ipconnection = '%s';""" % ip;
+                    ipconnection = '%s';""" % ip
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -4397,10 +4396,10 @@ class XmppMasterDatabase(DatabaseHelper):
             for t in presencelist:
                 a.append({'id': t[0],
                           'jid': t[1],
-                          'platform':t[2],
+                          'platform': t[2],
                           'hostname': t[4],
-                          'uuid_inventorymachine':t[5],
-                          'agenttype':t[10],
+                          'uuid_inventorymachine': t[5],
+                          'agenttype': t[10],
                           'classutil': t[11]})
             return a
         except:
@@ -4652,7 +4651,7 @@ class XmppMasterDatabase(DatabaseHelper):
                       "agenttype": "",
                       "keysyncthing":  "",
                       "enabled": 0
-                    }
+                      }
         return result
 
     @DatabaseHelper._sessionm
@@ -4735,7 +4734,7 @@ class XmppMasterDatabase(DatabaseHelper):
     def getMachinefromjid(self, session, jid):
         """ information machine"""
         user = str(jid).split("@")[0]
-        machine = session.query(Machines).filter(Machines.jid.like("%s%%" % user) ).first()
+        machine = session.query(Machines).filter(Machines.jid.like("%s%%" % user)).first()
         session.commit()
         session.flush()
         result = {}
@@ -4884,15 +4883,15 @@ class XmppMasterDatabase(DatabaseHelper):
                 if ars:
                     # result1 = [(m.ipconnection,m.port,m.jid,m.urlguacamole)for m in ars]
                     try:
-                        result2 = {m.jid :[m.ipconnection,
+                        result2 = {m.jid: [m.ipconnection,
                                            m.port,
                                            m.jid,
                                            m.urlguacamole,
-                                           0 ,
+                                           0,
                                            m.keysyncthing,
                                            m.syncthing_port] for m in ars}
                     except Exception:
-                        result2 = {m.jid :[m.ipconnection,
+                        result2 = {m.jid: [m.ipconnection,
                                            m.port,
                                            m.jid,
                                            m.urlguacamole,
@@ -5212,9 +5211,9 @@ class XmppMasterDatabase(DatabaseHelper):
         result = session.execute(sql)
         session.commit()
         session.flush()
-        return [{"jid" : element[0] ,
-                 "name" : element[1],
-                 "keysyncthing" : element[2]} for element in result]
+        return [{"jid": element[0],
+                 "name": element[1],
+                 "keysyncthing": element[2]} for element in result]
 
     @DatabaseHelper._sessionm
     def get_list_ars_from_cluster(self, session, cluster=0):
@@ -5226,7 +5225,7 @@ class XmppMasterDatabase(DatabaseHelper):
         result = session.execute(sql)
         session.commit()
         session.flush()
-        return [{"jid": element[0] ,
+        return [{"jid": element[0],
                  "name": element[1],
                  "keysyncthing": element[2]} for element in result]
 
