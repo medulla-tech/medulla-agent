@@ -1287,7 +1287,7 @@ def install_or_uninstall_keypub_authorized_keys(install=True,
                 os.chown(path_authorized_keys, int(obj['result']), -1)
         except Exception as e:
             logging.log(DEBUGPULSE, "ERROR %s" % str(e))
-            logging.log(DEBUGPULSE,"error create file : %s" %
+            logging.log(DEBUGPULSE, "error create file : %s" %
                         path_authorized_keys)
             return False
     if install:
@@ -1458,7 +1458,7 @@ def isBase64(s):
     return False;
 
 def decode_strconsole(x):
-    """ 
+    """
     input str decode to default coding python(# -*- coding: utf-8; -*-)
     """
     if sys.platform.startswith('linux'):
@@ -1482,7 +1482,7 @@ def encode_strconsole(x):
         return x
 
 
-def savejsonfile(filename, data, indent = 4):
+def savejsonfile(filename, data, indent=4):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
 
@@ -1496,7 +1496,7 @@ def loadjsonfile(filename):
             logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
-def save_user_current(name = None):
+def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
     if name is None:
         userlist = list(set([users[0]  for users in psutil.users()]))
@@ -1535,7 +1535,7 @@ def save_user_current(name = None):
 def test_kiosk_presence():
     """
     Test if the kiosk is installed in the machine.
-    
+
     Returns:
         True if the directory is found, False otherwise
         """
@@ -1737,7 +1737,6 @@ def install_key_ssh_relayserver(keypriv, private=False):
         logger.debug("filekey  %s" % filekey)
         logger.debug("Changing permission to user %s" % userprogram)
 
-
         if os.path.isfile(filekey):
             logger.warning("Changing permission to user %s" % userprogram)
             user, domain, type = win32security.LookupAccountName ("", userprogram)
@@ -1794,7 +1793,7 @@ def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
             tar.add(source_dir, arcname=os.path.basename(source_dir))
         return True
     except Exception as e:
-        logger.error("error create archive tar.%s %s" % (str(e),compresstype))
+        logger.error("error create archive tar.%s %s" % (str(e), compresstype))
         return False
 
 def extract_file(imput_file__gz_bz2, to_directory='.', compresstype="gz"):
