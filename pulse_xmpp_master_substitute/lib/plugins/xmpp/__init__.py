@@ -1223,7 +1223,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return True
 
     @DatabaseHelper._sessionm
-    def getAllOUuser(self, session, ctx, filt = ''):
+    def getAllOUuser(self, session, ctx, filt=''):
         """
         @return: all ou defined in the xmpp database
         """
@@ -1338,7 +1338,7 @@ class XmppMasterDatabase(DatabaseHelper):
             # Creation de organization for machine jiduser
             if self.is_id_inventory_organization_ad(id):
                 # Delete for uuid
-                self.delOrganization_ad(id_inventory = id)
+                self.delOrganization_ad(id_inventory=id)
             try:
                 session.add(new_Organization)
                 session.commit()
