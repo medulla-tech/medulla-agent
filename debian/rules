@@ -1,4 +1,6 @@
 #!/usr/bin/make -f
+  
+DESTDIR = $(CURDIR)/debian/pulse-xmpp-agent
 
 # Stolen from cdbs, we need this.
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
@@ -12,15 +14,7 @@ BRANCH=py3
 # Used during building to set the version
 export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"
 
-%:
-
-override_dh_install:
-	dh_install --list-missing
-
-override_dh_auto_build:
-	dh_auto_build
-
-override_dh_auto_install:
+build:
 	dh_auto_install
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent
 	cp -fr pulse_xmpp_agent/* $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent
@@ -184,3 +178,36 @@ override_dh_auto_install:
 	cp scripts_installer/win/netcheck-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/powershell-policy-remotesigned.pol $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
+
+clean:
+	dh_testdir
+	dh_testroot
+	-$(MAKE) clean
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+binary-indep: build install
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_install
+	dh_fixperms
+	dh_installchangelogs
+	dh_installdocs
+	dh_installinit
+	# Some postinstall tools are known to fails after being stripped
+	#dh_strip
+	dh_link
+	dh_compress
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+
