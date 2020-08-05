@@ -207,13 +207,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    'fusioninventory-agent.bat')
             for nbcmd in range(3):
 
-                if os.path.exists(namefilexml):
-                    cmd = """\"%s\" --config=none --scan-profiles """ \
-                        """--backend-collect-timeout=%s --additional-content=%s --local=\"%s\"""" % (program,
-                                                                                                     timeoutfusion,
-                                                                                                     namefilexml,
-                                                                                                     inventoryfile)
-                else:
+                try:
+                    if os.path.exists(namefilexml):
+                        cmd = """\"%s\" --config=none --scan-profiles """ \
+                            """--backend-collect-timeout=%s --additional-content=%s --local=\"%s\"""" % (program,
+                                                                                                            timeoutfusion,
+                                                                                                            namefilexml,
+                                                                                                            inventoryfile)
+                    else:
+                        cmd = """\"%s\" --config=none --scan-profiles """ \
+                            """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
+                                                                                 timeoutfusion,
+                                                                                 inventoryfile)
+                except Exception:
                     cmd = """\"%s\" --config=none --scan-profiles """ \
                         """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
                                                                              timeoutfusion,
