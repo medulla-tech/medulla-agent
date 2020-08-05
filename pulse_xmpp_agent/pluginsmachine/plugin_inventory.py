@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "2.1", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "2.2", "NAME": "inventory", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -47,12 +47,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True
 
-    if os.path.exists(xmppobject.config.json_file_extend_inventory):
-        dd = extend_xmlfile(xmppobject)
-        root = ET.fromstring(dd)
-        strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
-        namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
-        utils.file_put_contents_w_a(namefilexml, strxml)
+    if hasattr(xmppobject.config, 'json_file_extend_inventory'):
+        if os.path.exists(xmppobject.config.json_file_extend_inventory):
+            dd = extend_xmlfile(xmppobject)
+            root = ET.fromstring(dd)
+            strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
+            namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
+            utils.file_put_contents_w_a(namefilexml, strxml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
         if compteurcallplugin == 0:
