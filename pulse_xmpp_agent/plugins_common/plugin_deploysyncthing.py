@@ -87,7 +87,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     signalendsessionforARS(data , objectxmpp, sessionid, error = True)
                     return
 
-                dataobjpartage = data['objpartage']
                 objectxmpp.syncthing.get_db_completion(data['id_deploy'],
                                                        objectxmpp.syncthing.device_id)
                 # savedata fichier sessionid.ars
@@ -268,7 +267,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                    module="Deployment | Syncthing",
                                    date=None)
         else:
-            logger.error("jfkjfkjfk")
             if not objectxmpp.config.syncthing_on:
                 objectxmpp.xmpplog("<span class='log_err'>"\
                                    "Syncthing enabled parameter: no. "\

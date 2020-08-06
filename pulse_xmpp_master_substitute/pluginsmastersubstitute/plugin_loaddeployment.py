@@ -1171,12 +1171,7 @@ def read_conf_loaddeployment(objectxmpp):
     objectxmpp._sendwolgroup = types.MethodType(_sendwolgroup, objectxmpp)
     objectxmpp._addsetwol = types.MethodType(_addsetwol, objectxmpp)
 
-###jfkjfk
     objectxmpp.syncthingdeploy = types.MethodType(syncthingdeploy, objectxmpp)
-    #objectxmpp.schedule('syncthing_deploy',
-                    #50,
-                    #objectxmpp.syncthingdeploy,
-                    #repeat=True)
 
     objectxmpp.callpluginsubstitute = types.MethodType(callpluginsubstitute, objectxmpp)
 

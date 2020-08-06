@@ -858,7 +858,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.send_message(mto=syncthingtojson['objpartage']["agentdeploy"],
                                               mbody=strr,
                                               mtype='chat')
->>>>>>> origin/integration
             else:
                 # todo supprimer le fichier ars et descriptor.
                 # signaler l'erreur de decodage du fichier json.

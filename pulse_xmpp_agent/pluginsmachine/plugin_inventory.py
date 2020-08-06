@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "2.1", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "2.2", "NAME": "inventory", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -47,12 +47,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True
 
-    if os.path.exists(xmppobject.config.json_file_extend_inventory):
-        dd = extend_xmlfile(xmppobject)
-        root = ET.fromstring(dd)
-        strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
-        namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
-        utils.file_put_contents_w_a(namefilexml, strxml)
+    if hasattr(xmppobject.config, 'json_file_extend_inventory'):
+        if os.path.exists(xmppobject.config.json_file_extend_inventory):
+            dd = extend_xmlfile(xmppobject)
+            root = ET.fromstring(dd)
+            strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
+            namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
+            utils.file_put_contents_w_a(namefilexml, strxml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
         if compteurcallplugin == 0:
@@ -75,7 +76,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur['sessionid'] = sessionid
     timeoutfusion = 120
     msg=[]
-    if not 'forced' in data:
+    if 'forced' not in data:
         data['forced'] = "forced"
     if data['forced'] is True:
         data['forced'] = "forced"
@@ -206,13 +207,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    'fusioninventory-agent.bat')
             for nbcmd in range(3):
 
-                if os.path.exists(namefilexml):
-                    cmd = """\"%s\" --config=none --scan-profiles """ \
-                        """--backend-collect-timeout=%s --additional-content=%s --local=\"%s\"""" % (program,
-                                                                                                     timeoutfusion,
-                                                                                                     namefilexml,
-                                                                                                     inventoryfile)
-                else:
+                try:
+                    if os.path.exists(namefilexml):
+                        cmd = """\"%s\" --config=none --scan-profiles """ \
+                            """--backend-collect-timeout=%s --additional-content=%s --local=\"%s\"""" % (program,
+                                                                                                            timeoutfusion,
+                                                                                                            namefilexml,
+                                                                                                            inventoryfile)
+                    else:
+                        cmd = """\"%s\" --config=none --scan-profiles """ \
+                            """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
+                                                                                 timeoutfusion,
+                                                                                 inventoryfile)
+                except Exception:
                     cmd = """\"%s\" --config=none --scan-profiles """ \
                         """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
                                                                              timeoutfusion,

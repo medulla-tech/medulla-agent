@@ -42,7 +42,7 @@ import ConfigParser
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.51", "NAME": "registeryagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.52", "NAME": "registeryagent", "TYPE": "substitute"}
 
 # function comment for next feature
 # this functions will be used later
@@ -58,7 +58,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("=====================================================")
         logger.debug("call %s from %s" % (plugin, msg['from']))
         logger.debug("=====================================================")
-        compteurcallplugin = getattr(xmppobject, "num_call %s" % action)
+        compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
 
         if compteurcallplugin == 0:
             read_conf_remote_registeryagent(xmppobject)

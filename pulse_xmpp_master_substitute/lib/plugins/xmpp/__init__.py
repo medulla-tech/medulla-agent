@@ -4791,7 +4791,6 @@ class XmppMasterDatabase(DatabaseHelper):
                       'lastuser': machine.lastuser}
         return result
 
-##jfkjfk
     @DatabaseHelper._sessionm
     def getRelayServerfromjid(self, session, jid):
         relayserver = session.query(RelayServer).filter(RelayServer.jid.like("%s%%" % jid))

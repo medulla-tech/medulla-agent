@@ -324,7 +324,6 @@ class confParameter:
         except BaseException:
             self.agenttype = "machine"
 
-        ########## SYNCTHING #################
         # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":
