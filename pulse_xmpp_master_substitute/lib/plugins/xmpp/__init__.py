@@ -5370,6 +5370,21 @@ class XmppMasterDatabase(DatabaseHelper):
                           status=0,
                           updowntime=0,
                           date=None):
+        """
+        This function allow to know the uptime of a machine
+        Args:
+            session: The sqlalchemy session
+            hostname: The hostname of the machine
+            jid: The jid of the machine
+            status: The current status of the machine
+                    Can be 1 or 0
+                    0: The machine is offline
+                    1: The machine is online
+            uptime: The current uptime of the machine
+        Returns:
+            It returns the id of the machine
+        """
+
         try:
             new_Uptime_machine = Uptime_machine()
             new_Uptime_machine.hostname = hostname
@@ -5392,6 +5407,15 @@ class XmppMasterDatabase(DatabaseHelper):
                                  session,
                                  jid,
                                  nb=1):
+        """
+        This function allow to obtain the last presence.
+            Args:
+                session: The sqlalchemy session
+                jid: The jid of the machine
+                nb:
+
+            Returns:
+        """
         try:
             sql ="""SELECT
                     *,
