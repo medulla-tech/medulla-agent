@@ -5401,7 +5401,6 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
             return -1
 
-
     @DatabaseHelper._sessionm
     def last_event_presence_xmpp(self,
                                  session,
@@ -5417,7 +5416,7 @@ class XmppMasterDatabase(DatabaseHelper):
             Returns:
         """
         try:
-            sql ="""SELECT
+            sql = """SELECT
                     *,
                     UNIX_TIMESTAMP(date)
                 FROM

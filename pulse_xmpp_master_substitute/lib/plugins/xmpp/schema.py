@@ -491,6 +491,7 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
     regex_logmessage = Column(String(80), nullable=False)
     status = Column(String(80), nullable=False)
 
+
 class Uptime_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
     __tablename__ = 'uptime_machine'
@@ -503,4 +504,3 @@ class Uptime_machine(Base, XmppMasterDBObj):
     status = Column(Boolean, unique=False)
     updowntime = Column(Integer, nullable=False, default=0)
     date = Column(DateTime, default=datetime.datetime.now)
-
