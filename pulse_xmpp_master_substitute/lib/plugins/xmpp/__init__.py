@@ -5361,7 +5361,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error("call_set_list_machine: %s" % str(e))
             return False
 
-##################SUBSTITUTE UPDATE TIME ##############################
+    # SUBSTITUTE UPDATE TIME
     @DatabaseHelper._sessionm
     def setUptime_machine(self,
                           session,
@@ -5389,9 +5389,9 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def last_event_presence_xmpp(self,
-                      session,
-                      jid,
-                      nb=1):
+                                 session,
+                                 jid,
+                                 nb=1):
         try:
             sql ="""SELECT
                     *,
@@ -5401,7 +5401,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 WHERE
                     jid LIKE '%s'
                 ORDER BY id DESC
-                LIMIT %s;"""%(jid, nb)
+                LIMIT %s;""" % (jid, nb)
             result = session.execute(sql)
             session.commit()
             session.flush()
@@ -5411,7 +5411,7 @@ class XmppMasterDatabase(DatabaseHelper):
                      "status": element[3],
                      "updowntime": element[4],
                      "date": element[5].strftime("%Y/%m/%d/ %H:%M:%S"),
-                     "time" : element[6]} for element in result]
+                     "time": element[6]} for element in result]
         except Exception, e:
             logging.getLogger().error(str(e))
             return []
