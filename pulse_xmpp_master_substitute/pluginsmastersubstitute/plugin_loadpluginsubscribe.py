@@ -105,7 +105,7 @@ def changed_status(self, presence):
             XmppMasterDatabase().setUptime_machine(hostname,
                                                 spresence,
                                                 status=0,
-                                                uptime=time.time() - lastevent[0]['time'],
+                                                updowntime=time.time() - lastevent[0]['time'],
                                                 date=None)
         try:
             logger.debug("update offline for %s" % (spresence))
@@ -207,13 +207,13 @@ def changed_status(self, presence):
                 XmppMasterDatabase().setUptime_machine( hostname,
                                                         spresence,
                                                         status=1,
-                                                        uptime=time.time() - lastevent[0]['time'],
+                                                        updowntime=time.time() - lastevent[0]['time'],
                                                         date=None)
         else:
             XmppMasterDatabase().setUptime_machine(hostname,
                                                    spresence,
                                                    status=1,
-                                                   uptime=0,
+                                                   updowntime=0,
                                                    date=None)
         logger.info("update MACH or ARS %s Online"%spresence)
         result = XmppMasterDatabase().initialisePresenceMachine(spresence,

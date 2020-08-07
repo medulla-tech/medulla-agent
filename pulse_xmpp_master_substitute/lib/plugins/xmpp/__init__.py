@@ -5368,14 +5368,14 @@ class XmppMasterDatabase(DatabaseHelper):
                           hostname,
                           jid,
                           status=0,
-                          uptime=0,
+                          updowntime=0,
                           date=None):
         try:
             new_Uptime_machine = Uptime_machine()
             new_Uptime_machine.hostname = hostname
             new_Uptime_machine.jid = jid
             new_Uptime_machine.status = status
-            new_Uptime_machine.uptime = uptime
+            new_Uptime_machine.updowntime = updowntime
             if date is not None:
                 new_Uptime_machine.date = date
             session.add(new_Uptime_machine)
@@ -5385,6 +5385,7 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             return -1
+
 
     @DatabaseHelper._sessionm
     def last_event_presence_xmpp(self,
@@ -5408,7 +5409,7 @@ class XmppMasterDatabase(DatabaseHelper):
                      "hostname": element[1],
                      "jid": element[2],
                      "status": element[3],
-                     "uptime": element[4],
+                     "updowntime": element[4],
                      "date": element[5].strftime("%Y/%m/%d/ %H:%M:%S"),
                      "time" : element[6]} for element in result]
         except Exception, e:
