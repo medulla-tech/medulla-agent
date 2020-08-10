@@ -490,3 +490,17 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     regex_logmessage = Column(String(80), nullable=False)
     status = Column(String(80), nullable=False)
+
+
+class Uptime_machine(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'uptime_machine'
+    # ====== Fields =============================
+    # Here we define columns for the table uptime_machine.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    hostname = Column(String(100), nullable=False)
+    jid = Column(String(255), nullable=False)
+    status = Column(Boolean, unique=False)
+    updowntime = Column(Integer, nullable=False, default=0)
+    date = Column(DateTime, default=datetime.datetime.now)
