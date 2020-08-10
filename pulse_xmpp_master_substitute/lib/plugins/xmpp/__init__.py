@@ -5441,42 +5441,42 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def stat_up_down_time_by_last_day(self,
-                                  session,
-                                  jid,
-                                  day=1):
-        statdict={}
+                                      session,
+                                      jid,
+                                      day=1):
+        statdict = {}
         statdict['machine'] = jid
         statdict['downtime'] = 0
         statdict['uptime'] = 0
         statdict['nbstart'] = 0
-        statdict['totaltime'] = day*86400
+        statdict['totaltime'] = day * 86400
         try:
-            sql ="""SELECT
+            sql = """SELECT
                     id, status, updowntime, date
                 FROM
                     xmppmaster.uptime_machine
                 WHERE
                         jid LIKE '%s'
                     AND
-                        date > CURDATE() - INTERVAL %s DAY;"""%(jid, day)
+                        date > CURDATE() - INTERVAL %s DAY;""" % (jid, day)
             result = session.execute(sql)
             session.commit()
             session.flush()
-            nb=False
+            nb = False
             if result:
                 for el in result:
-                    if  el.status == 0:
-                        if statdict['nbstart']>0:
+                    if el.status == 0:
+                        if statdict['nbstart'] > 0:
                             if nb:
                                 statdict['uptime'] = statdict['uptime'] + el[2]
                             else:
-                                nb=True 
+                                nb = True 
                     else:
-                        statdict['nbstart'] = statdict['nbstart']+1
+                        statdict['nbstart'] = statdict['nbstart'] + 1
                         if nb:
                             statdict['downtime'] = statdict['downtime'] + el[2]
                         else:
-                            nb=True
+                            nb = True
             return statdict
         except Exception, e:
             self.logger.error("\n%s" % (traceback.format_exc()))
