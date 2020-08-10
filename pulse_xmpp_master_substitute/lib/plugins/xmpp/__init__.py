@@ -5470,7 +5470,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             if nb:
                                 statdict['uptime'] = statdict['uptime'] + el[2]
                             else:
-                                nb = True 
+                                nb = True
                     else:
                         statdict['nbstart'] = statdict['nbstart'] + 1
                         if nb:
