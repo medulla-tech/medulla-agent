@@ -138,7 +138,7 @@ class manage_scheduler:
                 l = descrip[int(x+2):int(y-1)].split(',')
                 if len(l) == 2 and int(l[0]) < int(l[1]):
                     searchvalue =  randint(int(l[0]), int(l[1]))
-                    replacedata = { 
+                    replacedata = {
                                 'descriptor': descrip[int(x):int(y)],
                                 'value': searchvalue }
                     rep.append(replacedata)

@@ -20,11 +20,10 @@
 # MA 02110-1301, USA.
 # file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadautoupdate.py
 
-import base64
 import json
 import os
 import logging
-from lib.utils import file_get_contents, getRandomName, data_struct_message
+from lib.utils import getRandomName
 from lib.update_remote_agent import Update_Remote_Agent
 import types
 import ConfigParser

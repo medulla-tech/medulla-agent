@@ -19,12 +19,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from sqlalchemy import Column, String, Integer, Boolean, \
-    ForeignKey, DateTime, Text, LargeBinary, Enum
+from sqlalchemy import Column, String, Integer, \
+    DateTime, Text, Enum
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-import datetime
 
 Base = declarative_base()
 

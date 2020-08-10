@@ -2,7 +2,7 @@
 #
 # (c) 2004-2007 Linbox / Free&ALter Soft, http://linbox.com
 # (c) 2007-2010 Mandriva, http://www.mandriva.com
-#
+# (c) 2016-2020 Siveo, http://www.siveo.net
 # $Id$
 #
 # This file is part of Mandriva Management Console (MMC).
@@ -21,23 +21,16 @@
 # along with MMC.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-This module declare all the necessary stuff to connect to a glpi database in it's
+This module declare all the necessary stuff to connect to a glpi database in its
 version 9.2
 """
-import os
 import logging
 import re
-import base64
-import json
-import requests
 import traceback
 import sys
 from sets import Set
 import datetime
 import calendar, hashlib
-import time
-from configobj import ConfigObj
-from xmlrpclib import ProtocolError
 import functools
 from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
         Integer, Date, ForeignKey, asc, or_, not_, desc, func, distinct
@@ -51,18 +44,18 @@ try:
     from sqlalchemy.sql.expression import ColumnOperators
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.exc import OperationalError, NoSuchTableError
+from sqlalchemy.exc import OperationalError
 
 # TODO rename location into entity (and locations in location)
 
 #from mmc.plugins.glpi.config import GlpiConfig
 #from mmc.plugins.glpi.utilities import complete_ctx
 #from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.utils.database_utils import decode_latin1, encode_latin1, decode_utf8, encode_utf8, fromUUID, toUUID, setUUID
+from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import  DbTOA # pyflakes.ignore
 #from mmc.plugins.dyngroup.config import DGConfig
-from distutils.version import LooseVersion, StrictVersion
+from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -577,7 +570,7 @@ class Glpi92(DatabaseHelper):
             autoload = True)
         mapper(RegContents, self.regcontents)
 
-    ##################### internal query generators
+    # Internal query generators
     def __filter_on(self, query):
         """
         Use the glpi.ini conf parameter filter_on to filter machines on some parameters
@@ -596,7 +589,8 @@ class Glpi92(DatabaseHelper):
             for filter_key, filter_values in self.config.filter_on.items():
                 try:
                     re = [x for x in filter_values if x.strip() != ""]
-                    if len(re) == 0 : continue
+                    if len(re) == 0:
+                        continue
                 except Exception:
                     pass
                 if filter_key == 'state':
@@ -949,7 +943,8 @@ class Glpi92(DatabaseHelper):
                         )
                     )
 
-        if count: query = query.scalar()
+        if count: 
+            query = query.scalar()
         return query
 
 
@@ -967,7 +962,8 @@ class Glpi92(DatabaseHelper):
             return obj.name
         if type(obj) == str and re.match('UUID', obj):
             l = self.getLocation(obj)
-            if l: return l.name
+            if l:
+                return l.name
         return obj
 
     def __addQueryFilter(self, query_filter, eq):

@@ -41,12 +41,11 @@ from lib.configuration import  confParameter, changeconnection,\
     alternativeclusterconnection, nextalternativeclusterconnection,\
         substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName,\
-    DEBUGPULSE, searchippublic, getIpXmppInterface,\
+from lib.utils import DEBUGPULSE, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher, refreshfingerprintconf, \
-                        protodef, geolocalisation_agent
+                      getRandomName, AESCipher, refreshfingerprintconf, \
+                        geolocalisation_agent
 
 from optparse import OptionParser
 
@@ -86,10 +85,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
         if not hasattr(self.config, 'geoservers'):
-                self.geoservers = "ifconfig.co, if.siveo.net"
+            self.geoservers = "ifconfig.co, if.siveo.net"
 
         self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                             geolocalisation=True, 
+                                             geolocalisation=True,
                                              ip_public=None,
                                              strlistgeoserveur=self.config.geoservers)
 
@@ -212,7 +211,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
-        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if sessionname == "":
+            sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
@@ -622,7 +622,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
     while True:
         if ipfromdns(tg.confserver) != "" and \
-            check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
+            check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
+            break
         logging.log(DEBUGPULSE,"ERROR CONNECTOR")
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.confserver,

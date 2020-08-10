@@ -29,10 +29,8 @@ import win32event
 import win32service
 import time
 import re
-from pathlib import Path
 import subprocess
 import os
-import psutil
 import sys
 import logging
 import logging.handlers
@@ -167,9 +165,9 @@ class PulseAgentService(SMWinservice):
             filter = "pulseagent"
             if not re.search(filter, result):
                 if not self.isdebug:
-                    os.system("C:\Python27\python.exe "+agent_dir+"\launcher.py -t machine")
+                    os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -t machine")
                 else:
-                    os.system("C:\Python27\python.exe "+agent_dir+"\launcher.py -c -t machine")
+                    os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -c -t machine")
             else:
                 time.sleep(5)
 

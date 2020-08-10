@@ -67,7 +67,7 @@ def conf_information(conffile):
     if Config.has_option("network_agent", "ip_ars"):
         configdata['ip_ars'] = Config.get('network_agent', 'ip_ars')
     else:
-        configdata['ip_ars'] = "localhost"     
+        configdata['ip_ars'] = "localhost"
     if Config.has_option("network_agent", "ip_ars"):
         configdata['port_ars'] = Config.getint('network_agent', 'port_ars')
     else:
@@ -88,7 +88,7 @@ def conf_information(conffile):
     else:
         excludelist = None
 
-    if excludelist is not None and len (excludelist) != 0: 
+    if excludelist is not None and len (excludelist) != 0:
         configdata['excludelist'] = excludelist.split(',')
     else:
         configdata['excludelist'] = None

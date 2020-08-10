@@ -47,14 +47,10 @@ from threading import Lock
 from utils import Program, getRandomName, simplecommand, file_put_contents
 import logging
 import traceback
-import shutil
 import time
 import os
 import sys
 from urlparse import urlparse
-#if sys.platform.startswith('win'):
-    #import win32api
-    #import win32con
 
 logger = logging.getLogger()
 
@@ -1318,7 +1314,8 @@ class syncthing(syncthingapi):
     def delete_device_is_not_list(self, listdeviceutil):
         to_delete = []
         for i, elem in enumerate(self.devices):
-            if elem["name"] == "pulse": continue
+            if elem["name"] == "pulse":
+                continue
             if not elem["deviceID"] in listdeviceutil:
                 to_delete.append(i)
         to_delete.reverse()

@@ -23,9 +23,7 @@
 # file pluginsmaster/plugin_wakeonlangroup.py
 
 
-import base64
 import json
-import os
 import sys
 from lib.plugins.xmpp import XmppMasterDatabase
 import traceback

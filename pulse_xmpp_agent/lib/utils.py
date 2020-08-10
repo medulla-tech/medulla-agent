@@ -48,11 +48,9 @@ from datetime import datetime
 import imp
 import requests
 import uuid
-import shutil
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
-import zipfile
 from functools import wraps
 
 logger = logging.getLogger()
@@ -1161,40 +1159,6 @@ def subnetnetwork(adressmachine, mask):
     return decimaltoIpV4(reseaumachine)
 
 
-def searchippublic(site=1):
-    if site == 1:
-        try:
-            page = urllib.urlopen("http://ifconfig.co/json").read()
-            objip = json.loads(page)
-            if is_valid_ipv4(objip['ip']):
-                return objip['ip']
-            else:
-                return searchippublic(3)
-        except BaseException:
-            return searchippublic(2)
-    elif site == 2:
-        try:
-            page = urllib.urlopen("http://www.monip.org/").read()
-            ip = page.split("IP : ")[1].split("<br>")[0]
-            if is_valid_ipv4(ip):
-                return ip
-            else:
-                return searchippublic(3)
-        except Exception:
-            return searchippublic(3)
-    elif site == 3:
-        try:
-            ip = urllib.urlopen("http://ip.42.pl/raw").read()
-            if is_valid_ipv4(ip):
-                return ip
-            else:
-                return searchippublic(4)
-        except Exception:
-            searchippublic(4)
-    elif site == 4:
-        return find_ip()
-    return None
-
 def find_ip():
     candidates = []
     for test_ip in ["192.0.2.0", "192.51.100.0", "203.0.113.0"]:
@@ -1554,7 +1518,7 @@ if sys.platform.startswith('win'):
             wr.SetValueEx(registry_key, name, 0, type, value)
             wr.CloseKey(registry_key)
             return True
-        except WindowsError:
+        except WindowsError:  # skipcq: PYL-E0602
             return False
 
     def get_reg(name, subkey, key=wr.HKEY_LOCAL_MACHINE):
@@ -1566,7 +1530,7 @@ if sys.platform.startswith('win'):
             value, regtype = wr.QueryValueEx(registry_key, name)
             wr.CloseKey(registry_key)
             return value
-        except WindowsError:
+        except WindowsError:  # skipcq: PYL-E0602
             return None
 
 def shutdown_command(time=0, msg=''):

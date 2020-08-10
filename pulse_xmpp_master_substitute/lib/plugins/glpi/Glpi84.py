@@ -24,20 +24,13 @@
 This module declare all the necessary stuff to connect to a glpi database in it's
 version 0.84
 """
-import os
 import logging
 import re
-import base64
-import json
-import requests
 import traceback
 import sys
 from sets import Set
 import datetime
 import calendar, hashlib
-import time
-from configobj import ConfigObj
-from xmlrpclib import ProtocolError
 import functools
 from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
         Integer, Date, ForeignKey, asc, or_, not_, desc, func, distinct
@@ -51,18 +44,18 @@ try:
     from sqlalchemy.sql.expression import ColumnOperators
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.exc import OperationalError, NoSuchTableError
+from sqlalchemy.exc import OperationalError
 
 # TODO rename location into entity (and locations in location)
 
 #from mmc.plugins.glpi.config import GlpiConfig
 #from mmc.plugins.glpi.utilities import complete_ctx
 #from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.utils.database_utils import decode_latin1, encode_latin1, decode_utf8, encode_utf8, fromUUID, toUUID, setUUID
+from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import  DbTOA # pyflakes.ignore
 #from mmc.plugins.dyngroup.config import DGConfig
-from distutils.version import LooseVersion, StrictVersion
+from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -919,7 +912,8 @@ class Glpi84(DatabaseHelper):
                         )
                     )
 
-        if count: query = query.scalar()
+        if count:
+            query = query.scalar()
         return query
 
 
@@ -937,7 +931,8 @@ class Glpi84(DatabaseHelper):
             return obj.name
         if type(obj) == str and re.match('UUID', obj):
             l = self.getLocation(obj)
-            if l: return l.name
+            if l:
+                return l.name
         return obj
 
     def __addQueryFilter(self, query_filter, eq):
@@ -2966,8 +2961,10 @@ class Glpi84(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(distinct(self.machine.c.id)))
@@ -3042,8 +3039,10 @@ class Glpi84(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(self.software.c.name))
