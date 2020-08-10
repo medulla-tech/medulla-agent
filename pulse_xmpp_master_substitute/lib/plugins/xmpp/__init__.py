@@ -5361,7 +5361,6 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error("call_set_list_machine: %s" % str(e))
             return False
 
-    # SUBSTITUTE UPDATE TIME
     @DatabaseHelper._sessionm
     def setUptime_machine(self,
                           session,
@@ -5411,9 +5410,21 @@ class XmppMasterDatabase(DatabaseHelper):
             Args:
                 session: The sqlalchemy session
                 jid: The jid of the machine
-                nb:
+                nb: Number of evenements we look at
 
             Returns:
+                It returns a dictionnary with:
+                    id: The id of the machine
+                    hostname: The hostname of the machine
+                    status: The current status of the machine
+                        Can be 1 or 0:
+                            0: The machine is offline
+                            1: The machine is online
+                    updowntime:
+                            The uptime if status is set to 0
+                            The downtime if status is set to 1
+                    date: The date we checked the informations
+                    time: Unix time
         """
         try:
             sql = """SELECT
@@ -5439,11 +5450,29 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
             return []
 
+    #TODO: Add this function for hours too.
+    #      Add in QA too.
     @DatabaseHelper._sessionm
     def stat_up_down_time_by_last_day(self,
                                       session,
                                       jid,
                                       day=1):
+    """
+    This function is used to know how long a machine is online/offline.
+    It allow to know the number of start of this machine too.
+
+    Args:
+        session: The Sqlalchemy session
+        jid: The jid of the machine
+        day: The number of days for the count
+    Returns:
+        It returns a dictonary with :
+            jid: The jid of the machine
+            downtime: The time the machine has been down
+            uptime: The time the machine has been running the agent
+            nbstart: The number of start of the agent
+            totaltime: The interval (in seconds) on which we count
+    """
         statdict = {}
         statdict['machine'] = jid
         statdict['downtime'] = 0
@@ -5462,6 +5491,8 @@ class XmppMasterDatabase(DatabaseHelper):
             result = session.execute(sql)
             session.commit()
             session.flush()
+            # We set nb to false to not use the last informations
+            # This would lead to errors.
             nb = False
             if result:
                 for el in result:
