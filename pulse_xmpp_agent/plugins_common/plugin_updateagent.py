@@ -29,12 +29,12 @@ import traceback
 from lib import utils, \
                 update_remote_agent
 
-plugin={"VERSION": "2.0", 'VERSIONAGENT': '2.0',  "NAME" : "updateagent", "TYPE" : "all", "waittingmax" : 35, "waittingmin" : 5}
+plugin = {"VERSION": "2.1", 'VERSIONAGENT': '2.0', "NAME": "updateagent", "TYPE": "all", "waittingmax": 35, "waittingmin": 5}
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-def action( objectxmpp, action, sessionid, data, message, dataerreur):
+def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s"%(plugin, message['from']))
     logger.debug("###################################################")
