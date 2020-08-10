@@ -25,7 +25,7 @@ from lib import utils
 import time
 
 import os
-plugin = {"VERSION": "2.0", "NAME": "enddeploy",  "TYPE": "all"}
+plugin = {"VERSION": "2.1", "NAME": "enddeploy",  "TYPE": "all"}
 
 logger = logging.getLogger()
 
@@ -100,7 +100,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                            touser="")
                         result1 = utils.simplecommand(utils.encode_strconsole("kill -6 %s" % processus))
                         if result1['code'] != 0:
-                            logger.error("the process %s closed with the status %s",  (processus, str(result1['result'])))
+                            logger.error("the process %s closed with the status %s" % (processus, str(result1['result'])))
         # add session id pour clear interdiction apres un certain momment
         objectxmpp.banterminate[sessionid] = time.time()
     # add session id pour bloquage message

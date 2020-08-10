@@ -1231,7 +1231,7 @@ class grafcet:
         except Exception as e:
             self.workingstep['@resultcommand'] = traceback.format_exc()
             logging.getLogger().error(str(e))
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error extracting %s to directory %s : %s' % (self.data['name'],
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error extracting %s to directory %s' % (self.data['name'],
                                                                                              self.workingstep['step'],
                                                                                              self.workingstep['filename'],
                                                                                              self.workingstep['pathdirectorytounzip']),
@@ -1315,7 +1315,7 @@ class grafcet:
             logger.error("\n%s"%(traceback.format_exc()))
             self.terminate(-1, False, "end error in actionprocessscript step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscript : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionprocessscript step' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -1570,7 +1570,7 @@ class grafcet:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(-1, False, "end error in actionprocessscriptfile step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscriptfile : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionprocessscriptfile step' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -1847,7 +1847,7 @@ class grafcet:
         self.steplog()
         result = [x.strip('\n') for x in re['result'] if x != '']
         logging.getLogger().debug("result action actionconfirm:")
-        self.objectxmpp.xmpplog('[%s]-[%s]: Dialog : Reponse %s' % (self.data['name'],self.workingstep['step'], result[-1]),
+        self.objectxmpp.xmpplog('[%s]-[%s]: Dialog : Response %s' % (self.data['name'],self.workingstep['step'], result[-1]),
                                 type='deploy',
                                 sessionname=self.sessionid,
                                 priority=self.workingstep['step'],
@@ -2061,7 +2061,7 @@ class grafcet:
             logger.error("\n%s"%(traceback.format_exc()))
             self.terminate(-1, False, "end error in actioncleaning step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actioncleaning : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actioncleaning step' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
