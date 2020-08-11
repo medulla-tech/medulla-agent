@@ -40,7 +40,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.16", "NAME": "reverse_ssh_on",  "TYPE": "all"}
+plugin = {"VERSION": "2.17", "NAME": "reverse_ssh_on",  "TYPE": "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
@@ -299,7 +299,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
             reversessh_server_port = "22"
 
         logger.debug("PROCESSING RELAYSERVER")
-        if message['from'] == "console":
+        if message['from'] == "console" or message['from'] == "master@pulse/MASTER":
             if "request" not in data :
                 objectxmpp.send_message_agent("console", dataerreur)
                 return
