@@ -2204,19 +2204,18 @@ class grafcet:
                     self.__search_Next_step_int__(self.workingstep['error'])
                     self.__execstep__()
                     return
-            self.objectxmpp.xmpplog('[%s]-[%s] : on download error continue deploy  %s' % (self.data['name'],
-                                                                                           self.workingstep['step'],
-                                                                                           txtmsg),
-                                        type='deploy',
-                                        sessionname=self.sessionid,
-                                        priority=self.workingstep['step'],
-                                        action="xmpplog",
-                                        who=self.objectxmpp.boundjid.bare,
-                                        why=self.data['name'],
-                                        module="Deployment | Execution",
-                                        date=None,
-                                        fromuser=self.data['login'])
-
+                self.objectxmpp.xmpplog('[%s]-[%s] : on download error continue deploy  %s' % (self.data['name'],
+                                                                                            self.workingstep['step'],
+                                                                                            txtmsg),
+                                            type='deploy',
+                                            sessionname=self.sessionid,
+                                            priority=self.workingstep['step'],
+                                            action="xmpplog",
+                                            who=self.objectxmpp.boundjid.bare,
+                                            why=self.data['name'],
+                                            module="Deployment | Execution",
+                                            date=None,
+                                            fromuser=self.data['login'])
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
