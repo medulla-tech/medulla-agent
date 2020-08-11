@@ -2149,7 +2149,6 @@ class grafcet:
                                 fromuser=self.data['login'],
                                 touser="")
 
-
     def action_download(self):
         """
         {
@@ -2188,18 +2187,18 @@ class grafcet:
                     return
             else:
                 self.objectxmpp.xmpplog('[%s]-[%s] : %s %s' % (self.data['name'],
-                                                                self.workingstep['step'],
-                                                                txtmsg,
-                                                                self.workingstep['url']),
-                                            type='deploy',
-                                            sessionname=self.sessionid,
-                                            priority=self.workingstep['step'],
-                                            action="xmpplog",
-                                            who=self.objectxmpp.boundjid.bare,
-                                            why=self.data['name'],
-                                            module="Deployment | Execution",
-                                            date=None,
-                                            fromuser=self.data['login'])
+                                                               self.workingstep['step'],
+                                                               txtmsg,
+                                                               self.workingstep['url']),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
                 if 'error' in self.workingstep:
                     self.__search_Next_step_int__(self.workingstep['error'])
                     self.__execstep__()
@@ -2283,4 +2282,4 @@ class grafcet:
                                 date=None,
                                 fromuser=self.data['login'])
         return downloadfile(self.workingstep['url'],
-                           urllocalfile=None).downloadurl()
+                            urllocalfile=None).downloadurl()
