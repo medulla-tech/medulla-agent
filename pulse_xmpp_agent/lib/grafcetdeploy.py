@@ -26,7 +26,7 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile
 from configuration import setconfigfile
 import traceback
 import logging
@@ -2148,3 +2148,139 @@ class grafcet:
                                 date=None,
                                 fromuser=self.data['login'],
                                 touser="")
+
+    def action_download(self):
+        """
+        {
+            "action": "action_download",
+            "actionlabel": "74539906",
+            "fullpath": "",
+            "step": 0,
+            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v7.8.9/npp.7.8.9.Installer.exe"
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+
+            result, txtmsg = self.__downloadfile()
+
+            if result:
+                self.objectxmpp.xmpplog('[%s]-[%s] : %s %s' % (self.data['name'],
+                                                               self.workingstep['step'],
+                                                               txtmsg,
+                                                               self.workingstep['url']),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
+                if 'succes' in self.workingstep:
+                    # goto succes
+                    self.__search_Next_step_int__(self.workingstep['succes'])
+                    self.__execstep__()
+                    return
+            else:
+                self.objectxmpp.xmpplog('[%s]-[%s] : %s %s' % (self.data['name'],
+                                                               self.workingstep['step'],
+                                                               txtmsg,
+                                                               self.workingstep['url']),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
+                if 'error' in self.workingstep:
+                    self.__search_Next_step_int__(self.workingstep['error'])
+                    self.__execstep__()
+                    return
+            self.objectxmpp.xmpplog('[%s]-[%s] : on download error continue deploy  %s' % (self.data['name'],
+                                                                                           self.workingstep['step'],
+                                                                                           txtmsg),
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    why=self.data['name'],
+                                    module="Deployment | Execution",
+                                    date=None,
+                                    fromuser=self.data['login'])
+
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            logger.error("\n%s"%(traceback.format_exc()))
+            self.terminate(-1, False, "end error in action_download step %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error action_download' % (self.data['name'], self.workingstep['step']),
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    why=self.data['name'],
+                                    module="Deployment | Error | Execution",
+                                    date=None,
+                                    fromuser=self.data['login'])
+
+    def __downloadfile(self):
+        msg = '[%s]-[%s]: download file %s' % (self.data['name'],
+                                               self.workingstep['step'],
+                                               self.workingstep['url'])
+        if 'fullpath' in self.workingstep and self.workingstep['fullpath'].strip() != "":
+            self.workingstep['fullpath'] = self.replaceTEMPLATE(self.workingstep['fullpath'])
+            msg = msg + " to %s"%self.workingstep['fullpath']
+            # verify exist file
+            # test if rep exist
+            self.objectxmpp.xmpplog(msg,
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    why=self.data['name'],
+                                    module="Deployment | Error | Execution",
+                                    date=None,
+                                    fromuser=self.data['login'])
+            try:
+                dirnamefile = os.path.dirname(self.workingstep['fullpath'])
+                os.makedirs(dirnamefile)
+            except OSError:
+                if not os.path.isdir(dirnamefile):
+                    self.objectxmpp.xmpplog("Error folder : verify parameter dowload: %s " % self.workingstep['fullpath'],
+                                            type='deploy',
+                                            sessionname=self.sessionid,
+                                            priority=self.workingstep['step'],
+                                            action="xmpplog",
+                                            who=self.objectxmpp.boundjid.bare,
+                                            how="",
+                                            why=self.data['name'],
+                                            module="Deployment | Error | Execution",
+                                            date=None,
+                                            fromuser=self.data['login'])
+                    return downloadfile(self.workingstep['url']).downloadurl()
+            return downloadfile(self.workingstep['url'],
+                               urllocalfile =self.workingstep['fullpath']).downloadurl()
+        self.objectxmpp.xmpplog(msg,
+                                type='deploy',
+                                sessionname=self.sessionid,
+                                priority=self.workingstep['step'],
+                                action="xmpplog",
+                                who=self.objectxmpp.boundjid.bare,
+                                why=self.data['name'],
+                                module="Deployment | Error | Execution",
+                                date=None,
+                                fromuser=self.data['login'])
+        return downloadfile(self.workingstep['url'],
+                            urllocalfile=None).downloadurl()
