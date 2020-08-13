@@ -3109,5 +3109,5 @@ class downloadfile():
             return False, "URL [%s] Error: %s" % (self.url, e.reason)
         except IOError as e:
             return False, "I/O error({0}): {1} for file{2}".format(e.errno, e.strerror, self.urllocalfile)
-        except:  # handle other exceptions such as attribute errors
+        except:  # handle other exceptions such as attribute errors skipcq: FLK-E722
             return False, "Unexpected error: %s", sys.exc_info()[0]
