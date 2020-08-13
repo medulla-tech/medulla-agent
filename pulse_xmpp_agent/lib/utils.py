@@ -3102,12 +3102,12 @@ class downloadfile():
             else:
                 with open(self.urllocalfile, "wb") as local_file:
                     local_file.write(f.read())
-            return True, "sucess download"
+            return True, "Download successful"
         except urllib2.HTTPError, e:
-            return False, "HTTP Error: %s for url [%s] %s" % (code_return_html(e.code), self.url, e.reason)
+            return False, "HTTP Error %s while downloading %s: %s" % (code_return_html(e.code), self.url, e.reason)
         except urllib2.URLError, e:
-            return False, "URL [%s] Error: %s" % (self.url, e.reason)
+            return False, "URL Error on %s: %s" % (self.url, e.reason)
         except IOError as e:
-            return False, "I/O error({0}): {1} for file{2}".format(e.errno, e.strerror, self.urllocalfile)
+            return False, "I/O error {0} on file {1}: {2}".format(e.errno, self.urllocalfile, e.strerror)
         except:  # handle other exceptions such as attribute errors skipcq: FLK-E722
             return False, "Unexpected error: %s", sys.exc_info()[0]

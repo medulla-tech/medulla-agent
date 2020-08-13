@@ -2203,7 +2203,7 @@ class grafcet:
                     self.__search_Next_step_int__(self.workingstep['error'])
                     self.__execstep__()
                     return
-                self.objectxmpp.xmpplog('[%s]-[%s] : on download error continue deploy  %s' % (self.data['name'],
+                self.objectxmpp.xmpplog('[%s]-[%s] : Error downloading file but proceeding to next step %s' % (self.data['name'],
                                                                                                self.workingstep['step'],
                                                                                                txtmsg),
                                         type='deploy',
@@ -2220,9 +2220,9 @@ class grafcet:
         except Exception as e:
             logging.getLogger().error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_download step %s" %
+            self.terminate(-1, False, "Transfer error %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error action_download' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Transfer error' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -2234,7 +2234,7 @@ class grafcet:
                                     fromuser=self.data['login'])
 
     def __downloadfile(self):
-        msg = '[%s]-[%s]: download file %s' % (self.data['name'],
+        msg = '[%s]-[%s]: Downloading file %s' % (self.data['name'],
                                                self.workingstep['step'],
                                                self.workingstep['url'])
         if 'fullpath' in self.workingstep and self.workingstep['fullpath'].strip() != "":
@@ -2257,7 +2257,7 @@ class grafcet:
                 os.makedirs(dirnamefile)
             except OSError:
                 if not os.path.isdir(dirnamefile):
-                    self.objectxmpp.xmpplog("Error folder : verify parameter dowload: %s " % self.workingstep['fullpath'],
+                    self.objectxmpp.xmpplog("Transfer error: destination folder %s missing. Check this parameter." % self.workingstep['fullpath'],
                                             type='deploy',
                                             sessionname=self.sessionid,
                                             priority=self.workingstep['step'],
