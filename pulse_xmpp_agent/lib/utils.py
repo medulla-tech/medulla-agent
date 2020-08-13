@@ -3068,7 +3068,7 @@ class downloadfile():
         self.urllocalfile = None
 
     def code_return_html(self, code):
-        msghtml="error html code %s" % code
+        msghtml = "error html code %s" % code
         if code == 200:
             msghtml = "[%s succes]" % code
         if code == 301:
@@ -3106,7 +3106,7 @@ class downloadfile():
         except urllib2.HTTPError, e:
             return False, "HTTP Error: %s for url [%s] %s" % (code_return_html(e.code), self.url, e.reason)
         except urllib2.URLError, e:
-            return False, "URL [%s] Error: %s"%(self.url, e.reason)
+            return False, "URL [%s] Error: %s" % (self.url, e.reason)
         except IOError as e:
             return False, "I/O error({0}): {1} for file{2}".format(e.errno, e.strerror, self.urllocalfile)
         except:  # handle other exceptions such as attribute errors
