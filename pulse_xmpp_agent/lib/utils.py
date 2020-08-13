@@ -3061,6 +3061,7 @@ class geolocalisation_agent:
                 pass
         return None
 
+
 class downloadfile():
     def __init__(self, url, urllocalfile=None):
         self.url = url
@@ -3069,27 +3070,27 @@ class downloadfile():
     def code_return_html(self, code):
         msghtml="error html code %s" % code
         if code == 200:
-            msghtml="[%s succes]" % code
+            msghtml = "[%s succes]" % code
         if code == 301:
-            msghtml="[%s Moved Permanently]" % code
+            msghtml = "[%s Moved Permanently]" % code
         if code == 302:
-            msghtml="[%s Moved temporarily]" % code
+            msghtml = "[%s Moved temporarily]" % code
         if code == 400:
-            msghtml="[%s Bad Request]" % code
+            msghtml = "[%s Bad Request]" % code
         if code == 401:
-            msghtml="[%s Unauthorized]" % code
+            msghtml = "[%s Unauthorized]" % code
         elif code == 403:
-            msghtml="[%s Forbidden]" % code
+            msghtml = "[%s Forbidden]" % code
         elif code == 404:
-            msghtml="[%s Not Found]" % code
+            msghtml = "[%s Not Found]" % code
         elif code == 408:
-            msghtml="[%s Request Timeout]" % code
+            msghtml = "[%s Request Timeout]" % code
         elif code == 500:
-            msghtml="[%s Internal Server Error]" % code
+            msghtml = "[%s Internal Server Error]" % code
         elif code == 503:
-            msghtml="[%s Service Unavailable]" % code
+            msghtml = "[%s Service Unavailable]" % code
         elif code == 504:
-            msghtml="[%s Gateway Timeout]" % code
+            msghtml = "[%s Gateway Timeout]" % code
         return msghtml
 
     def downloadurl(self):
@@ -3103,10 +3104,10 @@ class downloadfile():
                     local_file.write(f.read())
             return True, "sucess download"
         except urllib2.HTTPError, e:
-            return False, "HTTP Error: %s for url [%s] %s"%(code_return_html(e.code), self.url, e.reason)
+            return False, "HTTP Error: %s for url [%s] %s" % (code_return_html(e.code), self.url, e.reason)
         except urllib2.URLError, e:
             return False, "URL [%s] Error: %s"%(self.url, e.reason)
         except IOError as e:
-            return False,  "I/O error({0}): {1} for file{2}".format(e.errno, e.strerror, self.urllocalfile)
+            return False, "I/O error({0}): {1} for file{2}".format(e.errno, e.strerror, self.urllocalfile)
         except:  # handle other exceptions such as attribute errors
             return False, "Unexpected error: %s", sys.exc_info()[0]

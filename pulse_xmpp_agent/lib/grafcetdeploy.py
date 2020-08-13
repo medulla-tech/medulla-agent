@@ -2204,22 +2204,22 @@ class grafcet:
                     self.__execstep__()
                     return
                 self.objectxmpp.xmpplog('[%s]-[%s] : on download error continue deploy  %s' % (self.data['name'],
-                                                                                            self.workingstep['step'],
-                                                                                            txtmsg),
-                                            type='deploy',
-                                            sessionname=self.sessionid,
-                                            priority=self.workingstep['step'],
-                                            action="xmpplog",
-                                            who=self.objectxmpp.boundjid.bare,
-                                            why=self.data['name'],
-                                            module="Deployment | Execution",
-                                            date=None,
-                                            fromuser=self.data['login'])
+                                                                                               self.workingstep['step'],
+                                                                                               txtmsg),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(-1, False, "end error in action_download step %s" %
                            self.workingstep['step'])
             self.objectxmpp.xmpplog('[%s]-[%s]: Error action_download' % (self.data['name'], self.workingstep['step']),
@@ -2239,7 +2239,7 @@ class grafcet:
                                                self.workingstep['url'])
         if 'fullpath' in self.workingstep and self.workingstep['fullpath'].strip() != "":
             self.workingstep['fullpath'] = self.replaceTEMPLATE(self.workingstep['fullpath'])
-            msg = msg + " to %s"%self.workingstep['fullpath']
+            msg = msg + " to %s" % self.workingstep['fullpath']
             # verify exist file
             # test if rep exist
             self.objectxmpp.xmpplog(msg,
@@ -2257,7 +2257,7 @@ class grafcet:
                 os.makedirs(dirnamefile)
             except OSError:
                 if not os.path.isdir(dirnamefile):
-                    self.objectxmpp.xmpplog("Error folder : verify parameter dowload: %s "%self.workingstep['fullpath'],
+                    self.objectxmpp.xmpplog("Error folder : verify parameter dowload: %s " % self.workingstep['fullpath'],
                                             type='deploy',
                                             sessionname=self.sessionid,
                                             priority=self.workingstep['step'],
@@ -2270,7 +2270,7 @@ class grafcet:
                                             fromuser=self.data['login'])
                     return downloadfile(self.workingstep['url']).downloadurl()
             return downloadfile(self.workingstep['url'],
-                               urllocalfile =self.workingstep['fullpath']).downloadurl()
+                                urllocalfile=self.workingstep['fullpath']).downloadurl()
         self.objectxmpp.xmpplog(msg,
                                 type='deploy',
                                 sessionname=self.sessionid,
