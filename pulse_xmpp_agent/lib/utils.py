@@ -3077,7 +3077,10 @@ class geolocalisation_agent:
     @staticmethod
     def call_simple_page_urllib(url):
         try:
-            objip = json.loads(urllib.urlopen(url).read())
+            result = urllib2.urlopen(url, timeout=5)
+            objip = json.loads(result.read())
+            if result.getcode() != 200:
+                raise
             return objip
         except:
             return None
