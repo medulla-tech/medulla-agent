@@ -2156,15 +2156,34 @@ class grafcet:
             "actionlabel": "74539906",
             "fullpath": "",
             "step": 0,
-            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v7.8.9/npp.7.8.9.Installer.exe"
+            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v7.8.9/npp.7.8.9.Installer.exe",
+            "packageuuid" : ""
         }
         """
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
+            self.workingstep['pwd'] = ""
+            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
+                os.chdir(self.datasend['data']['pathpackageonmachine'])
+                self.workingstep['pwd'] = os.getcwd()
+            self.__alternatefolder()
 
-            result, txtmsg = self.__downloadfile()
+            msg = '[%s]-[%s]: Downloading file %s' % (self.data['name'],
+                                                      self.workingstep['step'],
+                                                      self.workingstep['url'])
+            self.objectxmpp.xmpplog(msg,
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    why=self.data['name'],
+                                    module="Deployment | Error | Execution",
+                                    date=None,
+                                    fromuser=self.data['login'])
+            result, txtmsg = downloadfile(self.workingstep['url']).downloadurl()
 
             if result:
                 self.objectxmpp.xmpplog('[%s]-[%s] : %s %s' % (self.data['name'],
@@ -2232,54 +2251,3 @@ class grafcet:
                                     module="Deployment | Error | Execution",
                                     date=None,
                                     fromuser=self.data['login'])
-
-    def __downloadfile(self):
-        msg = '[%s]-[%s]: Downloading file %s' % (self.data['name'],
-                                               self.workingstep['step'],
-                                               self.workingstep['url'])
-        if 'fullpath' in self.workingstep and self.workingstep['fullpath'].strip() != "":
-            self.workingstep['fullpath'] = self.replaceTEMPLATE(self.workingstep['fullpath'])
-            msg = msg + " to %s" % self.workingstep['fullpath']
-            # verify exist file
-            # test if rep exist
-            self.objectxmpp.xmpplog(msg,
-                                    type='deploy',
-                                    sessionname=self.sessionid,
-                                    priority=self.workingstep['step'],
-                                    action="xmpplog",
-                                    who=self.objectxmpp.boundjid.bare,
-                                    why=self.data['name'],
-                                    module="Deployment | Error | Execution",
-                                    date=None,
-                                    fromuser=self.data['login'])
-            try:
-                dirnamefile = os.path.dirname(self.workingstep['fullpath'])
-                os.makedirs(dirnamefile)
-            except OSError:
-                if not os.path.isdir(dirnamefile):
-                    self.objectxmpp.xmpplog("Transfer error: destination folder %s missing. Check this parameter." % self.workingstep['fullpath'],
-                                            type='deploy',
-                                            sessionname=self.sessionid,
-                                            priority=self.workingstep['step'],
-                                            action="xmpplog",
-                                            who=self.objectxmpp.boundjid.bare,
-                                            how="",
-                                            why=self.data['name'],
-                                            module="Deployment | Error | Execution",
-                                            date=None,
-                                            fromuser=self.data['login'])
-                    return downloadfile(self.workingstep['url']).downloadurl()
-            return downloadfile(self.workingstep['url'],
-                                urllocalfile=self.workingstep['fullpath']).downloadurl()
-        self.objectxmpp.xmpplog(msg,
-                                type='deploy',
-                                sessionname=self.sessionid,
-                                priority=self.workingstep['step'],
-                                action="xmpplog",
-                                who=self.objectxmpp.boundjid.bare,
-                                why=self.data['name'],
-                                module="Deployment | Error | Execution",
-                                date=None,
-                                fromuser=self.data['login'])
-        return downloadfile(self.workingstep['url'],
-                            urllocalfile=None).downloadurl()
