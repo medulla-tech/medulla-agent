@@ -1231,7 +1231,7 @@ class grafcet:
         except Exception as e:
             self.workingstep['@resultcommand'] = traceback.format_exc()
             logging.getLogger().error(str(e))
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error extracting %s to directory %s : %s' % (self.data['name'],
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error extracting %s to directory %s' % (self.data['name'],
                                                                                              self.workingstep['step'],
                                                                                              self.workingstep['filename'],
                                                                                              self.workingstep['pathdirectorytounzip']),
@@ -1315,7 +1315,7 @@ class grafcet:
             logger.error("\n%s"%(traceback.format_exc()))
             self.terminate(-1, False, "end error in actionprocessscript step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscript : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionprocessscript step' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -1570,7 +1570,7 @@ class grafcet:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(-1, False, "end error in actionprocessscriptfile step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionprocessscriptfile : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionprocessscriptfile step' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -1847,7 +1847,7 @@ class grafcet:
         self.steplog()
         result = [x.strip('\n') for x in re['result'] if x != '']
         logging.getLogger().debug("result action actionconfirm:")
-        self.objectxmpp.xmpplog('[%s]-[%s]: Dialog : Reponse %s' % (self.data['name'],self.workingstep['step'], result[-1]),
+        self.objectxmpp.xmpplog('[%s]-[%s]: Dialog : Response %s' % (self.data['name'],self.workingstep['step'], result[-1]),
                                 type='deploy',
                                 sessionname=self.sessionid,
                                 priority=self.workingstep['step'],
@@ -2061,7 +2061,7 @@ class grafcet:
             logger.error("\n%s"%(traceback.format_exc()))
             self.terminate(-1, False, "end error in actioncleaning step %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actioncleaning : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actioncleaning step' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -2203,26 +2203,26 @@ class grafcet:
                     self.__search_Next_step_int__(self.workingstep['error'])
                     self.__execstep__()
                     return
-                self.objectxmpp.xmpplog('[%s]-[%s] : on download error continue deploy  %s' % (self.data['name'],
-                                                                                            self.workingstep['step'],
-                                                                                            txtmsg),
-                                            type='deploy',
-                                            sessionname=self.sessionid,
-                                            priority=self.workingstep['step'],
-                                            action="xmpplog",
-                                            who=self.objectxmpp.boundjid.bare,
-                                            why=self.data['name'],
-                                            module="Deployment | Execution",
-                                            date=None,
-                                            fromuser=self.data['login'])
+                self.objectxmpp.xmpplog('[%s]-[%s] : Error downloading file but proceeding to next step %s' % (self.data['name'],
+                                                                                               self.workingstep['step'],
+                                                                                               txtmsg),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logging.getLogger().error(str(e))
-            logger.error("\n%s"%(traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_download step %s" %
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(-1, False, "Transfer error %s" %
                            self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error action_download' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Transfer error' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -2234,12 +2234,12 @@ class grafcet:
                                     fromuser=self.data['login'])
 
     def __downloadfile(self):
-        msg = '[%s]-[%s]: download file %s' % (self.data['name'],
+        msg = '[%s]-[%s]: Downloading file %s' % (self.data['name'],
                                                self.workingstep['step'],
                                                self.workingstep['url'])
         if 'fullpath' in self.workingstep and self.workingstep['fullpath'].strip() != "":
             self.workingstep['fullpath'] = self.replaceTEMPLATE(self.workingstep['fullpath'])
-            msg = msg + " to %s"%self.workingstep['fullpath']
+            msg = msg + " to %s" % self.workingstep['fullpath']
             # verify exist file
             # test if rep exist
             self.objectxmpp.xmpplog(msg,
@@ -2257,7 +2257,7 @@ class grafcet:
                 os.makedirs(dirnamefile)
             except OSError:
                 if not os.path.isdir(dirnamefile):
-                    self.objectxmpp.xmpplog("Error folder : verify parameter dowload: %s "%self.workingstep['fullpath'],
+                    self.objectxmpp.xmpplog("Transfer error: destination folder %s missing. Check this parameter." % self.workingstep['fullpath'],
                                             type='deploy',
                                             sessionname=self.sessionid,
                                             priority=self.workingstep['step'],
@@ -2270,7 +2270,7 @@ class grafcet:
                                             fromuser=self.data['login'])
                     return downloadfile(self.workingstep['url']).downloadurl()
             return downloadfile(self.workingstep['url'],
-                               urllocalfile =self.workingstep['fullpath']).downloadurl()
+                                urllocalfile=self.workingstep['fullpath']).downloadurl()
         self.objectxmpp.xmpplog(msg,
                                 type='deploy',
                                 sessionname=self.sessionid,

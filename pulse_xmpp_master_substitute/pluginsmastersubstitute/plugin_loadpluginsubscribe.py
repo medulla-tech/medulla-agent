@@ -87,8 +87,8 @@ def read_conf_load_plugin_subscribe(objectxmpp):
 
 def changed_status(self, presence):
     frommsg = jid.JID(presence['from'])
-    logger.info( "Message from %s"%frommsg)
-    spresence=str(presence['from'])
+    logger.info("Message from %s" % frommsg)
+    spresence = str(presence['from'])
     try:
         if frommsg.bare == self.boundjid.bare:
             logger.debug( "Message self calling not processed")
@@ -98,15 +98,15 @@ def changed_status(self, presence):
         pass
 
     hostname = spresence.split('.', 1)[0]
-    jidsubscripbe=spresence.split('/',1)[0]
+    jidsubscripbe = spresence.split('/', 1)[0]
     lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
     if presence['type'] == 'unavailable':
         if lastevent and lastevent[0]['status'] == 1:
             XmppMasterDatabase().setUptime_machine(hostname,
-                                                spresence,
-                                                status=0,
-                                                updowntime=time.time() - lastevent[0]['time'],
-                                                date=None)
+                                                   spresence,
+                                                   status=0,
+                                                   updowntime=time.time() - lastevent[0]['time'],
+                                                   date=None)
         try:
             logger.debug("update offline for %s" % (spresence))
             result = XmppMasterDatabase().initialisePresenceMachine(spresence)
@@ -133,7 +133,7 @@ def changed_status(self, presence):
                                     }
                             }
                 # all Relays server in the cluster are notified.
-                logger.debug( "Notify to all ARS, offline ARS %s" % spresence)
+                logger.debug("Notify to all ARS, offline ARS %s" % spresence)
                 for ARScluster in listrelayserver:
                     self.send_message(mto=ARScluster,
                                       mbody=json.dumps(cluster),
@@ -188,7 +188,7 @@ def changed_status(self, presence):
                     cluster = {'action': "cluster",
                                'sessionid': name_random(5, "cluster"),
                                'data': {'subaction': 'removeresource',
-                                        'data': {"jidmachine" :spresence
+                                        'data': {"jidmachine": spresence
                                                  }
                                         }
                                }
@@ -204,18 +204,18 @@ def changed_status(self, presence):
         lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
         if lastevent:
             if lastevent[0]['status'] == 0:
-                XmppMasterDatabase().setUptime_machine( hostname,
-                                                        spresence,
-                                                        status=1,
-                                                        updowntime=time.time() - lastevent[0]['time'],
-                                                        date=None)
+                XmppMasterDatabase().setUptime_machine(hostname,
+                                                       spresence,
+                                                       status=1,
+                                                       updowntime=time.time() - lastevent[0]['time'],
+                                                       date=None)
         else:
             XmppMasterDatabase().setUptime_machine(hostname,
                                                    spresence,
                                                    status=1,
                                                    updowntime=0,
                                                    date=None)
-        logger.info("update MACH or ARS %s Online"%spresence)
+        logger.info("update MACH or ARS %s Online" % spresence)
         result = XmppMasterDatabase().initialisePresenceMachine(spresence,
                                                                 presence=1)
         if result is None or len(result) == 0:
