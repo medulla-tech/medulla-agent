@@ -307,7 +307,8 @@ class manage_kiosk_message:
             if isBase64(msg):
                 msg = base64.b64decode(msg)
             try:
-                result = json.loads(msg)
+                #delete commentaire js dans json
+                result = json.loads('\n'.join([row.split('//')[0] for row in msg.split("\n") if len(row.strip())!=0]))
                 self.logger.info("__Event network or kiosk %s"%json.dumps(result,
                                                                      indent = 4))
             except ValueError as e:
@@ -387,6 +388,16 @@ class manage_kiosk_message:
                     datasend['action'] = "notifysyncthing"
                     datasend['sessionid'] = getRandomName(6, "syncthing")
                     datasend['data'] = result['data']
+                elif result['action'] == "terminalInformations" or\
+                        result['action'] == "terminalAlert":
+                    datasend['action'] = "vectormonitoringagent"
+                    datasend['sessionid'] = getRandomName(6, "monitoringterminalInformations")
+                    datasend['data']= result['data']
+                    datasend['data']['subaction'] = result['action']
+                    if 'date' in result:
+                        result['data']['date'] = result['date']
+                    if 'serial' in result:
+                        result['data']['serial'] = result['serial']
                 else:
                     #bad action
                     self.logger.getLogger().warning("this action is not taken into account : %s"%result['action'])
