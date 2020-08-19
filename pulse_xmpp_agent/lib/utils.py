@@ -3114,3 +3114,31 @@ class downloadfile():
             return False, "I/O error {0} on file {1}: {2}".format(e.errno, self.urllocalfile, e.strerror)
         except:  # handle other exceptions such as attribute errors skipcq: FLK-E722
             return False, "Unexpected error: %s", sys.exc_info()[0]
+
+def minifyjsonstring(strjson):
+    """
+    this function minify the json string in input
+        if json incorect '' and not "" this function reformat
+    Returns:
+        string the json minify
+    """
+    # on supprime les commentaires // et les passages a la ligne
+    strjson = ''.join([row.split('//')[0] for row in strjson.split("\n") if len(row.strip())!=0])
+    #on vire les tab les passage a la ligne et les fin de ligne
+    regex = re.compile(r'[\n\r\t]')
+    strjson = regex.sub("", strjson)
+    #on protege les espaces des strings json 
+    reg=re.compile(r"""(\".*?\n?.*?\")|(\'.*?\n?.*?\')""")
+    newjson = re.sub(reg,
+                     lambda x: '"%s"'%str(x.group(0)).strip('\"\'').strip().replace(' ','@@ESP@@'),
+                     strjson)
+    # on vire les espaces
+    newjson=newjson.replace(' ','')
+    #on remet les espace protégé
+    newjson=newjson.replace('@@ESP@@',' ')
+    # on supprime deserror retrouver souvent dans les json
+    newjson=newjson.replace(",}","}")
+    newjson=newjson.replace("{,","{")
+    newjson=newjson.replace("[,","[")
+    newjson=newjson.replace(",]","]")
+    return newjson
