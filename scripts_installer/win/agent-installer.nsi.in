@@ -64,7 +64,6 @@ RequestExecutionLevel admin
 !define SYNCTHING32_FILENAME "@@SYNCTHING32_FILENAME@@"
 !define SYNCTHING64_FILENAME "@@SYNCTHING64_FILENAME@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
-!define REMOVE_PROFILE_FILENAME "@@REMOVE_PROFILE_FILENAME@@"
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
 !define NETCHECK_SERVICE_FILENAME "@@NETCHECK_SERVICE_FILENAME@@"
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
@@ -290,7 +289,6 @@ Section "OpenSSH" sec_openssh
     @@FULL_OR_DL_OPENSSH32@@
   ${EndIf}
   @@FULL_OR_DL_RSYNC@@
-  File "${REMOVE_PROFILE_FILENAME}"
 
 
   ${LogString} "pulseuser user creation...."
@@ -302,7 +300,6 @@ Section "OpenSSH" sec_openssh
   ; Remove pulse user
   Call RemovePulseUser
   RMDir /r "${USERDIR}\pulse*"
-  Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
 
   ; Create Pulse user
   StrCpy $0 `$CMD_POWERSHELL Add-Type -AssemblyName System.Web ; [System.Web.Security.Membership]::GeneratePassword(12,2)`
@@ -1540,7 +1537,6 @@ Section "Uninstall"
   ${EndIf}
 
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
-  Delete $INSTDIR\tmp\${REMOVE_PROFILE_FILENAME}
   RMDir /r /REBOOTOK "$INSTDIR"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
@@ -1911,20 +1907,24 @@ FunctionEnd
 !macro DeletePulseProfile UN
   Function ${UN}DeletePulseProfile
   ; Remove Pulse profile
-  SetOutPath "$INSTDIR\tmp"
-  File "${REMOVE_PROFILE_FILENAME}"
-  ${PowerShellExecFile} ".\${REMOVE_PROFILE_FILENAME}"
-  Pop $R0
-  ${If} $R0 == "Failed"
+  StrCpy $0 `$CMD_POWERSHELL "Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -like '*pulse*'} | Remove-WmiObject"`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  ${LogString} "Return output : $1"
+  ${IfNot} $0 == 0
     ${IfNot} ${Silent}
       ${LogString} "Profile deletion failed"
       MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
+      This usually means that pulseuser profile is loaded. $\n\
+      A reboot will most probably solve this issue. $\n\
       Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
     SetErrorLevel 138
     Quit
   ${EndIf}
-  ${LogString} `Remove Pulse profile : $R0`
+  ${LogString} `Remove Pulse profile : $0`
   FunctionEnd
 !macroend
 !insertmacro DeletePulseProfile ""
