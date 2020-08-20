@@ -114,7 +114,7 @@ def loadPluginList(self):
                     self.plugindata[plugin['NAME']] = plugin['VERSION']
                     try:
                         self.plugintype[plugin['NAME']] = plugin['TYPE']
-                    except:
+                    except Exception:
                         self.plugintype[plugin['NAME']] = "machine"
                     break
         else:
@@ -154,7 +154,7 @@ def deployPlugin(self, jid, plugin):
         fileplugin = open(namefile, "rb")
         content = fileplugin.read()
         fileplugin.close()
-    except:
+    except Exception:
         logger.error("File read error\n%s" % (traceback.format_exc()))
         return
     fichierdata['action'] = 'installplugin'
@@ -169,7 +169,7 @@ def deployPlugin(self, jid, plugin):
         self.send_message(mto=jid,
                           mbody=json.dumps(fichierdata),
                           mtype='chat')
-    except:
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
 def plugin_loadpluginlistversion(self, msg, data):
@@ -183,7 +183,7 @@ def plugin_loadpluginlistversion(self, msg, data):
             # Check version
             if data['plugin'][k] != v:
                 deploy = True
-        except:
+        except Exception:
             deploy = True
         if data['agenttype'] != "all":
             if data['agenttype'] == "relayserver" and self.plugintype[k] == 'machine':

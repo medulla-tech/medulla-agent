@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "2.0", "NAME" :"inventory", "TYPE":"machine"}
+plugin = {"VERSION": "2.2", "NAME": "inventory", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -47,12 +47,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True
 
-    if os.path.exists(xmppobject.config.json_file_extend_inventory):
-        dd = extend_xmlfile(xmppobject)
-        root = ET.fromstring(dd)
-        strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
-        namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
-        utils.file_put_contents_w_a(namefilexml, strxml)
+    if hasattr(xmppobject.config, 'json_file_extend_inventory'):
+        if os.path.exists(xmppobject.config.json_file_extend_inventory):
+            dd = extend_xmlfile(xmppobject)
+            root = ET.fromstring(dd)
+            strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
+            namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
+            utils.file_put_contents_w_a(namefilexml, strxml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
         if compteurcallplugin == 0:
@@ -205,7 +206,21 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    'FusionInventory-Agent',
                                    'fusioninventory-agent.bat')
             for nbcmd in range(3):
-                cmd = """\"%s\" --config=none --scan-profiles """ \
+
+                try:
+                    if os.path.exists(namefilexml):
+                        cmd = """\"%s\" --config=none --scan-profiles """ \
+                            """--backend-collect-timeout=%s --additional-content=%s --local=\"%s\"""" % (program,
+                                                                                                            timeoutfusion,
+                                                                                                            namefilexml,
+                                                                                                            inventoryfile)
+                    else:
+                        cmd = """\"%s\" --config=none --scan-profiles """ \
+                            """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
+                                                                                 timeoutfusion,
+                                                                                 inventoryfile)
+                except Exception:
+                    cmd = """\"%s\" --config=none --scan-profiles """ \
                         """--backend-collect-timeout=%s --local=\"%s\"""" % (program,
                                                                              timeoutfusion,
                                                                              inventoryfile)
@@ -532,26 +547,21 @@ def extend_xmlfile(xmppobject):
                            <REQUEST>
                            <CONTENT>"""
             if "peripherals" in data and data['peripherals']:
-                # il y a des printers a ajouter.
+                # Some peripherals must be added.
                 for printer in data['peripherals']:
                     # add printer
                     xmlstring = xmlstring + \
-                        printer_string(data['terminal'],
-                                       printer['type'],
-                                       printer['serial'],
-                                       description="%s_%s_%s_%s_%s" % (data['terminal'],
-                                                                       printer['type'],
-                                                                       printer['serial'],
-                                                                       printer['manufacturer'],
-                                                                       printer['model'])) + \
                         usbdevice_string(data['terminal'],
-                                         "%s_%s_%s" % (printer['type'],
-                                                       printer['model'],
-                                                       printer['serial']),
+                                         "%s@%s@%s@%s@%s" % (data['terminal'],
+                                                             printer['type'],
+                                                             printer['serial'],
+                                                             printer['manufacturer'],
+                                                             printer['model']),
                                          printer['serial'],
                                          printer['manufacturer'],
                                          productid=printer['pid'],
-                                         vendorid=printer['vid'])
+                                         vendorid=printer['vid'],
+                                         firmware=printer['firmware'])
 
             xmlstring = xmlstring + """\n</CONTENT>
             </REQUEST>"""
@@ -566,21 +576,29 @@ def usbdevice_string(terminal,
                      vendorid="",
                      caption=None,
                      classname=None,
-                     subclass=None):
+                     subclass=None,
+                     firmware=""):
     if caption is None:
-        caption = "%s_%s" % (name, terminal)
+        caption = "%s@%s" % (name, terminal)
+
+    if firmware != "":
+        caption = "%s@%s" % (caption, firmware)
+        name = "%s@%s" % (name, firmware)
     xmlprinter = """\n<USBDEVICES>
     <CAPTION>%s</CAPTION>
     <NAME>%s</NAME>
     <MANUFACTURER>%s</MANUFACTURER>
     <SERIAL>%s</SERIAL>
     <PRODUCTID>%s</PRODUCTID>
-    <VENDORID>%s</VENDORID>""" % (caption.strip(),
-                                  name.strip(),
-                                  manufacturer.strip(),
-                                  serial.strip(),
-                                  productid.strip(),
-                                  vendorid.strip())
+    <VENDORID>%s</VENDORID>
+    <COMMENT>%s</COMMENT>
+    """ % (caption.strip(),
+           name.strip(),
+           manufacturer.strip(),
+           serial.strip(),
+           productid.strip(),
+           vendorid.strip(),
+           firmware.strip())
     if classname is not None:
         xmlprinter = "%s\n<CLASS>%s</CLASS>" % (xmlprinter, classname)
         if subclass is not None:
@@ -598,11 +616,15 @@ def printer_string(terminal,
                    printprocessor=None,
                    resolution=None,
                    shared=None,
-                   status=None):
+                   status=None,
+                   firmware=""):
     if driver is None:
-        driver = "%s_%s" % (name, terminal)
+        driver = "%s@%s" % (name, terminal)
     if description is None:
-        description = "%s_%s_%s" % (name, serial, terminal)
+        description = "%s@%s@%s@%s" % (name, serial, terminal, firmware)
+    if firmware != "":
+        description = "%s@%s" % (description, firmware)
+        driver = "%s@%s" % (driver, firmware)
     xmlprinter = """\n<PRINTERS>
     <DRIVER>%s</DRIVER>
     <NAME>%s</NAME>

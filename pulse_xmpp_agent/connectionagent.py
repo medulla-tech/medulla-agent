@@ -528,8 +528,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name
         }
-        if self.geodata.localisation is not None:
+        if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
+        else:
+            logging.warning('geolocalisation imposible')
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
             try:

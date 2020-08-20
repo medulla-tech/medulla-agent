@@ -2090,8 +2090,10 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                 dataobj['syncthing_port'] = self.config.syncthing_port
             except Exception:
                 pass
-        if self.geodata.localisation is not None:
+        if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
+        else:
+            logging.warning('geolocalisation not defined')
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver

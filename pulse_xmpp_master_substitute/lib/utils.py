@@ -1030,11 +1030,7 @@ def getIpXmppInterface(ipadress1, Port):
     ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-<<<<<<< HEAD
         print("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress))
-=======
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
->>>>>>> origin/integration
         obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
                             (Port, ipadress))
         logging.log(DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
@@ -1051,11 +1047,7 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-<<<<<<< HEAD
         print("netstat -an | findstr %s | findstr ESTABLISHED" % Port)
-=======
-        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
->>>>>>> origin/integration
         obj = simplecommand("netstat -an | findstr %s | findstr ESTABLISHED" %
                             Port)
         logging.log(DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
@@ -1069,11 +1061,7 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-<<<<<<< HEAD
         print("netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress))
-=======
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
->>>>>>> origin/integration
         obj = simplecommand("netstat -an |grep %s |grep %s| grep ESTABLISHED" %
                             (Port, ipadress))
         logging.log(DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
@@ -1118,40 +1106,6 @@ def subnetnetwork(adressmachine, mask):
     reseaumachine = ipV4toDecimal(adressmachine) & ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
 
-
-def searchippublic(site=1):
-    if site == 1:
-        try:
-            page = urllib.request.urlopen("http://ifconfig.co/json").read()
-            objip = json.loads(page)
-            if is_valid_ipv4(objip['ip']):
-                return objip['ip']
-            else:
-                return searchippublic(3)
-        except BaseException:
-            return searchippublic(2)
-    elif site == 2:
-        try:
-            page = urllib.request.urlopen("http://www.monip.org/").read()
-            ip = page.split("IP : ")[1].split("<br>")[0]
-            if is_valid_ipv4(ip):
-                return ip
-            else:
-                return searchippublic(3)
-        except Exception:
-            return searchippublic(3)
-    elif site == 3:
-        try:
-            ip =   urllib.request.urlopen("http://ip.42.pl/raw").read()
-            if is_valid_ipv4(ip):
-                return ip
-            else:
-                return searchippublic(4)
-        except Exception:
-            searchippublic(4)
-    elif site == 4:
-        return find_ip()
-    return None
 
 def find_ip():
     candidates =[]

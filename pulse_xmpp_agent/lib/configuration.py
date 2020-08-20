@@ -801,12 +801,12 @@ def listMacAdressWinOs():
     for line in ifconfig:
         if line.strip() == "":
             continue
-    if "phy" in line.lower() or not (line.startswith("\t") or line.startswith(' ')):
-        if "phy" not in line.lower():
-            ll = line.split(' ')[0].strip() + "%d" % i
-        else:
-            lst[ll] = line.split(':')[1].strip()
-            i = i + 1
+        if "phy" in line.lower() or not (line.startswith("\t") or line.startswith(' ')):
+            if "phy" not in line.lower():
+                ll = line.split(' ')[0].strip() + "%d" % i
+            else:
+                lst[ll] = line.split(':')[1].strip()
+                i = i + 1
     return lst
 
 
