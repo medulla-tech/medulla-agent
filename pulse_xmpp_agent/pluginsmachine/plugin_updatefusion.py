@@ -22,7 +22,7 @@
 
 import sys
 from lib import utils
-from distutils.version import LooseVersion, StrictVersion
+from distutils.version import StrictVersion
 import pycurl
 import logging
 
@@ -91,6 +91,6 @@ def updatefusion():
             else:
                 logger.error("Error installing %s: %s"
                              % (filename, cmd_result['result']))
-        else
+        else:
             # Download error
             logger.error("%s" % txtmsg)
