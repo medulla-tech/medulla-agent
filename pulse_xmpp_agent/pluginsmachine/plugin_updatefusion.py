@@ -25,6 +25,7 @@ from lib import utils
 from distutils.version import StrictVersion
 import pycurl
 import logging
+import platform
 
 FUSIONVERSION = '2.5.2'
 
@@ -38,18 +39,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
     try:
-        callcount = getattr(xmppobject, "num_call%s" % action)
-        logger.debug("Plugin %s call count: %s" % (action, callcount))
-        if callcount == 0:
-            # First call. Run some configuration
-            configure()
-    except Exception:
-        pass
-    try:
         # Update if version is lower
         installed_version = checkfusionversion()
         if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
-            updatefusion()
+            updatefusion(xmppobject)
     except Exception:
         pass
 
@@ -67,7 +60,7 @@ def checkfusionversion():
     return fusionversion
 
 
-def updatefusion():
+def updatefusion(xmppobject):
     logger.info("Updating FusionInventory Agent to version %s" % FUSIONVERSION)
     if sys.platform.startswith('win'):
         if platform.architecture()[0] == '64bit':
