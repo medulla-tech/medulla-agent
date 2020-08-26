@@ -3041,7 +3041,10 @@ class geolocalisation_agent:
     @staticmethod
     def call_simple_page_urllib(url):
         try:
-            objip = json.loads(urllib.urlopen(url).read())
+            result = urllib2.urlopen(url, timeout=5)
+            objip = json.loads(result.read())
+            if result.getcode() != 200:
+                raise
             return objip
         except:
             return None
@@ -3060,3 +3063,54 @@ class geolocalisation_agent:
             except BaseException:
                 pass
         return None
+
+
+class downloadfile():
+    def __init__(self, url, urllocalfile=None):
+        self.url = url
+        self.urllocalfile = None
+
+    def code_return_html(self, code):
+        msghtml = "error html code %s" % code
+        if code == 200:
+            msghtml = "[%s succes]" % code
+        if code == 301:
+            msghtml = "[%s Moved Permanently]" % code
+        if code == 302:
+            msghtml = "[%s Moved temporarily]" % code
+        if code == 400:
+            msghtml = "[%s Bad Request]" % code
+        if code == 401:
+            msghtml = "[%s Unauthorized]" % code
+        elif code == 403:
+            msghtml = "[%s Forbidden]" % code
+        elif code == 404:
+            msghtml = "[%s Not Found]" % code
+        elif code == 408:
+            msghtml = "[%s Request Timeout]" % code
+        elif code == 500:
+            msghtml = "[%s Internal Server Error]" % code
+        elif code == 503:
+            msghtml = "[%s Service Unavailable]" % code
+        elif code == 504:
+            msghtml = "[%s Gateway Timeout]" % code
+        return msghtml
+
+    def downloadurl(self):
+        try:
+            f = urllib2.urlopen(self.url)
+            if self.urllocalfile is None:
+                with open(os.path.basename(self.url), "wb") as local_file:
+                    local_file.write(f.read())
+            else:
+                with open(self.urllocalfile, "wb") as local_file:
+                    local_file.write(f.read())
+            return True, "Download successful"
+        except urllib2.HTTPError, e:
+            return False, "HTTP Error %s while downloading %s: %s" % (code_return_html(e.code), self.url, e.reason)
+        except urllib2.URLError, e:
+            return False, "URL Error on %s: %s" % (self.url, e.reason)
+        except IOError as e:
+            return False, "I/O error {0} on file {1}: {2}".format(e.errno, self.urllocalfile, e.strerror)
+        except:  # handle other exceptions such as attribute errors skipcq: FLK-E722
+            return False, "Unexpected error: %s", sys.exc_info()[0]

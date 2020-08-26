@@ -26,7 +26,7 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from utils import getMacAdressList, getIPAdressList, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile
 from configuration import setconfigfile
 import traceback
 import logging
@@ -2148,3 +2148,106 @@ class grafcet:
                                 date=None,
                                 fromuser=self.data['login'],
                                 touser="")
+
+    def action_download(self):
+        """
+        {
+            "action": "action_download",
+            "actionlabel": "74539906",
+            "fullpath": "",
+            "step": 0,
+            "url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v7.8.9/npp.7.8.9.Installer.exe",
+            "packageuuid" : ""
+        }
+        """
+        try:
+            if self.__terminateifcompleted__(self.workingstep):
+                return
+            self.__action_completed__(self.workingstep)
+            self.workingstep['pwd'] = ""
+            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
+                os.chdir(self.datasend['data']['pathpackageonmachine'])
+                self.workingstep['pwd'] = os.getcwd()
+            self.__alternatefolder()
+
+            msg = '[%s]-[%s]: Downloading file %s' % (self.data['name'],
+                                                      self.workingstep['step'],
+                                                      self.workingstep['url'])
+            self.objectxmpp.xmpplog(msg,
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    why=self.data['name'],
+                                    module="Deployment | Error | Execution",
+                                    date=None,
+                                    fromuser=self.data['login'])
+            result, txtmsg = downloadfile(self.workingstep['url']).downloadurl()
+
+            if result:
+                self.objectxmpp.xmpplog('[%s]-[%s] : %s %s' % (self.data['name'],
+                                                               self.workingstep['step'],
+                                                               txtmsg,
+                                                               self.workingstep['url']),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
+                if 'succes' in self.workingstep:
+                    # goto succes
+                    self.__search_Next_step_int__(self.workingstep['succes'])
+                    self.__execstep__()
+                    return
+            else:
+                self.objectxmpp.xmpplog('[%s]-[%s] : %s %s' % (self.data['name'],
+                                                               self.workingstep['step'],
+                                                               txtmsg,
+                                                               self.workingstep['url']),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
+                if 'error' in self.workingstep:
+                    self.__search_Next_step_int__(self.workingstep['error'])
+                    self.__execstep__()
+                    return
+                self.objectxmpp.xmpplog('[%s]-[%s] : Error downloading file but proceeding to next step %s' % (self.data['name'],
+                                                                                               self.workingstep['step'],
+                                                                                               txtmsg),
+                                        type='deploy',
+                                        sessionname=self.sessionid,
+                                        priority=self.workingstep['step'],
+                                        action="xmpplog",
+                                        who=self.objectxmpp.boundjid.bare,
+                                        why=self.data['name'],
+                                        module="Deployment | Execution",
+                                        date=None,
+                                        fromuser=self.data['login'])
+            self.steplog()
+            self.__Etape_Next_in__()
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            logger.error("\n%s" % (traceback.format_exc()))
+            self.terminate(-1, False, "Transfer error %s" %
+                           self.workingstep['step'])
+            self.objectxmpp.xmpplog('[%s]-[%s]: Transfer error' % (self.data['name'], self.workingstep['step']),
+                                    type='deploy',
+                                    sessionname=self.sessionid,
+                                    priority=self.workingstep['step'],
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    why=self.data['name'],
+                                    module="Deployment | Error | Execution",
+                                    date=None,
+                                    fromuser=self.data['login'])
