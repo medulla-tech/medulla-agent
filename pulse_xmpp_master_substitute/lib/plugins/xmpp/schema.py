@@ -504,3 +504,107 @@ class Uptime_machine(Base, XmppMasterDBObj):
     status = Column(Boolean, unique=False)
     updowntime = Column(Integer, nullable=False, default=0)
     date = Column(DateTime, default=datetime.datetime.now)
+
+
+
+
+class MyTypeenum(enum.Enum):
+    """
+        cette class defini domaine device type
+    """
+    thermalprinter = 'thermalprinter'
+    nfcReader = 'nfcReader'
+    opticalReader = 'opticalReader'
+    cpu = 'cpu'
+    memory = 'memory'
+    storage = 'storage'
+    network = 'network'
+
+
+class Mystatusenum(enum.Enum):
+    """
+        cette class defini domaine status
+    """
+    ready = 'ready'
+    busy = 'busy'
+    warning = 'warning'
+    error = 'error'
+    disable = 'disable'
+
+
+class Mon_machine(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'mon_machine'
+    # ====== Fields =============================
+    # Here we define columns for the table mon_machine.
+    # Notice that each column is also a normal Python instance attribute.
+    #  id = Column(Integer, primary_key=True)
+    machines_id = Column(Integer, nullable=False)
+    date = Column(DateTime, default=datetime.datetime.now)
+    hostname = Column(String(100), nullable=False)
+    statusmsg = Column(Text)
+
+
+class Mon_devices(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'mon_devices'
+    # ====== Fields =============================
+    # Here we define columns for the table mon_devices.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    mon_machine_id = Column(Integer, nullable=False)
+    device_type = Column(String(45), nullable=False, default="opticalReader")
+    serial = Column(String(45), default=None)
+    firmware = Column(String(10), default=None)
+    status = Column(String(45), nullable=False, default="ready")
+    alarm_msg = Column(String(45), default=None)
+    doc = Column(Text,  default=None)
+
+
+class Mon_device_service(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'mon_device_service'
+    # ====== Fields =============================
+    # Here we define columns for the table mon_device_service.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    device_type = Column(String(45), nullable=False, default="opticalReader")
+    enable = Column(Boolean, default=True)
+    structure_json_controle = Column(Text, nullable=False)
+    html_form = Column(Text)
+    mon_machine_id = Column(Integer, nullable=False)
+
+
+class Mon_rules(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'mon_rules'
+    # ====== Fields =============================
+    # Here we define columns for the table mon_device_service.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    hostname = Column(String(255), default=None)
+    device_type = status = Column(String(255), nullable=False,
+                                  default="opticalReader")
+    binding = Column(Text)
+    succes_binding_cmd = Column(Text,  default=None)
+    no_success_binding_cmd = Column(Text,  default=None)
+    error_on_binding = Column(Text,  default=None)
+    type_event = Column(String(255), default=None)
+    user = Column(String(255), default=None)
+    comment = Column(String(1024))
+
+
+class Mon_event(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'mon_event'
+    # ====== Fields =============================
+    # Here we define columns for the table mon_device_service.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    status_event = Column(Integer, default=1)
+    type_event = Column(String(255), default=None)
+    cmd = Column(Text)
+    machines_id = Column(Integer, nullable=False)
+    id_rule = Column(Integer, nullable=False)
+    id_device = Column(Integer, nullable=False)
+
