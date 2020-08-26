@@ -28,6 +28,7 @@ import traceback
 from sleekxmpp import jid
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
+from lib.manage_grafana import manage_grafana
 
 import time
 logger = logging.getLogger()
@@ -246,3 +247,81 @@ def changed_status(self, presence):
                                         '',
                                         '',
                                         self.boundjid.bare)
+
+        # check if monitoring panel already exists and add it if it's not the case
+        configure_panel(hostname)
+
+
+def configure_panel(jid):
+    try:
+        hostname = str(jid).split('.', 1)[0]
+    except Exception:
+        logger.error("Could not get hostname from jid %s\n%s" % (
+            jid, traceback.format_exc()))
+    if manage_grafana(hostname).grafanaGetPanelIdFromTitle("Online-Offline Status"):
+        return
+    try:
+        panel_json = """{
+            "id" : 1,
+            "datasource" : "xmppmaster",
+            "type" : "graph",
+            "lines": true,
+            "steppedLine": true,
+            "fill": 1,
+            "title": "Online-Offline Status",
+            "xaxis": {
+                "mode": "time",
+                "show": true
+            },
+            "yaxes": [
+                {
+                    "show": false
+                },
+                {
+                    "show": true
+                }
+            ],
+            "targets": [
+                {
+                    "format": "time_series",
+                    "group": [],
+                    "metricColumn": "none",
+                    "rawQuery": false,
+                    "rawSql": "SELECT date AS 'time', status FROM uptime_machine WHERE $__timeFilter(date) AND hostname = '%s' ORDER BY date",
+                    "select": [
+                        [
+                            {
+                                "params": [
+                                    "status"
+                                ],
+                                "type": "column"
+                            }
+                        ]
+                    ],
+                    "table": "uptime_machine",
+                    "timeColumn": "date",
+                    "timeColumnType": "timestamp",
+                    "where": [
+                        {
+                            "name": "$__timeFilter",
+                            "params": [],
+                            "type": "macro"
+                        },
+                        {
+                            "datatype": "varchar",
+                            "name": "",
+                            "params": [
+                                "hostname",
+                                "=",
+                                "'%s'"
+                            ],
+                            "type": "expression"
+                        }
+                    ]
+                }
+            ]
+        }""" % (hostname, hostname)
+        manage_grafana(hostname).grafanaEditPanel(panel_json)
+    except Exception:
+        logger.error("Could not configure Online-Offline status panel"
+                     " for %s\n%s" % (hostname, traceback.format_exc()))
