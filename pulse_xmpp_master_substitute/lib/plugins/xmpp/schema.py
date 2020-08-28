@@ -26,7 +26,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from mmc.database.database_helper import DBObj
 from sqlalchemy.orm import relationship
 import datetime
-
+import enum
 
 Base = declarative_base()
 
@@ -583,7 +583,7 @@ class Mon_rules(Base, XmppMasterDBObj):
     # Notice that each column is also a normal Python instance attribute.
     # id = Column(Integer, primary_key=True)
     hostname = Column(String(255), default=None)
-    device_type = status = Column(String(255), nullable=False,
+    device_type = Column(String(255), nullable=False,
                                   default="opticalReader")
     binding = Column(Text)
     succes_binding_cmd = Column(Text,  default=None)

@@ -35,7 +35,7 @@ import shutil
 import subprocess
 import psutil
 import random
-
+import hashlib
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
@@ -2084,6 +2084,19 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid
         }
+        try:
+            dataobj['md5_conf_monitoring'] = ""
+            # self.monitoring_file_configuration
+            if self.config.agenttype not in ['relayserver'] and \
+                hasattr(self, 'monitoring_file_configuration') and \
+                    self.monitoring_file_configuration != "" and \
+                        os.path.exists(self.monitoring_file_configuration):
+                            dataobj['md5_conf_monitoring'] =  hashlib.md5(file_get_contents(self.monitoring_file_configuration)).hexdigest()
+        except AttributeError:
+            logging.warning('conf file monitoring missing')
+        except Exception as e:
+            logging.error('%s error on file config monitoring'%str(e))
+
         if self.config.agenttype in ['relayserver']:
             try:
                 dataobj['syncthing_port'] = self.config.syncthing_port
