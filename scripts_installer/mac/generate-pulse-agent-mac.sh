@@ -38,7 +38,7 @@
 #	https://pypi.python.org/packages/07/49/42c86388fed58455e7e18d3821d7687f4921e47a40cb312e69b82f75c660/utils-0.9.0.tar.gz
 #	https://pypi.python.org/packages/2e/33/7adcc8d6b35cb72f9cc56785a3d9c63d540200c476b0cb3a0926f5b51102/sleekxmpp-1.3.1.tar.gz
 #	https://pypi.python.org/packages/60/ad/d6bc08f235b66c11bbb76df41b973ce93544a907cc0e23c726ea374eee79/zipfile2-0.0.12-py2.py3-none-any.whl
-#	https://pypi.python.org/packages/77/d9/d272b38e6e25d2686e22f6058820298dadead69340b1c57ff84c87ef81f0/pycurl-7.43.0.5.tar.gz
+#	https://pypi.python.org/packages/77/d9/d272b38e6e25d2686e22f6058820298dadead69340b1c57ff84c87ef81f0/pycurl-7.43.0.1.tar.gz
 #	https://pypi.python.org/packages/f1/c7/e19d317cc948095abc872a6e6ae78ac80260f2b45771dfa7a7ce86865f5b/lxml-3.6.0.tar.gz
 #	https://pypi.python.org/packages/60/db/645aa9af249f059cc3a368b118de33889219e0362141e75d4eaf6f80f163/pycrypto-2.6.1.tar.gz
 #	https://files.pythonhosted.org/packages/4b/0d/7ed381ab4fe80b8ebf34411d14f253e1cf3e56e2820ffa1d8844b23859a2/python_dateutil-2.6.1-py2.py3-none-any.whl
@@ -78,7 +78,7 @@ PY_SLEEKXMPP_VERSION="1.3.1"
 PY_ZIPFILE_MODULE="zipfile2"
 PY_ZIPFILE_VERSION="0.0.12"
 PY_CURL_MODULE="pycurl"
-PY_CURL_VERSION="7.43.0.5"
+PY_CURL_VERSION="7.43.0.1"
 PY_LXML_MODULE="lxml"
 PY_LXML_VERSION="3.6.0"
 PY_CRYPTO_MODULE="pycrypto"
