@@ -38,7 +38,7 @@
 #   https://files.pythonhosted.org/packages/63/cb/6965947c13a94236f6d4b8223e21beb4d576dc72e8130bd7880f600839b8/urllib3-1.22-py2.py3-none-any.whl
 #   https://files.pythonhosted.org/packages/60/75/f692a584e85b7eaba0e03827b3d51f45f571c2e793dd731e598828d380aa/certifi-2019.3.9-py2.py3-none-any.whl
 #   https://files.pythonhosted.org/packages/bc/a9/01ffebfb562e4274b6487b4bb1ddec7ca55ec7510b22e4c51f14098443b8/chardet-3.0.4-py2.py3-none-any.whl
-#   https://pypi.python.org/packages/28/df/755dab9f83c37031aea1cd9915673b5633665c575d649e812657df95b944/plyvel-1.0.1.tar.gz
+#   https://pypi.python.org/packages/28/df/755dab9f83c37031aea1cd9915673b5633665c575d649e812657df95b944/plyvel-1.2.0.tar.gz
 
 # Check if called with uuid to be used
 if [[ $1 =~ ^\{?[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\}?$ ]]; then
@@ -60,7 +60,7 @@ MAC_FILETREE_GENERATOR_FILENAME="pulse-filetree-generator"
 MAC_SYNCTHING_FILENAME="syncthing-macos-amd64-v1.6.1.zip"
 WIN32_SYNCTHING_FILENAME="syncthing-windows-386-v1.6.1.zip"
 WIN64_SYNCTHING_FILENAME="syncthing-windows-amd64-v1.6.1.zip"
-PY_MAC_PLYVEL_FILENAME="plyvel-1.0.1.tar.gz"
+PY_MAC_PLYVEL_FILENAME="plyvel-1.2.0.tar.gz"
 PY_SFTP_FILENAME="pysftp-0.2.9.tar.gz"
 PY_PATHLIB_FILENAME="pathlib-1.0.1.tar.gz"
 PY_SFTP_PARAMIKO_FILENAME="paramiko-1.18.5-py2.py3-none-any.whl"
