@@ -3117,26 +3117,26 @@ class downloadfile():
 
 def minifyjsonstring(strjson):
     """
-    this function minify the json string in input
-        if json incorect '' and not "" this function reformat
+    This function minifies the json string in input
+        if json has incorrect '' and not "" this function will reformat
     Returns:
-        string the json minify
+        string containining the minified json
     """
-    # on supprime les commentaires // et les passages a la ligne
+    # remove comments (//) and line breaks
     strjson = ''.join([row.split('//')[0] for row in strjson.split("\n") if len(row.strip())!=0])
-    #on vire les tab les passage a la ligne et les fin de ligne
+    # remove tabs, line breaks and end of lines
     regex = re.compile(r'[\n\r\t]')
     strjson = regex.sub("", strjson)
-    #on protege les espaces des strings json 
+    # protect json strings
     reg=re.compile(r"""(\".*?\n?.*?\")|(\'.*?\n?.*?\')""")
     newjson = re.sub(reg,
                      lambda x: '"%s"'%str(x.group(0)).strip('\"\'').strip().replace(' ','@@ESP@@'),
                      strjson)
-    # on vire les espaces
+    # remove blanks
     newjson=newjson.replace(' ','')
-    #on remet les espace protégé
+    # reinsert protected blanks
     newjson=newjson.replace('@@ESP@@',' ')
-    # on supprime deserror retrouver souvent dans les json
+    # remove errors that are found often in json files
     newjson=newjson.replace(",}","}")
     newjson=newjson.replace("{,","{")
     newjson=newjson.replace("[,","[")

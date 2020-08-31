@@ -5526,13 +5526,13 @@ class XmppMasterDatabase(DatabaseHelper):
                               session,
                               machines_id,
                               hostname,
-                              statusmsg = "",
+                              statusmsg="",
                               date=None):
         try:
             new_Monitoring_machine = Mon_machine()
             new_Monitoring_machine.machines_id = machines_id
             if date is not None:
-                date = date.replace("T"," ").replace("Z","")[:19]
+                date = date.replace("T", " ").replace("Z", "")[:19]
                 new_Monitoring_machine.date = date
             new_Monitoring_machine.hostname = hostname
             new_Monitoring_machine.statusmsg = statusmsg
@@ -5540,7 +5540,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_Monitoring_machine.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -5556,22 +5556,22 @@ class XmppMasterDatabase(DatabaseHelper):
                              alarm_msg,
                              doc):
         try:
-            logging.getLogger().debug("==================================\n"\
+            logging.getLogger().debug("==================================\n"
                                       "device_type [%s]"%device_type)
             if device_type not in ['thermalPrinter',
-                                    'nfcReader',
-                                    'opticalReader',
-                                    'cpu',
-                                    'memory',
-                                    'storage',
-                                    'network',
-                                    'system']:
+                                   'nfcReader',
+                                   'opticalReader',
+                                   'cpu',
+                                   'memory',
+                                   'storage',
+                                   'network',
+                                   'system']:
                 raise DomaineTypeDeviceError()
             if status not in ['ready', 'busy', 'warning', 'error', 'disable']:
                 raise DomainestatusDeviceError()
             new_Monitoring_device = Mon_devices()
             new_Monitoring_device.mon_machine_id = mon_machine_id
-            new_Monitoring_device.device_type =  device_type
+            new_Monitoring_device.device_type = device_type
             new_Monitoring_device.serial = serial
             new_Monitoring_device.firmware = firmware
             new_Monitoring_device.status = status
@@ -5582,122 +5582,124 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             logging.getLogger().debug("==================================")
             return new_Monitoring_device.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             self.logger.error("\n%s" % (traceback.format_exc()))
             return -1
 
     @DatabaseHelper._sessionm
     def setMonitoring_device_reg(self,
-                             session,
-                             hostname,
-                             mon_machine_id,
-                             device_type,
-                             serial,
-                             firmware,
-                             status,
-                             alarm_msg,
-                             doc):
+                                 session,
+                                 hostname,
+                                 mon_machine_id,
+                                 device_type,
+                                 serial,
+                                 firmware,
+                                 status,
+                                 alarm_msg,
+                                 doc):
         try:
             id_device_reg = self.setMonitoring_device(hostname,
-                             mon_machine_id,
-                             device_type,
-                             serial,
-                             firmware,
-                             status,
-                             alarm_msg,
-                             doc)
+                                                      mon_machine_id,
+                                                      device_type,
+                                                      serial,
+                                                      firmware,
+                                                      status,
+                                                      alarm_msg,
+                                                      doc)
 
-            #creation event on rule
-            objectlist_local_rule = self._rule_monitoring( hostname,
-                                                            mon_machine_id,
-                                                            device_type,
-                                                            serial,
-                                                            firmware,
-                                                            status,
-                                                            alarm_msg,
-                                                            doc,
-                                                            localrule= True)
+            # creation event on rule
+            objectlist_local_rule = self._rule_monitoring(hostname,
+                                                          mon_machine_id,
+                                                          device_type,
+                                                          serial,
+                                                          firmware,
+                                                          status,
+                                                          alarm_msg,
+                                                          doc,
+                                                          localrule=True)
             if objectlist_local_rule:
-                # 1 regle est definie pour ce device, sur cette machine
+                # A rule is defined for this device on this machine
                 self._action_new_event(objectlist_local_rule,
-                                        mon_machine_id,
-                                        id_device_reg,
-                                        doc,
-                                        status_event=1)
+                                       mon_machine_id,
+                                       id_device_reg,
+                                       doc,
+                                       status_event=1)
             else:
-                # on regarde si il y a 1 regle general pour ce device
-                objectlist_local_rule = self._rule_monitoring( hostname,
-                                                            mon_machine_id,
-                                                            device_type,
-                                                            serial,
-                                                            firmware,
-                                                            status,
-                                                            alarm_msg,
-                                                            doc,
-                                                            localrule= False)
+                # Check if there is a general rule for this device
+                objectlist_local_rule = self._rule_monitoring(hostname,
+                                                              mon_machine_id,
+                                                              device_type,
+                                                              serial,
+                                                              firmware,
+                                                              status,
+                                                              alarm_msg,
+                                                              doc,
+                                                              localrule=False)
                 if objectlist_local_rule:
                     self._action_new_event(objectlist_local_rule,
-                                            mon_machine_id,
-                                            id_device_reg,
-                                            doc,
-                                            status_event=1)
+                                           mon_machine_id,
+                                           id_device_reg,
+                                           doc,
+                                           status_event=1)
             logging.getLogger().debug("==================================")
             return id_device_reg
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             self.logger.error("\n%s" % (traceback.format_exc()))
             return -1
 
     @DatabaseHelper._sessionm
     def setMonitoring_event(self,
-                              session,
-                              machines_id,
-                              id_device,
-                              id_rule,
-                              cmd,
-                              type_event="log",
-                              status_event=1):
+                            session,
+                            machines_id,
+                            id_device,
+                            id_rule,
+                            cmd,
+                            type_event="log",
+                            status_event=1):
         try:
             new_Monitoring_event = Mon_event()
             new_Monitoring_event.machines_id = machines_id
             new_Monitoring_event.id_rule = id_rule
-            new_Monitoring_event.id_device =id_device
+            new_Monitoring_event.id_device = id_device
             new_Monitoring_event.type_event = type_event
             new_Monitoring_event.cmd = cmd
             session.add(new_Monitoring_event)
             session.commit()
             session.flush()
             return new_Monitoring_event.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
-    def _action_new_event( self,
-                            objectlist_local_rule,
-                            id_machine,
-                            id_device,
-                            doc,
-                            status_event=1):
+    def _action_new_event(self,
+                          objectlist_local_rule,
+                          id_machine,
+                          id_device,
+                          doc,
+                          status_event=1):
 
         if objectlist_local_rule:
-            #  on applique le binding pour savoir si 1 alerte ou et 1evenement est programmer
+            # apply binding to find out if an alert or event is defined
             for z in objectlist_local_rule:
-                result = self.__binding_application(doc, z['binding'],z['device_type'])
+                result = self.__binding_application(doc,
+                                                    z['binding'],
+                                                    z['device_type'])
                 if isinstance(result, basestring):
-                    # cas exception
-                    #if action associe a exception error creation evenement
+                    # exception case
+                    # create event if action associated to exception error
                     if z['error_on_binding'] is None:
                         return False
                     bindingcmd = z['error_on_binding']
                 elif result:
                     # alert True
-                    #if action associe a true creation evenement
+                    # create event if action associated to true
                     if z['succes_binding_cmd'] is None:
                         return False
                     bindingcmd = z['succes_binding_cmd']
                 else:
-                    #if action associe a false creation evenement
+                    # create event if action associated to false
                     if z['no_success_binding_cmd'] is None:
                         return False
                     bindingcmd = z['no_success_binding_cmd']
@@ -5709,11 +5711,11 @@ class XmppMasterDatabase(DatabaseHelper):
                 #logging.getLogger().debug("z['type_event'] %s"%z['type_event'])
                 #logging.getLogger().debug("status_event %s"%status_event)
                 self.setMonitoring_event(id_machine,
-                                                id_device,
-                                                z['id'],
-                                                bindingcmd,
-                                                type_event=z['type_event'],
-                                                status_event = 1)
+                                         id_device,
+                                         z['id'],
+                                         bindingcmd,
+                                         type_event=z['type_event'],
+                                         status_event=1)
 
 
 
@@ -5723,18 +5725,18 @@ class XmppMasterDatabase(DatabaseHelper):
             data=json.loads(datastring)
         except Exception as e:
             return "[binding error device rule %s] : data from message" \
-                " monitoring format json error %s"%(device_type,
-                                                    str(e))
+                " monitoring format json error %s" % (device_type, str(e))
 
         try:
             code = compile(bindingstring, '<string>', 'exec')
             exec(code)
         except KeyError as e:
-            resultbinding = "[binding error device rule %s] : key %s in binding:\n%s\nis missing,verify "\
-                "your binding on data\n%s"%(device_type,
-                                            str(e),
-                                            bindingstring,
-                                            json.dumps(data,indent=4))
+            resultbinding = "[binding error device rule %s] : key %s in "\
+                "binding:\n%s\nis missing. Check your binding on data\n%s" % (
+                    device_type,
+                    str(e),
+                    bindingstring,
+                    json.dumps(data,indent=4))
         except Exception as e:
             resultbinding = "[binding device rule %s error %s] in binding:\n%s\ "\
                 "on data\n%s"%(device_type,
@@ -5746,8 +5748,8 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getlistMonitoring_devices_type(self,
                               session,
-                              enable = 1):
-        sql=''' SELECT DISTINCT
+                              enable=1):
+        sql = ''' SELECT DISTINCT
                     device_type
                 FROM
                     xmppmaster.mon_device_service
@@ -5756,63 +5758,62 @@ class XmppMasterDatabase(DatabaseHelper):
         result = session.execute(sql)
         session.commit()
         session.flush()
-        return [ i[0].lower() for i in result ]
+        return [i[0].lower() for i in result]
 
     @DatabaseHelper._sessionm
     def _rule_monitoring(self,
-                    session,
-                    hostname,
-                    mon_machine_id,
-                    device_type,
-                    serial,
-                    firmware,
-                    status,
-                    alarm_msg,
-                    doc,
-                    localrule= True):
+                         session,
+                         hostname,
+                         mon_machine_id,
+                         device_type,
+                         serial,
+                         firmware,
+                         status,
+                         alarm_msg,
+                         doc,
+                         localrule=True):
         if localrule:
-            sql=''' SELECT
+            sql = ''' SELECT
                         *
                     FROM
                         xmppmaster.mon_rules
                     WHERE
                         hostname LIKE '%s'
-                            AND device_type LIKE '%s';'''%(hostname,
-                                                        device_type)
+                            AND device_type LIKE '%s';''' % (hostname,
+                                                             device_type)
         else:
-            sql=''' SELECT
+            sql = ''' SELECT
                         *
                     FROM
                         xmppmaster.mon_rules
                     WHERE
-                        device_type LIKE '%s';'''%(device_type)
+                        device_type LIKE '%s';''' % (device_type)
         #logging.getLogger().debug("sql %s"%sql)
         result = session.execute(sql)
         session.commit()
         session.flush()
-        return [ {'id' : i[0],
-                  'hostname' : i[1],
-                  'device_type' : i[2],
-                  "binding" : i[3],
-                  "succes_binding_cmd" : i[4],
-                  "no_success_binding_cmd" : i[5],
-                  "error_on_binding" : i[6],
-                  "type_event" : i[7],
-                  "user" : i[8],
-                  "comment" : i[9]} for i in result ]
+        return [{'id': i[0],
+                 'hostname': i[1],
+                 'device_type': i[2],
+                 "binding": i[3],
+                 "succes_binding_cmd": i[4],
+                 "no_success_binding_cmd": i[5],
+                 "error_on_binding": i[6],
+                 "type_event": i[7],
+                 "user": i[8],
+                 "comment": i[9]} for i in result]
 
     @DatabaseHelper._sessionm
     def analyse_mon_rules(self,
                           session,
                           mon_machine_id,
-                             device_type,
-                             serial,
-                             firmware,
-                             status,
-                             alarm_msg,
-                             doc
-                          ):
-        # search regle for device et machine
+                          device_type,
+                          serial,
+                          firmware,
+                          status,
+                          alarm_msg,
+                          doc):
+        # search rule for device and machine
         pass
 
 
@@ -5826,15 +5827,15 @@ class XmppMasterDatabase(DatabaseHelper):
                                       status=True,
                                       comment=""):
         """
-        This function allow to record panel graph template
+        This function allows to record panel graph template
         Args:
             session: The sqlalchemy session
             name_graphe: The name of graph
-            template_json: The name of graph
+            template_json: The panel template in json format
             type_graphe: The type of graph
-            parameters: The optionel parameters string json { "key":"value",...}
-            status: The name of graph
-            comment: The name of graph
+            parameters: The optional parameters json string  { "key":"value",...}
+            status: Can be True, False or None
+            comment:
         Returns:
             It returns the id of the machine
         """
@@ -5859,18 +5860,16 @@ class XmppMasterDatabase(DatabaseHelper):
                                       session,
                                       status=True):
         """
-        This function allow to get panel graph template
+        This function allows to get panel graph template
         Args:
             session: The sqlalchemy session
-            status: The name of graph
-          
             status: The default value is True
                     Can be 1, 0 or None
-                    False : list of template panel status False
-                    True : list of template panel status True
-                    None: list of all template panel
+                    False : list of template panels status False
+                    True : list of template panels status True
+                    None: list of all template panels
         Returns:
-            It returns the list of template panel
+            It returns the list of template panels
         """
         try:
             list_panels_template = []
@@ -5885,14 +5884,13 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             for graphe_template in result_panels_template:
-                res = { 'id': graphe_template.id,
-                        'name_graphe': graphe_template.name_graphe,
-                        'template_json': graphe_template.template_json,
-                        'type_graphe' : graphe_template.type_graphe,
-                        'parameters': graphe_template.parameters,
-                        'status' : graphe_template.status,
-                        'comment': graphe_template.comment
-                    }
+                res = {'id': graphe_template.id,
+                       'name_graphe': graphe_template.name_graphe,
+                       'template_json': graphe_template.template_json,
+                       'type_graphe': graphe_template.type_graphe,
+                       'parameters': graphe_template.parameters,
+                       'status': graphe_template.status,
+                       'comment': graphe_template.comment}
                 list_panels_template.append(res)
         except Exception, e:
             logging.getLogger().error(str(e))
