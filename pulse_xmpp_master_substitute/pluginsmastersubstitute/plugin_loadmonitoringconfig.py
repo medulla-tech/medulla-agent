@@ -81,11 +81,10 @@ def read_conf_load_plugin_monitoring_version_config(objectxmpp):
     if objectxmpp.monitoring_agent_config_file != "" and \
         os.path.exists(objectxmpp.monitoring_agent_config_file):
         content = file_get_contents(objectxmpp.monitoring_agent_config_file)
-        
+
         logger.debug("monitoring_agent_config_file %s "%(objectxmpp.monitoring_agent_config_file))
         logger.debug("content %s "%(content))
-        
-        
+
         objectxmpp.monitoring_agent_config_file_md5 = hashlib.md5(content).hexdigest()
         objectxmpp.monitoring_agent_config_file_content = base64.b64encode(content)
         logger.debug("monitoring_agent_config_file_content %s "%(objectxmpp.monitoring_agent_config_file_content))
@@ -97,16 +96,21 @@ def plugin_loadmonitoringconfig(self, msg, data):
         cette fonction est appeler par le substitute qui implemente ce plugin
     """
     try:
+        if data['agenttype']  in ["relayserver"]:
+            logger.warning("ARS monitoring_agent_config_file  no exist")
+            return
+
         if self.monitoring_agent_config_file_md5 == "":
             logger.warning("file %s not defined or "
                            "non-existent md5 missing"%self.monitoring_agent_config_file)
             return
+
         logger.debug("monitoring_agent_config_file_md5 %s "%(self.monitoring_agent_config_file_md5))
         logger.debug("self.monitoring_agent_config_file_content %s "%(self.monitoring_agent_config_file_content))
         logger.debug("data['md5_conf_monitoring'] %s "%(data['md5_conf_monitoring']))
-        if 'md5_conf_monitoring' in data and \
-            data['md5_conf_monitoring'] != self.monitoring_agent_config_file_md5 and \
-            self.monitoring_agent_config_file_content != "" :
+        if 'md5_conf_monitoring' in data :
+            if data['md5_conf_monitoring'] != self.monitoring_agent_config_file_md5 and \
+                self.monitoring_agent_config_file_content != "" :
                 # on installe le fichier de configuration
                 # creation du message de configuration.
                 # et envoi 
@@ -115,7 +119,7 @@ def plugin_loadmonitoringconfig(self, msg, data):
                             'sessionid' : name_random(5, pref="confmonitoring"),
                             'data' : { 'pluginname' : 'fichier_de_conf',
                                         'content' : self.monitoring_agent_config_file_content}}
-                            
+
                 logger.debug("fichierdata %s "%(json.dumps(fichierdata, indent=4)))
                 try:
                     self.send_message(mto=msg['from'],
@@ -125,6 +129,8 @@ def plugin_loadmonitoringconfig(self, msg, data):
                     logger.debug("Plugin %s creation message configuration : %s"%(plugin['NAME'],
                                                                                   str(e)))
                     logger.error("\n%s"%(traceback.format_exc()))
+            else:
+                logger.warning("up to date configuration monitoring")
     except Exception as e:
         logger.debug("Plugin %s : %s"%(plugin['NAME'], str(e)))
         logger.error("\n%s"%(traceback.format_exc()))
