@@ -51,7 +51,8 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Mon_devices, \
     Mon_device_service, \
     Mon_rules, \
-    Mon_event
+    Mon_event, \
+    Mon_panels_template
 # Imported last
 import logging
 import json
@@ -5813,3 +5814,86 @@ class XmppMasterDatabase(DatabaseHelper):
                           ):
         # search regle for device et machine
         pass
+
+
+    @DatabaseHelper._sessionm
+    def setMonitoring_panels_template(self,
+                                      session,
+                                      name_graphe,
+                                      template_json,
+                                      type_graphe,
+                                      parameters="{}",
+                                      status=True,
+                                      comment=""):
+        """
+        This function allow to record panel graph template
+        Args:
+            session: The sqlalchemy session
+            name_graphe: The name of graph
+            template_json: The name of graph
+            type_graphe: The type of graph
+            parameters: The optionel parameters string json { "key":"value",...}
+            status: The name of graph
+            comment: The name of graph
+        Returns:
+            It returns the id of the machine
+        """
+        try:
+            new_Monitoring_panels_template = Mon_panels_template()
+            new_Monitoring_panels_template.name_graphe = name_graphe
+            new_Monitoring_panels_template.template_json = template_json
+            new_Monitoring_panels_template.type_graphe = type_graphe
+            new_Monitoring_panels_template.parameters = parameters
+            new_Monitoring_panels_template.status = status
+            new_Monitoring_panels_template.comment = comment
+            session.add(new_Monitoring_panels_template)
+            session.commit()
+            session.flush()
+            return new_Monitoring_panels_template.id
+        except Exception, e:
+            logging.getLogger().error(str(e))
+            return -1
+
+    @DatabaseHelper._sessionm
+    def getMonitoring_panels_template(self,
+                                      session,
+                                      status=True):
+        """
+        This function allow to get panel graph template
+        Args:
+            session: The sqlalchemy session
+            status: The name of graph
+          
+            status: The default value is True
+                    Can be 1, 0 or None
+                    False : list of template panel status False
+                    True : list of template panel status True
+                    None: list of all template panel
+        Returns:
+            It returns the list of template panel
+        """
+        try:
+            list_panels_template = []
+            if status:
+                result_panels_template = session.query(Mon_panels_template).\
+                filter(and_(Mon_panels_template.status == 1)).all()
+            elif status is False:
+                result_panels_template = session.query(Mon_panels_template).\
+                filter(and_(Mon_panels_template.status == 0)).all()
+            else:
+                result_panels_template = session.query(Mon_panels_template).all()
+            session.commit()
+            session.flush()
+            for graphe_template in result_panels_template:
+                res = { 'id': graphe_template.id,
+                        'name_graphe': graphe_template.name_graphe,
+                        'template_json': graphe_template.template_json,
+                        'type_graphe' : graphe_template.type_graphe,
+                        'parameters': graphe_template.parameters,
+                        'status' : graphe_template.status,
+                        'comment': graphe_template.comment
+                    }
+                list_panels_template.append(res)
+        except Exception, e:
+            logging.getLogger().error(str(e))
+        return list_panels_template
