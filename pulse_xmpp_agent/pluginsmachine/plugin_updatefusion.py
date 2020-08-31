@@ -69,7 +69,7 @@ def updatefusion(xmppobject):
             architecture = 'x86'
         filename = 'fusioninventory-agent_windows-%s_%s.exe' % (
             architecture, FUSIONVERSION)
-        dl_url = 'http://%s/downloads/lin/downloads/%s' % (
+        dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(dl_url).downloadurl()
