@@ -52,7 +52,7 @@ def checkfusionversion():
         cmd = 'reg query hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            fusionversion = result['result'].split()[2]
+            fusionversion = result['result'][0].strip().split()[-1]
         else:
             # Fusion is not installed. We will force installation by returning
             # version 0.1
