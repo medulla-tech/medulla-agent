@@ -67,7 +67,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     if "content" in data:
         content = base64.b64decode(data['content'])
         if content != "":
-            # install le fichier de configuration monitoring
+            # Installs the monitoring config gile
             try:
                 logger.error("[%s] : install file %s" %
                              (plugin['NAME'], objectxmpp.config.monitoring_agent_config_file))
