@@ -672,7 +672,7 @@ class confParameter:
                 self.monitoring_agent_config_file = Config.get("monitoring",
                                                         "monitoring_agent_config_file")
             else:
-                # il n'y a pas de fichier de configuration
+                # Config file not found
                 self.monitoring_agent_config_file = ""
 
         self.information = {}

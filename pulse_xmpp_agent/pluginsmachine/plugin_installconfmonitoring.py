@@ -28,17 +28,17 @@ import traceback
 
 logger = logging.getLogger()
 
-plugin={"VERSION": "1.0", "NAME" : "installconfmonitoring", "TYPE" : "machine"}
+plugin = {"VERSION": "1.0", "NAME": "installconfmonitoring", "TYPE": "machine"}
 
-def action( objectxmpp, action, sessionid, data, message, dataerreur ):
+def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s"%(plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
-    logger.debug("data %s"%(json.dumps(data,indent=4)))
+    logger.debug("data %s" % (json.dumps(data,indent=4)))
     strjidagent = str(objectxmpp.boundjid.bare)
     dataerreur['ret'] = 255
     dataerreur['action'] = "resultmsginfoerror"
-        
+
     content = ""
     try:
         objectxmpp.config.monitoring_agent_config_file
@@ -50,14 +50,14 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                                     mtype = 'chat')
             return
     except Exception as e:
-        logger.debug("Plugin %s : %s"%(plugin['NAME'], str(e)))
-        logger.error("\n%s"%(traceback.format_exc()))
-        
-        dataerreur['data']['msg'] ="Error %s [plugin %s ] on machine %s" \
-                "\nTRACEBACK INFORMATION\n%s"% (str(e),
-                                                   plugin['Name'],
-                                                   strjidagent,
-                                                   traceback.format_exc())
+        logger.debug("Plugin %s : %s" % (plugin['NAME'], str(e)))
+        logger.error("\n%s" % (traceback.format_exc()))
+
+        dataerreur['data']['msg'] = "Error %s [plugin %s ] on machine %s" \
+                "\nTRACEBACK INFORMATION\n%s" % (str(e),
+                                                 plugin['Name'],
+                                                 strjidagent,
+                                                 traceback.format_exc())
 
         objectxmpp.send_message(mto = message['from'],
                                 mbody = json.dumps(dataerreur),
@@ -67,18 +67,18 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
     if "content" in data:
         content = base64.b64decode(data['content'])
         if content != "":
-            # install le fichier de configuration monitoring
+            # Installs the monitoring config gile
             try:
-                logger.error("[%s] : install file %s"%(plugin['NAME'], objectxmpp.config.monitoring_agent_config_file))
+                logger.error("[%s] : install file %s" %
+                             (plugin['NAME'], objectxmpp.config.monitoring_agent_config_file))
                 fileplugin = open(objectxmpp.config.monitoring_agent_config_file, "w")
                 fileplugin.write(str(content))
                 fileplugin.close()
-                
-            except Exception, e:
-                logging.getLogger().debug("error : %s"%str(e))
-                dataerreur['data']['msg'] = "Installing plugin %s on %s : %s"%(data['pluginname'],
-                                                                            message['to'].user,
-                                                                            str(e))
+
+            except Exception as e:
+                logging.getLogger().debug("error : %s" % str(e))
+                dataerreur['data']['msg'] = "Installing plugin %s on %s : %s" % (
+                    data['pluginname'], message['to'].user, str(e))
                 objectxmpp.send_message(mto = message['from'],
                                 mbody = json.dumps(dataerreur),
                                 mtype = 'chat')
