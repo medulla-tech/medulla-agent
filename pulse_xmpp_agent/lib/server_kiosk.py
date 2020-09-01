@@ -23,6 +23,7 @@
 # file : pulse_xmpp_agent/lib/server_kiosk.py
 
 import sys
+import re
 import logging
 import traceback
 import platform
@@ -257,6 +258,28 @@ class process_tcp_serveur():
         finally:
             client_socket.close()
 
+def minifyjsonstringrecv(strjson):
+    # on supprime les commentaires // et les passages a la ligne
+    strjson = ''.join([row.split('//')[0] for row in strjson.split("\n") if len(row.strip())!=0])
+    #on vire les tab les passage a la ligne et les fin de ligne
+    regex = re.compile(r'[\n\r\t]')
+    strjson = regex.sub("", strjson)
+    #on protege les espaces des strings json 
+    reg=re.compile(r"""(\".*?\n?.*?\")|(\'.*?\n?.*?\')""")
+    newjson = re.sub(reg,
+                     lambda x: '"%s"'%str(x.group(0)).strip('\"\'').strip().replace(' ','@@ESP@@'),
+                     strjson)
+    # on vire les espaces
+    newjson=newjson.replace(' ','')
+    #on remet les espace protégé
+    newjson=newjson.replace('@@ESP@@',' ')
+    # on supprime deserror retrouver souvent dans les json
+    newjson=newjson.replace(",}","}")
+    newjson=newjson.replace("{,","{")
+    newjson=newjson.replace("[,","[")
+    newjson=newjson.replace(",]","]")
+    return newjson
+
 class manage_kiosk_message:
     def __init__(self, queue_in, objectxmpp, key_quit="quit_server_kiosk"):
         self.logger = logging.getLogger()
@@ -307,7 +330,7 @@ class manage_kiosk_message:
             if isBase64(msg):
                 msg = base64.b64decode(msg)
             try:
-                result = json.loads(msg)
+                result = json.loads(minifyjsonstringrecv(msg))
                 self.logger.info("__Event network or kiosk %s"%json.dumps(result,
                                                                      indent = 4))
             except ValueError as e:
@@ -387,6 +410,16 @@ class manage_kiosk_message:
                     datasend['action'] = "notifysyncthing"
                     datasend['sessionid'] = getRandomName(6, "syncthing")
                     datasend['data'] = result['data']
+                elif result['action'] == "terminalInformations" or\
+                        result['action'] == "terminalAlert":
+                    datasend['action'] = "vectormonitoringagent"
+                    datasend['sessionid'] = getRandomName(6, "monitoringterminalInformations")
+                    datasend['data']= result['data']
+                    datasend['data']['subaction'] = result['action']
+                    if 'date' in result:
+                        result['data']['date'] = result['date']
+                    if 'serial' in result:
+                        result['data']['serial'] = result['serial']
                 else:
                     #bad action
                     self.logger.getLogger().warning("this action is not taken into account : %s"%result['action'])

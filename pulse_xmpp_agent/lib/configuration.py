@@ -666,6 +666,15 @@ class confParameter:
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
 
+        # configuration monitoring
+        if self.agenttype == "machine":
+            if Config.has_option("monitoring", "monitoring_agent_config_file"):
+                self.monitoring_agent_config_file = Config.get("monitoring",
+                                                        "monitoring_agent_config_file")
+            else:
+                # Config file not found
+                self.monitoring_agent_config_file = ""
+
         self.information = {}
         self.PlatformSystem = platform.platform()
         self.information['platform'] = self.PlatformSystem
