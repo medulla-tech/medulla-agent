@@ -28,7 +28,7 @@ import logging
 import traceback
 import types
 import ConfigParser
-from utils import file_get_contents, file_put_contents, name_random
+from utils import file_get_contents, name_random
 import hashlib
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.manage_grafana import manage_grafana
@@ -44,15 +44,13 @@ plugin = {"VERSION": "1.0", "NAME": "loadmonitoringconfig", "TYPE": "substitute"
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
 
-    callcounter = getattr(objectxmpp, "num_call%s"%action)
+    callcounter = getattr(objectxmpp, "num_call%s" % action)
 
     if callcounter == 0:
         read_conf_load_plugin_monitoring_version_config(objectxmpp)
-        for _ in range(10):
-            logger.debug("=====================================================")
 
 
 def read_conf_load_plugin_monitoring_version_config(objectxmpp):
@@ -61,7 +59,8 @@ def read_conf_load_plugin_monitoring_version_config(objectxmpp):
     """
 
     conffilename = plugin['NAME'] + ".ini"
-    pathfileconf = os.path.join(objectxmpp.config.pathdirconffile, conffilename)
+    pathfileconf = os.path.join(objectxmpp.config.pathdirconffile,
+                                conffilename)
 
     defautconf = "/var/lib/pulse2/xmpp_monitoring/confagent/monitoring_config.ini"
     if not os.path.isfile(pathfileconf):
