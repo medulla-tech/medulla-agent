@@ -28,11 +28,10 @@ import logging
 import traceback
 import types
 import ConfigParser
-from utils import file_get_contents, name_random
 import hashlib
+from lib.utils import file_get_contents, name_random
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.manage_grafana import manage_grafana
-
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -123,7 +122,6 @@ def plugin_loadmonitoringconfig(self, msg, data):
         if 'md5_conf_monitoring' not in data:
             logger.warning("md5_conf_monitoring missing from agent %s "%(msg['from']))
             return
-
 
         logger.debug("monitoring_agent_config_file_md5 %s "
                      % (self.monitoring_agent_config_file_md5))
