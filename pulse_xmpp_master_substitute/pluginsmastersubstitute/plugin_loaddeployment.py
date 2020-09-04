@@ -372,7 +372,7 @@ def scheduledeployrecoveryjob(self):
                                               data,
                                               sessionid=machine['sessionid'])
                 else:
-                    datasession = self.session.sessiongetdata(machine['sessionid'])
+                    datasession = self.sessiondeploysubstitute.sessiongetdata(machine['sessionid'])
                     msglog.append("Starting deployment on machine %s from ARS %s" % (machine['jidmachine'],
                                                                                      machine['jid_relay']))
 
