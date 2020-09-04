@@ -122,6 +122,12 @@ if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
     echo "..done"
 fi
 
+if systemctl -q is-enabled pulse-xmpp-master-substitute-monitoring ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-monitoring service..."
+    systemctl restart pulse-xmpp-master-substitute-monitoring
+    echo "..done"
+fi
+
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
@@ -172,6 +178,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 
 
 #--------------------------------------------------------------------
