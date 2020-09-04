@@ -47,7 +47,7 @@ from sleekxmpp import jid
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.0", "NAME": "loaddeployment", "TYPE": "substitute"}
+plugin = {"VERSION": "1.2", "NAME": "loaddeployment", "TYPE": "substitute"}
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
     try:
