@@ -66,7 +66,7 @@ def XmppUpdateInventoried(jid, machine):
                 XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
                 return True
     except KeyError:
-        logger.error("An error occured on machine %s and we did not receive any inventory,"
+        logger.error("An error occurred on machine %s and we did not receive any inventory,"
                      "make sure fusioninventory is running correctly" % machine)
     except Exception:
         logger.error("** Update error on inventory %s\n%s" % (jid, traceback.format_exc()))

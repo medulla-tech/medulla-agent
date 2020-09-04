@@ -35,7 +35,7 @@ import shutil
 import subprocess
 import psutil
 import random
-
+import hashlib
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
@@ -246,7 +246,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
 
-
         if not hasattr(self.config, 'sub_inventory'):
             self.sub_inventory = self.agentmaster
         else:
@@ -268,6 +267,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_registration = jid.JID(self.config.sub_registration)
         if self.sub_registration.bare == "":
             self.sub_registration = self.agentmaster
+
+        if not hasattr(self.config, 'sub_monitoring'):
+            self.sub_monitoring = self.agentmaster
+        else:
+            if isinstance(self.config.sub_monitoring, list) and\
+                len(self.config.sub_monitoring) > 0:
+                self.sub_monitoring = jid.JID(self.config.sub_monitoring[0])
+            else:
+                self.sub_monitoring = jid.JID(self.config.sub_monitoring)
+        if self.sub_monitoring.bare == "":
+            self.sub_monitoring = self.agentmaster
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
@@ -2084,6 +2094,18 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid
         }
+        try:
+            dataobj['md5_conf_monitoring'] = ""
+            # self.monitoring_agent_config_file
+            if self.config.agenttype not in ['relayserver'] and \
+                hasattr(self.config, 'monitoring_agent_config_file') and \
+                    self.config.monitoring_agent_config_file != "" and \
+                        os.path.exists(self.config.monitoring_agent_config_file):
+                            dataobj['md5_conf_monitoring'] =  hashlib.md5(file_get_contents(self.config.monitoring_agent_config_file)).hexdigest()
+        except AttributeError:
+            logging.warning('conf file monitoring missing')
+        except Exception as e:
+            logging.error('%s error on file config monitoring'%str(e))
         if self.config.agenttype in ['relayserver']:
             try:
                 dataobj['syncthing_port'] = self.config.syncthing_port
