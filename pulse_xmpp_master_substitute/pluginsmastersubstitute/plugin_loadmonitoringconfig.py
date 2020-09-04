@@ -30,6 +30,8 @@ import types
 import ConfigParser
 import hashlib
 from lib.utils import file_get_contents, name_random
+from lib.plugins.xmpp import XmppMasterDatabase
+from lib.manage_grafana import manage_grafana
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -41,15 +43,13 @@ plugin = {"VERSION": "1.0", "NAME": "loadmonitoringconfig", "TYPE": "substitute"
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
 
-    callcounter = getattr(objectxmpp, "num_call%s"%action)
+    callcounter = getattr(objectxmpp, "num_call%s" % action)
 
     if callcounter == 0:
         read_conf_load_plugin_monitoring_version_config(objectxmpp)
-        for _ in range(10):
-            logger.debug("=====================================================")
 
 
 def read_conf_load_plugin_monitoring_version_config(objectxmpp):
@@ -58,7 +58,8 @@ def read_conf_load_plugin_monitoring_version_config(objectxmpp):
     """
 
     conffilename = plugin['NAME'] + ".ini"
-    pathfileconf = os.path.join(objectxmpp.config.pathdirconffile, conffilename)
+    pathfileconf = os.path.join(objectxmpp.config.pathdirconffile,
+                                conffilename)
 
     defautconf = "/var/lib/pulse2/xmpp_monitoring/confagent/monitoring_config.ini"
     if not os.path.isfile(pathfileconf):
@@ -111,6 +112,8 @@ def plugin_loadmonitoringconfig(self, msg, data):
             logger.warning("ARS monitoring_agent_config_file does not exist")
             return
 
+        initialisation_graph(self, msg, data)
+
         if self.monitoring_agent_config_file_md5 == "":
             logger.warning("file %s not defined or non-existent md5"
                            % self.monitoring_agent_config_file)
@@ -151,3 +154,43 @@ def plugin_loadmonitoringconfig(self, msg, data):
     except Exception as e:
         logger.debug("Plugin %s : %s"%(plugin['NAME'], str(e)))
         logger.error("\n%s"%(traceback.format_exc()))
+
+
+def initialisation_graph(objectxmpp, msg, data):
+    try:
+        hostname = str(msg['from']).split('.', 1)[0]
+    except Exception:
+        logger.error("Could not get hostname from jid %s\n%s" % (
+            msg['from'], traceback.format_exc()))
+        return
+    # on recupere la liste des template
+    listtemplate = XmppMasterDatabase().\
+        getMonitoring_panels_template(status=True)
+    # pour chaque panel on applique les parametres.
+    for graphe_init in listtemplate:
+        try:
+            if manage_grafana(hostname).\
+                    grafanaGetPanelIdFromTitle(graphe_init['name_graphe']):
+                logger.debug("graphe %s for machine %s always exist")
+                continue
+            parameters = {}
+            try:
+                parameters = json.loads(graphe_init['parameters'])
+            except Exception:
+                logger.error("look for parameters in format "
+                "string json.\n%s" % traceback.format_exc())
+            parameters['@_hostname_@'] = hostname
+            parameters['@_type_graphe_@'] = graphe_init['type_graphe']
+            parameters['@_name_graphe_@'] = graphe_init['name_graphe']
+            logger.warning("parameters  %s"%parameters)
+            for keyreplace in parameters:
+                graphe_init['template_json'] = graphe_init['template_json'].\
+                    replace(keyreplace, parameters[keyreplace])
+
+            manage_grafana(hostname).grafanaEditPanel(graphe_init['template_json'])
+
+        except Exception:
+            logger.error("Could not configure %s panel"
+                    " for %s\n%s" % (graphe_init['name_graphe'],
+                                      hostname,
+                                      traceback.format_exc()))

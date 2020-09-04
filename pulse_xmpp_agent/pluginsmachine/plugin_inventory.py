@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "2.2", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "2.4", "NAME": "inventory", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -46,7 +46,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True
-
+    namefilexml =""
     if hasattr(xmppobject.config, 'json_file_extend_inventory'):
         if os.path.exists(xmppobject.config.json_file_extend_inventory):
             dd = extend_xmlfile(xmppobject)
@@ -113,7 +113,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             for nbcmd in range(1, 4):
                 logger.debug("process inventory %s timeout %s" % (nbcmd,
                                                                   timeoutfusion))
-                if os.path.exists(namefilexml):
+                if namefilexml and os.path.exists(namefilexml):
                     cmd = "fusioninventory-agent --backend-collect-timeout=%s "\
                         "--additional-content=%s --local=%s" % (timeoutfusion,
                                                                 namefilexml,

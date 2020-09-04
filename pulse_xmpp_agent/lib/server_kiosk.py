@@ -318,6 +318,7 @@ class manage_kiosk_message:
                 self.logger.info('loop event wait stop')
 
     def handle_client_connection(self, recv_msg_from_kiosk):
+        substitute_recv = ""
         try:
             self.logger.info('Received {}'.format(recv_msg_from_kiosk))
             datasend = { 'action': "resultkiosk",
@@ -412,6 +413,7 @@ class manage_kiosk_message:
                     datasend['data'] = result['data']
                 elif result['action'] == "terminalInformations" or\
                         result['action'] == "terminalAlert":
+                    substitute_recv = self.objectxmpp.sub_monitoring
                     datasend['action'] = "vectormonitoringagent"
                     datasend['sessionid'] = getRandomName(6, "monitoringterminalInformations")
                     datasend['data']= result['data']
@@ -424,8 +426,14 @@ class manage_kiosk_message:
                     #bad action
                     self.logger.getLogger().warning("this action is not taken into account : %s"%result['action'])
                     return
-                #call plugin on master
-                self.objectxmpp.send_message_to_master(datasend)
+                if substitute_recv:
+                    self.logger.warning("send to %s " % substitute_recv)
+                    self.objectxmpp.send_message(  mbody = json.dumps(datasend),
+                            mto = substitute_recv,
+                            mtype ='chat')
+                else:
+                    #call plugin on master
+                    self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
             self.logger.error("message to kiosk server : %s" % str(e))
             self.logger.error("\n%s"%(traceback.format_exc()))
