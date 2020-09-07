@@ -1907,7 +1907,7 @@ FunctionEnd
 !macro DeletePulseProfile UN
   Function ${UN}DeletePulseProfile
   ; Remove Pulse profile
-  StrCpy $0 `$CMD_POWERSHELL "Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -like '*pulse*'} | Remove-WmiObject"`
+  StrCpy $0 `$CMD_POWERSHELL "Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -like '*pulse*'} | ForEach-Object {Remove-WmiObject -InputObject $_}"`
   ${LogString} "Running $0"
   nsExec::ExecToStack $0
   Pop $0
