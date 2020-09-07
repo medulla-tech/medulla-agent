@@ -88,6 +88,7 @@ def read_conf_load_plugin_subscribe(objectxmpp):
 
 def changed_status(self, presence):
     frommsg = jid.JID(presence['from'])
+    spresence = str(presence['from'])
     try:
         if frommsg.bare == self.boundjid.bare:
             logger.debug( "Message self calling not processed")
@@ -98,6 +99,9 @@ def changed_status(self, presence):
 
     if presence['type'] == 'unavailable':
         try:
+            result = XmppMasterDatabase().getMachinefromjid(spresence)
+            if result and result['enabled'] == 0:
+                return
             logger.debug("update offline for %s" % (presence['from']))
             result = XmppMasterDatabase().initialisePresenceMachine(presence['from'])
             XmppMasterDatabase().setlogxmpp("%s offline" % presence['from'],
