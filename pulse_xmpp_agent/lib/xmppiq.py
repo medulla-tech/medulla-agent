@@ -55,6 +55,7 @@ from utils_psutil import sensors_battery,\
                          ifconfig,\
                          cpu_num,\
                          netstat
+import socket
 from lib.update_remote_agent import agentinfoversion
 if sys.platform.startswith('win'):
     import win32net
@@ -86,7 +87,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "keypub",
                          "information",
                          "keyinstall",
-                         "packageslist"]
+                         "packageslist",
+                         "f"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s " % data['action'])
         result = callXmppFunctionIq(data['action'], xmppobject=xmppobject, data=data)
@@ -121,6 +123,107 @@ class functionsynchroxmpp:
     def test(xmppobject, data):
         logger.debug("iq test")
         return json.dumps(data)
+
+    @staticmethod
+    def reversesshqa(xmppobject, data ):
+        """
+            call directement plugin reverse ssh
+        """
+        datareverse=data['data']
+        portproxy   = datareverse['portproxy']
+        remoteport = datareverse['remoteport']
+
+        if sys.platform.startswith('linux'):
+            # copier les clef ARS sur la machine distante.
+            ####      /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub
+            #### and /var/lib/pulse2/clients/reversessh/.ssh/id_rsa de relay  dans
+            ### pour linux basedir  de os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            ### pour windows basedir de filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa") ou de filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
+            ### pour macos basedir de os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            dd = """#!/bin/bash
+            /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            """%(datareverse['type_reverse'],
+                 datareverse['portproxy'],
+                 datareverse['remoteport'],
+                 filekey,
+                 datareverse['ipARS'],
+                 datareverse['port_ssh_ars'])
+            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'), "reversessh.sh")
+            file_put_contents(reversesshsh,  dd)
+            os.chmod(reversesshsh, 0o700)
+            args = shlex.split(reversesshsh)
+            result = subprocess.Popen(args)
+            logger.debug("Command reversessh %s" % dd)
+         #/usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
+        elif sys.platform.startswith('win'):
+            ################# win reverse #################
+            try:
+                win32net.NetUserGetInfo('','pulseuser',0)
+                filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
+            except:
+                filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
+            # il faut adapter les droit du fichier idrsa suivant si console administrator ou system.
+
+            userprogram = win32api.GetUserName().lower()
+            # on modifie les droits sur le fichier de key pour reverse ssh dans user
+            if not userprogram.startswith("syst"):
+                userprogram = "Administrator"
+
+            user, domain, type = win32security.LookupAccountName ("", userprogram)
+            sd = win32security.GetFileSecurity(filekey,
+                                            win32security.DACL_SECURITY_INFORMATION)
+            dacl = win32security.ACL ()
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
+                                        ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
+                                        user)
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+
+
+            win32security.SetFileSecurity(filekey,
+                                            win32security.DACL_SECURITY_INFORMATION, sd)
+
+
+            sshexec =  os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh.exe")
+            reversesshbat = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", "reversessh.bat")
+
+            linecmd = []
+            cmd = """\\"%s\\" -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
+                                                                                                                             datareverse['type_reverse'],
+                                                                                                                             datareverse['portproxy'],
+                                                                                                                             datareverse['remoteport'],
+                                                                                                                             filekey,
+                                                                                                                             datareverse['ipARS'],
+                                                                                                                             datareverse['port_ssh_ars'])
+            linecmd.append( """@echo off""")
+            linecmd.append( """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """ % cmd)
+            linecmd.append( """echo %$PID%""")
+            linecmd.append( """echo %$PID% > C:\\"Program Files"\\Pulse\\bin\\%$PID%.pid""")
+            dd = '\r\n'.join(linecmd)
+
+            if not os.path.exists(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")):
+                os.makedirs(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin"))
+            file_put_contents(reversesshbat,  dd)
+            result = subprocess.Popen(reversesshbat)
+            time.sleep(2)
+        elif sys.platform.startswith('darwin'):
+            filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            dd = """#!/bin/bash
+            /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            """ % ( datareverse['type_reverse'],
+                    datareverse['portproxy'],
+                    datareverse['remoteport'],
+                    filekey,
+                    datareverse['ipARS'],
+                    datareverse['port_ssh_ars'])
+            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'), "reversessh.sh")
+            file_put_contents(reversesshsh,  dd)
+            os.chmod(reversesshsh, 0o700)
+            args = shlex.split(reversesshsh)
+            result = subprocess.Popen(args)
+        else:
+            logger.warning("os not supported in plugin%s" % sys.platform)
+
 
     @staticmethod
     def remotefilesimple( xmppobject, data ):
@@ -420,6 +523,22 @@ class functionsynchroxmpp:
                     result['result']['informationresult'][info_ask] = decode_strconsole(ifconfig())
                 if info_ask == "cpu_num":
                     result['result']['informationresult'][info_ask] = decode_strconsole(cpu_num())
+                if info_ask == "get_ars_key_id_rsa":
+                    private_key_ars = os.path.join(os.path.expanduser('~reversessh'),
+                                                   '.ssh',
+                                                   "id_rsa")
+                    result['result']['informationresult'][info_ask] = file_get_contents(private_key_ars)
+                if info_ask == "get_ars_key_id_rsa_pub":
+                    public_key_ars = os.path.join(os.path.expanduser('~reversessh'),
+                                                   '.ssh',
+                                                   "id_rsa.pub")
+                    result['result']['informationresult'][info_ask] = file_get_contents(public_key_ars)
+                if info_ask == "get_free_tcp_port":
+                    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp.bind(('', 0))
+                    addr, port = tcp.getsockname()
+                    tcp.close()
+                    result['result']['informationresult'][info_ask] = port
                 if info_ask == "netstat":
                     result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
                 if info_ask == "profiluserpulse":
