@@ -108,6 +108,9 @@ def changed_status(self, presence):
                                                    status=0,
                                                    updowntime=time.time() - lastevent[0]['time'],
                                                    date=None)
+        result = XmppMasterDatabase().getMachinefromjid(spresence)
+        if result and result['enabled'] == 0:
+            return
         try:
             logger.debug("update offline for %s" % (spresence))
             result = XmppMasterDatabase().initialisePresenceMachine(spresence)
