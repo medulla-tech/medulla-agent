@@ -265,6 +265,11 @@ def configure_panel(jid):
             "id" : 1,
             "datasource" : "xmppmaster",
             "type" : "graph",
+            "legend": {
+                "show": true,
+                "current": true,
+                "values": true
+            },
             "lines": true,
             "steppedLine": true,
             "fill": 1,
@@ -286,41 +291,11 @@ def configure_panel(jid):
                     "format": "time_series",
                     "group": [],
                     "metricColumn": "none",
-                    "rawQuery": false,
-                    "rawSql": "SELECT date AS 'time', status FROM uptime_machine WHERE $__timeFilter(date) AND hostname = '%s' ORDER BY date",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "status"
-                                ],
-                                "type": "column"
-                            }
-                        ]
-                    ],
-                    "table": "uptime_machine",
-                    "timeColumn": "date",
-                    "timeColumnType": "timestamp",
-                    "where": [
-                        {
-                            "name": "$__timeFilter",
-                            "params": [],
-                            "type": "macro"
-                        },
-                        {
-                            "datatype": "varchar",
-                            "name": "",
-                            "params": [
-                                "hostname",
-                                "=",
-                                "'%s'"
-                            ],
-                            "type": "expression"
-                        }
-                    ]
+                    "rawQuery": true,
+                    "rawSql": "call `mon-onlineoffline`('%s');"
                 }
             ]
-        }""" % (hostname, hostname)
+        }""" % (hostname)
         manage_grafana(hostname).grafanaEditPanel(panel_json)
     except Exception:
         logger.error("Could not configure Online-Offline status panel"
