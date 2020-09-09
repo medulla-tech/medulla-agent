@@ -28,6 +28,8 @@ import sys
 import platform
 import json
 import logging
+import time
+import shlex
 from utils import  shellcommandtimeout, \
                    file_put_contents, \
                    file_get_contents, \
@@ -57,6 +59,7 @@ from utils_psutil import sensors_battery,\
                          ifconfig,\
                          cpu_num,\
                          netstat
+import socket
 from lib.update_remote_agent import agentinfoversion
 if sys.platform.startswith('win'):
     import win32net
@@ -85,7 +88,10 @@ def dispach_iq_command(xmppobject, jsonin):
                          "remotexmppmonitoring",
                          "keypub",
                          "information",
-                         "keyinstall"]
+                         "keyinstall",
+                         "packageslist",
+                         "reversesshqa",
+                         "get_id_rsa"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s " % data['action'] )
         result = callXmppFunctionIq(data['action'], xmppobject=xmppobject, data=data )
@@ -97,7 +103,7 @@ def dispach_iq_command(xmppobject, jsonin):
         return ""
 
 
-def logdeploymsg( xmppobject, msg, sessionid):
+def logdeploymsg(xmppobject, msg, sessionid):
     xmppobject.xmpplog(msg,
                        type='deploy',
                        sessionname=sessionid,
@@ -116,13 +122,118 @@ class functionsynchroxmpp:
         logger.debug("iq xmppbrowsing")
         return json.dumps(data)
 
+
     @staticmethod
-    def test( xmppobject, data):
+    def get_id_rsa(xmppobject, data):
+        result = {}
+        private_key_ars = os.path.join(os.path.expanduser('~reversessh'), '.ssh', "id_rsa")
+        result['private_key_ars'] = file_get_contents(private_key_ars)
+        result['public_key_ars'] = file_get_contents("%s.pub" % private_key_ars)
+        return json.dumps(result)
+
+
+    @staticmethod
+    def reversesshqa(xmppobject, data):
+        """
+            call directement plugin reverse ssh
+        """
+        datareverse = data['data']
+        portproxy = datareverse['portproxy']
+        remoteport = datareverse['remoteport']
+
+        private_key_ars = datareverse['private_key_ars'].strip(' \t\n\r')
+        install_key_ssh_relayserver(private_key_ars, private=True)
+        if sys.platform.startswith('linux'):
+            filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            dd = """#!/bin/bash
+            /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            """ % (datareverse['type_reverse'],
+                   datareverse['portproxy'],
+                   datareverse['remoteport'],
+                   filekey,
+                   datareverse['ipARS'],
+                   datareverse['port_ssh_ars'])
+            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
+                                        "reversessh.sh")
+            file_put_contents(reversesshsh,  dd)
+            os.chmod(reversesshsh, 0o700)
+            args = shlex.split(reversesshsh)
+            result = subprocess.Popen(args)
+            logger.debug("Command reversessh %s" % dd)
+            #/usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
+        elif sys.platform.startswith('win'):
+            ################# win reverse #################
+            try:
+                win32net.NetUserGetInfo('', 'pulseuser', 0)
+                filekey = os.path.join("C:",
+                                       "Users",
+                                       "pulseuser",
+                                       ".ssh",
+                                       "id_rsa")
+            except Exception:
+                filekey = os.path.join(os.environ["ProgramFiles"],
+                                       'pulse',
+                                       ".ssh",
+                                       "id_rsa")
+
+            sshexec = os.path.join(os.environ["ProgramFiles"],
+                                   "OpenSSH",
+                                   "ssh.exe")
+            reversesshbat = os.path.join(os.environ["ProgramFiles"],
+                                         "Pulse",
+                                         "bin",
+                                         "reversessh.bat")
+            linecmd = []
+            cmd = """\\"%s\\" -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
+                                                                                                                             datareverse['type_reverse'],
+                                                                                                                             datareverse['portproxy'],
+                                                                                                                             datareverse['remoteport'],
+                                                                                                                             filekey,
+                                                                                                                             datareverse['ipARS'],
+                                                                                                                             datareverse['port_ssh_ars'])
+            linecmd.append("""@echo off""")
+            linecmd.append("""for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """ % cmd)
+            linecmd.append("""echo %$PID%""")
+            linecmd.append("""echo %$PID% > C:\\"Program Files"\\Pulse\\bin\\%$PID%.pid""")
+            cmd = '\r\n'.join(linecmd)
+
+            if not os.path.exists(os.path.join(os.environ["ProgramFiles"],
+                                               "Pulse",
+                                               "bin")):
+                os.makedirs(os.path.join(os.environ["ProgramFiles"],
+                                         "Pulse",
+                                         "bin"))
+            file_put_contents(reversesshbat,  cmd)
+            result = subprocess.Popen(reversesshbat)
+            time.sleep(2)
+        elif sys.platform.startswith('darwin'):
+            filekey = os.path.join(os.path.expanduser('~pulseuser'),
+                                   ".ssh",
+                                   "id_rsa")
+            cmd = """#!/bin/bash
+            /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            """ % (datareverse['type_reverse'],
+                   datareverse['portproxy'],
+                   datareverse['remoteport'],
+                   filekey,
+                   datareverse['ipARS'],
+                   datareverse['port_ssh_ars'])
+            reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
+                                        "reversessh.sh")
+            file_put_contents(reversesshsh,  cmd)
+            os.chmod(reversesshsh, 0o700)
+            args = shlex.split(reversesshsh)
+            result = subprocess.Popen(args)
+        else:
+            logger.warning("os not supported in plugin%s" % sys.platform)
+
+    @staticmethod
+    def test(xmppobject, data):
         logger.debug("iq test")
         return json.dumps(data)
 
     @staticmethod
-    def remotefilesimple( xmppobject, data ):
+    def remotefilesimple(xmppobject, data):
         logger.debug("iq remotefilesimple")
         datapath = data['data']
         if type(datapath) == unicode or type(datapath) == str:
@@ -132,7 +243,7 @@ class functionsynchroxmpp:
         return json.dumps(data)
 
     @staticmethod
-    def remotefile( xmppobject, data ):
+    def remotefile(xmppobject, data):
         logger.debug("iq remotefile")
         datapath = data['data']
         if isinstance(datapath, basestring):
@@ -164,7 +275,7 @@ class functionsynchroxmpp:
         return json.dumps(result)
 
     @staticmethod
-    def keypub( xmppobject, data ):
+    def keypub(xmppobject, data):
         logger.debug("iq keypub")
         # verify relayserver
         try:
@@ -416,6 +527,30 @@ class functionsynchroxmpp:
                     result['result']['informationresult'][info_ask] = decode_strconsole(ifconfig())
                 if info_ask == "cpu_num":
                     result['result']['informationresult'][info_ask] = decode_strconsole(cpu_num())
+                if info_ask == "clean_reverse_ssh":
+                    if xmppobject.config.agenttype in ['relayserver']:
+                        #on clean les reverse ssh non utiliser
+                        xmppobject.manage_persistence_reverse_ssh.terminate_reverse_ssh_not_using()
+                if info_ask == "add_proxy_port_reverse":
+                    if xmppobject.config.agenttype in ['relayserver']:
+                        if 'param' in data['data'] and 'proxyport' in data['data']['param']:
+                            xmppobject.manage_persistence_reverse_ssh.add_port(data['data']['param']['proxyport'])
+                if info_ask == "get_ars_key_id_rsa":
+                    private_key_ars = os.path.join(os.path.expanduser('~reversessh'),
+                                                   '.ssh',
+                                                   "id_rsa")
+                    result['result']['informationresult'][info_ask] = file_get_contents(private_key_ars)
+                if info_ask == "get_ars_key_id_rsa_pub":
+                    public_key_ars = os.path.join(os.path.expanduser('~reversessh'),
+                                                  '.ssh',
+                                                  "id_rsa.pub")
+                    result['result']['informationresult'][info_ask] = file_get_contents(public_key_ars)
+                if info_ask == "get_free_tcp_port":
+                    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    tcp.bind(('', 0))
+                    addr, port = tcp.getsockname()
+                    tcp.close()
+                    result['result']['informationresult'][info_ask] = port
                 if info_ask == "netstat":
                     result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
                 if info_ask == "profiluserpulse":
@@ -535,3 +670,69 @@ class functionsynchroxmpp:
         else:
             data['data'] = {"result": "error action remotefileeditaction parameter incorrect", "error": True, 'numerror': 132}
         return json.dumps(data)
+
+    @staticmethod
+    def packageslist(xmppobject, data):
+
+        packages_path = os.path.join('/', 'var', 'lib', 'pulse2', 'packages')
+        packages_list = {'total': 0, 'datas': []}
+        total = 0
+        for folder, sub_folders, files in os.walk(packages_path):
+            size_bytes = 0
+            _files = []
+            count_files = 0
+            if files and os.path.isfile(os.path.join(folder, 'conf.json')) or os.path.isfile(os.path.join(folder, 'xmppdeploy.json')):
+                total += 1
+                for f in files:
+                    count_files += 1
+                    path = os.path.join(folder, f)
+                    size_bytes += os.stat(path).st_size
+                    _files.append((f, os.stat(path).st_size))
+
+                name = folder.split("/")[-1]
+                licenses = ""
+                metagenerator = ""
+                description = ""
+                version = ""
+                targetos = ""
+                methodtransfer = ""
+                try:
+                    with open(os.path.join(folder, 'conf.json'), 'r') as conf_file:
+                        conf_json = json.load(conf_file)
+                        if 'licenses' in conf_json:
+                            licenses = conf_json['licenses']
+                except Exception:
+                    pass
+
+                try:
+                    with open(os.path.join(folder, 'xmppdeploy.json'), 'r') as deploy_file:
+                        deploy_json = json.load(deploy_file)
+                        if 'metagenerator' in deploy_json['info']:
+                            metagenerator = deploy_json['info']['metagenerator']
+                        if 'name' in deploy_json['info']:
+                            name = deploy_json['info']['name']
+                        if 'description' in deploy_json['info']:
+                            description = deploy_json['info']['description']
+                        if 'version' in deploy_json['info']:
+                            version = deploy_json['info']['version']
+                        if 'methodtransfer' in deploy_json['info']:
+                            methodtransfer = deploy_json['info']['methodetransfert']
+                        if 'os' in deploy_json['metaparameter']:
+                            targetos = ", ".join(deploy_json['metaparameter']['os'])
+                except Exception:
+                    pass
+                packages_list['datas'].append({'uuid': folder,
+                                               'size': size_bytes,
+                                               'targetos': targetos,
+                                               'version': version,
+                                               'description': description,
+                                               'metagenerator': metagenerator,
+                                               'licenses': licenses,
+                                               'name': name,
+                                               'methodtransfer': methodtransfer,
+                                               'files': _files,
+                                               'count_files': count_files,
+                                               })
+
+        packages_list['total'] = total
+        return json.dumps(packages_list, indent=4)

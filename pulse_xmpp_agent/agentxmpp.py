@@ -36,6 +36,7 @@ import subprocess
 import psutil
 import random
 import hashlib
+from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
@@ -207,6 +208,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.levelcharge = {}
             self.levelcharge['machinelist'] = []
             self.levelcharge['charge'] = 0
+            # supprime les reverses ssh inutile
+            self.manage_persistence_reverse_ssh = reverse_port_ssh()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
