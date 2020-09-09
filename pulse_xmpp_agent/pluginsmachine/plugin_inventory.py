@@ -46,7 +46,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
     boolchang = True
-    namefilexml =""
+    namefilexml = ""
     if hasattr(xmppobject.config, 'json_file_extend_inventory'):
         if os.path.exists(xmppobject.config.json_file_extend_inventory):
             dd = extend_xmlfile(xmppobject)

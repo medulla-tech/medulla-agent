@@ -2525,6 +2525,15 @@ def create_msg_xmpp_quick_deploy(folder, create=False):
         logger.debug("Quick deployment package %s.xmpp found" % pathaqpackage)
 
 def pulseuser_useraccount_mustexist(username='pulseuser'):
+    """
+    This function checks if the a given user exists.
+    Args:
+        username: This is the username we need to check ( default is pulseuser )
+
+    Returns:
+        It returns False if the user already exists
+        It returns True if the users does not exists already
+    """
     message = []
     if sys.platform.startswith('linux'):
         try:
@@ -2574,6 +2583,15 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
         return False, message
 
 def pulseuser_profile_mustexist(username='pulseuser'):
+    """
+    This function checks if the a given profile exists.
+    Args:
+        username: This is the username we need to check ( default is pulseuser )
+
+    Returns:
+        It returns True if the profile has been correctly created or if the profile
+        already exists, it return False otherwise.
+    """
     message = []
     if sys.platform.startswith('win'):
         # Initialise userenv.dll
