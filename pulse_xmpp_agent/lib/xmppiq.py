@@ -36,7 +36,7 @@ from utils import   shellcommandtimeout, \
                     simplecommand, \
                     restartsshd, \
                     install_key_ssh_relayserver
-
+import socket
 from  agentconffile import  directoryconffile
 import zlib
 import re
@@ -88,7 +88,8 @@ def dispach_iq_command(xmppobject, jsonin):
                          "information",
                          "keyinstall",
                          "packageslist",
-                         "f"]
+                         "reversesshqa",
+                         "get_id_rsa"]
     if data['action'] in listactioncommand:
         logging.log(DEBUGPULSE,"call function %s " % data['action'])
         result = callXmppFunctionIq(data['action'], xmppobject=xmppobject, data=data)
@@ -123,6 +124,14 @@ class functionsynchroxmpp:
     def test(xmppobject, data):
         logger.debug("iq test")
         return json.dumps(data)
+
+    @staticmethod
+    def get_id_rsa( xmppobject, data ):        
+        result={}
+        private_key_ars = os.path.join(os.path.expanduser('~reversessh'), '.ssh', "id_rsa")
+        result['private_key_ars'] = file_get_contents(private_key_ars)
+        result['public_key_ars'] = file_get_contents("%s.pub" % private_key_ars)
+        return json.dumps(result)
 
     @staticmethod
     def reversesshqa(xmppobject, data ):
@@ -498,6 +507,14 @@ class functionsynchroxmpp:
                     result['result']['informationresult'][info_ask] = decode_strconsole(ifconfig())
                 if info_ask == "cpu_num":
                     result['result']['informationresult'][info_ask] = decode_strconsole(cpu_num())
+                if info_ask == "clean_reverse_ssh":
+                    if xmppobject.config.agenttype in ['relayserver']:
+                        #on clean les reverse ssh non utiliser
+                        xmppobject.manage_persistance_reverse_ssh.terminate_reverse_ssh_not_using()
+                if info_ask == "add_proxy_port_reverse":
+                    if xmppobject.config.agenttype in ['relayserver']:
+                        if  'param' in data['data'] and 'proxyport' in data['data']['param']:
+                            xmppobject.manage_persistance_reverse_ssh.add_port(data['data']['param']['proxyport'])
                 if info_ask == "get_ars_key_id_rsa":
                     private_key_ars = os.path.join(os.path.expanduser('~reversessh'),
                                                    '.ssh',
