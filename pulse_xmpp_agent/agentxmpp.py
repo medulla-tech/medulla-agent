@@ -209,7 +209,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.levelcharge['machinelist'] = []
             self.levelcharge['charge'] = 0
             # supprime les reverses ssh inutile
-            self.manage_persistance_reverse_ssh  =  reverse_port_ssh()
+            self.manage_persistence_reverse_ssh = reverse_port_ssh()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
