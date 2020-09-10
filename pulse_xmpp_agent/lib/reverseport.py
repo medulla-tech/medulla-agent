@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -25,7 +25,6 @@
 
 import os
 import logging
-import utils
 
 from lib.utils import simplecommand
 
@@ -34,20 +33,23 @@ logger = logging.getLogger()
 class reverse_port_ssh:
 
     def __init__(self):
-        #creation d'un repertoire dans /var/run si non exist.
-        self.directoryreverseport = "/var/run/revese_port_pulse"
+        # Create folder in /var/run if non existing
+        self.directoryreverseport = "/var/run/reverse_port_pulse"
         if not os.path.exists(self.directoryreverseport):
             os.makedirs(self.directoryreverseport)
 
     def add_port(self, number_port):
-        filenumberport = os.path.join(self.directoryreverseport, "%s"%number_port)
+        filenumberport = os.path.join(self.directoryreverseport, "%s"
+                                      % number_port)
+        logger.debug("%s" % filenumberport)
         if not os.path.exists(filenumberport):
             try:
                 os.mknod(filenumberport)
             except OSError:
-                logger.warning("the %s file exist"%filenumberport)
-            except Exception as  e:
-                logger.error("creation port id %s : [%s]" % (filenumberport, str(e)))
+                logger.warning("the %s file exist" % filenumberport)
+            except Exception as e:
+                logger.error("creation port id %s : [%s]" % (filenumberport,
+                                                             str(e)))
 
     def reverse_exist(self, number_port):
         cmd = 'netstat -an | egrep "tcp.*:%s.*LISTEN"' % number_port
@@ -65,7 +67,7 @@ class reverse_port_ssh:
 
     def pid_reverse(self, number_port):
         cmd = 'lsof -t -i :%s -s tcp:LISTEN' % number_port
-        es = simplecommand(cmd)
+        res = simplecommand(cmd)
         if res['code'] == 0 and res['result'] :
             return int(res['result'][0].strip(" \n\r\t"))
         return 0
@@ -79,9 +81,11 @@ class reverse_port_ssh:
             if len(res['result']) == 1:
                 self.stop_reverse(res['result'][0].strip(" \n\r\t"))
             try:
-                os.remove(os.path.join( self.directoryreverseport,
-                                        "%s"%number_port))
-            except:
+                logger.debug("rm %s" % os.path.join(self.directoryreverseport,
+                                                    "%s" % number_port))
+                os.remove(os.path.join(self.directoryreverseport,
+                                       "%s" % number_port))
+            except Exception:
                 pass
             return True
         return False
@@ -92,16 +96,11 @@ class reverse_port_ssh:
         if res['code'] == 0:
             return True
         return False
-    
+
     def list_port_reverse_ssh(self):
-        return [ x for x in os.listdir(self.directoryreverseport)
+        return [x for x in os.listdir(self.directoryreverseport)
             if os.path.isfile("%s/%s" % (self.directoryreverseport, x))]
-           
+
     def terminate_reverse_ssh_not_using(self):
         for numberport in self.list_port_reverse_ssh():
             self.clean_reverse_if_no_user(numberport)
-            
-            
-            
-            
-            

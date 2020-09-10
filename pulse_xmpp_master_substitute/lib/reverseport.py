@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file : pulse_xmpp_agent/lib/reverseport.py
+# file : pulse_xmpp_master_substitute/lib/reverseport.py
 #
 
 import os
