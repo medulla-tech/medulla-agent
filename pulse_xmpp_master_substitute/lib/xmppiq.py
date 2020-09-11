@@ -146,7 +146,7 @@ class functionsynchroxmpp:
         if sys.platform.startswith('linux'):
             filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
             dd = """#!/bin/bash
-            /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (datareverse['type_reverse'],
                    datareverse['portproxy'],
                    datareverse['remoteport'],
@@ -184,7 +184,7 @@ class functionsynchroxmpp:
                                          "bin",
                                          "reversessh.bat")
             linecmd = []
-            cmd = """\\"%s\\" -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
+            cmd = """\\"%s\\" -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
                                                                                                                              datareverse['type_reverse'],
                                                                                                                              datareverse['portproxy'],
                                                                                                                              datareverse['remoteport'],
@@ -211,7 +211,7 @@ class functionsynchroxmpp:
                                    ".ssh",
                                    "id_rsa")
             cmd = """#!/bin/bash
-            /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
+            /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (datareverse['type_reverse'],
                    datareverse['portproxy'],
                    datareverse['remoteport'],
@@ -239,7 +239,7 @@ class functionsynchroxmpp:
         if type(datapath) == unicode or type(datapath) == str:
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
-            data['data']=filesystem
+            data['data'] = filesystem
         return json.dumps(data)
 
     @staticmethod
@@ -263,7 +263,7 @@ class functionsynchroxmpp:
         try:
             result = base64.b64encode( zlib.compress(datastr, 9))
         except Exception as e:
-            logging.getLogger().error("synchro xmpp function remotefile  encodage: %s" % str(e))
+            logging.getLogger().error("synchro xmpp function remotefile encoding: %s" % str(e))
         return result
 
     @staticmethod
@@ -295,22 +295,22 @@ class functionsynchroxmpp:
                 data['ret'] = 20
                 data['data']["msg_error"] = ["error format message"]
                 return json.dumps(data, indent=4)
-            #install keypub on AM
+            # Install keypub on AM
             if sys.platform.startswith('linux'):
                 import pwd
                 import grp
                 reverse_ssh_key_privat_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'id_rsa')
-                #verify compte pulse exist
+                # Check if pulseuser account exists
                 try:
                     uid = pwd.getpwnam("pulseuser").pw_uid
                     gid = grp.getgrnam("pulseuser").gr_gid
                     gidroot = grp.getgrnam("root").gr_gid
-                    logger.debug("compte pulseuser  uuid %s\n gid %s\ngidroot %s" % (uid, gid, gidroot ))
-                    msgaction.append("compte pulseuser  uuid %s\n gid %s\ngidroot %s" % (uid, gid, gidroot ))
+                    logger.debug("compte pulseuser  uuid %s\n gid %s\ngidroot %s" % (uid, gid, gidroot))
+                    msgaction.append("compte pulseuser  uuid %s\n gid %s\ngidroot %s" % (uid, gid, gidroot))
                 except Exception:
-                    #le compte n'existe pas
-                    logger.debug("Creation compte pulse user")
-                    msgaction.append("Creation compte pulse user")
+                    # Account does not exist
+                    logger.debug("Creation of the pulseuser account")
+                    msgaction.append("Creation of the pulseuser account")
                     result = simplecommand(encode_strconsole("adduser --system --group --home /var/lib/pulse2 '\
                         '--shell /bin/rbash --disabled-password pulseuser"))
                 uid = pwd.getpwnam("pulseuser").pw_uid
@@ -318,8 +318,8 @@ class functionsynchroxmpp:
                 gidroot = grp.getgrnam("root").gr_gid
 
                 authorized_keys_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'authorized_keys')
-                logger.debug("file authorized_keys is %s"%authorized_keys_path)
-                msgaction.append("file authorized_keys is %s"%authorized_keys_path)
+                logger.debug("file authorized_keys is %s" % authorized_keys_path)
+                msgaction.append("file authorized_keys is %s" % authorized_keys_path)
                 if not os.path.isdir(os.path.dirname(authorized_keys_path)):
                     os.makedirs(os.path.dirname(authorized_keys_path), 0700)
 
@@ -341,7 +341,7 @@ class functionsynchroxmpp:
                 os.chmod(packagepath, 0764)
                 result = simplecommand(encode_strconsole("chown -R pulseuser: '/var/lib/pulse'"))
             elif sys.platform.startswith('win'):
-                # check if pulse account exists
+                # Check if pulse account exists
                 try:
                     win32net.NetUserGetInfo('', 'pulse', 0)
                     booluser = "pulse"
@@ -349,7 +349,7 @@ class functionsynchroxmpp:
                     booluser = "pulseuser"
 
                 if booluser != "pulse":
-                    # traitement si user pulseuser
+                    # If account is pulseuser
                     try:
                         win32net.NetUserGetInfo('', 'pulseuser', 0)
                     except Exception:
@@ -432,23 +432,23 @@ class functionsynchroxmpp:
                     msgaction.append("Reset of permissions on ssh keys and folders: %s" % result)
             elif sys.platform.startswith('darwin'):
                 authorized_keys_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
-                                                                '.ssh',
-                                                                'authorized_keys') )
+                                                                 '.ssh',
+                                                                 'authorized_keys'))
                 reverse_ssh_key_privat_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
-                                                                '.ssh',
-                                                                'id_rsa') )
+                                                                        '.ssh',
+                                                                        'id_rsa'))
             else:
                 return
-            #install private  reverse ssh key si necessaire.
+            # Install private reverse ssh key if needed.
             if 'keyreverseprivatssh' in data['data']:
                 install_key_ssh_relayserver(data['data']['keyreverseprivatssh'].strip(' \t\n\r'),
                                             private=True)
-            # instal key dans authorized_keys
+            # Install key in authorized_keys
             authorized_keys_content = file_get_contents(authorized_keys_path)
             if not data['data']['key'].strip(' \t\n\r') in authorized_keys_content:
                 # add en append la key dans le fichier
                 file_put_contents_w_a( authorized_keys_path, "\n"+ data['data']['key'], "a" )
-                logger.debug("install key ARS [%s]"%data['data']['from'])
+                logger.debug("install key ARS [%s]" % data['data']['from'])
                 msgaction.append('INSTALL key ARS %s on machine %s' % (data['data']['from'],
                                                                        xmppobject.boundjid.bare))
                 xmppobject.xmpplog('Installing ARS key %s on machine %s' % (data['data']['from'],
@@ -554,14 +554,14 @@ class functionsynchroxmpp:
                 if info_ask == "netstat":
                     result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
                 if info_ask == "profiluserpulse":
-                    profilname='pulseuser'
+                    profilname = 'pulseuser'
                     if sys.platform.startswith('win'):
                         # check if pulse account exists
                         try:
                             win32net.NetUserGetInfo('', 'pulseuser', 0)
-                            profilname='pulseuser'
+                            profilname = 'pulseuser'
                         except Exception:
-                            profilname='pulse'
+                            profilname = 'pulse'
                     result['result']['informationresult'][info_ask] = profilname
             except Exception:
                 result['result']['informationresult'][info_ask] = ""
