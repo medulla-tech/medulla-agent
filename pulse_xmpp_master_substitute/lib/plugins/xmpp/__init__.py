@@ -633,14 +633,14 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def updateaddCommand_action(self, session, command_result, sessionid , typemessage = "result"):
         try:
-            sql="""UPDATE `xmppmaster`.`command_action` 
-                    SET 
+            sql="""UPDATE `xmppmaster`.`command_action`
+                    SET
                         `typemessage` = '%s',
                         `command_result` = CONCAT(`command_result`, ' ', '%s')
                     WHERE
-                        (`session_id` = '%s');"""%(typemessage,
-                                                command_result,
-                                                sessionid)
+                        (`session_id` = '%s');""" % (typemessage,
+                                                     command_result,
+                                                     sessionid)
             result = session.execute(sql)
             session.commit()
             session.flush()
