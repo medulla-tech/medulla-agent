@@ -148,9 +148,12 @@ class functionsynchroxmpp:
         datareverse = data['data']
         portproxy = datareverse['portproxy']
         remoteport = datareverse['remoteport']
-
-        private_key_ars = datareverse['private_key_ars'].strip(' \t\n\r')
-        install_key_ssh_relayserver(private_key_ars, private=True)
+        if 'private_key_ars' in datareverse:
+            private_key_ars = datareverse['private_key_ars'].strip(' \t\n\r')
+            install_key_ssh_relayserver(private_key_ars, private=True)
+        if 'public_key_ars' in datareverse:
+            public_key_ars = datareverse['public_key_ars'].strip(' \t\n\r')
+            install_key_ssh_relayserver(public_key_ars, private=False)
         if sys.platform.startswith('linux'):
             filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
             dd = """#!/bin/bash
