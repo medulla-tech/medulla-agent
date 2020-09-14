@@ -148,7 +148,7 @@ def deployPlugin(self, jid, plugin):
     if os.path.isfile(namefile):
         logger.debug("File plugin found %s" % namefile)
     else:
-        logger.error("File plugin found %s" % namefile)
+        logger.error("The plugin file %s does not exists" % namefile)
         return
     try:
         fileplugin = open(namefile, "rb")
