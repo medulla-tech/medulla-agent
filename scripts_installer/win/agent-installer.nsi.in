@@ -32,6 +32,8 @@ RequestExecutionLevel admin
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 !define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
 !define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
+!define AGENT_SSH_NAME "Pulse SSH"
+!define PRODUCT_SSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_SSH_NAME}"
 !define USERDIR "c:\Users"
 !define PROGRAMDATA "C:\ProgramData"
 
@@ -49,6 +51,7 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 !define PULSE_AGENT_TASK_XML_FILENAME "@@PULSE_AGENT_TASK_XML_FILENAME@@"
 !define OPENSSH_NAME "@@OPENSSH_NAME@@"
+!define OPENSSH_VERSION "@@OPENSSH_VERSION@@"
 !define OPENSSH32_FILENAME "@@OPENSSH32_FILENAME@@"
 !define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
@@ -1342,6 +1345,10 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SSH_UNINST_KEY}" "DisplayName" "${AGENT_SSH_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SSH_UNINST_KEY}" "DisplayVersion" "${OPENSSH_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SSH_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+
   ${Else}
       SetRegView 32
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
@@ -1358,6 +1365,10 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SSH_UNINST_KEY}" "DisplayName" "${AGENT_SSH_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SSH_UNINST_KEY}" "DisplayVersion" "${OPENSSH_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SSH_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+
   ${EndIf}
 
   ; Write the version installed in registry
@@ -1542,6 +1553,7 @@ Section "Uninstall"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_SSH_UNINST_KEY}"
   DeleteRegKey HKLM "${NETCHECK_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
 
