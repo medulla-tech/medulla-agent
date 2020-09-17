@@ -75,6 +75,22 @@ except ImportError:
 from sqlalchemy.orm import scoped_session
 import random
 
+
+class Error(Exception):
+    """Base class for exceptions in this module."""
+    pass
+
+
+class DomaineTypeDeviceError(Error):
+    """
+        type is not in domaine 'thermalprinter', 'nfcReader', 'opticalReader',\
+        'cpu', 'memory', 'storage', 'network'
+    """
+
+    def __str__(self):
+        return "{0} {1}".format(self.__doc__, Exception.__str__(self))
+
+
 class Singleton(object):
 
     def __new__(type, *args):
