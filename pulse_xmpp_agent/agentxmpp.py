@@ -36,6 +36,7 @@ import subprocess
 import psutil
 import random
 import hashlib
+import cherrypy
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
@@ -68,6 +69,7 @@ from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
+from lib.server import Controller
 
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
@@ -2336,6 +2338,84 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         processes.append(p)
         p.start()
 
+    # ==========================
+    # = cherrypy server config =
+    # ==========================
+    config = confParameter(optstypemachine)
+    if config.agenttype in ['machine']:
+        port = 52044
+        root_path = os.path.abspath(os.getcwd())
+        server_path = os.path.join(root_path, 'lib', 'server')
+
+        Controller.config = config
+        # Generate cherrypy server conf
+        server_conf = {
+
+            # Root access
+            'global':{
+                'server.socket_host': '0.0.0.0',
+                'server.socket_port': port,
+            },
+            '/': {
+                #'tools.staticdir.on': True,
+                'tools.staticdir.dir': server_path
+            },
+            # Sharing css ...
+            '/css': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_path, 'public', 'css')
+            },
+            # Sharing js ...
+            '/js': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_path, 'public', 'js'),
+            },
+            # Sharing images ...
+            '/images': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_path, 'public', 'images')
+
+            },
+            # Alias to images for datatables js lib
+            '/DataTables-1.10.21/images': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_path, 'public', 'images'),
+            },
+            # Sharing fonts
+            '/fonts': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_path, 'public', 'fonts'),
+            },
+        }
+        count = 0
+        for path in config.paths:
+            name = config.names[count]
+            # Here we know the name and the path, we can add the access for each folders
+            server_conf['/%s' % str(name)] = {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': str(path)
+            }
+            count += 1
+        cherrypy.tree.mount(Controller(), '/', server_conf)
+        # We will create our own server so we don't need the
+        # default one
+        cherrypy.server.unsubscribe()
+        server1 = cherrypy._cpserver.Server()
+        server1.socket_port = port
+        server1._socket_host = '0.0.0.0'
+
+        # ===
+        # Do not remove the following lines
+        # They can be usefull to configure the server
+        # ===
+
+        # server1.thread_pool = 30
+        # server1.ssl_module = 'pyopenssl'
+        # server1.ssl_certificate = '/home/ubuntu/my_cert.crt'
+        # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
+        # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
+        server1.subscribe()
+        cherrypy.engine.start()
 
     # completing process
     try:

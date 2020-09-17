@@ -706,6 +706,59 @@ class confParameter:
         self.Architecture = platform.architecture()
         self.information['archi'] = self.Architecture
 
+        # Http fileviewer server parameters
+        self.paths = []
+        self.names = []
+        self.extensions = []
+        self.date_format = '%Y-%m-%d %H:%M:%S'
+
+        if Config.has_option('fileviewer', 'sources'):
+            self.paths = Config.get('fileviewer', 'sources').split(';')
+
+        # The size_paths drive the final size of paths, names and extensions parameters
+        size_paths = len(self.paths)
+
+        if Config.has_option('fileviewer', 'names'):
+            # Get names from ini file
+            self.names = Config.get('fileviewer', 'names').split(';')
+
+        # If some names are missing, complete display names associated to each paths
+        count = 0
+        while count < size_paths:
+            try:
+                self.names[count]
+            except IndexError:
+                # The displayed names are in lowercase
+                self.names.append(os.path.basename(self.paths[count]).lower())
+            finally:
+                count += 1
+
+        # Get available extensions
+        if Config.has_option('fileviewer', 'extensions'):
+            self.extensions = Config.get('fileviewer', 'extensions').split(';')
+
+        # If some extensions group are missing, complete the list for each paths
+        count = 0
+        while count < size_paths:
+            try:
+                self.extensions[count]
+            except IndexError:
+                self.extensions.append([])
+            finally:
+                count += 1
+
+        count = 0
+        while count < size_paths:
+            if type(self.extensions[count]) is list:
+                self.extensions[count] = self.extensions[count]
+            else:
+                self.extensions[count] = self.extensions[count].split(',')
+            count += 1
+
+        if Config.has_option('fileviewer', 'date_format'):
+            self.date_format = Config.get('fileviewer', 'date_format')
+
+
     def loadparametersplugins(self, namefile):
         Config = ConfigParser.ConfigParser()
         Config.read(namefile)
