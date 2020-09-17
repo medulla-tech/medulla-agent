@@ -42,7 +42,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         # Update if version is lower
         installed_version = checktightvncversion()
         if StrictVersion(installed_version) < StrictVersion(TIGHTVNC):
-            updatefusion(xmppobject)
+            updatetightvnc(xmppobject)
     except Exception:
         pass
 
