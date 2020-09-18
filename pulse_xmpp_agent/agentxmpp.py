@@ -69,7 +69,7 @@ from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
-from lib.server import Controller
+from lib.httpserver import Controller
 
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
@@ -2345,12 +2345,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     if config.agenttype in ['machine']:
         port = 52044
         root_path = os.path.abspath(os.getcwd())
-        server_path = os.path.join(root_path, 'lib', 'server')
+        server_path = os.path.join(root_path, 'lib')
+        server_ressources_path = os.path.join(root_path, 'lib', 'ressources')
 
         Controller.config = config
         # Generate cherrypy server conf
         server_conf = {
-
             # Root access
             'global':{
                 'server.socket_host': '0.0.0.0',
@@ -2363,28 +2363,28 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             # Sharing css ...
             '/css': {
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': os.path.join(server_path, 'public', 'css')
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'css')
             },
             # Sharing js ...
             '/js': {
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': os.path.join(server_path, 'public', 'js'),
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'js'),
             },
             # Sharing images ...
             '/images': {
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': os.path.join(server_path, 'public', 'images')
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'images')
 
             },
             # Alias to images for datatables js lib
             '/DataTables-1.10.21/images': {
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': os.path.join(server_path, 'public', 'images'),
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'images'),
             },
             # Sharing fonts
             '/fonts': {
                 'tools.staticdir.on': True,
-                'tools.staticdir.dir': os.path.join(server_path, 'public', 'fonts'),
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'fonts'),
             },
         }
         count = 0

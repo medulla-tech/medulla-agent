@@ -1,15 +1,30 @@
 #!/usr/bin/env python
 # coding: utf-8
+#
+# (c) 2020 siveo, http://www.siveo.net
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 """Run a http web server"""
 
 import os
-import sys
 from datetime import datetime
 import cherrypy
-
-# Get the project config
-from config import Config
 
 
 class Controller:
@@ -65,10 +80,6 @@ class Controller:
                     # we want the file size
                     size = os.path.getsize(abspath)
                     size = Controller.transform_size(size)
-                    print(timestamp)
-                    print(datetime.fromtimestamp(timestamp))
-                    print(datetime.fromtimestamp(timestamp).strftime("%d-%m-%Y %H:%M:%S"))
-                    print(datetime.fromtimestamp(timestamp).strftime(Controller.config.date_format))
                     final_list.append((element,
                         datetime.fromtimestamp(timestamp).strftime(Controller.config.date_format),
                         size,
@@ -177,103 +188,3 @@ class Controller:
             </body>
         </html>""" % (','.join(jstablenames), tabs, html)
         return template
-
-"""
-#
-# Uncomment all the following section to use the the server in standalone mode
-#
-
-def get_agent_conf_dir():
-    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-        return os.path.join('/', 'etc', 'pulse-xmpp-agent', 'agentconf.ini')
-    elif sys.platform.startswith('win'):
-        return os.path.join('C:/', 'Program Files', 'Pulse', 'etc', 'agentconf.ini')
-    else:
-        return False
-
-
-if __name__ == "__main__":
-    port = 52044
-    root_path = os.path.abspath(os.getcwd())
-    agent_dir = get_agent_conf_dir()
-
-    if get_agent_conf_dir() != False and os.path.isfile(get_agent_conf_dir()):
-        config_path = get_agent_conf_dir()
-    else:
-        config_path = os.path.join(root_path, 'config.ini')
-
-    pid = os.getpid()
-    with open(os.path.join(root_path, "http.PID"), "w") as pid_file:
-        pid_file.write("%s"%pid)
-        pid_file.close()
-
-    # Get general config
-    print('Using config file : %s'%config_path)
-
-    Controller.config = config = Config(config_path)
-
-    server_conf = {
-
-        # Root access
-        'global':{
-            'server.socket_host': '0.0.0.0',
-            'server.socket_port': port,
-        },
-        '/': {
-            #'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.abspath(os.getcwd())
-        },
-        # Sharing css ...
-        '/css': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.abspath(os.getcwd()), 'public', 'css')
-        },
-        # Sharing js ...
-        '/js': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.abspath(os.getcwd()), 'public', 'js'),
-        },
-        # Sharing images ...
-        '/images': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.abspath(os.getcwd()), 'public', 'images')
-        },
-        # Alias to images for datatables js lib
-        '/DataTables-1.10.21/images': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.abspath(os.getcwd()), 'public', 'images'),
-        },
-        # Sharing fonts
-        '/fonts': {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(os.path.abspath(os.getcwd()), 'public', 'fonts'),
-        },
-    }
-    count = 0
-    for path in config.paths:
-        name = config.names[count]
-        # Here we know the name and the path, we can add the access for each folders
-        server_conf['/%s' % str(name)] = {
-            'tools.staticdir.on': True,
-            'tools.staticdir.dir': str(path)
-        }
-        count += 1
-
-    # cherrypy.quickstart(Controller(), '/', server_conf)
-
-    # From : http://www.zacwitte.com/running-cherrypy-on-multiple-ports-example
-    cherrypy.tree.mount(Controller(), '/', server_conf)
-    cherrypy.server.unsubscribe()
-
-    server1 = cherrypy._cpserver.Server()
-    server1.socket_port=port
-    server1._socket_host='0.0.0.0'
-    # server1.thread_pool=30
-    # server1.ssl_module = 'pyopenssl'
-    # server1.ssl_certificate = '/home/ubuntu/my_cert.crt'
-    # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
-    # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
-    server1.subscribe()
-
-    cherrypy.engine.start()
-    cherrypy.engine.block()"""
