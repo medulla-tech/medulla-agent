@@ -20,6 +20,10 @@
 # MA 02110-1301, USA.
 # file pulse_xmpp_agent/pluginsmachine/plugin_startupdate.py
 
+# this plugin start all plugin list in init file startupdate.ini
+# this plugin launch inventory is asked
+
+
 from lib import utils
 import json
 import traceback
@@ -27,11 +31,41 @@ import sys
 import logging
 import os
 import time
+from lib.agentconffile import directoryconffile
+import ConfigParser
+import re
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.0", "NAME": "startupdate", "TYPE": "machine"}
+
+def read_conf_plugin_startupdate(objectxmpp):
+    objectxmpp.liststartpluginstartupdate = []
+    objectxmpp.startupdateinventory = False
+    objectxmpp.startupdateinventoryforced = False
+    configfilename = os.path.join(directoryconffile(),"startupdate.ini")
+    if os.path.isfile(configfilename):
+        # lit la configuration
+        Config = ConfigParser.ConfigParser()
+        Config.read(configfilename)
+        if Config.has_option('plugins', 'liststartplugin'):
+            liststartplugin = Config.get('plugins', 'liststartplugin')
+            objectxmpp.liststartpluginstartupdate = [x for x in
+                                            re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
+                                                     liststartplugin)
+                                            if x.strip()!=""]
+        if Config.has_option('plugins', 'inventory'):
+            objectxmpp.startupdateinventory = Config.getboolean('plugins', 'inventory')
+        if Config.has_option('plugins', 'inventoryforced'):
+            objectxmpp.startupdateinventoryforced = Config.getboolean('plugins', 'inventoryforced')
+
+    if not objectxmpp.liststartpluginstartupdate:
+        plugin_path = os.path.dirname(os.path.realpath(__file__))
+        objectxmpp.liststartpluginstartupdate = [x[7:-3] for x in os.listdir(plugin_path)
+                                                if x.startswith("plugin_update") and
+                                                not x.endswith(".pyc")]
+        objectxmpp.liststartpluginstartupdate.remove("updateagent")
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -41,37 +75,23 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     objectxmpp.inventoryBool = False
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
     if compteurcallplugin == 0:
-        logger.error("configuration")
-
-    plugin_path = os.path.dirname(os.path.realpath(__file__))
-    plugintocalling = [x[7:-3] for x in os.listdir(plugin_path)
-                       if x.startswith("plugin_update") and
-                       not x.endswith(".pyc")]
-    plugintocalling.remove("updateagent")
-
+        logger.debug("configure plugin %s" % action)
+        read_conf_plugin_startupdate(objectxmpp)
     update = {"action": "",
               "sessionid": sessionid,
               "ret": 0,
               "base64": False,
               "data": {}}
-
-    dataerreur = {"action": "result" + update["action"],
-                  "data": {"msg": "error plugin : " + update["action"]},
-                  'sessionid': sessionid,
-                  'ret': 255,
-                  'base64': False}
-
+    dataerreur =  update.copy()
     msg = {'from': objectxmpp.boundjid.bare,
            "to": objectxmpp.boundjid.bare,
            'type': 'chat'}
-
-    if 'data' not in update:
-        update['data'] = {}
-
-    for nameplugin in plugintocalling:
+    for nameplugin in objectxmpp.liststartpluginstartupdate:
         logger.debug("from plugin %s call plugin %s" % (plugin['NAME'],
                                                         nameplugin))
         update["action"] = nameplugin
+        dataerreur["action"] = "result" + update["action"]
+        dataerreur["data"] = {"msg": "error plugin: " + update["action"]}
         utils.call_plugin(update["action"],
                           objectxmpp,
                           update["action"],
@@ -79,9 +99,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                           update['data'],
                           msg,
                           dataerreur)
-    time.sleep(5)
-
     # ## appelle
-    if objectxmpp.inventoryBool:
+    if objectxmpp.startupdateinventory:
         # call inventory from machine.
-        pass
+        pam={"forced": "noforced", "sessionid": sessionid}
+        if objectxmpp.startupdateinventoryforced:
+            pam['forced'] = "forced"
+        logger.debug("call inventory %s" % pam)
+        objectxmpp.handleinventory(**pam)

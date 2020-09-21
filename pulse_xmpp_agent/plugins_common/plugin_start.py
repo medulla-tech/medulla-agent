@@ -18,7 +18,6 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
 # file  pulse_xmpp_agent/pluginsmachine/plugin_start.py
 
 import sys, os
@@ -35,7 +34,7 @@ plugin = {"VERSION" : "2.1", "NAME" : "start", "TYPE" : "all"}
 
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
-    configfilename = os.path.join(directoryconffile(), "start.ini")
+    configfilename = os.path.join(directoryconffile(),"start.ini")
     if os.path.isfile(configfilename):
         # lit la configuration
         Config = ConfigParser.ConfigParser()
@@ -53,9 +52,11 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+    logger.error("compteurcallplugin = %s" % compteurcallplugin )
     if compteurcallplugin == 0:
         logger.debug("configure plugin %s" % action)
         read_conf_plugin_start(objectxmpp)
+
 
     startupdate={"action": "",
                  "sessionid": utils.getRandomName(6, "startplugin"),
@@ -70,7 +71,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         startupdate["action"] = pluginstart
         dataerreur["action"] = "result" + startupdate["action"]
         dataerreur["action"] = {"msg": "error plugin: "+ startupdate["action"]}
-
+        logger.error("from plugin_start call %s" % pluginstart)
         utils.call_plugin(startupdate["action"],
                             objectxmpp,
                             startupdate["action"],
