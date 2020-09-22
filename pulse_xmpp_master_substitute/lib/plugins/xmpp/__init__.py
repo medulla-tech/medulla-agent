@@ -1026,36 +1026,44 @@ class XmppMasterDatabase(DatabaseHelper):
         return presence
 
     @DatabaseHelper._sessionm
-    def getMachinefrommacadress(self, session, macaddress):
-        """
-        information machine
-        """
-        machine = session.query(Machines).filter(Machines.macaddress.like(macaddress)).first()
+    def getMachinefrommacadress(self, session, macaddress, agenttype=None):
+        """ information machine"""
+        if agenttype is None:
+            machine = session.query(Machines).\
+                filter(Machines.macaddress.like(macaddress) ).first()
+        elif agenttype=="machine":
+            machine = session.query(Machines).\
+                filter(and_(Machines.macaddress.like(macaddress),
+                            Machines.agenttype.like("machine")) ).first()
+        elif agenttype=="relay":
+            machine = session.query(Machines).\
+                filter(and_(Machines.macaddress.like(macaddress),
+                            Machines.agenttype.like("relayserver")) ).first()    
         session.commit()
         session.flush()
         result = {}
         if machine:
-            result = {"id": machine.id,
-                      "jid": machine.jid,
-                      "platform": machine.platform,
-                      "archi": machine.archi,
-                      "hostname": machine.hostname,
-                      "uuid_inventorymachine": machine.uuid_inventorymachine,
-                      "ip_xmpp": machine.ip_xmpp,
-                      "ippublic": machine.ippublic,
-                      "macaddress": machine.macaddress,
-                      "subnetxmpp": machine.subnetxmpp,
-                      "agenttype": machine.agenttype,
-                      "classutil": machine.classutil,
-                      "groupdeploy": machine.groupdeploy,
-                      "urlguacamole": machine.urlguacamole,
-                      "picklekeypublic": machine.picklekeypublic,
-                      'ad_ou_user': machine.ad_ou_user,
-                      'ad_ou_machine': machine.ad_ou_machine,
-                      'kiosk_presence': machine.kiosk_presence,
-                      'lastuser': machine.lastuser,
-                      'keysyncthing': machine.keysyncthing,
-                      'enabled': machine.enabled}
+            result = {  "id" : machine.id,
+                        "jid" : machine.jid,
+                        "platform" : machine.platform,
+                        "archi" : machine.archi,
+                        "hostname" : machine.hostname,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "ippublic" : machine.ippublic,
+                        "macaddress" : machine.macaddress,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "agenttype" : machine.agenttype,
+                        "classutil" : machine.classutil,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "picklekeypublic" : machine.picklekeypublic,
+                        'ad_ou_user': machine.ad_ou_user,
+                        'ad_ou_machine': machine.ad_ou_machine,
+                        'kiosk_presence': machine.kiosk_presence,
+                        'lastuser': machine.lastuser,
+                        'keysyncthing' : machine.keysyncthing,
+                        'enabled' : machine.enabled}
         return result
 
     @DatabaseHelper._sessionm
@@ -1082,7 +1090,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            keysyncthing=""):
         msg ="Create Machine"
         pe=-1
-        machineforupdate = self.getMachinefrommacadress(macaddress)
+        machineforupdate = self.getMachinefrommacadress(macaddress, agenttype="machine")
         if len(machineforupdate) > 0:
             pe = machineforupdate['id']
         if pe != -1:
