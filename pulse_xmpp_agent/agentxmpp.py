@@ -1660,6 +1660,51 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
 
+    def call_asynchrome_function_plugin(self,
+                                        nameplugin,
+                                        differed=0,
+                                        data=None,
+                                        sessionid=None):
+        """
+            call plugin   parralelle mode ou differe calling
+        """
+        nameevenement = getRandomName(6, nameplugin)
+        if sessionid is None:
+            sessionid = getRandomName(6, "asynchrone")
+        if data is None:
+            data = {}
+        argv=[nameplugin, sessionid]
+        self.schedule(nameevenement,
+                      differed,
+                      self.__asynchrome_function_plugin,
+                      argv,
+                      data,
+                      repeat=False)
+
+    def __asynchrome_function_plugin(self, *argv, **kargv):
+        """
+         "data" : { "msg" : "error plugin : "+ dataobj["action"]
+        """
+        # structure execution
+        nameplugin = argv[0]
+        datasend={ "action": argv[0],
+                   "sessionid" : argv[1],
+                   "ret" : 0,
+                   "base64" : False,
+                   "data": kargv}
+        datasenderror=datasend.copy()
+        datasenderror['action']= "result" + datasend["action"]
+        datasenderror['data']= { "msg" : "error plugin : " + datasend['action']}
+        msg = {'from': self.boundjid.bare,
+               "to": self.boundjid.bare,
+               'type': 'chat'}
+        call_plugin(datasend['action'],
+                    self,
+                    datasend['action'],
+                    argv[1],
+                    datasend['data'],
+                    msg,
+                    datasenderror)
 
     def reloadsesssion(self):
         # reloadsesssion only for machine
