@@ -1035,7 +1035,7 @@ class XmppMasterDatabase(DatabaseHelper):
             machine = session.query(Machines).\
                 filter(and_(Machines.macaddress.like(macaddress),
                             Machines.agenttype.like("machine")) ).first()
-        elif agenttype=="relay":
+        elif agenttype=="relayserver":
             machine = session.query(Machines).\
                 filter(and_(Machines.macaddress.like(macaddress),
                             Machines.agenttype.like("relayserver")) ).first()    
@@ -1090,7 +1090,8 @@ class XmppMasterDatabase(DatabaseHelper):
                            keysyncthing=""):
         msg ="Create Machine"
         pe=-1
-        machineforupdate = self.getMachinefrommacadress(macaddress, agenttype="machine")
+        machineforupdate = self.getMachinefrommacadress(macaddress,
+                                                        agenttype=agenttype)
         if len(machineforupdate) > 0:
             pe = machineforupdate['id']
         if pe != -1:
