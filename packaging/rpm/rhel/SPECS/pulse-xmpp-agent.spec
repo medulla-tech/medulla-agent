@@ -143,7 +143,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/wakeonlan.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
-%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler_relay.ini
 %_var/log/pulse
 %dir %{python2_sitelib}/pulse_xmpp_agent/
 %{python2_sitelib}/pulse_xmpp_agent/lib/
@@ -234,7 +234,7 @@ fi
 %files -n pulse-agent-installers
 %_var/lib/pulse2/clients
 %config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
-%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
 %_var/lib/pulse2/xmpp_baseremoteagent/
 
@@ -321,7 +321,7 @@ cp pulse_xmpp_agent/config/reverse_ssh_on.ini %buildroot%_sysconfdir/pulse-xmpp-
 cp pulse_xmpp_agent/config/wakeonlan.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
-cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/manage_scheduler_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
@@ -378,7 +378,7 @@ rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_rela
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/manage_scheduler_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients

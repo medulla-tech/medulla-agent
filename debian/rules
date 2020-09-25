@@ -62,7 +62,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/wakeonlan.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/relayconf.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/package_watching.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
-	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
+	cp pulse_xmpp_agent/config/manage_scheduler_relay.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	mkdir -p $(CURDIR)/debian/tmp/etc/logrotate.d/
 	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/pulse-xmpp-agent-relay
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
@@ -127,7 +127,7 @@ override_dh_auto_install:
 	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/agentconf.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
-	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/manage_scheduler_machine.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/inventory.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients

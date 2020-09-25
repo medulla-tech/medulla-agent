@@ -34,7 +34,7 @@ AGENT_VERSION="2.1.2"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
-PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler.ini"
+PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 
 

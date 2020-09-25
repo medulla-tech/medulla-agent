@@ -58,15 +58,15 @@ class manage_scheduler:
             try :
                 objcromtabconf = json.loads(objectxmpp.config.listcrontabforpluginscheduled)
             except Exception as e:
-                logging.getLogger().error("Error json parameters listcrontabforpluginscheduled file manage_scheduler.ini")
+                logging.getLogger().error("Error json parameters listcrontabforpluginscheduled file manage_scheduler_[relay|machine].ini")
                 logging.getLogger().error(str(e))
         except AttributeError as e:
             logging.getLogger().warning("If you use the configuration to schedule some plugins,"\
-                    "do not forget to add conf in manage_scheduler.ini for these plugins."\
+                    "do not forget to add conf in manage_scheduler_[relay|machine].ini for these plugins."\
                     "json parameters listcrontabforpluginscheduled."\
                     "and declare the configuration of the scheduler in agentconf.ini"\
                     "[Plugin]"\
-                    "pluginlist = manage_scheduler")
+                    "pluginlist = manage_scheduler_[relay|machine]")
             objcromtabconf = {}
             logging.getLogger().warning(str(e))
 
