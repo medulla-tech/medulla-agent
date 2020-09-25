@@ -80,6 +80,20 @@ if sys.platform.startswith('darwin'):
     import pwd
     import grp
 
+
+class Env(object):
+    agenttype = None # Non specified by default
+    @staticmethod
+    def user_dir():
+        """Get the user folder for linux OS."""
+        if Env.agenttype is None:
+            raise NotImplementedError("The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'")
+        if Env.agenttype == "relayserver":
+            return os.path.join("/", "var", "lib", "pulse2")
+        else:
+            return os.path.expanduser('~pulseuser')
+
+
 # debug decorator
 def minimum_runtime(t):
     """
