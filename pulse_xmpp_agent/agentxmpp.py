@@ -143,6 +143,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        managepackage.agenttype = self.config.agenttype
         # creation object session ##########
         self.session = session(self.config.agenttype)
         # CREATE MANAGE SCHEDULER##############

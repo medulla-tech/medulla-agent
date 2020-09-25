@@ -684,7 +684,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 namefolder = os.path.basename(data['path'])
 
             if namefolder is not None:
-                folder = os.path.join(utils._path_package(), namefolder)
+                folder = os.path.join(managepackage.managepackage.packagedir(), namefolder)
                 pathaqpackage = os.path.join(utils._path_packagequickaction(), namefolder)
                 pathxmpppackage = "%s.xmpp" % pathaqpackage
                 if not os.path.exists(pathxmpppackage) or \
@@ -2184,6 +2184,9 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, limit_rate_ko=None):
         c.close()
 
 def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmdmode="rsync"):
+    """
+            # call function from agent machine
+    """
     logger.info("###################################################")
     logger.info("pull_package_transfert_rsync : " + cmdmode)
     logger.info("###################################################")
@@ -2208,7 +2211,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         execscp = "scp"
         error = False
         if sys.platform.startswith('linux'):
-            path_key_priv = os.path.join("/", "var", "lib", "pulse2", ".ssh", "id_rsa")
+            path_key_priv =  os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
             localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
         elif sys.platform.startswith('win'):
             try:
