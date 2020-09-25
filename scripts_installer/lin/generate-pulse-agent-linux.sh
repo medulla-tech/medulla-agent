@@ -176,8 +176,8 @@ generate_agent_package() {
 	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME; do
 		cp /var/lib/pulse2/clients/config/$config_files deb/pulse-agent-linux/etc/pulse-xmpp-agent/
 	done
-	mkdir -p deb/pulse-agent-linux/var/lib/pulse2/.ssh
-	cp -fv $SSH_PUB_KEY deb/pulse-agent-linux/var/lib/pulse2/.ssh/authorized_keys
+	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh
+	cp -fv $SSH_PUB_KEY deb/pulse-agent-linux/home/pulseuser/.ssh/authorized_keys
 
 	colored_echo green "### INFO  Generating agent package... Done"
 }
