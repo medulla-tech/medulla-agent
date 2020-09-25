@@ -28,6 +28,7 @@ import shlex
 import json
 import subprocess
 from lib.utils import file_get_contents, file_put_contents, file_put_contents_w_a, simplecommandstr, simplecommand
+from lib.utils import Env
 import shutil
 import logging
 import traceback
@@ -69,8 +70,8 @@ def genratekeyforARSreverseSSH():
                                     "id_rsa.pub")):
         os.system("useradd reversessh -md /var/lib/pulse2/clients/reversessh -s /bin/rbash")
 
-        if not os.path.isdir(os.path.join("/","var","lib","pulse2","clients","reversessh",".ssh")):
-            os.makedirs(os.path.join("/","var","lib","pulse2","clients","reversessh",".ssh"))
+        if not os.path.isdir(os.path.join(Env.user_dir(),"clients","reversessh",".ssh")):
+            os.makedirs(os.path.join(Env.user_dir(),"clients","reversessh",".ssh"))
 
         os.system("ssh-keygen -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa -q -N \"\"")
         shutil.copyfile("/var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub",
@@ -96,7 +97,7 @@ def load_key_ssh_relayserver(private=False, user="reversessh"):
     if user == "root":
         filekey = os.path.join("/", "root", ".ssh", keyname)
     else:
-        filekey = os.path.join("/", "var", "lib", "pulse2", "clients", "reversessh", ".ssh", keyname)
+        filekey = os.path.join(Env.user_dir(), "clients", "reversessh", ".ssh", keyname)
     return file_get_contents(filekey)
 
 def runProcess(cmd, shell=False, envoption=os.environ):
@@ -288,8 +289,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
     returnmessage['ret'] = 0
     if objectxmpp.config.agenttype in ['relayserver']:
         #verify key exist
-        idkeypub = os.path.join("/", "var", "lib", "pulse2", "clients", "reversessh", ".ssh", "id_rsa.pub")
-        idkey = os.path.join("/","var", "lib", "pulse2", "clients", "reversessh", ".ssh", "id_rsa")
+        idkeypub = os.path.join(Env.user_dir(), "clients", "reversessh", ".ssh", "id_rsa.pub")
+        idkey = os.path.join(Env.user_dir(), "clients", "reversessh", ".ssh", "id_rsa")
         if not os.path.isfile(idkey) or not os.path.isfile(idkeypub):
             genratekeyforARSreverseSSH()
 

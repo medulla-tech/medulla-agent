@@ -28,6 +28,7 @@ if sys.platform.startswith('darwin'):
     import plyvel
 else:
     import bsddb
+from lib.utils import Env
 
 
 logger = logging.getLogger()
@@ -65,7 +66,7 @@ class manageschedulerdeploy:
 
     def bddir(self):
         if sys.platform.startswith('linux'):
-            return os.path.join("/", "var" ,"lib","pulse2","BDDeploy")
+            return os.path.join(Env.user_dir(),"BDDeploy")
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse","var","tmp","BDDeploy")
         elif sys.platform.startswith('darwin'):
