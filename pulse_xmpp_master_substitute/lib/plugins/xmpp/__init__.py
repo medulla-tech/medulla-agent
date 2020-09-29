@@ -5785,7 +5785,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         xmppmaster.mon_machine.hostname LIKE '%s'
                     AND 
                         xmppmaster.mon_event.id_rule = %s;""" % (status_event,
-                                                                 localhost,
+                                                                 hostname,
                                                                  id_rule)
                         
             result = session.execute(sql)
