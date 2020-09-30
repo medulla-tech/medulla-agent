@@ -76,7 +76,7 @@ def conf_ars_deploy(port=23000,
                     name="pulse"):
     root, adressurl = read_serverannonce(configfile)
     if adressurl != "":
-        pathxmldevice = ".//device[contains(@name, '%s')]/address" % name
+        pathxmldevice = ".//device[@name ='%s']/address" % name
         listresult = root.xpath(pathxmldevice)
         if listresult:
             device = listresult[0].getparent()
@@ -104,7 +104,7 @@ def iddevice(configfile="/var/lib/pulse2/.config/syncthing/config.xml",
             logger.info("xml conf : %s device id for hostname machine %s" % (configfile, hostname))
             tree = etree.parse(configfile)
             root = tree.getroot()
-            pathxmldevice = ".//device[contains(@name, '%s')]" % hostname
+            pathxmldevice = ".//device[@name='%s']" % hostname
             listresult = root.xpath(pathxmldevice)
             devid = listresult[0].attrib['id']
             logger.info("find device id %s" % (devid))
