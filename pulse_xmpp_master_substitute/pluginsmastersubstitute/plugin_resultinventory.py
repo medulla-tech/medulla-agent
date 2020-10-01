@@ -33,7 +33,7 @@ from lib.plugins.glpi import Glpi
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "resultinventory", "TYPE": "substitute"}
+plugin = {"VERSION": "1.11", "NAME": "resultinventory", "TYPE": "substitute"}
 
 def getComputerByMac( mac):
     ret = Glpi().getMachineByMacAddress('imaging_module', mac)
@@ -49,7 +49,7 @@ def XmppUpdateInventoried(jid, machine):
     try:
         result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
         results = result[0].split(",")
-        logging.getLogger().debug("listMacAdressforMachine   %s" % results)
+        logger.debug("listMacAdressforMachine   %s" % results)
         uuid = ''
         for t in results:
             logger.debug("Processing mac address")
@@ -78,9 +78,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
               "Content-Type": "application/x-compress",
               }
     try:
-        logging.getLogger().debug("=====================================================")
-        logging.getLogger().debug("call %s from %s"%(plugin,msg['from']))
-        logging.getLogger().debug("=====================================================")
+        logger.debug("=====================================================")
+        logger.debug("call %s from %s"%(plugin,msg['from']))
+        logger.debug("=====================================================")
         logger.info("Received inventory from %s in inventory substitute agent" % (msg['from']))
         try:
             url = xmppobject.config.inventory_url
@@ -91,6 +91,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         try:
             response = urllib2.urlopen(request)
+            logger.debug("inject intentory to %s code wed %s" % (url, response.getcode()))
         except urllib2.URLError:
             logger.info("The inventory server is not reachable. Please check pulse2-inventory-server service")
 
@@ -121,6 +122,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             xmppobject.boundjid.bare)
         time.sleep(15)
         if not XmppUpdateInventoried(msg['from'], machine):
+            logger.error("After injection of the inventory, no inventory is found for the address Macs." )
             XmppMasterDatabase().setlogxmpp('<span class="log_err">Injection of inventory for machine %s failed</span>' % (msg['from']),
                                             "Inventory",
                                             "",
@@ -158,7 +160,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 time.sleep(counter)
                 if machine['id'] or counter >= 10:
                     break
-            logging.getLogger().debug("Computers ID: %s" % machine['id'])
+            logger.debug("Computers ID: %s" % machine['id'])
             nb_iter = int(reginventory['info']['max_key_index']) + 1
             for num in range(1, nb_iter):
                 reg_key_num = 'reg_key_'+str(num)
@@ -166,13 +168,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     reg_key = reginventory[reg_key_num]['key'].strip('"')
                     reg_key_value = reginventory[reg_key_num]['value'].strip('"')
                     key_name = reg_key.split('\\')[-1]
-                    logging.getLogger().debug("Registry information:")
-                    logging.getLogger().debug("  reg_key_num: %s" % reg_key_num)
-                    logging.getLogger().debug("  reg_key: %s" % reg_key)
-                    logging.getLogger().debug("  reg_key_value: %s" % reg_key_value)
-                    logging.getLogger().debug("  key_name: %s" % key_name)
+                    logger.debug("Registry information:")
+                    logger.debug("  reg_key_num: %s" % reg_key_num)
+                    logger.debug("  reg_key: %s" % reg_key)
+                    logger.debug("  reg_key_value: %s" % reg_key_value)
+                    logger.debug("  key_name: %s" % key_name)
                     registry_id = Glpi().getRegistryCollect(reg_key)
-                    logging.getLogger().debug("  registry_id: %s" % registry_id)
+                    logger.debug("  registry_id: %s" % registry_id)
                     XmppMasterDatabase().setlogxmpp("Inventory Registry information: [machine :  %s][reg_key_num : %s]"
                                                     "[reg_key: %s][reg_key_value : %s]"
                                                     "[key_name : %s]" % (
