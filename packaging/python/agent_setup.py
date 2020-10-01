@@ -39,7 +39,7 @@ setup(
     long_description=long_description,
     url="https://www.siveo.net/",
     include_package_data=True,
-    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
+    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine', 'pulse_xmpp_agent.lib.ressources.filebrowser.js'],
     classifiers=[
         "Programming Language :: Python :: 2.7",
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
