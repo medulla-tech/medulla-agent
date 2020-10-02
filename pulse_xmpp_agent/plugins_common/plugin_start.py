@@ -42,7 +42,7 @@ def read_conf_plugin_start(objectxmpp):
         Config.read(configfilename)
         if Config.has_option('plugins', 'liststartplugin'):
             liststartplugin = Config.get('plugins', 'liststartplugin')
-            objectxmpp.liststartplugin = [x for x in  
+            objectxmpp.liststartplugin = [x for x in
                                             re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
                                                      liststartplugin)
                                             if x.strip()!=""]
