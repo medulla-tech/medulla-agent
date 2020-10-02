@@ -31,7 +31,7 @@ import re
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "2.0", "NAME" : "start", "TYPE" : "all"}
+plugin = {"VERSION" : "2.1", "NAME" : "start", "TYPE" : "all"}
 
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
