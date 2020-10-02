@@ -36,7 +36,8 @@ SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
-
+PULSE_START_CONFFILE_FILENAME="start.ini"
+PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 
 # Go to own folder
 cd "$(dirname $0)"
@@ -173,7 +174,7 @@ generate_agent_package() {
 
 	# We copy the config files to deb bundle
 	mkdir -p deb/pulse-agent-linux/etc/pulse-xmpp-agent
-	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME; do
+	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME $PULSE_STARTUPDATE_CONFFILE_FILENAME $PULSE_START_CONFFILE_FILENAME; do
 		cp /var/lib/pulse2/clients/config/$config_files deb/pulse-agent-linux/etc/pulse-xmpp-agent/
 	done
 	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh
