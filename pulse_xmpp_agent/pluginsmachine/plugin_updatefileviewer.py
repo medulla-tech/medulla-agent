@@ -79,10 +79,13 @@ def fileviewer_path():
     elif sys.platform.startswith('linux'):
         rpm_python_path = os.path.join("/", "usr", "lib", "python2.7", "site-packages",
                                        "pulse_xmpp_agent")
+        pip_python_path = os.path.join("/", "usr", "local", "lib", "python2.7", "dist-packages",
+                                       "pulse_xmpp_agent")
         deb_python_path = os.path.join("/", "usr", "lib", "python2.7", "dist-packages",
                                        "pulse_xmpp_agent")
-        #FIXME: Do not hardcode python path
-        if os.path.isdir(deb_python_path):
+        if os.path.isdir(pip_python_path):
+            destpath = os.path.join(pip_python_path, "lib", "ressources", "fileviewer")
+        elif os.path.isdir(deb_python_path):
             destpath = os.path.join(deb_python_path, "lib", "ressources", "fileviewer")
         else:
             destpath = os.path.join(rpm_python_path, "lib", "ressources", "fileviewer")
