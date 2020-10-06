@@ -44,6 +44,7 @@ Requires:       python-inotify
 Requires:       python-dateutil
 Requires:       python2-psutil
 Requires:       python-wakeonlan
+Requires:       python-crypto
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -160,6 +161,7 @@ fi
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
+Requires:       python-enum34
 BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
