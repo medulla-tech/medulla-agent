@@ -37,7 +37,8 @@ from utils import   shellcommandtimeout, \
                     keypub, \
                     simplecommand, \
                     restartsshd, \
-                    install_key_ssh_relayserver
+                    install_key_ssh_relayserver, \
+                    showlinelog
 import socket
 from  agentconffile import  directoryconffile
 import zlib
@@ -56,7 +57,8 @@ from utils_psutil import sensors_battery,\
                          mmemory,\
                          ifconfig,\
                          cpu_num,\
-                         netstat
+                         netstat,\
+                         cputimes
 from lib.update_remote_agent import agentinfoversion
 if sys.platform.startswith('win'):
     import win32net
@@ -623,13 +625,14 @@ class functionsynchroxmpp:
         else:
             datastruct = json.loads(data['data'])
             if 'subaction' in datastruct:
-                result = functionsynchroxmpp.__execfunctionmonitoringparameter(datastruct)
+                result = functionsynchroxmpp.__execfunctionmonitoringparameter(datastruct,
+                                                                               xmppobject)
         result = base64.b64encode(zlib.compress(result, 9))
         data['result'] = result
         return json.dumps(data)
 
     @staticmethod
-    def __execfunctionmonitoringparameter(data):
+    def __execfunctionmonitoringparameter(data, xmppobject):
         result=""
         try:
             if  data['subaction'] == "cputimes":
@@ -637,14 +640,15 @@ class functionsynchroxmpp:
                 result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
                 return result
             elif data['subaction'] == "litlog":
-                func = getattr(sys.modules[__name__], "showlinelog")
+                func = getattr(sys.modules[__name__], "showlinelog") # call showlinelog from util
+                data['kwargs']['logfile'] = xmppobject.config.logfile
                 result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
                 return result
             else:
                 return ""
         except Exception as e:
-            print str(e)
-            traceback.print_exc(file=sys.stdout)
+            logger.error("%s" % str(e))
+            logger.error("%s" % (traceback.format_exc()))
             return ""
 
     @staticmethod

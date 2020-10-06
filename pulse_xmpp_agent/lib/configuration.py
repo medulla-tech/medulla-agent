@@ -550,6 +550,22 @@ class confParameter:
                                           'domain'),
                                       ressource)
         try:
+            self.nbrotfile = Config.getint('global', 'nb_rot_file')
+        except BaseException:
+            self.nbrotfile = 6
+        if self.nbrotfile < 1:
+            self.nbrotfile = 1
+        try:
+            self.compress = Config.get('global', 'compress')
+        except BaseException:
+            self.compress = "no"
+        self.compress = self.compress.lower()
+        if self.compress not in ["zip", "gzip", "bz2","No"]:
+            self.compress = "no"
+        defaultnamelogfile = "xmpp-agent-machine.log"  
+        if self.agenttype == "relayserver":
+            defaultnamelogfile = "xmpp-agent-relay.log"  
+        try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
             if sys.platform.startswith('win'):
@@ -558,17 +574,17 @@ class confParameter:
                                 "Pulse",
                                 "var",
                                 "log",
-                                "xmpp-agent.log")
+                                defaultnamelogfile)
             elif sys.platform.startswith('darwin'):
                 self.logfile = os.path.join(
                     "/opt",
                     "Pulse",
                     "var",
                     "log",
-                    "xmpp-agent.log")
+                    defaultnamelogfile)
             else:
                 self.logfile = os.path.join(
-                    "/", "var", "log", "pulse", "xmpp-agent.log")
+                    "/", "var", "log", "pulse", defaultnamelogfile)
 
         # information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):

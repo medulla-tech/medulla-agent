@@ -1803,14 +1803,18 @@ def connection_established(Port):
         logger.warning("connection xmpp low")
         return False
 
-def showlinelog(nbline=200):
+def showlinelog(nbline=200, logfile=None):
     obj = {"result": ""}
+    if logfile is not None:
+        na = logfile
     if sys.platform.startswith('win'):
-        na = os.path.join(os.environ['ProgramFiles'], "Pulse", "var", "log", "xmpp-agent.log")
+        if logfile is None:
+            na = os.path.join(os.environ['ProgramFiles'], "Pulse", "var", "log", "xmpp-agent.log")
         if os.path.isfile(na):
             obj = simplecommandstr(encode_strconsole("powershell \"Get-Content '%s' | select -last %s\"" % (na, nbline)))
     elif sys.platform.startswith('linux'):
-        na = os.path.join("/", "var", "log", "pulse", "xmpp-agent.log")
+        if logfile is None:
+            na = os.path.join("/", "var", "log", "pulse", "xmpp-agent.log")
         if os.path.isfile(na):
             obj = simplecommandstr("cat %s | tail -n %s" % (na, nbline))
     return obj['result']
