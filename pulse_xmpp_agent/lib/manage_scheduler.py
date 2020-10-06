@@ -180,8 +180,17 @@ class manage_scheduler:
 
     def call_scheduling_main(self, name, *args, **kwargs):
         mod = __import__("scheduling_%s"%name)
-        logging.getLogger().debug("exec plugin scheduling_%s"%name)
+        logging.getLogger().info("exec plugin scheduling_%s"%name)
+        # Add compteur appel plugins
+        count = 0
+        try:
+            count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+        except AttributeError:
+            count = 0
+            setattr(self.objectxmpp, "num_call_scheduling_%s"%name, count)
+        logging.getLogger().info("num_call_scheduling_%s  %s" % (name, count))
         mod.schedule_main(*args, **kwargs)
+        setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count + 1)
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
         mod = __import__("scheduling_%s"%name)
