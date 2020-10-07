@@ -2525,6 +2525,15 @@ def create_msg_xmpp_quick_deploy(folder, create=False):
         logger.debug("Quick deployment package %s.xmpp found" % pathaqpackage)
 
 def pulseuser_useraccount_mustexist(username='pulseuser'):
+    """
+    This function checks if the a given user exists.
+    Args:
+        username: This is the username we need to check ( default is pulseuser )
+
+    Returns:
+        It returns False if the user already exists
+        It returns True if the users does not exists already
+    """
     message = []
     if sys.platform.startswith('linux'):
         try:
@@ -2574,6 +2583,15 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
         return False, message
 
 def pulseuser_profile_mustexist(username='pulseuser'):
+    """
+    This function checks if the a given profile exists.
+    Args:
+        username: This is the username we need to check ( default is pulseuser )
+
+    Returns:
+        It returns True if the profile has been correctly created or if the profile
+        already exists, it return False otherwise.
+    """
     message = []
     if sys.platform.startswith('win'):
         # Initialise userenv.dll
@@ -3114,3 +3132,31 @@ class downloadfile():
             return False, "I/O error {0} on file {1}: {2}".format(e.errno, self.urllocalfile, e.strerror)
         except:  # handle other exceptions such as attribute errors skipcq: FLK-E722
             return False, "Unexpected error: %s", sys.exc_info()[0]
+
+def minifyjsonstring(strjson):
+    """
+    This function minifies the json string in input
+        if json has incorrect '' and not "" this function will reformat
+    Returns:
+        string containining the minified json
+    """
+    # remove comments (//) and line breaks
+    strjson = ''.join([row.split('//')[0] for row in strjson.split("\n") if len(row.strip())!=0])
+    # remove tabs, line breaks and end of lines
+    regex = re.compile(r'[\n\r\t]')
+    strjson = regex.sub("", strjson)
+    # protect json strings
+    reg=re.compile(r"""(\".*?\n?.*?\")|(\'.*?\n?.*?\')""")
+    newjson = re.sub(reg,
+                     lambda x: '"%s"'%str(x.group(0)).strip('\"\'').strip().replace(' ','@@ESP@@'),
+                     strjson)
+    # remove blanks
+    newjson=newjson.replace(' ','')
+    # reinsert protected blanks
+    newjson=newjson.replace('@@ESP@@',' ')
+    # remove errors that are found often in json files
+    newjson=newjson.replace(",}","}")
+    newjson=newjson.replace("{,","{")
+    newjson=newjson.replace("[,","[")
+    newjson=newjson.replace(",]","]")
+    return newjson

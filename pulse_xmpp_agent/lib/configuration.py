@@ -238,6 +238,7 @@ class substitutelist:
         self.sub_registration = ["master@pulse"]
         self.sub_assessor = ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
+        self.sub_monitoring = ["master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -259,13 +260,18 @@ class substitutelist:
             sub_loggerlocal = Config.get('substitute', 'logger')
             self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
 
+        if Config.has_option('substitute', 'monitoring'):
+            sub_monitoringlocal = Config.get('substitute', 'monitoring')
+            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+
     def parameterssubtitute(self):
         conflist = []
         data={ 'subscription': self.sub_subscribe,
                'inventory': self.sub_inventory,
                'registration': self.sub_registration,
                'assessor': self.sub_assessor,
-               'logger': self.sub_logger}
+               'logger': self.sub_logger,
+               'monitoring': self.sub_monitoring}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -297,6 +303,7 @@ class confParameter:
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
         self.sub_assessor = ["master@pulse"]
+        self.sub_monitoring= ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
@@ -310,6 +317,10 @@ class confParameter:
         if Config.has_option('substitute', 'registration'):
             sub_registrationlocal = Config.get('substitute', 'registration')
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+
+        if Config.has_option('substitute', 'monitoring'):
+            sub_monitoringlocal = Config.get('substitute', 'monitoring')
+            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
             sub_assessorlocal = Config.get('substitute', 'assessor')
@@ -666,6 +677,15 @@ class confParameter:
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
 
+        # configuration monitoring
+        if self.agenttype == "machine":
+            if Config.has_option("monitoring", "monitoring_agent_config_file"):
+                self.monitoring_agent_config_file = Config.get("monitoring",
+                                                        "monitoring_agent_config_file")
+            else:
+                # Config file not found
+                self.monitoring_agent_config_file = ""
+
         self.information = {}
         self.PlatformSystem = platform.platform()
         self.information['platform'] = self.PlatformSystem
@@ -685,6 +705,59 @@ class confParameter:
         self.information['processor'] = self.ProcessorIdentifier
         self.Architecture = platform.architecture()
         self.information['archi'] = self.Architecture
+
+        # Http fileviewer server parameters
+        self.paths = []
+        self.names = []
+        self.extensions = []
+        self.date_format = '%Y-%m-%d %H:%M:%S'
+
+        if Config.has_option('fileviewer', 'sources'):
+            self.paths = Config.get('fileviewer', 'sources').split(';')
+
+        # The size_paths drive the final size of paths, names and extensions parameters
+        size_paths = len(self.paths)
+
+        if Config.has_option('fileviewer', 'names'):
+            # Get names from ini file
+            self.names = Config.get('fileviewer', 'names').split(';')
+
+        # If some names are missing, complete display names associated to each paths
+        count = 0
+        while count < size_paths:
+            try:
+                self.names[count]
+            except IndexError:
+                # The displayed names are in lowercase
+                self.names.append(os.path.basename(self.paths[count]).lower())
+            finally:
+                count += 1
+
+        # Get available extensions
+        if Config.has_option('fileviewer', 'extensions'):
+            self.extensions = Config.get('fileviewer', 'extensions').split(';')
+
+        # If some extensions group are missing, complete the list for each paths
+        count = 0
+        while count < size_paths:
+            try:
+                self.extensions[count]
+            except IndexError:
+                self.extensions.append([])
+            finally:
+                count += 1
+
+        count = 0
+        while count < size_paths:
+            if type(self.extensions[count]) is list:
+                self.extensions[count] = self.extensions[count]
+            else:
+                self.extensions[count] = self.extensions[count].split(',')
+            count += 1
+
+        if Config.has_option('fileviewer', 'date_format'):
+            self.date_format = Config.get('fileviewer', 'date_format')
+
 
     def loadparametersplugins(self, namefile):
         Config = configparser.ConfigParser()

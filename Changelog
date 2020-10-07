@@ -1,3 +1,11 @@
+pulse-xmpp-agent xxx
+======================
+* [FEATURE]  Add plugin to install fileviewer
+
+pulse-xmpp-agent 2.1.2
+======================
+* [FEATURE]  Use FusionInventory 2.5.2
+
 pulse-xmpp-agent 2.1.1
 ======================
 * [FEATURE]  Agents now use ifconfig.co webservice to find location

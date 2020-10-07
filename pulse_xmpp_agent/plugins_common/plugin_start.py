@@ -23,42 +23,59 @@
 import sys, os
 import logging
 from lib import utils
+from lib.agentconffile import directoryconffile
+import ConfigParser
+import re
+
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "2.0", "NAME" : "start", "TYPE" : "all"}
+plugin = {"VERSION" : "2.1", "NAME" : "start", "TYPE" : "all"}
+
+def read_conf_plugin_start(objectxmpp):
+    objectxmpp.liststartplugin = []
+    configfilename = os.path.join(directoryconffile(),"start.ini")
+    if os.path.isfile(configfilename):
+        # lit la configuration
+        Config = ConfigParser.ConfigParser()
+        Config.read(configfilename)
+        if Config.has_option('plugins', 'liststartplugin'):
+            liststartplugin = Config.get('plugins', 'liststartplugin')
+            objectxmpp.liststartplugin = [x for x in
+                                            re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
+                                                     liststartplugin)
+                                            if x.strip()!=""]
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s"%(plugin, message['from']))
     logger.debug("###################################################")
-    if objectxmpp.config.agenttype in ['machine']:
-        logger.debug("#################AGENT MACHINE#####################")
-        logger.debug("###################################################")
-        if sys.platform.startswith('win'):
-            #injection version clef de registre
-            logger.debug("INJECTION KEY REGISTER VERSION")
-            pathversion = os.path.join(objectxmpp.pathagent, "agentversion")
-            if os.path.isfile(pathversion):
-                version = utils.file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
-                if len(version) < 20:
-                    logger.debug("Version AGENT is " + version)
-                    import winreg
-                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
-                                        0 ,
-                                        winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
-                    winreg.SetValueEx ( key,
-                                        'DisplayVersion'  ,
-                                        0,
-                                        winreg.REG_SZ,
-                                        version)
-                    winreg.CloseKey(key)
-        elif sys.platform.startswith('linux') :
-            pass
-        elif sys.platform.startswith('darwin'):
-            pass
-    else:
-        logger.debug("###################################################")
-        logger.debug("##############AGENT RELAY SERVER###################")
-        logger.debug("###################################################")
+
+    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+    logger.error("compteurcallplugin = %s" % compteurcallplugin )
+    if compteurcallplugin == 0:
+        logger.debug("configure plugin %s" % action)
+        read_conf_plugin_start(objectxmpp)
+
+
+    startupdate={"action": "",
+                 "sessionid": utils.getRandomName(6, "startplugin"),
+                 "ret": 0,
+                 "base64": False,
+                 "data": {}}
+    msg = {'from': objectxmpp.boundjid.bare,
+        "to" : objectxmpp.boundjid.bare,
+        'type': 'chat' }
+    dataerreur =  startupdate.copy()
+    for pluginstart in objectxmpp.liststartplugin:
+        startupdate["action"] = pluginstart
+        dataerreur["action"] = "result" + startupdate["action"]
+        dataerreur["action"] = {"msg": "error plugin: "+ startupdate["action"]}
+        logger.error("from plugin_start call %s" % pluginstart)
+        utils.call_plugin(startupdate["action"],
+                            objectxmpp,
+                            startupdate["action"],
+                            startupdate['sessionid'],
+                            startupdate['data'],
+                            msg,
+                            dataerreur)

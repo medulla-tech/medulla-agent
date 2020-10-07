@@ -6,7 +6,7 @@ DESTDIR = $(CURDIR)/debian/pulse-xmpp-agent
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
-VERSION_XMPP_AGENT=2.1.1
+VERSION_XMPP_AGENT=2.1.2
 VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
 BRANCH=py3
@@ -55,7 +55,7 @@ build:
 	cp pulse_xmpp_agent/config/wakeonlan.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/relayconf.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	cp pulse_xmpp_agent/config/package_watching.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
-	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
+	cp pulse_xmpp_agent/config/manage_scheduler_relay.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	mkdir -p $(CURDIR)/debian/tmp/etc/logrotate.d/
 	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/pulse-xmpp-agent-relay
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
@@ -76,6 +76,7 @@ build:
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 	chmod +x $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
+	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 	# We create the installer part now
 	mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	mkdir -p pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
@@ -119,8 +120,11 @@ build:
 	rm -fv $(CURDIR)/debian/tmp/var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/agentconf.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
-	cp pulse_xmpp_agent/config/manage_scheduler.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/manage_scheduler_machine.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/inventory.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/inventory.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/start.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/startupdate.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-deps-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
@@ -161,7 +165,7 @@ build:
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-netcheck-package
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-service-package
 	#chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/generate-kiosk-package
-	GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-filetree-generator.git
+	GIT_SSL_NO_VERIFY=true git clone https://USER:PASSWORD@github.com/pulse-project/pulse-filetree-generator.git
 	mv pulse-filetree-generator pulse-filetree-generator-${FILETREE_VERSION}
 	g++ -O3 -std=c++11 pulse-filetree-generator-${FILETREE_VERSION}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin

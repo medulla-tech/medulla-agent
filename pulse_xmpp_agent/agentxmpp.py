@@ -35,7 +35,9 @@ import shutil
 import subprocess
 import psutil
 import random
-
+import hashlib
+import cherrypy
+from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
@@ -67,6 +69,7 @@ from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
+from lib.httpserver import Controller
 
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
@@ -208,6 +211,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.levelcharge = {}
             self.levelcharge['machinelist'] = []
             self.levelcharge['charge'] = 0
+            # supprime les reverses ssh inutile
+            self.manage_persistence_reverse_ssh = reverse_port_ssh()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
@@ -247,7 +252,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
 
-
         if not hasattr(self.config, 'sub_inventory'):
             self.sub_inventory = self.agentmaster
         else:
@@ -269,6 +273,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_registration = jid.JID(self.config.sub_registration)
         if self.sub_registration.bare == "":
             self.sub_registration = self.agentmaster
+
+        if not hasattr(self.config, 'sub_monitoring'):
+            self.sub_monitoring = self.agentmaster
+        else:
+            if isinstance(self.config.sub_monitoring, list) and\
+                len(self.config.sub_monitoring) > 0:
+                self.sub_monitoring = jid.JID(self.config.sub_monitoring[0])
+            else:
+                self.sub_monitoring = jid.JID(self.config.sub_monitoring)
+        if self.sub_monitoring.bare == "":
+            self.sub_monitoring = self.agentmaster
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
@@ -1646,6 +1661,51 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
 
+    def call_asynchrome_function_plugin(self,
+                                        nameplugin,
+                                        differed=0,
+                                        data=None,
+                                        sessionid=None):
+        """
+            call plugin   parralelle mode ou differe calling
+        """
+        nameevenement = getRandomName(6, nameplugin)
+        if sessionid is None:
+            sessionid = getRandomName(6, "asynchrone")
+        if data is None:
+            data = {}
+        argv=[nameplugin, sessionid]
+        self.schedule(nameevenement,
+                      differed,
+                      self.__asynchrome_function_plugin,
+                      argv,
+                      data,
+                      repeat=False)
+
+    def __asynchrome_function_plugin(self, *argv, **kargv):
+        """
+         "data" : { "msg" : "error plugin : "+ dataobj["action"]
+        """
+        # structure execution
+        nameplugin = argv[0]
+        datasend={ "action": argv[0],
+                   "sessionid" : argv[1],
+                   "ret" : 0,
+                   "base64" : False,
+                   "data": kargv}
+        datasenderror=datasend.copy()
+        datasenderror['action']= "result" + datasend["action"]
+        datasenderror['data']= { "msg" : "error plugin : " + datasend['action']}
+        msg = {'from': self.boundjid.bare,
+               "to": self.boundjid.bare,
+               'type': 'chat'}
+        call_plugin(datasend['action'],
+                    self,
+                    datasend['action'],
+                    argv[1],
+                    datasend['data'],
+                    msg,
+                    datasenderror)
 
     def reloadsesssion(self):
         # reloadsesssion only for machine
@@ -2085,6 +2145,18 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid
         }
+        try:
+            dataobj['md5_conf_monitoring'] = ""
+            # self.monitoring_agent_config_file
+            if self.config.agenttype not in ['relayserver'] and \
+                hasattr(self.config, 'monitoring_agent_config_file') and \
+                    self.config.monitoring_agent_config_file != "" and \
+                        os.path.exists(self.config.monitoring_agent_config_file):
+                            dataobj['md5_conf_monitoring'] =  hashlib.md5(file_get_contents(self.config.monitoring_agent_config_file)).hexdigest()
+        except AttributeError:
+            logging.warning('conf file monitoring missing')
+        except Exception as e:
+            logging.error('%s error on file config monitoring'%str(e))
         if self.config.agenttype in ['relayserver']:
             try:
                 dataobj['syncthing_port'] = self.config.syncthing_port
@@ -2312,6 +2384,84 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         processes.append(p)
         p.start()
 
+    # ==========================
+    # = cherrypy server config =
+    # ==========================
+    config = confParameter(optstypemachine)
+    if config.agenttype in ['machine']:
+        port = 52044
+        root_path = os.path.abspath(os.getcwd())
+        server_path = os.path.join(root_path, 'lib')
+        server_ressources_path = os.path.join(root_path, 'lib', 'ressources')
+
+        Controller.config = config
+        # Generate cherrypy server conf
+        server_conf = {
+            # Root access
+            'global':{
+                'server.socket_host': '0.0.0.0',
+                'server.socket_port': port,
+            },
+            '/': {
+                #'tools.staticdir.on': True,
+                'tools.staticdir.dir': server_path
+            },
+            # Sharing css ...
+            '/css': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'css')
+            },
+            # Sharing js ...
+            '/js': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'js'),
+            },
+            # Sharing images ...
+            '/images': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'images')
+
+            },
+            # Alias to images for datatables js lib
+            '/DataTables-1.10.21/images': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'images'),
+            },
+            # Sharing fonts
+            '/fonts': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'fonts'),
+            },
+        }
+        count = 0
+        for path in config.paths:
+            name = config.names[count]
+            # Here we know the name and the path, we can add the access for each folders
+            server_conf['/%s' % str(name)] = {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': str(path)
+            }
+            count += 1
+        cherrypy.tree.mount(Controller(), '/', server_conf)
+        # We will create our own server so we don't need the
+        # default one
+        cherrypy.server.unsubscribe()
+        server1 = cherrypy._cpserver.Server()
+        server1.socket_port = port
+        server1._socket_host = '0.0.0.0'
+
+        # ===
+        # Do not remove the following lines
+        # They can be usefull to configure the server
+        # ===
+
+        # server1.thread_pool = 30
+        # server1.ssl_module = 'pyopenssl'
+        # server1.ssl_certificate = '/home/ubuntu/my_cert.crt'
+        # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
+        # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
+        server1.subscribe()
+        cherrypy.engine.start()
 
     # completing process
     try:
