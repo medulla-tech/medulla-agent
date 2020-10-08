@@ -137,7 +137,8 @@ class networkagentinfo:
                 pythoncom.CoUninitialize()
             for dev in wmi_out:
                 objnet = {}
-                if dev.MACAddress is None: continue
+                if dev.MACAddress is None:
+                    continue
                 objnet['macaddress'] = dev.MACAddress
                 objnet['Description'] = dev.Description
                 try:
