@@ -61,6 +61,7 @@ PY_MODULES_32_FILENAMES="pypiwin32-219-cp27-none-win32.whl \
 pycurl-7.43.0-cp27-none-win32.whl \
 lxml-3.6.0-cp27-none-win32.whl \
 psutil-5.4.3-cp27-none-win32.whl \
+simplejson-3.16.0-cp27-cp27m-win32.whl \
 "
 PY_MODULES_64_FILENAMES="pypiwin32-219-cp27-none-win_amd64.whl \
 pycurl-7.43.0-cp27-none-win_amd64.whl \
