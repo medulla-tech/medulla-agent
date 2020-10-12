@@ -1613,7 +1613,6 @@ def reboot_command():
         os.system("shutdown /r")
     elif sys.platform.startswith('darwin'):
         os.system("shutdown -r now")
-
     return
 
 def isBase64(s):
@@ -3178,3 +3177,27 @@ def minifyjsonstring(strjson):
     newjson=newjson.replace("[,","[")
     newjson=newjson.replace(",]","]")
     return newjson
+
+def serialnumbermachine():
+    serial_uuid_machine=""
+    try:
+        if sys.platform.startswith('win'):
+            result = simplecommand("wmic csproduct get uuid")
+            if result['code'] == 0 and result['result']:
+                a=[ x.strip().decode('utf-8', 'ignore') for x in result['result']]
+                serial_uuid_machine = ''.join(a).replace('UUID','').strip()
+        elif sys.platform.startswith('linux'):
+            result = simplecommand('dmidecode -s system-uuid')
+            if result['code'] == 0 and result['result']:
+                serial_uuid_machine = ''.join(result['result']).strip()
+        elif sys.platform.startswith('darwin'):
+            cmd=r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
+            result = simplecommand(cmd)
+            if result['code'] == 0 and result['result']:
+                a=[x.strip().decode('utf-8', 'ignore') for x in result['result']]
+                serial_uuid_machine = ''.join(a).replace('UUID','').strip()
+        else:
+            logger.warning("function serialnumbermachine No Implemented for os %s" % sys.platform)
+    except Exception:
+        logger.error("function serialnumbermachine\n%s" % (traceback.format_exc()))
+    return serial_uuid_machine
