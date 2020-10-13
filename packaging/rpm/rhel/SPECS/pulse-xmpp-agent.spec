@@ -45,6 +45,7 @@ Requires:       python-dateutil
 Requires:       python2-psutil
 Requires:       python-wakeonlan
 Requires:       python-crypto
+Requires:       python-cherrypy
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
