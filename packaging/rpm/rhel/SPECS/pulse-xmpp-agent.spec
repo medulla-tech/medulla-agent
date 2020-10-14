@@ -257,8 +257,6 @@ plugins for pulse xmppmaster
 %files -n pulse-xmppmaster-agentplugins
 %_var/lib/pulse2/xmpp_baseplugin
 %_var/lib/pulse2/xmpp_basepluginscheduler
-%_var/lib/pulse2/clients/config/
-%_var/lib/pulse2/clients/config/inventory.ini
 
 #--------------------------------------------------------------------
 
