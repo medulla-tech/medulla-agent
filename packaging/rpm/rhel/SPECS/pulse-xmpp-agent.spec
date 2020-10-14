@@ -238,7 +238,6 @@ fi
 %_var/lib/pulse2/clients
 %config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler_machine.ini
-%config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/start.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
 %_var/lib/pulse2/xmpp_baseremoteagent/
@@ -257,6 +256,7 @@ plugins for pulse xmppmaster
 %files -n pulse-xmppmaster-agentplugins
 %_var/lib/pulse2/xmpp_baseplugin
 %_var/lib/pulse2/xmpp_basepluginscheduler
+%config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
 
 #--------------------------------------------------------------------
 
