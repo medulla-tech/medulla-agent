@@ -594,6 +594,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     # on scrute jusqua 20 fois si 1 mac matche avec  inventaire glpi existant
                     if showinfobool:
                         logger.info("Finding uuid from GLPI computer id for mac address ")
+
                     for t in results:
                         if showinfobool:
                             logger.info("Finding the machine which has the specified mac address : %s" % t)
