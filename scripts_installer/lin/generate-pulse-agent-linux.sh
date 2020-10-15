@@ -267,6 +267,10 @@ install_repos() {
                 install_package pulse-agent-linux-repo-xenial
                 INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-xenial}" )
                 ;;
+            ubuntu-focal)
+                install_package pulse-agent-linux-repo-focal
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-focal}" )
+                ;;
             *)
                 echo "the distribution $distro is not yet supported"
                 ;;
