@@ -129,6 +129,14 @@ class Glpi(object):
 
         #return ret
 
+    def getMachineBySerial(self, serial):
+        global glpi
+        return glpi.getMachineBySerial(serial)
+
+    def getMachineByUuidSetup(self, uuidsetupmachine):
+        global glpi
+        return glpi.getMachineByUuidSetup(uuidsetupmachine)
+
     def getMachineByMacAddress(self, ctx, filter):
         global glpi
         return glpi.getMachineByMacAddress(ctx, filter)
