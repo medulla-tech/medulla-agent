@@ -1856,15 +1856,6 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         module = "Deployment | Install",
                                         date = None )
                     obj = utils.simplecommand("ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
-                    objectxmpp.xmpplog( str(obj['result']),
-                                type = 'deploy',
-                                sessionname = sessionid,
-                                priority = 0,
-                                action = "xmpplog",
-                                who = fromrelay,
-                                module = "Deployment | Install",
-                                date = None )
-                    # chang permition
                     objectxmpp.xmpplog( "Setting proper permissions on the ssh keys",
                                         type = 'deploy',
                                         sessionname = sessionid,
