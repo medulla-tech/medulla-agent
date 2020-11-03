@@ -1835,6 +1835,9 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         "--shell /bin/rbash " \
                                         "--disabled-password " \
                                         "reversessh")
+                    if sys.platform.startswith('linux'):
+                        os.system("setfacl -Rb /var/lib/pulse2/clients/reversessh/")
+
                     # create keygen
                     if os.path.exists(file_key_reverse_private_ars):
                         os.remove(file_key_reverse_private_ars)
