@@ -41,7 +41,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.17", "NAME": "reverse_ssh_on",  "TYPE": "all"}
+plugin = {"VERSION": "2.170", "NAME": "reverse_ssh_on",  "TYPE": "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
@@ -72,6 +72,10 @@ def genratekeyforARSreverseSSH():
 
         if not os.path.isdir(os.path.join(Env.user_dir(),"clients","reversessh",".ssh")):
             os.makedirs(os.path.join(Env.user_dir(),"clients","reversessh",".ssh"))
+
+        if sys.platform.startswith('linux'):
+            os.system("setfacl -Rb /var/lib/pulse2/clients/reversessh/")
+
 
         os.system("ssh-keygen -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa -q -N \"\"")
         shutil.copyfile("/var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub",
