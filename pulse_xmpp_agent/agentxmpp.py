@@ -2464,16 +2464,39 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
         server1.subscribe()
         cherrypy.engine.start()
-
-    # completing process
-    try:
-        for p in processes:
-            p.join()
-    except KeyboardInterrupt:
-        logging.error("TERMINATE PROGRAMM ON CTRL+C")
-        os._exit(1)
-    except Exception as e:
-        logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
+    if config.agenttype in ['relayserver']:
+        # completing process
+        programrun = True
+        while True:
+            time.sleep(20)
+            for p in processes:
+                if p.is_alive():
+                    logger.debug("Alive %s (%s)"%(p.name,p.pid))
+                    if p.name == "xmppagent":
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        result = simplecommand(cmd)
+                        if result['code'] == 0:
+                            if result['result']:
+                                programrun = False
+                                break
+                else:
+                    logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
+                    programrun = False
+                    break
+            if not programrun:
+                for p in processes:
+                    p.terminate()
+                break
+    else:
+        # completing process
+        try:
+            for p in processes:
+                p.join()
+        except KeyboardInterrupt:
+            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            os._exit(1)
+        except Exception as e:
+            logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
 
 class process_xmpp_agent():
