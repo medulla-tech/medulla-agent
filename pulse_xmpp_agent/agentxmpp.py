@@ -21,6 +21,7 @@
 # MA 02110-1301, USA.
 # file /pulse_xmpp_agent/agentxmpp.py
 
+from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 import sys
 import os
 import logging
@@ -2256,16 +2257,64 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             p.start()
             p.join()
         else:
-            # Store the Fork PID
-            pid = os.fork()
-            if pid > 0:
-                print 'PID: %d' % pid
-                os._exit(0)
+            try:
+                pid = os.fork()
+                if pid > 0:
+                    # Wait for initialization before exiting
+                    time.sleep(2)
+                    # exit first parent and return
+                    sys.exit(0)
+            except OSError, e:
+                print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+                sys.exit(1)
+
+            # decouple from parent environment
+            os.chdir("/")
+            os.setsid()
+
+            # do second fork
+            try:
+                pid = os.fork()
+                if pid > 0:
+                    # exit from second parent
+                    sys.exit(0)
+            except OSError, e:
+                sys.exit(1)
+
+            maxfd = getrlimit(RLIMIT_NOFILE)[1]
+            if maxfd == RLIM_INFINITY:
+                maxfd = 1024
+
+            for fd in range(0, maxfd):
+                # Don't close twisted FDs
+                # TODO: make a clean code to be sure nothing is opened before this function
+                # ie: daemonize very early, then after import all stuff...
+                if fd not in (3, 4, 5, 6, 7, 8):
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        pass
+
+            if (hasattr(os, "devnull")):
+                REDIRECT_TO = os.devnull
+            else:
+                REDIRECT_TO = "/dev/null"
+
+            os.open(REDIRECT_TO, os.O_RDWR)
+            os.dup2(0, 1)
+            os.dup2(0, 2)
+            # write pidfile
+            pid = os.getpid()
+            f = open("/var/lib/xmpp_agent_pulse_%s.pid"%optstypemachine, 'w')
+            try:
+                f.write('%s\n' % pid)
+            finally:
+                f.close()
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s"%(traceback.format_exc()))
-        os._exit(1)
+        sys.exit(1)
 
 def tgconf(optstypemachine):
     tg = confParameter(optstypemachine)
@@ -2357,15 +2406,17 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     processes.append(p)
     p.start()
 
-    p = Process(target=process_tcp_serveur, args=(14000,
-                                                  optstypemachine,
-                                                  optsconsoledebug,
-                                                  optsdeamon,
-                                                  tglevellog,
-                                                  tglogfile,
-                                                  queue_recv_tcp_to_xmpp,
-                                                  queueout,
-                                                  eventkilltcp))
+    p = Process(target=process_tcp_serveur,
+                name="tcp_serveur",
+                args=(  14000,
+                        optstypemachine,
+                        optsconsoledebug,
+                        optsdeamon,
+                        tglevellog,
+                        tglogfile,
+                        queue_recv_tcp_to_xmpp,
+                        queueout,
+                        eventkilltcp))
     processes.append(p)
     p.start()
 
