@@ -2305,7 +2305,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             os.dup2(0, 2)
             # write pidfile
             pid = os.getpid()
-            f = open("/var/lib/xmpp_agent_pulse_%s.pid"%optstypemachine, 'w')
+            f = open("/var/run/xmpp_agent_pulse_%s.pid"%optstypemachine, 'w')
             try:
                 f.write('%s\n' % pid)
             finally:
