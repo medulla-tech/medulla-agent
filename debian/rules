@@ -1,6 +1,4 @@
 #!/usr/bin/make -f
-  
-DESTDIR = $(CURDIR)/debian/pulse-xmpp-agent
 
 # Stolen from cdbs, we need this.
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
@@ -9,26 +7,35 @@ DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//'
 VERSION_XMPP_AGENT=2.1.2
 VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
-BRANCH=py3
+BRANCH=integration
 
 # Used during building to set the version
 export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"
 
-build:
+%:
+	dh $@ --buildsystem=python_distutils --with=python3
+
+override_dh_install:
+	dh_install --list-missing
+
+override_dh_auto_build:
+	dh_auto_build
+
+override_dh_auto_install:
 	dh_auto_install
-	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent
-	cp -fr pulse_xmpp_agent/* $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent
-	rm -fr $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/config
-	rm -fr $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/descriptor_scheduler_common
-	rm -fr $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/plugins_common
-	rm -fr $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py
-	rm -fr $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/pluginsmachine/plugin_*.py
-	cp -fv pulse_xmpp_agent/plugins_common/plugin_* $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/pluginsrelay
-	cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/descriptor_scheduler_relay/
-	chmod +x $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py
-	chmod +x $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/agentxmpp.py
-	chmod +x $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/package_watching.py
-	chmod +x $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_agent/launcher.py
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent
+	cp -fr pulse_xmpp_agent/* $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent
+	rm -fr $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/config
+	rm -fr $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptor_scheduler_common
+	rm -fr $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/plugins_common
+	rm -fr $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptor_scheduler_machine/scheduling_*.py
+	rm -fr $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/pluginsmachine/plugin_*.py
+	cp -fv pulse_xmpp_agent/plugins_common/plugin_* $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/pluginsrelay
+	cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/descriptor_scheduler_relay/
+	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py
+	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/agentxmpp.py
+	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/package_watching.py
+	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_agent/launcher.py
 	mkdir -p $(CURDIR)/debian/tmp/var/log/pulse/
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/systemd/system
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
@@ -58,13 +65,13 @@ build:
 	cp pulse_xmpp_agent/config/manage_scheduler_relay.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent
 	mkdir -p $(CURDIR)/debian/tmp/etc/logrotate.d/
 	cp contrib/scripts/pulse-xmpp-agent-relay.logrotate $(CURDIR)/debian/tmp/etc/logrotate.d/pulse-xmpp-agent-relay
-	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
-	cp pulse_xmpp_master_substitute/agentmastersubstitute.py $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
-	cp pulse_xmpp_master_substitute/agentversion $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
-	cp -r pulse_xmpp_master_substitute/bin/ $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
-	cp -r pulse_xmpp_master_substitute/lib/  $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
-	cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
-	cp -r pulse_xmpp_master_substitute/script/ $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp pulse_xmpp_master_substitute/agentmastersubstitute.py $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp pulse_xmpp_master_substitute/agentversion $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/bin/ $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/lib/  $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
+	cp -r pulse_xmpp_master_substitute/script/ $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/
 	mkdir -p $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent-substitute/
 	cp pulse_xmpp_master_substitute/config/*.ini $(CURDIR)/debian/tmp/etc/pulse-xmpp-agent-substitute/
 	cp -fr pulse_xmpp_master_substitute/config/systemd/* $(CURDIR)/debian/tmp/usr/lib/systemd/system
@@ -75,8 +82,8 @@ build:
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
-	chmod +x $(CURDIR)/debian/tmp/usr/lib/python3.5/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
 	sed -i 's,site-packages,dist-packages,g' -i $(CURDIR)/debian/tmp/usr/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+	chmod +x $(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
 	# We create the installer part now
 	mkdir pulse-xmpp-agent-${VERSION_XMPP_AGENT}
 	mkdir -p pulse-machine-plugins-${VERSION_XMPP_AGENT}/pulse_xmpp_agent/pluginsmachine
@@ -182,36 +189,3 @@ build:
 	cp scripts_installer/win/netcheck-service.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/networkevents.py $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
 	cp scripts_installer/win/powershell-policy-remotesigned.pol $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/
-
-clean:
-	dh_testdir
-	dh_testroot
-	-$(MAKE) clean
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_clean -k
-	dh_installdirs
-
-binary-indep: build install
-binary-arch: build install
-	dh_testdir
-	dh_testroot
-	dh_install
-	dh_fixperms
-	dh_installchangelogs
-	dh_installdocs
-	dh_installinit
-	# Some postinstall tools are known to fails after being stripped
-	#dh_strip
-	dh_link
-	dh_compress
-	dh_installdeb
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-
