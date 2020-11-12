@@ -11,6 +11,8 @@ logger = logging.getLogger()
 
 
 class managepackage:
+    agenttype="relayserver"
+
     @staticmethod
     def packagedir():
         """
@@ -19,7 +21,10 @@ class managepackage:
         @return: string: The path of the package folder.
         """
         if sys.platform.startswith('linux'):
-            return os.path.join("/", "var", "lib", "pulse2", "packages")
+            if managepackage.agenttype == "relayserver":
+                return os.path.join("/", "var", "lib", "pulse2", "packages")
+            else:
+                return os.path.join(os.path.expanduser('~pulseuser'), 'packages')
         elif sys.platform.startswith('win'):
             return os.path.join(
                 os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages")

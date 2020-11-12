@@ -165,7 +165,7 @@ class functionsynchroxmpp:
             ################# win reverse #################
             try:
                 win32net.NetUserGetInfo('', 'pulseuser', 0)
-                filekey = os.path.join("C:",
+                filekey = os.path.join("C:\\",
                                        "Users",
                                        "pulseuser",
                                        ".ssh",

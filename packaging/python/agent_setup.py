@@ -58,6 +58,7 @@ setup(
         'psutil >= 5.4.3',
         'pysftp >= 0.2.9',
         'syncthing >= 2.3.1',
+        'cherrypy >= 3.0.0',
         'requests >= 2.8.14'
     ] + ( ['pathlib >= 1.0.1', 'pypiwin32 >= 219', 'comtypes >= 1.1.3', 'wmi >= 1.4.9'] if "win" in sys.platform else [] )
 )

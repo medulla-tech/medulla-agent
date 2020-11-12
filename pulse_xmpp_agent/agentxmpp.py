@@ -21,6 +21,7 @@
 # MA 02110-1301, USA.
 # file /pulse_xmpp_agent/agentxmpp.py
 
+from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 import sys
 import os
 import logging
@@ -36,6 +37,7 @@ import subprocess
 import psutil
 import random
 import hashlib
+from lib.manageresourceplugin import resource_plugin
 import cherrypy
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
@@ -60,7 +62,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
-                        protodef, geolocalisation_agent
+                        protodef, geolocalisation_agent, Env
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -143,6 +145,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        Env.agenttype = self.config.agenttype
+        managepackage.agenttype = self.config.agenttype
         # creation object session ##########
         self.session = session(self.config.agenttype)
         # CREATE MANAGE SCHEDULER##############
@@ -2254,16 +2258,64 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             p.start()
             p.join()
         else:
-            # Store the Fork PID
-            pid = os.fork()
-            if pid > 0:
-                print(('PID: %d' % pid))
-                os._exit(0)
+            try:
+                pid = os.fork()
+                if pid > 0:
+                    # Wait for initialization before exiting
+                    time.sleep(2)
+                    # exit first parent and return
+                    sys.exit(0)
+            except OSError, e:
+                print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+                sys.exit(1)
+
+            # decouple from parent environment
+            os.chdir("/")
+            os.setsid()
+
+            # do second fork
+            try:
+                pid = os.fork()
+                if pid > 0:
+                    # exit from second parent
+                    sys.exit(0)
+            except OSError, e:
+                sys.exit(1)
+
+            maxfd = getrlimit(RLIMIT_NOFILE)[1]
+            if maxfd == RLIM_INFINITY:
+                maxfd = 1024
+
+            for fd in range(0, maxfd):
+                # Don't close twisted FDs
+                # TODO: make a clean code to be sure nothing is opened before this function
+                # ie: daemonize very early, then after import all stuff...
+                if fd not in (3, 4, 5, 6, 7, 8):
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        pass
+
+            if (hasattr(os, "devnull")):
+                REDIRECT_TO = os.devnull
+            else:
+                REDIRECT_TO = "/dev/null"
+
+            os.open(REDIRECT_TO, os.O_RDWR)
+            os.dup2(0, 1)
+            os.dup2(0, 2)
+            # write pidfile
+            pid = os.getpid()
+            f = open("/var/run/xmpp_agent_pulse_%s.pid"%optstypemachine, 'w')
+            try:
+                f.write('%s\n' % pid)
+            finally:
+                f.close()
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s"%(traceback.format_exc()))
-        os._exit(1)
+        sys.exit(1)
 
 def tgconf(optstypemachine):
     tg = confParameter(optstypemachine)
@@ -2355,15 +2407,17 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
     processes.append(p)
     p.start()
 
-    p = Process(target=process_tcp_serveur, args=(14000,
-                                                  optstypemachine,
-                                                  optsconsoledebug,
-                                                  optsdeamon,
-                                                  tglevellog,
-                                                  tglogfile,
-                                                  queue_recv_tcp_to_xmpp,
-                                                  queueout,
-                                                  eventkilltcp))
+    p = Process(target=process_tcp_serveur,
+                name="tcp_serveur",
+                args=(  14000,
+                        optstypemachine,
+                        optsconsoledebug,
+                        optsdeamon,
+                        tglevellog,
+                        tglogfile,
+                        queue_recv_tcp_to_xmpp,
+                        queueout,
+                        eventkilltcp))
     processes.append(p)
     p.start()
 
@@ -2462,16 +2516,39 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
         server1.subscribe()
         cherrypy.engine.start()
-
-    # completing process
-    try:
-        for p in processes:
-            p.join()
-    except KeyboardInterrupt:
-        logging.error("TERMINATE PROGRAMM ON CTRL+C")
-        os._exit(1)
-    except Exception as e:
-        logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
+    if config.agenttype in ['relayserver']:
+        # completing process
+        programrun = True
+        while True:
+            time.sleep(20)
+            for p in processes:
+                if p.is_alive():
+                    logger.debug("Alive %s (%s)"%(p.name,p.pid))
+                    if p.name == "xmppagent":
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        result = simplecommand(cmd)
+                        if result['code'] == 0:
+                            if result['result']:
+                                programrun = False
+                                break
+                else:
+                    logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
+                    programrun = False
+                    break
+            if not programrun:
+                for p in processes:
+                    p.terminate()
+                break
+    else:
+        # completing process
+        try:
+            for p in processes:
+                p.join()
+        except KeyboardInterrupt:
+            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            os._exit(1)
+        except Exception as e:
+            logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
 
 class process_xmpp_agent():

@@ -77,7 +77,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resourcejid=newjidconf[1].split("/")
         resourcejid[0]=conf.confdomain
         newjidconf[0] = getRandomName(10,"conf")
-        self.HostNameSystem = platform.node()
+        self.HostNameSystem = platform.node().split('.')[0]
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
         self.agentmaster =jid.JID("master@pulse")
         self.session = ""

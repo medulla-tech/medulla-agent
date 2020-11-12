@@ -61,11 +61,13 @@ PY_MODULES_32_FILENAMES="pypiwin32-219-cp27-none-win32.whl \
 pycurl-7.43.0-cp27-none-win32.whl \
 lxml-3.6.0-cp27-none-win32.whl \
 psutil-5.4.3-cp27-none-win32.whl \
+simplejson-3.16.0-cp27-cp27m-win32.whl \
 "
 PY_MODULES_64_FILENAMES="pypiwin32-219-cp27-none-win_amd64.whl \
 pycurl-7.43.0-cp27-none-win_amd64.whl \
 lxml-3.6.0-cp27-none-win_amd64.whl \
 psutil-5.4.3-cp27-none-win_amd64.whl \
+simplejson-3.16.0-cp27-cp27m-win_amd64.whl \
 "
 PY_MODULES_COMMON_FILENAMES="netifaces-0.10.5.tar.gz \
 comtypes-1.1.3-2.zip \
@@ -88,6 +90,10 @@ urllib3-1.22-py2.py3-none-any.whl \
 certifi-2019.3.9-py2.py3-none-any.whl \
 chardet-3.0.4-py2.py3-none-any.whl \
 pathlib-1.0.1.tar.gz \
+CherryPy-8.9.1-py2.py3-none-any.whl \
+Routes-2.4.1-py2.py3-none-any.whl \
+repoze.lru-0.7-py3-none-any.whl \
+WebOb-1.8.5-py2.py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
@@ -114,6 +120,8 @@ PULSE_SERVICE_FILENAME="pulse-service.py"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
+PULSE_START_CONFFILE_FILENAME="start.ini"
+PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
 NETCHECK_SERVICE_FILENAME="netcheck-service.py"
 NETCHECK_PROGRAM_FILENAME="networkevents.py"
@@ -396,6 +404,8 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_CONFFILE@@/${PULSE_AGENT_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_SCHEDULER_CONFFILE@@/${PULSE_SCHEDULER_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_INVENTORY_CONFFILE@@/${PULSE_INVENTORY_CONFFILE_FILENAME}/" \
+        -e "s/@@PULSE_START_CONFFILE@@/${PULSE_START_CONFFILE_FILENAME}/" \
+        -e "s/@@PULSE_STARTUPDATE_CONFFILE@@/${PULSE_STARTUPDATE_CONFFILE_FILENAME}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
