@@ -5,7 +5,7 @@ Priority: optional
 Maintainer: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
 Uploaders: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
 Build-Depends: debhelper (>= 9),
-               git, python3-all
+               git, python3-all, python3-setuptools
 Standards-Version: 3.9.8
 Homepage: http://cyberelk.net/tim/software/pycups/
 Vcs-Git: https://anonscm.debian.org/git/python3-modules/packages/python3-cups.git
