@@ -16,7 +16,7 @@ export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"
 	dh $@ --buildsystem=pybuild --with=python3
 
 override_dh_install:
-	dh_install --list-missing
+	dh_missing --list-missing
 
 override_dh_auto_build:
 	dh_auto_build
