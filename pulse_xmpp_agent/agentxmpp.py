@@ -25,6 +25,9 @@ from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 import sys
 import os
 import logging
+import logging.config
+from logging.handlers import TimedRotatingFileHandler
+import ConfigParser
 import traceback
 import sleekxmpp
 import platform
@@ -62,7 +65,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
-                        protodef, geolocalisation_agent, Env
+                        protodef, geolocalisation_agent, Env, \
+                        serialnumbermachine
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -95,6 +99,54 @@ else:
 from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message, process_serverPipe
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+
+
+class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
+    """
+    Extended version of TimedRotatingFileHandler that compress logs on rollover.
+    the rotation file is compress in zip
+    """
+  
+    def __init__(self, filename, when='h', interval=1, backupCount=0, 
+                 encoding=None, delay=False, utc=False,  compress="zip"):
+        super(TimedCompressedRotatingFileHandler, self).__init__(filename, when, 
+                                                                 interval, backupCount, encoding, 
+                                                                 delay, utc)
+        self.backupCountlocal= backupCount
+ 
+    def get_files_by_date(self):
+        dir_name, base_name = os.path.split(self.baseFilename)
+        file_names = os.listdir(dir_name)
+        result = []
+        result1 = []
+        prefix = '{}'.format(base_name) 
+        for file_name in file_names:
+            if file_name.startswith(prefix) and not file_name.endswith('.zip'):
+                f=os.path.join(dir_name, file_name )
+                result.append((os.stat(f)[ST_CTIME], f)  )
+            if file_name.startswith(prefix) and  file_name.endswith('.zip'):
+                f=os.path.join(dir_name, file_name )
+                result1.append((os.stat(f)[ST_CTIME], f))
+        result1.sort()
+        result.sort()
+        while result1 and len(result1) >= self.backupCountlocal:
+            el = result1.pop(0)
+            if os.path.exists(el[1]):
+                os.remove(el[1])
+        return result[1][1]
+
+    def doRollover(self):
+        super(TimedCompressedRotatingFileHandler, self).doRollover()
+        try:
+            dfn = self.get_files_by_date()
+        except:
+            return
+        dfn_zipped = '{}.zip'.format(dfn)
+        if os.path.exists(dfn_zipped):
+            os.remove(dfn_zipped)
+        with zipfile.ZipFile(dfn_zipped, 'w') as f:
+            f.write(dfn, dfn_zipped, zipfile.ZIP_DEFLATED)
+        os.remove(dfn)
 
 logger = logging.getLogger()
 
@@ -2146,7 +2198,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'adorgbyuser': '',
             'kiosk_presence': test_kiosk_presence(),
             'countstart': save_count_start(),
-            'keysyncthing': self.deviceid
+            'keysyncthing': self.deviceid,
+            'uuid_serial_machine' : serialnumbermachine()
         }
         try:
             dataobj['md5_conf_monitoring'] = ""
@@ -2246,7 +2299,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     return True
         return False
 
-def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+def createDaemon(optstypemachine, optsconsoledebug,
+                 optsdeamon, tgfichierconf, tglevellog, tglogfile):
     """
         This function create a service/Daemon that will execute a det. task
     """
@@ -2342,7 +2396,8 @@ def tgconf(optstypemachine):
         time.sleep(2)
     return tg
 
-def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+def doTask( optstypemachine, optsconsoledebug, optsdeamon,
+           tgnamefileconfig, tglevellog, tglogfile):
     processes = []
     queue_recv_tcp_to_xmpp = Queue()
     queueout= Queue()
@@ -2370,6 +2425,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     # format log more informations
     format = '%(asctime)s - %(levelname)s - %(message)s'
+    #logging.handlers.TimedCompressedRotatingFileHandler = TimedCompressedRotatingFileHandler
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon :
@@ -2753,6 +2809,8 @@ if __name__ == '__main__':
             os.remove(f)
 
     if not opts.deamon :
-        doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
+        doTask(opts.typemachine, opts.consoledebug,
+               opts.deamon, tg.namefileconfig, tg.levellog, tg.logfile)
     else:
-        createDaemon(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
+        createDaemon(opts.typemachine, opts.consoledebug,
+                     opts.deamon, tg.namefileconfig, tg.levellog, tg.logfile)
