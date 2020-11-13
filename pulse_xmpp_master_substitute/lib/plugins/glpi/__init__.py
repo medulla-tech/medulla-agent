@@ -120,6 +120,9 @@ class Glpi(object):
         if self._glpi_version.startswith("9.4"):
             glpi = Glpi94()
 
+        if self._glpi_version.startswith("9.5"):
+            glpi = Glpi95()
+
 
         ret = glpi.activate()
         self.is_activated = glpi.is_activated
