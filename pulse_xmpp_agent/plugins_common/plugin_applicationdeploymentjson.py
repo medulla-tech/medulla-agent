@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.1", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.11", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -1835,6 +1835,9 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         "--shell /bin/rbash " \
                                         "--disabled-password " \
                                         "reversessh")
+                    if sys.platform.startswith('linux'):
+                        os.system("setfacl -Rb /var/lib/pulse2/clients/reversessh/")
+
                     # create keygen
                     if os.path.exists(file_key_reverse_private_ars):
                         os.remove(file_key_reverse_private_ars)
@@ -1853,15 +1856,6 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                                         module = "Deployment | Install",
                                         date = None )
                     obj = utils.simplecommand("ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
-                    objectxmpp.xmpplog( str(obj['result']),
-                                type = 'deploy',
-                                sessionname = sessionid,
-                                priority = 0,
-                                action = "xmpplog",
-                                who = fromrelay,
-                                module = "Deployment | Install",
-                                date = None )
-                    # chang permition
                     objectxmpp.xmpplog( "Setting proper permissions on the ssh keys",
                                         type = 'deploy',
                                         sessionname = sessionid,

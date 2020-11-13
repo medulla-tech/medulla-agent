@@ -260,7 +260,7 @@ class grafcet:
         cmd = cmd.replace('@@@PACKAGE_NAME@@@', self.datasend['data']['name'])
         cmd = cmd.replace('@@@SESSION_ID@@@', self.datasend['sessionid'])
 
-        cmd = cmd.replace('@@@HOSTNAME@@@', platform.node())
+        cmd = cmd.replace('@@@HOSTNAME@@@', platform.node().split('.')[0])
 
         cmd = cmd.replace(
             '@@@PYTHON_IMPLEMENTATION@@@',

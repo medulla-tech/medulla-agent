@@ -535,7 +535,7 @@ class confParameter:
         #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
         ## Deployment chatroom
         #self.passwordconnexionmuc = Config.get('chatroom', 'password')
-        self.NickName = "%s.%s" % (platform.node(), jidsufixe)
+        self.NickName = "%s.%s" % (platform.node().split('.')[0], jidsufixe)
         ########chat#############
         # The jidagent must be the smallest value in the list of mac addresses
         self.chatserver = Config.get('chat', 'domain')
@@ -710,7 +710,7 @@ class confParameter:
         self.information['os'] = self.OperatingSystem
         self.UnameSystem = platform.uname()
         self.information['uname'] = self.UnameSystem
-        self.HostNameSystem = platform.node()
+        self.HostNameSystem = platform.node().split('.')[0]
         self.information['hostname'] = self.HostNameSystem
         self.OsReleaseNumber = platform.release()
         self.information['osrelease'] = self.OsReleaseNumber

@@ -69,6 +69,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi.Glpi84 import Glpi84
 from lib.plugins.glpi.Glpi92 import Glpi92
 from lib.plugins.glpi.Glpi94 import Glpi94
+from lib.plugins.glpi.Glpi95 import Glpi95
 
 glpi = None
 
@@ -118,6 +119,9 @@ class Glpi(object):
 
         if self._glpi_version.startswith("9.4"):
             glpi = Glpi94()
+
+        if self._glpi_version.startswith("9.5"):
+            glpi = Glpi95()
 
 
         ret = glpi.activate()
