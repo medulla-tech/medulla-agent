@@ -1809,12 +1809,12 @@ def showlinelog(nbline=200, logfile=None):
         na = logfile
     if sys.platform.startswith('win'):
         if logfile is None:
-            na = os.path.join(os.environ['ProgramFiles'], "Pulse", "var", "log", "xmpp-agent.log")
+            na = os.path.join(os.environ['ProgramFiles'], "Pulse", "var", "log", "xmpp-agent-machine.log")
         if os.path.isfile(na):
             obj = simplecommandstr(encode_strconsole("powershell \"Get-Content '%s' | select -last %s\"" % (na, nbline)))
     elif sys.platform.startswith('linux'):
         if logfile is None:
-            na = os.path.join("/", "var", "log", "pulse", "xmpp-agent.log")
+            na = os.path.join("/", "var", "log", "pulse", "xmpp-agent-machine.log")
         if os.path.isfile(na):
             obj = simplecommandstr("cat %s | tail -n %s" % (na, nbline))
     return obj['result']
