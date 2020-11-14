@@ -1,4 +1,4 @@
-# -*- coding: utf-8; -*-
+# coding: utf-8
 #
 # (c) 2016 siveo, http://www.siveo.net/
 #
@@ -661,7 +661,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return False
 
@@ -5448,7 +5448,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_Uptime_machine.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -5498,7 +5498,7 @@ class XmppMasterDatabase(DatabaseHelper):
                      "updowntime": element[4],
                      "date": element[5].strftime("%Y/%m/%d/ %H:%M:%S"),
                      "time": element[6]} for element in result]
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return []
 
@@ -5561,7 +5561,7 @@ class XmppMasterDatabase(DatabaseHelper):
                         else:
                             nb = True
             return statdict
-        except Exception, e:
+        except Exception as e:
             self.logger.error("\n%s" % (traceback.format_exc()))
             logging.getLogger().error(str(e))
             return statdict
@@ -5928,7 +5928,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return new_Monitoring_panels_template.id
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return -1
 
@@ -5969,6 +5969,6 @@ class XmppMasterDatabase(DatabaseHelper):
                        'status': graphe_template.status,
                        'comment': graphe_template.comment}
                 list_panels_template.append(res)
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
         return list_panels_template
