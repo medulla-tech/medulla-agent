@@ -1,7 +1,7 @@
 #!/usr/bin/python3
-# -*- coding: utf-8; -*-
+# coding: utf-8
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -19,6 +19,9 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
+"""Launcher for agentsubstitute"""
+
 import sys
 import os
 import logging
