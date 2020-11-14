@@ -1038,7 +1038,7 @@ class XmppMasterDatabase(DatabaseHelper):
         elif agenttype=="relayserver":
             machine = session.query(Machines).\
                 filter(and_(Machines.macaddress.like(macaddress),
-                            Machines.agenttype.like("relayserver")) ).first()    
+                            Machines.agenttype.like("relayserver")) ).first()
         session.commit()
         session.flush()
         result = {}
@@ -5670,7 +5670,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                        mon_machine_id,
                                        id_device_reg,
                                        doc,
-                                       status_event=1, 
+                                       status_event=1,
                                        hostname=hostname)
             else:
                 # Check if there is a general rule for this device
@@ -5688,7 +5688,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                            mon_machine_id,
                                            id_device_reg,
                                            doc,
-                                           status_event=1, 
+                                           status_event=1,
                                             hostname=hostname)
             logging.getLogger().debug("==================================")
             return id_device_reg
@@ -5726,7 +5726,7 @@ class XmppMasterDatabase(DatabaseHelper):
                           id_machine,
                           id_device,
                           doc,
-                          status_event=1, 
+                          status_event=1,
                           hostname=None):
 
         if objectlist_local_rule:
@@ -5760,7 +5760,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 #logging.getLogger().debug("z['type_event'] %s"%z['type_event'])
                 #logging.getLogger().debug("status_event %s"%status_event)
                 if hostname is not None:
-                    self.remise_status_event(z['id'], 
+                    self.remise_status_event(z['id'],
                                              0,
                                              hostname)
                 self.setMonitoring_event(id_machine,
@@ -5772,22 +5772,22 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def remise_status_event(self,
                             session,
-                            id_rule, 
+                            id_rule,
                             status_event,
                             hostname):
         try:
             sql="""UPDATE `xmppmaster`.`mon_event`
                         JOIN
-                    xmppmaster.mon_machine ON xmppmaster.mon_machine.id = xmppmaster.mon_event.machines_id 
-                SET 
+                    xmppmaster.mon_machine ON xmppmaster.mon_machine.id = xmppmaster.mon_event.machines_id
+                SET
                     `xmppmaster`.`mon_event`.`status_event` = '%s'
                 WHERE
                         xmppmaster.mon_machine.hostname LIKE '%s'
-                    AND 
+                    AND
                         xmppmaster.mon_event.id_rule = %s;""" % (status_event,
                                                                  hostname,
                                                                  id_rule)
-                        
+
             result = session.execute(sql)
             session.commit()
             session.flush()
