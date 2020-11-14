@@ -2265,7 +2265,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
                     time.sleep(2)
                     # exit first parent and return
                     sys.exit(0)
-            except OSError, e:
+            except OSError as e:
                 print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
                 sys.exit(1)
 
