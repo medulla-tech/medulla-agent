@@ -21,7 +21,6 @@
 # MA 02110-1301, USA.
 # file /pulse_xmpp_agent/agentxmpp.py
 
-from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 import sys
 import os
 import logging
@@ -91,6 +90,7 @@ if sys.platform.startswith('win'):
     import win32file
 else:
     import signal
+    from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 
 from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message, process_serverPipe
 
