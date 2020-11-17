@@ -3103,8 +3103,17 @@ class geolocalisation_agent:
 
 class downloadfile():
     def __init__(self, url, urllocalfile=None):
+        """
+        Instanciate a downloadfile object.
+
+        Params:
+            - url string of the download url
+            - urllocalfile string of the dest (i.e.: /tmp/my_file.zip).
+                If urllocalfile is None the file is downloaded in the current dir.
+        """
+
         self.url = url
-        self.urllocalfile = None
+        self.urllocalfile = urllocalfile
 
     def code_return_html(self, code):
         """
@@ -3143,10 +3152,9 @@ class downloadfile():
 
     def downloadurl(self):
         """
-        This function is used to download files
-
+        Download the url specified during instanciation.
         Returns:
-            It returns the status of the download if it passes or fails.
+            bool success, string return code
         """
         try:
             f = urllib2.urlopen(self.url)
@@ -3157,9 +3165,9 @@ class downloadfile():
                 with open(self.urllocalfile, "wb") as local_file:
                     local_file.write(f.read())
             return True, "Download successful"
-        except urllib2.HTTPError, e:
-            return False, "HTTP Error %s while downloading %s: %s" % (code_return_html(e.code), self.url, e.reason)
-        except urllib2.URLError, e:
+        except urllib2.HTTPError as e:
+            return False, "HTTP Error %s while downloading %s: %s" % (self.code_return_html(e.code), self.url, e.reason)
+        except urllib2.URLError as e:
             return False, "URL Error on %s: %s" % (self.url, e.reason)
         except IOError as e:
             return False, "I/O error {0} on file {1}: {2}".format(e.errno, self.urllocalfile, e.strerror)
