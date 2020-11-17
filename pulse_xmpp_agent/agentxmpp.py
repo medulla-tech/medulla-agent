@@ -680,7 +680,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if not self.config.syncthing_on:
             return
         self.syncthingreconfigure = False;
-        logger.info("synchro_synthing")
+        logger.debug("synchro_synthing")
         # update syncthing
         if self.config.agenttype in ['relayserver']:
             self.clean_old_partage_syncting()
