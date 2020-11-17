@@ -89,10 +89,9 @@ def updatenetworkcheck(xmppobject):
         dl_url = 'http://%s/downloads/win/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(pulsedir_path, filename)).downloadurl()
         if result:
-            # Download success
-            shutil.copyfile(filename, os.path.join(pulsedir_path, filename))
+            logger.debug("%s" % txtmsg_js)
         else:
             # Download error
             logger.error("%s" % txtmsg)
@@ -107,12 +106,10 @@ def updatenetworkcheck(xmppobject):
         servicefilename = 'netcheck-service.py'
         service_dl_url = 'http://%s/downloads/win/%s' % (
             xmppobject.config.Server, servicefilename)
-        logger.debug("Downloading %s" % service_dl_url)
-        serviceresult, servicetxtmsg = utils.downloadfile(service_dl_url).downloadurl()
+        serviceresult, servicetxtmsg = utils.downloadfile(service_dl_url, os.path.join(pulsedir_path, servicefilename)).downloadurl()
         if serviceresult:
             # Download success
             logger.info("%s" % servicetxtmsg)
-            shutil.copyfile(servicefilename, os.path.join(pulsedir_path, servicefilename))
             # Run installer
             servicecmd = 'C:\Python27\python.exe "%s\%s" --startup=auto install' % (pulsedir_path, servicefilename)
             servicecmd_result = utils.simplecommand(servicecmd)
