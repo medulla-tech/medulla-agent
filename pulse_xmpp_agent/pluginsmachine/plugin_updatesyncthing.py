@@ -24,7 +24,6 @@ import sys
 import os
 from distutils.version import StrictVersion
 import logging
-import shutil
 import zipfile
 import platform
 from lib import utils
@@ -32,7 +31,7 @@ SYNCTHINGVERSION = '1.6.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.03", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.04", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -98,7 +97,7 @@ def updatesyncthing(xmppobject, installed_version):
             try:
                 #TODO: Kill syncthing process first
                 zip_file = zipfile.ZipFile(filename, 'r')
-                zip_file.extract(syncthing.exe, path=pulsedir_path)
+                zip_file.extract("syncthing.exe", path=pulsedir_path)
                 updatesyncthingversion(installed_version)
             except IOError as errorcopy:
                 logger.error("Error while copying the file with the error: %s" % errorcopy)
