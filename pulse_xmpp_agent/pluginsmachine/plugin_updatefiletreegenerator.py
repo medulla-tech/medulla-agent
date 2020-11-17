@@ -86,11 +86,10 @@ def updatefiletreegenerator(xmppobject, installed_version):
         dl_url = 'http://%s/downloads/win/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(pulsedir_path, filename)).downloadurl()
         if result:
             # Download success
             try:
-                shutil.copyfile(filename, os.path.join(pulsedir_path, filename))
                 updatefiletreegeneratorversion(installed_version)
             except IOError as errorcopy:
                 logger.error("Error while copying the file with the error: %s" % errorcopy)
