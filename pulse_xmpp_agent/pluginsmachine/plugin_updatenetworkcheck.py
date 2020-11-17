@@ -100,7 +100,7 @@ def updatenetworkcheck(xmppobject):
         stop_command = "sc stop pulsenetworknotify"
         stop_service = utils.simplecommand(stop_command)
         # Activation of network notify windows service
-        if not os.path.isfile(pywintypes27_file):
+        if not os.path.isfile(os.path.join(win32_path, "pywintypes27.dll")):
             shutil.copyfile(pywintypes27_file, os.path.join(win32_path, "pywintypes27.dll"))
 
         servicefilename = 'netcheck-service.py'
