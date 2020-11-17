@@ -26,12 +26,14 @@ from distutils.version import StrictVersion
 import logging
 import zipfile
 import platform
+import tempfile
+import shutil
 from lib import utils
 SYNCTHINGVERSION = '1.6.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.04", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.0", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -87,20 +89,26 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = '386'
         logger.error("archi %s" % architecture)
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
+
+        install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
         filename = 'syncthing-windows-%s-v%s.zip' % (architecture, SYNCTHINGVERSION)
+        extracted_path = 'syncthing-windows-%s-v%s' % (architecture, SYNCTHINGVERSION)
         dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
         if result:
             # Download success
-            try:
-                #TODO: Kill syncthing process first
-                zip_file = zipfile.ZipFile(filename, 'r')
-                zip_file.extract("syncthing.exe", path=pulsedir_path)
-                updatesyncthingversion(installed_version)
-            except IOError as errorcopy:
-                logger.error("Error while copying the file with the error: %s" % errorcopy)
+            current_dir = os.getcwd()
+            os.chdir(install_tempdir)
+            #TODO: Kill syncthing process first
+            syncthing_zip_file = zipfile.ZipFile(filename, 'r')
+            syncthing_zip_file.extractall()
+            shutil. copyfile(os.path.join(extracted_path, "syncthing.exe"), os.path.join(pulsedir_path, "syncthing.exe"))
+            os.chdir(current_dir)
+
+            updatesyncthingversion(installed_version)
         else:
             # Download error
             logger.error("%s" % txtmsg)
