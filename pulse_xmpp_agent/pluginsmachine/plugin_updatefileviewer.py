@@ -35,7 +35,7 @@ list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatefileviewer", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatefileviewer", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
