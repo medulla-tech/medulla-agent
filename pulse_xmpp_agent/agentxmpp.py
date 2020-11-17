@@ -2519,7 +2519,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # completing process
         programrun = True
         while True:
-            time.sleep(20)
+            time.sleep(300)
             for p in processes:
                 if p.is_alive():
                     logger.debug("Alive %s (%s)"%(p.name,p.pid))
