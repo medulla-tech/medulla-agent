@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.17", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.18", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -90,6 +90,8 @@ def updateopenssh(xmppobject, installed_version):
 
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
+        sshdaemon_bin_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH", "sshd.exe")
+        sshagent_bin_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh-agent.exe")
         mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 
@@ -141,6 +143,15 @@ def updateopenssh(xmppobject, installed_version):
                 logger.debug("Failed to copy the files:  %s" % e)
 
             os.chdir(current_dir)
+
+            sshagentDesc = "Agent to hold private keys used for public key authentication."
+            utils.simplecommand("sc.exe query ssh-agent binpath=sshdaemon_bin_path DisplayName='OpenSSH Authentication Agent' start=auto")
+            utils.simplecommand("sc.exe sdset ssh-agent 'D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)(A;;RP;;;AU)'")
+            utils.simplecommand("sc.exe privs ssh-agent SeImpersonatePrivilege")
+
+            sshdaemonDesc = "SSH protocol based service to provide secure encrypted communications between two untrusted hosts over an insecure network."
+            utils.simplecommand("sc.exe query sshdaemon binpath=sshagent_bin_path DisplayName='OpenSSH SSH Server' start=auto")
+            utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
 #            updateopensshversion(installed_version)
         else:
