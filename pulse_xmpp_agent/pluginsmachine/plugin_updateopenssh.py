@@ -100,34 +100,37 @@ def updateopenssh(xmppobject, installed_version):
         dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
 
-        if os.path.isfile(os.path.join(opensshdir_path, "uninstall-sshd.ps1")):
-            openssh_uninstall = utils.simplecommand("sc.exe query ssh-agent")
-            if openssh_uninstall['code'] == 0:
-                utils.simplecommand("sc.exe stop ssh-agent")
-                utils.simplecommand("sc.exe delete ssh-agent")
-
-            daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
-            if daemon_uninstall['code'] == 0:
-                utils.simplecommand("sc.exe stop sshdaemon")
-                utils.simplecommand("sc.exe delete sshdaemon")
-        else:
-            logger.debug("No previous SSH found")
-
-        if os.path.isdir(mandriva_sshdir_path):
-            current_dir = os.pwd()
-            os.chdir(mandriva_sshdir_path)
-            uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
-            if uninstall_mandriva_ssh['code'] == 0:
-                logger.debug("Uninstallation successful")
-
-            os.chdir(current_dir)
-            os.rmdir(uninstall_mandriva_ssh)
-
-        if os.path.isdir(opensshdir_path):
-            os.rmdir(opensshdir_path)
-
 
         if result:
+            # Download success
+            if os.path.isfile(os.path.join(opensshdir_path, "uninstall-sshd.ps1")):
+                openssh_uninstall = utils.simplecommand("sc.exe query ssh-agent")
+
+                if openssh_uninstall['code'] == 0:
+                    utils.simplecommand("sc.exe stop ssh-agent")
+                    utils.simplecommand("sc.exe delete ssh-agent")
+
+                daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
+                if daemon_uninstall['code'] == 0:
+                    utils.simplecommand("sc.exe stop sshdaemon")
+                    utils.simplecommand("sc.exe delete sshdaemon")
+            else:
+                logger.debug("No previous SSH found")
+
+            if os.path.isdir(mandriva_sshdir_path):
+                current_dir = os.pwd()
+                os.chdir(mandriva_sshdir_path)
+                uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
+                if uninstall_mandriva_ssh['code'] == 0:
+                    logger.debug("Uninstallation successful")
+
+                os.chdir(current_dir)
+                os.rmdir(uninstall_mandriva_ssh)
+
+            if os.path.isdir(opensshdir_path):
+                os.rmdir(opensshdir_path)
+
+
             # Download success
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
