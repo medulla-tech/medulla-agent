@@ -107,8 +107,8 @@ def updateopenssh(xmppobject, installed_version):
                 if openssh_uninstall['code'] == 0:
                     utils.simplecommand("sc.exe delete ssh-agent")
 
-                openssh_uninstall = utils.simplecommand("sc.exe query sshdaemon")
-                if openssh_uninstall['code'] == 0:
+                daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
+                if daemon_uninstall['code'] == 0:
                     utils.simplecommand("sc.exe delete sshdaemon")
 
         if result:
