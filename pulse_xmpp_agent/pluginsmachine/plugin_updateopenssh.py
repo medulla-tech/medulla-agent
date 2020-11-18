@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.02", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.05", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -118,7 +118,7 @@ def updateopenssh(xmppobject, installed_version):
                 logger.debug("No previous SSH found")
 
             if os.path.isdir(mandriva_sshdir_path):
-                current_dir = os.pwd()
+                current_dir = os.getcwd()
                 os.chdir(mandriva_sshdir_path)
                 uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
                 if uninstall_mandriva_ssh['code'] == 0:
@@ -136,6 +136,17 @@ def updateopenssh(xmppobject, installed_version):
             os.chdir(install_tempdir)
             openssh_zip_file = zipfile.ZipFile(filename, 'r')
             openssh_zip_file.extractall()
+            try:
+                os.rmdir(opensshdir_path)
+            except OSError:
+                logger.debug("Deletion of the directory %s failed" % opensshdir_path)
+
+            try:
+                os.mkdir(opensshdir_path)
+            except OSError:
+                logger.debug("Creation of the directory %s failed" % opensshdir_path)
+
+            shutil.copytree(install_tempdir, opensshdir_path)
             os.chdir(current_dir)
 
 #            updateopensshversion(installed_version)
