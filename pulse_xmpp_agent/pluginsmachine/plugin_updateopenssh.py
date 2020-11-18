@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.08", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.17", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -96,7 +96,7 @@ def updateopenssh(xmppobject, installed_version):
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
         filename = 'OpenSSH-%s.zip' % architecture
-        extracted_path = 'openssh-windows-%s' % architecture
+        extracted_path = 'OpenSSH-%s' % architecture
         dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
 
@@ -129,18 +129,17 @@ def updateopenssh(xmppobject, installed_version):
                 shutil.rmtree(opensshdir_path)
             except OSError:
                 logger.debug("Deletion of the directory %s failed" % opensshdir_path)
-            try:
-                os.mkdir(opensshdir_path)
-            except OSError:
-                logger.debug("Creation of the directory %s failed" % opensshdir_path)
-
 
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
             openssh_zip_file = zipfile.ZipFile(filename, 'r')
             openssh_zip_file.extractall()
 
-            shutil.copytree(install_tempdir, opensshdir_path)
+            try:
+                shutil.copytree(os.path.join(install_tempdir, extracted_path), opensshdir_path)
+            except Exception as e:
+                logger.debug("Failed to copy the files:  %s" % e)
+
             os.chdir(current_dir)
 
 #            updateopensshversion(installed_version)
