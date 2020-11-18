@@ -88,7 +88,6 @@ def updateopenssh(xmppobject, installed_version):
         else:
             architecture = 'Win32'
 
-        logger.error("archi %s" % architecture)
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
@@ -110,6 +109,8 @@ def updateopenssh(xmppobject, installed_version):
             if daemon_uninstall['code'] == 0:
                 utils.simplecommand("sc.exe stop sshdaemon")
                 utils.simplecommand("sc.exe delete sshdaemon")
+        else:
+            logger.debug("No previous SSH found")
 
         if os.path.isdir(opensshdir_path):
             os.rmdir(opensshdir_path)
