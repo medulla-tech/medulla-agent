@@ -138,7 +138,7 @@ def updateopenssh(xmppobject, installed_version):
             openssh_zip_file.extractall()
             os.chdir(current_dir)
 
-            updateopensshversion(installed_version)
+#            updateopensshversion(installed_version)
         else:
             # Download error
             logger.error("%s" % txtmsg)
