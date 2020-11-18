@@ -90,6 +90,7 @@ def updateopenssh(xmppobject, installed_version):
 
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
+        mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -111,6 +112,16 @@ def updateopenssh(xmppobject, installed_version):
                 utils.simplecommand("sc.exe delete sshdaemon")
         else:
             logger.debug("No previous SSH found")
+
+        if os.path.isdir(mandriva_sshdir_path):
+            current_dir = os.pwd()
+            os.chdir(mandriva_sshdir_path)
+            uninstall_mandriva_ssh = utils.simplecommand("uninst.exe /S")
+            if uninstall_mandriva_ssh['code'] == 0:
+                logger.debug("Uninstallation successful")
+
+            os.chdir(current_dir)
+            os.rmdir(uninstall_mandriva_ssh)
 
         if os.path.isdir(opensshdir_path):
             os.rmdir(opensshdir_path)
