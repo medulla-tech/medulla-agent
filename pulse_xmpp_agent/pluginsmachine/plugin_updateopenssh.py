@@ -101,15 +101,18 @@ def updateopenssh(xmppobject, installed_version):
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
 
         if os.path.isfile(os.path.join(opensshdir_path, "uninstall-sshd.ps1")):
-                openssh_uninstall = utils.simplecommand("sc.exe query ssh-agent")
-                if openssh_uninstall['code'] == 0:
-                    utils.simplecommand("sc.exe stop ssh-agent")
-                    utils.simplecommand("sc.exe delete ssh-agent")
+            openssh_uninstall = utils.simplecommand("sc.exe query ssh-agent")
+            if openssh_uninstall['code'] == 0:
+                utils.simplecommand("sc.exe stop ssh-agent")
+                utils.simplecommand("sc.exe delete ssh-agent")
 
-                daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
-                if daemon_uninstall['code'] == 0:
-                    utils.simplecommand("sc.exe stop sshdaemon")
-                    utils.simplecommand("sc.exe delete sshdaemon")
+            daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
+            if daemon_uninstall['code'] == 0:
+                utils.simplecommand("sc.exe stop sshdaemon")
+                utils.simplecommand("sc.exe delete sshdaemon")
+
+        if os.path.isdir(opensshdir_path):
+            os.rmdir(opensshdir_path)
 
 
         if result:
