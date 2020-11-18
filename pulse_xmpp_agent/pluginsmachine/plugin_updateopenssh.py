@@ -1,0 +1,126 @@
+# -*- coding: utf-8 -*-
+#
+# (c) 2020 siveo, http://www.siveo.net
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+
+import sys
+import os
+from distutils.version import StrictVersion
+import logging
+import zipfile
+import platform
+import tempfile
+import shutil
+from lib import utils
+OPENSSHVERSION = '7.7'
+
+logger = logging.getLogger()
+
+plugin = {"VERSION": "1.02", "NAME": "updateopenssh", "TYPE": "machine"}
+
+
+def action(xmppobject, action, sessionid, data, message, dataerreur):
+    logger.debug("###################################################")
+    logger.debug("call %s from %s" % (plugin, message['from']))
+    logger.debug("###################################################")
+    try:
+        # Update if version is lower
+        installed_version = checkopensshversion()
+        if StrictVersion(installed_version) < StrictVersion(OPENSSHVERSION):
+            updateopenssh(xmppobject, installed_version)
+    except Exception:
+        pass
+
+
+def checkopensshversion():
+    if sys.platform.startswith('win'):
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /s | Find "DisplayVersion"'
+        result = utils.simplecommand(cmd)
+        if result['code'] == 0:
+            opensshversion = result['result'][0].strip().split()[-1]
+        else:
+            # The filetree generator is not installed. We will force installation by returning
+            # version 0.0
+            opensshversion = '0.0'
+    return opensshversion
+
+def updateopensshversion(version):
+    if sys.platform.startswith('win'):
+        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
+                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % OPENSSHVERSION
+
+        result = utils.simplecommand(cmd)
+        if result['code'] == 0:
+            logger.debug("we successfully changed the version of Syncthing")
+
+        if version == "0.0":
+            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
+                    '/v "DisplayName" /t REG_SZ  /d "OpenSSH" /f'
+	    utils.simplecommand(cmdDisplay)
+
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
+                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+
+            utils.simplecommand(cmd)
+
+def updateopenssh(xmppobject, installed_version):
+    logger.info("Updating OpenSSH to version %s" % OPENSSHVERSION)
+
+    if sys.platform.startswith('win'):
+        if platform.architecture()[0] == '64bit':
+            architecture = 'Win64'
+        else:
+            architecture = 'Win32'
+
+        logger.error("archi %s" % architecture)
+        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
+        windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
+
+        install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
+
+        filename = 'OpenSSH-%s.zip' % architecture
+        extracted_path = 'openssh-windows-%s' % architecture
+        dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
+
+        if os.path.isfile(os.path.join(opensshdir_path, "uninstall-sshd.ps1")):
+                logger.error("On est dans le dossier openssh et on va le désinstaller")
+                os.chdir(opensshdir_path)
+                openssh_uninstall = utils.simplecommand("sc.exe query ssh-agent")
+                if openssh_uninstall['code'] == 0:
+                    utils.simplecommand("sc.exe delete ssh-agent")
+
+                openssh_uninstall = utils.simplecommand("sc.exe query sshdaemon")
+                if openssh_uninstall['code'] == 0:
+                    utils.simplecommand("sc.exe delete sshdaemon")
+
+        if result:
+            # Download success
+            current_dir = os.getcwd()
+            os.chdir(install_tempdir)
+            openssh_zip_file = zipfile.ZipFile(filename, 'r')
+            openssh_zip_file.extractall()
+            os.chdir(current_dir)
+
+            updateopensshversion(installed_version)
+        else:
+            # Download error
+            logger.error("%s" % txtmsg)
+
