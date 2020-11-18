@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.05", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.08", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -100,12 +100,10 @@ def updateopenssh(xmppobject, installed_version):
         dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
 
-
         if result:
             # Download success
             if os.path.isfile(os.path.join(opensshdir_path, "uninstall-sshd.ps1")):
                 openssh_uninstall = utils.simplecommand("sc.exe query ssh-agent")
-
                 if openssh_uninstall['code'] == 0:
                     utils.simplecommand("sc.exe stop ssh-agent")
                     utils.simplecommand("sc.exe delete ssh-agent")
@@ -127,8 +125,14 @@ def updateopenssh(xmppobject, installed_version):
                 os.chdir(current_dir)
                 os.rmdir(uninstall_mandriva_ssh)
 
-            if os.path.isdir(opensshdir_path):
-                os.rmdir(opensshdir_path)
+            try:
+                shutil.rmtree(opensshdir_path)
+            except OSError:
+                logger.debug("Deletion of the directory %s failed" % opensshdir_path)
+            try:
+                os.mkdir(opensshdir_path)
+            except OSError:
+                logger.debug("Creation of the directory %s failed" % opensshdir_path)
 
 
             # Download success
@@ -136,15 +140,6 @@ def updateopenssh(xmppobject, installed_version):
             os.chdir(install_tempdir)
             openssh_zip_file = zipfile.ZipFile(filename, 'r')
             openssh_zip_file.extractall()
-            try:
-                os.rmdir(opensshdir_path)
-            except OSError:
-                logger.debug("Deletion of the directory %s failed" % opensshdir_path)
-
-            try:
-                os.mkdir(opensshdir_path)
-            except OSError:
-                logger.debug("Creation of the directory %s failed" % opensshdir_path)
 
             shutil.copytree(install_tempdir, opensshdir_path)
             os.chdir(current_dir)
