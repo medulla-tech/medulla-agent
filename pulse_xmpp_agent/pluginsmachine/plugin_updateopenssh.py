@@ -135,7 +135,6 @@ def updateopenssh(xmppobject, installed_version):
                 logger.debug("Creation of the directory %s failed" % opensshdir_path)
 
 
-            # Download success
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
             openssh_zip_file = zipfile.ZipFile(filename, 'r')
