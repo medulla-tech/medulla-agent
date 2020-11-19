@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.18", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.28", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -144,13 +144,16 @@ def updateopenssh(xmppobject, installed_version):
 
             os.chdir(current_dir)
 
+
             sshagentDesc = "Agent to hold private keys used for public key authentication."
-            utils.simplecommand("sc.exe query ssh-agent binpath=sshdaemon_bin_path DisplayName='OpenSSH Authentication Agent' start=auto")
+            command_sshagent = "sc.exe create ssh-agent binPath=\"%s\" DisplayName=\"OpenSSH Authentication Agent\" start=auto" % sshagent_bin_path
+            utils.simplecommand(command_sshagent)
+
             utils.simplecommand("sc.exe sdset ssh-agent 'D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)(A;;RP;;;AU)'")
             utils.simplecommand("sc.exe privs ssh-agent SeImpersonatePrivilege")
 
             sshdaemonDesc = "SSH protocol based service to provide secure encrypted communications between two untrusted hosts over an insecure network."
-            utils.simplecommand("sc.exe query sshdaemon binpath=sshagent_bin_path DisplayName='OpenSSH SSH Server' start=auto")
+            utils.simplecommand("sc.exe create sshdaemon binPath=\"%s\" DisplayName=\"OpenSSH SSH Server\" start=auto" % sshdaemon_bin_path)
             utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
 #            updateopensshversion(installed_version)
