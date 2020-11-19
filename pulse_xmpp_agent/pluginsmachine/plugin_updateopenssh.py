@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.28", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.291", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -156,6 +156,10 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("sc.exe create sshdaemon binPath=\"%s\" DisplayName=\"OpenSSH SSH Server\" start=auto" % sshdaemon_bin_path)
             utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
+            try:
+                shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(opensshdir_path, "sshd_config"))
+            except Exception as e:
+                logger.debug("Failed to copy the files:  %s" % e)
 #            updateopensshversion(installed_version)
         else:
             # Download error
