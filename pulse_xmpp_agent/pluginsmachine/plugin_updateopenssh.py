@@ -160,6 +160,20 @@ def updateopenssh(xmppobject, installed_version):
                 shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(opensshdir_path, "sshd_config"))
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
+
+            # Now we customize the config file
+            sshd_config_file = file_get_contents(os.path.join(opensshdir_path, "sshd_config"))
+            sshd_config_file.replace("#Port 22", "Port 22")
+            sshd_config_file.replace("#PubkeyAuthentication yes","PubkeyAuthentication yes")
+            sshd_config_file.replace("#PasswordAuthentication yes","PasswordAuthentication no")
+            sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
+            sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
+            sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
+            sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
+            sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
+
+
+            file_get_contents(os.path.join(opensshdir_path, "sshd_config"), sshd_config_file)
 #            updateopensshversion(installed_version)
         else:
             # Download error
