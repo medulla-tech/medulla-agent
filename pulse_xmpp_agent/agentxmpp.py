@@ -2306,7 +2306,8 @@ def createDaemon(optstypemachine, optsconsoledebug,
     """
     try:
         if sys.platform.startswith('win'):
-            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
+            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tgfichierconf, tglevellog, tglogfile,))
+
             p.daemon = True
             p.start()
             p.join()
