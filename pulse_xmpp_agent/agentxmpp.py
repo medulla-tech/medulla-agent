@@ -2364,7 +2364,7 @@ def createDaemon(optstypemachine, optsconsoledebug,
                 f.write('%s\n' % pid)
             finally:
                 f.close()
-            doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
+            doTask(optstypemachine, optsconsoledebug, optsdeamon, tgfichierconf, tglevellog, tglogfile)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s"%(traceback.format_exc()))
