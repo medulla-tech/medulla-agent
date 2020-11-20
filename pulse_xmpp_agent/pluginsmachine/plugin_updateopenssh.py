@@ -22,8 +22,6 @@
 import sys
 import os
 from distutils.version import StrictVersion
-from lib.agentconffile import directoryconffile
-import ConfigParser
 import logging
 import zipfile
 import platform
@@ -34,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2994", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.2990", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -83,17 +81,9 @@ def updateopensshversion(version):
 
 def updateopenssh(xmppobject, installed_version):
 
-    configfilename = os.path.join(directoryconffile(),"updateopenssh.ini")
-
     Used_ssh_port = "22"
-
-
-    if os.path.isfile(configfilename):
-        Config = ConfigParser.ConfigParser()
-        Config.read(configfilename)
-        if Config.has_option('global', 'sshport'):
-            Used_ssh_port = Config.get('global', 'sshport')
-
+    if hasattr(xmppobject.config, 'sshport'):
+        Used_ssh_port = xmppobject.config.sshport
 
     logger.info("Updating OpenSSH to version %s" % OPENSSHVERSION)
 
