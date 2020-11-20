@@ -108,6 +108,8 @@ def updatesyncthing(xmppobject, installed_version):
             shutil. copyfile(os.path.join(extracted_path, "syncthing.exe"), os.path.join(pulsedir_path, "syncthing.exe"))
             os.chdir(current_dir)
 
+            utils.simplecommand("netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
+
             updatesyncthingversion(installed_version)
         else:
             # Download error
