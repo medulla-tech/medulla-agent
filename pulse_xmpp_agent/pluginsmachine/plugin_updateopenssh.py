@@ -83,7 +83,7 @@ def updateopensshversion(version):
 
 def updateopenssh(xmppobject, installed_version):
 
-    configfilename = os.path.join(directoryconffile(),"pluginopenssh.ini")
+    configfilename = os.path.join(directoryconffile(),"updateopenssh.ini")
 
     Used_ssh_port = "22"
 
