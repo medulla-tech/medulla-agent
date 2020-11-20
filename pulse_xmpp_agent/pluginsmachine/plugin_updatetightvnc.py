@@ -65,7 +65,7 @@ def updatetightvnc(xmppobject):
 
     Used_rfb_port = 5900
     if hasattr(xmppobject.config, 'rfbport'):
-        Used_rfb_port = xmppobject.config.sshport
+        Used_rfb_port = xmppobject.config.rfbport
 
     if sys.platform.startswith('win'):
         if platform.architecture()[0] == '64bit':
