@@ -31,7 +31,7 @@ TIGHTVNC = '2.8.27'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatetightvnc", "TYPE": "machine"}
+plugin = {"VERSION": "1.01", "NAME": "updatetightvnc", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -121,6 +121,8 @@ def updatetightvnc(xmppobject):
             else:
                 logger.error("Error installing %s: %s"
                              % (filename, cmd_result['result']))
+
+            utils.simplecommand("netsh advfirewall firewall add rule name=\"Remote Desktop for Pulse VNC\" dir=in action=allow protocol=TCP localport=%s" % Used_rfb_port)
         else:
             # Download error
             logger.error("%s" % txtmsg)
