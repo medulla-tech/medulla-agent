@@ -182,6 +182,8 @@ def updateopenssh(xmppobject, installed_version):
 
             utils.file_put_contents("sc start sshdaemon")
             utils.file_put_contents("sc start ssh-agent")
+
+            utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
             #TODO: Generate SSH Keys
 #            updateopensshversion(installed_version)
         else:
