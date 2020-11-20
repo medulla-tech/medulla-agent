@@ -62,6 +62,11 @@ def checktightvncversion():
 
 def updatetightvnc(xmppobject):
     logger.info("Updating TightVNC Agent to version %s" % TIGHTVNC)
+
+    Used_rfb_port = 5900
+    if hasattr(xmppobject.config, 'rfbport'):
+        Used_rfb_port = xmppobject.config.sshport
+
     if sys.platform.startswith('win'):
         if platform.architecture()[0] == '64bit':
             architecture = '64bit'
@@ -76,8 +81,39 @@ def updatetightvnc(xmppobject):
         if result:
             # Download success
             logger.info("%s" % txtmsg)
+            install_options = "/quiet /qn /norestart"
+            install_options = install_options + " ADDLOCAL=Server SERVER_REGISTER_AS_SERVICE=1 SERVER_ADD_FIREWALL_EXCEPTION=1 SERVER_ALLOW_SAS=1"
+            # Disable embedded Java WebSrv on port 5800
+            install_options = install_options + " SET_ACCEPTHTTPCONNECTIONS=1 VALUE_OF_ACCEPTHTTPCONNECTIONS=0"
+            # Enable RFB on port 5900
+            install_options = install_options + " SET_ACCEPTRFBCONNECTIONS=1 VALUE_OF_ACCEPTRFBCONNECTIONS=1"
+            # Enable loopback connection
+            install_options = install_options + " SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1"
+            # Allow on all interfaces
+            install_options = install_options + " SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=0"
+            # Only allow from 127.0.0.1 and query user
+            install_options = install_options + " SET_IPACCESSCONTROL=1 VALUE_OF_IPACCESSCONTROL=0.0.0.0-255.255.255.255:2"
+            # Default answser on timeout is reject
+            install_options = install_options + " SET_QUERYACCEPTONTIMEOUT=1 VALUE_OF_QUERYACCEPTONTIMEOUT=0"
+            # Timeout is 20s
+            install_options = install_options + " SET_QUERYTIMEOUT=1 VALUE_OF_QUERYTIMEOUT=20"
+            # Show service icon
+            install_options = install_options + " SET_RUNCONTROLINTERFACE=1 VALUE_OF_RUNCONTROLINTERFACE=1"
+            # Hide wallpaper
+            install_options = install_options + " SET_REMOVEWALLPAPER=1 VALUE_OF_REMOVEWALLPAPER=1"
+            # Share between multiple connection
+            install_options = install_options + " SET_ALWASHARED=1 SET_NEVERSHARED=1 VALUE_OF_ALWASHARED=1 VALUE_OF_NEVERSHARED=0"
+            # Disable authentication
+            install_options = install_options + " SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=0"
+            # Ensure remote inputs are enabled
+            install_options = install_options + " SET_BLOCKREMOTEINPUT=1 VALUE_OF_BLOCKREMOTEINPUT=0"
+            # Don't do anything when terminating VNC session
+            install_options = install_options + " SET_DISCONNECTACTION=1 VALUE_OF_DISCONNECTACTION=0"
+            # Set the server listening port
+            install_options = install_options + " SET_RFBPORT=1 VALUE_OF_RFBPORT=%s" % Used_rfb_port
+
             # Run installer
-            cmd = 'msiexec /x %s /qn REBOOT=R' % filename
+            cmd = 'msiexec /x %s %s REBOOT=R' % (filename, install_options)
             cmd_result = utils.simplecommand(cmd)
             if cmd_result['code'] == 0:
                 logger.info("%s installed successfully" % filename)
