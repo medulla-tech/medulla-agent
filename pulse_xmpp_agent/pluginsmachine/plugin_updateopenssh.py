@@ -22,6 +22,8 @@
 import sys
 import os
 from distutils.version import StrictVersion
+from lib.agentconffile import directoryconffile
+import ConfigParser
 import logging
 import zipfile
 import platform
@@ -32,7 +34,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2992", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.2994", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -80,6 +82,19 @@ def updateopensshversion(version):
             utils.simplecommand(cmd)
 
 def updateopenssh(xmppobject, installed_version):
+
+    configfilename = os.path.join(directoryconffile(),"pluginopenssh.ini")
+
+    Used_ssh_port = "22"
+
+
+    if os.path.isfile(configfilename):
+        Config = ConfigParser.ConfigParser()
+        Config.read(configfilename)
+        if Config.has_option('global', 'sshport'):
+            Used_ssh_port = Config.get('global', 'sshport')
+
+
     logger.info("Updating OpenSSH to version %s" % OPENSSHVERSION)
 
     if sys.platform.startswith('win'):
@@ -163,7 +178,8 @@ def updateopenssh(xmppobject, installed_version):
 
             # Now we customize the config file
             sshd_config_file = utils.file_get_contents(os.path.join(opensshdir_path, "sshd_config"))
-            sshd_config_file = sshd_config_file.replace("#Port 22", "Port 22")
+            sshport = "Port %s" % Used_ssh_port
+            sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
             sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes","PubkeyAuthentication yes")
             sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes","PasswordAuthentication no")
             sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
