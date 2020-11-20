@@ -21,7 +21,6 @@
 # MA 02110-1301, USA.
 # file /pulse_xmpp_agent/agentxmpp.py
 
-from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 import sys
 import os
 import logging
@@ -91,6 +90,7 @@ if sys.platform.startswith('win'):
     import win32file
 else:
     import signal
+    from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 
 from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message, process_serverPipe
 
@@ -628,7 +628,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if not self.config.syncthing_on:
             return
         self.syncthingreconfigure = False;
-        logger.info("synchro_synthing")
+        logger.debug("synchro_synthing")
         # update syncthing
         if self.config.agenttype in ['relayserver']:
             self.clean_old_partage_syncting()
@@ -2519,7 +2519,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # completing process
         programrun = True
         while True:
-            time.sleep(20)
+            time.sleep(300)
             for p in processes:
                 if p.is_alive():
                     logger.debug("Alive %s (%s)"%(p.name,p.pid))
