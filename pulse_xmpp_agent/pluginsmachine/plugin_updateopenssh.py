@@ -179,6 +179,7 @@ def updateopenssh(xmppobject, installed_version):
             sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
 
             utils.file_put_contents(os.path.join(opensshdir_path, "sshd_config"), sshd_config_file)
+            #TODO: Generate SSH Keys
 #            updateopensshversion(installed_version)
         else:
             # Download error
