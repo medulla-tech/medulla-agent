@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.291", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.2992", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -129,8 +129,8 @@ def updateopenssh(xmppobject, installed_version):
 
             try:
                 shutil.rmtree(opensshdir_path)
-            except OSError:
-                logger.debug("Deletion of the directory %s failed" % opensshdir_path)
+            except OSError as e:
+                logger.debug("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
 
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
@@ -162,18 +162,17 @@ def updateopenssh(xmppobject, installed_version):
                 logger.debug("Failed to copy the files:  %s" % e)
 
             # Now we customize the config file
-            sshd_config_file = file_get_contents(os.path.join(opensshdir_path, "sshd_config"))
-            sshd_config_file.replace("#Port 22", "Port 22")
-            sshd_config_file.replace("#PubkeyAuthentication yes","PubkeyAuthentication yes")
-            sshd_config_file.replace("#PasswordAuthentication yes","PasswordAuthentication no")
-            sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
-            sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
-            sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
-            sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
-            sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
+            sshd_config_file = utils.file_get_contents(os.path.join(opensshdir_path, "sshd_config"))
+            sshd_config_file = sshd_config_file.replace("#Port 22", "Port 22")
+            sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes","PubkeyAuthentication yes")
+            sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes","PasswordAuthentication no")
+            sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
+            sshd_config_file = sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
+            sshd_config_file = sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
+            sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
+            sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
 
-
-            file_get_contents(os.path.join(opensshdir_path, "sshd_config"), sshd_config_file)
+            utils.file_put_contents(os.path.join(opensshdir_path, "sshd_config"), sshd_config_file)
 #            updateopensshversion(installed_version)
         else:
             # Download error
