@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2990", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.2998", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -90,15 +90,19 @@ def updateopenssh(xmppobject, installed_version):
     if sys.platform.startswith('win'):
         if platform.architecture()[0] == '64bit':
             architecture = 'Win64'
+            windows_system = 'SysWOW64'
         else:
             architecture = 'Win32'
+            windows_system = 'System32'
 
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
         sshdaemon_bin_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH", "sshd.exe")
         sshagent_bin_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh-agent.exe")
         mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
+        nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
+        rsync_dest_folder = os.path.join("c:\\", "Windows", windows_system)
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
@@ -185,8 +189,38 @@ def updateopenssh(xmppobject, installed_version):
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
             #TODO: Generate SSH Keys
-#            updateopensshversion(installed_version)
         else:
             # Download error
             logger.error("%s" % txtmsg)
 
+
+
+        if not os.path.isdir(nytrio_sshdir_path):
+            rsync_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
+            rsync_filename = 'rsync.zip'
+            rsync_extracted_path = 'rsync'
+            rsync_dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, rsync_filename)
+            rsync_result, rsync_txtmsg = utils.downloadfile(rsync_dl_url, os.path.join(rsync_tempdir, rsync_filename)).downloadurl()
+
+            if rsync_result:
+                current_dir = os.getcwd()
+                os.chdir(rsync_tempdir)
+                rsync_zip_file = zipfile.ZipFile(rsync_filename, 'r')
+                rsync_zip_file.extractall()
+
+
+
+                rsync_files = os.listdir(os.path.join(rsync_tempdir, "rsync"))
+                for rsync_file in rsync_files:
+                    full_rsync_file_name = os.path.join(rsync_files, rsync_file)
+
+                    if os.path.isfile(full_rsync_file_name):
+                        try:
+                            shutil.copy(full_rsync_file_name, os.path.join(rsync_dest_folder, rsync_file))
+                        except Exception as e:
+                            logger.debug("Failed to copy the files:  %s" % e)
+
+            os.chdir(current_dir)
+
+
+        #updateopensshversion(installed_version)
