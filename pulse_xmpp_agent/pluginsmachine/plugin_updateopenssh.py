@@ -222,5 +222,8 @@ def updateopenssh(xmppobject, installed_version):
 
             os.chdir(current_dir)
 
+            os.chdir(opensshdir_path)
+            utils.simplecommand("ssh-keygen -A")
+
 
         #updateopensshversion(installed_version)
