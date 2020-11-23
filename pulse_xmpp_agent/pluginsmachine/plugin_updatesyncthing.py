@@ -105,6 +105,7 @@ def updatesyncthing(xmppobject, installed_version):
             #TODO: Kill syncthing process first
             syncthing_zip_file = zipfile.ZipFile(filename, 'r')
             syncthing_zip_file.extractall()
+            utils.simplecommand("taskkill.exe /F /IM syncthing.exe")
             shutil. copyfile(os.path.join(extracted_path, "syncthing.exe"), os.path.join(pulsedir_path, "syncthing.exe"))
             os.chdir(current_dir)
 
