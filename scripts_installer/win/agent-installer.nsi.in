@@ -36,8 +36,6 @@ RequestExecutionLevel admin
 !define PRODUCT_SSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_SSH_NAME}"
 !define AGENT_FILETREE_NAME "Pulse Filetree Generator"
 !define PRODUCT_FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_FILETREE_NAME}"
-!define AGENT_SYNCTHING_NAME "Syncthing"
-!define PRODUCT_SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_SYNCTHING_NAME}"
 !define USERDIR "c:\Users"
 !define PROGRAMDATA "C:\ProgramData"
 
@@ -71,10 +69,6 @@ RequestExecutionLevel admin
 !define VNC_AGENT32_FILENAME "@@VNC_AGENT32_FILENAME@@"
 !define VNC_AGENT64_FILENAME "@@VNC_AGENT64_FILENAME@@"
 !define RFB_PORT "@@RFB_PORT@@"
-!define SYNCTHING32_FILENAME "@@SYNCTHING32_FILENAME@@"
-!define SYNCTHING64_FILENAME "@@SYNCTHING64_FILENAME@@"
-!define SYNCTHING_NAME "@@SYNCTHING_NAME@@"
-!define SYNCTHING_VERSION "@@SYNCTHING_VERSION@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
 !define NETCHECK_SERVICE_FILENAME "@@NETCHECK_SERVICE_FILENAME@@"
@@ -1114,11 +1108,6 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
   ${If} ${RunningX64}
-    @@FULL_OR_DL_SYNCTHING64@@
-  ${Else}
-    @@FULL_OR_DL_SYNCTHING32@@
-  ${EndIf}
-  ${If} ${RunningX64}
     @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
   ${Else}
     @@FULL_OR_DL_PY_MODULES_32_FILENAMES@@
@@ -1164,55 +1153,6 @@ Section "!${PRODUCT_NAME}" sec_app
     ${EndIf}
     SetErrorLevel 129
     Quit
-  ${EndIf}
-
-  ; Copy syncthing exe to pulse\bin folder
-  ClearErrors
-  ${If} ${RunningX64}
-    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING64_FILENAME}" "$INSTDIR\bin\syncthing.exe"
-  ${Else}
-    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING32_FILENAME}" "$INSTDIR\bin\syncthing.exe"
-  ${EndIf}
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 130
-    Quit
-  ${EndIf}
-  ; Create symbolic link to syncthing config file from etc
-  ClearErrors
-  SetOutPath "$INSTDIR\etc"
-  ${CreateSymbolicLinkFile} "syncthing.ini" "syncthing\config.xml" $0
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Symbolic link creation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 131
-    Quit
-  ${EndIf}
-
-  ; Setup of Windows firewall to allow Syncthing
-  ${IfNot} $FIREWALL == 1
-    ${If} ${IsWinXP}
-      StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
-    ${Else}
-      StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
-    ${EndIf}
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${IfNot} $1 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 132
-      Quit
-    ${EndIf}
   ${EndIf}
 
   ; Copy of agent config file
@@ -1363,9 +1303,6 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayName" "${AGENT_FILETREE_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayVersion" "${FILETREE_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SYNCTHING_UNINST_KEY}" "DisplayName" "${AGENT_SYNCTHING_NAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SYNCTHING_UNINST_KEY}" "DisplayVersion" "${SYNCTHING_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SYNCTHING_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
 
 
   ${Else}
@@ -1390,9 +1327,6 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayName" "${AGENT_FILETREE_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayVersion" "${FILETREE_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SYNCTHING_UNINST_KEY}" "DisplayName" "${AGENT_SYNCTHING_NAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SYNCTHING_UNINST_KEY}" "DisplayVersion" "${SYNCTHING_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_SYNCTHING_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
   ${EndIf}
 
   ; Write the version installed in registry
@@ -1409,8 +1343,6 @@ Section "!${PRODUCT_NAME}" sec_app
   Delete $INSTDIR\tmp\${PULSE_AGENT_FILENAME}
   Delete $INSTDIR\tmp\${AGENT_PLUGINS_FILENAME}
   Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME}
-  Delete $INSTDIR\tmp\${SYNCTHING32_FILENAME}
-  Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@
 
   ; Relock Powershell
@@ -1542,8 +1474,6 @@ Section "Uninstall"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
-  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="Syncthing for Pulse"`
-  ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
@@ -1909,30 +1839,6 @@ FunctionEnd
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
         SetErrorLevel 145
-        Quit
-  ${EndSwitch}
-  ${LogString} $0
-
-  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${Switch} $1
-    ${Case} "0"
-        StrCpy $0 `Process has been stopped`
-        ${Break}
-    ${Case} "128"
-        ;128 The process is not found.
-        StrCpy $0 `Process is already stopped`
-        ${Break}
-    ${Default}
-        ${LogString} `Something else happened : $1`
-        ${LogString} $0
-        ${IfNot} ${Silent}
-            MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
-            Please check the logs in $INSTDIR\tmp\install.log"
-        ${EndIf}
-        SetErrorLevel 146
         Quit
   ${EndSwitch}
   ${LogString} $0
