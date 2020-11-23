@@ -39,8 +39,6 @@
 #   https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/fusioninventory-agent_windows-x64_2.4.exe
 #   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-32bit.msi
 #   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-64bit.msi
-#   https://github.com/syncthing/syncthing/releases/download/v1.1.0/syncthing-windows-386-v1.1.0.zip
-#   https://github.com/syncthing/syncthing/releases/download/v1.1.0/syncthing-windows-amd64-v1.1.0.zip
 
 # To be defined for minimal install
 BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
@@ -83,7 +81,6 @@ croniter-0.3.16.tar.gz \
 pysftp-0.2.9.tar.gz \
 paramiko-1.18.5-py2.py3-none-any.whl \
 ecdsa-0.13-py2.py3-none-any.whl \
-syncthing-2.3.1.tar.gz \
 requests-2.18.4-py2.py3-none-any.whl \
 idna-2.6-py2.py3-none-any.whl \
 urllib3-1.22-py2.py3-none-any.whl \
@@ -111,12 +108,6 @@ VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
 VNC_PORT="5900"
 SSH_PORT="22"
-SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.6.1.zip"
-SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.6.1.zip"
-SYNCTHING32_FILENAME="syncthing32.exe"
-SYNCTHING64_FILENAME="syncthing64.exe"
-SYNCTHING_NAME="Syncthing"
-SYNCTHING_VERSION="1.6.1"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
 REMOVE_PROFILE_FILENAME="remove-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
@@ -236,8 +227,6 @@ compute_parameters_full() {
     FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT64_FILENAME}'"')
     FULL_OR_DL_VNC_AGENT32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT32_FILENAME}'"')
     FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
-    FULL_OR_DL_SYNCTHING32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING32_FILENAME}'"')
-    FULL_OR_DL_SYNCTHING64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING64_FILENAME}'"')
     FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
@@ -277,8 +266,6 @@ compute_parameters_dl() {
 	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT64_FILENAME}' '${FUSION_INVENTORY_AGENT64_FILENAME})
 	FULL_OR_DL_VNC_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT32_FILENAME}' '${VNC_AGENT32_FILENAME})
 	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
-	FULL_OR_DL_SYNCTHING32=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING32_FILENAME}' '${SYNCTHING32_FILENAME})
-	FULL_OR_DL_SYNCTHING64=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING64_FILENAME}' '${SYNCTHING64_FILENAME})
     FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
@@ -349,27 +336,6 @@ prepare_mandatory_includes() {
 		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
 		exit 1
 	fi
-    # syncthing
-    if [ -e ${DOWNLOADS_DIR}/${SYNCTHING32_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${SYNCTHING32_DL_FILENAME}
-        cp ${SYNCTHING32_DL_FILENAME::-4}/syncthing.exe bin/${SYNCTHING32_FILENAME}
-        rm -rf ${SYNCTHING32_DL_FILENAME::-4}
-		popd
-    else
-        colored_echo red "${SYNCTHING32_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-        exit 1
-    fi
-    if [ -e ${DOWNLOADS_DIR}/${SYNCTHING64_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${SYNCTHING64_DL_FILENAME}
-        cp ${SYNCTHING64_DL_FILENAME::-4}/syncthing.exe bin/${SYNCTHING64_FILENAME}
-        rm -rf ${SYNCTHING64_DL_FILENAME::-4}
-		popd
-    else
-        colored_echo red "${SYNCTHING64_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-        exit 1
-    fi
     # LGPO
     if [ -e ${DOWNLOADS_DIR}/${LGPO_DL_FILENAME} ]; then
 		pushd ${DOWNLOADS_DIR}
@@ -430,12 +396,6 @@ update_nsi_script() {
 		-e "s/@@VNC_AGENT64_FILENAME@@/${VNC_AGENT64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_VNC_AGENT32@@/${FULL_OR_DL_VNC_AGENT32}/" \
 		-e "s/@@FULL_OR_DL_VNC_AGENT64@@/${FULL_OR_DL_VNC_AGENT64}/" \
-		-e "s/@@SYNCTHING32_FILENAME@@/${SYNCTHING32_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_SYNCTHING32@@/${FULL_OR_DL_SYNCTHING32}/" \
-        -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
-        -e "s/@@SYNCTHING_VERSION@@/${SYNCTHING_VERSION}/" \
-		-e "s/@@SYNCTHING64_FILENAME@@/${SYNCTHING64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_SYNCTHING64@@/${FULL_OR_DL_SYNCTHING64}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
         -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
