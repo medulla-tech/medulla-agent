@@ -33,7 +33,7 @@ SYNCTHINGVERSION = '1.6.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -89,6 +89,8 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = '386'
         logger.error("archi %s" % architecture)
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        pulseconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
+        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -111,6 +113,7 @@ def updatesyncthing(xmppobject, installed_version):
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
 
+            os.symlink(os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
             updatesyncthingversion(installed_version)
         else:
             # Download error
