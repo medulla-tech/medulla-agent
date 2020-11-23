@@ -117,6 +117,8 @@ SYNCTHING32_FILENAME="syncthing32.exe"
 SYNCTHING64_FILENAME="syncthing64.exe"
 SYNCTHING_NAME="Syncthing"
 SYNCTHING_VERSION="1.6.1"
+CHERRYPY_NAME="CherryPy"
+CHERRYPY_VERSION="8.9.1"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
 REMOVE_PROFILE_FILENAME="remove-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
@@ -436,6 +438,8 @@ update_nsi_script() {
         -e "s/@@SYNCTHING_VERSION@@/${SYNCTHING_VERSION}/" \
 		-e "s/@@SYNCTHING64_FILENAME@@/${SYNCTHING64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_SYNCTHING64@@/${FULL_OR_DL_SYNCTHING64}/" \
+        -e "s/@@CHERRYPY_NAME@@/${CHERRYPY_NAME}/" \
+        -e "s/@@CHERRYPY_VERSION@@/${CHERRYPY_VERSION}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
         -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
