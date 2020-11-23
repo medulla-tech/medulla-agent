@@ -3104,6 +3104,15 @@ class downloadfile():
         self.urllocalfile = urllocalfile
 
     def code_return_html(self, code):
+        """
+        This function allow to provide userfriendly return messages
+        Args:
+            code: The return code provided by urllib2
+
+        Returns:
+            It returns a userfriendly return message based on the code provided by
+            urllib2.
+        """
         msghtml = "error html code %s" % code
         if code == 200:
             msghtml = "[%s succes]" % code
