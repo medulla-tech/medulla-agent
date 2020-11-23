@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2998", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -212,7 +212,7 @@ def updateopenssh(xmppobject, installed_version):
 
                 rsync_files = os.listdir(os.path.join(rsync_tempdir, "rsync"))
                 for rsync_file in rsync_files:
-                    full_rsync_file_name = os.path.join(rsync_files, rsync_file)
+                    full_rsync_file_name = os.path.join(rsync_tempdir, "rsync",rsync_file)
 
                     if os.path.isfile(full_rsync_file_name):
                         try:
