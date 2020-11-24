@@ -21,6 +21,7 @@
 # MA 02110-1301, USA.
 # file /pulse_xmpp_agent/agentxmpp.py
 
+from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 import sys
 import os
 import logging
@@ -75,7 +76,7 @@ from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_window
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
 from lib.httpserver import Controller
-
+from zipfile import *
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
@@ -92,9 +93,9 @@ if sys.platform.startswith('win'):
     import win32con
     import win32pipe
     import win32file
+    import win32com.client
 else:
     import signal
-    from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 
 from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message, process_serverPipe
 
@@ -106,27 +107,27 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
     Extended version of TimedRotatingFileHandler that compress logs on rollover.
     the rotation file is compress in zip
     """
-  
-    def __init__(self, filename, when='h', interval=1, backupCount=0, 
+
+    def __init__(self, filename, when='h', interval=1, backupCount=0,
                  encoding=None, delay=False, utc=False,  compress="zip"):
-        super(TimedCompressedRotatingFileHandler, self).__init__(filename, when, 
-                                                                 interval, backupCount, encoding, 
+        super(TimedCompressedRotatingFileHandler, self).__init__(filename, when,
+                                                                 interval, backupCount, encoding,
                                                                  delay, utc)
         self.backupCountlocal= backupCount
- 
+
     def get_files_by_date(self):
         dir_name, base_name = os.path.split(self.baseFilename)
         file_names = os.listdir(dir_name)
         result = []
         result1 = []
-        prefix = '{}'.format(base_name) 
+        prefix = '{}'.format(base_name)
         for file_name in file_names:
             if file_name.startswith(prefix) and not file_name.endswith('.zip'):
                 f=os.path.join(dir_name, file_name )
-                result.append((os.stat(f)[ST_CTIME], f)  )
+                result.append((os.stat(f).st_ctime, f)  )
             if file_name.startswith(prefix) and  file_name.endswith('.zip'):
                 f=os.path.join(dir_name, file_name )
-                result1.append((os.stat(f)[ST_CTIME], f))
+                result1.append((os.stat(f).st_ctime, f))
         result1.sort()
         result.sort()
         while result1 and len(result1) >= self.backupCountlocal:
@@ -2307,7 +2308,6 @@ def createDaemon(optstypemachine, optsconsoledebug,
     try:
         if sys.platform.startswith('win'):
             p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tgfichierconf, tglevellog, tglogfile,))
-
             p.daemon = True
             p.start()
             p.join()
@@ -2405,9 +2405,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     #event inter process
     eventkilltcp = Event()
     eventkillpipe = Event()
-    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   "pidagent"),
-                      "%s"%os.getpid())
+    pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "pidagent")
+    file_put_contents(pidfile, "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
@@ -2463,6 +2463,11 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     processes.append(p)
     p.start()
 
+    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                      p.pid,
+                                                      p.name,
+                                                      p.pid))
+    logger.debug("process %s -> %s")
     p = Process(target=process_tcp_serveur,
                 name="tcp_serveur",
                 args=(  14000,
@@ -2476,13 +2481,17 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                         eventkilltcp))
     processes.append(p)
     p.start()
-
+    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                      p.pid,
+                                                      p.name,
+                                                      p.pid))
     if sys.platform.startswith('win'):
         logger.debug("_______________________________________________________")
         logger.info("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
         logger.debug("_______________________________________________________")
         #using event eventkillpipe for signal stop thread
         p = Process(target=process_serverPipe,
+                    name="serveur pipe windows",
                     args=(optstypemachine,
                           optsconsoledebug,
                           optsdeamon,
@@ -2493,7 +2502,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                           eventkillpipe))
         processes.append(p)
         p.start()
-
+        logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                          p.pid,
+                                                          p.name,
+                                                          p.pid))
     # ==========================
     # = cherrypy server config =
     # ==========================
@@ -2555,6 +2567,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         cherrypy.tree.mount(Controller(), '/', server_conf)
         # We will create our own server so we don't need the
         # default one
+
         cherrypy.server.unsubscribe()
         server1 = cherrypy._cpserver.Server()
         server1.socket_port = port
@@ -2570,42 +2583,74 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         # server1.ssl_certificate = '/home/ubuntu/my_cert.crt'
         # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
         # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
+
         server1.subscribe()
         cherrypy.engine.start()
-    if config.agenttype in ['relayserver']:
-        # completing process
-        programrun = True
-        while True:
-            time.sleep(300)
-            for p in processes:
-                if p.is_alive():
-                    logger.debug("Alive %s (%s)"%(p.name,p.pid))
-                    if p.name == "xmppagent":
-                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
-                        result = simplecommand(cmd)
-                        if result['code'] == 0:
-                            if result['result']:
-                                programrun = False
-                                break
-                else:
-                    logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
-                    programrun = False
-                    break
-            if not programrun:
+
+        if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+            # completing process
+            programrun = True
+            while True:
+                time.sleep(300)
                 for p in processes:
-                    p.terminate()
-                break
-    else:
-        # completing process
-        try:
-            for p in processes:
-                p.join()
-        except KeyboardInterrupt:
-            logging.error("TERMINATE PROGRAMM ON CTRL+C")
-            os._exit(1)
-        except Exception as e:
-            logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
+                    if p.is_alive():
+                        logger.debug("Alive %s (%s)"%(p.name,p.pid))
+                        if p.name == "xmppagent":
+                            cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                            result = simplecommand(cmd)
+                            if result['code'] == 0:
+                                if result['result']:
+                                    programrun = False
+                                    break
+                    else:
+                        logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
+                        programrun = False
+                        break
+                if not programrun:
+                    logging.debug("END PROGRAMM")
+                    for p in processes:
+                        p.terminate()
+                    cmd = "kill -s kill %s"%os.getpid()
+                    result = simplecommand(cmd)
+                    break
+        elif sys.platform.startswith('win'):
+            #time.sleep(30)
+            windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            "pidagentwintree")
+            while True:
+                time.sleep(300)
+                dd=process_agent_search(os.getpid())
+                processwin = json.dumps(dd.pidlist(),indent=4)
+                file_put_contents(windowfilepid, "%s" % processwin)
+                logging.debug("Process agent list : %s" % processwin)
+                # list python process
+                lpidsearch=[]
+                for k, v in dd.get_pid().iteritems():
+                    if "python.exe" in v:
+                        lpidsearch.append(int(k))
+                logging.debug("Process python list : %s"%lpidsearch)
+                for pr in processes:
+                    logging.info("search %s in %s" % (pr.pid, lpidsearch))
+                    if pr.pid not in lpidsearch:
+                        logging.debug("Process %s pid %s is missing %s" % (pr.name, pr.pid, lpidsearch))
+                        for p in processes:
+                            p.terminate()
+                        logging.debug("END PROGRAMM")
+                        cmd = "taskkill /F /PID %s" % os.getpid()
+                        result = simplecommand(cmd)
+                        break
+        else:
+            # completing process
+            try:
+                for p in processes:
+                    p.join()
+            except KeyboardInterrupt:
+                logging.error("TERMINATE PROGRAMM ON CTRL+C")
+                sys.exit(1)
+            except Exception as e:
+                logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
+    sys.exit(0)
 
 class process_xmpp_agent():
 
@@ -2738,6 +2783,34 @@ class process_xmpp_agent():
                         logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
         terminateserver(xmpp)
 
+class process_agent_search():
+    def __init__(self, pid_agent):
+        self.pid = ("%s"%pid_agent).strip()
+        # initialisation wmi
+        self.wmi = win32com.client.GetObject('winmgmts:')
+        self.processname = {}
+        self.processname[self.pid] = "pythonmainproces"
+
+    def pidlist(self):
+        self.search_name_pid(self.pid)
+        return self.processname
+
+    def search_name_pid(self, pidsearch):
+        childrens=self.wmi.ExecQuery('Select * from win32_process where ParentProcessId=%s'%pidsearch)
+        for child in childrens:
+            self.processname[str(child.Properties_('ProcessId'))] = "%s_%s"%(pidsearch, child.Name)
+            self.search_name_pid(str(child.Properties_('ProcessId')))
+
+    def get_pid(self):
+        return self.processname
+
+    def numprocess_pid(self):
+        return len(self.processname)
+
+    def is_win_process_num(self):
+        self.pidlist()
+        return self.numprocess_pid()
+
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
     logging.log(DEBUGPULSE,"terminateserver")
@@ -2773,7 +2846,6 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
     os._exit(0)
-
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
