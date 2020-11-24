@@ -33,7 +33,7 @@ SYNCTHINGVERSION = '1.6.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.10", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -114,6 +114,15 @@ def updatesyncthing(xmppobject, installed_version):
             utils.simplecommand("netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
 
             os.symlink(os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
+
+            # Enable syncthing now it is installed
+            agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")
+            Config = ConfigParser.ConfigParser()
+            Config.read(agentconf_file)
+            if not Config.has_option("syncthing", "activation"):
+                Config.add_section('syncthing')
+            Config.set("syncthing", "activation", "1")
+
             updatesyncthingversion(installed_version)
         else:
             # Download error
