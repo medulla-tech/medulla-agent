@@ -28,6 +28,7 @@ import zipfile
 import platform
 import tempfile
 import shutil
+import ConfigParser
 from lib import utils
 SYNCTHINGVERSION = '1.6.1'
 
