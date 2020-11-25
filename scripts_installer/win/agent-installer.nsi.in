@@ -64,7 +64,6 @@ RequestExecutionLevel admin
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
 !define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
 !define GENERATED_SIZE "@@GENERATED_SIZE@@"
-!define VNC_AGENT32_FILENAME "@@VNC_AGENT32_FILENAME@@"
 !define VNC_AGENT64_FILENAME "@@VNC_AGENT64_FILENAME@@"
 !define RFB_PORT "@@RFB_PORT@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
@@ -170,7 +169,7 @@ Section "Python" sec_py
     ${IfNot} ${Errors}
         ; Seems Python is installed. We'll try to uninstall the 32bit version
         ${LogString} "Uninstalling 32bit python if found..."
-        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn`
+        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn /norestart`
         ${LogString} "Running $0"
         nsExec::ExecToLog $0
         Pop $1 # return value/error/timeout
@@ -924,33 +923,23 @@ Section "VNC Setup" sec_vnc
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_VNC_AGENT64@@
-  ${Else}
-    @@FULL_OR_DL_VNC_AGENT32@@
-  ${EndIf}
+  @@FULL_OR_DL_VNC_AGENT64@@
   ${LogString} "VNC setup for remote control of machine via Pulse...."
   ${LogString} "------------------------------------------------------"
 
-  ; On win64 clean old 32bit TightVNC if installed
-  ${If} ${RunningX64}
-    IfFileExists $PROGRAMFILES\TightVNC\tvnserver.exe 0 +8
-    ${LogString} "TightVNC seems to be installed. Uninstalling..."
-    StrCpy $0 `msiexec /x "$INSTDIR\tmp\${VNC_AGENT32_FILENAME}" /qn REBOOT=R`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${LogString} ""
-  ${EndIf}
+  ; Clean old 32bit TightVNC if installed
+  IfFileExists $PROGRAMFILES\TightVNC\tvnserver.exe 0 +8
+  ${LogString} "TightVNC seems to be installed. Uninstalling..."
+  StrCpy $0 `msiexec /x {C148910C-51F8-4D36-BFBD-87A64B139006} /qn /norestart`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${LogString} ""
 
   ; Get location
   Var /GLOBAL VNC_AGENT_FILENAME
-  ${If} ${RunningX64}
-    StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT64_FILENAME}"
-  ${Else}
-    StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT32_FILENAME}"
-  ${EndIf}
+  StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT64_FILENAME}"
   ; Install VNC
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ; Create installation command line                                                          ;
@@ -1022,7 +1011,6 @@ Section "VNC Setup" sec_vnc
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${VNC_AGENT32_FILENAME}
   Delete $INSTDIR\tmp\${VNC_AGENT64_FILENAME}
 SectionEnd
 

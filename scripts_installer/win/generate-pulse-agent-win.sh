@@ -35,7 +35,6 @@
 #   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win32.zip
 #   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win64.zip
 #   https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/fusioninventory-agent_windows-x64_2.4.exe
-#   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-32bit.msi
 #   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-64bit.msi
 
 # To be defined for minimal install
@@ -93,7 +92,6 @@ OPENSSH64_FILENAME="${OPENSSH_NAME}-Win64.zip"
 FILETREE_VERSION="0.1"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 FUSION_INVENTORY_AGENT64_FILENAME="fusioninventory-agent_windows-x64_2.5.2.exe"
-VNC_AGENT32_FILENAME="tightvnc-2.8.8-gpl-setup-32bit.msi"
 VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
 VNC_PORT="5900"
@@ -207,7 +205,6 @@ compute_parameters_full() {
     FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
     FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT64_FILENAME}'"')
-    FULL_OR_DL_VNC_AGENT32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT32_FILENAME}'"')
     FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
     FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
@@ -238,7 +235,6 @@ compute_parameters_dl() {
 	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
 	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT64_FILENAME}' '${FUSION_INVENTORY_AGENT64_FILENAME})
-	FULL_OR_DL_VNC_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT32_FILENAME}' '${VNC_AGENT32_FILENAME})
 	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
     FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
@@ -361,9 +357,7 @@ update_nsi_script() {
 		-e "s/@@FUSION_INVENTORY_AGENT64_FILENAME@@/${FUSION_INVENTORY_AGENT64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@/${FULL_OR_DL_FUSION_INVENTORY_AGENT64}/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
-		-e "s/@@VNC_AGENT32_FILENAME@@/${VNC_AGENT32_FILENAME}/" \
 		-e "s/@@VNC_AGENT64_FILENAME@@/${VNC_AGENT64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_VNC_AGENT32@@/${FULL_OR_DL_VNC_AGENT32}/" \
 		-e "s/@@FULL_OR_DL_VNC_AGENT64@@/${FULL_OR_DL_VNC_AGENT64}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
         -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
