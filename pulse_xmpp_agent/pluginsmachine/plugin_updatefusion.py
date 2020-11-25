@@ -62,6 +62,9 @@ def checkfusionversion():
 
 def updatefusion(xmppobject):
     logger.info("Updating FusionInventory Agent to version %s" % FUSIONVERSION)
+
+    install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
+
     if sys.platform.startswith('win'):
         if platform.architecture()[0] == '64bit':
             architecture = 'x64'
@@ -72,10 +75,12 @@ def updatefusion(xmppobject):
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
         if result:
             # Download success
             logger.info("%s" % txtmsg)
+            current_dir = os.getcwd()
+            os.chdir(install_tempdir)
             # Run installer
             cmd = '%s /S /acceptlicense /no-start-menu /execmode=Manual' % filename
             cmd_result = utils.simplecommand(cmd)
