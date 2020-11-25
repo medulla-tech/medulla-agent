@@ -76,18 +76,18 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
         msg.append(msglog)
         # Write message to logger
         for line in msg:
-        objectxmpp.xmpplog(line,
-                           type='noset',
-                           sessionname=sessionid,
-                           priority=-1,
-                           action="xmpplog",
-                           who=objectxmpp.boundjid.bare,
-                           how="",
-                           why="",
-                           module="Notify | Packaging | Reversessh",
-                           date=None,
-                           fromuser="",
-                           touser="")
+            objectxmpp.xmpplog(line,
+                               type='noset',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=objectxmpp.boundjid.bare,
+                               how="",
+                               why="",
+                               module="Notify | Packaging | Reversessh",
+                               date=None,
+                               fromuser="",
+                               touser="")
 
         if hasattr(objectxmpp.config, 'reverseserver_ssh_port'):
             reversessh_server_port = int(objectxmpp.config.reverseserver_ssh_port)
