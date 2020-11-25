@@ -78,7 +78,7 @@ def updatetightvnc(xmppobject):
         else:
             architecture = '32bit'
         filename = 'tightvnc-%s-gpl-setup-%s.msi' % (
-            tightvncversion, architecture)
+            TIGHTVNC, architecture)
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
