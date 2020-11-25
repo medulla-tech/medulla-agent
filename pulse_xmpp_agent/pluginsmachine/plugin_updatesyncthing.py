@@ -123,6 +123,8 @@ def updatesyncthing(xmppobject, installed_version):
             if not Config.has_option("syncthing", "activation"):
                 Config.add_section('syncthing')
             Config.set("syncthing", "activation", "1")
+            with open(agentconf_file, 'w') as configfile:
+                Config.write(configfile)
 
             updatesyncthingversion(installed_version)
         else:
