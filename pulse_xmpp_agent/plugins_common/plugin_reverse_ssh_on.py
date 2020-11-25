@@ -27,8 +27,7 @@ from subprocess import Popen
 import shlex
 import json
 import subprocess
-from lib.utils import file_get_contents, file_put_contents, file_put_contents_w_a, simplecommandstr, simplecommand
-from lib.utils import Env
+from lib import utils
 import shutil
 import logging
 import traceback
@@ -50,156 +49,10 @@ def checkresult(result):
         logger.error("error : %s"%result['result'][-1])
     return result['codereturn'] == 0
 
-def genratekeyforARSreverseSSH():
-    logger.debug("############genrate key for ARS reverseSSH ###############")
-    if not os.path.isfile(os.path.join("/",
-                                       "var",
-                                       "lib",
-                                       "pulse2",
-                                       "clients",
-                                       "reversessh",
-                                       ".ssh",
-                                       "id_rsa")) or not \
-        os.path.isfile(os.path.join("/",
-                                    "var",
-                                    "lib",
-                                    "pulse2",
-                                    "clients",
-                                    "reversessh",
-                                    ".ssh",
-                                    "id_rsa.pub")):
-        os.system("useradd reversessh -md /var/lib/pulse2/clients/reversessh -s /bin/rbash")
-
-        if not os.path.isdir(os.path.join(Env.user_dir(),"clients","reversessh",".ssh")):
-            os.makedirs(os.path.join(Env.user_dir(),"clients","reversessh",".ssh"))
-
-        if sys.platform.startswith('linux'):
-            os.system("setfacl -Rb /var/lib/pulse2/clients/reversessh/")
-
-
-        os.system("ssh-keygen -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa -q -N \"\"")
-        shutil.copyfile("/var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub",
-                        "/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-        os.system("chown -R reversessh: /var/lib/pulse2/clients/reversessh/")
-        os.chmod("/var/lib/pulse2/clients/reversessh/.ssh", 0o700)
-        os.chmod("/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys", 0o600)
-
-def load_key_ssh_relayserver(private=False, user="reversessh"):
-    """
-        This function load the sskey
-        Args:
-            private: Tell if this is the private of the public ssh key
-
-        Returns:
-            The content of the sshkey file
-    """
-
-    if private is True:
-        keyname = "id_rsa"
-    else:
-        keyname = "id_rsa.pub"
-    if user == "root":
-        filekey = os.path.join("/", "root", ".ssh", keyname)
-    else:
-        filekey = os.path.join(Env.user_dir(), "clients", "reversessh", ".ssh", keyname)
-    return file_get_contents(filekey)
-
 def runProcess(cmd, shell=False, envoption=os.environ):
     logger.debug("START COMMAND %s" % cmd)
     args = shlex.split(cmd)
     return Popen(args, env=envoption, shell=shell).pid
-
-def prepare_ssh_repertoire_window_user_pulse():
-    if sys.platform.startswith('win'):
-        try:
-            win32net.NetUserGetInfo('', 'pulse', 0)
-            # permision total for les user pulse, userconnecter, system, et administrators.
-            userprogram = win32api.GetUserName().lower()
-
-            filekey = os.path.join("C:", "progra~1", "pulse", '.ssh')
-
-            user, domain, type = win32security.LookupAccountName ("", userprogram)
-            user1, domain, type = win32security.LookupAccountName ("", "pulse")
-            user2, domain, type = win32security.LookupAccountName ("", "Administrators")
-            user3, domain, type = win32security.LookupAccountName ("", "system")
-            sd = win32security.GetFileSecurity(filekey,
-                                               win32security.DACL_SECURITY_INFORMATION)
-            dacl = win32security.ACL ()
-            #--------------------------------user program-------------------------------------
-            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                    ntsecuritycon.FILE_ALL_ACCESS,
-                                    user)
-            sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            win32security.SetFileSecurity(filekey,
-                                          win32security.DACL_SECURITY_INFORMATION, sd)
-            #--------------------------------pulse------------------------------------
-            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                    ntsecuritycon.FILE_ALL_ACCESS ,
-                                    user1)
-            sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
-
-            #---------------------------------Administrators------------------------------------
-            #if userprogram != "system":
-            #dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                    #ntsecuritycon.FILE_ALL_ACCESS,
-                                    #user2)
-            #sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            #win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
-            #else:
-            ##----------------------------------system-------------------------------
-            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                    ntsecuritycon.FILE_ALL_ACCESS,
-                                    user3)
-            sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
-        except:
-            return
-
-def set_authorized_keys(keypub):
-    try:
-        if sys.platform.startswith('linux'):
-            file_authorized_keys=os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "authorized_keys" )
-        elif sys.platform.startswith('win'):
-            try:
-                win32net.NetUserGetInfo('','pulseuser',0)
-                file_authorized_keys = os.path.join("C:", "Users", "pulseuser", ".ssh", "authorized_keys")
-            except:
-                file_authorized_keys = os.path.join(os.environ["ProgramFiles"],
-                                                    "pulse" ,
-                                                    '.ssh',
-                                                    "authorized_keys")
-            try:
-                if not os.path.isfile(file_authorized_keys):
-                    file_put_contents(file_authorized_keys, "\n")
-            except:
-                logger.warning("\n%s"%(traceback.format_exc()))
-
-        elif sys.platform.startswith('darwin'):
-            file_authorized_keys = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "authorized_keys")
-
-
-        if not os.path.isfile(file_authorized_keys):
-            try:
-                file_put_contents(file_authorized_keys, keypub)
-                logger.debug("set authorized_keys key %s"%keypub)
-            except:
-                logger.warning("\n%s"%(traceback.format_exc()))
-            return True
-        else:
-            try:
-                content = file_get_contents(file_authorized_keys)
-                if keypub.strip('\n\r\t ') not in content:
-                    file_put_contents_w_a(file_authorized_keys, keypub, option="a")
-                    logger.debug("add key in authorized_keys %s" % keypub)
-            except:
-                logger.warning("\n%s" % (traceback.format_exc()))
-            return True
-
-    except:
-        logger.error("\n%s" % (traceback.format_exc()))
-        return False
-    return True
 
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur ):
@@ -210,11 +63,31 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
     returnmessage = dataerreur
     returnmessage['ret'] = 0
     if objectxmpp.config.agenttype in ['relayserver']:
-        #verify key exist
-        idkeypub = os.path.join(Env.user_dir(), "clients", "reversessh", ".ssh", "id_rsa.pub")
-        idkey = os.path.join(Env.user_dir(), "clients", "reversessh", ".ssh", "id_rsa")
-        if not os.path.isfile(idkey) or not os.path.isfile(idkeypub):
-            genratekeyforARSreverseSSH()
+        # Make sure reversessh account and keys exist
+        msg = []
+        username = 'reversessh'
+        result, msglog = utils.reversessh_useraccount_mustexist_on_relay(username)
+        if result is False:
+            logger.error(msglog)
+        msg.append(msglog)
+        result, msglog = utils.reversessh_keys_mustexist_on_relay(username)
+        if result is False:
+            logger.error(msglog)
+        msg.append(msglog)
+        # Write message to logger
+        for line in msg:
+        objectxmpp.xmpplog(line,
+                           type='noset',
+                           sessionname=sessionid,
+                           priority=-1,
+                           action="xmpplog",
+                           who=objectxmpp.boundjid.bare,
+                           how="",
+                           why="",
+                           module="Notify | Packaging | Reversessh",
+                           date=None,
+                           fromuser="",
+                           touser="")
 
         if hasattr(objectxmpp.config, 'reverseserver_ssh_port'):
             reversessh_server_port = int(objectxmpp.config.reverseserver_ssh_port)
@@ -235,9 +108,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 returnmessage['data']['sendemettor'] = True
                 returnmessage['data']['relayserverip'] = objectxmpp.ipconnection
                 returnmessage['data']['reversessh_server_port'] = reversessh_server_port
-                returnmessage['data']['key'] = load_key_ssh_relayserver(private=True)
-                returnmessage['data']['keypub'] = load_key_ssh_relayserver()
-                returnmessage['data']['keypubroot'] = load_key_ssh_relayserver(user="root")
+                returnmessage['data']['key'] = utils.get_relayserver_reversessh_idrsa('reversessh')
+                returnmessage['data']['keypub'] = utils.get_relayserver_pubkey('reversessh')
+                returnmessage['data']['keypubroot'] = utils.get_relayserver_pubkey('root')
                 returnmessage['ret'] = 0
                 returnmessage['action'] = "askinfo"
                 del returnmessage['data']['request']
@@ -261,9 +134,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 returnmessage['data']['sendemettor'] = True
                 returnmessage['data']['relayserverip'] = objectxmpp.ipconnection
                 returnmessage['data']['reversessh_server_port'] = reversessh_server_port
-                returnmessage['data']['key'] = load_key_ssh_relayserver(private=True)
-                returnmessage['data']['keypub'] = load_key_ssh_relayserver()
-                returnmessage['data']['keypubroot'] = load_key_ssh_relayserver(user="root")
+                returnmessage['data']['key'] = utils.get_relayserver_reversessh_idrsa('reversessh')
+                returnmessage['data']['keypub'] = utils.get_relayserver_pubkey('reversessh')
+                returnmessage['data']['keypubroot'] = utils.get_relayserver_pubkey('root')
                 returnmessage['ret'] = 0
                 returnmessage['action'] = "askinfo"
                 returnmessage['sessionid'] = sessionid
@@ -291,6 +164,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
 
         if data['options'] == "createreversessh":
             # Add the keys to pulseuser account
+            username = 'pulseuser'
             result, msglog = utils.create_idrsa_on_client(username, data['key'])
             if result is False:
                 logger.error(msglog)
@@ -339,7 +213,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
                 """%(reversetype, data['port'], remoteport, filekey, data['relayserverip'], reversessh_server_port)
                 reversesshsh = os.path.join(os.path.expanduser('~pulseuser'), "reversessh.sh")
-                file_put_contents(reversesshsh,  dd)
+                utils.file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
                 if 'persistence' not in data:
@@ -349,7 +223,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                         logger.info("Closing reverse ssh tunnel %s" % str(objectxmpp.reversesshmanage[data['persistence']]))
                         cmd = "kill -9 %s" % str(objectxmpp.reversesshmanage[data['persistence']])
                         logger.info(cmd)
-                        simplecommandstr(cmd)
+                        utils.simplecommandstr(cmd)
                         objectxmpp.xmpplog("Closing reverse ssh tunnel %s" % str(objectxmpp.reversesshmanage[data['persistence']]),
                                            type='noset',
                                            sessionname=sessionid,
@@ -388,31 +262,9 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                     filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
                 except:
                     filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
-                # il faut adapter les droit du fichier idrsa suivant si console administrator ou system.
+                # Define the permissions depending on the user running the agent (admin or system)
+                utils.apply_perms_sshkey(filekey, private=True):
 
-                userprogram = win32api.GetUserName().lower()
-                # on modifie les droits sur le fichier de key pour reverse ssh dans user
-                if not userprogram.startswith("syst"):
-                    userprogram = "Administrator"
-
-                user, domain, type = win32security.LookupAccountName ("", userprogram)
-                sd = win32security.GetFileSecurity(filekey,
-                                                win32security.DACL_SECURITY_INFORMATION)
-                dacl = win32security.ACL ()
-                dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                         ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
-                                         user)
-                sd.SetSecurityDescriptorDacl(1, dacl, 0)
-
-
-                win32security.SetFileSecurity(filekey,
-                                              win32security.DACL_SECURITY_INFORMATION, sd)
-
-                #os_platform = os.environ['PROCESSOR_ARCHITECTURE']
-                #try:
-                    #os_platform = os.environ["PROCESSOR_ARCHITEW6432"] # Will raise exception if x86 arch
-                #except KeyError:
-                    #pass
                 sshexec =  os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh.exe")
                 reversesshbat = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", "reversessh.bat")
 
@@ -432,17 +284,17 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
 
                 if not os.path.exists(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")):
                     os.makedirs(os.path.join(os.environ["ProgramFiles"], "Pulse", "bin"))
-                file_put_contents(reversesshbat,  dd)
+                utils.file_put_contents(reversesshbat,  dd)
                 if 'persistence' not in data:
                     data['persistence'] = "no"
                 # clear tout les reverse ssh
                 searchreversesshprocess = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
                 for f in [ os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", x) \
                             for x in os.listdir(searchreversesshprocess) if x[-4:]== ".pid"]:
-                    pid= file_get_contents(f).strip(" \n\r\t")
+                    pid= utils.file_get_contents(f).strip(" \n\r\t")
                     cmd = "taskkill /F /PID %s" % str(pid)
                     logger.info(cmd)
-                    simplecommand(cmd)
+                    utils.simplecommand(cmd)
                     os.remove(f)
                     objectxmpp.xmpplog("Closing reverse ssh tunnel [PID : %s]" % str(f),
                                        type='deploy',
@@ -488,7 +340,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 /usr/bin/ssh -t -t -%s %s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
                 """ % (reversetype, data['port'], remoteport, filekey, data['relayserverip'], reversessh_server_port)
                 reversesshsh = os.path.join(os.path.expanduser('~pulseuser'), "reversessh.sh")
-                file_put_contents(reversesshsh,  dd)
+                utils.file_put_contents(reversesshsh,  dd)
                 os.chmod(reversesshsh, 0o700)
                 args = shlex.split(reversesshsh)
                 if 'persistence' not in data:
@@ -498,7 +350,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                         logger.info("Closing reverse ssh tunnel %s" % str(objectxmpp.reversesshmanage[data['persistence']]))
                         cmd = "kill -9 %s" % str(objectxmpp.reversesshmanage[data['persistence']])
                         logger.info(cmd)
-                        simplecommandstr(cmd)
+                        utils.simplecommandstr(cmd)
                         objectxmpp.xmpplog("Closing reverse ssh tunnel %s" % str(objectxmpp.reversesshmanage[data['persistence']]),
                                            type='noset',
                                            sessionname=sessionid,
