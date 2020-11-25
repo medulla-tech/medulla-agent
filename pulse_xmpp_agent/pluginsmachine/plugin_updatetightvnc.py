@@ -29,7 +29,7 @@ import platform
 import tempfile
 import os
 
-TIGHTVNC = '2.8.27'
+TIGHTVNC = '2.8.8'
 
 logger = logging.getLogger()
 
