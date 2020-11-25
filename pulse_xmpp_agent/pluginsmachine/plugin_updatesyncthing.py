@@ -73,7 +73,7 @@ def updatesyncthingversion(version):
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Syncthing" /f'
+                    '/v "DisplayName" /t REG_SZ  /d "Pulse Syncthing" /f'
 	    utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
