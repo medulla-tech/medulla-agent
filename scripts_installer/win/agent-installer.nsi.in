@@ -69,8 +69,6 @@ RequestExecutionLevel admin
 !define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
 !define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
 !define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
-!define LGPO_FILENAME "@@LGPO_FILENAME@@"
-!define REMOTE_SIGNED_FILENAME "@@REMOTE_SIGNED_FILENAME@@"
 
 SetCompressor lzma
 
@@ -1143,18 +1141,6 @@ Section "!${PRODUCT_NAME}" sec_app
   Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@
 
-  ; Relock Powershell
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    ${LogString} ""
-    ${LogString} "Restore powershell execution policy"
-    ${LogString} "------------------------------------------------------"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
-
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
   ${EndIf}
@@ -1167,18 +1153,6 @@ Section "Uninstall"
 
   ; Define Powershell command
   StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
-
-  ; Unlock Powershell
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    ${LogString} ""
-    ${LogString} "Unlock powershell execution policy"
-    ${LogString} "------------------------------------------------------"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
 
   ; Stop all Pulse services
   Call un.StopPulseServices
@@ -1288,18 +1262,6 @@ Section "Uninstall"
   ; Remove pulse user
   Call un.RemovePulseUser
 
-  ; Relock Powershell
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    ${LogString} ""
-    ${LogString} "Restaure powershell execution policy"
-    ${LogString} "------------------------------------------------------"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
-
   RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   RMDir /r /REBOOTOK "$INSTDIR"
 
@@ -1356,43 +1318,6 @@ Function .onInit
   ${LogString} "------------------------------------------------------"
   CreateDirectory "$INSTDIR\bin"
   SetOutPath "$INSTDIR\bin"
-  @@FULL_OR_DL_LGPO@@
-  File "${REMOTE_SIGNED_FILENAME}"
-
-  ; Detect if policy are applied
-  StrCpy $0 `$CMD_POWERSHELL get-executionpolicy -scope MachinePolicy`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${TrimNewLines} $1 $1
-  ${LogString} "PowerShell Policy status : $1"
-
-  ${IfNot} $1 == Undefined
-    SetOutPath "$INSTDIR\tmp\gpo"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $0
-    ${LogString} "Return code was : $0"
-    StrCpy $0 `cmd /c where /r "$INSTDIR\tmp" registry.pol | findstr Machine`
-    ${LogString} "Running $0"
-    nsExec::ExecToStack $0
-    Pop $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was : $1"
-    Rename "$1" "$INSTDIR\tmp\machine.pol"
-    SetOutPath "$INSTDIR\tmp"
-    RMDir /r /REBOOTOK "$INSTDIR\tmp\gpo"
-  ${EndIf}
-
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
 
   ; Detect Firewall status
   StrCpy $0 `netsh advfirewall show allprofiles`

@@ -104,9 +104,6 @@ NETCHECK_SERVICE_DISPLAYNAME="Pulse network notify"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
-LGPO_DL_FILENAME="LGPO.zip"
-LGPO_FILENAME="lgpo.exe"
-REMOTE_SIGNED_FILENAME="powershell-policy-remotesigned.pol"
 
 # Display usage
 display_usage() {
@@ -196,7 +193,6 @@ compute_parameters_full() {
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
-    FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
 
@@ -223,7 +219,6 @@ compute_parameters_dl() {
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
 	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
-    FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
 
@@ -293,17 +288,6 @@ prepare_mandatory_includes() {
 		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
 		exit 1
 	fi
-    # LGPO
-    if [ -e ${DOWNLOADS_DIR}/${LGPO_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${LGPO_DL_FILENAME}
-        cp LGPO_30/LGPO.exe bin/${LGPO_FILENAME}
-        rm -rf LGPO_30
-		popd
-    else
-        colored_echo red "${LGPO_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-        exit 1
-    fi
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
@@ -347,9 +331,6 @@ update_nsi_script() {
         -e "s/@@NETCHECK_SERVICE_FILENAME@@/${NETCHECK_SERVICE_FILENAME}/" \
         -e "s/@@NETCHECK_PROGRAM_FILENAME@@/${NETCHECK_PROGRAM_FILENAME}/" \
         -e "s/@@NETCHECK_SERVICE_DISPLAYNAME@@/${NETCHECK_SERVICE_DISPLAYNAME}/" \
-        -e "s/@@LGPO_FILENAME@@/${LGPO_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_LGPO@@/${FULL_OR_DL_LGPO}/" \
-        -e "s/@@REMOTE_SIGNED_FILENAME@@/${REMOTE_SIGNED_FILENAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
