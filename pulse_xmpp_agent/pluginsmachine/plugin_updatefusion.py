@@ -65,6 +65,7 @@ def checkfusionversion():
 def updatefusion(xmppobject):
     logger.info("Updating FusionInventory Agent to version %s" % FUSIONVERSION)
 
+    windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
     install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
     if sys.platform.startswith('win'):
