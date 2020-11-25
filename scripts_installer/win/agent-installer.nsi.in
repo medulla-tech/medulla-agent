@@ -1098,11 +1098,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
-  ${Else}
-    @@FULL_OR_DL_PY_MODULES_32_FILENAMES@@
-  ${EndIf}
+  @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
   @@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@
 
   ${LogString} "Pulse Agent Installation...."
