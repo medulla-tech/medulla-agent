@@ -60,7 +60,6 @@ RequestExecutionLevel admin
 !define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
 !define SSH_PORT "@@SSH_PORT@@"
-!define FUSION_INVENTORY_AGENT32_FILENAME "@@FUSION_INVENTORY_AGENT32_FILENAME@@"
 !define FUSION_INVENTORY_AGENT64_FILENAME "@@FUSION_INVENTORY_AGENT64_FILENAME@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
 !define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
@@ -1034,10 +1033,7 @@ Section "Fusion Inventory agent" sec_fusinv
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
-  ${Else}
-    @@FULL_OR_DL_FUSION_INVENTORY_AGENT32@@
+  @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
   ${EndIf}
   ${LogString} "Fusion Inventory agent setup...."
   ${LogString} "------------------------------------------------------"
@@ -1060,11 +1056,7 @@ Section "Fusion Inventory agent" sec_fusinv
   ; Install of Fusion Inventory agent
   ; Get location
   Var /GLOBAL FUSION_INVENTORY_AGENT_FILENAME
-  ${If} ${RunningX64}
-    StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT64_FILENAME}"
-  ${Else}
-    StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT32_FILENAME}"
-  ${EndIf}
+  StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT64_FILENAME}"
   ; Install Fusion Inventory agent
   !If "${INVENTORY_TAG}" == ''
     StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch`
@@ -1085,7 +1077,6 @@ Section "Fusion Inventory agent" sec_fusinv
   ${EndIf}
 
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT32_FILENAME}
   Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT64_FILENAME}
 SectionEnd
 
