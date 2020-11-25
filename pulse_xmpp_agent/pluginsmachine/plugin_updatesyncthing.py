@@ -114,7 +114,8 @@ def updatesyncthing(xmppobject, installed_version):
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
 
-            utils.simplecommand("mklink %s %s" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml")))
+            mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
+            utils.simplecommand(mklink_command)
 
             # Enable syncthing now it is installed
             agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")
