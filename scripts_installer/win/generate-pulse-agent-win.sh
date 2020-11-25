@@ -33,7 +33,6 @@
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
 #   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win64.zip
-#   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-64bit.msi
 
 # To be defined for minimal install
 BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
@@ -88,9 +87,7 @@ OPENSSH_VERSION="7.7"
 OPENSSH64_FILENAME="${OPENSSH_NAME}-Win64.zip"
 FILETREE_VERSION="0.1"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
-VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
-VNC_PORT="5900"
 SSH_PORT="22"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
 REMOVE_PROFILE_FILENAME="remove-profile.ps1"
@@ -199,7 +196,6 @@ compute_parameters_full() {
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
-    FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
     FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
@@ -227,7 +223,6 @@ compute_parameters_dl() {
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
 	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
-	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
     FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
@@ -345,11 +340,7 @@ update_nsi_script() {
         -e "s/@@FULL_OR_DL_RSYNC@@/${FULL_OR_DL_RSYNC}/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
-		-e "s/@@VNC_AGENT64_FILENAME@@/${VNC_AGENT64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_VNC_AGENT64@@/${FULL_OR_DL_VNC_AGENT64}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
-        -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
-        -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
         -e "s/@@CREATE_PROFILE_FILENAME@@/${CREATE_PROFILE_FILENAME}/" \
         -e "s/@@REMOVE_PROFILE_FILENAME@@/${REMOVE_PROFILE_FILENAME}/" \
         -e "s/@@PULSE_SERVICE_FILENAME@@/${PULSE_SERVICE_FILENAME}/" \
@@ -366,8 +357,6 @@ update_nsi_script() {
     sed -i 's/XOXOXOX/\
 /g' agent-installer.nsi
 
-    [ ${DISABLE_VNC} -eq 1 ] && sed -i "/^\s*Section\s\"VNC.*;$/ s|^|;|; /^\s*Section\s\"VNC/, /SectionEnd$/ s|^|;|" agent-installer.nsi
-    [ ${DISABLE_VNC} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_vnc}/,+1 s/^/;/"  agent-installer.nsi
 	[ ${DISABLE_RDP} -eq 1 ] && sed -i "/^\s*Section\s\"RDP.*;$/ s|^|;|; /^\s*Section\s\"RDP/, /SectionEnd$/ s|^|;|" agent-installer.nsi
     [ ${DISABLE_RDP} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_rdp}/,+1 s/^/;/"  agent-installer.nsi
     [ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_fusinv}/,+1 s/^/;/"  agent-installer.nsi
