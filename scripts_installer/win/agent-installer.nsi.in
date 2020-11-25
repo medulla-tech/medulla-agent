@@ -40,7 +40,6 @@ RequestExecutionLevel admin
 !define PROGRAMDATA "C:\ProgramData"
 
 ; Variables replaced by the script calling the nsi
-!define PYTHON32_FILENAME "@@PYTHON32_FILENAME@@"
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
 !define PY_VCPYTHON27_FILENAME "@@PY_VCPYTHON27_FILENAME@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
@@ -160,9 +159,6 @@ Section "Python" sec_py
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
   @@FULL_OR_DL_PYTHON64@@
-  ; 32bit python installer is needed in any case as it is used to uninstall
-  ; a previous 32bit version if found
-  @@FULL_OR_DL_PYTHON32@@
   @@FULL_OR_DL_PY_VCPYTHON27@@
   @@FULL_OR_DL_LIBCURL@@
   ${LogString} "Python Installation...."
@@ -175,7 +171,7 @@ Section "Python" sec_py
     ${IfNot} ${Errors}
         ; Seems Python is installed. We'll try to uninstall the 32bit version
         ${LogString} "Uninstalling 32bit python if found..."
-        StrCpy $0 `msiexec /x "$INSTDIR\tmp\${PYTHON32_FILENAME}" /qn REBOOT=R`
+        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn`
         ${LogString} "Running $0"
         nsExec::ExecToLog $0
         Pop $1 # return value/error/timeout
@@ -203,11 +199,7 @@ Section "Python" sec_py
   ; Install of Python
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
-  ${If} ${RunningX64}
-    StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
-  ${Else}
-    StrCpy $PYTHON_FILENAME "${PYTHON32_FILENAME}"
-  ${EndIf}
+  StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
   ; Install Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\$PYTHON_FILENAME" /quiet /qn /norestart ALLUSERS=1 ADDLOCAL=ALL REMOVE="pip_feature"`
   ${LogString} "Running $0"
@@ -276,7 +268,6 @@ Section "Python" sec_py
     Quit
   ${EndIf}
 
-  Delete $INSTDIR\tmp\${PYTHON32_FILENAME}
   Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
@@ -1207,7 +1198,6 @@ Section "!${PRODUCT_NAME}" sec_app
         Quit
   ${EndSwitch}
   ${LogString} $0
-
 
   CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
   StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`

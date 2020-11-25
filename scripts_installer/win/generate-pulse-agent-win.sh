@@ -28,7 +28,6 @@
 
 #	Files needed for the full version of the installer:
 #	In /var/lib/pulse2/clients/win32/downloads/:
-#	https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
 #	https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
@@ -50,17 +49,10 @@ cd "`dirname $0`"
 AGENT_VERSION="2.1.2"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
-PYTHON32_FILENAME="python-2.7.9.msi"
 PYTHON64_FILENAME="python-2.7.9.amd64.msi"
 PY_VCPYTHON27_FILENAME="VCForPython27.msi"
 LIBCURL_DL_FILENAME="libcurl4-7.52.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
-PY_MODULES_32_FILENAMES="pypiwin32-219-cp27-none-win32.whl \
-pycurl-7.43.0-cp27-none-win32.whl \
-lxml-3.6.0-cp27-none-win32.whl \
-psutil-5.4.3-cp27-none-win32.whl \
-simplejson-3.16.0-cp27-cp27m-win32.whl \
-"
 PY_MODULES_64_FILENAMES="pypiwin32-219-cp27-none-win_amd64.whl \
 pycurl-7.43.0-cp27-none-win_amd64.whl \
 lxml-3.6.0-cp27-none-win_amd64.whl \
@@ -195,20 +187,13 @@ check_arguments() {
 }
 
 compute_parameters_full() {
-    PY_MODULES_32=''
     PY_MODULES_64=''
     PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
-    FULL_OR_DL_PYTHON32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON32_FILENAME}'"')
     FULL_OR_DL_PYTHON64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON64_FILENAME}'"')
     FULL_OR_DL_PY_VCPYTHON27=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PY_VCPYTHON27_FILENAME}'"')
     FULL_OR_DL_LIBCURL=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LIBCURL_FILENAME}'"')
-    for FILENAME in ${PY_MODULES_32_FILENAMES}; do
-        PY_MODULES_32='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_32}
-        DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
-    done
-    FULL_OR_DL_PY_MODULES_32_FILENAMES=$(sed_escape ${PY_MODULES_32})
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
         PY_MODULES_64='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
@@ -234,20 +219,13 @@ compute_parameters_full() {
 compute_parameters_dl() {
     DL_URL="${BASE_URL}/win/downloads"
     DL_MODULES_URL="${DL_URL}/python_modules"
-    PY_MODULES_32=''
     PY_MODULES_64=''
     PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
-    FULL_OR_DL_PYTHON32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON32_FILENAME}' '${PYTHON32_FILENAME})
-	FULL_OR_DL_PYTHON64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON64_FILENAME}' '${PYTHON64_FILENAME})
-	FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PY_VCPYTHON27_FILENAME}' '${PY_VCPYTHON27_FILENAME})
+    FULL_OR_DL_PYTHON64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON64_FILENAME}' '${PYTHON64_FILENAME})
+    FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PY_VCPYTHON27_FILENAME}' '${PY_VCPYTHON27_FILENAME})
     FULL_OR_DL_LIBCURL=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LIBCURL_FILENAME}' '${LIBCURL_FILENAME})
-    for FILENAME in ${PY_MODULES_32_FILENAMES}; do
-        PY_MODULES_32='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_32}
-        DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
-    done
-    FULL_OR_DL_PY_MODULES_32_FILENAMES=$(sed_escape ${PY_MODULES_32})
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
         PY_MODULES_64='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
@@ -356,15 +334,12 @@ update_nsi_script() {
 
 	sed -e "s/@@AGENT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOADS_DIR}/" \
-		-e "s/@@PYTHON32_FILENAME@@/${PYTHON32_FILENAME}/" \
 		-e "s/@@PYTHON64_FILENAME@@/${PYTHON64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PYTHON32@@/${FULL_OR_DL_PYTHON32}/" \
 		-e "s/@@FULL_OR_DL_PYTHON64@@/${FULL_OR_DL_PYTHON64}/" \
 		-e "s/@@PY_VCPYTHON27_FILENAME@@/${PY_VCPYTHON27_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_VCPYTHON27@@/${FULL_OR_DL_PY_VCPYTHON27}/" \
 		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
         -e "s/@@FULL_OR_DL_LIBCURL@@/${FULL_OR_DL_LIBCURL}/" \
-        -e "s/@@FULL_OR_DL_PY_MODULES_32_FILENAMES@@/${FULL_OR_DL_PY_MODULES_32_FILENAMES}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_64_FILENAMES@@/${FULL_OR_DL_PY_MODULES_64_FILENAMES}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@/${FULL_OR_DL_PY_MODULES_COMMON_FILENAMES}/" \
         -e "s/@@DELETE_PY_MODULES_FILENAMES@@/${DELETE_PY_MODULES_FILENAMES}/" \
