@@ -56,7 +56,6 @@ RequestExecutionLevel admin
 !define OPENSSH_NAME "@@OPENSSH_NAME@@"
 !define OPENSSH_VERSION "@@OPENSSH_VERSION@@"
 !define FILETREE_VERSION "@@FILETREE_VERSION@@"
-!define OPENSSH32_FILENAME "@@OPENSSH32_FILENAME@@"
 !define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
 !define SSH_PORT "@@SSH_PORT@@"
@@ -278,11 +277,7 @@ Section "OpenSSH" sec_openssh
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_OPENSSH64@@
-  ${Else}
-    @@FULL_OR_DL_OPENSSH32@@
-  ${EndIf}
+  @@FULL_OR_DL_OPENSSH64@@
   @@FULL_OR_DL_RSYNC@@
 
 
@@ -379,15 +374,9 @@ Section "OpenSSH" sec_openssh
   Var /GLOBAL SSH_PATH
   Var /GLOBAL OPENSSH_FILENAME
   Var /GLOBAL OPENSSH_CONTENTS_FOLDER
-  ${If} ${RunningX64}
-    StrCpy $OPENSSH_FILENAME "${OPENSSH64_FILENAME}"
-    StrCpy $SSH_PATH "$PROGRAMFILES64\${OPENSSH_NAME}"
-    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win64"
-  ${Else}
-    StrCpy $OPENSSH_FILENAME "${OPENSSH32_FILENAME}"
-    StrCpy $SSH_PATH "$PROGRAMFILES\${OPENSSH_NAME}"
-    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win32"
-  ${EndIf}
+  StrCpy $OPENSSH_FILENAME "${OPENSSH64_FILENAME}"
+  StrCpy $SSH_PATH "$PROGRAMFILES64\${OPENSSH_NAME}"
+  StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win64"
 
   ; Uninstall OpenSSH if found
   SetOutPath $SSH_PATH
@@ -860,7 +849,6 @@ Section "OpenSSH" sec_openssh
   SetRebootFlag true
 
   ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${OPENSSH32_FILENAME}
   Delete $INSTDIR\tmp\${OPENSSH64_FILENAME}
   Delete $INSTDIR\tmp\${RSYNC_FILENAME}
   RMDir /r $INSTDIR\tmp\rsync

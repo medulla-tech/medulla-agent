@@ -32,7 +32,6 @@
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
-#   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win32.zip
 #   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win64.zip
 #   https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/fusioninventory-agent_windows-x64_2.4.exe
 #   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-64bit.msi
@@ -87,7 +86,6 @@ RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
 RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="OpenSSH"
 OPENSSH_VERSION="7.7"
-OPENSSH32_FILENAME="${OPENSSH_NAME}-Win32.zip"
 OPENSSH64_FILENAME="${OPENSSH_NAME}-Win64.zip"
 FILETREE_VERSION="0.1"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
@@ -201,7 +199,6 @@ compute_parameters_full() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-    FULL_OR_DL_OPENSSH32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH32_FILENAME}'"')
     FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
     FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT64_FILENAME}'"')
@@ -231,7 +228,6 @@ compute_parameters_dl() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-	FULL_OR_DL_OPENSSH32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH32_FILENAME}' '${OPENSSH32_FILENAME})
 	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
 	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT64_FILENAME}' '${FUSION_INVENTORY_AGENT64_FILENAME})
@@ -346,10 +342,8 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
 		-e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
-		-e "s/@@OPENSSH32_FILENAME@@/${OPENSSH32_FILENAME}/" \
 		-e "s/@@OPENSSH64_FILENAME@@/${OPENSSH64_FILENAME}/" \
         -e "s/@@FILETREE_VERSION@@/${FILETREE_VERSION}/" \
-		-e "s/@@FULL_OR_DL_OPENSSH32@@/${FULL_OR_DL_OPENSSH32}/" \
 		-e "s/@@FULL_OR_DL_OPENSSH64@@/${FULL_OR_DL_OPENSSH64}/" \
 		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
         -e "s/@@FULL_OR_DL_RSYNC@@/${FULL_OR_DL_RSYNC}/" \
