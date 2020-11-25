@@ -1034,6 +1034,7 @@ Section "Fusion Inventory agent" sec_fusinv
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
   @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
+  ${EndIf}
   ${LogString} "Fusion Inventory agent setup...."
   ${LogString} "------------------------------------------------------"
 
