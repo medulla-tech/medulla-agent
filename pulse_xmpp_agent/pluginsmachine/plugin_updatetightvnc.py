@@ -63,6 +63,9 @@ def checktightvncversion():
 def updatetightvnc(xmppobject):
     logger.info("Updating TightVNC Agent to version %s" % TIGHTVNC)
 
+
+    install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
+
     Used_rfb_port = 5900
     if hasattr(xmppobject.config, 'rfbport'):
         Used_rfb_port = xmppobject.config.rfbport
@@ -77,10 +80,12 @@ def updatetightvnc(xmppobject):
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
         if result:
             # Download success
             logger.info("%s" % txtmsg)
+            current_dir = os.getcwd()
+            os.chdir(install_tempdir)
             install_options = "/quiet /qn /norestart"
             install_options = install_options + " ADDLOCAL=Server SERVER_REGISTER_AS_SERVICE=1 SERVER_ADD_FIREWALL_EXCEPTION=1 SERVER_ALLOW_SAS=1"
             # Disable embedded Java WebSrv on port 5800
