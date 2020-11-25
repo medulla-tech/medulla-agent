@@ -59,7 +59,6 @@ RequestExecutionLevel admin
 !define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
 !define SSH_PORT "@@SSH_PORT@@"
-!define FUSION_INVENTORY_AGENT64_FILENAME "@@FUSION_INVENTORY_AGENT64_FILENAME@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
 !define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
 !define GENERATED_SIZE "@@GENERATED_SIZE@@"
@@ -1002,61 +1001,6 @@ Section "VNC Setup" sec_vnc
   Delete $INSTDIR\tmp\${VNC_AGENT64_FILENAME}
 SectionEnd
 
-
-; ####################### Setup of Fusion Inventory agent #######################
-Section "Fusion Inventory agent" sec_fusinv
-  SetOutPath "$INSTDIR\tmp"
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
-  @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
-  ${EndIf}
-  ${LogString} "Fusion Inventory agent setup...."
-  ${LogString} "------------------------------------------------------"
-
-  ; Clean old Fusion Inventory agent if installed
-  ClearErrors
-  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\FusionInventory-Agent" "UninstallString"
-  ${IfNot} ${Errors}
-    ; Seems Fusion Inventory agent is installed
-    ${LogString} "Fusion Inventory agent seems to be installed. Uninstalling..."
-    ; Silent uninstall
-    StrCpy $0 `"$0" /S`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${LogString} ""
-  ${EndIf}
-
-  ; Install of Fusion Inventory agent
-  ; Get location
-  Var /GLOBAL FUSION_INVENTORY_AGENT_FILENAME
-  StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT64_FILENAME}"
-  ; Install Fusion Inventory agent
-  !If "${INVENTORY_TAG}" == ''
-    StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch`
-  !Else
-    StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch /tag="${INVENTORY_TAG}"`
-  !EndIf
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "FusionInventory installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 127
-    Quit
-  ${EndIf}
-
-  ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT64_FILENAME}
-SectionEnd
-
-
 ; ####################### Installation of Pulse Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
@@ -1601,9 +1545,6 @@ Function .onMouseOverSection
 
   StrCmp $0 ${sec_vnc} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup VNC required for remote control"
-
-  StrCmp $0 ${sec_fusinv} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Fusion inventory agent required for inventory"
 
   StrCmp $0 ${sec_app} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"

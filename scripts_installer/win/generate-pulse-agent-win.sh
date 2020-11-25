@@ -33,7 +33,6 @@
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
 #   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win64.zip
-#   https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/fusioninventory-agent_windows-x64_2.4.exe
 #   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-64bit.msi
 
 # To be defined for minimal install
@@ -89,7 +88,6 @@ OPENSSH_VERSION="7.7"
 OPENSSH64_FILENAME="${OPENSSH_NAME}-Win64.zip"
 FILETREE_VERSION="0.1"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
-FUSION_INVENTORY_AGENT64_FILENAME="fusioninventory-agent_windows-x64_2.5.2.exe"
 VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
 VNC_PORT="5900"
@@ -201,7 +199,6 @@ compute_parameters_full() {
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
-    FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT64_FILENAME}'"')
     FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
     FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
@@ -230,7 +227,6 @@ compute_parameters_dl() {
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
 	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
-	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT64_FILENAME}' '${FUSION_INVENTORY_AGENT64_FILENAME})
 	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
     FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
@@ -348,8 +344,6 @@ update_nsi_script() {
 		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
         -e "s/@@FULL_OR_DL_RSYNC@@/${FULL_OR_DL_RSYNC}/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
-		-e "s/@@FUSION_INVENTORY_AGENT64_FILENAME@@/${FUSION_INVENTORY_AGENT64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@/${FULL_OR_DL_FUSION_INVENTORY_AGENT64}/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@VNC_AGENT64_FILENAME@@/${VNC_AGENT64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_VNC_AGENT64@@/${FULL_OR_DL_VNC_AGENT64}/" \
@@ -376,7 +370,6 @@ update_nsi_script() {
     [ ${DISABLE_VNC} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_vnc}/,+1 s/^/;/"  agent-installer.nsi
 	[ ${DISABLE_RDP} -eq 1 ] && sed -i "/^\s*Section\s\"RDP.*;$/ s|^|;|; /^\s*Section\s\"RDP/, /SectionEnd$/ s|^|;|" agent-installer.nsi
     [ ${DISABLE_RDP} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_rdp}/,+1 s/^/;/"  agent-installer.nsi
-	[ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/^\s*Section\s\"Fusion.*;$/ s|^|;|; /^\s*Section\s\"Fusion/, /SectionEnd$/ s|^|;|" agent-installer.nsi
     [ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_fusinv}/,+1 s/^/;/"  agent-installer.nsi
 
 	colored_echo green "### INFO Updating NSIS script.. Done"
