@@ -65,7 +65,7 @@ def checktightvncversion():
 def updatetightvnc(xmppobject):
     logger.info("Updating TightVNC Agent to version %s" % TIGHTVNC)
 
-
+    windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
     install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
     Used_rfb_port = 5900
