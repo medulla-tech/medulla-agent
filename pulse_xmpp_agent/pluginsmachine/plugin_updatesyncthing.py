@@ -88,7 +88,6 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = 'amd64'
         else:
             architecture = '386'
-        logger.error("archi %s" % architecture)
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         pulseconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
         syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
@@ -105,7 +104,6 @@ def updatesyncthing(xmppobject, installed_version):
             # Download success
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
-            #TODO: Kill syncthing process first
             syncthing_zip_file = zipfile.ZipFile(filename, 'r')
             syncthing_zip_file.extractall()
             utils.simplecommand("taskkill.exe /F /IM syncthing.exe")
