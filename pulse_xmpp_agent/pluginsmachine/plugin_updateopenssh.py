@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.6", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -170,6 +170,9 @@ def updateopenssh(xmppobject, installed_version):
                 shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(programdata_path, "sshd_config"))
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
+
+            if not os.isdir(programdata_path):
+                os.mkdir(programdata_path)
 
             # Now we customize the config file
             sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
