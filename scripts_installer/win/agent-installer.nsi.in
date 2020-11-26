@@ -32,8 +32,6 @@ RequestExecutionLevel admin
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 !define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
 !define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
-!define AGENT_FILETREE_NAME "Pulse Filetree Generator"
-!define PRODUCT_FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_FILETREE_NAME}"
 !define USERDIR "c:\Users"
 !define PROGRAMDATA "C:\ProgramData"
 
@@ -51,7 +49,6 @@ RequestExecutionLevel admin
 !define PULSE_START_CONFFILE "@@PULSE_START_CONFFILE@@"
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 !define PULSE_AGENT_TASK_XML_FILENAME "@@PULSE_AGENT_TASK_XML_FILENAME@@"
-!define FILETREE_VERSION "@@FILETREE_VERSION@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
 !define SSH_PORT "@@SSH_PORT@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
@@ -295,19 +292,6 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  ; Copy of pulse filetree generator
-  ClearErrors
-  SetOutPath "$INSTDIR\bin"
-  File "pulse-filetree-generator.exe"
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Pulse File Tree installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 129
-    Quit
-  ${EndIf}
-
   ; Copy of agent config file
   ClearErrors
   SetOutPath "$INSTDIR\etc"
@@ -412,9 +396,6 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayName" "${AGENT_FILETREE_NAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayVersion" "${FILETREE_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
 
 
   ${Else}
@@ -430,9 +411,6 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayName" "${AGENT_FILETREE_NAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayVersion" "${FILETREE_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
   ${EndIf}
 
   ; Write the version installed in registry
@@ -468,7 +446,6 @@ Section "Uninstall"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
-  DeleteRegKey HKLM "${PRODUCT_FILETREE_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
 
 SectionEnd

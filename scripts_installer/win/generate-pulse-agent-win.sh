@@ -83,7 +83,6 @@ RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
 RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="OpenSSH"
 OPENSSH_VERSION="7.7"
-FILETREE_VERSION="0.1"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
 SSH_PORT="22"
@@ -310,7 +309,6 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
 		-e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
-        -e "s/@@FILETREE_VERSION@@/${FILETREE_VERSION}/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
