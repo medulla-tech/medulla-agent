@@ -719,6 +719,7 @@ FunctionEnd
         Quit
   ${EndSwitch}
   ${LogString} $0
+  FunctionEnd
 
 !macroend
 !insertmacro StopPulseServices ""
