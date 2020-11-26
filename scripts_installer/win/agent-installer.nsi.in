@@ -256,54 +256,6 @@ Section "Python" sec_py
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
 SectionEnd
 
-; ####################### Setup of RDP & Firewall #######################
-Section "RDP Setup" sec_rdp
-  ${LogString} "RDP setup for remote control of machine via Pulse...."
-  ${LogString} "------------------------------------------------------"
-
-  ; Setup of rdp
-  ClearErrors
-  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fDenyTSConnections" 0
-  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fSingleSessionPerUser" 0
-  ${If} ${AtLeastWin7}
-    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "UserAuthentication" 0
-  ${EndIf}
-  ${If} ${AtLeastWin7}
-    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "SecurityLayer" 0
-  ${EndIf}
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error configuring RDP. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 123
-    Quit
-  ${EndIf}
-
-  ; Setup of Windows firewall to allow rdp
-  ${IfNot} $FIREWALL == 1
-    ${If} ${IsWinXP}
-      StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
-    ${Else}
-      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
-    ${EndIf}
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${IfNot} $1 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 124
-      Quit
-    ${EndIf}
-  ${EndIf}
-
-  ${LogString} "------------------------------------------------------"
-SectionEnd
-
 ; ####################### Installation of Pulse Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
   SetOutPath "$INSTDIR\tmp"
@@ -624,9 +576,6 @@ Function .onMouseOverSection
   StrCmp $0 ${sec_py} 0 +3
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
           This is required for ${PRODUCT_NAME} to run."
-
-  StrCmp $0 ${sec_rdp} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
 
   StrCmp $0 ${sec_app} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
