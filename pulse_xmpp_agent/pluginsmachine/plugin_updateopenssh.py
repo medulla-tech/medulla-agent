@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.4", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -226,4 +226,4 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("ssh-keygen -A")
 
 
-        #updateopensshversion(installed_version)
+        updateopensshversion(installed_version)
