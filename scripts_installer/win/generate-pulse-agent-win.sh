@@ -31,7 +31,6 @@
 #	https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
-#	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
 
 # To be defined for minimal install
 BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
@@ -79,8 +78,6 @@ repoze.lru-0.7-py3-none-any.whl \
 WebOb-1.8.5-py2.py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
-RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
-RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="OpenSSH"
 OPENSSH_VERSION="7.7"
 FILETREE_VERSION="0.1"
@@ -189,7 +186,6 @@ compute_parameters_full() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-    FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
 
@@ -214,7 +210,6 @@ compute_parameters_dl() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-    FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
 
@@ -250,43 +245,6 @@ sed_escape() {
 	echo "$@" |sed -e 's/[\/&\$"]/\\&/g'
 }
 
-prepare_mandatory_includes() {
-	colored_echo blue "### INFO Preparing mandatory includes..."
-    mkdir -p ${DOWNLOADS_DIR}/bin
-	# rsync
-	if [ -e ${DOWNLOADS_DIR}/${RSYNC_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${RSYNC_DL_FILENAME}
-		mkdir rsync
-		rm -f rsync.zip
-		FOLDERNAME="${RSYNC_DL_FILENAME%.*}"
-		cp ${FOLDERNAME}/bin/* rsync
-		rm rsync/cygcrypto-1.0.0.dll
-		rm rsync/cygssp-0.dll
-		rm rsync/ssh-keygen.exe
-		rm rsync/ssh.exe
-		zip -r rsync.zip rsync
-		rm -rf rsync
-		rm -rf ${FOLDERNAME}
-		popd
-	else
-		colored_echo red "${RSYNC_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-		exit 1
-	fi
-	# libcurl
-	if [ -e ${DOWNLOADS_DIR}/${LIBCURL_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		tar xJf ${LIBCURL_DL_FILENAME}
-        mv usr/bin/cygcurl-4.dll bin
-        rm -rf usr
-		popd
-	else
-		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-		exit 1
-	fi
-	colored_echo green "### INFO Preparing mandatory includes... Done"
-}
-
 update_nsi_script() {
 	colored_echo blue "### INFO Updating NSIS script..."
     LAUNCHER_SSH_KEY=$(sed_escape ${LAUNCHER_SSH_KEY})
@@ -314,8 +272,6 @@ update_nsi_script() {
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
 		-e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
         -e "s/@@FILETREE_VERSION@@/${FILETREE_VERSION}/" \
-		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
-        -e "s/@@FULL_OR_DL_RSYNC@@/${FULL_OR_DL_RSYNC}/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
