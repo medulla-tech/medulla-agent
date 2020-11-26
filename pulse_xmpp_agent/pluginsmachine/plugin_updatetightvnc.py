@@ -33,7 +33,7 @@ TIGHTVNC = '2.8.8'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.01", "NAME": "updatetightvnc", "TYPE": "machine"}
+plugin = {"VERSION": "1.02", "NAME": "updatetightvnc", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -120,7 +120,7 @@ def updatetightvnc(xmppobject):
             install_options = install_options + " SET_RFBPORT=1 VALUE_OF_RFBPORT=%s" % Used_rfb_port
 
             # Run installer
-            cmd = 'msiexec /x %s %s REBOOT=R' % (filename, install_options)
+            cmd = 'msiexec /i %s %s REBOOT=R' % (filename, install_options)
             cmd_result = utils.simplecommand(cmd)
             if cmd_result['code'] == 0:
                 logger.info("%s installed successfully" % filename)
