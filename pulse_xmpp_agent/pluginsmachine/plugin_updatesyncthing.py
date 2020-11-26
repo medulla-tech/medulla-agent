@@ -69,7 +69,7 @@ def updatesyncthingversion(version):
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.debug("we successfully changed the version of Syncthing")
+            logger.info("we successfully updated Syncthing to version " % SYNCTHINGVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
