@@ -123,7 +123,7 @@ def updatetightvnc(xmppobject):
             cmd = 'msiexec /i %s %s REBOOT=R' % (filename, install_options)
             cmd_result = utils.simplecommand(cmd)
             if cmd_result['code'] == 0:
-                logger.info("%s installed successfully" % filename)
+                logger.info("%s installed successfully to version %s" % (filename, TIGHTVNC))
                 
             else:
                 logger.error("Error installing %s: %s"
