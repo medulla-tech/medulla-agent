@@ -166,13 +166,16 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("sc.exe create sshdaemon binPath=\"%s\" DisplayName=\"OpenSSH SSH Server\" start=auto" % sshdaemon_bin_path)
             utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
+            utils.simplecommand("sc start sshdaemon")
+            utils.simplecommand("sc start ssh-agent")
+
+            utils.simplecommand("sc stop sshdaemon")
+            utils.simplecommand("sc stop ssh-agent")
+
             try:
                 shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(programdata_path, "sshd_config"))
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
-
-            if not os.isdir(programdata_path):
-                os.mkdir(programdata_path)
 
             # Now we customize the config file
             sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
