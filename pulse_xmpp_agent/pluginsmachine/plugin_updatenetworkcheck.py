@@ -91,7 +91,7 @@ def updatenetworkcheck(xmppobject):
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(pulsedir_path, filename)).downloadurl()
         if result:
-            logger.debug("%s" % txtmsg_js)
+            logger.debug("%s" % txtmsg)
         else:
             # Download error
             logger.error("%s" % txtmsg)
