@@ -59,10 +59,6 @@ RequestExecutionLevel admin
 !define RFB_PORT "@@RFB_PORT@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
-!define NETCHECK_SERVICE_FILENAME "@@NETCHECK_SERVICE_FILENAME@@"
-!define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
-!define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
-!define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
 
 SetCompressor lzma
 
@@ -428,25 +424,6 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  ; Create Network check service
-  SetOutPath "$INSTDIR\bin"
-  File "${NETCHECK_SERVICE_FILENAME}"
-  File "${NETCHECK_PROGRAM_FILENAME}"
-  CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
-  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${NETCHECK_SERVICE_FILENAME}" --startup=auto install`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error installing Network check service. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 135
-    Quit
-  ${EndIf}
-
   ; Create packages folder to hold packages to be deployed on client
   CreateDirectory $INSTDIR\var\tmp\packages
   ; Create bin folder
@@ -498,9 +475,6 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayName" "${AGENT_FILETREE_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayVersion" "${FILETREE_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
@@ -519,9 +493,6 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayName" "${AGENT_FILETREE_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "DisplayVersion" "${FILETREE_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_FILETREE_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
@@ -561,7 +532,6 @@ Section "Uninstall"
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_FILETREE_UNINST_KEY}"
-  DeleteRegKey HKLM "${NETCHECK_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
 
 SectionEnd
