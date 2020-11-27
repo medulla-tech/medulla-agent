@@ -98,6 +98,8 @@ PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
+CHERRYPY_NAME="CherryPy"
+CHERRYPY_VERSION="8.9.1"
 
 # Display usage
 display_usage() {
@@ -315,6 +317,8 @@ update_nsi_script() {
         -e "s/@@CREATE_PROFILE_FILENAME@@/${CREATE_PROFILE_FILENAME}/" \
         -e "s/@@REMOVE_PROFILE_FILENAME@@/${REMOVE_PROFILE_FILENAME}/" \
         -e "s/@@PULSE_SERVICE_FILENAME@@/${PULSE_SERVICE_FILENAME}/" \
+        -e "s/@@CHERRYPY_NAME@@/${CHERRYPY_NAME}/" \
+        -e "s/@@CHERRYPY_VERSION@@/${CHERRYPY_VERSION}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
