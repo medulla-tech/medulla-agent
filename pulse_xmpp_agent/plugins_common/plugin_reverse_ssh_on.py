@@ -40,7 +40,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "2.170", "NAME": "reverse_ssh_on",  "TYPE": "all"}
+plugin = {"VERSION": "3.0", "NAME": "reverse_ssh_on",  "TYPE": "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
