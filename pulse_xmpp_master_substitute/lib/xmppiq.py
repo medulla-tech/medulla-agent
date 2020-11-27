@@ -39,7 +39,10 @@ from utils import  shellcommandtimeout, \
                    keypub, \
                    simplecommand, \
                    restartsshd, \
-                   install_key_ssh_relayserver
+                   pulseuser_useraccount_mustexist, \
+                   pulseuser_profile_mustexist, \
+                   create_idrsa_on_client, \
+                   add_key_to_authorizedkeys_on_client
 
 from  agentconffile import  directoryconffile
 import zlib
@@ -142,7 +145,7 @@ class functionsynchroxmpp:
         remoteport = datareverse['remoteport']
 
         private_key_ars = datareverse['private_key_ars'].strip(' \t\n\r')
-        install_key_ssh_relayserver(private_key_ars, private=True)
+        create_idrsa_on_client('pulseuser', private_key_ars)
         if sys.platform.startswith('linux'):
             filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
             dd = """#!/bin/bash
@@ -295,164 +298,32 @@ class functionsynchroxmpp:
                 data['ret'] = 20
                 data['data']["msg_error"] = ["error format message"]
                 return json.dumps(data, indent=4)
-            # Install keypub on AM
-            if sys.platform.startswith('linux'):
-                import pwd
-                import grp
-                reverse_ssh_key_privat_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'id_rsa')
-                # Check if pulseuser account exists
-                try:
-                    uid = pwd.getpwnam("pulseuser").pw_uid
-                    gid = grp.getgrnam("pulseuser").gr_gid
-                    gidroot = grp.getgrnam("root").gr_gid
-                    logger.debug("compte pulseuser  uuid %s\n gid %s\ngidroot %s" % (uid, gid, gidroot))
-                    msgaction.append("compte pulseuser  uuid %s\n gid %s\ngidroot %s" % (uid, gid, gidroot))
-                except Exception:
-                    # Account does not exist
-                    logger.debug("Creation of the pulseuser account")
-                    msgaction.append("Creation of the pulseuser account")
-                    result = simplecommand(encode_strconsole("adduser --system --group --home /var/lib/pulse2 '\
-                        '--shell /bin/rbash --disabled-password pulseuser"))
-                uid = pwd.getpwnam("pulseuser").pw_uid
-                gid = grp.getgrnam("pulseuser").gr_gid
-                gidroot = grp.getgrnam("root").gr_gid
 
-                authorized_keys_path = os.path.join(os.path.expanduser('~pulseuser'), '.ssh', 'authorized_keys')
-                logger.debug("file authorized_keys is %s" % authorized_keys_path)
-                msgaction.append("file authorized_keys is %s" % authorized_keys_path)
-                if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                    os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+            # Make sure user account and profile exists
+            username = 'pulseuser'
+            result, msglog = pulseuser_useraccount_mustexist(username)
+            if result is False:
+                logger.error(msglog)
+            msgaction.append(msglog)
+            result, msglog = pulseuser_profile_mustexist(username)
+            if result is False:
+                logger.error(msglog)
+            msgaction.append(msglog)
 
-                if not os.path.isfile(authorized_keys_path):
-                    file_put_contents(authorized_keys_path,"")
-
-                os.chown(os.path.dirname(authorized_keys_path), uid, gid)
-                os.chown(authorized_keys_path, uid, gid)
-                os.chown(authorized_keys_path, uid, gid)
-                packagepath = os.path.join(os.path.expanduser('~pulseuser'), 'packages')
-                pathuser = os.path.join(os.path.expanduser('~pulseuser'))
-                if not os.path.isdir(pathuser):
-                    os.chmod(pathuser, 751)
-                if not os.path.isdir(packagepath):
-                    os.makedirs(packagepath, 0764)
-                os.chown(packagepath, uid, gidroot)
-                os.chmod(os.path.dirname(authorized_keys_path), 0700)
-                os.chmod(authorized_keys_path, 0644)
-                os.chmod(packagepath, 0764)
-                result = simplecommand(encode_strconsole("chown -R pulseuser: '/var/lib/pulse'"))
-            elif sys.platform.startswith('win'):
-                # Check if pulse account exists
-                try:
-                    win32net.NetUserGetInfo('', 'pulse', 0)
-                    booluser = "pulse"
-                except Exception:
-                    booluser = "pulseuser"
-
-                if booluser != "pulse":
-                    # If account is pulseuser
-                    try:
-                        win32net.NetUserGetInfo('', 'pulseuser', 0)
-                    except Exception:
-                        #user ni pulse, ni pulseuser il faut faire la creation du compte et du profile
-                        # pulse account doesn't exist. Create it
-                        logger.warning("Pulse user account does not exist. Creating it.")
-                        msgaction.append("Pulse user account does not exist. Creating it.")
-                        pulseuserpassword = uuid.uuid4().hex[:14]
-                        result = simplecommand(encode_strconsole('net user "pulseuser" "%s" /ADD /COMMENT:"Pulse '\
-                            'user with admin rights on the system"' % pulseuserpassword))
-                        logger.info("Creation of pulse user: %s" % result)
-                        msgaction.append("Creation of pulse user: %s" % result)
-                        result = simplecommand(encode_strconsole('powershell -inputformat none -ExecutionPolicy RemoteSigned -Command'\
-                            ' "Import-Module .\script\create-profile.ps1; New-Profile -Account pulseuser"'))
-                        logger.info("Creation of pulseuser profile: %s" % result)
-                        msgaction.append("Creation of pulseuser profile: %s" % result)
-                        result = simplecommand(encode_strconsole('wmic useraccount where "Name=\'pulseuser\'" set PasswordExpires=False'))
-                        adminsgrpsid = win32security.ConvertStringSidToSid('S-1-5-32-544')
-                        adminsgroup = win32security.LookupAccountSid('', adminsgrpsid)[0]
-                        result = simplecommand(encode_strconsole('net localgroup %s "pulseuser" /ADD' % adminsgroup))
-                        logger.info("Adding pulseuser to administrators group: %s" % result)
-                        msgaction.append("Adding pulseuser to administrators group: %s" % result)
-                    # on configure le compte pulseuser
-                    logger.info("Creating authorized_keys file in pulseuser account")
-                    msgaction.append("Creating authorized_keys file in pulseuser account")
-                    authorized_keys_path = os.path.join("C:", "Users", "pulseuser", '.ssh', 'authorized_keys')
-                    reverse_ssh_key_privat_path = os.path.join("C:", "Users", "pulseuser", '.ssh', 'id_rsa')
-                    if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                        os.makedirs(os.path.dirname(authorized_keys_path), 0700)
-                    if not os.path.isfile(authorized_keys_path):
-                        file_put_contents(authorized_keys_path,"")
-                    currentdir = os.getcwd()
-                    os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
-                    result = simplecommand(encode_strconsole('powershell -ExecutionPolicy Bypass -Command ". '\
-                        '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
-                    os.chdir(currentdir)
-                    logger.info("Reset of permissions on ssh keys and folders: %s" % result)
-                    msgaction.append("Reset of permissions on ssh keys and folders: %s" % result)
-                else:
-                    # user pulse sans profile user
-                    # les informations sont dans "ProgramFiles"], "Pulse"
-                    pathcompte = os.path.join(os.environ["ProgramFiles"], "Pulse")
-                    process = subprocess.Popen("wmic useraccount where name='pulse' get sid",
-                                               shell=True,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.STDOUT)
-                    output = process.stdout.readlines()
-                    sid = output[1].rstrip(' \t\n\r')
-                    logger.info("SID compte Pulse : %s " % sid)
-                    msgaction.append("path compte is  pathcompte : %s " % pathcompte)
-                    logger.info("path compte is  pathcompte : %s " % pathcompte)
-                    msgaction.append("path compte is  pathcompte : %s " % pathcompte)
-                    cmd = 'REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s" '\
-                        '/v "ProfileImagePath" /t REG_SZ  /d "%s" /f' % (sid,
-                                                                         pathcompte)
-                    result = simplecommand(encode_strconsole(cmd))
-                    logger.info("Creating authorized_keys file in pulse account")
-                    msgaction.append("Creating authorized_keys file in pulse account")
-                    authorized_keys_path = os.path.join(os.environ["ProgramFiles"],
-                                                        "pulse",
-                                                        '.ssh',
-                                                        'authorized_keys')
-                    reverse_ssh_key_privat_path = os.path.join(os.environ["ProgramFiles"],
-                                                               "pulse",
-                                                               '.ssh',
-                                                               'id_rsa')
-
-                    # creation if no exist
-                    if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-                        os.makedirs(os.path.dirname(authorized_keys_path), 0700)
-                    if not os.path.isfile(authorized_keys_path):
-                        file_put_contents(authorized_keys_path,"")
-
-                    currentdir = os.getcwd()
-                    os.chdir(os.path.join(os.environ["ProgramFiles"], 'OpenSSH'))
-                    result = simplecommand(encode_strconsole('powershell -ExecutionPolicy Bypass -Command ". '\
-                        '.\FixHostFilePermissions.ps1 -Confirm:$false"'))
-                    os.chdir(currentdir)
-                    logger.info("Reset of permissions on ssh keys and folders: %s" % result)
-                    msgaction.append("Reset of permissions on ssh keys and folders: %s" % result)
-            elif sys.platform.startswith('darwin'):
-                authorized_keys_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
-                                                                 '.ssh',
-                                                                 'authorized_keys'))
-                reverse_ssh_key_privat_path = os.path.join(os.path.join(os.path.expanduser('~pulseuser'),
-                                                                        '.ssh',
-                                                                        'id_rsa'))
-            else:
-                return
-            # Install private reverse ssh key if needed.
+            # Add the keys to pulseuser account
             if 'keyreverseprivatssh' in data['data']:
-                install_key_ssh_relayserver(data['data']['keyreverseprivatssh'].strip(' \t\n\r'),
-                                            private=True)
-            # Install key in authorized_keys
-            authorized_keys_content = file_get_contents(authorized_keys_path)
-            if not data['data']['key'].strip(' \t\n\r') in authorized_keys_content:
-                # add en append la key dans le fichier
-                file_put_contents_w_a( authorized_keys_path, "\n"+ data['data']['key'], "a" )
-                logger.debug("install key ARS [%s]" % data['data']['from'])
-                msgaction.append('INSTALL key ARS %s on machine %s' % (data['data']['from'],
-                                                                       xmppobject.boundjid.bare))
-                xmppobject.xmpplog('Installing ARS key %s on machine %s' % (data['data']['from'],
-                                                                            xmppobject.boundjid.bare),
+                result, msglog = create_idrsa_on_client(username, data['data']['keyreverseprivatssh'])
+                if result is False:
+                    logger.error(msglog)
+                msgaction.append(msglog)
+            result, msglog = add_key_to_authorizedkeys_on_client(username, data['data']['key'])
+            if result is False:
+                logger.error(msglog)
+            msgaction.append(msglog)
+
+            # Send logs to logger
+            for line in msgaction:
+                xmppobject.xmpplog(line,
                                    type='deploy',
                                    sessionname=data['data']["sessionid"],
                                    priority=-1,
@@ -460,26 +331,11 @@ class functionsynchroxmpp:
                                    who=xmppobject.boundjid.bare,
                                    how="",
                                    why="",
-                                   module="Deployment | Cluster | Notify",
+                                   module="Deployment | Notify",
                                    date=None,
                                    fromuser="",
                                    touser="")
-            else:
-                xmppobject.xmpplog('Relay key %s is present on machine %s' % (data['data']['from'],
-                                                                              xmppobject.boundjid.bare),
-                                   type='deploy',
-                                   sessionname=data['data']["sessionid"],
-                                   priority=-1,
-                                   action="xmpplog",
-                                   who=xmppobject.boundjid.bare,
-                                   how="",
-                                   why="",
-                                   module="Deployment | Cluster | Notify",
-                                   date=None,
-                                   fromuser="",
-                                   touser="")
-                logger.warning("key ARS [%s] : is already installed." % data['data']['from'])
-                msgaction.append("key ARS [%s] : is already installed." % data['data']['from'])
+                
             data['action'] = "resultkeyinstall"
             data['ret'] = 0
             data['data'] = {"msg_action": msgaction}
