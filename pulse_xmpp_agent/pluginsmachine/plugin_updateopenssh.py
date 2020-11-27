@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.6", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -102,6 +102,7 @@ def updateopenssh(xmppobject, installed_version):
         mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
         nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
+        programdata_path = os.path.join("c:\\", "ProgramData", "ssh")
         rsync_dest_folder = os.path.join("c:\\", "Windows", windows_system)
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -165,13 +166,19 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("sc.exe create sshdaemon binPath=\"%s\" DisplayName=\"OpenSSH SSH Server\" start=auto" % sshdaemon_bin_path)
             utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
+            utils.simplecommand("sc start sshdaemon")
+            utils.simplecommand("sc start ssh-agent")
+
+            utils.simplecommand("sc stop sshdaemon")
+            utils.simplecommand("sc stop ssh-agent")
+
             try:
-                shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(opensshdir_path, "sshd_config"))
+                shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(programdata_path, "sshd_config"))
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
 
             # Now we customize the config file
-            sshd_config_file = utils.file_get_contents(os.path.join(opensshdir_path, "sshd_config"))
+            sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
             sshport = "Port %s" % Used_ssh_port
             sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
             sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes","PubkeyAuthentication yes")
@@ -182,13 +189,12 @@ def updateopenssh(xmppobject, installed_version):
             sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
             sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
 
-            utils.file_put_contents(os.path.join(opensshdir_path, "sshd_config"), sshd_config_file)
+            utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
 
             utils.simplecommand("sc start sshdaemon")
             utils.simplecommand("sc start ssh-agent")
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
-            #TODO: Generate SSH Keys
         else:
             # Download error
             logger.error("%s" % txtmsg)
@@ -226,4 +232,4 @@ def updateopenssh(xmppobject, installed_version):
             utils.simplecommand("ssh-keygen -A")
 
 
-        #updateopensshversion(installed_version)
+        updateopensshversion(installed_version)
