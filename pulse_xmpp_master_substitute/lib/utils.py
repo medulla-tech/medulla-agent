@@ -2059,7 +2059,6 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        gid = grp.getgrnam(username).gr_gid
         msg = '%s user account already exists. Nothing to do.' % username
         return True, msg
     except Exception:
@@ -2077,7 +2076,6 @@ def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
 def reversessh_keys_mustexist_on_relay(username='reversessh'):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        gid = grp.getgrnam(username).gr_gid
         homedir = os.path.expanduser(username)
     except Exception as e:
         msg = 'Error getting information for creating home folder for user %s' % username
@@ -2085,7 +2083,7 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     if not os.path.isdir(homedir):
         os.makedirs(homedir, 0751)
     os.chmod(homedir, 0751)
-    os.chown(homedir, uid, gid)
+    os.chown(homedir, uid, -1)
     # Check keys
     id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
@@ -2098,11 +2096,11 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
         keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
         result = simplecommand(encode_strconsole(keygen_cmd))
     os.chmod(os.path.dirname(id_rsa_key_path), 0700)
-    os.chown(os.path.dirname(id_rsa_key_path), uid, gid)
+    os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
     os.chmod(id_rsa_key_path, 0600)
-    os.chown(id_rsa_key_path, uid, gid)
+    os.chown(id_rsa_key_path, uid, -1)
     os.chmod(public_key_path, 0644)
-    os.chown(public_key_path, uid, gid)
+    os.chown(public_key_path, uid, -1)
     return True, ''
 
 def get_relayserver_pubkey(username='root'):

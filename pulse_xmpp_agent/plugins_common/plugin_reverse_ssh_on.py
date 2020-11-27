@@ -40,7 +40,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.0", "NAME": "reverse_ssh_on",  "TYPE": "all"}
+plugin = {"VERSION": "3.1", "NAME": "reverse_ssh_on",  "TYPE": "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
@@ -263,7 +263,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 except:
                     filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
                 # Define the permissions depending on the user running the agent (admin or system)
-                utils.apply_perms_sshkey(filekey, private=True):
+                utils.apply_perms_sshkey(filekey, private=True)
 
                 sshexec =  os.path.join(os.environ["ProgramFiles"], "OpenSSH", "ssh.exe")
                 reversesshbat = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin", "reversessh.bat")
