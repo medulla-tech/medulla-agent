@@ -40,7 +40,7 @@ if sys.platform.startswith('win'):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.1", "NAME": "reverse_ssh_on",  "TYPE": "all"}
+plugin = {"VERSION": "3.2", "NAME": "reverse_ssh_on",  "TYPE": "all"}
 
 def checkresult(result):
     if result['codereturn'] != 0:
@@ -259,7 +259,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur ):
                 ################# win reverse #################
                 try:
                     win32net.NetUserGetInfo('','pulseuser',0)
-                    filekey = os.path.join("C:", "Users", "pulseuser", ".ssh", "id_rsa")
+                    filekey = os.path.join("C:\\", "Users", "pulseuser", ".ssh", "id_rsa")
                 except:
                     filekey = os.path.join(os.environ["ProgramFiles"], 'pulse', ".ssh", "id_rsa")
                 # Define the permissions depending on the user running the agent (admin or system)
