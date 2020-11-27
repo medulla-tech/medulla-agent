@@ -106,7 +106,7 @@ def updatecherrypy(xmppobject, installed_version):
 	    os.chdir(install_tempdir)
             utils.simplecommand(cmd)
 
-         updatecherrypyversion(installed_version)
+        updatecherrypyversion(installed_version)
         else:
             # Download error
             logger.error("%s" % txtmsg)
