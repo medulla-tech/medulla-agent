@@ -28,19 +28,10 @@
 
 #	Files needed for the full version of the installer:
 #	In /var/lib/pulse2/clients/win32/downloads/:
-#	https://www.python.org/ftp/python/2.7.9/python-2.7.9.msi
 #	https://www.python.org/ftp/python/2.7.9/python-2.7.9.amd64.msi
 #	https://download.microsoft.com/download/7/9/6/796EF2E4-801B-4FC4-AB28-B59FBF6D907B/VCForPython27.msi
 #	http://mirrors.kernel.org/sources.redhat.com/cygwin/x86/release/curl/libcurl4/libcurl4-7.52.1-1.tar.xz
 #	https://www.itefix.net/dl/cwRsync_5.5.0_x86_Free.zip
-#   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win32.zip
-#   https://github.com/PowerShell/Win32-OpenSSH/releases/download/v0.0.21.0/OpenSSH-Win64.zip
-#   https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/fusioninventory-agent_windows-x86_2.4.exe
-#   https://github.com/fusioninventory/fusioninventory-agent/releases/download/2.4/fusioninventory-agent_windows-x64_2.4.exe
-#   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-32bit.msi
-#   https://www.tightvnc.com/download/2.8.8/tightvnc-2.8.8-gpl-setup-64bit.msi
-#   https://github.com/syncthing/syncthing/releases/download/v1.1.0/syncthing-windows-386-v1.1.0.zip
-#   https://github.com/syncthing/syncthing/releases/download/v1.1.0/syncthing-windows-amd64-v1.1.0.zip
 
 # To be defined for minimal install
 BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
@@ -52,17 +43,10 @@ cd "`dirname $0`"
 AGENT_VERSION="2.1.2"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
-PYTHON32_FILENAME="python-2.7.9.msi"
 PYTHON64_FILENAME="python-2.7.9.amd64.msi"
 PY_VCPYTHON27_FILENAME="VCForPython27.msi"
 LIBCURL_DL_FILENAME="libcurl4-7.52.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
-PY_MODULES_32_FILENAMES="pypiwin32-219-cp27-none-win32.whl \
-pycurl-7.43.0-cp27-none-win32.whl \
-lxml-3.6.0-cp27-none-win32.whl \
-psutil-5.4.3-cp27-none-win32.whl \
-simplejson-3.16.0-cp27-cp27m-win32.whl \
-"
 PY_MODULES_64_FILENAMES="pypiwin32-219-cp27-none-win_amd64.whl \
 pycurl-7.43.0-cp27-none-win_amd64.whl \
 lxml-3.6.0-cp27-none-win_amd64.whl \
@@ -83,7 +67,6 @@ croniter-0.3.16.tar.gz \
 pysftp-0.2.9.tar.gz \
 paramiko-1.18.5-py2.py3-none-any.whl \
 ecdsa-0.13-py2.py3-none-any.whl \
-syncthing-2.3.1.tar.gz \
 requests-2.18.4-py2.py3-none-any.whl \
 idna-2.6-py2.py3-none-any.whl \
 urllib3-1.22-py2.py3-none-any.whl \
@@ -100,23 +83,9 @@ RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
 RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="OpenSSH"
 OPENSSH_VERSION="7.7"
-OPENSSH32_FILENAME="${OPENSSH_NAME}-Win32.zip"
-OPENSSH64_FILENAME="${OPENSSH_NAME}-Win64.zip"
-FILETREE_VERSION="0.1"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
-FUSION_INVENTORY_AGENT32_FILENAME="fusioninventory-agent_windows-x86_2.5.2.exe"
-FUSION_INVENTORY_AGENT64_FILENAME="fusioninventory-agent_windows-x64_2.5.2.exe"
-VNC_AGENT32_FILENAME="tightvnc-2.8.8-gpl-setup-32bit.msi"
-VNC_AGENT64_FILENAME="tightvnc-2.8.8-gpl-setup-64bit.msi"
 DOWNLOADS_DIR="downloads"
-VNC_PORT="5900"
 SSH_PORT="22"
-SYNCTHING32_DL_FILENAME="syncthing-windows-386-v1.6.1.zip"
-SYNCTHING64_DL_FILENAME="syncthing-windows-amd64-v1.6.1.zip"
-SYNCTHING32_FILENAME="syncthing32.exe"
-SYNCTHING64_FILENAME="syncthing64.exe"
-SYNCTHING_NAME="Syncthing"
-SYNCTHING_VERSION="1.6.1"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
 REMOVE_PROFILE_FILENAME="remove-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
@@ -126,15 +95,9 @@ PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 PULSE_START_CONFFILE_FILENAME="start.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
-NETCHECK_SERVICE_FILENAME="netcheck-service.py"
-NETCHECK_PROGRAM_FILENAME="networkevents.py"
-NETCHECK_SERVICE_DISPLAYNAME="Pulse network notify"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
-LGPO_DL_FILENAME="LGPO.zip"
-LGPO_FILENAME="lgpo.exe"
-REMOTE_SIGNED_FILENAME="powershell-policy-remotesigned.pol"
 
 # Display usage
 display_usage() {
@@ -204,20 +167,13 @@ check_arguments() {
 }
 
 compute_parameters_full() {
-    PY_MODULES_32=''
     PY_MODULES_64=''
     PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
-    FULL_OR_DL_PYTHON32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON32_FILENAME}'"')
     FULL_OR_DL_PYTHON64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON64_FILENAME}'"')
     FULL_OR_DL_PY_VCPYTHON27=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PY_VCPYTHON27_FILENAME}'"')
     FULL_OR_DL_LIBCURL=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LIBCURL_FILENAME}'"')
-    for FILENAME in ${PY_MODULES_32_FILENAMES}; do
-        PY_MODULES_32='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_32}
-        DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
-    done
-    FULL_OR_DL_PY_MODULES_32_FILENAMES=$(sed_escape ${PY_MODULES_32})
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
         PY_MODULES_64='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
@@ -229,36 +185,20 @@ compute_parameters_full() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-    FULL_OR_DL_OPENSSH32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH32_FILENAME}'"')
-    FULL_OR_DL_OPENSSH64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${OPENSSH64_FILENAME}'"')
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
-    FULL_OR_DL_FUSION_INVENTORY_AGENT32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT32_FILENAME}'"')
-    FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${FUSION_INVENTORY_AGENT64_FILENAME}'"')
-    FULL_OR_DL_VNC_AGENT32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT32_FILENAME}'"')
-    FULL_OR_DL_VNC_AGENT64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${VNC_AGENT64_FILENAME}'"')
-    FULL_OR_DL_SYNCTHING32=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING32_FILENAME}'"')
-    FULL_OR_DL_SYNCTHING64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${SYNCTHING64_FILENAME}'"')
-    FULL_OR_DL_LGPO=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LGPO_FILENAME}'"')
     GENERATED_SIZE='FULL'
 }
 
 compute_parameters_dl() {
     DL_URL="${BASE_URL}/win/downloads"
     DL_MODULES_URL="${DL_URL}/python_modules"
-    PY_MODULES_32=''
     PY_MODULES_64=''
     PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
-    FULL_OR_DL_PYTHON32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON32_FILENAME}' '${PYTHON32_FILENAME})
-	FULL_OR_DL_PYTHON64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON64_FILENAME}' '${PYTHON64_FILENAME})
-	FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PY_VCPYTHON27_FILENAME}' '${PY_VCPYTHON27_FILENAME})
+    FULL_OR_DL_PYTHON64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON64_FILENAME}' '${PYTHON64_FILENAME})
+    FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PY_VCPYTHON27_FILENAME}' '${PY_VCPYTHON27_FILENAME})
     FULL_OR_DL_LIBCURL=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LIBCURL_FILENAME}' '${LIBCURL_FILENAME})
-    for FILENAME in ${PY_MODULES_32_FILENAMES}; do
-        PY_MODULES_32='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_32}
-        DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
-    done
-    FULL_OR_DL_PY_MODULES_32_FILENAMES=$(sed_escape ${PY_MODULES_32})
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
         PY_MODULES_64='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
@@ -270,16 +210,7 @@ compute_parameters_dl() {
     done
     FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
-	FULL_OR_DL_OPENSSH32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH32_FILENAME}' '${OPENSSH32_FILENAME})
-	FULL_OR_DL_OPENSSH64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${OPENSSH64_FILENAME}' '${OPENSSH64_FILENAME})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
-	FULL_OR_DL_FUSION_INVENTORY_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT32_FILENAME}' '${FUSION_INVENTORY_AGENT32_FILENAME})
-	FULL_OR_DL_FUSION_INVENTORY_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${FUSION_INVENTORY_AGENT64_FILENAME}' '${FUSION_INVENTORY_AGENT64_FILENAME})
-	FULL_OR_DL_VNC_AGENT32=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT32_FILENAME}' '${VNC_AGENT32_FILENAME})
-	FULL_OR_DL_VNC_AGENT64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${VNC_AGENT64_FILENAME}' '${VNC_AGENT64_FILENAME})
-	FULL_OR_DL_SYNCTHING32=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING32_FILENAME}' '${SYNCTHING32_FILENAME})
-	FULL_OR_DL_SYNCTHING64=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${SYNCTHING64_FILENAME}' '${SYNCTHING64_FILENAME})
-    FULL_OR_DL_LGPO=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LGPO_FILENAME}' '${LGPO_FILENAME})
     GENERATED_SIZE='MINIMAL'
 }
 
@@ -316,7 +247,7 @@ sed_escape() {
 }
 
 prepare_mandatory_includes() {
-	colored_echo blue "### INFO Preparing mandatory includes..."
+	colored_echo blue "### INFO Preparing mandatory includes..."
     mkdir -p ${DOWNLOADS_DIR}/bin
 	# rsync
 	if [ -e ${DOWNLOADS_DIR}/${RSYNC_DL_FILENAME} ]; then
@@ -349,39 +280,7 @@ prepare_mandatory_includes() {
 		colored_echo red "${LIBCURL_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
 		exit 1
 	fi
-    # syncthing
-    if [ -e ${DOWNLOADS_DIR}/${SYNCTHING32_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${SYNCTHING32_DL_FILENAME}
-        cp ${SYNCTHING32_DL_FILENAME::-4}/syncthing.exe bin/${SYNCTHING32_FILENAME}
-        rm -rf ${SYNCTHING32_DL_FILENAME::-4}
-		popd
-    else
-        colored_echo red "${SYNCTHING32_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-        exit 1
-    fi
-    if [ -e ${DOWNLOADS_DIR}/${SYNCTHING64_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${SYNCTHING64_DL_FILENAME}
-        cp ${SYNCTHING64_DL_FILENAME::-4}/syncthing.exe bin/${SYNCTHING64_FILENAME}
-        rm -rf ${SYNCTHING64_DL_FILENAME::-4}
-		popd
-    else
-        colored_echo red "${SYNCTHING64_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-        exit 1
-    fi
-    # LGPO
-    if [ -e ${DOWNLOADS_DIR}/${LGPO_DL_FILENAME} ]; then
-		pushd ${DOWNLOADS_DIR}
-		unzip -q ${LGPO_DL_FILENAME}
-        cp LGPO_30/LGPO.exe bin/${LGPO_FILENAME}
-        rm -rf LGPO_30
-		popd
-    else
-        colored_echo red "${LGPO_DL_FILENAME} is not present in ${DOWNLOADS_DIR}. Please restart."
-        exit 1
-    fi
-	colored_echo green "### INFO Preparing mandatory includes... Done"
+	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
 update_nsi_script() {
@@ -390,15 +289,12 @@ update_nsi_script() {
 
 	sed -e "s/@@AGENT_VERSION@@/${AGENT_VERSION}/" \
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOADS_DIR}/" \
-		-e "s/@@PYTHON32_FILENAME@@/${PYTHON32_FILENAME}/" \
 		-e "s/@@PYTHON64_FILENAME@@/${PYTHON64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PYTHON32@@/${FULL_OR_DL_PYTHON32}/" \
 		-e "s/@@FULL_OR_DL_PYTHON64@@/${FULL_OR_DL_PYTHON64}/" \
 		-e "s/@@PY_VCPYTHON27_FILENAME@@/${PY_VCPYTHON27_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PY_VCPYTHON27@@/${FULL_OR_DL_PY_VCPYTHON27}/" \
 		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
         -e "s/@@FULL_OR_DL_LIBCURL@@/${FULL_OR_DL_LIBCURL}/" \
-        -e "s/@@FULL_OR_DL_PY_MODULES_32_FILENAMES@@/${FULL_OR_DL_PY_MODULES_32_FILENAMES}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_64_FILENAMES@@/${FULL_OR_DL_PY_MODULES_64_FILENAMES}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@/${FULL_OR_DL_PY_MODULES_COMMON_FILENAMES}/" \
         -e "s/@@DELETE_PY_MODULES_FILENAMES@@/${DELETE_PY_MODULES_FILENAMES}/" \
@@ -413,54 +309,18 @@ update_nsi_script() {
 		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
 		-e "s/@@OPENSSH_VERSION@@/${OPENSSH_VERSION}/" \
-		-e "s/@@OPENSSH32_FILENAME@@/${OPENSSH32_FILENAME}/" \
-		-e "s/@@OPENSSH64_FILENAME@@/${OPENSSH64_FILENAME}/" \
-        -e "s/@@FILETREE_VERSION@@/${FILETREE_VERSION}/" \
-		-e "s/@@FULL_OR_DL_OPENSSH32@@/${FULL_OR_DL_OPENSSH32}/" \
-		-e "s/@@FULL_OR_DL_OPENSSH64@@/${FULL_OR_DL_OPENSSH64}/" \
-		-e "s/@@RSYNC_FILENAME@@/${RSYNC_FILENAME}/" \
-        -e "s/@@FULL_OR_DL_RSYNC@@/${FULL_OR_DL_RSYNC}/" \
 		-e "s/@@LAUNCHER_SSH_KEY@@/${LAUNCHER_SSH_KEY}/" \
-		-e "s/@@FUSION_INVENTORY_AGENT32_FILENAME@@/${FUSION_INVENTORY_AGENT32_FILENAME}/" \
-		-e "s/@@FUSION_INVENTORY_AGENT64_FILENAME@@/${FUSION_INVENTORY_AGENT64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT32@@/${FULL_OR_DL_FUSION_INVENTORY_AGENT32}/" \
-		-e "s/@@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@/${FULL_OR_DL_FUSION_INVENTORY_AGENT64}/" \
 		-e "s/@@INVENTORY_TAG@@/${INVENTORY_TAG}/" \
-		-e "s/@@VNC_AGENT32_FILENAME@@/${VNC_AGENT32_FILENAME}/" \
-		-e "s/@@VNC_AGENT64_FILENAME@@/${VNC_AGENT64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_VNC_AGENT32@@/${FULL_OR_DL_VNC_AGENT32}/" \
-		-e "s/@@FULL_OR_DL_VNC_AGENT64@@/${FULL_OR_DL_VNC_AGENT64}/" \
-		-e "s/@@SYNCTHING32_FILENAME@@/${SYNCTHING32_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_SYNCTHING32@@/${FULL_OR_DL_SYNCTHING32}/" \
-        -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
-        -e "s/@@SYNCTHING_VERSION@@/${SYNCTHING_VERSION}/" \
-		-e "s/@@SYNCTHING64_FILENAME@@/${SYNCTHING64_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_SYNCTHING64@@/${FULL_OR_DL_SYNCTHING64}/" \
 		-e "s/@@GENERATED_SIZE@@/${GENERATED_SIZE}/" \
-        -e "s/@@RFB_PORT@@/${VNC_PORT}/" \
-        -e "s/@@SSH_PORT@@/${SSH_PORT}/" \
         -e "s/@@CREATE_PROFILE_FILENAME@@/${CREATE_PROFILE_FILENAME}/" \
         -e "s/@@REMOVE_PROFILE_FILENAME@@/${REMOVE_PROFILE_FILENAME}/" \
         -e "s/@@PULSE_SERVICE_FILENAME@@/${PULSE_SERVICE_FILENAME}/" \
-        -e "s/@@NETCHECK_SERVICE_FILENAME@@/${NETCHECK_SERVICE_FILENAME}/" \
-        -e "s/@@NETCHECK_PROGRAM_FILENAME@@/${NETCHECK_PROGRAM_FILENAME}/" \
-        -e "s/@@NETCHECK_SERVICE_DISPLAYNAME@@/${NETCHECK_SERVICE_DISPLAYNAME}/" \
-        -e "s/@@LGPO_FILENAME@@/${LGPO_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_LGPO@@/${FULL_OR_DL_LGPO}/" \
-        -e "s/@@REMOTE_SIGNED_FILENAME@@/${REMOTE_SIGNED_FILENAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
     # Replace XOXOXOX with new line
     sed -i 's/XOXOXOX/\
 /g' agent-installer.nsi
-
-    [ ${DISABLE_VNC} -eq 1 ] && sed -i "/^\s*Section\s\"VNC.*;$/ s|^|;|; /^\s*Section\s\"VNC/, /SectionEnd$/ s|^|;|" agent-installer.nsi
-    [ ${DISABLE_VNC} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_vnc}/,+1 s/^/;/"  agent-installer.nsi
-	[ ${DISABLE_RDP} -eq 1 ] && sed -i "/^\s*Section\s\"RDP.*;$/ s|^|;|; /^\s*Section\s\"RDP/, /SectionEnd$/ s|^|;|" agent-installer.nsi
-    [ ${DISABLE_RDP} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_rdp}/,+1 s/^/;/"  agent-installer.nsi
-	[ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/^\s*Section\s\"Fusion.*;$/ s|^|;|; /^\s*Section\s\"Fusion/, /SectionEnd$/ s|^|;|" agent-installer.nsi
-    [ ${DISABLE_INVENTORY} -eq 1 ] && sed -i "/StrCmp \$0 \${sec_fusinv}/,+1 s/^/;/"  agent-installer.nsi
 
 	colored_echo green "### INFO Updating NSIS script.. Done"
 }

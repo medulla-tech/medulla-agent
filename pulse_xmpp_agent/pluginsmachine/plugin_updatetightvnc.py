@@ -26,12 +26,14 @@ from distutils.version import StrictVersion
 import pycurl
 import logging
 import platform
+import tempfile
+import os
 
-TIGHTVNC = '2.8.27'
+TIGHTVNC = '2.8.8'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.01", "NAME": "updatetightvnc", "TYPE": "machine"}
+plugin = {"VERSION": "1.02", "NAME": "updatetightvnc", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -63,6 +65,9 @@ def checktightvncversion():
 def updatetightvnc(xmppobject):
     logger.info("Updating TightVNC Agent to version %s" % TIGHTVNC)
 
+    windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
+    install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
+
     Used_rfb_port = 5900
     if hasattr(xmppobject.config, 'rfbport'):
         Used_rfb_port = xmppobject.config.rfbport
@@ -73,14 +78,16 @@ def updatetightvnc(xmppobject):
         else:
             architecture = '32bit'
         filename = 'tightvnc-%s-gpl-setup-%s.msi' % (
-            tightvncversion, architecture)
+            TIGHTVNC, architecture)
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
         if result:
             # Download success
             logger.info("%s" % txtmsg)
+            current_dir = os.getcwd()
+            os.chdir(install_tempdir)
             install_options = "/quiet /qn /norestart"
             install_options = install_options + " ADDLOCAL=Server SERVER_REGISTER_AS_SERVICE=1 SERVER_ADD_FIREWALL_EXCEPTION=1 SERVER_ALLOW_SAS=1"
             # Disable embedded Java WebSrv on port 5800
@@ -113,10 +120,10 @@ def updatetightvnc(xmppobject):
             install_options = install_options + " SET_RFBPORT=1 VALUE_OF_RFBPORT=%s" % Used_rfb_port
 
             # Run installer
-            cmd = 'msiexec /x %s %s REBOOT=R' % (filename, install_options)
+            cmd = 'msiexec /i %s %s REBOOT=R' % (filename, install_options)
             cmd_result = utils.simplecommand(cmd)
             if cmd_result['code'] == 0:
-                logger.info("%s installed successfully" % filename)
+                logger.info("%s installed successfully to version %s" % (filename, TIGHTVNC))
                 
             else:
                 logger.error("Error installing %s: %s"

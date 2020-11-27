@@ -1,6 +1,9 @@
 pulse-xmpp-agent xxx
 ======================
 * [FEATURE]  Add plugin to install fileviewer
+* [FEATURE]  Add Glpi 9.5 support
+* [FEATURE]  Add Openssh update plugin
+* [FEATURE]  Add Syncthing update plugin
 
 pulse-xmpp-agent 2.1.2
 ======================

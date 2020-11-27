@@ -19,7 +19,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-#
+# file pluginsmastersubstitute/plugin_resultinventory.py
 
 import zlib
 import base64
@@ -33,44 +33,8 @@ from lib.plugins.glpi import Glpi
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "resultinventory", "TYPE": "substitute"}
+plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}
 
-def getComputerByMac( mac):
-    ret = Glpi().getMachineByMacAddress('imaging_module', mac)
-    if type(ret) == list:
-        if len(ret) != 0:
-            return ret[0]
-        else:
-            return None
-    return ret
-
-#todo augmenter colonne type dans la table log.
-def XmppUpdateInventoried(jid, machine):
-    try:
-        result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
-        results = result[0].split(",")
-        logger.debug("listMacAdressforMachine   %s" % results)
-        uuid = ''
-        for t in results:
-            logger.debug("Processing mac address")
-            computer = getComputerByMac(t)
-            if computer is not None:
-                uuid = 'UUID' + str(computer.id)
-                logger.debug("** Update uuid %s for machine %s " % (uuid, machine['jid']))
-                if machine['uuid_inventorymachine'] != "" and \
-                            machine['uuid_inventorymachine'] is not None:
-                    logger.debug("** Update in Organization_ad uuid %s to %s " % (machine['uuid_inventorymachine'],
-                                                                                    uuid))
-                    XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
-                                                                                uuid)
-                XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
-                return True
-    except KeyError:
-        logger.error("An error occurred on machine %s and we did not receive any inventory,"
-                     "make sure fusioninventory is running correctly" % machine)
-    except Exception:
-        logger.error("** Update error on inventory %s\n%s" % (jid, traceback.format_exc()))
-    return False
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     HEADER = {"Pragma": "no-cache",
@@ -96,6 +60,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             logger.info("The inventory server is not reachable. Please check pulse2-inventory-server service")
 
         machine = XmppMasterDatabase().getMachinefromjid(msg['from'])
+        if not machine:
+            logger.error("machine missing in table %s" % (msg['from']))
+            return
+
         nbsize = len(inventory)
         XmppMasterDatabase().setlogxmpp("Received inventory from machine %s" % msg['from'],
                                         "Inventory",
@@ -198,3 +166,68 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         # xmppobject.restartAgent(msg['from'])
     except Exception, e:
         logger.error("%s\n%s"%(str(e), traceback.format_exc()))
+
+
+def getComputerByMac( mac):
+    ret = Glpi().getMachineByMacAddress('imaging_module', mac)
+    if type(ret) == list:
+        if len(ret) != 0:
+            return ret[0]
+        else:
+            return None
+    return ret
+
+def getMachineByUuidSetup( uuidsetupmachine):
+    if uuidsetupmachine is None or uuidsetupmachine == "":
+        logger.warning("Setup uuid machine missing in inventory xmpp")
+        return {}
+    machine_result=Glpi().getMachineByUuidSetup(uuidsetupmachine)
+    if machine_result:
+        logger.debug("machine for setup uuid machine %s" %machine_result)
+    return machine_result
+
+def XmppUpdateInventoried(jid, machine):
+    """ search id glpi for machine
+        search on uuid setup machine is exist.
+        if not exit search on macadress """
+    if machine['uuid_serial_machine'] is not None and \
+        machine['uuid_serial_machine'] != "":
+        # search on uuid setup
+
+        setupuuid = getMachineByUuidSetup(machine['uuid_serial_machine'])
+        if setupuuid:
+            logger.debug("** search id glpi on uuid setup machine")
+            uuid = 'UUID' + str(setupuuid['id'])
+            if machine['uuid_inventorymachine'] == uuid:
+                logger.debug("correct uuid_inventorymachine " \
+                    "in table machine id(%s) uuid_inventorymachine(%s)" %  (machine['id'],
+                                                                            machine['uuid_inventorymachine']))
+                return True
+            XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+            return True
+    # update on mac address
+    try:
+        result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
+        results = result[0].split(",")
+        logger.debug("listMacAdressforMachine   %s" % results)
+        uuid = ''
+        for t in results:
+            logger.debug("Processing mac address")
+            computer = getComputerByMac(t)
+            if computer is not None:
+                uuid = 'UUID' + str(computer.id)
+                logger.debug("** Update uuid %s for machine %s " % (uuid, machine['jid']))
+                if machine['uuid_inventorymachine'] != "" and \
+                            machine['uuid_inventorymachine'] is not None:
+                    logger.debug("** Update in Organization_ad uuid %s to %s " % (machine['uuid_inventorymachine'],
+                                                                                    uuid))
+                    XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
+                                                                                uuid)
+                XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+                return True
+    except KeyError:
+        logger.error("An error occurred on machine %s and we did not receive any inventory,"
+                     "make sure fusioninventory is running correctly" % machine)
+    except Exception:
+        logger.error("** Update error on inventory %s\n%s" % (jid, traceback.format_exc()))
+    return False

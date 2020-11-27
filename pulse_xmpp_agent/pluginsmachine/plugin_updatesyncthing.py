@@ -28,12 +28,13 @@ import zipfile
 import platform
 import tempfile
 import shutil
+import ConfigParser
 from lib import utils
 SYNCTHINGVERSION = '1.6.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.10", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -68,11 +69,11 @@ def updatesyncthingversion(version):
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.debug("we successfully changed the version of Syncthing")
+            logger.info("we successfully updated Syncthing to version " % SYNCTHINGVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Syncthing" /f'
+                    '/v "DisplayName" /t REG_SZ  /d "Pulse Syncthing" /f'
 	    utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
@@ -87,8 +88,9 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = 'amd64'
         else:
             architecture = '386'
-        logger.error("archi %s" % architecture)
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        pulseconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
+        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -102,13 +104,26 @@ def updatesyncthing(xmppobject, installed_version):
             # Download success
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
-            #TODO: Kill syncthing process first
             syncthing_zip_file = zipfile.ZipFile(filename, 'r')
             syncthing_zip_file.extractall()
+            utils.simplecommand("taskkill.exe /F /IM syncthing.exe")
             shutil. copyfile(os.path.join(extracted_path, "syncthing.exe"), os.path.join(pulsedir_path, "syncthing.exe"))
             os.chdir(current_dir)
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
+
+            mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
+            utils.simplecommand(mklink_command)
+
+            # Enable syncthing now it is installed
+            agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")
+            Config = ConfigParser.ConfigParser()
+            Config.read(agentconf_file)
+            if not Config.has_option("syncthing", "activation"):
+                Config.add_section('syncthing')
+            Config.set("syncthing", "activation", "1")
+            with open(agentconf_file, 'w') as configfile:
+                Config.write(configfile)
 
             updatesyncthingversion(installed_version)
         else:

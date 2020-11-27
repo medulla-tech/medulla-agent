@@ -290,7 +290,8 @@ class confParameter:
         self.Server = ipfromdns(Config.get('connection', 'server'))
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
-
+        #jfk
+        self.namefileconfig = namefileconfig
         #parameters AM and kiosk tcp server
         self.am_local_port = 8765
         self.kiosk_local_port = 8766
