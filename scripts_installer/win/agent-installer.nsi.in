@@ -312,8 +312,8 @@ Section "!${PRODUCT_NAME}" sec_app
   File "../config/${PULSE_STARTUPDATE_CONFFILE}"
   File "../config/${PULSE_START_CONFFILE}"
   ; Copy of update plugins conf file
-  File "../config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE}"
-  File "../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE}"
+  File "../config/${PULSE_UPDATEOPENSSH_CONFFILE}"
+  File "../config/${PULSE_UPDATETIGHTVNC_CONFFILE}"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
