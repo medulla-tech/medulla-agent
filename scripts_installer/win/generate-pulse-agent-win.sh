@@ -94,6 +94,8 @@ PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 PULSE_START_CONFFILE_FILENAME="start.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
+PULSE_AGENTUPDATEOPENSSH_CONFFILE="updateopenssh.ini"
+PULSE_AGENTUPDATETIGHTVNC_CONFFILE="updatetightvnc.ini"
 PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
 DISABLE_VNC=0
 DISABLE_RDP=0
@@ -285,6 +287,11 @@ prepare_mandatory_includes() {
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
+update_plugins_configuration() {
+    crudini --set config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE} parameter sshport ${SSH_PORT}
+    crudini --set config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameter rfbport ${RFB_PORT}
+}
+
 update_nsi_script() {
 	colored_echo blue "### INFO Updating NSIS script..."
     LAUNCHER_SSH_KEY=$(sed_escape ${LAUNCHER_SSH_KEY})
@@ -307,6 +314,8 @@ update_nsi_script() {
 		-e "s/@@PULSE_INVENTORY_CONFFILE@@/${PULSE_INVENTORY_CONFFILE_FILENAME}/" \
         -e "s/@@PULSE_START_CONFFILE@@/${PULSE_START_CONFFILE_FILENAME}/" \
         -e "s/@@PULSE_STARTUPDATE_CONFFILE@@/${PULSE_STARTUPDATE_CONFFILE_FILENAME}/" \
+        -e "s/@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@/${PULSE_AGENTUPDATEOPENSSH_CONFFILE}/" \
+        -e "s/@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
@@ -364,4 +373,5 @@ else
 	compute_parameters_full
 fi
 update_nsi_script
+update_plugins_configuration
 generate_agent_installer
