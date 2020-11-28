@@ -288,8 +288,8 @@ prepare_mandatory_includes() {
 }
 
 update_plugins_configuration() {
-    crudini --set config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE} parameter sshport ${SSH_PORT}
-    crudini --set config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameter rfbport ${VNC_PORT}
+    crudini --set ../config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE} parameter sshport ${SSH_PORT}
+    crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameter rfbport ${VNC_PORT}
 }
 
 update_nsi_script() {
