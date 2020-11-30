@@ -135,7 +135,7 @@ def updateopenssh(xmppobject, installed_version):
                 os.rmdir(uninstall_mandriva_ssh)
 
 
-            if os.path.sdir(opensshdir_path):
+            if os.path.isdir(opensshdir_path):
                 try:
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
