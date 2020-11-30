@@ -1816,9 +1816,9 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath('C:/Users/%s' % username)
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip()
         # Get user profile as created on the machine
-        profile_location = os.path.normpath(get_user_profile(username))
+        profile_location = os.path.normpath(get_user_profile(username)).strip()
         if not profile_location or profile_location != defined_profilepath:
             # Delete all profiles if found
             delete_profile(username)
@@ -1829,7 +1829,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
                                      LPCWSTR(username),
                                      ptr_profilepath,
                                      240)
-            if os.path.normpath(ptr_profilepath.value) == defined_profilepath:
+            if os.path.normpath(ptr_profilepath.value).strip() == defined_profilepath:
                 msg = '%s profile created successfully at %s' % (username, ptr_profilepath.value)
                 return True, msg
             else:
@@ -2087,7 +2087,7 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     # Check keys
     id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
-    keycheck_cmd = 'ssh-keygen -y -e -f %s > %s' % (id_rsa_key_path, public_key_path)
+    keycheck_cmd = 'ssh-keygen -y -f %s > %s' % (id_rsa_key_path, public_key_path)
     result = simplecommand(encode_strconsole(keycheck_cmd))
     if result['code'] != 0:
         logger.debug('Creating id_rsa file in %s' % id_rsa_key_path)
@@ -2095,12 +2095,17 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
             os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
         keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
         result = simplecommand(encode_strconsole(keygen_cmd))
+    authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
+    addtoauth_cmd = 'ssh-keygen -y -f %s > %s' % (id_rsa_key_path, authorized_keys_path)
+    simplecommand(encode_strconsole(addtoauth_cmd))
     os.chmod(os.path.dirname(id_rsa_key_path), 0700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
     os.chmod(id_rsa_key_path, 0600)
     os.chown(id_rsa_key_path, uid, -1)
     os.chmod(public_key_path, 0644)
     os.chown(public_key_path, uid, -1)
+    os.chmod(authorized_keys_path, 0600)
+    os.chown(authorized_keys_path, uid, -1)
     return True, ''
 
 def get_relayserver_pubkey(username='root'):

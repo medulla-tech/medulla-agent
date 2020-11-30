@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.12", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.20", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -1172,7 +1172,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                fromuser=data['login'],
                                touser="")
             timeoutmax = 20  # timeout 20 seconde
-            cmdreverse = "netstat -van4 | grep 127.0.0.1:%s" % remoteport
+            cmdreverse = "netstat -van4 | grep %s" % remoteport
             timeattente = 1
             objectxmpp.xmpplog('Waiting mount of reverse ssh tunnel for port %s' % (remoteport),
                                type='deploy',
