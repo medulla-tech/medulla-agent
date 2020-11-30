@@ -290,8 +290,9 @@ prepare_mandatory_includes() {
 enable_and_configure_vnc_plugin() {
 
     if [ $DISABLE_VNC = "1" ]; then
-        sed -i 's/ updatetightvnc,//' /var/lib/pulse2/clients/config/startupdate.ini
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatetightvnc
     else
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatetightvnc
         crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
     fi
 }
@@ -303,7 +304,9 @@ configure_ssh_plugin() {
 enable_and_configure_inventory_plugin() {
 
     if [ $DISABLE_INVENTORY = "1" ]; then
-        sed -i 's/ updatefusion,//' /var/lib/pulse2/clients/config/startupdate.ini
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatefusion
+    else
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatefusion
     fi
 }
 
