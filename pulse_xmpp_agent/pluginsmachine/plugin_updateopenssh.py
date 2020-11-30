@@ -124,6 +124,12 @@ def updateopenssh(xmppobject, installed_version):
                 if daemon_uninstall['code'] == 0:
                     utils.simplecommand("sc.exe stop sshdaemon")
                     utils.simplecommand("sc.exe delete sshdaemon")
+
+                agent_uninstall = utils.simplecommand("sc.exe query ssh-agent")
+                if agent_uninstall['code'] == 0:
+                    utils.simplecommand("sc.exe stop ssh-agent")
+                    utils.simplecommand("sc.exe delete ssh-agent")
+
             else:
                 logger.debug("No previous SSH found")
 
