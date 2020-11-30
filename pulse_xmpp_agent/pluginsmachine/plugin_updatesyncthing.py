@@ -52,7 +52,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 def checksyncthingversion():
     if sys.platform.startswith('win'):
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" /s | Find "DisplayVersion"'
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
             syncthingversion = result['result'][0].strip().split()[-1]
@@ -64,7 +64,7 @@ def checksyncthingversion():
 
 def updatesyncthingversion(version):
     if sys.platform.startswith('win'):
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
+        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % SYNCTHINGVERSION
 
         result = utils.simplecommand(cmd)
@@ -72,11 +72,11 @@ def updatesyncthingversion(version):
             logger.info("we successfully updated Syncthing to version " % SYNCTHINGVERSION)
 
         if version == "0.0":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
+            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '\
                     '/v "DisplayName" /t REG_SZ  /d "Pulse Syncthing" /f'
 	    utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Syncthing" '\
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '\
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
