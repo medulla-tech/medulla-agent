@@ -2446,7 +2446,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            homedir = os.path.expanduser(username)
+            homedir = os.path.expanduser('~%s' % username)
         except Exception as e:
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
@@ -2466,7 +2466,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            homedir = os.path.expanduser(username)
+            homedir = os.path.expanduser('~%s' % username)
         except Exception as e:
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
@@ -2679,7 +2679,7 @@ def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
 def reversessh_keys_mustexist_on_relay(username='reversessh'):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        homedir = os.path.expanduser(username)
+        homedir = os.path.expanduser('~%s' % username)
     except Exception as e:
         msg = 'Error getting information for creating home folder for user %s' % username
         return False, msg
