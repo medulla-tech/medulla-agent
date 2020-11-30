@@ -134,10 +134,12 @@ def updateopenssh(xmppobject, installed_version):
                 os.chdir(current_dir)
                 os.rmdir(uninstall_mandriva_ssh)
 
-            try:
-                shutil.rmtree(opensshdir_path)
-            except OSError as e:
-                logger.debug("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
+
+            if os.isdir(opensshdir_path):
+                try:
+                    shutil.rmtree(opensshdir_path)
+                except OSError as e:
+                    logger.debug("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
 
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
