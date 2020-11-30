@@ -287,9 +287,24 @@ prepare_mandatory_includes() {
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
-update_plugins_configuration() {
+enable_and_configure_vnc_plugin() {
+
+    if [ $DISABLE_VNC = "1" ]; then
+        sed -i 's/ updatetightvnc,//' /var/lib/pulse2/clients/config/startupdate.ini
+    else
+        crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
+    fi
+}
+
+configure_ssh_plugin() {
     crudini --set ../config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE} parameters sshport ${SSH_PORT}
-    crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
+}
+
+enable_and_configure_inventory_plugin() {
+
+    if [ $DISABLE_INVENTORY = "1" ]; then
+        sed -i 's/ updatefusion,//' /var/lib/pulse2/clients/config/startupdate.ini
+    fi
 }
 
 update_nsi_script() {
@@ -373,5 +388,7 @@ else
 	compute_parameters_full
 fi
 update_nsi_script
-update_plugins_configuration
+configure_ssh_plugin
+enable_and_configure_vnc_plugin
+enable_and_configure_inventory_plugin
 generate_agent_installer
