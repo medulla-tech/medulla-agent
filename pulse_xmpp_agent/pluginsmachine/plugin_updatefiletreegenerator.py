@@ -30,7 +30,7 @@ FILETREEVERSION = '0.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "0.1", "NAME": "updatefiletreegenerator", "TYPE": "machine"}
+plugin = {"VERSION": "0.2", "NAME": "updatefiletreegenerator", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
