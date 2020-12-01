@@ -529,7 +529,11 @@ class confParameter:
         else:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
-        ressource = utils.name_jid()
+        try:            
+            ressource = utils.name_jid()
+        except:
+            ressource = "missingmac"
+            logger.warning('list mac missing')
         #########chatroom############
         #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
