@@ -33,7 +33,7 @@ setup(
 
     keywords='pulse-xmpp-agent',
     name='pulse_xmpp_agent',
-    version='2.1.2',
+    version='2.1.3',
     debian_distro='stretch',
     description='pulse-xmpp-agent',
     url='https://www.siveo.net/',

@@ -1,4 +1,4 @@
-pulse-xmpp-agent xxx
+pulse-xmpp-agent 2.1.3
 ======================
 * [FEATURE]  Add plugin to install fileviewer
 * [FEATURE]  Add Glpi 9.5 support
