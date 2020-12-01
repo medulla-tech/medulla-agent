@@ -40,7 +40,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.1.2"
+AGENT_VERSION="2.1.3"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
 PYTHON64_FILENAME="python-2.7.9.amd64.msi"
@@ -86,6 +86,7 @@ OPENSSH_VERSION="7.7"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
 SSH_PORT="22"
+VNC_PORT="5900"
 CREATE_PROFILE_FILENAME="create-profile.ps1"
 REMOVE_PROFILE_FILENAME="remove-profile.ps1"
 PULSE_SERVICE_FILENAME="pulse-service.py"
@@ -94,11 +95,13 @@ PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
 PULSE_START_CONFFILE_FILENAME="start.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
+PULSE_AGENTUPDATEOPENSSH_CONFFILE="updateopenssh.ini"
+PULSE_AGENTUPDATETIGHTVNC_CONFFILE="updatetightvnc.ini"
 PULSE_AGENT_TASK_XML_FILENAME="pulse-agent-task.xml"
 DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
-CHERRYPY_NAME="CherryPy"
+CHERRYPY_NAME="Pulse CherryPy"
 CHERRYPY_VERSION="8.9.1"
 
 # Display usage
@@ -285,6 +288,29 @@ prepare_mandatory_includes() {
 	colored_echo green "### INFO Preparing mandatory includes... Done"
 }
 
+enable_and_configure_vnc_plugin() {
+
+    if [ $DISABLE_VNC = "1" ]; then
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatetightvnc
+    else
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatetightvnc
+        crudini --set ../config/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE} parameters rfbport ${VNC_PORT}
+    fi
+}
+
+configure_ssh_plugin() {
+    crudini --set ../config/${PULSE_AGENTUPDATEOPENSSH_CONFFILE} parameters sshport ${SSH_PORT}
+}
+
+enable_and_configure_inventory_plugin() {
+
+    if [ $DISABLE_INVENTORY = "1" ]; then
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatefusion
+    else
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updatefusion
+    fi
+}
+
 update_nsi_script() {
 	colored_echo blue "### INFO Updating NSIS script..."
     LAUNCHER_SSH_KEY=$(sed_escape ${LAUNCHER_SSH_KEY})
@@ -307,6 +333,8 @@ update_nsi_script() {
 		-e "s/@@PULSE_INVENTORY_CONFFILE@@/${PULSE_INVENTORY_CONFFILE_FILENAME}/" \
         -e "s/@@PULSE_START_CONFFILE@@/${PULSE_START_CONFFILE_FILENAME}/" \
         -e "s/@@PULSE_STARTUPDATE_CONFFILE@@/${PULSE_STARTUPDATE_CONFFILE_FILENAME}/" \
+        -e "s/@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@/${PULSE_AGENTUPDATEOPENSSH_CONFFILE}/" \
+        -e "s/@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@/${PULSE_AGENTUPDATETIGHTVNC_CONFFILE}/" \
 		-e "s/@@PULSE_AGENT_MODULE@@/${PULSE_AGENT_MODULE}/" \
 		-e "s/@@PULSE_AGENT_TASK_XML_FILENAME@@/${PULSE_AGENT_TASK_XML_FILENAME}/" \
 		-e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
@@ -364,4 +392,7 @@ else
 	compute_parameters_full
 fi
 update_nsi_script
+configure_ssh_plugin
+enable_and_configure_vnc_plugin
+enable_and_configure_inventory_plugin
 generate_agent_installer

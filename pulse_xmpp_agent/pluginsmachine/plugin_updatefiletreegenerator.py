@@ -30,7 +30,7 @@ FILETREEVERSION = '0.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "0.1", "NAME": "updatefiletreegenerator", "TYPE": "machine"}
+plugin = {"VERSION": "0.2", "NAME": "updatefiletreegenerator", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -78,7 +78,7 @@ def updatefiletreegeneratorversion(version):
             utils.simplecommand(cmd)
 
 def updatefiletreegenerator(xmppobject, installed_version):
-    logger.info("Updating Filetree Generator to version %s" % FILETREEVERSION)
+    logger.info("Updating Filetree Generator from version %s to version %s" % (installed_version, FILETREEVERSION))
     if sys.platform.startswith('win'):
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 

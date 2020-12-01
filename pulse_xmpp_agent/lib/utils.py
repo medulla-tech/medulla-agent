@@ -1406,121 +1406,7 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return False
 
 
-def install_or_uninstall_keypub_authorized_keys(
-        install=True, publicKey=None, user="pulseuser"):
-    """
-        This function installs or uninstall the public key in the authorized_keys file for the user
-
-        If publicKey is not specified then the function uninstall the key for user "user"
-
-        Args:
-            install: is install is True it installs the key. If False it uninstall the key.
-            publicKey: The public key to use.
-            user: user where the authorized_keys is copied to.
-
-        Returns:
-    """
-    path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh")
-    path_authorized_keys = os.path.join(path_ssh, "authorized_keys")
-    logging.log(
-        DEBUGPULSE,
-        "file path_authorized_keys : %s" %
-        path_authorized_keys)
-    if not os.path.isdir(path_ssh):
-        try:
-            os.makedirs(path_ssh, 0o700)
-        except OSError:
-            logging.log(DEBUGPULSE, "error create directory : %s" % path_ssh)
-            return False
-    if not os.path.exists(path_authorized_keys):
-        try:
-            open(path_authorized_keys, 'a').close()
-            if not sys.platform.startswith('win'):
-                os.chmod(path_authorized_keys, 0o600)
-                obj = simplecommandstr(
-                    "grep %s /etc/passwd | cut -d':' -f3" % user)
-                os.chown(path_authorized_keys, int(obj['result']), -1)
-        except Exception as e:
-            logging.log(DEBUGPULSE, "ERROR %s" % str(e))
-            logging.log(
-                DEBUGPULSE,
-                "error create file : %s" %
-                path_authorized_keys)
-            return False
-    if install:
-        logging.log(DEBUGPULSE, "install key if key missing")
-        # See if the key is already installed
-        addkey = True
-        try:
-            source = open(path_authorized_keys, "r")
-            for ligne in source.readlines():
-                if ligne.startswith(publicKey):
-                    addkey = False
-                    break
-            source.close()
-        except Exception as e:
-            logging.log(DEBUGPULSE, "ERROR %s" % str(e))
-            return False
-        if addkey:
-            logging.log(
-                DEBUGPULSE,
-                "key missing, install key in  %s" %
-                path_authorized_keys)
-            try:
-                source = open(path_authorized_keys, "a")
-                source.write('\n')
-                source.write(publicKey)
-                source.close()
-            except Exception as e:
-                logging.log(DEBUGPULSE, "ERROR %s" % str(e))
-                return False
-    else:
-        logging.log(DEBUGPULSE, "uninstall key")
-        filesouce = ""
-        source = open(path_authorized_keys, "r")
-        for ligne in source:
-            if ligne.startswith(os.sep):
-                continue
-            if not ligne.startswith(publicKey):
-                filesouce = filesouce + ligne
-        source.close()
-        source = open(path_authorized_keys, "w").write(filesouce)
-        source.close()
-    return True
-
-
-def get_keypub_ssh(name="id_rsa.pub", user="root"):
-    """
-        This function check the public key
-
-        This funtion can only be used on Linux
-
-        Args:
-            name: the name of public key file
-            user: the user used to check the key
-
-        Returns:
-            It retuens the public key
-    """
-    path_ssh = os.path.join(os.path.expanduser('~%s' % user), ".ssh", name)
-    source = open(path_ssh, "r")
-    publicKey = source.read().strip(" \n\t")
-    source.close()
-    return publicKey
-
-
 if sys.platform.startswith('win'):
-    def get_sid_user(name):
-        """
-            for windows only
-        """
-        wmi_obj = wmi.WMI()
-        wmi_sql = "select * from Win32_UserAccount Where Name ='%s'" % name
-        wmi_out = wmi_obj.query(wmi_sql)
-        for dev in wmi_out:
-            return dev.SID
-
-
     def set_reg(name, value, subkey, key=wr.HKEY_LOCAL_MACHINE,
                 type=wr.REG_SZ):
         try:
@@ -2265,89 +2151,6 @@ def restartsshd():
                 except Exception:
                     pass
 
-def install_key_ssh_relayserver(keypriv, private=False):
-    """
-        This function installs the sshkey
-        Args:
-            keypriv: The name of the key to copy on the dest machine
-            private: Tell if this is the private of the public ssh key
-    """
-    logger.debug("install key")
-    userprogram = "system"
-    if sys.platform.startswith('win'):
-        userprogram = win32api.GetUserName().lower()
-        # on modifie les droits sur le fichier de key pour reverse ssh dans user
-        if not userprogram.startswith("syst"):
-            userprogram = "Administrator"
-    if private is True:
-        keyname = "id_rsa"
-        keyperm = 0o600
-    else:
-        keyname = "id_rsa.pub"
-        keyperm = 0o644
-
-    if sys.platform.startswith('linux'):
-        if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh/")):
-            os.makedirs(os.path.join(os.path.expanduser('~pulseuser'), ".ssh/"))
-        filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", keyname)
-    elif sys.platform.startswith('win'):
-        # check if pulse account exists
-        try:
-            win32net.NetUserGetInfo('', 'pulseuser', 0)
-            filekey = os.path.join("c:\Users\pulseuser", ".ssh", keyname)
-        except:
-            filekey = os.path.join(os.environ["ProgramFiles"], "pulse", ".ssh", keyname)
-
-        logger.debug("filekey  %s" % filekey)
-        logger.debug("chang permition to user %s" % userprogram)
-
-        if os.path.isfile(filekey):
-            logger.warning("change permition to %s" % userprogram)
-            user, domain, type = win32security.LookupAccountName("", userprogram)
-            sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
-            dacl = win32security.ACL()
-            dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                     ntsecuritycon.FILE_GENERIC_READ | \
-                                     ntsecuritycon.FILE_GENERIC_WRITE | \
-                                     ntsecuritycon.FILE_ALL_ACCESS,
-                                     user)
-            sd.SetSecurityDescriptorDacl(1, dacl, 0)
-            win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
-        else:
-            logger.debug("filekey not exist %s" % filekey)
-
-    elif sys.platform.startswith('darwin'):
-        if not os.path.isdir(os.path.join(os.path.expanduser('~pulseuser'), ".ssh")):
-            os.makedirs(os.path.join(os.path.expanduser('~pulseuser'), ".ssh"))
-        filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", keyname)
-    else:
-        return
-
-    if os.path.isfile(filekey):
-        try:
-            os.remove(filekey)
-        except:
-            logger.warning("remove %s key impossible" % filekey)
-
-    logger.debug("CREATION DU FICHIER %s" % filekey)
-    try:
-        file_put_contents(filekey, keypriv)
-    except:
-        logger.error("\n%s" % (traceback.format_exc()))
-
-    if sys.platform.startswith('win'):
-        user, domain, type = win32security.LookupAccountName("", userprogram)
-        sd = win32security.GetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION)
-        dacl = win32security.ACL()
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION,
-                                 ntsecuritycon.FILE_GENERIC_READ | ntsecuritycon.FILE_GENERIC_WRITE,
-                                 user)
-        sd.SetSecurityDescriptorDacl(1, dacl, 0)
-        win32security.SetFileSecurity(filekey, win32security.DACL_SECURITY_INFORMATION, sd)
-    else:
-        os.chmod(filekey, keyperm)
-
-
 def make_tarfile(output_file_gz_bz2, source_dir, compresstype="gz"):
     """
         creation archive tar.gz or tar.bz2
@@ -2616,9 +2419,9 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath('C:/Users/%s' % username)
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip().lower()
         # Get user profile as created on the machine
-        profile_location = os.path.normpath(get_user_profile(username))
+        profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
             # Delete all profiles if found
             delete_profile(username)
@@ -2629,7 +2432,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
                                      LPCWSTR(username),
                                      ptr_profilepath,
                                      240)
-            if os.path.normpath(ptr_profilepath.value) == defined_profilepath:
+            if os.path.normpath(ptr_profilepath.value).strip().lower() == defined_profilepath:
                 msg = '%s profile created successfully at %s' % (username, ptr_profilepath.value)
                 return True, msg
             else:
@@ -2643,7 +2446,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            homedir = os.path.expanduser(username)
+            homedir = os.path.expanduser('~%s' % username)
         except Exception as e:
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
@@ -2663,7 +2466,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         try:
             uid = pwd.getpwnam(username).pw_uid
             gid = grp.getgrnam(username).gr_gid
-            homedir = os.path.expanduser(username)
+            homedir = os.path.expanduser('~%s' % username)
         except Exception as e:
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
@@ -2859,7 +2662,6 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        gid = grp.getgrnam(username).gr_gid
         msg = '%s user account already exists. Nothing to do.' % username
         return True, msg
     except Exception:
@@ -2877,19 +2679,18 @@ def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
 def reversessh_keys_mustexist_on_relay(username='reversessh'):
     try:
         uid = pwd.getpwnam(username).pw_uid
-        gid = grp.getgrnam(username).gr_gid
-        homedir = os.path.expanduser(username)
+        homedir = os.path.expanduser('~%s' % username)
     except Exception as e:
         msg = 'Error getting information for creating home folder for user %s' % username
         return False, msg
     if not os.path.isdir(homedir):
         os.makedirs(homedir, 0751)
     os.chmod(homedir, 0751)
-    os.chown(homedir, uid, gid)
+    os.chown(homedir, uid, -1)
     # Check keys
     id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
     public_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa.pub')
-    keycheck_cmd = 'ssh-keygen -y -e -f %s > %s' % (id_rsa_key_path, public_key_path)
+    keycheck_cmd = 'ssh-keygen -y -f %s > %s' % (id_rsa_key_path, public_key_path)
     result = simplecommand(encode_strconsole(keycheck_cmd))
     if result['code'] != 0:
         logger.debug('Creating id_rsa file in %s' % id_rsa_key_path)
@@ -2897,13 +2698,18 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
             os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
         keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
         result = simplecommand(encode_strconsole(keygen_cmd))
+    authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
+    addtoauth_cmd = 'ssh-keygen -y -f %s > %s' % (id_rsa_key_path, authorized_keys_path)
+    simplecommand(encode_strconsole(addtoauth_cmd))
     os.chmod(os.path.dirname(id_rsa_key_path), 0700)
-    os.chown(os.path.dirname(id_rsa_key_path), uid, gid)
+    os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
     os.chmod(id_rsa_key_path, 0600)
-    os.chown(id_rsa_key_path, uid, gid)
+    os.chown(id_rsa_key_path, uid, -1)
     os.chmod(public_key_path, 0644)
-    os.chown(public_key_path, uid, gid)
-    return True, ''
+    os.chown(public_key_path, uid, -1)
+    os.chmod(authorized_keys_path, 0600)
+    os.chown(authorized_keys_path, uid, -1)
+    return True, 'Keys permissions applied on relay'
 
 def get_relayserver_pubkey(username='root'):
     """

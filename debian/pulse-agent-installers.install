@@ -3,6 +3,8 @@ var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 var/lib/pulse2/clients/config/inventory.ini
 var/lib/pulse2/clients/config/start.ini
 var/lib/pulse2/clients/config/startupdate.ini
+/var/lib/pulse2/clients/config/updatetightvnc.ini
+/var/lib/pulse2/clients/config/updateopenssh.ini
 var/lib/pulse2/clients/generate-agent-deps-package
 var/lib/pulse2/clients/generate-agent-package
 var/lib/pulse2/clients/generate-netcheck-package
@@ -30,8 +32,8 @@ var/lib/pulse2/clients/mac/postflight.in
 var/lib/pulse2/clients/mac/pulse-filetree-generator
 var/lib/pulse2/clients/mac/rbash
 var/lib/pulse2/clients/mac/runpulseagent
-var/lib/pulse2/clients/pulse-xmpp-agent-2.1.2.tar.gz
-var/lib/pulse2/clients/pulse-machine-plugins-2.1.2.tar.gz
+var/lib/pulse2/clients/pulse-xmpp-agent-2.1.3.tar.gz
+var/lib/pulse2/clients/pulse-machine-plugins-2.1.3.tar.gz
 var/lib/pulse2/clients/style.css
 var/lib/pulse2/clients/win/agent-installer.nsi.in
 var/lib/pulse2/clients/win/artwork

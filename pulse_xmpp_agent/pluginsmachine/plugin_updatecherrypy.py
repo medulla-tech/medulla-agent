@@ -30,7 +30,7 @@ CHERRYPYVERSION = '8.9.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatecherrypy", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatecherrypy", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -106,7 +106,7 @@ def updatecherrypy(xmppobject, installed_version):
 	    os.chdir(install_tempdir)
             utils.simplecommand(cmd)
 
-         updatecherrypyversion(installed_version)
+            updatecherrypyversion(installed_version)
         else:
             # Download error
             logger.error("%s" % txtmsg)

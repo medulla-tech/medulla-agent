@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.11", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.20", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -1172,7 +1172,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                fromuser=data['login'],
                                touser="")
             timeoutmax = 20  # timeout 20 seconde
-            cmdreverse = "netstat -van4 | grep 127.0.0.1:%s" % remoteport
+            cmdreverse = "netstat -van4 | grep %s" % remoteport
             timeattente = 1
             objectxmpp.xmpplog('Waiting mount of reverse ssh tunnel for port %s' % (remoteport),
                                type='deploy',
@@ -1774,117 +1774,43 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                             module = "Deployment | Error",
                             date = None )
 
-    file_key_pub_ars = os.path.join('/',
-                                    'root',
-                                    '.ssh',
-                                    'id_rsa.pub')
-    file_key_reverse_private_ars = os.path.join('/',
-                                        'var',
-                                        'lib',
-                                        'pulse2',
-                                        'clients',
-                                        'reversessh',
-                                        '.ssh',
-                                        'id_rsa')
-    if not os.path.exists(file_key_reverse_private_ars):
-        # protege ressource
-        try:
-            objectxmpp.mutex.acquire(1)
-            if not os.path.exists(file_key_reverse_private_ars):
-                objectxmpp.xmpplog( "Warning: Reverse ssh key missing",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                if not os.path.exists(os.path.dirname(file_key_reverse_private_ars)):
-                    objectxmpp.xmpplog( "Creating %s"%os.path.dirname(file_key_reverse_private_ars),
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    os.makedirs(os.path.dirname(file_key_reverse_private_ars))
-                obj = utils.simplecommand("grep reversessh /etc/passwd | awk  -F \":\"  '{print $1;}'")
-                for lineresult in obj['result']:
-                    if str(lineresult) == "reversessh":
-                        objectxmpp.xmpplog( "reversessh user present on relay server",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                        break
-                else:
-                    objectxmpp.xmpplog( "Creating reversessh user on relay server",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    obj = utils.simplecommand("adduser --system --quiet " \
-                                        "--home /var/lib/pulse2/clients/reversessh " \
-                                        "--shell /bin/rbash " \
-                                        "--disabled-password " \
-                                        "reversessh")
-                    if sys.platform.startswith('linux'):
-                        os.system("setfacl -Rb /var/lib/pulse2/clients/reversessh/")
-
-                    # create keygen
-                    if os.path.exists(file_key_reverse_private_ars):
-                        os.remove(file_key_reverse_private_ars)
-                    if os.path.exists("%s.pub"%file_key_reverse_private_ars):
-                        os.remove("%s.pub"%file_key_reverse_private_ars)
-                    if os.path.exists("/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys"):
-                        os.remove("/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-                    logger.debug("cmd : ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
-
-                    objectxmpp.xmpplog( "Creating ssh keys for reversessh user on relay server",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    obj = utils.simplecommand("ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
-                    objectxmpp.xmpplog( "Setting proper permissions on the ssh keys",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    utils.simplecommand("cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-                    utils.simplecommand("chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh")
-                    utils.simplecommand("chmod 700 /var/lib/pulse2/clients/reversessh/.ssh")
-                    utils.simplecommand("chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-        finally:
-            logger.debug("libere mutex")
-            objectxmpp.mutex.release()
-    keyreversessh = utils.file_get_contents(file_key_reverse_private_ars)
-    key = utils.file_get_contents(file_key_pub_ars)
+    # Make sure reversessh account and keys exist
+    msg = []
+    username = 'reversessh'
+    result, msglog = utils.reversessh_useraccount_mustexist_on_relay(username)
+    if result is False:
+        logger.error(msglog)
+    msg.append(msglog)
+    result, msglog = utils.reversessh_keys_mustexist_on_relay(username)
+    if result is False:
+        logger.error(msglog)
+    msg.append(msglog)
+    # Write message to logger
+    for line in msg:
+        objectxmpp.xmpplog(line,
+                           type = 'deploy',
+                           sessionname = sessionid,
+                           priority = 0,
+                           action = "xmpplog",
+                           who = fromrelay,
+                           module = "Deployment | Install",
+                           date = None )
+    # Install keys on client
+    keyreversessh = utils.get_relayserver_reversessh_idrsa(username)
+    key = utils.get_relayserver_pubkey('root')
     time_out_install_key = 60
-    resultiqstr = objectxmpp.iqsendpulse( tomachine,
-                                          { "action": "keyinstall",
-                                            "data": { "key" : key,
-                                                      "keyreverseprivatssh" : keyreversessh ,
-                                                      "sessionid" : sessionid,
-                                                      "from" : fromrelay }
-                                           }, time_out_install_key)
+    resultiqstr = objectxmpp.iqsendpulse(tomachine,
+                                         {"action": "keyinstall",
+                                          "data": {"key": key,
+                                                   "keyreverseprivatssh": keyreversessh,
+                                                   "sessionid": sessionid,
+                                                   "from" : fromrelay}
+                                          },
+                                         time_out_install_key)
     resultiq = json.loads(resultiqstr)
     msglogbool = False
     if 'ret' in resultiq and resultiq['ret'] != 0:
-        logger.error("Install of relay server key %s on machine %s"%(fromrelay,tomachine))
+        logger.error("Install of relay server key %s on machine %s" % (fromrelay, tomachine))
         if  'data' in resultiq and 'msg_error' in resultiq['data']:
             logger.error("Error description : %s"%json.dumps(resultiq['data']['msg_error'], indent = 4))
             objectxmpp.xmpplog( "Error on machine %s"%resultiq['data']['msg_error'],
@@ -1897,16 +1823,13 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                             date = None )
         msglogbool = True
     if "err" in resultiq:
-        logger.error("Install ARS key %s on machine %s timed out %s"%(fromrelay,
+        logger.error("Install ARS key %s on machine %s timed out %s" % (fromrelay,
                                                                         tomachine,
                                                                         time_out_install_key))
         msglogbool = True
     if msglogbool:
         msgerror = "Check why we cannot install the ars %s " \
-                "public key which is contained in the %s " \
-                "file on the %s machine" % (file_key_pub_ars,
-                                            fromrelay,
-                                            tomachine)
+                "keys on the machine %s" % (fromrelay, tomachine)
         logger.error(msgerror)
         objectxmpp.xmpplog( msgerror,
                             type = 'deploy',

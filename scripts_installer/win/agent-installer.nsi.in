@@ -43,6 +43,8 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
+!define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
 !define PULSE_SCHEDULER_CONFFILE "@@PULSE_SCHEDULER_CONFFILE@@"
 !define PULSE_INVENTORY_CONFFILE "@@PULSE_INVENTORY_CONFFILE@@"
 !define PULSE_STARTUPDATE_CONFFILE "@@PULSE_STARTUPDATE_CONFFILE@@"
@@ -58,6 +60,7 @@ RequestExecutionLevel admin
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
 !define CHERRYPY_NAME "@@CHERRYPY_NAME@@"
 !define CHERRYPY_VERSION "@@CHERRYPY_VERSION@@"
+!define PRODUCT_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CHERRYPY_NAME}"
 
 SetCompressor lzma
 
@@ -85,17 +88,13 @@ SetCompressor lzma
 !include "FileFunc.nsh"
 !include "zipdll.nsh"
 !include "LogicLib.nsh"
-!include "Trim.nsh"
 !Include "LogString.nsh"
-!Include "StrTok.nsh"
 !Include "psexec.nsh"
 !include "x64.nsh"
 !include "TextReplace.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
 
-Var OS_LANGUAGE
-Var CMD_POWERSHELL
 Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
@@ -309,6 +308,9 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Copy of start update plugins config files
   File "../config/${PULSE_STARTUPDATE_CONFFILE}"
   File "../config/${PULSE_START_CONFFILE}"
+  ; Copy of update plugins conf file
+  File "../config/${PULSE_UPDATEOPENSSH_CONFFILE}"
+  File "../config/${PULSE_UPDATETIGHTVNC_CONFFILE}"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
@@ -398,7 +400,7 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${AGENT_CHERRYPY_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
 
@@ -416,7 +418,7 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${AGENT_CHERRYPY_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
   ${EndIf}
@@ -480,9 +482,6 @@ Function .onInit
   ; Create registry keys in 64bit section
   SetRegView 64
 
-  ; Define Powershell command
-  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
-
   ; Install log initialization
   !If "$PROGRAMFILES64" != ""
     StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
@@ -512,20 +511,6 @@ Function .onInit
   StrCpy $FIREWALL $0
   ${LogString} "Firewall status is : $FIREWALL"
 
-  ; Detect system language
-  StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${TrimNewLines} $1 $OS_LANGUAGE
-  ${LogString} "System language is : $OS_LANGUAGE"
-  ; Stop the agent if it is already running and kill all python tasks
-  ${LogString} ""
-  ${LogString} "Detect previous installation and stop service"
-  ${LogString} "------------------------------------------------------"
-  Call StopPulseServices
-
 FunctionEnd
 
 Function un.onInit
@@ -550,60 +535,6 @@ Function .onMouseOverSection
   StrCmp $0 ${sec_app} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
 FunctionEnd
-
-; Macro Remove pulseuser / pulse user
-!macro RemovePulseUser UN
-  Function ${UN}RemovePulseUser
-    ; Remove pulse user
-    StrCpy $0 `net user "pulse" /DELETE`
-    nsExec::ExecToLog $0
-    ${LogString} `Running $0`
-    Pop $1 # return value/error/timeout
-    ${Switch} $1
-      ${Case} "0"
-          StrCpy $0 `Return code : $1`
-          ${Break}
-      ${Case} "2"
-          ;2 The user name could not be found.
-          StrCpy $0 `No old Pulse account found`
-          ${Break}
-      ${Default}
-          StrCpy $0 `Return code : $1`
-          ${IfNot} ${Silent}
-              MessageBox MB_OK|MB_ICONSTOP "Pulse old account removal failed. $\n\
-              Please check the logs in $INSTDIR\tmp\install.log"
-          ${EndIf}
-          SetErrorLevel 102
-          Quit
-    ${EndSwitch}
-    ${LogString} $0
-
-    StrCpy $0 `net user "pulseuser" /DELETE`
-    nsExec::ExecToLog $0
-    ${LogString} `Running $0`
-    Pop $1 # return value/error/timeout
-    ${Switch} $1
-      ${Case} "0"
-          StrCpy $0 `Return code : $1`
-          ${Break}
-      ${Case} "2"
-          ;2 The user name could not be found.
-          StrCpy $0 `No pulseuser account found`
-          ${Break}
-      ${Default}
-          StrCpy $0 `Return code : $1`
-          ${IfNot} ${Silent}
-              MessageBox MB_OK|MB_ICONSTOP "pulseuser account removal failed. $\n\
-              Please check the logs in $INSTDIR\tmp\install.log"
-          ${EndIf}
-          SetErrorLevel 102
-          Quit
-    ${EndSwitch}
-    ${LogString} $0
-  FunctionEnd
-!macroend
-!insertmacro RemovePulseUser ""
-!insertmacro RemovePulseUser "un."
 
 ; Macro Stop all Pulse services
 !macro StopPulseServices UN
@@ -709,30 +640,3 @@ FunctionEnd
 !macroend
 !insertmacro StopPulseServices ""
 !insertmacro StopPulseServices "un."
-
-; Macro Delete Pulse profile
-!macro DeletePulseProfile UN
-  Function ${UN}DeletePulseProfile
-  ; Remove Pulse profile
-  StrCpy $0 `$CMD_POWERSHELL "Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -like '*pulse*'} | ForEach-Object {Remove-WmiObject -InputObject $_}"`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-      ${LogString} "Profile deletion failed"
-      MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
-      This usually means that pulseuser profile is loaded. $\n\
-      A reboot will most probably solve this issue. $\n\
-      Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 138
-    Quit
-  ${EndIf}
-  ${LogString} `Remove Pulse profile : $0`
-  FunctionEnd
-!macroend
-!insertmacro DeletePulseProfile ""
-!insertmacro DeletePulseProfile "un."

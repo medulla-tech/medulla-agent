@@ -4,7 +4,7 @@
 DEB_VERSION := $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
 DEB_NOEPOCH_VERSION := $(shell echo $(DEB_VERSION) | cut -d: -f2-)
 DEB_UPSTREAM_VERSION := $(shell echo $(DEB_NOEPOCH_VERSION) | sed 's/-[^-]*$$//')
-VERSION_XMPP_AGENT=2.1.2
+VERSION_XMPP_AGENT=2.1.3
 VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
 BRANCH=integration
@@ -132,6 +132,8 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/inventory.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/start.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/startupdate.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/updateopenssh.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/updatetightvnc.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-deps-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients

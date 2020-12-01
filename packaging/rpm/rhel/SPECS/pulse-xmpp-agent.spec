@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.1.2
+Version:	2.1.3
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -241,6 +241,8 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/start.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
 %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
@@ -385,6 +387,8 @@ cp pulse_xmpp_agent/config/manage_scheduler_machine.ini %buildroot%_var/lib/puls
 cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/start.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
