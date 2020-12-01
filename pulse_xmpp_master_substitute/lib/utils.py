@@ -2106,7 +2106,7 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     os.chown(public_key_path, uid, -1)
     os.chmod(authorized_keys_path, 0600)
     os.chown(authorized_keys_path, uid, -1)
-    return True, ''
+    return True, 'Keys permissions applied on relay'
 
 def get_relayserver_pubkey(username='root'):
     """
