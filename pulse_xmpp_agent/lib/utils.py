@@ -2419,9 +2419,9 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
-        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip()
+        defined_profilepath = os.path.normpath('C:/Users/%s' % username).strip().lower()
         # Get user profile as created on the machine
-        profile_location = os.path.normpath(get_user_profile(username)).strip()
+        profile_location = os.path.normpath(get_user_profile(username)).strip().lower()
         if not profile_location or profile_location != defined_profilepath:
             # Delete all profiles if found
             delete_profile(username)
@@ -2432,7 +2432,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
                                      LPCWSTR(username),
                                      ptr_profilepath,
                                      240)
-            if os.path.normpath(ptr_profilepath.value).strip() == defined_profilepath:
+            if os.path.normpath(ptr_profilepath.value).strip().lower() == defined_profilepath:
                 msg = '%s profile created successfully at %s' % (username, ptr_profilepath.value)
                 return True, msg
             else:
