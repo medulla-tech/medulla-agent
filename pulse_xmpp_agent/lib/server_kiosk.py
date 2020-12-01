@@ -35,7 +35,7 @@ import select
 import threading
 from multiprocessing import Queue
 import psutil
-from utils import getRandomName, isBase64, is_connectedServer
+from utils import getRandomName, isBase64, is_connectedServer, getIpXmppInterface
 from configuration import confParameter
 from logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
@@ -342,6 +342,10 @@ class manage_kiosk_message:
                     self.logger.debug('RECV NETWORK INTERFACE')
                     #manage message from watching interface
                     #result = result['data']
+                    try:
+                        self.objectxmpp.config.ipxmpp
+                    except:
+                        self.objectxmpp.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
                     if self.objectxmpp.config.ipxmpp in result['removedinterface']:
                         self.logger.info("__IP Interface used to xmpp Server %s__"%self.objectxmpp.config.ipxmpp)
                         self.logger.info("__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__")
