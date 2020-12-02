@@ -2160,12 +2160,12 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
         remoteservice = protodef()
-        self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
+        self.FullRegistration = remoteservice.boolchangerproto # || condition de reconf complet
         ### on search if exist fileboolreconfcomple
         BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                                    "BOOLFILECOMPLETREGISTRATION")
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
-            self.regcomplet = True
+            self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'infomachine',
@@ -2198,7 +2198,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'ippublic': self.config.public_ip,
             'geolocalisation': {},
             'remoteservice': remoteservice.proto,
-            'regcomplet': self.regcomplet,
+            'regcomplet': self.FullRegistration,
             'packageserver': self.config.packageserver,
             'adorgbymachine': base64.b64encode(organizationbymachine()),
             'adorgbyuser': '',

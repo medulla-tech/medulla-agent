@@ -500,9 +500,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                                    "BOOLFILECOMPLETREGISTRATION")
-        self.regcomplet = False
+        self.FullRegistration = False
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
-            self.regcomplet = True
+            self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'connectionconf',
@@ -534,7 +534,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name,
             'uuid_serial_machine' : serialnumbermachine(),
-            'regcomplet': self.regcomplet
+            'regcomplet': self.FullRegistration
         }
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
