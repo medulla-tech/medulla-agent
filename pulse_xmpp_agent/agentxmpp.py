@@ -65,7 +65,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine
+                        serialnumbermachine, file_put_contents_w_a
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -2160,8 +2160,13 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
         remoteservice = protodef()
-        # if regcomplet = True then register agent reconfigure complet of agent
         self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
+        ### on search if exist fileboolreconfcomple
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                   "BOOLFILECOMPLETREGISTRATION")
+        if os.path.exists(BOOLFILECOMPLETREGISTRATION):
+            self.regcomplet = True
+            os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'infomachine',
             'from': self.config.jidagent,
@@ -2462,7 +2467,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                                        eventkillpipe))
     processes.append(p)
     p.start()
-
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            "pidagentwintreename")
+    file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
     logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
@@ -2481,6 +2488,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                         eventkilltcp))
     processes.append(p)
     p.start()
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            "pidagentwintreename")
+    
+    file_put_contents_w_a(windowfilepidname,
+                          "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                          option="a")
     logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
@@ -2502,6 +2515,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                           eventkillpipe))
         processes.append(p)
         p.start()
+        windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            "pidagentwintreename")
+    
+        file_put_contents_w_a(windowfilepidname,
+                            "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                            option="a")
         logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                           p.pid,
                                                           p.name,
@@ -2617,6 +2636,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
             #time.sleep(30)
             windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                             "pidagentwintree")
+            dd=process_agent_search(os.getpid())
+            processwin = json.dumps(dd.pidlist(),indent=4)
+            file_put_contents(windowfilepid, "%s" % processwin)
+            logging.debug("Process agent list : %s" % processwin)
             while True:
                 time.sleep(300)
                 dd=process_agent_search(os.getpid())
@@ -2845,6 +2868,25 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
     logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
+    if sys.platform.startswith('win'):
+        windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                            "pidagentwintree")
+        with open(windowfilepid) as json_data:
+            data_dict = json.load(json_data)
+        pythonmainproces = ""
+
+        for pidprocess in data_dict:
+            if "pythonmainproces" in data_dict[pidprocess]:
+                pythonmainproces = pidprocess
+        if pythonmainproces != "":
+            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces )
+            pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                       "pidagent")
+            aa = file_get_contents(pidfile).strip()
+            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa )
+            cmd="TASKKILL /F /PID %s /T" % pythonmainproces
+            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
+            os.system(cmd)
     os._exit(0)
 
 if __name__ == '__main__':

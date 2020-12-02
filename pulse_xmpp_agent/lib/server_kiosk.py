@@ -24,6 +24,7 @@
 
 import sys
 import re
+import os
 import logging
 import traceback
 import platform
@@ -35,7 +36,7 @@ import select
 import threading
 from multiprocessing import Queue
 import psutil
-from utils import getRandomName, isBase64, is_connectedServer, getIpXmppInterface
+from utils import getRandomName, isBase64, is_connectedServer, getIpXmppInterface, file_put_contents
 from configuration import confParameter
 from logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
@@ -66,7 +67,7 @@ class process_serverPipe():
             # all non-Windows platforms are supporting ANSI escapes so we use them
             logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
         # format log more informations
-        format = '%(asctime)s - %(levelname)s - %(message)s'
+        format = '%(asctime)s - %(levelname)s -(SP) %(message)s'
         # more information log
         # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
         if not optsdeamon :
@@ -97,6 +98,7 @@ class process_serverPipe():
             self.logger.info ("________ START SERVER WATCHES NETWORK INTERFACE WINDOWS ________")
             self.logger.debug("________________________________________________________________")
             #self.eventkillpipe = threading.Event()
+            pid = os.getpid()
             while not self.eventkillpipe.wait(1):
                 self.logger.debug ("WAITING INTERFACE INFORMATION")
                 try:
@@ -109,10 +111,11 @@ class process_serverPipe():
                                                 300,
                                                 None)
                     win32pipe.ConnectNamedPipe(self.pipe_handle, None)
-                    self.logger.debug("___Waitting event network chang___")
+                    self.logger.debug("___Waitting event network chang___ pid %s" % pid)
                     data = win32file.ReadFile(self.pipe_handle, 4096)
                 except Exception as e:
-                    self.logger.warning("read input from Pipenammed error")
+                    self.logger.error("read input from Pipenammed error %s"%str(e))
+                    self.logger.warning("pid server pipe process is %s" % pid)
                     continue
                 finally:
                     self.pipe_handle.Close()
@@ -132,6 +135,8 @@ class process_serverPipe():
                         except Exception as e:
                             self.logger.warning("read input from Pipe nammed error %s"%str(e))
         self.logger.info("QUIT process_serverPipe")
+
+
 class process_tcp_serveur():
     def __init__(self,
                  port,
@@ -151,7 +156,7 @@ class process_tcp_serveur():
             # all non-Windows platforms are supporting ANSI escapes so we use them
             logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
         # format log more informations
-        format = '%(asctime)s - %(levelname)s - %(message)s'
+        format = '%(asctime)s - %(levelname)s -(SK) %(message)s'
         # more information log
         # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
         if not optsdeamon :
@@ -202,10 +207,11 @@ class process_tcp_serveur():
         self.logger.debug("_______________________________________________")
         self.logger.debug("_____________ START SERVER KIOSK ______________")
         self.logger.debug("_______________________________________________")
+        pid = os.getpid()
         while not self.eventkill.wait(1):
-            self.logger.debug("SERVER KIOSK ON")
+            self.logger.debug("SERVER KIOSK ON pid server KIOS process is %s" % pid)
             try:
-                rr, rw, err = select.select([self.sock],[],[self.sock], 5)
+                rr, rw, err = select.select([self.sock],[],[self.sock], 7)
             except Exception as e:
                 self.logger.error("kiosk server : %s" % str(e))
                 #self.sock.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
@@ -280,7 +286,9 @@ def minifyjsonstringrecv(strjson):
     newjson=newjson.replace(",]","]")
     return newjson
 
+
 class manage_kiosk_message:
+
     def __init__(self, queue_in, objectxmpp, key_quit="quit_server_kiosk"):
         self.logger = logging.getLogger()
         self.queue_in = queue_in
@@ -342,6 +350,12 @@ class manage_kiosk_message:
                     self.logger.debug('RECV NETWORK INTERFACE')
                     #manage message from watching interface
                     #result = result['data']
+                    BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                               "..",
+                                                               "BOOLFILECOMPLETREGISTRATION")
+                    file_put_contents(BOOLFILECOMPLETREGISTRATION,
+                                      "Do not erase.\n"\
+                                      "when re-recording, it will be of type 2. full recording.")
                     try:
                         self.objectxmpp.config.ipxmpp
                     except:
@@ -367,6 +381,7 @@ class manage_kiosk_message:
                                 pass
                     else:
                         self.logger.warning("The new network interface is directly usable. Nothing to do")
+                        self.objectxmpp.update_plugin()
                         return
             except Exception as e:
                 self.logger.error("%s"%str(e))

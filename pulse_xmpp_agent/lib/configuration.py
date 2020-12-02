@@ -529,6 +529,7 @@ class confParameter:
         else:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
+        # if aucune interface. il n'y a pas de macs adress. ressource missing
         try:            
             ressource = utils.name_jid()
         except:
