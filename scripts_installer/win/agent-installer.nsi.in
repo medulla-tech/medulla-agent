@@ -61,7 +61,8 @@ RequestExecutionLevel admin
 !define CHERRYPY_NAME "@@CHERRYPY_NAME@@"
 !define CHERRYPY_VERSION "@@CHERRYPY_VERSION@@"
 !define PRODUCT_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CHERRYPY_NAME}"
-
+!define NETWORK_NAME "@@NETWORK_NAME@@"
+!define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -470,7 +471,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
-
+  DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
 SectionEnd
 
 ; Functions
