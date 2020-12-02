@@ -1797,6 +1797,10 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
             if result['code'] != 0:
                 msg = 'Error adding %s account to administrators group: %s' % (username, result)
                 return False, msg
+            result = simplecommand(encode_strconsole('REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" /v "%s" /t REG_DWORD /d 0 /f' % username))
+            if result['code'] != 0:
+                msg = 'Error hiding %s account: %s' % (username, result)
+                return False, msg
         return True, msg
     else:
         msg = 'Creation of %s user account failed: %s' % (username, result)
