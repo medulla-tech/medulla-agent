@@ -81,7 +81,7 @@ WebOb-1.8.5-py2.py3-none-any.whl \
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
 RSYNC_FILENAME="rsync.zip"
-OPENSSH_NAME="OpenSSH"
+OPENSSH_NAME="Pulse OpenSSH"
 OPENSSH_VERSION="7.7"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
@@ -104,7 +104,10 @@ DISABLE_INVENTORY=0
 CHERRYPY_NAME="Pulse CherryPy"
 CHERRYPY_VERSION="8.9.1"
 NETWORK_NAME="Pulse network notify"
-OPENSSH_NAME="Pulse SSH"
+RDP_NAME="Pulse RDP"
+SYNCTHING_NAME="Pulse Syncthing"
+FILETREE_NAME="Pulse Filetree Generator"
+
 # Display usage
 display_usage() {
     echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
@@ -350,6 +353,9 @@ update_nsi_script() {
         -e "s/@@CHERRYPY_VERSION@@/${CHERRYPY_VERSION}/" \
         -e "s/@@NETWORK_NAME@@/${NETWORK_NAME}/" \
         -e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
+        -e "s/@@RDP_NAME@@/${RDP_NAME}/" \
+        -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
+        -e "s/@@FILETREE_NAME@@/${FILETREE_NAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 

@@ -65,6 +65,12 @@ RequestExecutionLevel admin
 !define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
 !define OPENSSH_NAME "@@OPENSSH_NAME@@"
 !define OPENSSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${OPENSSH_NAME}"
+!define RDP_NAME "@@RDP_NAME@@"
+!define RDP_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RDP_NAME}"
+!define SYNCTHING_NAME "@@SYNCTHING_NAME@@"
+!define SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SYNCTHING_NAME}"
+!define FILETREE_NAME "@@FILETREE_NAME@@"
+!define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -476,6 +482,9 @@ Section "Uninstall"
   DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
   DeleteRegKey HKLM "${OPENSSH_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_CHERRYPY_UNINST_KEY}"
+  DeleteRegKey HKLM "${RDP_UNINST_KEY}"
+  DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
+  DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
 SectionEnd
 
 ; Functions
