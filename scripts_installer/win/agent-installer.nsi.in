@@ -475,6 +475,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
   DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
   DeleteRegKey HKLM "${OPENSSH_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_CHERRYPY_UNINST_KEY}"
 SectionEnd
 
 ; Functions
