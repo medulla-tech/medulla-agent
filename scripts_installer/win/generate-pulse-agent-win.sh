@@ -104,6 +104,7 @@ DISABLE_INVENTORY=0
 CHERRYPY_NAME="Pulse CherryPy"
 CHERRYPY_VERSION="8.9.1"
 NETWORK_NAME="Pulse network notify"
+OPENSSH_NAME="Pulse SSH"
 # Display usage
 display_usage() {
     echo -e "\nUsage:\n$0 [--inventory-tag=<Tag added to the inventory>]\n"
@@ -348,6 +349,7 @@ update_nsi_script() {
         -e "s/@@CHERRYPY_NAME@@/${CHERRYPY_NAME}/" \
         -e "s/@@CHERRYPY_VERSION@@/${CHERRYPY_VERSION}/" \
         -e "s/@@NETWORK_NAME@@/${NETWORK_NAME}/" \
+        -e "s/@@OPENSSH_NAME@@/${OPENSSH_NAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 
