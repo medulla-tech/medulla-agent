@@ -81,7 +81,7 @@ WebOb-1.8.5-py2.py3-none-any.whl \
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
 RSYNC_FILENAME="rsync.zip"
-OPENSSH_NAME="Pulse OpenSSH"
+OPENSSH_NAME="Pulse SSH"
 OPENSSH_VERSION="7.7"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
