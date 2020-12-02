@@ -652,6 +652,10 @@ FunctionEnd
         ;1060 The specified service does not exist as an installed service.
         StrCpy $0 `No previous installation`
         ${Break}
+    ${Case} "1062"
+        ;1062 The service has not been started
+        StrCpy $0 `Service is already stopped`
+        ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
         ${IfNot} ${Silent}
