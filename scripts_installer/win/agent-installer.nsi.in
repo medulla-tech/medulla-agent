@@ -693,10 +693,10 @@ FunctionEnd
   ${EndSwitch}
   ${LogString} $0
 
-  StrCpy $0 `sc query networknotify`
+  StrCpy $0 `sc query pulsenetworknotify`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  StrCpy $0 `net stop networknotify`
+  StrCpy $0 `net stop pulsenetworknotify`
   ${LogString} `Running $0`
   ${Switch} $1
     ${Case} "0"
@@ -724,7 +724,7 @@ FunctionEnd
         Quit
   ${EndSwitch}
 
-  StrCpy $0 `sc delete networknotify`
+  StrCpy $0 `sc delete pulsenetworknotify`
   ${LogString} `Running $0`
   ${Switch} $1
     ${Case} "0"
