@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.61", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.62", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -71,7 +71,7 @@ def updateopensshversion(version):
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
-                    '/v "DisplayName" /t REG_SZ  /d "OpenSSH" /f'
+                    '/v "DisplayName" /t REG_SZ  /d "Pulse OpenSSH" /f'
 	    utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
