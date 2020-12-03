@@ -22,6 +22,15 @@
 ; Make sure the installer runs as admin
 RequestExecutionLevel admin
 
+; Make sure client is 64bits
+${IfNot} ${RunningX64}
+  ${IfNot} ${Silent}
+  MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
+  ${EndIf}
+  Quit
+${EndIf}
+SetErrorLevel 666
+
 ; Define a few variables
 !define PRODUCT_NAME "Pulse Agent"
 !define PRODUCT_PUBLISHER "SIVEO"
