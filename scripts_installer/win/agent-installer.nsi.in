@@ -471,9 +471,6 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
-  ; Stop all Pulse services
-  Call un.StopPulseServices
-
   RMDir /r /REBOOTOK "$INSTDIR"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
@@ -485,6 +482,9 @@ Section "Uninstall"
   DeleteRegKey HKLM "${RDP_UNINST_KEY}"
   DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
+
+  ; Stop all Pulse services
+  Call un.StopPulseServices
 SectionEnd
 
 ; Functions
