@@ -315,6 +315,15 @@ enable_and_configure_inventory_plugin() {
     fi
 }
 
+configure_rdp_plugin() {
+    if [ $DISABLE_RDP = "1" ]; then
+        crudini --del --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updaterdp
+    else
+        crudini --set --list ../config/${PULSE_STARTUPDATE_CONFFILE_FILENAME} plugins liststartplugin updaterdp
+    fi
+}
+
+
 update_nsi_script() {
 	colored_echo blue "### INFO Updating NSIS script..."
     LAUNCHER_SSH_KEY=$(sed_escape ${LAUNCHER_SSH_KEY})
@@ -404,4 +413,5 @@ update_nsi_script
 configure_ssh_plugin
 enable_and_configure_vnc_plugin
 enable_and_configure_inventory_plugin
+configure_rdp_plugin
 generate_agent_installer
