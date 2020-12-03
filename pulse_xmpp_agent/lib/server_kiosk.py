@@ -36,7 +36,12 @@ import select
 import threading
 from multiprocessing import Queue
 import psutil
-from utils import getRandomName, isBase64, is_connectedServer, getIpXmppInterface, file_put_contents
+from utils import getRandomName,\
+                  isBase64, \
+                  is_connectedServer,\
+                  getIpXmppInterface, \
+                  file_put_contents, \
+                  refreshfingerprint
 from configuration import confParameter
 from logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 
@@ -270,7 +275,7 @@ def minifyjsonstringrecv(strjson):
     #on vire les tab les passage a la ligne et les fin de ligne
     regex = re.compile(r'[\n\r\t]')
     strjson = regex.sub("", strjson)
-    #on protege les espaces des strings json 
+    #on protege les espaces des strings json
     reg=re.compile(r"""(\".*?\n?.*?\")|(\'.*?\n?.*?\')""")
     newjson = re.sub(reg,
                      lambda x: '"%s"'%str(x.group(0)).strip('\"\'').strip().replace(' ','@@ESP@@'),
@@ -356,17 +361,25 @@ class manage_kiosk_message:
                     file_put_contents(BOOLFILECOMPLETREGISTRATION,
                                       "Do not erase.\n"\
                                       "when re-recording, it will be of type 2. full recording.")
+                    if self.objectxmpp.state.ensure('connected'):
+                        # toujours connected.
+                        self.objectxmpp.md5reseau=refreshfingerprint()
+                        self.objectxmpp.update_plugin()
+                        return
                     try:
                         self.objectxmpp.config.ipxmpp
                     except:
-                        self.objectxmpp.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+                        self.objectxmpp.config.ipxmpp = getIpXmppInterface(self.objectxmpp.config.Server,
+                                                                           self.objectxmpp.config.Port)
                     if self.objectxmpp.config.ipxmpp in result['removedinterface']:
                         self.logger.info("__IP Interface used to xmpp Server %s__"%self.objectxmpp.config.ipxmpp)
                         self.logger.info("__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__")
-                        logmsg = "The new network interface can replace the previous one. The service will resume after restarting the agent"
+                        logmsg = "The new network interface can replace the previous one. "\
+                                 "The service will resume after restarting the agent"
                         if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
                             #on fait juste 1 restart
                             self.logger.warning(logmsg)
+                            self.objectxmpp.md5reseau=refreshfingerprint()
                             self.objectxmpp.restartBot()
                         else:
                             #on reconfigure la totale
@@ -374,15 +387,26 @@ class manage_kiosk_message:
                             if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
                                 #on fait juste 1 restart
                                 self.logger.warning(logmsg)
+                                self.objectxmpp.md5reseau=refreshfingerprint()
                                 self.objectxmpp.restartBot()
                             else:
-                                self.logger.warning("No network interface can replace the previous one. Agent reconfiguration needed to resume the service.")
+                                self.logger.warning("No network interface can replace the previous one. "\
+                                                    "Agent reconfiguration needed to resume the service.")
                                 self.objectxmpp.networkMonitor()
                                 pass
                     else:
-                        self.logger.warning("The new network interface is directly usable. Nothing to do")
-                        self.objectxmpp.update_plugin()
-                        return
+                        # detection si 1 seule interface presente or 127.0.0.1
+                        if len(result['interface']) < 2:
+                            # il y a seulement l'interface 127.0.0.1
+                            # dans ce cas on refait la total.
+                            self.logger.warning("The new uniq network interface. "\
+                                                "Agent reconfiguration needed to resume the service.")
+                            self.objectxmpp.networkMonitor()
+                        else:
+                            self.logger.warning("The new network interface is directly usable. Nothing to do")
+                            self.objectxmpp.md5reseau=refreshfingerprint()
+                            self.objectxmpp.update_plugin()
+                    return
             except Exception as e:
                 self.logger.error("%s"%str(e))
                 return
@@ -443,7 +467,8 @@ class manage_kiosk_message:
                         result['data']['serial'] = result['serial']
                 else:
                     #bad action
-                    self.logger.getLogger().warning("this action is not taken into account : %s"%result['action'])
+                    self.logger.getLogger().warning("this action is not taken "\
+                                                    "into account : %s"%result['action'])
                     return
                 if substitute_recv:
                     self.logger.warning("send to %s " % substitute_recv)
