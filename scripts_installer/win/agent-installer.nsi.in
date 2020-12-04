@@ -472,6 +472,10 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
+  ; Ensure service is running
+  StrCpy $0 `net start pulseagent`
+  nsExec::ExecToLog $0
+
   RMDir /r /REBOOTOK "$INSTDIR"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
