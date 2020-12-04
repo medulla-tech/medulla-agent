@@ -2529,7 +2529,6 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                                                       p.pid,
                                                       p.name,
                                                       p.pid))
-    logger.debug("process %s -> %s")
     p = Process(target=process_tcp_serveur,
                 name="tcp_serveur",
                 args=(  14000,
