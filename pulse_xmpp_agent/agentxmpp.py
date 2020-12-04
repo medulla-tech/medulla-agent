@@ -197,6 +197,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        # _____________ verify network interface _____________
+        # verifi si on a changer les interface pendant l'arret de l'agent.
+        netfingerprintstart = createfingerprintnetwork()
+        filetempinfolibfingerprint = os.path.join( os.path.dirname(os.path.realpath(__file__)),
+                                                   "lib",
+                                                   "INFOSTMP",
+                                                   'fingerprintnetwork')
+        logging.error("nom fichier %s" % filetempinfolibfingerprint)
+        if os.path.exists(filetempinfolibfingerprint):
+            logging.error("fichier fingerprintactiel %s" % file_get_contents(filetempinfolibfingerprint))
+            # comparaison
+            if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
+                logging.warning("after start : registration must update the information in the xmpp tables.")
+                self.force_full_registration()
+        # ______________________________________________________
         Env.agenttype = self.config.agenttype
         managepackage.agenttype = self.config.agenttype
         # creation object session ##########
@@ -2851,22 +2866,25 @@ class process_xmpp_agent():
         terminateserver(xmpp)
 
 class process_agent_search():
-    def __init__(self, pid_agent):
+    def __init__(self, pid_agent, depth = 3):
         self.pid = ("%s"%pid_agent).strip()
         # initialisation wmi
         self.wmi = win32com.client.GetObject('winmgmts:')
         self.processname = {}
         self.processname[self.pid] = "pythonmainproces"
+        self.depth = depth
 
     def pidlist(self):
         self.search_name_pid(self.pid)
         return self.processname
 
-    def search_name_pid(self, pidsearch):
+    def search_name_pid(self, pidsearch, leveldepth = 0):
+        leveldepth += 1
+        if leveldepth >= self.depth : return
         childrens=self.wmi.ExecQuery('Select * from win32_process where ParentProcessId=%s'%pidsearch)
         for child in childrens:
             self.processname[str(child.Properties_('ProcessId'))] = "%s_%s"%(pidsearch, child.Name)
-            self.search_name_pid(str(child.Properties_('ProcessId')))
+            self.search_name_pid(str(child.Properties_('ProcessId')), leveldepth)
 
     def get_pid(self):
         return self.processname
