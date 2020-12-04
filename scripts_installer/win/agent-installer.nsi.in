@@ -22,6 +22,7 @@
 ; Make sure the installer runs as admin
 RequestExecutionLevel admin
 
+
 ; Define a few variables
 !define PRODUCT_NAME "Pulse Agent"
 !define PRODUCT_PUBLISHER "SIVEO"
@@ -497,6 +498,15 @@ Function .onInit
     Quit
   ${EndIf}
 
+  ; Make sure client is 64bits
+  ${IfNot} ${RunningX64}
+    ${IfNot} ${Silent}
+    MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
+    ${EndIf}
+    Quit
+  ${EndIf}
+  SetErrorLevel 666
+
   ; Make sure we are running as admin
   UserInfo::GetAccountType
   pop $0
@@ -693,10 +703,10 @@ FunctionEnd
   ${EndSwitch}
   ${LogString} $0
 
-  StrCpy $0 `sc query networknotify`
+  StrCpy $0 `sc query pulsenetworknotify`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
-  StrCpy $0 `net stop networknotify`
+  StrCpy $0 `net stop pulsenetworknotify`
   ${LogString} `Running $0`
   ${Switch} $1
     ${Case} "0"
@@ -724,7 +734,7 @@ FunctionEnd
         Quit
   ${EndSwitch}
 
-  StrCpy $0 `sc delete networknotify`
+  StrCpy $0 `sc delete pulsenetworknotify`
   ${LogString} `Running $0`
   ${Switch} $1
     ${Case} "0"

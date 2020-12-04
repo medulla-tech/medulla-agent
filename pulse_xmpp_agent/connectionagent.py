@@ -23,7 +23,8 @@
 # file  : pulse_xmpp_agent/connectionagent.py
 
 import shutil
-import sys,os
+import sys
+import os
 import logging
 import sleekxmpp
 import platform
@@ -497,7 +498,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 break
 
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
-
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                   "BOOLFILECOMPLETREGISTRATION")
+        self.FullRegistration = False
+        if os.path.exists(BOOLFILECOMPLETREGISTRATION):
+            self.FullRegistration = True
+            os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'connectionconf',
             'from': self.config.jidagent,
@@ -527,7 +533,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbymachine': base64.b64encode(organizationbymachine()),
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name,
-            'uuid_serial_machine' : serialnumbermachine()
+            'uuid_serial_machine' : serialnumbermachine(),
+            'regcomplet': self.FullRegistration
         }
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
@@ -576,11 +583,13 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
                                    "pidconnection"), "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
                                     os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                 "INFOSTMP",
                                                  "pidconnection"),
                                     "/setowner",
                                     "pulse",
@@ -595,7 +604,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     # format log more informations
-    format = '%(asctime)s - %(levelname)s - %(message)s'
+    format = '%(asctime)s - %(levelname)s - (CONF)%(message)s'
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon :

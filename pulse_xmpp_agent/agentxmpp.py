@@ -65,7 +65,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine
+                        serialnumbermachine, file_put_contents_w_a
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -201,6 +201,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
         managepackage.agenttype = self.config.agenttype
         # creation object session ##########
         self.session = session(self.config.agenttype)
+        self.boolinventory=False # cette variable permet de faire demander 1
+                                 # inventaire suite a 1 changement de reseau.
+                                 # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
         # CREATE MANAGE SCHEDULER##############
         logging.debug("### CREATION MANAGER PLUGINSCHULING ##########")
         self.manage_scheduler = manage_scheduler(self)
@@ -428,15 +431,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_update_plugin,
                       self.update_plugin,
                       repeat=True)
-        if not sys.platform.startswith('win'):
-            if self.config.netchanging == 1:
-                logging.warning("Network Changing enable")
-                self.schedule('check network',
-                            self.laps_time_networkMonitor,
-                            self.networkMonitor,
-                            repeat=True)
-            else:
-                logging.warning("Network Changing disable")
+        # if not sys.platform.startswith('win'):
+        if self.config.netchanging == 1:
+            logging.warning("Network Changing enable")
+            self.schedule('check network',
+                        self.laps_time_networkMonitor,
+                        self.networkMonitor,
+                        repeat=True)
+        else:
+            logging.warning("Network Changing disable")
         self.schedule('check AGENT INSTALL', 350,
                       self.checkinstallagent,
                       repeat=True)
@@ -1818,6 +1821,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def handlemanagesession(self):
         self.session.decrementesessiondatainfo()
 
+    def force_full_registration(self):
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                   "BOOLFILECOMPLETREGISTRATION")
+        BOOLFILEINVENTORYONCHANGINTERFACE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                   "BOOLFILEINVENTORYONCHANGINTERFACE")
+        file_put_contents(BOOLFILECOMPLETREGISTRATION,
+                                "Do not erase.\n"\
+                                "when re-recording, it will be of type 2. full recording.\n from networkMonitor")
+
+        file_put_contents(BOOLFILEINVENTORYONCHANGINTERFACE,
+                                "Do not erase.\n"\
+                                "this file allows you to request 1 inventory following 1 change of network.\n"\
+                                "The inventory is sent when the agent is no longer in transient mode\n" \
+                                "following changes of interfaces.")
+
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time  "\
@@ -1826,6 +1844,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
             if self.md5reseau != md5ctl or os.path.isfile(force_reconfiguration):
+                self.force_full_registration()
+                # il y a 1 changement dans le reseau
+                # on verify si on connecte
+                if self.state.ensure('connected'):
+                    logging.log(DEBUGPULSE,"AGENT MACHINE ALWAY CONNECTED ON CHANG RESEAU")
+                    # toujours connected.
+                    self.md5reseau = refreshfingerprint()
+                    # il y a changement d interface. il faut remettre a jour la table pour network.
+                    # remarque cela declenchera 1 inventaire glpi apres reengeristrement
+                    self.update_plugin()
+                    return
                 if not os.path.isfile(force_reconfiguration):
                     refreshfingerprint()
                     logging.log(DEBUGPULSE,"by network changed. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
@@ -1847,7 +1876,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         break
                     time.sleep(2)
                 logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
+                self.force_full_registration()
                 self.restartBot()
+            else:
+                BOOLFILEINVENTORYONCHANGINTERFACE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                    "BOOLFILEINVENTORYONCHANGINTERFACE")
+                if os.path.isfile(BOOLFILEINVENTORYONCHANGINTERFACE):
+                    # if on a ce fichier alors on genere 1 nouveau inventaire
+                    os.remove(BOOLFILEINVENTORYONCHANGINTERFACE)
+                    logging.log(DEBUGPULSE,"send inventory on chang network")
+                    self.handleinventory()
         except Exception as e:
             logging.error(" %s " %(str(e)))
             logger.error("\n%s"%(traceback.format_exc()))
@@ -2160,8 +2198,13 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
         remoteservice = protodef()
-        # if regcomplet = True then register agent reconfigure complet of agent
-        self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
+        self.FullRegistration = remoteservice.boolchangerproto # || condition de reconf complet
+        ### on search if exist fileboolreconfcomple
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                   "BOOLFILECOMPLETREGISTRATION")
+        if os.path.exists(BOOLFILECOMPLETREGISTRATION):
+            self.FullRegistration = True
+            os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'infomachine',
             'from': self.config.jidagent,
@@ -2193,7 +2236,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'ippublic': self.config.public_ip,
             'geolocalisation': {},
             'remoteservice': remoteservice.proto,
-            'regcomplet': self.regcomplet,
+            'regcomplet': self.FullRegistration,
             'packageserver': self.config.packageserver,
             'adorgbymachine': base64.b64encode(organizationbymachine()),
             'adorgbyuser': '',
@@ -2406,12 +2449,13 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     eventkilltcp = Event()
     eventkillpipe = Event()
     pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   "pidagent")
+                           "INFOSTMP",
+                           "pidagent")
     file_put_contents(pidfile, "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
-                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidagent"),
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"),
                                     "/setowner",
                                     "pulse",
                                     "/t"], stderr=subprocess.STDOUT)
@@ -2462,7 +2506,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                                        eventkillpipe))
     processes.append(p)
     p.start()
-
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
+    file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
     logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
@@ -2481,6 +2528,13 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                         eventkilltcp))
     processes.append(p)
     p.start()
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
+
+    file_put_contents_w_a(windowfilepidname,
+                          "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                          option="a")
     logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
                                                       p.name,
@@ -2502,6 +2556,13 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                           eventkillpipe))
         processes.append(p)
         p.start()
+        windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         "INFOSTMP",
+                                         "pidagentwintreename")
+
+        file_put_contents_w_a(windowfilepidname,
+                            "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                            option="a")
         logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                           p.pid,
                                                           p.name,
@@ -2616,7 +2677,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         elif sys.platform.startswith('win'):
             #time.sleep(30)
             windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            "pidagentwintree")
+                                         "INFOSTMP",
+                                         "pidagentwintree")
+            dd=process_agent_search(os.getpid())
+            processwin = json.dumps(dd.pidlist(),indent=4)
+            file_put_contents(windowfilepid, "%s" % processwin)
+            logging.debug("Process agent list : %s" % processwin)
             while True:
                 time.sleep(300)
                 dd=process_agent_search(os.getpid())
@@ -2758,6 +2824,7 @@ class process_xmpp_agent():
                     logging.log(DEBUGPULSE,"analyse alternative alternative connection")
                     logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
                     logging.log(DEBUGPULSE, "alternative configuration")
+                    xmpp.force_full_registration()
                     setgetcountcycle(1)
                     try:
                         timealternatifars = random.randint(*xmpp.config.timealternatif)
@@ -2845,6 +2912,27 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
     logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
+    if sys.platform.startswith('win'):
+        windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintree")
+        with open(windowfilepid) as json_data:
+            data_dict = json.load(json_data)
+        pythonmainproces = ""
+
+        for pidprocess in data_dict:
+            if "pythonmainproces" in data_dict[pidprocess]:
+                pythonmainproces = pidprocess
+        if pythonmainproces != "":
+            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces )
+            pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
+                                   "pidagent")
+            aa = file_get_contents(pidfile).strip()
+            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa )
+            cmd="TASKKILL /F /PID %s /T" % pythonmainproces
+            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
+            os.system(cmd)
     os._exit(0)
 
 if __name__ == '__main__':
