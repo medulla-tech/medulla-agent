@@ -2667,7 +2667,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
             # completing process
             programrun = True
             while True:
-                time.sleep(300)
+                time.sleep(120)
                 for p in processes:
                     if p.is_alive():
                         logger.debug("Alive %s (%s)"%(p.name,p.pid))
@@ -2699,7 +2699,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
             file_put_contents(windowfilepid, "%s" % processwin)
             logging.debug("Process agent list : %s" % processwin)
             while True:
-                time.sleep(300)
+                time.sleep(120)
                 dd=process_agent_search(os.getpid())
                 processwin = json.dumps(dd.pidlist(),indent=4)
                 file_put_contents(windowfilepid, "%s" % processwin)
