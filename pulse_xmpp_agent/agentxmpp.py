@@ -2663,73 +2663,73 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         server1.subscribe()
         cherrypy.engine.start()
 
-        if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
-            # completing process
-            programrun = True
-            while True:
-                time.sleep(120)
-                for p in processes:
-                    if p.is_alive():
-                        logger.debug("Alive %s (%s)"%(p.name,p.pid))
-                        if p.name == "xmppagent":
-                            cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
-                            result = simplecommand(cmd)
-                            if result['code'] == 0:
-                                if result['result']:
-                                    programrun = False
-                                    break
-                    else:
-                        logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
-                        programrun = False
-                        break
-                if not programrun:
-                    logging.debug("END PROGRAMM")
-                    for p in processes:
-                        p.terminate()
-                    cmd = "kill -s kill %s"%os.getpid()
-                    result = simplecommand(cmd)
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+        # completing process
+        programrun = True
+        while True:
+            time.sleep(120)
+            for p in processes:
+                if p.is_alive():
+                    logger.debug("Alive %s (%s)"%(p.name,p.pid))
+                    if p.name == "xmppagent":
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        result = simplecommand(cmd)
+                        if result['code'] == 0:
+                            if result['result']:
+                                programrun = False
+                                break
+                else:
+                    logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
+                    programrun = False
                     break
-        elif sys.platform.startswith('win'):
-            #time.sleep(30)
-            windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         "INFOSTMP",
-                                         "pidagentwintree")
-            dd=process_agent_search(os.getpid())
+            if not programrun:
+                logging.debug("END PROGRAMM")
+                for p in processes:
+                    p.terminate()
+                cmd = "kill -s kill %s"%os.getpid()
+                result = simplecommand(cmd)
+                break
+    elif sys.platform.startswith('win'):
+        #time.sleep(30)
+        windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintree")
+        dd = process_agent_search(os.getpid())
+        processwin = json.dumps(dd.pidlist(),indent=4)
+        file_put_contents(windowfilepid, "%s" % processwin)
+        logging.debug("Process agent list : %s" % processwin)
+        while True:
+            time.sleep(120)
+            dd = process_agent_search(os.getpid())
             processwin = json.dumps(dd.pidlist(),indent=4)
             file_put_contents(windowfilepid, "%s" % processwin)
             logging.debug("Process agent list : %s" % processwin)
-            while True:
-                time.sleep(120)
-                dd=process_agent_search(os.getpid())
-                processwin = json.dumps(dd.pidlist(),indent=4)
-                file_put_contents(windowfilepid, "%s" % processwin)
-                logging.debug("Process agent list : %s" % processwin)
-                # list python process
-                lpidsearch=[]
-                for k, v in dd.get_pid().iteritems():
-                    if "python.exe" in v:
-                        lpidsearch.append(int(k))
-                logging.debug("Process python list : %s"%lpidsearch)
-                for pr in processes:
-                    logging.info("search %s in %s" % (pr.pid, lpidsearch))
-                    if pr.pid not in lpidsearch:
-                        logging.debug("Process %s pid %s is missing %s" % (pr.name, pr.pid, lpidsearch))
-                        for p in processes:
-                            p.terminate()
-                        logging.debug("END PROGRAMM")
-                        cmd = "taskkill /F /PID %s" % os.getpid()
-                        result = simplecommand(cmd)
-                        break
-        else:
-            # completing process
-            try:
-                for p in processes:
-                    p.join()
-            except KeyboardInterrupt:
-                logging.error("TERMINATE PROGRAMM ON CTRL+C")
-                sys.exit(1)
-            except Exception as e:
-                logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
+            # list python process
+            lpidsearch=[]
+            for k, v in dd.get_pid().iteritems():
+                if "python.exe" in v:
+                    lpidsearch.append(int(k))
+            logging.debug("Process python list : %s"%lpidsearch)
+            for pr in processes:
+                logging.info("search %s in %s" % (pr.pid, lpidsearch))
+                if pr.pid not in lpidsearch:
+                    logging.debug("Process %s pid %s is missing %s" % (pr.name, pr.pid, lpidsearch))
+                    for p in processes:
+                        p.terminate()
+                    logging.debug("END PROGRAMM")
+                    cmd = "taskkill /F /PID %s" % os.getpid()
+                    result = simplecommand(cmd)
+                    break
+    else:
+        # completing process
+        try:
+            for p in processes:
+                p.join()
+        except KeyboardInterrupt:
+            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            sys.exit(1)
+        except Exception as e:
+            logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
     sys.exit(0)
 
