@@ -583,11 +583,13 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
                                    "pidconnection"), "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
                                     os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                 "INFOSTMP",
                                                  "pidconnection"),
                                     "/setowner",
                                     "pulse",

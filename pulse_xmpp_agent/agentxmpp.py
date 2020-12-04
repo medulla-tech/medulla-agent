@@ -2449,12 +2449,13 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     eventkilltcp = Event()
     eventkillpipe = Event()
     pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   "pidagent")
+                           "INFOSTMP",
+                           "pidagent")
     file_put_contents(pidfile, "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
-                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidagent"),
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"),
                                     "/setowner",
                                     "pulse",
                                     "/t"], stderr=subprocess.STDOUT)
@@ -2506,7 +2507,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     processes.append(p)
     p.start()
     windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            "pidagentwintreename")
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
     file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
     logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
                                                       p.pid,
@@ -2527,7 +2529,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     processes.append(p)
     p.start()
     windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            "pidagentwintreename")
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
 
     file_put_contents_w_a(windowfilepidname,
                           "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
@@ -2554,7 +2557,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         processes.append(p)
         p.start()
         windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            "pidagentwintreename")
+                                         "INFOSTMP",
+                                         "pidagentwintreename")
 
         file_put_contents_w_a(windowfilepidname,
                             "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
@@ -2673,7 +2677,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         elif sys.platform.startswith('win'):
             #time.sleep(30)
             windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                            "pidagentwintree")
+                                         "INFOSTMP",
+                                         "pidagentwintree")
             dd=process_agent_search(os.getpid())
             processwin = json.dumps(dd.pidlist(),indent=4)
             file_put_contents(windowfilepid, "%s" % processwin)
@@ -2909,6 +2914,7 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"bye bye Agent")
     if sys.platform.startswith('win'):
         windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
                                      "pidagentwintree")
         with open(windowfilepid) as json_data:
             data_dict = json.load(json_data)
@@ -2920,7 +2926,8 @@ def terminateserver(xmpp):
         if pythonmainproces != "":
             logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces )
             pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                       "pidagent")
+                                   "INFOSTMP",
+                                   "pidagent")
             aa = file_get_contents(pidfile).strip()
             logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa )
             cmd="TASKKILL /F /PID %s /T" % pythonmainproces

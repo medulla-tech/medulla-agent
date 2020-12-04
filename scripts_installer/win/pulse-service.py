@@ -148,7 +148,7 @@ class PulseAgentService(SMWinservice):
         logger.info("Service %s stopped" %self._svc_display_name_)
         cmd =""
         for pidprog in self.listnamefilepid:
-            pidfile =os.path.join(agent_dir, pidprog)
+            pidfile =os.path.join(agent_dir, "INFOSTMP", pidprog)
             if os.path.isfile(pidfile):
                 pid = file_get_contents(pidfile)
                 cmd = "taskkill /PID %s /F /T"%pid
