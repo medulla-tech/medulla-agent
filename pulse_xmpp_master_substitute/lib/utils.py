@@ -51,6 +51,7 @@ import imp
 import requests
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
+import random
 
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -1767,7 +1768,8 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
             msg = '%s user account already exists. Nothing to do.' % username
             return True, msg
         except Exception:
-            userpassword = uuid.uuid4().hex[:14]
+            passwdchars = string.hexdigits + '-' + '$' + '#' + ',' + '_'
+            userpassword = ''.join(random.sample(list(passwdchars), 14))
             adduser_cmd = 'net user "%s" "%s" /ADD /COMMENT:"Pulse '\
                 'user with admin rights on the system"' % (username, userpassword)
     elif sys.platform.startswith('darwin'):
@@ -1777,7 +1779,8 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
             msg = '%s user account already exists. Nothing to do.' % username
             return True, msg
         except Exception:
-            userpassword = uuid.uuid4().hex[:14]
+            passwdchars = string.hexdigits + '-' + '$' + '#' + ',' + '_'
+            userpassword = ''.join(random.sample(list(passwdchars), 14))
             adduser_cmd = 'dscl . -create /Users/%s '\
                 'UserShell /usr/local/bin/rbash && '\
                 'dscl . -passwd /Users/%s %s' % (username, username, userpassword)
