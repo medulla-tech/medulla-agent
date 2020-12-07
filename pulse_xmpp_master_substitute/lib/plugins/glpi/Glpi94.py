@@ -3629,7 +3629,7 @@ class Glpi94(DatabaseHelper):
                         'license_id': ret.license_id,
                         'operatingsystemkernelversions_id': ret.operatingsystemkernelversions_id}
             except Exception:
-                logger.error("\n%s" % (traceback.format_exc()))
+                self.logger.error("\n%s" % (traceback.format_exc()))
         return {}
 
     def getMachineBySerial(self, serial):
