@@ -3520,17 +3520,11 @@ class Glpi84(DatabaseHelper):
                         'states_id': ret.states_id,
                         'ticket_tco': ret.ticket_tco,
                         'uuid': ret.uuid,
-                        'date_creation': ret.date_creation,
-                        'is_recursive': ret.is_recursive,
                         'operatingsystems_id': ret.operatingsystems_id,
                         'operatingsystemversions_id': ret.operatingsystemversions_id,
-                        'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id,
-                        'operatingsystemarchitectures_id': ret.operatingsystemarchitectures_id,
-                        'license_number': ret.license_number,
-                        'license_id': ret.license_id,
-                        'operatingsystemkernelversions_id': ret.operatingsystemkernelversions_id}
+                        'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id}
             except Exception:
-                logger.error("\n%s" % (traceback.format_exc()))
+                self.logger.error("\n%s" % (traceback.format_exc()))
         return {}
 
     def getMachineBySerial(self, serial):
