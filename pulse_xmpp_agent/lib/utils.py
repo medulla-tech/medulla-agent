@@ -2406,6 +2406,11 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
             if result['code'] != 0:
                 msg = 'Error hiding %s account: %s' % (username, result)
                 return False, msg
+            user_home = os.path.join("c:\\", "Users", username)
+            hide_from_explorer = simplecommand(encode_strconsole('attrib +h %s' % user_home))
+            if hide_from_explorer['code'] != 0:
+                msg = 'Error hiding %s account: %s' % (username, hide_from_explorer)
+                return False, msg
         return True, msg
     else:
         msg = 'Creation of %s user account failed: %s' % (username, result)
