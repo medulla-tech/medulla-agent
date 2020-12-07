@@ -489,98 +489,6 @@ Section "Uninstall"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
 
   ; Stop all Pulse services
-  Call un.StopPulseServices
-SectionEnd
-
-; Functions
-
-Function .onInit
-  ; XP or later
-  ${IfNot} ${AtLeastWinXP}
-    MessageBox MB_OK|MB_ICONSTOP "XP and above required for running ${PRODUCT_NAME}"
-    SetErrorLevel 137
-    Quit
-  ${EndIf}
-
-  ; Make sure client is 64bits
-  ${IfNot} ${RunningX64}
-    ${IfNot} ${Silent}
-    MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
-    ${EndIf}
-    Quit
-  ${EndIf}
-  SetErrorLevel 666
-
-  ; Make sure we are running as admin
-  UserInfo::GetAccountType
-  pop $0
-  ${If} $0 != "admin" ;Require admin rights on NT4+
-    MessageBox MB_OK|MB_ICONSTOP "Administrator rights required!"
-    SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
-    Quit
-  ${EndIf}
-
-  ; Create registry keys in 64bit section
-  SetRegView 64
-
-  ; Install log initialization
-  !If "$PROGRAMFILES64" != ""
-    StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
-  !Else
-    StrCpy $INSTDIR "$PROGRAMFILES\Pulse"
-  !EndIf
-  CreateDirectory "$INSTDIR\tmp"
-  ${LogInit} "$INSTDIR\tmp\install.log"
-  ${LogString} "Starting install..."
-  !insertmacro GetTime
-  ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
-  ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
-
-  ; Unlock Powershell
-  ${LogString} ""
-  ${LogString} "Backup and unlock powershell execution policy"
-  ${LogString} "------------------------------------------------------"
-  CreateDirectory "$INSTDIR\bin"
-  SetOutPath "$INSTDIR\bin"
-
-  ; Detect Firewall status
-  StrCpy $0 `netsh advfirewall show allprofiles`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  StrCpy $FIREWALL $0
-  ${LogString} "Firewall status is : $FIREWALL"
-
-FunctionEnd
-
-Function un.onInit
-  ; Create registry keys in 64bit section
-  SetRegView 64
-FunctionEnd
-
-Function .onGUIEnd
-  ; Write the log file
-  !insertmacro Log_Close
-FunctionEnd
-
-Function .onMouseOverSection
-  ; Find which section the mouse is over, and set the corresponding description.
-  FindWindow $R0 "#32770" "" $HWNDPARENT
-  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
-
-  StrCmp $0 ${sec_py} 0 +3
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
-          This is required for ${PRODUCT_NAME} to run."
-
-  StrCmp $0 ${sec_app} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
-FunctionEnd
-
-; Macro Stop all Pulse services
-!macro StopPulseServices UN
-  Function ${UN}StopPulseServices
-
   StrCpy $0 `sc query sshd`
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -764,8 +672,90 @@ FunctionEnd
         Quit
   ${EndSwitch}
   ${LogString} $0
-  FunctionEnd
 
-!macroend
-!insertmacro StopPulseServices ""
-!insertmacro StopPulseServices "un."
+SectionEnd
+
+; Functions
+
+Function .onInit
+  ; XP or later
+  ${IfNot} ${AtLeastWinXP}
+    MessageBox MB_OK|MB_ICONSTOP "XP and above required for running ${PRODUCT_NAME}"
+    SetErrorLevel 137
+    Quit
+  ${EndIf}
+
+  ; Make sure client is 64bits
+  ${IfNot} ${RunningX64}
+    ${IfNot} ${Silent}
+    MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
+    ${EndIf}
+    Quit
+  ${EndIf}
+  SetErrorLevel 666
+
+  ; Make sure we are running as admin
+  UserInfo::GetAccountType
+  pop $0
+  ${If} $0 != "admin" ;Require admin rights on NT4+
+    MessageBox MB_OK|MB_ICONSTOP "Administrator rights required!"
+    SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+    Quit
+  ${EndIf}
+
+  ; Create registry keys in 64bit section
+  SetRegView 64
+
+  ; Install log initialization
+  !If "$PROGRAMFILES64" != ""
+    StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
+  !Else
+    StrCpy $INSTDIR "$PROGRAMFILES\Pulse"
+  !EndIf
+  CreateDirectory "$INSTDIR\tmp"
+  ${LogInit} "$INSTDIR\tmp\install.log"
+  ${LogString} "Starting install..."
+  !insertmacro GetTime
+  ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
+  ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
+
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  CreateDirectory "$INSTDIR\bin"
+  SetOutPath "$INSTDIR\bin"
+
+  ; Detect Firewall status
+  StrCpy $0 `netsh advfirewall show allprofiles`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  StrCpy $FIREWALL $0
+  ${LogString} "Firewall status is : $FIREWALL"
+
+FunctionEnd
+
+Function un.onInit
+  ; Create registry keys in 64bit section
+  SetRegView 64
+FunctionEnd
+
+Function .onGUIEnd
+  ; Write the log file
+  !insertmacro Log_Close
+FunctionEnd
+
+Function .onMouseOverSection
+  ; Find which section the mouse is over, and set the corresponding description.
+  FindWindow $R0 "#32770" "" $HWNDPARENT
+  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+
+  StrCmp $0 ${sec_py} 0 +3
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+          This is required for ${PRODUCT_NAME} to run."
+
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+FunctionEnd
