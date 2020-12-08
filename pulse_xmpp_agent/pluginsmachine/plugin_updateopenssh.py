@@ -67,7 +67,7 @@ def updateopensshversion(version):
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("we successfully changed the version of OpenSSH")
+            logger.info("we successfully changed the version of OpenSSH to version %s" % OPENSSHVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
