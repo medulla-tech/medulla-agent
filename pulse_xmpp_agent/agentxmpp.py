@@ -2710,7 +2710,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                     lpidsearch.append(int(k))
             logging.debug("Process python list : %s"%lpidsearch)
             for pr in processes:
-                logging.info("search %s in %s" % (pr.pid, lpidsearch))
+                logging.debug("search %s in %s" % (pr.pid, lpidsearch))
                 if pr.pid not in lpidsearch:
                     logging.debug("Process %s pid %s is missing %s" % (pr.name, pr.pid, lpidsearch))
                     for p in processes:
