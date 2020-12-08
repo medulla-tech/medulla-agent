@@ -206,7 +206,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                    'fingerprintnetwork')
         logging.debug("filename: %s" % filetempinfolibfingerprint)
         if os.path.exists(filetempinfolibfingerprint):
-            logging.debug("actuel fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
+            logging.debug("current fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
             # comparaison
             if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
                 logging.warning("after start : registration must update the information in the xmpp tables.")
