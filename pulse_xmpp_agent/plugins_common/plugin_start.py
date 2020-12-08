@@ -52,7 +52,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
-    logger.error("compteurcallplugin = %s" % compteurcallplugin )
+    logger.debug("compteurcallplugin = %s" % compteurcallplugin )
     if compteurcallplugin == 0:
         logger.debug("configure plugin %s" % action)
         read_conf_plugin_start(objectxmpp)
