@@ -47,6 +47,20 @@ class manageschedulerdeploy:
                 os.makedirs(path_bd, mode=0700)
             self.name_basesession = os.path.join(path_bd, name_basesession)
             self.name_basecmd = os.path.join(path_bd, name_basecmd)
+            # on del base if name prefix underscore
+            self.name_basesessioncorrup = os.path.join(path_bd,"__db.%s" % name_basesession)
+            self.name_basecmdcorrup = os.path.join(path_bd, "__db.%s" % name_basecmd)
+            if  os.path.exists(self.name_basesessioncorrup):
+                # os.remove(self.name_basesessioncorrup)
+                logger.warning("Verify integrity of data " \
+                               "base\n\t%s on ->? %s" % (self.name_basesession,
+                                                         self.name_basesessioncorrup))
+            if  os.path.exists(self.name_basecmdcorrup):
+                # os.remove(self.name_basecmdcorrup)
+                logger.warning("Verify integrity of data " \
+                               "base\n\t%s on ->? %s" % (self.name_basecmd,
+                                                         self.name_basecmdcorrup))
+
             if sys.platform.startswith('darwin'):
                 if not os.path.isdir(self.name_basesession):
                     os.makedirs(self.name_basesession, mode=0700)
