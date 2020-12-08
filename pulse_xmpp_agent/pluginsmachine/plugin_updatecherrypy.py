@@ -65,7 +65,7 @@ def updatecherrypyversion(version):
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.debug("we successfully changed the version of Pulse CherryPy")
+            logger.info("we successfully updated Pulse CherryPy to version %s" % CHERRYPYVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\Pulse CherryPy" '\
