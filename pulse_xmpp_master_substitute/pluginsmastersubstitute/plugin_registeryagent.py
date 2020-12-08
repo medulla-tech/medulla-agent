@@ -1114,6 +1114,7 @@ def read_conf_remote_registeryagent(xmppobject):
         xmppobject.check_uuidinventory = False
         xmppobject.blacklisted_mac_addresses = ["00\:00\:00\:00\:00\:00"]
         xmppobject.registeryagent_showinfomachine = []
+        xmppobject.use_uuid = True
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1127,6 +1128,13 @@ def read_conf_remote_registeryagent(xmppobject):
             xmppobject.check_uuidinventory = Config.getboolean('parameters', 'check_uuidinventory')
         else:
             xmppobject.check_uuidinventory = False
+
+
+        if Config.has_option("parameters", "use_uuid"):
+            xmppobject.use_uuid = Config.getboolean('parameters',
+                                                    'use_uuid')
+        else:
+            xmppobject.use_uuid = True
 
         if Config.has_option("parameters", "pluginlistregistered"):
             pluginlistregistered = Config.get('parameters', 'pluginlistregistered')
