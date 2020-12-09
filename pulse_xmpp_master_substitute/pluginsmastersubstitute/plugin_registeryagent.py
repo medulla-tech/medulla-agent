@@ -87,7 +87,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if 'completedatamachine' in data:
                 info = json.loads(base64.b64decode(data['completedatamachine']))
                 data['information'] = info
-
+                if not xmppobject.use_uuid:
+                    data['uuid_serial_machine'] = ""
+                    if showinfobool:
+                        logger.info("parameter use_uuid is False: " \
+                            "uuid serial machine is not used")
                 if 'uuid_serial_machine' not in data:
                     data['uuid_serial_machine'] = ""
                     if showinfobool:
