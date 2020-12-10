@@ -25,7 +25,7 @@ from lib import utils
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updateuseraccount", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updateuseraccount", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -48,16 +48,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     # Get necessary keys from relay server
     jidars = xmppobject.config.agentcommand
     timeout = 15
-    iqresult = xmppobject.iqsendpulse(jidars,
-                                      {"action": "information",
-                                       "data": {"listinformation": ["get_ars_key_id_rsa",
-                                                                    "keypub"],
-                                                "param": {}
-                                                }
-                                       },
-                                      timeout)
-    res = json.loads(iqresult)
-    if 'numerror' not in res or res['numerror'] != 0:
+    try:
+        iqresult = xmppobject.iqsendpulse(jidars,
+                                          {"action": "information",
+                                           "data": {"listinformation": ["get_ars_key_id_rsa",
+                                                                        "keypub"],
+                                                    "param": {}
+                                                    }
+                                           },
+                                          timeout)
+        res = json.loads(iqresult)
+    except IqError:
         logger.error("Error getting relayserver pubkey and reversessh idrsa via iq from %s" % jidars)
         return
     result = res['result']['informationresult']
