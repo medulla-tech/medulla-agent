@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.62", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.63", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -113,6 +113,12 @@ def updateopenssh(xmppobject, installed_version):
 
         if result:
             # Download success
+            agent_uninstall = utils.simplecommandstr("sc.exe qc ssh-agent")
+            if agent_uninstall['code'] == 0:
+                if opensshdir_path in agent_uninstall['result']:
+                    utils.simplecommand("sc.exe stop ssh-agent")
+                    utils.simplecommand("sc.exe delete ssh-agent")
+
             daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
             if daemon_uninstall['code'] == 0:
                 utils.simplecommand("sc.exe stop sshdaemon")
