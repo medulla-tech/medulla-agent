@@ -155,7 +155,7 @@ def updateopenssh(xmppobject, installed_version):
 
 
             sshdaemonDesc = "SSH protocol based service to provide secure encrypted communications between two untrusted hosts over an insecure network."
-            command_sshdaemon = "sc.exe create sshdaemon binPath=\"%s\" DisplayName=\"Pulse SSH Server\" start=auto" % sshdaemon_bin_path
+            command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Pulse SSH Server\" start= auto" % sshdaemon_bin_path
             utils.simplecommand(command_sshdaemon)
 
             utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
