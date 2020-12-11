@@ -112,10 +112,10 @@ def updatenetworkcheck(xmppobject):
             logger.info("%s" % servicetxtmsg)
             # Run installer
             query_command = "sc query pulsenetworknotify"
-            if query_command['code'] == 0:
+            if query_command['code'] != 0:
                 servicecmd = 'C:\Python27\python.exe "%s\%s" --startup=auto install' % (pulsedir_path, servicefilename)
                 servicecmd_result = utils.simplecommand(servicecmd)
-                if servicecmd_result['code'] != 0:
+                if servicecmd_result['code'] == 0:
                     logger.info("%s installed successfully" % servicefilename)
                 else:
                     logger.error("Error installing %s: %s"
