@@ -30,7 +30,7 @@ NETWORKVERSION = '2.1.3'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "updatenetworkcheck", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -111,8 +111,9 @@ def updatenetworkcheck(xmppobject):
             # Download success
             logger.info("%s" % servicetxtmsg)
             # Run installer
-            query_command = "sc query pulsenetworknotify"
-            if query_command['code'] != 0:
+            querycmd = "sc query pulsenetworknotify"
+             querycmd_result = utils.simplecommand(update_command)
+            if querycmd_result['code'] != 0:
                 servicecmd = 'C:\Python27\python.exe "%s\%s" --startup=auto install' % (pulsedir_path, servicefilename)
                 servicecmd_result = utils.simplecommand(servicecmd)
                 if servicecmd_result['code'] == 0:
