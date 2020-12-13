@@ -290,7 +290,8 @@ class confParameter:
         self.Server = ipfromdns(Config.get('connection', 'server'))
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
-
+        #jfk
+        self.namefileconfig = namefileconfig
         #parameters AM and kiosk tcp server
         self.am_local_port = 8765
         self.kiosk_local_port = 8766
@@ -361,7 +362,7 @@ class confParameter:
         if Config.has_option('syncthing-deploy', 'syncthing_home'):
             self.syncthing_home = Config.get('syncthing-deploy', 'syncthing_home')
 
-        logger.info('activation syncthing %s'%self.syncthing_on)
+        logger.debug('activation syncthing %s'%self.syncthing_on)
         # SYNCTHING #################
 
         self.moderelayserver = "static"
@@ -528,7 +529,12 @@ class confParameter:
         else:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
-        ressource = utils.name_jid()
+        # if aucune interface. il n'y a pas de macs adress. ressource missing
+        try:            
+            ressource = utils.name_jid()
+        except:
+            ressource = "missingmac"
+            logger.warning('list mac missing')
         #########chatroom############
         #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')

@@ -1063,7 +1063,50 @@ class XmppMasterDatabase(DatabaseHelper):
                         'kiosk_presence': machine.kiosk_presence,
                         'lastuser': machine.lastuser,
                         'keysyncthing' : machine.keysyncthing,
-                        'enabled' : machine.enabled}
+                        'enabled' : machine.enabled,
+                        'uuid_serial_machine' : machine.uuid_serial_machine}
+        return result
+
+    @DatabaseHelper._sessionm
+    def getMachinefromuuidsetup(self, session, uuid_serial_machine, agenttype=None):
+        """ information machine"""
+        if agenttype is None:
+            machine = session.query(Machines).\
+                filter(Machines.uuid_serial_machine.like(uuid_serial_machine) ).first()
+        elif agenttype=="machine":
+            machine = session.query(Machines).\
+                filter(and_(Machines.uuid_serial_machine.like(uuid_serial_machine),
+                            Machines.agenttype.like("machine")) ).first()
+        elif agenttype=="relayserver":
+            machine = session.query(Machines).\
+                filter(and_(Machines.uuid_serial_machine.like(uuid_serial_machine),
+                            Machines.agenttype.like("relayserver")) ).first()
+        session.commit()
+        session.flush()
+        result = {}
+        if machine:
+            result = {  "id" : machine.id,
+                        "jid" : machine.jid,
+                        "platform" : machine.platform,
+                        "archi" : machine.archi,
+                        "hostname" : machine.hostname,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "ippublic" : machine.ippublic,
+                        "macaddress" : machine.macaddress,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "agenttype" : machine.agenttype,
+                        "classutil" : machine.classutil,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "picklekeypublic" : machine.picklekeypublic,
+                        'ad_ou_user': machine.ad_ou_user,
+                        'ad_ou_machine': machine.ad_ou_machine,
+                        'kiosk_presence': machine.kiosk_presence,
+                        'lastuser': machine.lastuser,
+                        'keysyncthing' : machine.keysyncthing,
+                        'enabled' : machine.enabled,
+                        'uuid_serial_machine' : machine.uuid_serial_machine}
         return result
 
     @DatabaseHelper._sessionm
@@ -1087,15 +1130,20 @@ class XmppMasterDatabase(DatabaseHelper):
                            ad_ou_machine="",
                            kiosk_presence="False",
                            lastuser="",
-                           keysyncthing=""):
+                           keysyncthing="",
+                           uuid_serial_machine=""):
         msg ="Create Machine"
-        pe=-1
-        machineforupdate = self.getMachinefrommacadress(macaddress,
-                                                        agenttype=agenttype)
-        if len(machineforupdate) > 0:
+        pe = -1
+        if uuid_serial_machine != "":
+            machineforupdate = self.getMachinefromuuidsetup(uuid_serial_machine,
+                                                            agenttype=agenttype)
+        else:
+            machineforupdate = self.getMachinefrommacadress(macaddress,
+                                                            agenttype=agenttype)
+        if machineforupdate:
             pe = machineforupdate['id']
         if pe != -1:
-            # Update
+            # update
             maxlenhostname = max([len(machineforupdate['hostname']), len(hostname)])
             maxlenjid = max([len(machineforupdate['jid']), len(jid)])
             maxmacadress = max([len(machineforupdate['macaddress']), len(macaddress)])
@@ -1108,60 +1156,85 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 uuidnew = str(uuid_inventorymachine)
             maxuuid=max([len(uuidold), len(uuidnew)])
-            msg ="Update Machine %8s\n" \
+            msg ="Update Machine %8s (%s)\n" \
                 "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
                 "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
                 "by\n" \
-                "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|" % (machineforupdate['id'],
-                                                   maxlenhostname, "hostname",
-                                                   maxlenjid, "jid",
-                                                   maxmacadress, "macaddress",
-                                                   maxip_xmpp, "ip_xmpp",
-                                                   maxsubnetxmpp, "subnetxmpp",
-                                                   maxonoff, "On/OFF",
-                                                   maxuuid, "UUID",
-                                                   maxlenhostname, machineforupdate['hostname'],
-                                                   maxlenjid, machineforupdate['jid'],
-                                                   maxmacadress, machineforupdate['macaddress'],
-                                                   maxip_xmpp, machineforupdate['ip_xmpp'],
-                                                   maxsubnetxmpp, machineforupdate['subnetxmpp'],
-                                                   maxonoff, machineforupdate['enabled'],
-                                                   maxuuid, uuidold,
-                                                   maxlenhostname, hostname,
-                                                   maxlenjid, jid,
-                                                   maxmacadress, macaddress,
-                                                   maxip_xmpp, ip_xmpp,
-                                                   maxsubnetxmpp, subnetxmpp,
-                                                   maxonoff, "1",
-                                                   6, uuidnew)
+                "|%*s|%*s|%*s|%*s|%*s|%*s|%*s|"%(
+                    machineforupdate['id'], uuid_serial_machine,
+                    maxlenhostname, "hostname",
+                    maxlenjid, "jid",
+                    maxmacadress, "macaddress",
+                    maxip_xmpp, "ip_xmpp",
+                    maxsubnetxmpp, "subnetxmpp",
+                    maxonoff, "On/OFF",
+                    maxuuid,"UUID",
+                    maxlenhostname, machineforupdate['hostname'],
+                    maxlenjid, machineforupdate['jid'],
+                    maxmacadress, machineforupdate['macaddress'],
+                    maxip_xmpp, machineforupdate['ip_xmpp'],
+                    maxsubnetxmpp, machineforupdate['subnetxmpp'],
+                    maxonoff, machineforupdate['enabled'],
+                    maxuuid, uuidold,
+                    maxlenhostname, hostname,
+                    maxlenjid, jid,
+                    maxmacadress, macaddress,
+                    maxip_xmpp, ip_xmpp,
+                    maxsubnetxmpp, subnetxmpp,
+                    maxonoff, "1",
+                    6,uuidnew)
             self.logger.warning(msg)
             session.query(Machines).filter( Machines.id == pe).\
-                       update({Machines.jid: jid,
-                               Machines.platform: platform,
-                               Machines.hostname: hostname,
-                               Machines.archi: archi,
-                               Machines.uuid_inventorymachine: uuid_inventorymachine,
-                               Machines.ippublic: ippublic,
-                               Machines.ip_xmpp: ip_xmpp,
-                               Machines.subnetxmpp: subnetxmpp,
-                               Machines.macaddress: macaddress,
-                               Machines.agenttype: agenttype,
-                               Machines.classutil: classutil,
-                               Machines.urlguacamole: urlguacamole,
-                               Machines.groupdeploy: groupdeploy,
-                               Machines.picklekeypublic: objkeypublic,
-                               Machines.ad_ou_user: ad_ou_user,
-                               Machines.ad_ou_machine: ad_ou_machine,
-                               Machines.kiosk_presence: kiosk_presence,
-                               Machines.lastuser: lastuser,
-                               Machines.keysyncthing: keysyncthing,
-                               Machines.enabled: '1'
-                               })
+                       update({ Machines.jid: jid,
+                                Machines.platform: platform,
+                                Machines.hostname: hostname,
+                                Machines.archi: archi,
+                                Machines.uuid_inventorymachine: uuid_inventorymachine,
+                                Machines.ippublic: ippublic,
+                                Machines.ip_xmpp: ip_xmpp,
+                                Machines.subnetxmpp: subnetxmpp,
+                                Machines.macaddress: macaddress,
+                                Machines.agenttype: agenttype,
+                                Machines.classutil: classutil,
+                                Machines.urlguacamole: urlguacamole,
+                                Machines.groupdeploy: groupdeploy,
+                                Machines.picklekeypublic: objkeypublic,
+                                Machines.ad_ou_user: ad_ou_user,
+                                Machines.ad_ou_machine: ad_ou_machine,
+                                Machines.kiosk_presence: kiosk_presence,
+                                Machines.lastuser: lastuser,
+                                Machines.keysyncthing: keysyncthing,
+                                Machines.enabled: '1',
+                                Machines.uuid_serial_machine: uuid_serial_machine
+                                })
             session.commit()
             session.flush()
             return pe, msg
         else:
-            # Create
+            #create
+            lenhostname = len(hostname)
+            lenjid = len(jid)
+            lenmacadress = len(macaddress)
+            lenip_xmpp = len(ip_xmpp)
+            lensubnetxmpp = len(subnetxmpp)
+            lenonoff = 6
+            msg ="creat Machine (%s)\n" \
+                "|%*s|%*s|%*s|%*s|%*s|%*s|\n" \
+                "|%*s|%*s|%*s|%*s|%*s|%*s|\n" % (
+                    uuid_serial_machine,
+                    lenhostname, "hostname",
+                    lenjid, "jid",
+                    lenmacadress, "macaddress",
+                    lenip_xmpp, "ip_xmpp",
+                    lensubnetxmpp, "subnetxmpp",
+                    lenonoff, "On/OFF",
+                    lenhostname, hostname,
+                    lenjid, jid,
+                    lenmacadress, macaddress,
+                    lenip_xmpp, ip_xmpp,
+                    lensubnetxmpp, subnetxmpp,
+                    lenonoff, "1")
+            self.logger.debug(msg)
             try:
                 new_machine = Machines()
                 new_machine.jid = jid
@@ -1184,23 +1257,22 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_machine.lastuser = lastuser
                 new_machine.keysyncthing = keysyncthing
                 new_machine.enabled = '1'
+                new_machine.uuid_serial_machine = uuid_serial_machine
                 session.add(new_machine)
                 session.commit()
                 session.flush()
                 if agenttype == "relayserver":
                     sql = "UPDATE `xmppmaster`.`relayserver` \
                                 SET `enabled`='1' \
-                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s'" % hostname
+                                WHERE `xmppmaster`.`relayserver`.`nameserver`='%s';" % hostname
                     session.execute(sql)
                     session.commit()
                     session.flush()
                 self.checknewjid(jid)
-            except Exception as e:
-                # logging.getLogger().error("addPresenceMachine %s" % jid)
+            except Exception, e:
                 logging.getLogger().error(str(e))
-                msg = str(e)
+                msg=str(e)
                 return -1, msg
-
             return new_machine.id, msg
 
     @DatabaseHelper._sessionm
@@ -2921,7 +2993,9 @@ class XmppMasterDatabase(DatabaseHelper):
                 latitude="",
                 postal_code="",
                 country_code="",
-                country_name=""):
+                country_name="",
+                creation_user="",
+                last_modif=""):
         sql = "SELECT count(*) as nb FROM xmppmaster.users where "\
               "`users`.`namesession`='%s' and `users`.`hostname`='%s';" % (namesession,
                                                                            hostname)
@@ -2931,6 +3005,7 @@ class XmppMasterDatabase(DatabaseHelper):
         postal_code = postal_code.decode('iso-8859-1').encode('utf8')
         country_code = country_code.decode('iso-8859-1').encode('utf8')
         country_name = country_name.decode('iso-8859-1').encode('utf8')
+        createuser = datetime.now()
         try:
             nb = session.execute(sql)
             session.commit()
@@ -2951,6 +3026,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_user.postal_code = postal_code
                 new_user.country_code = country_code
                 new_user.country_name = country_name
+                new_user.creation_user = createuser
+                new_user.last_modif = createuser
                 session.add(new_user)
                 session.commit()
                 session.flush()
@@ -2968,8 +3045,8 @@ class XmppMasterDatabase(DatabaseHelper):
                             Users.latitude:latitude,
                             Users.postal_code:postal_code,
                             Users.country_code:country_code,
-                            Users.country_name:country_name
-                            })
+                            Users.country_name:country_name,
+                            Users.last_modif:createuser })
                 session.commit()
                 session.flush()
                 sql ="select id from `xmppmaster`.`users` WHERE `xmppmaster`.`users`.`hostname`='%s';" % hostname
@@ -4139,13 +4216,12 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def listMacAdressforMachine(self, session, id_machine, infomac=False):
         try:
-            sql = """SELECT
-                        GROUP_CONCAT(CONCAT(mac)) AS listmac
+            sql = """SELECT 
+                        GROUP_CONCAT(DISTINCT mac ORDER BY mac ASC  SEPARATOR ',') AS listmac
                     FROM
                         xmppmaster.network
                     WHERE
-                        machines_id = '%s'
-                    LIMIT 1;""" % (id_machine)
+                        machines_id = '%s';""" % (id_machine)
             if infomac:
                 logging.getLogger().debug("SQL request to get the mac addresses list "\
                                           "for the presence machine #%s" % id_machine)
@@ -4812,7 +4888,8 @@ class XmppMasterDatabase(DatabaseHelper):
                       'kiosk_presence': machine.kiosk_presence,
                       'lastuser': machine.lastuser,
                       'keysyncthing': machine.keysyncthing,
-                      'enabled': machine.enabled}
+                      'enabled': machine.enabled,
+                      'uuid_serial_machine': machine.uuid_serial_machine}
         return result
 
     @DatabaseHelper._sessionm
@@ -4841,7 +4918,10 @@ class XmppMasterDatabase(DatabaseHelper):
                       'ad_ou_user': machine.ad_ou_user,
                       'ad_ou_machine': machine.ad_ou_machine,
                       'kiosk_presence': machine.kiosk_presence,
-                      'lastuser': machine.lastuser}
+                      'lastuser': machine.lastuser,
+                      'keysyncthing': machine.keysyncthing,
+                      'enabled': machine.enabled,
+                      'uuid_serial_machine' : machine.uuid_serial_machine}
         return result
 
     @DatabaseHelper._sessionm

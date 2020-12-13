@@ -26,11 +26,15 @@ import os, sys, subprocess
 from lib.utils import testagentconf, networkchanged, confchanged, refreshfingerprintconf, refreshfingerprint, file_put_contents
 
 if __name__ == '__main__':
-    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidlauncher"), "%s" % os.getpid())
+    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
+                                   "pidlauncher"), "%s" % os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
-                                              os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidlauncher"),
+                                              os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                           "INFOSTMP",
+                                                           "pidlauncher"),
                                               "/setowner",
                                               "pulse",
                                               "/t"], stderr=subprocess.STDOUT)

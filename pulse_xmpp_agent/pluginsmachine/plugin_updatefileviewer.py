@@ -24,7 +24,6 @@ import sys
 import os
 from distutils.version import StrictVersion
 import logging
-import shutil
 from lib import utils
 
 BOOTSTRAP = '3.1.1'
@@ -36,7 +35,7 @@ list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatefileviewer", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatefileviewer", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -158,15 +157,10 @@ def updatemain(xmppobject):
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_css)
 
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path, 'css', filename_css)).downloadurl()
     if result_css:
         # Download success
         logger.debug("%s" % txtmsg_css)
-        # Run installer
-        try:
-            shutil.copyfile(filename_css, os.path.join(installed_path, 'css', filename_css))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.debug("%s" % txtmsg_css)
@@ -174,15 +168,10 @@ def updatemain(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, 'js', filename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
-        # Run installer
-        try:
-            shutil.copyfile(filename_js, os.path.join(installed_path, 'js', filename_js))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_js)
@@ -207,16 +196,10 @@ def updatebootstrap(xmppobject):
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_css)
 
-    #result_css, txtmsg_css = utils.downloadfile(dl_url_css, '/tmp/%s'%filename_css).downloadurl()
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path, 'css', filename_css)).downloadurl()
     if result_css:
         # Download success
         logger.debug("%s" % txtmsg_css)
-        # Run installer
-        try:
-            shutil.copyfile(filename_css, os.path.join(installed_path, 'css', filename_css))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.debug("%s" % txtmsg_css)
@@ -224,15 +207,10 @@ def updatebootstrap(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, 'js', filename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
-        # Run installer
-        try:
-            shutil.copyfile(filename_js, os.path.join(installed_path, 'js', filename_js))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_js)
@@ -257,15 +235,10 @@ def updatejquery(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path,'js',postfilename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
-        # Run installer
-        try:
-            shutil.copyfile(filename_js, os.path.join(installed_path,'js',postfilename_js))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_js)
@@ -293,45 +266,30 @@ def updatedatatables(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path,'js', postfilename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
-        # Run installer
-        try:
-            shutil.copyfile(filename_js, os.path.join(installed_path,'js', postfilename_js))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_js)
 
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
 	xmppobject.config.Server, architecture, filename_css)
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path,'css', postfilename_css)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_css)
-        # Run installer
-        try:
-            shutil.copyfile(filename_css, os.path.join(installed_path,'css', postfilename_css))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_css)
 
     dl_url_woff = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_woff)
-    result_woff, txtmsg_woff = utils.downloadfile(dl_url_woff).downloadurl()
+    result_woff, txtmsg_woff = utils.downloadfile(dl_url_woff, os.path.join(installed_path,'fonts', filename_woff)).downloadurl()
     if result_woff:
         # Download success
         logger.debug("%s" % txtmsg_woff)
-        # Run installer
-        try:
-            shutil.copyfile(filename_css, os.path.join(installed_path,'fonts', filename_woff))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_css)
@@ -356,16 +314,10 @@ def updatejqueryui(xmppobject):
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_css)
 
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path,'css',filename_css)).downloadurl()
     if result_css:
         # Download success
         logger.debug("%s" % txtmsg_css)
-        # Run installer
-        try:
-            shutil.copyfile(filename_css, os.path.join(installed_path,'css',filename_css))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
-
     else:
         # Download error
         logger.error("%s" % txtmsg_css)
@@ -376,11 +328,6 @@ def updatejqueryui(xmppobject):
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
-        # Run installer
-        try:
-            shutil.copyfile(filename_js, os.path.join(installed_path,'js',filename_js))
-        except Exception as e:
-            logger.error("Error while copying the file, with the error: %s" % e)
     else:
         # Download error
         logger.error("%s" % txtmsg_js)

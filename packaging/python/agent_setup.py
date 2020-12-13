@@ -32,7 +32,7 @@ for scheme in list(INSTALL_SCHEMES.values()):
 
 setup(
     name="pulse_xmpp_agent",
-    version="2.1.2",
+    version="2.1.3",
     author="SIVEO",
     author_email="support@siveo.net",
     description="XMPP Agent for pulse",
@@ -57,7 +57,6 @@ setup(
         'croniter >= 0.3.16',
         'psutil >= 5.4.3',
         'pysftp >= 0.2.9',
-        'syncthing >= 2.3.1',
         'cherrypy >= 3.0.0',
         'requests >= 2.8.14'
     ] + ( ['pathlib >= 1.0.1', 'pypiwin32 >= 219', 'comtypes >= 1.1.3', 'wmi >= 1.4.9'] if "win" in sys.platform else [] )
