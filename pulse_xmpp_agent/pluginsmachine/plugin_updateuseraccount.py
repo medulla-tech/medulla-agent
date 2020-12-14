@@ -26,7 +26,7 @@ from sleekxmpp.exceptions import IqError
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updateuseraccount", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updateuseraccount", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
