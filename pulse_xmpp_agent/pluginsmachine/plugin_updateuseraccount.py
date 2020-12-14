@@ -59,11 +59,6 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                            },
                                           timeout)
         res = json.loads(iqresult)
-    except IqError:
-        logger.error("Error getting relayserver pubkey and reversessh idrsa via iq from %s" % jidars)
-        return
-
-    try:
         result = res['result']['informationresult']
         relayserver_pubkey = result['keypub']
         relayserver_reversessh_idrsa = result['get_ars_key_id_rsa']
