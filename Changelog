@@ -1,9 +1,27 @@
+pulse-xmpp-agent 2.1.4
+======================
+
 pulse-xmpp-agent 2.1.3
 ======================
 * [FEATURE]  Add plugin to install fileviewer
 * [FEATURE]  Add Glpi 9.5 support
 * [FEATURE]  Add Openssh update plugin
 * [FEATURE]  Add Syncthing update plugin
+* [FEATURE]  Add FusionInventory update plugin
+* [FEATURE]  Add Pulse Network Notify update plugin
+* [FEATURE]  Add Tighvnc update plugin
+* [FEATURE]  Clean installer to install only pulse + python  (and deps)
+* [FEATURE]  Fix creation of reverse ssh tunnel
+* [FEATURE]  Add monitoring support
+* [FEATURE]  Add updateuseraccount plugin to create windows pulseuser account
+* [FEATURE]  Fix restarting Agentxmpp if a processus die
+* [FEATURE]  Add log compression support on windows
+* [FEATURE]  Fix finding hostname where domain is written in the /etc/hostname file
+* [BUGFIX] Fix systemd support
+* [BUGFIX] Change pulseuser home folder from /var/lib/pulse2 to /home/pulseuser
+* [BUGFIX] Fix syncthing support
+* [BUGFIX] Fix debugs to be more understandable
+* [BUGFIX] Fix GLPI 0.84 support
 
 pulse-xmpp-agent 2.1.2
 ======================
