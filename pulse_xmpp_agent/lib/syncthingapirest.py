@@ -44,7 +44,7 @@ from lxml import etree
 import urllib
 import socket
 from threading import Lock
-from utils import Program, getRandomName, simplecommand, file_put_contents
+from utils import Program, getRandomName, simplecommand, file_put_contents, simplecommand
 import logging
 import traceback
 import time
@@ -1389,6 +1389,15 @@ class syncthingprogram(Program):
                     Config.set('syncthing', 'activation', "0")
                     with open(agentconf, 'w') as configfile:
                         Config.write(configfile)
+
+                query_cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /s | Find "DisplayVersion"'
+                query_result = simplecommand(query_cmd)
+                if query_result['code'] == 0:
+                    delete_cmd = 'reg delete "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /f'
+                    delete_result = simplecommand(delete_cmd)
+                    if delete_result['code'] == 0:
+                        logger.debug("Syncthing has been removed from the registry")
+
 
             cmd = [ "%s" % syncthing_bin,
                    "-home=%s" % self.home,
