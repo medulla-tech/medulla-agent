@@ -507,9 +507,9 @@ Function .onInit
     ${IfNot} ${Silent}
     MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
     ${EndIf}
+    SetErrorLevel 666
     Quit
   ${EndIf}
-  SetErrorLevel 666
 
   ; Make sure we are running as admin
   UserInfo::GetAccountType
