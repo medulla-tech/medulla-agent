@@ -25,7 +25,7 @@ import glob
 import os
 import json
 import logging
-from utils import decode_strconsole, loadjsonfile
+from utils import loadjsonfile
 
 class Session(Exception):
     pass
@@ -104,7 +104,7 @@ class sessiondatainfo:
     def removesessionfile(self):
         namefilesession = os.path.join(self.pathfile, self.sessionid)
         if os.path.isfile(namefilesession):
-                os.remove(namefilesession)
+            os.remove(namefilesession)
 
     def getdatasession(self):
         return self.datasession
@@ -121,7 +121,6 @@ class sessiondatainfo:
             return True
         else:
             return self.sauvesession()
-
 
     def settimeout(self, timeminute=10):
         self.timevalid = timeminute

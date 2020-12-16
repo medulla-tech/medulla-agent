@@ -238,6 +238,7 @@ class substitutelist:
         self.sub_registration = ["master@pulse"]
         self.sub_assessor = ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
+        self.sub_monitoring = ["master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -259,13 +260,18 @@ class substitutelist:
             sub_loggerlocal = Config.get('substitute', 'logger')
             self.sub_logger = [x.strip() for x in sub_loggerlocal.split(",")]
 
+        if Config.has_option('substitute', 'monitoring'):
+            sub_monitoringlocal = Config.get('substitute', 'monitoring')
+            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+
     def parameterssubtitute(self):
         conflist = []
         data={ 'subscription': self.sub_subscribe,
                'inventory': self.sub_inventory,
                'registration': self.sub_registration,
                'assessor': self.sub_assessor,
-               'logger': self.sub_logger}
+               'logger': self.sub_logger,
+               'monitoring': self.sub_monitoring}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -284,7 +290,8 @@ class confParameter:
         self.Server = ipfromdns(Config.get('connection', 'server'))
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
-
+        #jfk
+        self.namefileconfig = namefileconfig
         #parameters AM and kiosk tcp server
         self.am_local_port = 8765
         self.kiosk_local_port = 8766
@@ -297,6 +304,7 @@ class confParameter:
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
         self.sub_assessor = ["master@pulse"]
+        self.sub_monitoring= ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
@@ -310,6 +318,10 @@ class confParameter:
         if Config.has_option('substitute', 'registration'):
             sub_registrationlocal = Config.get('substitute', 'registration')
             self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+
+        if Config.has_option('substitute', 'monitoring'):
+            sub_monitoringlocal = Config.get('substitute', 'monitoring')
+            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
             sub_assessorlocal = Config.get('substitute', 'assessor')
@@ -350,7 +362,7 @@ class confParameter:
         if Config.has_option('syncthing-deploy', 'syncthing_home'):
             self.syncthing_home = Config.get('syncthing-deploy', 'syncthing_home')
 
-        logger.info('activation syncthing %s'%self.syncthing_on)
+        logger.debug('activation syncthing %s'%self.syncthing_on)
         # SYNCTHING #################
 
         self.moderelayserver = "static"
@@ -452,7 +464,7 @@ class confParameter:
         self.public_ip_relayserver = ""
         self.geoservers = "ifconfig.co, if.siveo.net"
         self.geolocalisation = True
-        
+
         if Config.has_option("type", "public_ip"):
             self.public_ip = Config.get('type', 'public_ip')
 
@@ -517,13 +529,18 @@ class confParameter:
         else:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
-        ressource = utils.name_jid()
+        # if aucune interface. il n'y a pas de macs adress. ressource missing
+        try:            
+            ressource = utils.name_jid()
+        except:
+            ressource = "missingmac"
+            logger.warning('list mac missing')
         #########chatroom############
         #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
         ## Deployment chatroom
         #self.passwordconnexionmuc = Config.get('chatroom', 'password')
-        self.NickName = "%s.%s" % (platform.node(), jidsufixe)
+        self.NickName = "%s.%s" % (platform.node().split('.')[0], jidsufixe)
         ########chat#############
         # The jidagent must be the smallest value in the list of mac addresses
         self.chatserver = Config.get('chat', 'domain')
@@ -539,6 +556,22 @@ class confParameter:
                                           'domain'),
                                       ressource)
         try:
+            self.nbrotfile = Config.getint('global', 'nb_rot_file')
+        except BaseException:
+            self.nbrotfile = 6
+        if self.nbrotfile < 1:
+            self.nbrotfile = 1
+        try:
+            self.compress = Config.get('global', 'compress')
+        except BaseException:
+            self.compress = "no"
+        self.compress = self.compress.lower()
+        if self.compress not in ["zip", "gzip", "bz2","No"]:
+            self.compress = "no"
+        defaultnamelogfile = "xmpp-agent-machine.log"  
+        if self.agenttype == "relayserver":
+            defaultnamelogfile = "xmpp-agent-relay.log"  
+        try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
             if sys.platform.startswith('win'):
@@ -547,17 +580,17 @@ class confParameter:
                                 "Pulse",
                                 "var",
                                 "log",
-                                "xmpp-agent.log")
+                                defaultnamelogfile)
             elif sys.platform.startswith('darwin'):
                 self.logfile = os.path.join(
                     "/opt",
                     "Pulse",
                     "var",
                     "log",
-                    "xmpp-agent.log")
+                    defaultnamelogfile)
             else:
                 self.logfile = os.path.join(
-                    "/", "var", "log", "pulse", "xmpp-agent.log")
+                    "/", "var", "log", "pulse", defaultnamelogfile)
 
         # information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):
@@ -666,6 +699,15 @@ class confParameter:
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
 
+        # configuration monitoring
+        if self.agenttype == "machine":
+            if Config.has_option("monitoring", "monitoring_agent_config_file"):
+                self.monitoring_agent_config_file = Config.get("monitoring",
+                                                        "monitoring_agent_config_file")
+            else:
+                # Config file not found
+                self.monitoring_agent_config_file = ""
+
         self.information = {}
         self.PlatformSystem = platform.platform()
         self.information['platform'] = self.PlatformSystem
@@ -673,7 +715,7 @@ class confParameter:
         self.information['os'] = self.OperatingSystem
         self.UnameSystem = platform.uname()
         self.information['uname'] = self.UnameSystem
-        self.HostNameSystem = platform.node()
+        self.HostNameSystem = platform.node().split('.')[0]
         self.information['hostname'] = self.HostNameSystem
         self.OsReleaseNumber = platform.release()
         self.information['osrelease'] = self.OsReleaseNumber
@@ -685,6 +727,59 @@ class confParameter:
         self.information['processor'] = self.ProcessorIdentifier
         self.Architecture = platform.architecture()
         self.information['archi'] = self.Architecture
+
+        # Http fileviewer server parameters
+        self.paths = []
+        self.names = []
+        self.extensions = []
+        self.date_format = '%Y-%m-%d %H:%M:%S'
+
+        if Config.has_option('fileviewer', 'sources'):
+            self.paths = Config.get('fileviewer', 'sources').split(';')
+
+        # The size_paths drive the final size of paths, names and extensions parameters
+        size_paths = len(self.paths)
+
+        if Config.has_option('fileviewer', 'names'):
+            # Get names from ini file
+            self.names = Config.get('fileviewer', 'names').split(';')
+
+        # If some names are missing, complete display names associated to each paths
+        count = 0
+        while count < size_paths:
+            try:
+                self.names[count]
+            except IndexError:
+                # The displayed names are in lowercase
+                self.names.append(os.path.basename(self.paths[count]).lower())
+            finally:
+                count += 1
+
+        # Get available extensions
+        if Config.has_option('fileviewer', 'extensions'):
+            self.extensions = Config.get('fileviewer', 'extensions').split(';')
+
+        # If some extensions group are missing, complete the list for each paths
+        count = 0
+        while count < size_paths:
+            try:
+                self.extensions[count]
+            except IndexError:
+                self.extensions.append([])
+            finally:
+                count += 1
+
+        count = 0
+        while count < size_paths:
+            if type(self.extensions[count]) is list:
+                self.extensions[count] = self.extensions[count]
+            else:
+                self.extensions[count] = self.extensions[count].split(',')
+            count += 1
+
+        if Config.has_option('fileviewer', 'date_format'):
+            self.date_format = Config.get('fileviewer', 'date_format')
+
 
     def loadparametersplugins(self, namefile):
         Config = ConfigParser.ConfigParser()
@@ -801,12 +896,12 @@ def listMacAdressWinOs():
     for line in ifconfig:
         if line.strip() == "":
             continue
-    if "phy" in line.lower() or not (line.startswith("\t") or line.startswith(' ')):
-        if "phy" not in line.lower():
-            ll = line.split(' ')[0].strip() + "%d" % i
-        else:
-            lst[ll] = line.split(':')[1].strip()
-            i = i + 1
+        if "phy" in line.lower() or not (line.startswith("\t") or line.startswith(' ')):
+            if "phy" not in line.lower():
+                ll = line.split(' ')[0].strip() + "%d" % i
+            else:
+                lst[ll] = line.split(':')[1].strip()
+                i = i + 1
     return lst
 
 

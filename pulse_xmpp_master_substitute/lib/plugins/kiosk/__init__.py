@@ -134,7 +134,8 @@ class KioskDatabase(DatabaseHelper):
                 logging.getLogger().error(e)
             except Exception, e:
                 logging.getLogger().error(e)
-            if ret: break
+            if ret:
+                break
         if not ret:
             raise "Database kiosk connection error"
         return ret

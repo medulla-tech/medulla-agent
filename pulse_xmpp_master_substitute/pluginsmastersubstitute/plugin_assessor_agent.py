@@ -25,11 +25,7 @@ import base64
 import json
 import os
 import logging
-from lib.utils import file_get_contents, \
-                      getRandomName, \
-                      data_struct_message, \
-                      add_method, \
-                      ipfromdns, \
+from lib.utils import ipfromdns, \
                       AESCipher, \
                       subnetnetwork
 from lib.localisation import Point
@@ -40,7 +36,7 @@ import operator
 import traceback
 import ConfigParser
 import netaddr
-from math import cos, sin, acos, asin, atan2, degrees, radians,sqrt
+from math import cos, sin, atan2, sqrt
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -49,20 +45,20 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
-plugin = {"VERSION" : "1.2", "NAME" : "assessor_agent", "TYPE" : "substitute", "FEATURE": "assessor" }
+plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
     try:
-        compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+        compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
             read_conf_assessor(objectxmpp)
 
         if objectxmpp.assessor_agent_errorconf:
-            logger.error("error configuration no process action %s for machine %s"%(action , msg['from']))
+            logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
             sendErrorConnectionConf(objectxmpp,sessionid,msg)
             return
 
@@ -73,7 +69,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
                                                       msg)
     except Exception as e:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
 
 def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
     codechaine="%s"%(msg['from'])
@@ -85,29 +81,30 @@ def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
             result = True
             break
     if not result:
-        logger.warning("authentification False %s"%(codechaine))
+        logger.warning("authentification False %s" % (codechaine))
 
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
     return result
 
 def distHaversine(p1, p2):
-        """
-        #  Calculate the distance (in km) between 2 points specified by their
-        #  latitude/longitude using Haversine formula
-        #
-        #   de : Haversine formula - R. W. Sinnott, "Virtues of the Haversine",
-        #        Sky and Telescope, vol 68, no 2, 1984
-        #        http://www.census.gov/cgi-bin/geo/gisfaq?Q5.1
-        #
-        """
-        rt = 6371  # Mean Earth radius in km
-        # We consider latitude at rt whatever the point
-        dLat = p2.lat - p1.lat
-        dLong = p2.lon - p1.lon
-        a = sin(dLat/2) * sin(dLat/2) + cos(p1.lat) * cos(p2.lat) * sin(dLong/2) * sin(dLong/2)
-        c = 2 * atan2(sqrt(a), sqrt(1-a))
-        d = rt * c
-        return d
+    """
+      Calculate the distance (in km) between 2 points specified by their
+      latitude/longitude using Haversine formula
+
+       de : Haversine formula - R. W. Sinnott, "Virtues of the Haversine",
+            Sky and Telescope, vol 68, no 2, 1984
+            http://www.census.gov/cgi-bin/geo/gisfaq?Q5.1
+
+    """
+    rt = 6371  # Mean Earth radius in km
+    # We consider latitude at rt whatever the point
+    dLat = p2.lat - p1.lat
+    dLong = p2.lon - p1.lon
+    a = sin(dLat/2) * sin(dLat/2) + cos(p1.lat) * cos(p2.lat) * sin(dLong/2) * sin(dLong/2)
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    d = rt * c
+    return d
+
 def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   action,
                                                   sessionid,
@@ -116,20 +113,20 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     """
         applies the allocation rules algorithms to determine the chosen relayserver.
     """
-    codechaine="%s"%(msg['from'])
+    codechaine="%s" % (msg['from'])
     try:
         host = codechaine.split('/')[1]
     except Exception:
         host = msg['from']
-    logger.info("CONFIGURATION AGENT MACHINE %s"%host)
+    logger.info("CONFIGURATION AGENT MACHINE %s" % host)
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
         showinfomachine = True
-        logger.info("showinfomachine = %s in file assessor_agent.ini(.local)"%(host)) 
+        logger.info("showinfomachine = %s in file assessor_agent.ini(.local)" % (host))
     else:
         showinfomachine = False
-        logger.info("gives showinfomachine in assessor_agent.ini(.local)" \
-                    " for display infos on %s"%(host))
-    
+        logger.info("gives showinfomachine in assessor_agent.ini(.local)"
+                    " for display infos on %s" % (host))
+
     if data['adorgbymachine'] is not None and data['adorgbymachine'] != "":
         data['adorgbymachine'] = base64.b64decode(data['adorgbymachine'])
     if data['adorgbyuser'] is not None and data['adorgbyuser'] != "":
@@ -137,16 +134,15 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     try:
         data['information'] = json.loads(base64.b64decode(data['completedatamachine']))
         del data['completedatamachine']
-        datastr = json.dumps(data, indent = 4)
-    except:
-        logger.error("decode msg error from %s"%(codechaine))
+    except Exception:
+        logger.error("decode msg error from %s" % (codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
     if data['agenttype'] == "relayserver":
         objectxmpp.sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
     if 'codechaine' not in data:
-        logger.error("missing authentification from %s"%(codechaine))
+        logger.error("missing authentification from %s" % (codechaine))
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         return
 
@@ -163,10 +159,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         XmppMasterDatabase().log("Warning no user determinated for the machine : %s " %
                                 (data['information']['info']['hostname']))
 
-    msgstr = "Search Relay Server for " \
-             "connection from user %s "\
-             "hostname %s"%(data['information']['users'][0],
-                                            data['information']['info']['hostname'])
+    msgstr = "Search Relay Server for connection from user %s hostname %s" % (data['information']['users'][0],
+                                                                              data['information']['info']['hostname'])
     if showinfomachine :
         logger.info(msgstr)
     XmppMasterDatabase().log(msgstr)
@@ -214,7 +208,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 msg_log("The Hostname",
                         data['information']['info']['hostname'],
                         data['information']['users'][0],
-                        result, objectxmpp, data)
+                        result,
+                        objectxmpp,
+                        data)
                 break
         # Location Rule : 3
         elif x[0] == 3:
@@ -224,25 +220,23 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 data['geolocalisation'] is not None and \
                     len(data['geolocalisation']) > 0:
                 #initialization parameter geolocalisation
-                tabinformation={"longitude" : "unknown",
-                                "latitude" : "unknown",
-                                "city" : "unknown",
-                                "region_name" : "unknown",
-                                "time_zone" : "unknown",
-                                "longitude" : "unknown",
-                                "latitude" : "unknown",
-                                "zip_code" : "unknown",
-                                "country_iso" : "",
-                                "country" : "unknown"}
+                tabinformation={"longitude": "unknown",
+                                "latitude": "unknown",
+                                "city": "unknown",
+                                "region_name": "unknown",
+                                "time_zone": "unknown",
+                                "zip_code": "unknown",
+                                "country_iso": "",
+                                "country": "unknown"}
                 for geovariable in tabinformation:
                     try:
-                        tabinformation[geovariable]=str(data['geolocalisation'][geovariable])
+                        tabinformation[geovariable] = str(data['geolocalisation'][geovariable])
                     except  Exception:
-                        logger.error("\n%s"%(traceback.format_exc()))
+                        logger.error("\n%s" % (traceback.format_exc()))
                         pass
-                    
+
                 if showinfomachine:
-                    logger.info("Geoposition of machine %s %s "%(codechaine, tabinformation))
+                    logger.info("Geoposition of machine %s %s " % (codechaine, tabinformation))
                 if tabinformation['longitude'] != "unknown" \
                     and tabinformation['latitude'] != "unknown" \
                         and tabinformation['longitude'] != "" \
@@ -250,16 +244,16 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                     if showinfomachine:
                         logger.info("Analysis the 3rd rule : select the relay server by Geolocalisation")
                     if showinfomachine:
-                        logger.info("Geoposition of machine %s [ %s : %s]"%(data['information']['info']['hostname'],
-                                                                            tabinformation['latitude'],
-                                                                            tabinformation['longitude']))
-                    
-                    pointmachine = Point(float(tabinformation['latitude']),float( tabinformation['longitude']))
+                        logger.info("Geoposition of machine %s [ %s : %s]" % (data['information']['info']['hostname'],
+                                                                              tabinformation['latitude'],
+                                                                              tabinformation['longitude']))
+
+                    pointmachine = Point(float(tabinformation['latitude']), float(tabinformation['longitude']))
                     distance = 40000000000
                     listeserver = set()
                     relayserver = -1
                     result = []
-                    try:     
+                    try:
                         result1 = XmppMasterDatabase().IdlonglatServerRelay(data['classutil'])
                         for x in result1:
                             # pour tout les relay on clacule la distance a vol oiseau.
@@ -271,35 +265,37 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                 else:
                                     distancecalculated = distHaversine(pointrelay, pointmachine)
                                 if showinfomachine:
-                                    logger.info("Geoposition ars id %s: long %s lat %s dist %s km"%( x[0],
-                                                                                          x[1],
-                                                                                          x[2],
-                                                                                          distancecalculated))    
+                                    logger.info("Geoposition ars id %s: long %s lat %s dist %s km" % (x[0],
+                                                                                                      x[1],
+                                                                                                      x[2],
+                                                                                                      distancecalculated))
                                 if distancecalculated < distance:
                                     listeserver = {x[0]}
                                     distance = distancecalculated
-                                    relayserver = x[0] #x[0] id du relayserver
+                                    relayserver = x[0]  # x[0] id du relayserver
                                 if distancecalculated == distance:
                                     # il peut y avoir plusieurs ars a la meme distance.
                                     listeserver.add(x[0])
-                        listeserver = list(listeserver)            
+                        listeserver = list(listeserver)
                         nbserver = len(listeserver)
                         if nbserver > 1:
                             index = randint(0, nbserver-1)
-                            #on choisi 1 ARS dans la liste
-                            logger.warning("Geoposition Rule returned %d " \
-                                        "relay servers for machine"
-                                        "%s user %s \nPossible relay servers" \
-                                        " : id list %s " % (nbserver,
-                                                            data['information']['info']['hostname'],
-                                                            data['information']['users'][0],
-                                                            listeserver))
-                            logger.warning("ARS Random choice : %s"%listeserver[index])
+                            # on choisi 1 ARS dans la liste
+                            logger.warning("Geoposition Rule returned %d "
+                                           "relay servers for machine"
+                                           "%s user %s \nPossible relay servers"
+                                           " : id list %s " % (nbserver,
+                                                               data['information']['info']['hostname'],
+                                                               data['information']['users'][0],
+                                                               listeserver))
+                            logger.warning("ARS Random choice : %s" % listeserver[index])
                             result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(listeserver[index])
                             msg_log("The Geoposition",
-                                        data['information']['info']['hostname'],
-                                        data['information']['users'][0],
-                                        result, objectxmpp, data)
+                                    data['information']['info']['hostname'],
+                                    data['information']['users'][0],
+                                    result,
+                                    objectxmpp,
+                                    data)
                             break
                         elif nbserver == 1:
                             # il n y a 1 seul relay server de trouve
@@ -307,18 +303,20 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                             msg_log("The Geoposition",
                                     data['information']['info']['hostname'],
                                     data['information']['users'][0],
-                                    result, objectxmpp, data)
+                                    result,
+                                    objectxmpp,
+                                    data)
                             break
                         else:
-                            logger.warning("no ARS found by Geoposition for machine %s"%msg['from'])
+                            logger.warning("no ARS found by Geoposition for machine %s" % msg['from'])
                             continue
                     except KeyError:
                         logger.error("Error algo rule 3")
-                        logger.error("\n%s"%(traceback.format_exc()))
+                        logger.error("\n%s" % (traceback.format_exc()))
                         continue
             else:
                 # regle trois aucun ars trouve
-                logger.warning("On Remote Machine %s, geolocalisation misssing"%msg['from'])
+                logger.warning("On Remote Machine %s, geolocalisation misssing" % msg['from'])
                 continue
         # Subnet Rule : 4
         elif x[0] == 4:
@@ -327,9 +325,12 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 logger.info("rule subnet : Test if network are identical")
             subnetexist = False
             for z in data['information']['listipinfo']:
+                if z['ipaddress'] is None or z['mask'] is None:
+                    continue
+
                 result1 = XmppMasterDatabase().algorulesubnet(subnetnetwork(z['ipaddress'],
                                                                             z['mask']),
-                                                                data['classutil'])
+                                                              data['classutil'])
                 if len(result1) > 0:
                     if showinfomachine:
                         logger.info("Applied rule : select the relay server in same subnet")
@@ -338,7 +339,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                     msg_log("same subnet",
                             data['information']['info']['hostname'],
                             data['information']['users'][0],
-                            result, objectxmpp, data)
+                            result,
+                            objectxmpp,
+                            data)
                     break
             if subnetexist:
                 break
@@ -347,12 +350,14 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         elif x[0] == 5:
             if showinfomachine:
                 logger.info("analysis the 5th rule : " \
-                    "use default relay server %s" %objectxmpp.assessor_agent_serverip)
+                    "use default relay server %s" % objectxmpp.assessor_agent_serverip)
             result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
             msg_log("use default relay server",
                     data['information']['info']['hostname'],
                     data['information']['users'][0],
-                    result, objectxmpp, data)
+                    result,
+                    objectxmpp,
+                    data)
             break
 
         # Load Balancer Rule : 6
@@ -368,7 +373,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 msg_log("Load Balancer",
                         data['information']['info']['hostname'],
                         data['information']['users'][0],
-                        result, objectxmpp, data)
+                        result,
+                        objectxmpp,
+                        data)
                 break
 
         # OU Machine Rule : 7
@@ -386,7 +393,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                     msg_log("AD organized by machine",
                             data['information']['info']['hostname'],
                             data['information']['users'][0],
-                            result, objectxmpp, data)
+                            result,
+                            objectxmpp,
+                            data)
                     break
 
         # OU User Rule : 8
@@ -404,7 +413,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                     msg_log("AD organized by User",
                             data['information']['info']['hostname'],
                             data['information']['users'][0],
-                            result, objectxmpp, data)
+                            result,
+                            objectxmpp,
+                            data)
                     break
 
         # Network Rule : 9
@@ -424,7 +435,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 msg_log("network address",
                         data['information']['info']['hostname'],
                         data['information']['users'][0],
-                        result, objectxmpp, data)
+                        result,
+                        objectxmpp,
+                        data)
                 break
                 # Network Rule : 10
         elif x[0] == 10:
@@ -447,9 +460,9 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         msg_string ="[user: %s / hostname: %s] : "\
                     "Relay server assigned: "\
                     "%s:%s" % (data['information']['users'][0],
-                                       data['information']['info']['hostname'],
-                                       result[0],
-                                       result[1])
+                               data['information']['info']['hostname'],
+                               result[0],
+                               result[1])
         if showinfomachine:
             logger.info(msg_string)
         XmppMasterDatabase().setlogxmpp(msg_string,
@@ -504,18 +517,18 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
             if len(listars) == 0:
                 listars = XmppMasterDatabase().getRelayServerofclusterFromjidars(result[2],
                                                                              moderelayserver="static",
-                                                                             enablears = None)
+                                                                             enablears=None)
                 logger.warning("agent %s. ARS %s is found but it is " \
-                    "stopped." % (data['information']['info']['hostname'], result[2]))
-                logger.warning("ACTION: Re-start the ARS on %s."%(result[2]))
+                               "stopped." % (data['information']['info']['hostname'], result[2]))
+                logger.warning("ACTION: Re-start the ARS on %s." % (result[2]))
                 logger.warning("try to apply the configuration on agent "\
-                    "%s of down default ars."%(data['information']['info']['hostname']))
+                               "%s of down default ars." % (data['information']['info']['hostname']))
         except (RuntimeError, TypeError, NameError):
             msglog = "Verify configuration assessor file name assessor_agent.ini.local."\
-                    "\n\terror parameter serverip "\
-                        "\nsearch ipconnection in table relayserver for default ARS"\
-                            "\nserverip = %s "\
-                                "configuration error"%(objectxmpp.assessor_agent_serverip)
+                "\n\terror parameter serverip "\
+                "\nsearch ipconnection in table relayserver for default ARS"\
+                "\nserverip = %s "\
+                "configuration error" % (objectxmpp.assessor_agent_serverip)
             msglog1 = "ERROR: Unable to assign a relay server "\
                          "to an agent %s"%data['information']['info']['hostname']
             logger.error(msglog1)
@@ -562,15 +575,15 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 " the agent to run its reconfiguration."%(result[2]))
             objectxmpp.xmpplog("No configuration sent to machine " \
                 "agent %s. ARS %s is found but it is stopped." % (result[2],
-                                                                  data['information']['info']['hostname'] ),
-                                                                  type = 'conf',
-                                                                  sessionname =  sessionid,
-                                                                  priority = -1,
-                                                                  action = "xmpplog",
-                                                                  who = data['information']['info']['hostname'],
-                                                                  module = "Configuration | Notify | Assessor",
-                                                                  date = None,
-                                                                  fromuser = objectxmpp.boundjid.bare)
+                                                                  data['information']['info']['hostname']),
+                                                                  type='conf',
+                                                                  sessionname=sessionid,
+                                                                  priority=-1,
+                                                                  action="xmpplog",
+                                                                  who=data['information']['info']['hostname'],
+                                                                  module="Configuration | Notify | Assessor",
+                                                                  date=None,
+                                                                  fromuser=objectxmpp.boundjid.bare)
             sendErrorConnectionConf(objectxmpp, sessionid, msg)
             return
 
@@ -578,13 +591,12 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
         if "substitute" in data and \
             "conflist" in data["substitute"] and \
                 len(data["substitute"]["conflist"]) > 0:
-            response["substitute"] =  XmppMasterDatabase().\
-                                    substituteinfo(data["substitute"],
-                                                   z1[0][2])
+            response["substitute"] =  XmppMasterDatabase().substituteinfo(data["substitute"],
+                                                                          z1[0][2])
             response["substitute"]["ars_chooose_for_substitute"] = z1[0][2]
             if showinfomachine:
-                logger.info("substitute resend to agent : %s"%json.dumps(response["substitute"],indent=4))
-                logger.info("substitute resend to agent : %s"%json.dumps(response["substitute"]['subscription'],indent=4))
+                logger.info("substitute resend to agent : %s" % json.dumps(response["substitute"], indent=4))
+                logger.info("substitute resend to agent : %s" % json.dumps(response["substitute"]['subscription'], indent=4))
             if "subscription" in response["substitute"]:
                 agentsubscription = response["substitute"]['subscription'][0]
                 listmacadress=[]
@@ -592,17 +604,17 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                     listmacadress.append(mac['macaddress'])
                 XmppMasterDatabase().setuplistSubscription(listmacadress, agentsubscription)
         if showinfomachine:
-            logger.info("msg['from'] %s"%data['agent_machine_name'])
+            logger.info("msg['from'] %s" % data['agent_machine_name'])
         XmppMasterDatabase().updateMachinereconf(data['agent_machine_name'])
         if showinfomachine:
-            logger.info("updateMachinereconf %s "%data['agent_machine_name'])
+            logger.info("updateMachinereconf %s " % data['agent_machine_name'])
         objectxmpp.send_message(mto=msg['from'],
-                            mbody=json.dumps(response),
-                            mtype='chat')
+                                mbody=json.dumps(response),
+                                mtype='chat')
     except Exception:
         sendErrorConnectionConf(objectxmpp,sessionid,msg)
         logger.error("Unable to assign a relay server to an agent")
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
         XmppMasterDatabase().setlogxmpp("Unable to assign a relay server to an agent",
                                         "conf",
                                         sessionid,
@@ -630,9 +642,9 @@ def msg_log(msg_header, hostname, user, result, objectxmpp, data):
         logger.info("%s Rule selects " \
                     "the relay server for machine " \
                     "%s user %s \n %s" % (msg_header,
-                                        hostname,
-                                        user,
-                                        result))
+                                          hostname,
+                                          user,
+                                          result))
         pass
 
 def displayData(objectxmpp, data):
@@ -643,7 +655,7 @@ def displayData(objectxmpp, data):
                         data['agenttype'].upper())
         else:
             logger.info("** INFORMATION FROM AGENT %s %s" % (data['agenttype'].upper(),
-                                                                data['action']))
+                                                             data['action']))
         logger.info("__________________________")
         logger.info("MACHINE INFORMATION")
         logger.info("Deployment name : %s" % data['deployment'])
@@ -709,13 +721,13 @@ def displayData(objectxmpp, data):
 
 def sendErrorConnectionConf(objectxmpp, session,  msg):
     response = {'action': 'resultconnectionconf',
-               'sessionid': session,
-               'data': [],
-               'syncthing': "",
-               'ret': 255}
+                'sessionid': session,
+                'data': [],
+                'syncthing': "",
+                'ret': 255}
     objectxmpp.send_message(mto=msg['from'],
-                        mbody=json.dumps(response),
-                        mtype='chat')
+                            mbody=json.dumps(response),
+                            mtype='chat')
 
 def read_conf_assessor(objectxmpp):
     """
@@ -726,8 +738,8 @@ def read_conf_assessor(objectxmpp):
     namefichierconf = plugin['NAME'] + ".ini"
     objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(objectxmpp.pathfileconf):
-        logger.error("plugin %s\nConfiguration file  missing\n  %s"%(plugin['NAME'],
-                                                                     objectxmpp.pathfileconf))
+        logger.error("plugin %s\nConfiguration file  missing\n  %s" % (plugin['NAME'],
+                                                                       objectxmpp.pathfileconf))
         message_config(plugin['NAME'], objectxmpp.pathfileconf)
         objectxmpp.assessor_agent_errorconf = True
         return False
@@ -756,7 +768,7 @@ def read_conf_assessor(objectxmpp):
                 if len(objectxmpp.assessor_agent_keyAES32) >0:
                     for keyAES32items in objectxmpp.assessor_agent_keyAES32:
                         if len(keyAES32items) != 32:
-                            logger.warning("parameter taille keyAES32 %s"%keyAES32items)
+                            logger.warning("parameter taille keyAES32 %s" % keyAES32items)
                             objectxmpp.assessor_agent_errorconf = True
             else:
                 logger.error("keyAES32 Key AES 32 char [Mandatory parameter keyAES32]")
@@ -768,38 +780,38 @@ def read_conf_assessor(objectxmpp):
                 objectxmpp.assessor_agent_announce_server = "default"
                 logger.warning("announce_server for syncthing default value is default")
 
-            ######################## default connection ##########################
-            ### Connection server parameters if no relay server is available ####
+            # default connection ##########################
+            # Connection server parameters if no relay server is available ####
 
             if Config.has_option("parameters", "serverip"):
                 objectxmpp.assessor_agent_serverip = ipfromdns(Config.get('parameters',
                                                                        'serverip'))
                 if objectxmpp.assessor_agent_serverip == "":
-                    logger.error("see parameter [serverip] in file : %s " \
-                                "if Connection server parameters " \
-                                "if no relay server is available"%objectxmpp.pathfileconf)
+                    logger.error("see parameter [serverip] in file : %s "
+                                 "if Connection server parameters "
+                                 "if no relay server is available" % objectxmpp.pathfileconf)
                     objectxmpp.assessor_agent_errorconf = True
                 ipdatadown = ["localhost", "127.0.0.1"]
                 for ip in ipdatadown:
                     if objectxmpp.assessor_agent_serverip == ip:
-                        logger.error("see parameter [serverip] in file : %s " \
-                                "if Connection server parameters " \
-                                "if no relay server is available"%objectxmpp.pathfileconf)
-                        logging.getLogger().error('parameter section "parameters" ' \
-                                                  'serverip must not be %s'%ip)
-                        objectxmpp.assessor_agent_errorconf  = True
+                        logger.error("see parameter [serverip] in file : %s "
+                                "if Connection server parameters "
+                                "if no relay server is available" % objectxmpp.pathfileconf)
+                        logging.getLogger().error('parameter section "parameters" '
+                                                  'serverip must not be %s' % ip)
+                        objectxmpp.assessor_agent_errorconf = True
             else:
                 logger.error("see parameter [serverip] " \
-                             "missing in file : %s " %objectxmpp.pathfileconf)
-                objectxmpp.assessor_agent_errorconf  = True
+                             "missing in file : %s " % objectxmpp.pathfileconf)
+                objectxmpp.assessor_agent_errorconf = True
 
             if Config.has_option("parameters", "port"):
                 objectxmpp.assessor_agent_port = Config.get('parameters', 'port')
                 if objectxmpp.assessor_agent_port == "":
-                    logger.error("see parameter [port] in file : %s " \
-                                "if Connection server parameters " \
-                                "if no relay server is available"%objectxmpp.pathfileconf)
-                    objectxmpp.assessor_agent_errorconf  = True
+                    logger.error("see parameter [port] in file : %s "
+                                "if Connection server parameters "
+                                "if no relay server is available" % objectxmpp.pathfileconf)
+                    objectxmpp.assessor_agent_errorconf = True
             else:
                 logger.error("default value parameter [port] 5222")
                 objectxmpp.assessor_agent_port == "5222"
@@ -808,18 +820,18 @@ def read_conf_assessor(objectxmpp):
                 objectxmpp.assessor_agent_baseurlguacamole = Config.get('parameters',
                                                                         'guacamole_baseurl')
                 if objectxmpp.assessor_agent_baseurlguacamole == "":
-                    logger.error("see parameter [guacamole_baseurl] in file : %s " \
-                                "if Connection server parameters " \
-                                "if no relay server is available"%objectxmpp.pathfileconf)
-                    objectxmpp.assessor_agent_errorconf  = True
+                    logger.error("see parameter [guacamole_baseurl] in file : %s "
+                                "if Connection server parameters "
+                                "if no relay server is available" % objectxmpp.pathfileconf)
+                    objectxmpp.assessor_agent_errorconf = True
             else:
-                logger.error("see parameter [guacamole_baseurl] " \
-                             "missing in file : %s " %objectxmpp.pathfileconf)
-                objectxmpp.assessor_agent_errorconf  = True
+                logger.error("see parameter [guacamole_baseurl] "
+                             "missing in file : %s " % objectxmpp.pathfileconf)
+                objectxmpp.assessor_agent_errorconf = True
 
         else:
-            logger.error("see SECTION [parameters] mising in file : %s "%objectxmpp.pathfileconf)
-            objectxmpp.assessor_agent_errorconf  = True
+            logger.error("see SECTION [parameters] mising in file : %s " % objectxmpp.pathfileconf)
+            objectxmpp.assessor_agent_errorconf = True
         if objectxmpp.assessor_agent_errorconf:
             message_config(plugin['NAME'], objectxmpp.pathfileconf)
             return False
@@ -837,10 +849,10 @@ def message_config(nameplugin, pathfileconf):
         announce_server : Syncthing announce server url of default ARS
         showinfomachine : list of names of the machines whose information we want displayed
         keyAES32 : List of AES keys for checking the agent"""%pathfileconf
-    logger.error("%s"%msg)
-    logger.error("For the [%s] plugin, it is mandatory " \
-                 "to define the following parameters."%(nameplugin))
-    logger.error("in files [%s] and file [%s.local]"%(pathfileconf, pathfileconf))
+    logger.error("%s" % msg)
+    logger.error("For the [%s] plugin, it is mandatory "
+                 "to define the following parameters." % (nameplugin))
+    logger.error("in files [%s] and file [%s.local]" % (pathfileconf, pathfileconf))
     logger.error("# Connection server parameters if no relay server is available")
     logger.error("[parameters]")
     logger.error("# XMPP server")

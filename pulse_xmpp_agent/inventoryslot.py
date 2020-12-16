@@ -17,21 +17,16 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
 import sys, os
 import logging
 import ConfigParser
-import sleekxmpp
 import netifaces
 import random
-from sleekxmpp.exceptions import IqError, IqTimeout
 import json
 import hashlib
-import datetime
 from optparse import OptionParser
-import base64
-import copy
 import traceback
-from datetime import datetime
 import time
 import urllib2
 import signal
@@ -9943,30 +9938,30 @@ def add_coloring_to_emit_windows(fn):
         FOREGROUND_RED = 0x0004  # text color contains red.
         FOREGROUND_INTENSITY = 0x0008  # text color is intensified.
         FOREGROUND_WHITE = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED
-       # winbase.h
-        #STD_INPUT_HANDLE = -10
-        #STD_OUTPUT_HANDLE = -11
-        #STD_ERROR_HANDLE = -12
+        # winbase.h
+        # STD_INPUT_HANDLE = -10
+        # STD_OUTPUT_HANDLE = -11
+        # STD_ERROR_HANDLE = -12
 
         # wincon.h
-        #FOREGROUND_BLACK     = 0x0000
+        # FOREGROUND_BLACK     = 0x0000
         FOREGROUND_BLUE = 0x0001
         FOREGROUND_GREEN = 0x0002
-        #FOREGROUND_CYAN      = 0x0003
+        # FOREGROUND_CYAN      = 0x0003
         FOREGROUND_RED = 0x0004
         FOREGROUND_MAGENTA = 0x0005
         FOREGROUND_YELLOW = 0x0006
-        #FOREGROUND_GREY      = 0x0007
+        # FOREGROUND_GREY      = 0x0007
         FOREGROUND_INTENSITY = 0x0008  # foreground color is intensified.
 
-        #BACKGROUND_BLACK     = 0x0000
-        #BACKGROUND_BLUE      = 0x0010
-        #BACKGROUND_GREEN     = 0x0020
-        #BACKGROUND_CYAN      = 0x0030
-        #BACKGROUND_RED       = 0x0040
-        #BACKGROUND_MAGENTA   = 0x0050
+        # BACKGROUND_BLACK     = 0x0000
+        # BACKGROUND_BLUE      = 0x0010
+        # BACKGROUND_GREEN     = 0x0020
+        # BACKGROUND_CYAN      = 0x0030
+        # BACKGROUND_RED       = 0x0040
+        # BACKGROUND_MAGENTA   = 0x0050
         BACKGROUND_YELLOW = 0x0060
-        #BACKGROUND_GREY      = 0x0070
+        # BACKGROUND_GREY      = 0x0070
         BACKGROUND_INTENSITY = 0x0080  # background color is intensified.
 
         levelno = args[1].levelno
@@ -10193,7 +10188,7 @@ class actiontest(Thread):
             d+=1
             if maxthread < d:
                 maxthread = d
-            
+
             request = urllib2.Request(self.url, globaltest, self.HEADER)
             response = urllib2.urlopen(request)
         except Exception, exc:
@@ -10381,7 +10376,7 @@ if __name__ == '__main__':
     optp.add_option("-T", "--nbthreadmax",
                 dest="nbthreadmax", default=None,
                 help="nomber thread maximun")
-    
+
     #optp.add_option("-p", "--password",
                 #dest="password", default=None,
                 #help="password connection xmpp")

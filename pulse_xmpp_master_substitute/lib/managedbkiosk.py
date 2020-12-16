@@ -26,6 +26,8 @@ import sys
 import os
 import json
 import logging
+from lib.utils import env
+
 if sys.platform.startswith('darwin'):
     import plyvel
 else:
@@ -58,7 +60,7 @@ class manageskioskdb:
 
     def bddir(self):
         if sys.platform.startswith('linux'):
-            return os.path.join("/", "var" ,"lib","pulse2","BDKiosk")
+            return os.path.join(Env.user_dir(),"BDKiosk")
         elif sys.platform.startswith('win'):
             return os.path.join(os.environ["ProgramFiles"], "Pulse","var","tmp","BDKiosk")
         elif sys.platform.startswith('darwin'):
@@ -129,7 +131,7 @@ class manageskioskdb:
         self.closebase()
         return result
     ################################################################################################
-    # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage 
+    # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage
     def get_obj_ref(self):
         str_name_idpackage = {}
         strjson = self.get_cmd_launch("str_json_name_id_package")

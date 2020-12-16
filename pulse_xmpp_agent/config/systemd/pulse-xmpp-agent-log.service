@@ -1,6 +1,7 @@
 [Unit]
 Description=Pulse2 XMPP Agent
-After=samba.service slapd.service
+After=samba.service slapd.service ejabberd.service
+Requires=ejabberd.service
 
 [Service]
 #PIDFile=/var/run/pulse-xmpp-agent-log.pid

@@ -24,20 +24,24 @@
 import sys
 import os
 import logging
+import logging.config
+from logging.handlers import TimedRotatingFileHandler
+import ConfigParser
 import traceback
 import sleekxmpp
 import platform
 import base64
 import json
 import time
-import socket
-import select
 import threading
 import shutil
 import subprocess
 import psutil
 import random
-
+import hashlib
+from lib.manageresourceplugin import resource_plugin
+import cherrypy
+from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
@@ -52,15 +56,16 @@ from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
-                        call_plugin, searchippublic, subnetnetwork,\
+                        call_plugin, subnetnetwork,\
                         createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
                         save_count_start, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
-                        simplecommand, is_connectedServer,  testagentconf, \
+                        simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
-                        protodef, geolocalisation_agent
+                        protodef, geolocalisation_agent, Env, \
+                        serialnumbermachine, file_put_contents_w_a
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -69,7 +74,8 @@ from lib.manage_scheduler import manage_scheduler
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
-
+from lib.httpserver import Controller
+from zipfile import *
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
@@ -78,7 +84,7 @@ from modulefinder import ModuleFinder
 
 from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp.xmlstream.stanzabase import ElementBase, ET, JID
+from sleekxmpp.xmlstream.stanzabase import ET
 from sleekxmpp import jid
 
 if sys.platform.startswith('win'):
@@ -86,12 +92,62 @@ if sys.platform.startswith('win'):
     import win32con
     import win32pipe
     import win32file
+    import win32com.client
 else:
     import signal
+    from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
 
 from lib.server_kiosk import process_tcp_serveur, manage_kiosk_message, process_serverPipe
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+
+
+class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
+    """
+    Extended version of TimedRotatingFileHandler that compress logs on rollover.
+    the rotation file is compress in zip
+    """
+
+    def __init__(self, filename, when='h', interval=1, backupCount=0,
+                 encoding=None, delay=False, utc=False,  compress="zip"):
+        super(TimedCompressedRotatingFileHandler, self).__init__(filename, when,
+                                                                 interval, backupCount, encoding,
+                                                                 delay, utc)
+        self.backupCountlocal= backupCount
+
+    def get_files_by_date(self):
+        dir_name, base_name = os.path.split(self.baseFilename)
+        file_names = os.listdir(dir_name)
+        result = []
+        result1 = []
+        prefix = '{}'.format(base_name)
+        for file_name in file_names:
+            if file_name.startswith(prefix) and not file_name.endswith('.zip'):
+                f=os.path.join(dir_name, file_name )
+                result.append((os.stat(f).st_ctime, f)  )
+            if file_name.startswith(prefix) and  file_name.endswith('.zip'):
+                f=os.path.join(dir_name, file_name )
+                result1.append((os.stat(f).st_ctime, f))
+        result1.sort()
+        result.sort()
+        while result1 and len(result1) >= self.backupCountlocal:
+            el = result1.pop(0)
+            if os.path.exists(el[1]):
+                os.remove(el[1])
+        return result[1][1]
+
+    def doRollover(self):
+        super(TimedCompressedRotatingFileHandler, self).doRollover()
+        try:
+            dfn = self.get_files_by_date()
+        except:
+            return
+        dfn_zipped = '{}.zip'.format(dfn)
+        if os.path.exists(dfn_zipped):
+            os.remove(dfn_zipped)
+        with zipfile.ZipFile(dfn_zipped, 'w') as f:
+            f.write(dfn, dfn_zipped, zipfile.ZIP_DEFLATED)
+        os.remove(dfn)
 
 logger = logging.getLogger()
 
@@ -141,8 +197,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+        # _____________ verify network interface _____________
+        # verifi si on a changer les interface pendant l'arret de l'agent.
+        netfingerprintstart = createfingerprintnetwork()
+        filetempinfolibfingerprint = os.path.join( os.path.dirname(os.path.realpath(__file__)),
+                                                   "lib",
+                                                   "INFOSTMP",
+                                                   'fingerprintnetwork')
+        logging.debug("filename: %s" % filetempinfolibfingerprint)
+        if os.path.exists(filetempinfolibfingerprint):
+            logging.debug("actuel fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
+            # comparaison
+            if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
+                logging.warning("after start : registration must update the information in the xmpp tables.")
+                self.force_full_registration()
+        # ______________________________________________________
+        Env.agenttype = self.config.agenttype
+        managepackage.agenttype = self.config.agenttype
         # creation object session ##########
         self.session = session(self.config.agenttype)
+        self.boolinventory=False # cette variable permet de faire demander 1
+                                 # inventaire suite a 1 changement de reseau.
+                                 # inventaire sera demander quand l'agent sera dans 1 mode moins transitoire.
         # CREATE MANAGE SCHEDULER##############
         logging.debug("### CREATION MANAGER PLUGINSCHULING ##########")
         self.manage_scheduler = manage_scheduler(self)
@@ -209,6 +285,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.levelcharge = {}
             self.levelcharge['machinelist'] = []
             self.levelcharge['charge'] = 0
+            # supprime les reverses ssh inutile
+            self.manage_persistence_reverse_ssh = reverse_port_ssh()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
         self.nicklistchatroomcommand = {}
@@ -248,7 +326,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.sub_subscribe.bare == "":
             self.sub_subscribe = self.agentmaster
 
-
         if not hasattr(self.config, 'sub_inventory'):
             self.sub_inventory = self.agentmaster
         else:
@@ -270,6 +347,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_registration = jid.JID(self.config.sub_registration)
         if self.sub_registration.bare == "":
             self.sub_registration = self.agentmaster
+
+        if not hasattr(self.config, 'sub_monitoring'):
+            self.sub_monitoring = self.agentmaster
+        else:
+            if isinstance(self.config.sub_monitoring, list) and\
+                len(self.config.sub_monitoring) > 0:
+                self.sub_monitoring = jid.JID(self.config.sub_monitoring[0])
+            else:
+                self.sub_monitoring = jid.JID(self.config.sub_monitoring)
+        if self.sub_monitoring.bare == "":
+            self.sub_monitoring = self.agentmaster
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:
@@ -358,15 +446,15 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       laps_time_update_plugin,
                       self.update_plugin,
                       repeat=True)
-        if not sys.platform.startswith('win'):
-            if self.config.netchanging == 1:
-                logging.warning("Network Changing enable")
-                self.schedule('check network',
-                            self.laps_time_networkMonitor,
-                            self.networkMonitor,
-                            repeat=True)
-            else:
-                logging.warning("Network Changing disable")
+        # if not sys.platform.startswith('win'):
+        if self.config.netchanging == 1:
+            logging.warning("Network Changing enable")
+            self.schedule('check network',
+                        self.laps_time_networkMonitor,
+                        self.networkMonitor,
+                        repeat=True)
+        else:
+            logging.warning("Network Changing disable")
         self.schedule('check AGENT INSTALL', 350,
                       self.checkinstallagent,
                       repeat=True)
@@ -482,11 +570,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                       15,
                       self.initialise_syncthing,
                       repeat=False)
-
-        #self.schedule('initialise_tcp_kiosk',
-                      #80,
-                      #self.initialise_tcp_kiosk,
-                      #repeat=False)
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
@@ -616,7 +699,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if not self.config.syncthing_on:
             return
         self.syncthingreconfigure = False;
-        logger.info("synchro_synthing")
+        logger.debug("synchro_synthing")
         # update syncthing
         if self.config.agenttype in ['relayserver']:
             self.clean_old_partage_syncting()
@@ -942,7 +1025,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except IqError as e:
                 err_resp = e.iq
                 logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-                logger.error("\n%s" % (traceback.format_exc()))
+                logger.debug("\n%s" % (traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
@@ -1652,6 +1735,51 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             mbody = json.dumps(dataobj),
                             mtype = 'chat')
 
+    def call_asynchrome_function_plugin(self,
+                                        nameplugin,
+                                        differed=0,
+                                        data=None,
+                                        sessionid=None):
+        """
+            call plugin   parralelle mode ou differe calling
+        """
+        nameevenement = getRandomName(6, nameplugin)
+        if sessionid is None:
+            sessionid = getRandomName(6, "asynchrone")
+        if data is None:
+            data = {}
+        argv=[nameplugin, sessionid]
+        self.schedule(nameevenement,
+                      differed,
+                      self.__asynchrome_function_plugin,
+                      argv,
+                      data,
+                      repeat=False)
+
+    def __asynchrome_function_plugin(self, *argv, **kargv):
+        """
+         "data" : { "msg" : "error plugin : "+ dataobj["action"]
+        """
+        # structure execution
+        nameplugin = argv[0]
+        datasend={ "action": argv[0],
+                   "sessionid" : argv[1],
+                   "ret" : 0,
+                   "base64" : False,
+                   "data": kargv}
+        datasenderror=datasend.copy()
+        datasenderror['action']= "result" + datasend["action"]
+        datasenderror['data']= { "msg" : "error plugin : " + datasend['action']}
+        msg = {'from': self.boundjid.bare,
+               "to": self.boundjid.bare,
+               'type': 'chat'}
+        call_plugin(datasend['action'],
+                    self,
+                    datasend['action'],
+                    argv[1],
+                    datasend['data'],
+                    msg,
+                    datasenderror)
 
     def reloadsesssion(self):
         # reloadsesssion only for machine
@@ -1708,6 +1836,21 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def handlemanagesession(self):
         self.session.decrementesessiondatainfo()
 
+    def force_full_registration(self):
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                   "BOOLFILECOMPLETREGISTRATION")
+        BOOLFILEINVENTORYONCHANGINTERFACE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                   "BOOLFILEINVENTORYONCHANGINTERFACE")
+        file_put_contents(BOOLFILECOMPLETREGISTRATION,
+                                "Do not erase.\n"\
+                                "when re-recording, it will be of type 2. full recording.\n from networkMonitor")
+
+        file_put_contents(BOOLFILEINVENTORYONCHANGINTERFACE,
+                                "Do not erase.\n"\
+                                "this file allows you to request 1 inventory following 1 change of network.\n"\
+                                "The inventory is sent when the agent is no longer in transient mode\n" \
+                                "following changes of interfaces.")
+
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time  "\
@@ -1716,6 +1859,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
             md5ctl = createfingerprintnetwork()
             force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
             if self.md5reseau != md5ctl or os.path.isfile(force_reconfiguration):
+                self.force_full_registration()
+                # il y a 1 changement dans le reseau
+                # on verify si on connecte
+                if self.state.ensure('connected'):
+                    logging.log(DEBUGPULSE,"AGENT MACHINE ALWAY CONNECTED ON CHANG RESEAU")
+                    # toujours connected.
+                    self.md5reseau = refreshfingerprint()
+                    # il y a changement d interface. il faut remettre a jour la table pour network.
+                    # remarque cela declenchera 1 inventaire glpi apres reengeristrement
+                    self.update_plugin()
+                    return
                 if not os.path.isfile(force_reconfiguration):
                     refreshfingerprint()
                     logging.log(DEBUGPULSE,"by network changed. The reconfiguration of the agent [%s] will be executed." % self.boundjid.user)
@@ -1737,7 +1891,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         break
                     time.sleep(2)
                 logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
+                self.force_full_registration()
                 self.restartBot()
+            else:
+                BOOLFILEINVENTORYONCHANGINTERFACE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                    "BOOLFILEINVENTORYONCHANGINTERFACE")
+                if os.path.isfile(BOOLFILEINVENTORYONCHANGINTERFACE):
+                    # if on a ce fichier alors on genere 1 nouveau inventaire
+                    os.remove(BOOLFILEINVENTORYONCHANGINTERFACE)
+                    logging.log(DEBUGPULSE,"send inventory on chang network")
+                    self.handleinventory()
         except Exception as e:
             logging.error(" %s " %(str(e)))
             logger.error("\n%s"%(traceback.format_exc()))
@@ -1905,8 +2068,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 if dataobj.has_key('base64') and \
                     ((isinstance(dataobj['base64'],bool) and dataobj['base64'] is True) or
                     (isinstance(dataobj['base64'],str) and dataobj['base64'].lower()=='true')):
-                        #data in base 64
-                        mydata = json.loads(base64.b64decode(dataobj['data']))
+                    # data in base 64
+                    mydata = json.loads(base64.b64decode(dataobj['data']))
                 else:
                     mydata = dataobj['data']
 
@@ -2050,8 +2213,13 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if self.config.public_ip == None:
             self.config.public_ip = self.config.ipxmpp
         remoteservice = protodef()
-        # if regcomplet = True then register agent reconfigure complet of agent
-        self.regcomplet = remoteservice.boolchangerproto # || condition de reconf complet
+        self.FullRegistration = remoteservice.boolchangerproto # || condition de reconf complet
+        ### on search if exist fileboolreconfcomple
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                   "BOOLFILECOMPLETREGISTRATION")
+        if os.path.exists(BOOLFILECOMPLETREGISTRATION):
+            self.FullRegistration = True
+            os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'infomachine',
             'from': self.config.jidagent,
@@ -2083,21 +2251,36 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'ippublic': self.config.public_ip,
             'geolocalisation': {},
             'remoteservice': remoteservice.proto,
-            'regcomplet': self.regcomplet,
+            'regcomplet': self.FullRegistration,
             'packageserver': self.config.packageserver,
             'adorgbymachine': base64.b64encode(organizationbymachine()),
             'adorgbyuser': '',
             'kiosk_presence': test_kiosk_presence(),
             'countstart': save_count_start(),
-            'keysyncthing': self.deviceid
+            'keysyncthing': self.deviceid,
+            'uuid_serial_machine' : serialnumbermachine()
         }
+        try:
+            dataobj['md5_conf_monitoring'] = ""
+            # self.monitoring_agent_config_file
+            if self.config.agenttype not in ['relayserver'] and \
+                hasattr(self.config, 'monitoring_agent_config_file') and \
+                    self.config.monitoring_agent_config_file != "" and \
+                        os.path.exists(self.config.monitoring_agent_config_file):
+                            dataobj['md5_conf_monitoring'] =  hashlib.md5(file_get_contents(self.config.monitoring_agent_config_file)).hexdigest()
+        except AttributeError:
+            logging.warning('conf file monitoring missing')
+        except Exception as e:
+            logging.error('%s error on file config monitoring'%str(e))
         if self.config.agenttype in ['relayserver']:
             try:
                 dataobj['syncthing_port'] = self.config.syncthing_port
             except Exception:
                 pass
-        if self.geodata.localisation is not None:
+        if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
+        else:
+            logging.warning('geolocalisation not defined')
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
@@ -2175,27 +2358,76 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     return True
         return False
 
-def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+def createDaemon(optstypemachine, optsconsoledebug,
+                 optsdeamon, tgfichierconf, tglevellog, tglogfile):
     """
         This function create a service/Daemon that will execute a det. task
     """
     try:
         if sys.platform.startswith('win'):
-            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile,))
+            p = multiprocessing.Process(name='xmppagent',target=doTask, args=(optstypemachine, optsconsoledebug, optsdeamon, tgfichierconf, tglevellog, tglogfile,))
             p.daemon = True
             p.start()
             p.join()
         else:
-            # Store the Fork PID
-            pid = os.fork()
-            if pid > 0:
-                print 'PID: %d' % pid
-                os._exit(0)
-            doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
+            try:
+                pid = os.fork()
+                if pid > 0:
+                    # Wait for initialization before exiting
+                    time.sleep(2)
+                    # exit first parent and return
+                    sys.exit(0)
+            except OSError, e:
+                print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+                sys.exit(1)
+
+            # decouple from parent environment
+            os.chdir("/")
+            os.setsid()
+
+            # do second fork
+            try:
+                pid = os.fork()
+                if pid > 0:
+                    # exit from second parent
+                    sys.exit(0)
+            except OSError, e:
+                sys.exit(1)
+
+            maxfd = getrlimit(RLIMIT_NOFILE)[1]
+            if maxfd == RLIM_INFINITY:
+                maxfd = 1024
+
+            for fd in range(0, maxfd):
+                # Don't close twisted FDs
+                # TODO: make a clean code to be sure nothing is opened before this function
+                # ie: daemonize very early, then after import all stuff...
+                if fd not in (3, 4, 5, 6, 7, 8):
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        pass
+
+            if (hasattr(os, "devnull")):
+                REDIRECT_TO = os.devnull
+            else:
+                REDIRECT_TO = "/dev/null"
+
+            os.open(REDIRECT_TO, os.O_RDWR)
+            os.dup2(0, 1)
+            os.dup2(0, 2)
+            # write pidfile
+            pid = os.getpid()
+            f = open("/var/run/xmpp_agent_pulse_%s.pid"%optstypemachine, 'w')
+            try:
+                f.write('%s\n' % pid)
+            finally:
+                f.close()
+            doTask(optstypemachine, optsconsoledebug, optsdeamon, tgfichierconf, tglevellog, tglogfile)
     except OSError, error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s"%(traceback.format_exc()))
-        os._exit(1)
+        sys.exit(1)
 
 def tgconf(optstypemachine):
     tg = confParameter(optstypemachine)
@@ -2223,20 +2455,22 @@ def tgconf(optstypemachine):
         time.sleep(2)
     return tg
 
-def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
+def doTask( optstypemachine, optsconsoledebug, optsdeamon,
+           tgnamefileconfig, tglevellog, tglogfile):
     processes = []
     queue_recv_tcp_to_xmpp = Queue()
     queueout= Queue()
     #event inter process
     eventkilltcp = Event()
     eventkillpipe = Event()
-    file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                   "pidagent"),
-                      "%s"%os.getpid())
+    pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           "INFOSTMP",
+                           "pidagent")
+    file_put_contents(pidfile, "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
-                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pidagent"),
+                                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagent"),
                                     "/setowner",
                                     "pulse",
                                     "/t"], stderr=subprocess.STDOUT)
@@ -2251,6 +2485,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     # format log more informations
     format = '%(asctime)s - %(levelname)s - %(message)s'
+    #logging.handlers.TimedCompressedRotatingFileHandler = TimedCompressedRotatingFileHandler
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon :
@@ -2286,25 +2521,45 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                        eventkillpipe))
     processes.append(p)
     p.start()
-
-    p = Process(target=process_tcp_serveur, args=(14000,
-                                                  optstypemachine,
-                                                  optsconsoledebug,
-                                                  optsdeamon,
-                                                  tglevellog,
-                                                  tglogfile,
-                                                  queue_recv_tcp_to_xmpp,
-                                                  queueout,
-                                                  eventkilltcp))
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
+    file_put_contents(windowfilepidname, "from %s : %s %s" % (os.getpid(), p.name, p.pid ))
+    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                      p.pid,
+                                                      p.name,
+                                                      p.pid))
+    p = Process(target=process_tcp_serveur,
+                name="tcp_serveur",
+                args=(  14000,
+                        optstypemachine,
+                        optsconsoledebug,
+                        optsdeamon,
+                        tglevellog,
+                        tglogfile,
+                        queue_recv_tcp_to_xmpp,
+                        queueout,
+                        eventkilltcp))
     processes.append(p)
     p.start()
+    windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintreename")
 
+    file_put_contents_w_a(windowfilepidname,
+                          "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                          option="a")
+    logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                      p.pid,
+                                                      p.name,
+                                                      p.pid))
     if sys.platform.startswith('win'):
         logger.debug("_______________________________________________________")
         logger.info("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
         logger.debug("_______________________________________________________")
         #using event eventkillpipe for signal stop thread
         p = Process(target=process_serverPipe,
+                    name="serveur pipe windows",
                     args=(optstypemachine,
                           optsconsoledebug,
                           optsdeamon,
@@ -2315,18 +2570,167 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                           eventkillpipe))
         processes.append(p)
         p.start()
+        windowfilepidname = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         "INFOSTMP",
+                                         "pidagentwintreename")
 
+        file_put_contents_w_a(windowfilepidname,
+                            "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid ),
+                            option="a")
+        logger.info("%s -> %s : [Process Alive %s (%s)]"%(os.getpid(),
+                                                          p.pid,
+                                                          p.name,
+                                                          p.pid))
+    # ==========================
+    # = cherrypy server config =
+    # ==========================
+    config = confParameter(optstypemachine)
+    if config.agenttype in ['machine']:
+        port = 52044
+        root_path = os.path.abspath(os.getcwd())
+        server_path = os.path.join(root_path, 'lib')
+        server_ressources_path = os.path.join(root_path, 'lib', 'ressources')
 
-    # completing process
-    try:
-        for p in processes:
-            p.join()
-    except KeyboardInterrupt:
-        logging.error("TERMINATE PROGRAMM ON CTRL+C")
-        os._exit(1)
-    except Exception as e:
-        logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
+        Controller.config = config
+        # Generate cherrypy server conf
+        server_conf = {
+            # Root access
+            'global':{
+                'server.socket_host': '0.0.0.0',
+                'server.socket_port': port,
+            },
+            '/': {
+                #'tools.staticdir.on': True,
+                'tools.staticdir.dir': server_path
+            },
+            # Sharing css ...
+            '/css': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'css')
+            },
+            # Sharing js ...
+            '/js': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'js'),
+            },
+            # Sharing images ...
+            '/images': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'images')
+
+            },
+            # Alias to images for datatables js lib
+            '/DataTables-1.10.21/images': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'images'),
+            },
+            # Sharing fonts
+            '/fonts': {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': os.path.join(server_ressources_path, 'fileviewer', 'fonts'),
+            },
+        }
+        count = 0
+        for path in config.paths:
+            name = config.names[count]
+            # Here we know the name and the path, we can add the access for each folders
+            server_conf['/%s' % str(name)] = {
+                'tools.staticdir.on': True,
+                'tools.staticdir.dir': str(path)
+            }
+            count += 1
+        cherrypy.tree.mount(Controller(), '/', server_conf)
+        # We will create our own server so we don't need the
+        # default one
+
+        cherrypy.server.unsubscribe()
+        server1 = cherrypy._cpserver.Server()
+        server1.socket_port = port
+        server1._socket_host = '0.0.0.0'
+
+        # ===
+        # Do not remove the following lines
+        # They can be usefull to configure the server
+        # ===
+
+        # server1.thread_pool = 30
+        # server1.ssl_module = 'pyopenssl'
+        # server1.ssl_certificate = '/home/ubuntu/my_cert.crt'
+        # server1.ssl_private_key = '/home/ubuntu/my_cert.key'
+        # server1.ssl_certificate_chain = '/home/ubuntu/gd_bundle.crt'
+
+        server1.subscribe()
+        cherrypy.engine.start()
+
+    if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
+        # completing process
+        programrun = True
+        while True:
+            time.sleep(120)
+            for p in processes:
+                if p.is_alive():
+                    logger.debug("Alive %s (%s)"%(p.name,p.pid))
+                    if p.name == "xmppagent":
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        result = simplecommand(cmd)
+                        if result['code'] == 0:
+                            if result['result']:
+                                programrun = False
+                                break
+                else:
+                    logger.error("Not ALIVE %s (%s) "%(p.name, p.pid))
+                    programrun = False
+                    break
+            if not programrun:
+                logging.debug("END PROGRAMM")
+                for p in processes:
+                    p.terminate()
+                cmd = "kill -s kill %s"%os.getpid()
+                result = simplecommand(cmd)
+                break
+    elif sys.platform.startswith('win'):
+        #time.sleep(30)
+        windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintree")
+        dd = process_agent_search(os.getpid())
+        processwin = json.dumps(dd.pidlist(),indent=4)
+        file_put_contents(windowfilepid, "%s" % processwin)
+        logging.debug("Process agent list : %s" % processwin)
+        while True:
+            time.sleep(120)
+            dd = process_agent_search(os.getpid())
+            processwin = json.dumps(dd.pidlist(),indent=4)
+            file_put_contents(windowfilepid, "%s" % processwin)
+            logging.debug("Process agent list : %s" % processwin)
+            # list python process
+            lpidsearch=[]
+            for k, v in dd.get_pid().iteritems():
+                if "python.exe" in v:
+                    lpidsearch.append(int(k))
+            logging.debug("Process python list : %s"%lpidsearch)
+            for pr in processes:
+                logging.debug("search %s in %s" % (pr.pid, lpidsearch))
+                if pr.pid not in lpidsearch:
+                    logging.debug("Process %s pid %s is missing %s" % (pr.name, pr.pid, lpidsearch))
+                    for p in processes:
+                        p.terminate()
+                    logging.debug("END PROGRAMM")
+                    cmd = "taskkill /F /PID %s" % os.getpid()
+                    result = simplecommand(cmd)
+                    break
+    else:
+        # completing process
+        try:
+            for p in processes:
+                p.join()
+        except KeyboardInterrupt:
+            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            sys.exit(1)
+        except Exception as e:
+            logging.error("TERMINATE PROGRAMM ON ERROR : %s"%str(e))
     logging.debug("END PROGRAMM")
+    sys.exit(0)
 
 class process_xmpp_agent():
 
@@ -2434,6 +2838,7 @@ class process_xmpp_agent():
                     logging.log(DEBUGPULSE,"analyse alternative alternative connection")
                     logging.log(DEBUGPULSE,"file %s"%conffilename("cluster"))
                     logging.log(DEBUGPULSE, "alternative configuration")
+                    xmpp.force_full_registration()
                     setgetcountcycle(1)
                     try:
                         timealternatifars = random.randint(*xmpp.config.timealternatif)
@@ -2458,6 +2863,37 @@ class process_xmpp_agent():
                         logging.log(40," ERROR analyse alternative connection")
                         logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
         terminateserver(xmpp)
+
+class process_agent_search():
+    def __init__(self, pid_agent, depth = 3):
+        self.pid = ("%s"%pid_agent).strip()
+        # initialisation wmi
+        self.wmi = win32com.client.GetObject('winmgmts:')
+        self.processname = {}
+        self.processname[self.pid] = "pythonmainproces"
+        self.depth = depth
+
+    def pidlist(self):
+        self.search_name_pid(self.pid)
+        return self.processname
+
+    def search_name_pid(self, pidsearch, leveldepth = 0):
+        leveldepth += 1
+        if leveldepth >= self.depth : return
+        childrens=self.wmi.ExecQuery('Select * from win32_process where ParentProcessId=%s'%pidsearch)
+        for child in childrens:
+            self.processname[str(child.Properties_('ProcessId'))] = "%s_%s"%(pidsearch, child.Name)
+            self.search_name_pid(str(child.Properties_('ProcessId')), leveldepth)
+
+    def get_pid(self):
+        return self.processname
+
+    def numprocess_pid(self):
+        return len(self.processname)
+
+    def is_win_process_num(self):
+        self.pidlist()
+        return self.numprocess_pid()
 
 def terminateserver(xmpp):
     #event for quit loop server tcpserver for kiosk
@@ -2493,8 +2929,28 @@ def terminateserver(xmpp):
     logging.log(DEBUGPULSE,"Waiting to stop kiosk server")
     logging.log(DEBUGPULSE,"QUIT")
     logging.log(DEBUGPULSE,"bye bye Agent")
-    os._exit(0)
+    if sys.platform.startswith('win'):
+        windowfilepid = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                     "INFOSTMP",
+                                     "pidagentwintree")
+        with open(windowfilepid) as json_data:
+            data_dict = json.load(json_data)
+        pythonmainproces = ""
 
+        for pidprocess in data_dict:
+            if "pythonmainproces" in data_dict[pidprocess]:
+                pythonmainproces = pidprocess
+        if pythonmainproces != "":
+            logging.log(DEBUGPULSE, "TERMINE process pid %s" % pythonmainproces )
+            pidfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
+                                   "pidagent")
+            aa = file_get_contents(pidfile).strip()
+            logging.log(DEBUGPULSE, "process pid file pidagent is %s" % aa )
+            cmd="TASKKILL /F /PID %s /T" % pythonmainproces
+            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
+            os.system(cmd)
+    os._exit(0)
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
@@ -2531,6 +2987,8 @@ if __name__ == '__main__':
             os.remove(f)
 
     if not opts.deamon :
-        doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
+        doTask(opts.typemachine, opts.consoledebug,
+               opts.deamon, tg.namefileconfig, tg.levellog, tg.logfile)
     else:
-        createDaemon(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
+        createDaemon(opts.typemachine, opts.consoledebug,
+                     opts.deamon, tg.namefileconfig, tg.levellog, tg.logfile)

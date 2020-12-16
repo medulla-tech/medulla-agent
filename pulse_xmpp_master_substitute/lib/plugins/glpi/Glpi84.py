@@ -24,20 +24,13 @@
 This module declare all the necessary stuff to connect to a glpi database in it's
 version 0.84
 """
-import os
 import logging
 import re
-import base64
-import json
-import requests
 import traceback
 import sys
 from sets import Set
 import datetime
 import calendar, hashlib
-import time
-from configobj import ConfigObj
-from xmlrpclib import ProtocolError
 import functools
 from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
         Integer, Date, ForeignKey, asc, or_, not_, desc, func, distinct
@@ -51,18 +44,18 @@ try:
     from sqlalchemy.sql.expression import ColumnOperators
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.exc import OperationalError, NoSuchTableError
+from sqlalchemy.exc import OperationalError
 
 # TODO rename location into entity (and locations in location)
 
 #from mmc.plugins.glpi.config import GlpiConfig
 #from mmc.plugins.glpi.utilities import complete_ctx
 #from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.utils.database_utils import decode_latin1, encode_latin1, decode_utf8, encode_utf8, fromUUID, toUUID, setUUID
+from lib.plugins.utils.database_utils import fromUUID, toUUID, setUUID
 
 from lib.plugins.utils.database_utils import  DbTOA # pyflakes.ignore
 #from mmc.plugins.dyngroup.config import DGConfig
-from distutils.version import LooseVersion, StrictVersion
+from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -919,7 +912,8 @@ class Glpi84(DatabaseHelper):
                         )
                     )
 
-        if count: query = query.scalar()
+        if count:
+            query = query.scalar()
         return query
 
 
@@ -937,7 +931,8 @@ class Glpi84(DatabaseHelper):
             return obj.name
         if type(obj) == str and re.match('UUID', obj):
             l = self.getLocation(obj)
-            if l: return l.name
+            if l:
+                return l.name
         return obj
 
     def __addQueryFilter(self, query_filter, eq):
@@ -2966,8 +2961,10 @@ class Glpi84(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(distinct(self.machine.c.id)))
@@ -3042,8 +3039,10 @@ class Glpi84(DatabaseHelper):
                 return param
 
         name = check_list(name)
-        if vendor is not None: vendor = check_list(vendor)
-        if version is not None: version = check_list(version)
+        if vendor is not None:
+            vendor = check_list(vendor)
+        if version is not None:
+            version = check_list(version)
 
         if int(count) == 1:
             query = session.query(func.count(self.software.c.name))
@@ -3477,6 +3476,7 @@ class Glpi84(DatabaseHelper):
         ret = query.group_by(self.net.c.name).all()
         session.close()
         return ret
+
     def getMachineByNetwork(self, ctx, filt):
         """ @return: all machines that have this contact number """
         session = create_session()
@@ -3489,9 +3489,60 @@ class Glpi84(DatabaseHelper):
         session.close()
         return ret
 
+    def _machineobject(self, ret):
+        """ result view glpi_computers_pulse """
+        if ret:
+            try:
+                return {'id' : ret.id,
+                        'entities_id': ret.entities_id,
+                        'name': ret.name,
+                        'serial': ret.serial,
+                        'otherserial': ret.otherserial,
+                        'contact': ret.contact,
+                        'contact_num': ret.contact_num,
+                        'users_id_tech': ret.users_id_tech,
+                        'groups_id_tech': ret.groups_id_tech,
+                        'comment': ret.comment,
+                        'date_mod': ret.date_mod,
+                        'autoupdatesystems_id': ret.autoupdatesystems_id,
+                        'locations_id': ret.locations_id ,
+                        'domains_id': ret.domains_id,
+                        'networks_id': ret.networks_id,
+                        'computermodels_id': ret.computermodels_id,
+                        'computertypes_id': ret.computertypes_id,
+                        'is_template': ret.is_template,
+                        'template_name': ret.template_name,
+                        'manufacturers_id': ret.manufacturers_id,
+                        'is_deleted': ret.is_deleted,
+                        'is_dynamic': ret.is_dynamic,
+                        'users_id': ret.users_id,
+                        'groups_id': ret.groups_id,
+                        'states_id': ret.states_id,
+                        'ticket_tco': ret.ticket_tco,
+                        'uuid': ret.uuid,
+                        'operatingsystems_id': ret.operatingsystems_id,
+                        'operatingsystemversions_id': ret.operatingsystemversions_id,
+                        'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id}
+            except Exception:
+                self.logger.error("\n%s" % (traceback.format_exc()))
+        return {}
+
+    def getMachineBySerial(self, serial):
+        """ @return: all computers that have this mac address """
+        session = create_session()
+        ret = session.query(Machine).filter(Machine.serial.like(serial)).first()
+        session.close()
+        return self._machineobject(ret)
+
+    def getMachineByUuidSetup(self, uuidsetupmachine):
+        """ @return: all computers that have this uuid setup machine """
+        session = create_session()
+        ret = session.query(Machine).filter(Machine.uuid.like(uuidsetupmachine)).first()
+        session.close()
+        return self._machineobject(ret)
+
     def getMachineByMacAddress(self, ctx, filt):
         """ @return: all computers that have this mac address """
-
         session = create_session()
         query = session.query(Machine).join(NetworkPorts, and_(Machine.id == NetworkPorts.items_id, NetworkPorts.itemtype == 'Computer'))
         query = query.filter(Machine.is_deleted == 0).filter(Machine.is_template == 0)

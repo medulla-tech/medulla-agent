@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.1.2
+Version:	2.1.3
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -44,6 +44,8 @@ Requires:       python-inotify
 Requires:       python-dateutil
 Requires:       python2-psutil
 Requires:       python-wakeonlan
+Requires:       python-crypto
+Requires:       python-cherrypy
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -122,6 +124,12 @@ if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
     echo "..done"
 fi
 
+if systemctl -q is-enabled pulse-xmpp-master-substitute-monitoring ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-monitoring service..."
+    systemctl restart pulse-xmpp-master-substitute-monitoring
+    echo "..done"
+fi
+
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
@@ -137,7 +145,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/wakeonlan.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
-%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler_relay.ini
 %_var/log/pulse
 %dir %{python2_sitelib}/pulse_xmpp_agent/
 %{python2_sitelib}/pulse_xmpp_agent/lib/
@@ -154,6 +162,7 @@ fi
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
+Requires:       python-enum34
 BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
@@ -172,6 +181,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 
 
 #--------------------------------------------------------------------
@@ -227,8 +237,12 @@ fi
 %files -n pulse-agent-installers
 %_var/lib/pulse2/clients
 %config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
-%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/start.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
 %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
@@ -245,8 +259,6 @@ plugins for pulse xmppmaster
 %files -n pulse-xmppmaster-agentplugins
 %_var/lib/pulse2/xmpp_baseplugin
 %_var/lib/pulse2/xmpp_basepluginscheduler
-%_var/lib/pulse2/clients/config/
-%_var/lib/pulse2/clients/config/inventory.ini
 
 #--------------------------------------------------------------------
 
@@ -314,7 +326,7 @@ cp pulse_xmpp_agent/config/reverse_ssh_on.ini %buildroot%_sysconfdir/pulse-xmpp-
 cp pulse_xmpp_agent/config/wakeonlan.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
-cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/manage_scheduler_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
@@ -371,8 +383,12 @@ rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_rela
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/manage_scheduler_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/start.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
@@ -413,7 +429,7 @@ chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-deps-package
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-netcheck-package
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-service-package
 #chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-kiosk-package
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-filetree-generator.git
+GIT_SSL_NO_VERIFY=true git clone https://USER:PASSWORD@github.com/pulse-project/pulse-filetree-generator.git
 mv pulse-filetree-generator pulse-filetree-generator-%{filetree_version}
 g++ -O3 -std=c++11 pulse-filetree-generator-%{filetree_version}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin

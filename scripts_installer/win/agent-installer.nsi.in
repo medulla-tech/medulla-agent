@@ -22,6 +22,7 @@
 ; Make sure the installer runs as admin
 RequestExecutionLevel admin
 
+
 ; Define a few variables
 !define PRODUCT_NAME "Pulse Agent"
 !define PRODUCT_PUBLISHER "SIVEO"
@@ -36,7 +37,6 @@ RequestExecutionLevel admin
 !define PROGRAMDATA "C:\ProgramData"
 
 ; Variables replaced by the script calling the nsi
-!define PYTHON32_FILENAME "@@PYTHON32_FILENAME@@"
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
 !define PY_VCPYTHON27_FILENAME "@@PY_VCPYTHON27_FILENAME@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
@@ -44,34 +44,34 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
 !define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
+!define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
 !define PULSE_SCHEDULER_CONFFILE "@@PULSE_SCHEDULER_CONFFILE@@"
 !define PULSE_INVENTORY_CONFFILE "@@PULSE_INVENTORY_CONFFILE@@"
+!define PULSE_STARTUPDATE_CONFFILE "@@PULSE_STARTUPDATE_CONFFILE@@"
+!define PULSE_START_CONFFILE "@@PULSE_START_CONFFILE@@"
 !define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
 !define PULSE_AGENT_TASK_XML_FILENAME "@@PULSE_AGENT_TASK_XML_FILENAME@@"
-!define OPENSSH_NAME "@@OPENSSH_NAME@@"
-!define OPENSSH32_FILENAME "@@OPENSSH32_FILENAME@@"
-!define OPENSSH64_FILENAME "@@OPENSSH64_FILENAME@@"
 !define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
 !define SSH_PORT "@@SSH_PORT@@"
-!define FUSION_INVENTORY_AGENT32_FILENAME "@@FUSION_INVENTORY_AGENT32_FILENAME@@"
-!define FUSION_INVENTORY_AGENT64_FILENAME "@@FUSION_INVENTORY_AGENT64_FILENAME@@"
 !define INVENTORY_TAG "@@INVENTORY_TAG@@"
-!define RSYNC_FILENAME "@@RSYNC_FILENAME@@"
 !define GENERATED_SIZE "@@GENERATED_SIZE@@"
-!define VNC_AGENT32_FILENAME "@@VNC_AGENT32_FILENAME@@"
-!define VNC_AGENT64_FILENAME "@@VNC_AGENT64_FILENAME@@"
 !define RFB_PORT "@@RFB_PORT@@"
-!define SYNCTHING32_FILENAME "@@SYNCTHING32_FILENAME@@"
-!define SYNCTHING64_FILENAME "@@SYNCTHING64_FILENAME@@"
 !define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
 !define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
-!define NETCHECK_SERVICE_FILENAME "@@NETCHECK_SERVICE_FILENAME@@"
-!define NETCHECK_PROGRAM_FILENAME "@@NETCHECK_PROGRAM_FILENAME@@"
-!define NETCHECK_SERVICE_DISPLAYNAME "@@NETCHECK_SERVICE_DISPLAYNAME@@"
-!define NETCHECK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETCHECK_SERVICE_DISPLAYNAME}"
-!define LGPO_FILENAME "@@LGPO_FILENAME@@"
-!define REMOTE_SIGNED_FILENAME "@@REMOTE_SIGNED_FILENAME@@"
-
+!define CHERRYPY_NAME "@@CHERRYPY_NAME@@"
+!define CHERRYPY_VERSION "@@CHERRYPY_VERSION@@"
+!define PRODUCT_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CHERRYPY_NAME}"
+!define NETWORK_NAME "@@NETWORK_NAME@@"
+!define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
+!define OPENSSH_NAME "@@OPENSSH_NAME@@"
+!define OPENSSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${OPENSSH_NAME}"
+!define RDP_NAME "@@RDP_NAME@@"
+!define RDP_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RDP_NAME}"
+!define SYNCTHING_NAME "@@SYNCTHING_NAME@@"
+!define SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SYNCTHING_NAME}"
+!define FILETREE_NAME "@@FILETREE_NAME@@"
+!define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -98,17 +98,13 @@ SetCompressor lzma
 !include "FileFunc.nsh"
 !include "zipdll.nsh"
 !include "LogicLib.nsh"
-!include "Trim.nsh"
 !Include "LogString.nsh"
-!Include "StrTok.nsh"
 !Include "psexec.nsh"
 !include "x64.nsh"
 !include "TextReplace.nsh"
 !include "TextFunc.nsh"
 !include "Junction.nsh"
 
-Var OS_LANGUAGE
-Var CMD_POWERSHELL
 Var FIREWALL
 
 Name "${PRODUCT_NAME} ${AGENT_VERSION}"
@@ -154,9 +150,6 @@ Section "Python" sec_py
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
   @@FULL_OR_DL_PYTHON64@@
-  ; 32bit python installer is needed in any case as it is used to uninstall
-  ; a previous 32bit version if found
-  @@FULL_OR_DL_PYTHON32@@
   @@FULL_OR_DL_PY_VCPYTHON27@@
   @@FULL_OR_DL_LIBCURL@@
   ${LogString} "Python Installation...."
@@ -169,7 +162,7 @@ Section "Python" sec_py
     ${IfNot} ${Errors}
         ; Seems Python is installed. We'll try to uninstall the 32bit version
         ${LogString} "Uninstalling 32bit python if found..."
-        StrCpy $0 `msiexec /x "$INSTDIR\tmp\${PYTHON32_FILENAME}" /qn REBOOT=R`
+        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn /norestart`
         ${LogString} "Running $0"
         nsExec::ExecToLog $0
         Pop $1 # return value/error/timeout
@@ -197,11 +190,7 @@ Section "Python" sec_py
   ; Install of Python
   ; Get location
   Var /GLOBAL PYTHON_FILENAME
-  ${If} ${RunningX64}
-    StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
-  ${Else}
-    StrCpy $PYTHON_FILENAME "${PYTHON32_FILENAME}"
-  ${EndIf}
+  StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
   ; Install Python
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\$PYTHON_FILENAME" /quiet /qn /norestart ALLUSERS=1 ADDLOCAL=ALL REMOVE="pip_feature"`
   ${LogString} "Running $0"
@@ -270,827 +259,10 @@ Section "Python" sec_py
     Quit
   ${EndIf}
 
-  Delete $INSTDIR\tmp\${PYTHON32_FILENAME}
   Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
   Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
 SectionEnd
-
-
-; ####################### OpenSSH installation #######################
-Section "OpenSSH" sec_openssh
-  SetOutPath "$INSTDIR\tmp"
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_OPENSSH64@@
-  ${Else}
-    @@FULL_OR_DL_OPENSSH32@@
-  ${EndIf}
-  @@FULL_OR_DL_RSYNC@@
-
-
-  ${LogString} "pulseuser user creation...."
-  ${LogString} "------------------------------------------------------"
-
-  ; Remove previous Pulse profile and account
-  Call DeletePulseProfile
-
-  ; Remove pulse user
-  Call RemovePulseUser
-  RMDir /r "${USERDIR}\pulse*"
-
-  ; Create Pulse user
-  StrCpy $0 `$CMD_POWERSHELL Add-Type -AssemblyName System.Web ; [System.Web.Security.Membership]::GeneratePassword(12,2)`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  Var /GLOBAL Password
-  StrCpy $Password "$1"
-  StrCpy $0 `net user "pulseuser" "$Password" /ADD /COMMENT:"Pulse user with admin rights on the system"`
-  ${LogString} "Running net user pulseuser ************ /ADD /COMMENT:Pulse user with admin rights on the system "
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "pulseuser user creation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 108
-    Quit
-  ${EndIf}
-
-  ; Create pulse user profile
-  ${LogString} "Create pulseuser profile"
-  SetOutPath "$INSTDIR\tmp"
-  File "${CREATE_PROFILE_FILENAME}"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\${CREATE_PROFILE_FILENAME}; New-Profile -Account pulseuser`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "pulseuser user profile creation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 109
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  Delete $INSTDIR\tmp\${CREATE_PROFILE_FILENAME}
-
-  ; Create .ssh folder and grant permissions
-  ClearErrors
-  CreateDirectory ${USERDIR}\pulseuser\.ssh
-  AccessControl::GRANTONFILE /NOINHERIT "${USERDIR}\pulseuser" "(BA)" "FullAccess"
-  AccessControl::GRANTONFILE /NOINHERIT "${USERDIR}\pulseuser\.ssh" "(BA)" "FullAccess"
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "${USERDIR}\pulseuser\.ssh folder creation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 110
-    Quit
-  ${EndIf}
-
-  ; Copy ssh public key
-  SetOutPath "${USERDIR}\pulseuser\.ssh"
-  File /oname=authorized_keys "${LAUNCHER_SSH_KEY}"
-  StrCpy $0 `attrib +h ${USERDIR}\pulseuser`
-  ${LogString} "Running ATTR $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "ssh public key setup failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 111
-    Quit
-  ${EndIf}
-  ${LogString} "------------------------------------------------------"
-
-  ${LogString} "OpenSSH Installation...."
-  ${LogString} "------------------------------------------------------"
-
-  ; Install of OpenSSH
-  ; Get location
-  Var /GLOBAL SSH_PATH
-  Var /GLOBAL OPENSSH_FILENAME
-  Var /GLOBAL OPENSSH_CONTENTS_FOLDER
-  ${If} ${RunningX64}
-    StrCpy $OPENSSH_FILENAME "${OPENSSH64_FILENAME}"
-    StrCpy $SSH_PATH "$PROGRAMFILES64\${OPENSSH_NAME}"
-    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win64"
-  ${Else}
-    StrCpy $OPENSSH_FILENAME "${OPENSSH32_FILENAME}"
-    StrCpy $SSH_PATH "$PROGRAMFILES\${OPENSSH_NAME}"
-    StrCpy $OPENSSH_CONTENTS_FOLDER "${OPENSSH_NAME}-Win32"
-  ${EndIf}
-
-  ; Uninstall OpenSSH if found
-  SetOutPath $SSH_PATH
-  IfFileExists "uninstall-sshd.ps1" file_found file_not_found
-  file_found:
-  StrCpy $0 `$CMD_POWERSHELL -Command .\uninstall-sshd.ps1`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 142
-    Quit
-  ${EndIf}
-  goto end_of_test ;
-  file_not_found:
-  ${LogString} "No previous SSH found"
-  end_of_test:
-  ${LogString} "Return code was : $0"
-  SetOutPath "C:\Program Files"
-  RMDir /r "$SSH_PATH"
-  ; Uninstall Mandriva SSH if found
-  IfFileExists $PROGRAMFILES\Mandriva\OpenSSH 0 +5
-  StrCpy $0 `$PROGRAMFILES\Mandriva\OpenSSH\uninst.exe /S`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  RMDir /r "$PROGRAMFILES\Mandriva\OpenSSH"
-
-  ; Extract OpenSSH
-  ClearErrors
-  ZipDLL::extractall "$INSTDIR\tmp\$OPENSSH_FILENAME" "$INSTDIR\tmp\"
-  ${LogString} "del /f /s /q $PROGRAMFILES\OpenSSH"
-  nsExec::ExecToStack $0
-  ${LogString} "rd /s /q $PROGRAMFILES\OpenSSH"
-  nsExec::ExecToStack $0
-
-  Delete $INSTDIR\tmp\$OPENSSH_FILENAME
-  Rename "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER" "$SSH_PATH"
-  ; Update service installer and uninstaller scripts
-  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "New-Service -Name sshd" "New-Service -Name sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "sc.exe config sshd" "sc.exe config sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\install-sshd.ps1" "$SSH_PATH\install-sshd.ps1" "sc.exe privs sshd" "sc.exe privs sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Get-Service sshd" "Get-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "Stop-Service sshd" "Stop-Service sshdaemon" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "$SSH_PATH\uninstall-sshd.ps1" "$SSH_PATH\uninstall-sshd.ps1" "sc.exe delete sshd" "sc.exe delete sshdaemon" "/S=1 /C=1 /AO=1" $0
-  SetOutPath $SSH_PATH
-  StrCpy $0 `$CMD_POWERSHELL -Command .\install-sshd.ps1`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "SSH installation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 112
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-
-  ; Configure SSH server
-  ClearErrors
-  CreateDirectory "${PROGRAMDATA}\ssh"
-  CopyFiles /SILENT "$SSH_PATH\sshd_config_default" "${PROGRAMDATA}\ssh\sshd_config"
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#Port 22" "Port ${SSH_PORT}" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#PubkeyAuthentication yes" "PubkeyAuthentication yes" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#PasswordAuthentication yes" "PasswordAuthentication no" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#PidFile /var/run/sshd.pid" "PidFile C:\Windows\Temp\sshd.pid" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "AuthorizedKeysFile	.ssh/authorized_keys" "AuthorizedKeysFile	$\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "#SyslogFacility AUTH" "SyslogFacility LOCAL0" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "Match Group administrators" "#Match Group administrators" "/S=1 /C=1 /AO=1" $0
-  ${textreplace::ReplaceInFile} "${PROGRAMDATA}\ssh\sshd_config" "${PROGRAMDATA}\ssh\sshd_config" "       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys" "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys" "/S=1 /C=1 /AO=1" $0
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "ssh configuration failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 139
-    Quit
-  ${EndIf}
-
-  ; Configure SSH server to start automatically at boot
-  StrCpy $0 `sc.exe config ssh-agent start= auto`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Setting ssh-agent autostart failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 113
-    Quit
-  ${EndIf}
-  StrCpy $0 `sc.exe config sshdaemon start= auto`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Setting sshdaemon autostart failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 114
-    Quit
-  ${EndIf}
-
-  ; Generate SSH Keys
-  SetOutPath "$SSH_PATH"
-  StrCpy $0 `"$SSH_PATH\ssh-keygen.exe" -A`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Generating ssh keys failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 115
-    Quit
-  ${EndIf}
-
-  ${LogString} "Setting permissions on pulse user profile folder"
-  StrCpy $0 `wmic useraccount where name="pulseuser" get sid /VALUE`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  ${If} $0 = 0
-    Pop $1
-    ${Trim} $0 $1
-    ${StrTok} $0 "$0" "=" "L" "1"
-    Var /GLOBAL SID
-    StrCpy $SID "$0"
-    ${LogString} "User SID: $SID"
-    WriteRegExpandStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\ProfileList\$SID" "ProfileImagePath" "${USERDIR}\pulseuser"
-  ${Else}
-    ${LogString} "Return code was: $0"
-  ${EndIf}
-
-  ; Set pulse account password to not expire
-  ReadRegStr $0 HKLM SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName "ComputerName"
-  StrCpy $0 `wmic useraccount where "Name='pulseuser' and Domain='$0'" set PasswordExpires=False`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting account password expiration settings. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 117
-    Quit
-  ${EndIf}
-
-  ; Add pulse user to administrators group in English, French and Portugese
-  Var /GLOBAL PULSEUSER_GROUP
-  ${If} $OS_LANGUAGE == "fr";
-    StrCpy $0 `net localgroup administrateurs "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrateurs group"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    StrCpy $PULSEUSER_GROUP $1
-  ${ElseIf} $OS_LANGUAGE == "es";
-    StrCpy $0 `net localgroup administradores "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administradores group"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    StrCpy $PULSEUSER_GROUP $1
-  ${ElseIf} $OS_LANGUAGE == "en";
-    StrCpy $0 `net localgroup administrators "pulseuser" /ADD`
-    ${LogString} "Add pulseuser to Administrators group"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    StrCpy $PULSEUSER_GROUP $1
-  ${Else}
-    ${LogString} "Your system language $OS_LANGUAGE is currently not supported, please report an issue https://github.com/pulse-project/pulse-xmpp-agent/issues"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Your system language $OS_LANGUAGE is currently not supported. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 101
-    Quit
-  ${EndIf}
-
-  ${If} $PULSEUSER_GROUP == '0'
-    ${LogString} "Added to group correctly"
-  ${ElseIf} $PULSEUSER_GROUP == '1'
-    ${LogString} "Missing pulseuser account"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Missing pulseuser account. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 100
-    Quit
-  ${ElseIf} $PULSEUSER_GROUP == '2'
-    ${LogString} "Already a member of the group"
-  ${Else}
-    ${LogString} "Other error : $1"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Other error : $1. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 102
-    Quit
-  ${EndIf}
-
-  ; Hide the account
-  StrCpy $0 `REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" /v "pulseuser" /t REG_DWORD /d 0 /f`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $0
-  Pop $1
-  ${IfNot} $0 == 0
-    ${LogString} "Return output 0 : $0"
-    ${LogString} "Return output 1 : $1"
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error hiding pulse account. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 140
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-
-  ; Check and configure permissions
-  ClearErrors
-
-  SetOutPath $SSH_PATH
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdConfigPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\sshd_config`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : sshd_config. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_dsa_key. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_dsa_key.pub`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_dsa_key.pub. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ecdsa_key. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ecdsa_key.pub`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ecdsa_key.pub. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ed25519_key. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_ed25519_key.pub`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_ed25519_key.pub. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_rsa_key. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-SshdHostKeyPermission -Confirm:$$false -FilePath ${PROGRAMDATA}\ssh\ssh_host_rsa_key.pub`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : ssh_host_rsa_key.pub. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-  StrCpy $0 `$CMD_POWERSHELL import-module .\OpenSSHUtils.psd1 -Force; Repair-AuthorizedKeyPermission -Confirm:$$false -FilePath ${USERDIR}\pulseuser\.ssh\authorized_keys`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys : authorized_keys. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 118
-    Quit
-  ${EndIf}
-  ${LogString} "Return code was : $0"
-
-  ; Start the service
-  StrCpy $0 `sc start ssh-agent`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error starting ssh-agent service. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 119
-    Quit
-  ${EndIf}
-  StrCpy $0 `sc start sshdaemon`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error starting sshdaemon service. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 120
-    Quit
-  ${EndIf}
-
-  ; Setup of Windows firewall to allow ssh
-  ${IfNot} $FIREWALL == 1
-    ${If} ${IsWinXP}
-      StrCpy $0 `netsh firewall add portopening TCP ${SSH_PORT} "SSH for Pulse"`
-    ${Else}
-      StrCpy $0 `netsh advfirewall firewall add rule name="SSH for Pulse" dir=in action=allow protocol=TCP localport=${SSH_PORT}`
-    ${EndIf}
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${IfNot} $1 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow SSH traffic failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 121
-      Quit
-    ${EndIf}
-  ${EndIf}
-
-  ; Install of rsync
-  ; Install rsync only if Nytrio agent does not exist
-  IfFileExists $PROGRAMFILES\Nytrio\OpenSSH +22 0
-  ; Extract rsync
-  ClearErrors
-  ZipDLL::extractall "$INSTDIR\tmp\${RSYNC_FILENAME}" "$INSTDIR\tmp\"
-  ; Copy rsync files to System32/SysWOW64 folder
-  ${DisableX64FSRedirection}
-  ${If} ${RunningX64}
-    CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$WINDIR\SysWOW64\"
-  ${Else}
-    CopyFiles /SILENT "$INSTDIR\tmp\rsync\*.*" "$WINDIR\System32\"
-  ${EndIf}
-  ${EnableX64FSRedirection}
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error setting permissions on ssh keys. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 122
-    Quit
-  ${EndIf}
-  ; This requires a reboot
-  SetRebootFlag true
-
-  ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${OPENSSH32_FILENAME}
-  Delete $INSTDIR\tmp\${OPENSSH64_FILENAME}
-  Delete $INSTDIR\tmp\${RSYNC_FILENAME}
-  RMDir /r $INSTDIR\tmp\rsync
-  RMDir /r "$INSTDIR\tmp\$OPENSSH_CONTENTS_FOLDER"
-SectionEnd
-
-
-; ####################### Setup of RDP & Firewall #######################
-Section "RDP Setup" sec_rdp
-  ${LogString} "RDP setup for remote control of machine via Pulse...."
-  ${LogString} "------------------------------------------------------"
-
-  ; Setup of rdp
-  ClearErrors
-  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fDenyTSConnections" 0
-  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server" "fSingleSessionPerUser" 0
-  ${If} ${AtLeastWin7}
-    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "UserAuthentication" 0
-  ${EndIf}
-  ${If} ${AtLeastWin7}
-    WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" "SecurityLayer" 0
-  ${EndIf}
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error configuring RDP. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 123
-    Quit
-  ${EndIf}
-
-  ; Setup of Windows firewall to allow rdp
-  ${IfNot} $FIREWALL == 1
-    ${If} ${IsWinXP}
-      StrCpy $0 `netsh firewall add portopening TCP 3389 "Remote Desktop for Pulse RDP"`
-    ${Else}
-      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse RDP" dir=in action=allow protocol=TCP localport=3389`
-    ${EndIf}
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${IfNot} $1 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow RDP traffic failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 124
-      Quit
-    ${EndIf}
-  ${EndIf}
-
-  ${LogString} "------------------------------------------------------"
-SectionEnd
-
-
-; ####################### Setup of VNC & Firewall #######################
-Section "VNC Setup" sec_vnc
-  SetOutPath "$INSTDIR\tmp"
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_VNC_AGENT64@@
-  ${Else}
-    @@FULL_OR_DL_VNC_AGENT32@@
-  ${EndIf}
-  ${LogString} "VNC setup for remote control of machine via Pulse...."
-  ${LogString} "------------------------------------------------------"
-
-  ; On win64 clean old 32bit TightVNC if installed
-  ${If} ${RunningX64}
-    IfFileExists $PROGRAMFILES\TightVNC\tvnserver.exe 0 +8
-    ${LogString} "TightVNC seems to be installed. Uninstalling..."
-    StrCpy $0 `msiexec /x "$INSTDIR\tmp\${VNC_AGENT32_FILENAME}" /qn REBOOT=R`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${LogString} ""
-  ${EndIf}
-
-  ; Get location
-  Var /GLOBAL VNC_AGENT_FILENAME
-  ${If} ${RunningX64}
-    StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT64_FILENAME}"
-  ${Else}
-    StrCpy $VNC_AGENT_FILENAME "${VNC_AGENT32_FILENAME}"
-  ${EndIf}
-  ; Install VNC
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ; Create installation command line                                                          ;
-  ; http://www.tightvnc.com/doc/win/TightVNC_2.7_for_Windows_Installing_from_MSI_Packages.pdf ;
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  StrCpy $0 `msiexec /i "$INSTDIR\tmp\$VNC_AGENT_FILENAME" /quiet /qn /norestart`
-  StrCpy $0 `$0 ADDLOCAL=Server SERVER_REGISTER_AS_SERVICE=1 SERVER_ADD_FIREWALL_EXCEPTION=1 SERVER_ALLOW_SAS=1`
-  ; Disable embedded Java WebSrv on port 5800
-  StrCpy $0 `$0 SET_ACCEPTHTTPCONNECTIONS=1 VALUE_OF_ACCEPTHTTPCONNECTIONS=0`
-  ; Enable RFB on port 5900
-  StrCpy $0 `$0 SET_ACCEPTRFBCONNECTIONS=1 VALUE_OF_ACCEPTRFBCONNECTIONS=1`
-  ; Enable loopback connection
-  StrCpy $0 `$0 SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1`
-  ; Allow on all interfaces
-  StrCpy $0 `$0 SET_LOOPBACKONLY=1 VALUE_OF_LOOPBACKONLY=0`
-  ; Only allow from 127.0.0.1 and query user
-  StrCpy $0 `$0 SET_IPACCESSCONTROL=1 VALUE_OF_IPACCESSCONTROL=0.0.0.0-255.255.255.255:2`
-  ; Default answser on timeout is reject
-  StrCpy $0 `$0 SET_QUERYACCEPTONTIMEOUT=1 VALUE_OF_QUERYACCEPTONTIMEOUT=0`
-  ; Timeout is 20s
-  StrCpy $0 `$0 SET_QUERYTIMEOUT=1 VALUE_OF_QUERYTIMEOUT=20`
-  ; Show service icon
-  StrCpy $0 `$0 SET_RUNCONTROLINTERFACE=1 VALUE_OF_RUNCONTROLINTERFACE=1`
-  ; Hide wallpaper
-  StrCpy $0 `$0 SET_REMOVEWALLPAPER=1 VALUE_OF_REMOVEWALLPAPER=1`
-  ; Share between multiple connection
-  StrCpy $0 `$0 SET_ALWASHARED=1 SET_NEVERSHARED=1 VALUE_OF_ALWASHARED=1 VALUE_OF_NEVERSHARED=0`
-  ; Disable authentication
-  StrCpy $0 `$0 SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=0`
-  ; Ensure remote inputs are enabled
-  StrCpy $0 `$0 SET_BLOCKREMOTEINPUT=1 VALUE_OF_BLOCKREMOTEINPUT=0`
-  ; Don't do anything when terminating VNC session
-  StrCpy $0 `$0 SET_DISCONNECTACTION=1 VALUE_OF_DISCONNECTACTION=0`
-  ; Set the server listening port
-  StrCpy $0 `$0 SET_RFBPORT=1 VALUE_OF_RFBPORT=${RFB_PORT}`
-
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "TightVNC installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 125
-    Quit
-  ${EndIf}
-
-  ; Setup of Windows firewall to allow vnc
-  ${IfNot} $FIREWALL == 1
-    ${If} ${IsWinXP}
-      StrCpy $0 `netsh firewall add portopening TCP ${RFB_PORT} "Remote Desktop for Pulse"`
-    ${Else}
-      StrCpy $0 `netsh advfirewall firewall add rule name="Remote Desktop for Pulse VNC" dir=in action=allow protocol=TCP localport=${RFB_PORT}`
-    ${EndIf}
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${IfNot} $1 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow VNC traffic failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 126
-      Quit
-    ${EndIf}
-  ${EndIf}
-
-  ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${VNC_AGENT32_FILENAME}
-  Delete $INSTDIR\tmp\${VNC_AGENT64_FILENAME}
-SectionEnd
-
-
-; ####################### Setup of Fusion Inventory agent #######################
-Section "Fusion Inventory agent" sec_fusinv
-  SetOutPath "$INSTDIR\tmp"
-  ${LogString} ""
-  ${LogString} "Downloads all dependencies"
-  ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_FUSION_INVENTORY_AGENT64@@
-  ${Else}
-    @@FULL_OR_DL_FUSION_INVENTORY_AGENT32@@
-  ${EndIf}
-  ${LogString} "Fusion Inventory agent setup...."
-  ${LogString} "------------------------------------------------------"
-
-  ; Clean old Fusion Inventory agent if installed
-  ClearErrors
-  ReadRegStr $0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\FusionInventory-Agent" "UninstallString"
-  ${IfNot} ${Errors}
-    ; Seems Fusion Inventory agent is installed
-    ${LogString} "Fusion Inventory agent seems to be installed. Uninstalling..."
-    ; Silent uninstall
-    StrCpy $0 `"$0" /S`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${LogString} ""
-  ${EndIf}
-
-  ; Install of Fusion Inventory agent
-  ; Get location
-  Var /GLOBAL FUSION_INVENTORY_AGENT_FILENAME
-  ${If} ${RunningX64}
-    StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT64_FILENAME}"
-  ${Else}
-    StrCpy $FUSION_INVENTORY_AGENT_FILENAME "${FUSION_INVENTORY_AGENT32_FILENAME}"
-  ${EndIf}
-  ; Install Fusion Inventory agent
-  !If "${INVENTORY_TAG}" == ''
-    StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch`
-  !Else
-    StrCpy $0 `"$INSTDIR\tmp\$FUSION_INVENTORY_AGENT_FILENAME" /S /acceptlicense /no-start-menu /execmode=Manual /installtype=from-scratch /tag="${INVENTORY_TAG}"`
-  !EndIf
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "FusionInventory installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 127
-    Quit
-  ${EndIf}
-
-  ${LogString} "------------------------------------------------------"
-  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT32_FILENAME}
-  Delete $INSTDIR\tmp\${FUSION_INVENTORY_AGENT64_FILENAME}
-SectionEnd
-
 
 ; ####################### Installation of Pulse Agent #######################
 Section "!${PRODUCT_NAME}" sec_app
@@ -1100,16 +272,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} ""
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_SYNCTHING64@@
-  ${Else}
-    @@FULL_OR_DL_SYNCTHING32@@
-  ${EndIf}
-  ${If} ${RunningX64}
-    @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
-  ${Else}
-    @@FULL_OR_DL_PY_MODULES_32_FILENAMES@@
-  ${EndIf}
+  @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
   @@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@
 
   ${LogString} "Pulse Agent Installation...."
@@ -1140,68 +303,6 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  ; Copy of pulse filetree generator
-  ClearErrors
-  SetOutPath "$INSTDIR\bin"
-  File "pulse-filetree-generator.exe"
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Pulse File Tree installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 129
-    Quit
-  ${EndIf}
-
-  ; Copy syncthing exe to pulse\bin folder
-  ClearErrors
-  ${If} ${RunningX64}
-    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING64_FILENAME}" "$INSTDIR\bin\syncthing.exe"
-  ${Else}
-    CopyFiles /SILENT "$INSTDIR\tmp\${SYNCTHING32_FILENAME}" "$INSTDIR\bin\syncthing.exe"
-  ${EndIf}
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Syncthing installation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 130
-    Quit
-  ${EndIf}
-  ; Create symbolic link to syncthing config file from etc
-  ClearErrors
-  SetOutPath "$INSTDIR\etc"
-  ${CreateSymbolicLinkFile} "syncthing.ini" "syncthing\config.xml" $0
-  ${If} ${Errors}
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Symbolic link creation failed. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 131
-    Quit
-  ${EndIf}
-
-  ; Setup of Windows firewall to allow Syncthing
-  ${IfNot} $FIREWALL == 1
-    ${If} ${IsWinXP}
-      StrCpy $0 `netsh firewall add portopening TCP 22000 "Syncthing for Pulse"`
-    ${Else}
-      StrCpy $0 `netsh advfirewall firewall add rule name="Syncthing for Pulse" dir=in action=allow protocol=TCP localport=22000`
-    ${EndIf}
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-    ${IfNot} $1 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "Configuring firewall to allow peer deploy traffic failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 132
-      Quit
-    ${EndIf}
-  ${EndIf}
-
   ; Copy of agent config file
   ClearErrors
   SetOutPath "$INSTDIR\etc"
@@ -1214,6 +315,12 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Copy of inventory config file
   SetOutPath "$INSTDIR\etc"
   File "../config/${PULSE_INVENTORY_CONFFILE}"
+  ; Copy of start update plugins config files
+  File "../config/${PULSE_STARTUPDATE_CONFFILE}"
+  File "../config/${PULSE_START_CONFFILE}"
+  ; Copy of update plugins conf file
+  File "../config/${PULSE_UPDATEOPENSSH_CONFFILE}"
+  File "../config/${PULSE_UPDATETIGHTVNC_CONFFILE}"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
@@ -1252,7 +359,6 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndSwitch}
   ${LogString} $0
 
-
   CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
   StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
   ${LogString} "Running $0"
@@ -1268,57 +374,36 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  ; Create Network check service
-  SetOutPath "$INSTDIR\bin"
-  File "${NETCHECK_SERVICE_FILENAME}"
-  File "${NETCHECK_PROGRAM_FILENAME}"
-  CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
-  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${NETCHECK_SERVICE_FILENAME}" --startup=auto install`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error installing Network check service. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 135
-    Quit
-  ${EndIf}
-
   ; Create packages folder to hold packages to be deployed on client
   CreateDirectory $INSTDIR\var\tmp\packages
   ; Create bin folder
   CreateDirectory $INSTDIR\bin
 
-  ; Run the agent Pulse agent
-  StrCpy $0 `sc start pulseagent`
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error starting Pulse Agent service. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+        MessageBox MB_OK|MB_ICONSTOP "Error updating Pulse Agent service. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-    SetErrorLevel 136
+    SetErrorLevel 135
     Quit
   ${EndIf}
 
-  ; Run the agent Pulse network notify
-  StrCpy $0 `sc start pulsenetworknotify`
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${IfNot} $1 == 0
     ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Error starting Pulse network notify. $\n\
-	Please check the logs in $INSTDIR\tmp\install.log"
+        MessageBox MB_OK|MB_ICONSTOP "Error restarting Pulse Agent service. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
     ${EndIf}
-    SetErrorLevel 141
+    SetErrorLevel 136
     Quit
   ${EndIf}
 
@@ -1338,9 +423,11 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+
+
   ${Else}
       SetRegView 32
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
@@ -1354,9 +441,9 @@ Section "!${PRODUCT_NAME}" sec_app
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
       WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayName" "${NETCHECK_SERVICE_DISPLAYNAME}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
-      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${NETCHECK_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
   ${EndIf}
 
   ; Write the version installed in registry
@@ -1373,21 +460,7 @@ Section "!${PRODUCT_NAME}" sec_app
   Delete $INSTDIR\tmp\${PULSE_AGENT_FILENAME}
   Delete $INSTDIR\tmp\${AGENT_PLUGINS_FILENAME}
   Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME}
-  Delete $INSTDIR\tmp\${SYNCTHING32_FILENAME}
-  Delete $INSTDIR\tmp\${SYNCTHING64_FILENAME}
   @@DELETE_PY_MODULES_FILENAMES@@
-
-  ; Relock Powershell
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    ${LogString} ""
-    ${LogString} "Restore powershell execution policy"
-    ${LogString} "------------------------------------------------------"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
 
   ${If} ${RunningX64}
     RMDir /r "$PROGRAMFILES\Pulse"
@@ -1399,151 +472,24 @@ SectionEnd
 ; What needs to be done for uninstalling
 Section "Uninstall"
 
-  ; Define Powershell command
-  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
+  ; Ensure service is running
+  StrCpy $0 `net start pulseagent`
+  nsExec::ExecToLog $0
 
-  ; Unlock Powershell
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    ${LogString} ""
-    ${LogString} "Unlock powershell execution policy"
-    ${LogString} "------------------------------------------------------"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
-
-  ; Stop all Pulse services
-  Call un.StopPulseServices
-
-  ; Remove OpenSSH
-  StrCpy $0 `sc.exe stop sshdaemon`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `sc.exe stop ssh-agent`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `sc.exe delete ssh-agent`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `sc.exe delete sshdaemon`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  Delete "$SYSDIR\ssh-lsa.dll"
-
-  ; Uninstall OpenSSH
-  ${If} ${FileExists} "$PROGRAMFILES64\${OPENSSH_NAME}\uninstall-sshd.ps1"
-    ${LogString} "OpenSSH uninstall.."
-    ${LogString} "------------------------------------------------------"
-    setOutPath $PROGRAMFILES64\${OPENSSH_NAME}
-    StrCpy $0 `$CMD_POWERSHELL -Command .\uninstall-sshd.ps1`
-    ${LogString} "Running $0"
-    nsExec::ExecToStack $0
-    pop $0
-    pop $1
-    ${LogString} "Return output : $1"
-    ${IfNot} $0 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 142
-      Quit
-    ${EndIf}
-    RMDir /r /REBOOTOK "$PROGRAMFILES64\OpenSSH"
-  ${Else}
-    ${LogString} "OpenSSH uninstall.."
-    ${LogString} "------------------------------------------------------"
-    setOutPath $PROGRAMFILES\${OPENSSH_NAME}
-    StrCpy $0 `$CMD_POWERSHELL -Command .\uninstall-sshd.ps1`
-    ${LogString} "Running $0"
-    nsExec::ExecToStack $0
-    pop $0
-    pop $1
-    ${LogString} "Return output : $1"
-    ${IfNot} $0 == 0
-      ${IfNot} ${Silent}
-          MessageBox MB_OK|MB_ICONSTOP "SSH uninstallation failed. $\n\
-          Please check the logs in $INSTDIR\tmp\install.log"
-      ${EndIf}
-      SetErrorLevel 142
-      Quit
-    ${EndIf}
-    RMDir /r /REBOOTOK "$PROGRAMFILES\${OPENSSH_NAME}"
-  ${EndIf}
-
-  RMDir /r "${PROGRAMDATA}\ssh"
-  ; Remove libcurl
-  Delete "$SYSDIR\${LIBCURL_FILENAME}"
-
-  ; Uninstall agent
-  StrCpy $0 `sc delete pulseagent`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `sc delete pulsenetworknotify`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="Remote Desktop for Pulse"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="SSH for Pulse"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `netsh.exe advfirewall firewall delete rule name="Syncthing for Pulse"`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  StrCpy $0 `C:\Python27\Scripts\pip uninstall "${PULSE_AGENT_MODULE}" -y`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  RMDir /r "C:\Python27\Lib\site-packages\pulse_xmpp_agent\"
-  RMDir /r "C:\Program Files\OpenSSH"
-
-  ; Remove Pulse profile
-  Call un.DeletePulseProfile
-  ; Remove pulse user
-  Call un.RemovePulseUser
-
-  ; Relock Powershell
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    ${LogString} ""
-    ${LogString} "Restaure powershell execution policy"
-    ${LogString} "------------------------------------------------------"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\tmp\machine.pol"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
-
-  RMDir /r /REBOOTOK "${USERDIR}\pulse*"
   RMDir /r /REBOOTOK "$INSTDIR"
 
   DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
-  DeleteRegKey HKLM "${NETCHECK_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+  DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
+  DeleteRegKey HKLM "${OPENSSH_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_CHERRYPY_UNINST_KEY}"
+  DeleteRegKey HKLM "${RDP_UNINST_KEY}"
+  DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
+  DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
 
+  ; Stop all Pulse services
+  Call un.StopPulseServices
 SectionEnd
 
 ; Functions
@@ -1553,6 +499,15 @@ Function .onInit
   ${IfNot} ${AtLeastWinXP}
     MessageBox MB_OK|MB_ICONSTOP "XP and above required for running ${PRODUCT_NAME}"
     SetErrorLevel 137
+    Quit
+  ${EndIf}
+
+  ; Make sure client is 64bits
+  ${IfNot} ${RunningX64}
+    ${IfNot} ${Silent}
+    MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
+    ${EndIf}
+    SetErrorLevel 666
     Quit
   ${EndIf}
 
@@ -1567,9 +522,6 @@ Function .onInit
 
   ; Create registry keys in 64bit section
   SetRegView 64
-
-  ; Define Powershell command
-  StrCpy $CMD_POWERSHELL "powershell -inputformat none -ExecutionPolicy UnRestricted"
 
   ; Install log initialization
   !If "$PROGRAMFILES64" != ""
@@ -1590,43 +542,6 @@ Function .onInit
   ${LogString} "------------------------------------------------------"
   CreateDirectory "$INSTDIR\bin"
   SetOutPath "$INSTDIR\bin"
-  @@FULL_OR_DL_LGPO@@
-  File "${REMOTE_SIGNED_FILENAME}"
-
-  ; Detect if policy are applied
-  StrCpy $0 `$CMD_POWERSHELL get-executionpolicy -scope MachinePolicy`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${TrimNewLines} $1 $1
-  ${LogString} "PowerShell Policy status : $1"
-
-  ${IfNot} $1 == Undefined
-    SetOutPath "$INSTDIR\tmp\gpo"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /b "$INSTDIR\tmp\gpo"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $0
-    ${LogString} "Return code was : $0"
-    StrCpy $0 `cmd /c where /r "$INSTDIR\tmp" registry.pol | findstr Machine`
-    ${LogString} "Running $0"
-    nsExec::ExecToStack $0
-    Pop $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was : $1"
-    Rename "$1" "$INSTDIR\tmp\machine.pol"
-    SetOutPath "$INSTDIR\tmp"
-    RMDir /r /REBOOTOK "$INSTDIR\tmp\gpo"
-  ${EndIf}
-
-  ${If} ${FileExists} "$INSTDIR\tmp\machine.pol"
-    StrCpy $0 `"$INSTDIR\bin\${LGPO_FILENAME}" /m "$INSTDIR\bin\${REMOTE_SIGNED_FILENAME}"`
-    ${LogString} "Running $0"
-    nsExec::ExecToLog $0
-    Pop $1 # return value/error/timeout
-    ${LogString} "Return code was: $1"
-  ${EndIf}
 
   ; Detect Firewall status
   StrCpy $0 `netsh advfirewall show allprofiles`
@@ -1636,20 +551,6 @@ Function .onInit
   Pop $1
   StrCpy $FIREWALL $0
   ${LogString} "Firewall status is : $FIREWALL"
-
-  ; Detect system language
-  StrCpy $0 `$CMD_POWERSHELL -Command (get-uiculture).TwoLetterISOLanguageName`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${TrimNewLines} $1 $OS_LANGUAGE
-  ${LogString} "System language is : $OS_LANGUAGE"
-  ; Stop the agent if it is already running and kill all python tasks
-  ${LogString} ""
-  ${LogString} "Detect previous installation and stop service"
-  ${LogString} "------------------------------------------------------"
-  Call StopPulseServices
 
 FunctionEnd
 
@@ -1672,75 +573,9 @@ Function .onMouseOverSection
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
           This is required for ${PRODUCT_NAME} to run."
 
-  StrCmp $0 ${sec_openssh} 0 +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:OpenSSH required for deployment, backup, etc."
-
-  StrCmp $0 ${sec_rdp} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup RDP protocol required for remote control"
-
-  StrCmp $0 ${sec_vnc} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Setup VNC required for remote control"
-
-  StrCmp $0 ${sec_fusinv} "" +2
-    SendMessage $R0 ${WM_SETTEXT} 0 "STR:Fusion inventory agent required for inventory"
-
   StrCmp $0 ${sec_app} "" +2
     SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
 FunctionEnd
-
-; Macro Remove pulseuser / pulse user
-!macro RemovePulseUser UN
-  Function ${UN}RemovePulseUser
-    ; Remove pulse user
-    StrCpy $0 `net user "pulse" /DELETE`
-    nsExec::ExecToLog $0
-    ${LogString} `Running $0`
-    Pop $1 # return value/error/timeout
-    ${Switch} $1
-      ${Case} "0"
-          StrCpy $0 `Return code : $1`
-          ${Break}
-      ${Case} "2"
-          ;2 The user name could not be found.
-          StrCpy $0 `No old Pulse account found`
-          ${Break}
-      ${Default}
-          StrCpy $0 `Return code : $1`
-          ${IfNot} ${Silent}
-              MessageBox MB_OK|MB_ICONSTOP "Pulse old account removal failed. $\n\
-              Please check the logs in $INSTDIR\tmp\install.log"
-          ${EndIf}
-          SetErrorLevel 102
-          Quit
-    ${EndSwitch}
-    ${LogString} $0
-
-    StrCpy $0 `net user "pulseuser" /DELETE`
-    nsExec::ExecToLog $0
-    ${LogString} `Running $0`
-    Pop $1 # return value/error/timeout
-    ${Switch} $1
-      ${Case} "0"
-          StrCpy $0 `Return code : $1`
-          ${Break}
-      ${Case} "2"
-          ;2 The user name could not be found.
-          StrCpy $0 `No pulseuser account found`
-          ${Break}
-      ${Default}
-          StrCpy $0 `Return code : $1`
-          ${IfNot} ${Silent}
-              MessageBox MB_OK|MB_ICONSTOP "pulseuser account removal failed. $\n\
-              Please check the logs in $INSTDIR\tmp\install.log"
-          ${EndIf}
-          SetErrorLevel 102
-          Quit
-    ${EndSwitch}
-    ${LogString} $0
-  FunctionEnd
-!macroend
-!insertmacro RemovePulseUser ""
-!insertmacro RemovePulseUser "un."
 
 ; Macro Stop all Pulse services
 !macro StopPulseServices UN
@@ -1831,6 +666,10 @@ FunctionEnd
         ;1060 The specified service does not exist as an installed service.
         StrCpy $0 `No previous installation`
         ${Break}
+    ${Case} "1062"
+        ;1062 The service has not been started
+        StrCpy $0 `Service is already stopped`
+        ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
         ${IfNot} ${Silent}
@@ -1838,6 +677,32 @@ FunctionEnd
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
         SetErrorLevel 144
+        Quit
+  ${EndSwitch}
+
+  StrCpy $0 `sc delete pulseagent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been removed`
+            ${Break}
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `The service does not exists`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Pulse agent service uninstall failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 145
         Quit
   ${EndSwitch}
   ${LogString} $0
@@ -1865,67 +730,43 @@ FunctionEnd
         ${Break}
     ${Default}
         ${LogString} `Something else happened : $1`
-        ${LogString} $0
         ${IfNot} ${Silent}
-            MessageBox MB_OK|MB_ICONSTOP "Pulse network notify stop failed. $\n\
+            MessageBox MB_OK|MB_ICONSTOP "Network Notify stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 144
+        Quit
+  ${EndSwitch}
+
+  StrCpy $0 `sc delete pulsenetworknotify`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been removed`
+            ${Break}
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `The service does not exists`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Network Notify service uninstall failed. $\n\
             Please check the logs in $INSTDIR\tmp\install.log"
         ${EndIf}
         SetErrorLevel 145
         Quit
   ${EndSwitch}
   ${LogString} $0
-
-  StrCpy $0 `taskkill.exe /F /IM syncthing.exe`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${Switch} $1
-    ${Case} "0"
-        StrCpy $0 `Process has been stopped`
-        ${Break}
-    ${Case} "128"
-        ;128 The process is not found.
-        StrCpy $0 `Process is already stopped`
-        ${Break}
-    ${Default}
-        ${LogString} `Something else happened : $1`
-        ${LogString} $0
-        ${IfNot} ${Silent}
-            MessageBox MB_OK|MB_ICONSTOP "Syncthing stop failed. $\n\
-            Please check the logs in $INSTDIR\tmp\install.log"
-        ${EndIf}
-        SetErrorLevel 146
-        Quit
-  ${EndSwitch}
-  ${LogString} $0
   FunctionEnd
+
 !macroend
 !insertmacro StopPulseServices ""
 !insertmacro StopPulseServices "un."
 
-; Macro Delete Pulse profile
-!macro DeletePulseProfile UN
-  Function ${UN}DeletePulseProfile
-  ; Remove Pulse profile
-  StrCpy $0 `$CMD_POWERSHELL "Get-WmiObject -Class Win32_UserProfile | Where-Object {$_.LocalPath -like '*pulse*'} | ForEach-Object {Remove-WmiObject -InputObject $_}"`
-  ${LogString} "Running $0"
-  nsExec::ExecToStack $0
-  Pop $0
-  Pop $1
-  ${LogString} "Return output : $1"
-  ${IfNot} $0 == 0
-    ${IfNot} ${Silent}
-      ${LogString} "Profile deletion failed"
-      MessageBox MB_OK|MB_ICONSTOP "Pulse user profile deletion failed. $\n\
-      This usually means that pulseuser profile is loaded. $\n\
-      A reboot will most probably solve this issue. $\n\
-      Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 138
-    Quit
-  ${EndIf}
-  ${LogString} `Remove Pulse profile : $0`
-  FunctionEnd
-!macroend
-!insertmacro DeletePulseProfile ""
-!insertmacro DeletePulseProfile "un."

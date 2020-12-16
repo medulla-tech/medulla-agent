@@ -23,7 +23,8 @@
 # file  : pulse_xmpp_agent/connectionagent.py
 
 import shutil
-import sys,os
+import sys
+import os
 import logging
 import sleekxmpp
 import platform
@@ -41,12 +42,12 @@ from lib.configuration import  confParameter, changeconnection,\
     alternativeclusterconnection, nextalternativeclusterconnection,\
         substitutelist, changeconfigurationsubtitute
 from lib.agentconffile import conffilename
-from lib.utils import getRandomName,\
-    DEBUGPULSE, searchippublic, getIpXmppInterface,\
+from lib.utils import DEBUGPULSE, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
-                      AESCipher, refreshfingerprintconf, \
-                        protodef, geolocalisation_agent
+                      getRandomName, AESCipher, refreshfingerprintconf, \
+                        geolocalisation_agent, \
+                        serialnumbermachine
 
 from optparse import OptionParser
 
@@ -77,7 +78,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         resourcejid=newjidconf[1].split("/")
         resourcejid[0]=conf.confdomain
         newjidconf[0] = getRandomName(10,"conf")
-        self.HostNameSystem = platform.node()
+        self.HostNameSystem = platform.node().split('.')[0]
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
         self.agentmaster =jid.JID("master@pulse")
         self.session = ""
@@ -86,10 +87,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
         if not hasattr(self.config, 'geoservers'):
-                self.geoservers = "ifconfig.co, if.siveo.net"
+            self.geoservers = "ifconfig.co, if.siveo.net"
 
         self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                             geolocalisation=True, 
+                                             geolocalisation=True,
                                              ip_public=None,
                                              strlistgeoserveur=self.config.geoservers)
 
@@ -212,7 +213,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
-        if sessionname == "" : sessionname = getRandomName(6, "logagent")
+        if sessionname == "":
+            sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         msgbody = {}
@@ -496,7 +498,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 break
 
         subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
-
+        BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                                   "BOOLFILECOMPLETREGISTRATION")
+        self.FullRegistration = False
+        if os.path.exists(BOOLFILECOMPLETREGISTRATION):
+            self.FullRegistration = True
+            os.remove(BOOLFILECOMPLETREGISTRATION)
         dataobj = {
             'action': 'connectionconf',
             'from': self.config.jidagent,
@@ -525,10 +532,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'geolocalisation': {},
             'adorgbymachine': base64.b64encode(organizationbymachine()),
             'adorgbyuser': '',
-            'agent_machine_name':self.agent_machine_name
+            'agent_machine_name':self.agent_machine_name,
+            'uuid_serial_machine' : serialnumbermachine(),
+            'regcomplet': self.FullRegistration
         }
-        if self.geodata.localisation is not None:
+        if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
+        else:
+            logging.warning('geolocalisation imposible')
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
             try:
@@ -572,11 +583,13 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
 
 def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
     file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                   "INFOSTMP",
                                    "pidconnection"), "%s"%os.getpid())
     if sys.platform.startswith('win'):
         try:
             result = subprocess.check_output(["icacls",
                                     os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                 "INFOSTMP",
                                                  "pidconnection"),
                                     "/setowner",
                                     "pulse",
@@ -591,7 +604,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         # all non-Windows platforms are supporting ANSI escapes so we use them
         logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     # format log more informations
-    format = '%(asctime)s - %(levelname)s - %(message)s'
+    format = '%(asctime)s - %(levelname)s - (CONF)%(message)s'
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon :
@@ -622,7 +635,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
 
     while True:
         if ipfromdns(tg.confserver) != "" and \
-            check_exist_ip_port(ipfromdns(tg.confserver), tg.confport): break
+            check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
+            break
         logging.log(DEBUGPULSE,"ERROR CONNECTOR")
         logging.log(DEBUGPULSE,"Unable to connect. (%s : %s) on xmpp server."\
             " Check that %s can be resolved"%(tg.confserver,

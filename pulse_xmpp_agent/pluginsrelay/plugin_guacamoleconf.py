@@ -23,7 +23,6 @@ import sys
 from lib import utils
 import MySQLdb
 import traceback
-from random import randint
 import socket
 
 import json

@@ -58,15 +58,15 @@ class manage_scheduler:
             try :
                 objcromtabconf = json.loads(objectxmpp.config.listcrontabforpluginscheduled)
             except Exception as e:
-                logging.getLogger().error("Error json parameters listcrontabforpluginscheduled file manage_scheduler.ini")
+                logging.getLogger().error("Error json parameters listcrontabforpluginscheduled file manage_scheduler_[relay|machine].ini")
                 logging.getLogger().error(str(e))
         except AttributeError as e:
             logging.getLogger().warning("If you use the configuration to schedule some plugins,"\
-                    "do not forget to add conf in manage_scheduler.ini for these plugins."\
+                    "do not forget to add conf in manage_scheduler_[relay|machine].ini for these plugins."\
                     "json parameters listcrontabforpluginscheduled."\
                     "and declare the configuration of the scheduler in agentconf.ini"\
                     "[Plugin]"\
-                    "pluginlist = manage_scheduler")
+                    "pluginlist = manage_scheduler_[relay|machine]")
             objcromtabconf = {}
             logging.getLogger().warning(str(e))
 
@@ -138,7 +138,7 @@ class manage_scheduler:
                 l = descrip[int(x+2):int(y-1)].split(',')
                 if len(l) == 2 and int(l[0]) < int(l[1]):
                     searchvalue =  randint(int(l[0]), int(l[1]))
-                    replacedata = { 
+                    replacedata = {
                                 'descriptor': descrip[int(x):int(y)],
                                 'value': searchvalue }
                     rep.append(replacedata)
@@ -181,7 +181,16 @@ class manage_scheduler:
     def call_scheduling_main(self, name, *args, **kwargs):
         mod = __import__("scheduling_%s"%name)
         logging.getLogger().debug("exec plugin scheduling_%s"%name)
+        # Add compteur appel plugins
+        count = 0
+        try:
+            count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+        except AttributeError:
+            count = 0
+            setattr(self.objectxmpp, "num_call_scheduling_%s"%name, count)
+        logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
         mod.schedule_main(*args, **kwargs)
+        setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count + 1)
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
         mod = __import__("scheduling_%s"%name)

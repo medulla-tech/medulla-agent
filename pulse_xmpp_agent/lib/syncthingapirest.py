@@ -47,14 +47,10 @@ from threading import Lock
 from utils import Program, getRandomName, simplecommand, file_put_contents
 import logging
 import traceback
-import shutil
 import time
 import os
 import sys
 from urlparse import urlparse
-#if sys.platform.startswith('win'):
-    #import win32api
-    #import win32con
 
 logger = logging.getLogger()
 
@@ -80,7 +76,7 @@ def conf_ars_deploy(port=23000,
                     name="pulse"):
     root, adressurl = read_serverannonce(configfile)
     if adressurl != "":
-        pathxmldevice = ".//device[contains(@name, '%s')]/address" % name
+        pathxmldevice = ".//device[@name ='%s']/address" % name
         listresult = root.xpath(pathxmldevice)
         if listresult:
             device = listresult[0].getparent()
@@ -108,7 +104,7 @@ def iddevice(configfile="/var/lib/pulse2/.config/syncthing/config.xml",
             logger.info("xml conf : %s device id for hostname machine %s" % (configfile, hostname))
             tree = etree.parse(configfile)
             root = tree.getroot()
-            pathxmldevice = ".//device[contains(@name, '%s')]" % hostname
+            pathxmldevice = ".//device[@name='%s']" % hostname
             listresult = root.xpath(pathxmldevice)
             devid = listresult[0].attrib['id']
             logger.info("find device id %s" % (devid))
@@ -1318,7 +1314,8 @@ class syncthing(syncthingapi):
     def delete_device_is_not_list(self, listdeviceutil):
         to_delete = []
         for i, elem in enumerate(self.devices):
-            if elem["name"] == "pulse": continue
+            if elem["name"] == "pulse":
+                continue
             if not elem["deviceID"] in listdeviceutil:
                 to_delete.append(i)
         to_delete.reverse()
