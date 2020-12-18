@@ -797,19 +797,19 @@ class confParameter:
             self.scan_syncthing_deploy = Config.getboolean('switch_scheduling',
                                                            'scan_syncthing_deploy')
 
-        self.pluginlistexclud = []
-        if Config.has_option("plugin_list_exclud",
-                             "pluginlistexclud"):
-            pluginlistexcludtmp = Config.get('plugin_list_exclud',
-                                             'pluginlistexclud').split(",")
-            self.pluginlistexclud = [x.strip() for x in pluginlistexcludtmp]
+        self.excludedplugins = []
+        if Config.has_option("excluded_plugins",
+                             "excludedplugins"):
+            excludedpluginstmp = Config.get('excluded_plugins',
+                                             'excludedplugins').split(",")
+            self.excludedplugins = [x.strip() for x in excludedpluginstmp]
 
-        self.pluginsschedulelistexclud = []
-        if Config.has_option("plugin_scdule_list_exclud",
-                             "pluginsschedulelistexclud"):
-            pluginsschedulelistexcludtmp = Config.get('plugin_scdule_list_exclud',
-                                                      'pluginsschedulelistexclud').split(",")
-            self.pluginsschedulelistexclud = [x.strip() for x in pluginsschedulelistexcludtmp]
+        self.excludedscheduledplugins = []
+        if Config.has_option("excluded_scheduled_plugins",
+                             "excludedscheduledplugins"):
+            excludedscheduledpluginstmp = Config.get('excluded_scheduled_plugins',
+                                                      'excludedscheduledplugins').split(",")
+            self.excludedscheduledplugins = [x.strip() for x in excludedscheduledpluginstmp]
 
 
         self.scheduling_plugin_action = True
