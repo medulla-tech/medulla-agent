@@ -113,7 +113,7 @@ class manageschedulerdeploy:
             else:
                 self.dbsessionscheduler[sessionid] = objsession
                 self.dbsessionscheduler.sync()
-        except Exceptionas exception_error:
+        except Exception as exception_error:
             logger.error("In the function set_sesionscheduler the plugin %s failed with the error: \n %s" % (self.name_basesession, exception_error))
         finally:
             self.closebase()
