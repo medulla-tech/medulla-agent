@@ -490,7 +490,7 @@ def loadModule(filename):
 
 def call_plugin(name, *args, **kwargs):
     if args[0].config.plugin_action :
-        if args[1] not in args[0].config.pluginlistexclud :
+        if args[1] not in args[0].config.excludedplugins :
             nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
             for _ in range(15): logger.error("LOAD %s" % args[1])
             # Add compteur appel plugins
