@@ -489,17 +489,25 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
-    nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-    # Add compteur appel plugins
-    count = 0
-    try:
-        count = getattr(args[0], "num_call%s" % args[1])
-    except AttributeError:
-        count = 0
-        setattr(args[0], "num_call%s"%args[1], count)
-    pluginaction = loadModule(nameplugin)
-    pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count + 1)
+    if args[0].config.plugin_action :
+        if args[1] not in args[0].config.pluginlistexclud :
+            nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+            for _ in range(15): logger.error("LOAD %s" % args[1])
+            # Add compteur appel plugins
+            count = 0
+            try:
+                count = getattr(args[0], "num_call%s" % args[1])
+            except AttributeError:
+                count = 0
+                setattr(args[0], "num_call%s"%args[1], count)
+            pluginaction = loadModule(nameplugin)
+            pluginaction.action(*args, **kwargs)
+            setattr(args[0], "num_call%s" % args[1], count + 1)
+        else:
+                logging.getLogger().warning("the call plugin scheduled %s exclud " % args[1])
+    else:
+        logging.getLogger().warning("parameter plugin_action not allowed" \
+            " the call plugin %s" % args[1])
 
 # def load_plugin(name):
     # mod = __import__("plugin_%s" % name)

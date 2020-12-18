@@ -54,6 +54,7 @@ class manage_scheduler:
     def __init__(self, objectxmpp):
         #creation repertoire si non exist.
         try:
+            self.objectxmpp = objectxmpp
             objectxmpp.config.listcrontabforpluginscheduled = objectxmpp.config.listcrontabforpluginscheduled.replace(os.linesep,"").replace("'",'"').strip('"')
             try :
                 objcromtabconf = json.loads(objectxmpp.config.listcrontabforpluginscheduled)
@@ -74,7 +75,7 @@ class manage_scheduler:
 
         self.now = datetime.now()
 
-        self.objectxmpp = objectxmpp
+
 
         #addition path to sys
         if  self.objectxmpp.config.agenttype in ['relayserver']:
@@ -179,18 +180,24 @@ class manage_scheduler:
             self.taches.remove(y)
 
     def call_scheduling_main(self, name, *args, **kwargs):
-        mod = __import__("scheduling_%s"%name)
-        logging.getLogger().debug("exec plugin scheduling_%s"%name)
-        # Add compteur appel plugins
-        count = 0
-        try:
-            count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
-        except AttributeError:
-            count = 0
-            setattr(self.objectxmpp, "num_call_scheduling_%s"%name, count)
-        logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
-        mod.schedule_main(*args, **kwargs)
-        setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count + 1)
+        if self.objectxmpp.config.scheduling_plugin_action :
+            if name not in self.objectxmpp.config.pluginsschedulelistexclud :
+                mod = __import__("scheduling_%s"%name)
+                logging.getLogger().debug("exec plugin scheduling_%s"%name)
+                # Add compteur appel plugins
+                count = 0
+                try:
+                    count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+                except AttributeError:
+                    count = 0
+                    setattr(self.objectxmpp, "num_call_scheduling_%s"%name, count)
+                logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
+                mod.schedule_main(*args, **kwargs)
+                setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count + 1)
+            else:
+                logging.getLogger().warning("the call plugin scheduled %s exclud " % name)
+        else:
+            logging.getLogger().warning("parameter scheduling_plugin_action not allowed the call plugin %s" % name)
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
         mod = __import__("scheduling_%s"%name)

@@ -797,6 +797,32 @@ class confParameter:
             self.scan_syncthing_deploy = Config.getboolean('switch_scheduling',
                                                            'scan_syncthing_deploy')
 
+        self.pluginlistexclud = []
+        if Config.has_option("plugin_list_exclud",
+                             "pluginlistexclud"):
+            pluginlistexcludtmp = Config.get('plugin_list_exclud',
+                                             'pluginlistexclud').split(",")
+            self.pluginlistexclud = [x.strip() for x in pluginlistexcludtmp]
+
+        self.pluginsschedulelistexclud = []
+        if Config.has_option("plugin_scdule_list_exclud",
+                             "pluginsschedulelistexclud"):
+            pluginsschedulelistexcludtmp = Config.get('plugin_scdule_list_exclud',
+                                                      'pluginsschedulelistexclud').split(",")
+            self.pluginsschedulelistexclud = [x.strip() for x in pluginsschedulelistexcludtmp]
+
+
+        self.scheduling_plugin_action = True
+        self.plugin_action = True
+        if Config.has_option("call_plugin",
+                             "scheduling_plugin_action"):
+            self.scheduling_plugin_action = Config.getboolean('call_plugin',
+                                                           'scheduling_plugin_action')
+
+        if Config.has_option("call_plugin",
+                             "plugin_action"):
+            self.plugin_action = Config.getboolean('call_plugin',
+                                                           'plugin_action')
         # ########################## END DEBUG switch_scheduling ########################
         # configuration monitoring
         if self.agenttype == "machine":
