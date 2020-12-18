@@ -530,7 +530,7 @@ class confParameter:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
         # if aucune interface. il n'y a pas de macs adress. ressource missing
-        try:            
+        try:
             ressource = utils.name_jid()
         except:
             ressource = "missingmac"
@@ -568,9 +568,9 @@ class confParameter:
         self.compress = self.compress.lower()
         if self.compress not in ["zip", "gzip", "bz2","No"]:
             self.compress = "no"
-        defaultnamelogfile = "xmpp-agent-machine.log"  
+        defaultnamelogfile = "xmpp-agent-machine.log"
         if self.agenttype == "relayserver":
-            defaultnamelogfile = "xmpp-agent-relay.log"  
+            defaultnamelogfile = "xmpp-agent-relay.log"
         try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
@@ -698,7 +698,106 @@ class confParameter:
                                                     "inventory_interval")
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
+        # ########################## DEBUG switch_scheduling ########################
+        #clean session if ban jid for deploy
+        self.removeban = True
+        self.check_established_connection = True
+        self.Quick_deployment_load = True
+        # switch exec plugin scheduling
+        self.schedulerfunction = True
+        self.update_plugin = True
+        self.check_network = True
+        # controle si doit installer image
+        self.check_AGENT_INSTALL = True
+        self.manage_session = True
+        self.reloaddeploy = True
+        self.event_inventory = True
+        self.session_reload = True
+        self.reprise_evenement  = True
+        self.execcmdfile = True
+        self.initsyncthing = True
+        self.scan_syncthing_deploy = True
+        self.synchro_synthing = True
+        if Config.has_option("switch_scheduling",
+                             "removeban"):
+            self.removeban = Config.getboolean('switch_scheduling',
+                                               'removeban')
 
+        if Config.has_option("switch_scheduling",
+                             "check_established_connection"):
+            self.check_established_connection = Config.getboolean('switch_scheduling',
+                                                                  'check_established_connection')
+
+        if Config.has_option("switch_scheduling",
+                             "Quick_deployment_load"):
+            self.Quick_deployment_load = Config.getboolean('switch_scheduling',
+                                                           'Quick_deployment_load')
+
+        if Config.has_option("switch_scheduling",
+                             "schedulerfunction"):
+            self.schedulerfunction = Config.getboolean('switch_scheduling',
+                                                       'schedulerfunction')
+
+        if Config.has_option("switch_scheduling",
+                             "update_plugin"):
+            self.update_plugin = Config.getboolean('switch_scheduling',
+                                                   'update_plugin')
+
+        if Config.has_option("switch_scheduling",
+                             "check_network"):
+            self.check_network = Config.getboolean('switch_scheduling',
+                                                   'check_network')
+
+        if Config.has_option("switch_scheduling", "check_AGENT_INSTALL"):
+            self.check_AGENT_INSTALL = Config.getboolean('switch_scheduling',
+                                                         'check_AGENT_INSTALL')
+
+        if Config.has_option("switch_scheduling",
+                             "manage_session"):
+            self.manage_session = Config.getboolean('switch_scheduling',
+                                                    'manage_session')
+
+        if Config.has_option("switch_scheduling",
+                             "reloaddeploy"):
+            self.reloaddeploy = Config.getboolean('switch_scheduling',
+                                                  'reloaddeploy')
+
+        if Config.has_option("switch_scheduling",
+                             "event_inventory"):
+            self.event_inventory = Config.getboolean('switch_scheduling',
+                                                     'event_inventory')
+
+        if Config.has_option("switch_scheduling",
+                             "session_reload"):
+            self.session_reload = Config.getboolean('switch_scheduling',
+                                                    'session_reload')
+
+        if Config.has_option("switch_scheduling",
+                             "reprise_evenement"):
+            self.reprise_evenement = Config.getboolean('switch_scheduling',
+                                                       'reprise_evenement')
+
+        if Config.has_option("switch_scheduling",
+                             "execcmdfile"):
+            self.execcmdfile = Config.getboolean('switch_scheduling',
+                                                 'execcmdfile')
+
+        if Config.has_option("switch_scheduling",
+                             "initsyncthing"):
+            self.initsyncthing = Config.getboolean('switch_scheduling',
+                                                   'initsyncthing')
+
+        if Config.has_option("switch_scheduling",
+                             "synchro_synthing"):
+            self.synchro_synthing = Config.getboolean('switch_scheduling',
+                                                       'synchro_synthing')
+
+        if Config.has_option("switch_scheduling",
+                             "scan_syncthing_deploy"):
+            self.scan_syncthing_deploy = Config.getboolean('switch_scheduling',
+                                                           'scan_syncthing_deploy')
+
+        # ########################## END DEBUG switch_scheduling ########################
         # configuration monitoring
         if self.agenttype == "machine":
             if Config.has_option("monitoring", "monitoring_agent_config_file"):

@@ -404,22 +404,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
         self.banterminate = { } # used for clear id session banned
-        self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
+        if self.config.removeban:
+            self.schedule('removeban',
+                          30,
+                          self.remove_sessionid_in_ban_deploy_sessionid_list,
+                          repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
-        self.schedule('check established connection',
-                      laps_time_check_established_connection,
-                      self.established_connection,
-                      repeat=True)
+        if self.config.check_established_connection:
+            self.schedule(  'check established connection',
+                            laps_time_check_established_connection,
+                            self.established_connection,
+                            repeat=True)
         if self.config.agenttype in ['relayserver']:
             #scheduled task that calls the slot plugin for sending the quick deployments that have not been processed.
-            self.schedule('Quick deployment load',
-                        15,
-                        self.QDeployfile,
-                        repeat=True)
+            if self.config.Quick_deployment_load:
+                self.schedule('Quick deployment load',
+                            15,
+                            self.QDeployfile,
+                            repeat=True)
 
         if not hasattr(self.config, 'geolocalisation'):
             self.config.geolocalisation = True
@@ -438,35 +444,41 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.config.public_ip = None
 
         self.md5reseau = refreshfingerprint()
-        self.schedule('schedulerfunction',
-                      10 ,
-                      self.schedulerfunction,
-                      repeat=True)
-        self.schedule('update plugin',
-                      laps_time_update_plugin,
-                      self.update_plugin,
-                      repeat=True)
+        if self.config.schedulerfunction:
+            self.schedule('schedulerfunction',
+                            10 ,
+                            self.schedulerfunction,
+                            repeat=True)
+        if self.config.update_plugin:
+            self.schedule('update plugin',
+                        laps_time_update_plugin,
+                        self.update_plugin,
+                        repeat=True)
         # if not sys.platform.startswith('win'):
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
-            self.schedule('check network',
-                        self.laps_time_networkMonitor,
-                        self.networkMonitor,
-                        repeat=True)
+            if self.config.check_network:
+                self.schedule('check network',
+                                self.laps_time_networkMonitor,
+                                self.networkMonitor,
+                                repeat=True)
         else:
             logging.warning("Network Changing disable")
-        self.schedule('check AGENT INSTALL', 350,
-                      self.checkinstallagent,
-                      repeat=True)
-        self.schedule('manage session',
-                      laps_time_handlemanagesession,
-                      self.handlemanagesession,
-                      repeat=True)
+        if self.config.check_AGENT_INSTALL:
+            self.schedule('check AGENT INSTALL', 350,
+                        self.checkinstallagent,
+                        repeat=True)
+        if self.config.manage_session:
+            self.schedule('manage session',
+                        laps_time_handlemanagesession,
+                        self.handlemanagesession,
+                        repeat=True)
         if self.config.agenttype in ['relayserver']:
-            self.schedule('reloaddeploy',
-                          15,
-                          self.reloaddeploy,
-                          repeat=True)
+            if self.config.reloaddeploy:
+                self.schedule('reloaddeploy',
+                            15,
+                            self.reloaddeploy,
+                            repeat=True)
 
             # ######################Update remote agent#########################
             self.diragentbase = os.path.join('/',
@@ -487,24 +499,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.warning("chang minimun time cyclic inventory : 3600")
                 logging.warning("we make sure that the time for "\
                     " the inventories is greater than or equal to 1 hour.")
-            self.schedule('event inventory',
-                          self.config.inventory_interval,
-                          self.handleinventory,
-                          repeat=True)
+            if self.config.event_inventory:
+                self.schedule('event inventory',
+                            self.config.inventory_interval,
+                            self.handleinventory,
+                            repeat=True)
         else:
             logging.warning("not enable cyclic inventory")
 
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ['relayserver']:
-            self.schedule('session reload',
-                          15,
-                          self.reloadsesssion,
-                          repeat=False)
-
-        self.schedule('reprise_evenement',
-                      10,
-                      self.handlereprise_evenement,
-                      repeat=True)
+            if self.config.session_reload:
+                self.schedule('session reload',
+                            15,
+                            self.reloadsesssion,
+                            repeat=False)
+        if self.config.reprise_evenement:
+            self.schedule('reprise_evenement',
+                        10,
+                        self.handlereprise_evenement,
+                        repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
@@ -561,15 +575,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,
                                                                              "custom_xep")),
                                     self._handle_custom_iq))
-        self.schedule('execcmdfile',
-                      laps_time_action_extern,
-                      self.execcmdfile,
-                      repeat=True)
-
-        self.schedule('initsyncthing',
-                      15,
-                      self.initialise_syncthing,
-                      repeat=False)
+        if self.config.execcmdfile:
+            self.schedule('execcmdfile',
+                        laps_time_action_extern,
+                        self.execcmdfile,
+                        repeat=True)
+        if self.config.initsyncthing:
+            self.schedule('initsyncthing',
+                        15,
+                        self.initialise_syncthing,
+                        repeat=False)
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
@@ -1567,8 +1582,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         ################################### initialise syncthing ###################################
         if self.config.syncthing_on:
             if self.config.agenttype not in ['relayserver']:
-                self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
-            self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
+                if self.config.scan_syncthing_deploy:
+                    self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
+            if self.config.synchro_synthing:
+                self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
             if logger.level <= 10:
                 console = False
                 browser = True
