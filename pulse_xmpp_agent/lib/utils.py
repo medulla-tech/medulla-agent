@@ -508,16 +508,6 @@ def call_plugin(name, *args, **kwargs):
     else:
         logging.getLogger().debug("The plugin %s is not allowed due to plugin_action parameter" % args[1])
 
-# def load_plugin(name):
-    # mod = __import__("plugin_%s" % name)
-    # return mod
-
-
-# def call_plugin(name, *args, **kwargs):
-    # pluginaction = load_plugin(name)
-    # pluginaction.action(*args, **kwargs)
-
-
 def getshortenedmacaddress():
     listmacadress = {}
     for nbsearchmac in range(20):
