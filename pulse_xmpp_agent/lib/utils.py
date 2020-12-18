@@ -504,9 +504,9 @@ def call_plugin(name, *args, **kwargs):
             pluginaction.action(*args, **kwargs)
             setattr(args[0], "num_call%s" % args[1], count + 1)
         else:
-                logging.getLogger().warning("the call plugin scheduled %s exclud " % args[1])
+                logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
     else:
-        logging.getLogger().warning("parameter plugin_action not allowed" \
+        logging.getLogger().debug("parameter plugin_action not allowed" \
             " the call plugin %s" % args[1])
 
 # def load_plugin(name):
