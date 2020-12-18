@@ -70,16 +70,21 @@ class manageschedulerdeploy:
         else:
             try:
                 self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
-            except Exception:
+            except DBInvalidArgError:
                 logger.error("An error occured while opening the bsddb database: %s" % self.name_basecmd)
                 os.remove(self.name_basecmd)
                 self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
+            except Exception as error:
+                logger.error("Opening the bsddb database failed with the error %s" % error)
+
             try:
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
-            except Exception:
+            except DBInvalidArgError:
                 logger.error("An error occured while opening the bsddb database: %s" % self.name_basesession)
                 os.remove(self.name_basesession)
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
+             except Exception as error:
+                logger.error("Opening the bsddb database failed with the error %s" % error)
 
     def closebase(self):
         self.dbcmdscheduler.close()
