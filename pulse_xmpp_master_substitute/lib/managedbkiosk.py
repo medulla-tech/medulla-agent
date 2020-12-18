@@ -27,6 +27,7 @@ import os
 import json
 import logging
 from lib.utils import Env
+import traceback
 
 if sys.platform.startswith('darwin'):
     import plyvel
@@ -51,9 +52,19 @@ class manageskioskdb:
 
     def openbase(self):
         if sys.platform.startswith('darwin'):
-            self.dblaunchcmd = plyvel.DB(self.name_launch_cmd_db, create_if_missing=True)
+            try:
+                self.dblaunchcmd = plyvel.DB(self.name_launch_cmd_db, create_if_missing=True)
+            except Exception:
+                logger.error("open pyvel db %s" % self.name_launch_cmd_db)
+                os.remove(self.name_launch_cmd_db)
+                self.dblaunchcmd = plyvel.DB(self.name_launch_cmd_db, create_if_missing=True)
         else:
-            self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db , 'c')
+            try:
+                self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db , 'c')
+            except Exception:
+                logger.error("open bsddb db %s" % self.name_launch_cmd_db)
+                os.remove(self.name_launch_cmd_db)
+                self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db , 'c')
 
     def closebase(self):
         self.dblaunchcmd.close()
@@ -70,65 +81,90 @@ class manageskioskdb:
 
     def set_cmd_launch(self, idpackage, str_cmd_launch):
         idpackage = str(idpackage)
-        self.openbase()
-        if sys.platform.startswith('darwin'):
-            self.dblaunchcmd.put(bytearray(idpackage), bytearray(str_cmd_launch))
-        else:
-            self.dblaunchcmd[idpackage] = str_cmd_launch
-            self.dblaunchcmd.sync()
-        self.closebase()
+        try:
+            self.openbase()
+            if sys.platform.startswith('darwin'):
+                self.dblaunchcmd.put(bytearray(idpackage), bytearray(str_cmd_launch))
+            else:
+                self.dblaunchcmd[idpackage] = str_cmd_launch
+                self.dblaunchcmd.sync()
+        except Exception:
+            logger.error("set_cmd_launch %s" % self.name_launch_cmd_db)
+            logger.error("\n%s"%(traceback.format_exc()))
+        finally:
+            self.closebase()
 
     def get_cmd_launch(self, idpackage):
         idpackage = str(idpackage)
         data = ""
-        self.openbase()
-        if sys.platform.startswith('darwin'):
-            data = self.dblaunchcmd.get(bytearray(idpackage))
-            if data is None:
-                data =""
-        else:
-            if self.dblaunchcmd.has_key(str(idpackage)):
-                data = self.dblaunchcmd[idpackage]
-        self.closebase()
+        try:
+            self.openbase()
+            if sys.platform.startswith('darwin'):
+                data = self.dblaunchcmd.get(bytearray(idpackage))
+                if data is None:
+                    data =""
+            else:
+                if self.dblaunchcmd.has_key(str(idpackage)):
+                    data = self.dblaunchcmd[idpackage]
+        except Exception:
+            logger.error("get_cmd_launch %s" % self.name_launch_cmd_db)
+            logger.error("\n%s"%(traceback.format_exc()))
+        finally:
+            self.closebase()
         return str(data)
 
     def del_cmd_launch(self, idpackage):
         idpackage = str(idpackage)
         self.openbase()
-        if sys.platform.startswith('darwin'):
-            data = self.dblaunchcmd.delete(bytearray(idpackage))
-        else:
-            if self.dblaunchcmd.has_key(idpackage):
-                del self.dblaunchcmd[idpackage]
-                self.dblaunchcmd.sync()
-        self.closebase()
+        try:
+            if sys.platform.startswith('darwin'):
+                data = self.dblaunchcmd.delete(bytearray(idpackage))
+            else:
+                if self.dblaunchcmd.has_key(idpackage):
+                    del self.dblaunchcmd[idpackage]
+                    self.dblaunchcmd.sync()
+        except Exception:
+            logger.error("del_cmd_launch %s" % self.name_launch_cmd_db)
+            logger.error("\n%s"%(traceback.format_exc()))
+        finally:
+            self.closebase()
 
     def get_all_obj_launch(self):
         self.openbase()
-        result = {}
-        if sys.platform.startswith('darwin'):
-            for k, v in self.dblaunchcmd:
-                result[str(k)] = str(v)
-        else:
-            for k, v in self.dblaunchcmd.iteritems():
-                result[str(k)] = str(v)
-        self.closebase()
+        try:
+            result = {}
+            if sys.platform.startswith('darwin'):
+                for k, v in self.dblaunchcmd:
+                    result[str(k)] = str(v)
+            else:
+                for k, v in self.dblaunchcmd.iteritems():
+                    result[str(k)] = str(v)
+        except Exception:
+            logger.error("del_cmd_launch %s" % self.name_launch_cmd_db)
+            logger.error("\n%s"%(traceback.format_exc()))
+        finally:
+            self.closebase()
         return result
 
     def get_all_cmd_launch(self):
         self.openbase()
         result = {}
-        if sys.platform.startswith('darwin'):
-            for k, v in self.dblaunchcmd:
-                if str(k) == "str_json_name_id_package":
-                    continue
-                result[str(k)] = str(v)
-        else:
-            for k, v in self.dblaunchcmd.iteritems():
-                if str(k) == "str_json_name_id_package":
-                    continue
-                result[str(k)] = str(v)
-        self.closebase()
+        try:
+            if sys.platform.startswith('darwin'):
+                for k, v in self.dblaunchcmd:
+                    if str(k) == "str_json_name_id_package":
+                        continue
+                    result[str(k)] = str(v)
+            else:
+                for k, v in self.dblaunchcmd.iteritems():
+                    if str(k) == "str_json_name_id_package":
+                        continue
+                    result[str(k)] = str(v)
+        except Exception:
+            logger.error("get_all_cmd_launch %s" % self.name_launch_cmd_db)
+            logger.error("\n%s"%(traceback.format_exc()))
+        finally:
+            self.closebase()
         return result
     ################################################################################################
     # key "str_json_name_id_package" json string reserved to doing match between name  and idpackage
