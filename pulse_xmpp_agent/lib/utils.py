@@ -506,8 +506,7 @@ def call_plugin(name, *args, **kwargs):
         else:
                 logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
     else:
-        logging.getLogger().debug("parameter plugin_action not allowed" \
-            " the call plugin %s" % args[1])
+        logging.getLogger().debug("The plugin %s is not allowed due to plugin_action parameter" % args[1])
 
 # def load_plugin(name):
     # mod = __import__("plugin_%s" % name)
