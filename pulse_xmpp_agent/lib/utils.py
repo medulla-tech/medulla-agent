@@ -3023,7 +3023,7 @@ def serialnumbermachine():
                 a=[x.strip().decode('utf-8', 'ignore') for x in result['result']]
                 serial_uuid_machine = ''.join(a).replace('UUID','').strip()
         else:
-            logger.warning("function serialnumbermachine No Implemented for os %s" % sys.platform)
+            logger.warning("the serialnumbermachine function is not implemented for your os: %s" % sys.platform)
     except Exception:
-        logger.error("function serialnumbermachine\n%s" % (traceback.format_exc()))
+        logger.error("An error occured while using the serialnumbermachine function \n we got the error below \n%s" % (traceback.format_exc()))
     return serial_uuid_machine
