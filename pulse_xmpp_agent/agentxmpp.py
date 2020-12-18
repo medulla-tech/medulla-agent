@@ -2286,9 +2286,10 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                         os.path.exists(self.config.monitoring_agent_config_file):
                             dataobj['md5_conf_monitoring'] =  hashlib.md5(file_get_contents(self.config.monitoring_agent_config_file)).hexdigest()
         except AttributeError:
-            logging.warning('conf file monitoring missing')
+            logging.debug('The monitoring configuration file is missing')
         except Exception as e:
-            logging.error('%s error on file config monitoring'%str(e))
+            logging.error('%s error on file config monitoring' % str(e))
+
         if self.config.agenttype in ['relayserver']:
             try:
                 dataobj['syncthing_port'] = self.config.syncthing_port
@@ -2297,7 +2298,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
         else:
-            logging.warning('geolocalisation not defined')
+            logging.debug('The geolocalisation is disabled')
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
