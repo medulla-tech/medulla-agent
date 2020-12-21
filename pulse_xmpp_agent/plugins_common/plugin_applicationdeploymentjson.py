@@ -188,7 +188,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                why="",
                                module="Deployment | Error | Dependencies | Transfer| Notify",
                                date=None,
-                               fromuser=data['name'],
+                               fromuser="AM %s" % strjidagent,
                                touser="")
             if sessionid in objectxmpp.back_to_deploy:
                 objectxmpp.xmpplog('<span class="log_err">List of abandoned dependencies %s</span>' % objectxmpp.back_to_deploy[sessionid]['Dependency'],
@@ -201,7 +201,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment | Dependencies | Transfer | Notify",
                                    date=None,
-                                   fromuser=data['name'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
             objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                                type='deploy',
@@ -213,7 +213,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                why="",
                                module="Deployment | Terminate | Notify",
                                date=None,
-                               fromuser=data['name'],
+                               fromuser="AM %s" % strjidagent,
                                touser="")
             signalendsessionforARS(data, objectxmpp, sessionid, error=True)
 
@@ -445,7 +445,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                        why="",
                                        module="Deployment",
                                        date=None,
-                                       fromuser=data['name'],
+                                       fromuser="AM %s" % strjidagent,
                                        touser="")
                     data["plan"] = strdeploypack
                     logger.debug("Dependencies list %s" % (objectxmpp.back_to_deploy[sessionid]['Dependency']))
