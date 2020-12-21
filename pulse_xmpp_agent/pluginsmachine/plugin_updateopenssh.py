@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.62", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.64", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -67,7 +67,7 @@ def updateopensshversion(version):
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.debug("we successfully changed the version of OpenSSH")
+            logger.info("we successfully changed the version of OpenSSH to version %s" % OPENSSHVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
@@ -100,9 +100,9 @@ def updateopenssh(xmppobject, installed_version):
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
         mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
         nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
-        windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
-        programdata_path = os.path.join("c:\\", "ProgramData", "ssh")
-        rsync_dest_folder = os.path.join("c:\\", "Windows", windows_system)
+        windows_tempdir = os.path.join("C:\\", "Windows", "Temp")
+        programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
+        rsync_dest_folder = os.path.join("C:\\", "Windows", windows_system)
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
@@ -113,6 +113,12 @@ def updateopenssh(xmppobject, installed_version):
 
         if result:
             # Download success
+            agent_uninstall = utils.simplecommandstr("sc.exe qc ssh-agent")
+            if agent_uninstall['code'] == 0:
+                if opensshdir_path in agent_uninstall['result']:
+                    utils.simplecommand("sc.exe stop ssh-agent")
+                    utils.simplecommand("sc.exe delete ssh-agent")
+
             daemon_uninstall = utils.simplecommand("sc.exe query sshdaemon")
             if daemon_uninstall['code'] == 0:
                 utils.simplecommand("sc.exe stop sshdaemon")
@@ -149,7 +155,7 @@ def updateopenssh(xmppobject, installed_version):
 
 
             sshdaemonDesc = "SSH protocol based service to provide secure encrypted communications between two untrusted hosts over an insecure network."
-            command_sshdaemon = "sc.exe create sshdaemon binPath=\"%s\" DisplayName=\"Pulse SSH Server\" start=auto" % sshdaemon_bin_path
+            command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Pulse SSH Server\" start= auto" % sshdaemon_bin_path
             utils.simplecommand(command_sshdaemon)
 
             utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")

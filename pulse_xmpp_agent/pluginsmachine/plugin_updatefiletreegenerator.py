@@ -65,7 +65,7 @@ def updatefiletreegeneratorversion(version):
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.debug("we successfully changed the version of Pulse Filetree Generator")
+            logger.info("we successfully updated Pulse Filetree Generator to version %s" % FILETREEVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\Pulse Filetree Generator" '\

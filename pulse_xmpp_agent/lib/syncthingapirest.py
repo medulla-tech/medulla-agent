@@ -44,12 +44,13 @@ from lxml import etree
 import urllib
 import socket
 from threading import Lock
-from utils import Program, getRandomName, simplecommand, file_put_contents
+from utils import Program, getRandomName, simplecommand, file_put_contents, simplecommand
 import logging
 import traceback
 import time
 import os
 import sys
+import ConfigParser
 from urlparse import urlparse
 
 logger = logging.getLogger()
@@ -1370,9 +1371,38 @@ class syncthingprogram(Program):
                 self.logfile = "%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']
 
             self.stop_syncthing()
-            cmd = ['%s\\Pulse\\bin\\syncthing.exe'%os.environ['programfiles'],
-                   "-home=%s"%self.home,
-                   "-logfile=%s"%self.logfile]
+
+            agentconf = os.path.join(os.environ['programfiles'], "Pulse", "etc", "agentconf.ini")
+            Config = ConfigParser.ConfigParser()
+            Config.read(agentconf)
+
+            syncthing_bin = os.path.join(os.environ['programfiles'], "Pulse", "bin", "syncthing.exe")
+
+            if not os.path.isfile(syncthing_bin):
+                logger.error("Syncthing is not installed, Changing configuration to not use it yet.")
+
+                is_syncthing_activated = 1
+                if Config.has_option("syncthing", "activation"):
+                    is_syncthing_activated = Config.get('syncthing', 'activation')
+
+                if is_syncthing_activated:
+                    Config.set('syncthing', 'activation', "0")
+                    with open(agentconf, 'w') as configfile:
+                        Config.write(configfile)
+
+                query_cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /s | Find "DisplayVersion"'
+                query_result = simplecommand(query_cmd)
+                if query_result['code'] == 0:
+                    delete_cmd = 'reg delete "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /f'
+                    delete_result = simplecommand(delete_cmd)
+                    if delete_result['code'] == 0:
+                        logger.debug("Syncthing has been removed from the registry")
+
+
+            cmd = [ "%s" % syncthing_bin,
+                   "-home=%s" % self.home,
+                   "-logfile=%s" % self.logfile]
+
             if not self.console:
                 cmd.append('-no-console')
             if not self.browser:

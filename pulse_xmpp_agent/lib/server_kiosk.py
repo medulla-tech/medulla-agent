@@ -214,7 +214,7 @@ class process_tcp_serveur():
         self.logger.debug("_______________________________________________")
         pid = os.getpid()
         while not self.eventkill.wait(1):
-            self.logger.debug("SERVER KIOSK ON pid server KIOS process is %s" % pid)
+            self.logger.debug("The process of the KIOSK server is %s" % pid)
             try:
                 rr, rw, err = select.select([self.sock],[],[self.sock], 7)
             except Exception as e:
@@ -225,7 +225,7 @@ class process_tcp_serveur():
                 self.logger.error('Quit connection kiosk')
                 break
             except KeyboardInterrupt:
-                self.logger.error("INTERRUPTED SERVER KIOSK CTRL+C")
+                self.logger.error("The KIOSK server has been interupted by CTRL+C")
                 break
             if self.sock in rr:
                 try:
