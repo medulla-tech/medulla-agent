@@ -118,9 +118,9 @@ def read_conf_wol(xmppobject):
         wakeonlanport = 9
     """
 
-    namefichierconf = plugin['NAME'] + ".ini"
-    pathfileconf = os.path.join( xmppobject.config.pathdirconffile, namefichierconf )
-    logger.debug("fichier de configuration is %s" % pathfileconf)
+    conf_filename = plugin['NAME'] + ".ini"
+    pathfileconf = os.path.join( xmppobject.config.pathdirconffile, conf_filename)
+    logger.debug("The configuration file is %s" % pathfileconf)
     xmppobject.wakeonlangroupremotelan = True
     xmppobject.wakeonlangroupport = 9
     if not os.path.isfile(pathfileconf):
