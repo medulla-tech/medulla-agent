@@ -76,7 +76,7 @@ def action(xmppobject, action, sessionid, data, message, ret):
                                       port=xmppobject.wakeonlangroupport)
                 msglog = "A local lan WOL request have been sent to the" \
                          " mac address %s and port %s" % (data['macadress'],
-                                                          xmppobject.wakeonlanport)
+                                                          xmppobject.wakeonlangroupport)
                 historymessage(xmppobject, sessionid, msglog)
                 logger.debug(msglog)
 
