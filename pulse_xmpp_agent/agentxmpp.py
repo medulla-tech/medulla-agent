@@ -1571,10 +1571,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
 
     def initialise_syncthing(self):
-        logger.info("____________________________________________")
-        logger.info("___________ INITIALISE SYNCTHING ___________")
-        logger.info("____________________________________________")
-        try:
+         try:
+            logger.info("____________________________________________")
+            logger.info("___________ INITIALISE SYNCTHING ___________")
+            logger.info("____________________________________________")
             self.config.syncthing_on
         except NameError:
             self.config.syncthing_on = False
