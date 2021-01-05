@@ -1568,6 +1568,30 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
 
+    def call_plugin_differed(self, time_differed = 5):
+        try:
+            for pluginname in self.paramsdict:
+                self.schedule(  pluginname["descriptor"]["action"],
+                                time_differed ,
+                                self.call_plugin_deffered_mode,
+                                repeat=False,
+                                kwargs = {},
+                                args=())
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
+
+    def call_plugin_deffered_mode(self, *args, **kwargs):
+        try:
+            newparams = self.paramsdict.pop(0)
+            call_plugin(newparams["descriptor"]["action"],
+                        self,
+                        newparams["descriptor"]["action"],
+                        newparams["descriptor"]['sessionid'],
+                        newparams["descriptor"]['data'],
+                        newparams["msg"],
+                        newparams["errordescriptor"])
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
 
 
     def initialise_syncthing(self):
