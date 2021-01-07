@@ -489,27 +489,24 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
-    nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-    # Add compteur appel plugins
-    count = 0
-    try:
-        count = getattr(args[0], "num_call%s" % args[1])
-    except AttributeError:
-        count = 0
-        setattr(args[0], "num_call%s"%args[1], count)
-    pluginaction = loadModule(nameplugin)
-    pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count + 1)
-
-# def load_plugin(name):
-    # mod = __import__("plugin_%s" % name)
-    # return mod
-
-
-# def call_plugin(name, *args, **kwargs):
-    # pluginaction = load_plugin(name)
-    # pluginaction.action(*args, **kwargs)
-
+    if args[0].config.plugin_action :
+        if args[1] not in args[0].config.excludedplugins:
+            nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+            logger.debug("Loading plugin %s" % args[1])
+            # Add compteur appel plugins
+            count = 0
+            try:
+                count = getattr(args[0], "num_call%s" % args[1])
+            except AttributeError:
+                count = 0
+                setattr(args[0], "num_call%s"%args[1], count)
+            pluginaction = loadModule(nameplugin)
+            pluginaction.action(*args, **kwargs)
+            setattr(args[0], "num_call%s" % args[1], count + 1)
+        else:
+                logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
+    else:
+        logging.getLogger().debug("The plugin %s is not allowed due to plugin_action parameter" % args[1])
 
 def getshortenedmacaddress():
     listmacadress = {}
@@ -3026,7 +3023,7 @@ def serialnumbermachine():
                 a=[x.strip().decode('utf-8', 'ignore') for x in result['result']]
                 serial_uuid_machine = ''.join(a).replace('UUID','').strip()
         else:
-            logger.warning("function serialnumbermachine No Implemented for os %s" % sys.platform)
+            logger.warning("the serialnumbermachine function is not implemented for your os: %s" % sys.platform)
     except Exception:
-        logger.error("function serialnumbermachine\n%s" % (traceback.format_exc()))
+        logger.error("An error occured while using the serialnumbermachine function \n we got the error below \n%s" % (traceback.format_exc()))
     return serial_uuid_machine

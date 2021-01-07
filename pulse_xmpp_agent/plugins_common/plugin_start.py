@@ -35,10 +35,13 @@ plugin = {"VERSION" : "2.1", "NAME" : "start", "TYPE" : "all"}
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
     configfilename = os.path.join(directoryconffile(),"start.ini")
+    objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
         # lit la configuration
         Config = ConfigParser.ConfigParser()
         Config.read(configfilename)
+        if Config.has_option('plugins', 'time_differed_start'):
+           objectxmpp.time_differed_start = Config.getint('plugins', 'time_differed_start')
         if Config.has_option('plugins', 'liststartplugin'):
             liststartplugin = Config.get('plugins', 'liststartplugin')
             objectxmpp.liststartplugin = [x for x in
@@ -56,7 +59,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     if compteurcallplugin == 0:
         logger.debug("configure plugin %s" % action)
         read_conf_plugin_start(objectxmpp)
-
+        objectxmpp.paramsdict=[]
 
     startupdate={"action": "",
                  "sessionid": utils.getRandomName(6, "startplugin"),
@@ -66,16 +69,20 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     msg = {'from': objectxmpp.boundjid.bare,
         "to" : objectxmpp.boundjid.bare,
         'type': 'chat' }
-    dataerreur =  startupdate.copy()
+
     for pluginstart in objectxmpp.liststartplugin:
+        dataerreur =  startupdateskel.copy()
+        startupdate =  startupdateskel.copy()
         startupdate["action"] = pluginstart
         dataerreur["action"] = "result" + startupdate["action"]
-        dataerreur["action"] = {"msg": "error plugin: "+ startupdate["action"]}
-        logger.error("from plugin_start call %s" % pluginstart)
-        utils.call_plugin(startupdate["action"],
-                            objectxmpp,
-                            startupdate["action"],
-                            startupdate['sessionid'],
-                            startupdate['data'],
-                            msg,
-                            dataerreur)
+        dataerreur["data"] = {"msg": "error plugin: "+ startupdate["action"]}
+        dataerreur["ret"] = 255
+        logger.warning("from plugin_start call %s differed %s" % (pluginstart,
+                                                                  objectxmpp.time_differed_start))
+        params = {"descriptor" : startupdate,
+                  "errordescriptor" : dataerreur,
+                  "msg" : msg}
+        objectxmpp.paramsdict.append(params)
+
+    objectxmpp.call_plugin_differed(time_differed = objectxmpp.time_differed_start)
+

@@ -530,7 +530,7 @@ class confParameter:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
         # if aucune interface. il n'y a pas de macs adress. ressource missing
-        try:            
+        try:
             ressource = utils.name_jid()
         except:
             ressource = "missingmac"
@@ -568,9 +568,9 @@ class confParameter:
         self.compress = self.compress.lower()
         if self.compress not in ["zip", "gzip", "bz2","No"]:
             self.compress = "no"
-        defaultnamelogfile = "xmpp-agent-machine.log"  
+        defaultnamelogfile = "xmpp-agent-machine.log"
         if self.agenttype == "relayserver":
-            defaultnamelogfile = "xmpp-agent-relay.log"  
+            defaultnamelogfile = "xmpp-agent-relay.log"
         try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
@@ -698,7 +698,132 @@ class confParameter:
                                                     "inventory_interval")
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
+        # ########################## DEBUG switch_scheduling ########################
+        #clean session if ban jid for deploy
+        self.sched_remove_ban = True
+        self.sched_check_connection = True
+        self.sched_quick_deployment_load = True
+        # switch exec plugin scheduling
+        self.sched_scheduled_plugins = True
+        self.sched_update_plugin = True
+        self.sched_check_network = True
+        # controle si doit installer image
+        self.sched_update_agent = True
+        self.sched_manage_session = True
+        self.sched_reload_deployments = True
+        self.sched_check_inventory = True
+        self.sched_session_reload = True
+        self.sched_check_events  = True
+        self.sched_check_cmd_file = True
+        self.sched_init_syncthing = True
+        self.sched_check_syncthing_deployment = True
+        self.sched_check_synthing_config = True
+        if Config.has_option("switch_scheduling",
+                             "sched_remove_ban"):
+            self.sched_remove_ban = Config.getboolean('switch_scheduling',
+                                                      'sched_remove_ban')
 
+        if Config.has_option("switch_scheduling",
+                             "sched_check_connection"):
+            self.sched_check_connection = Config.getboolean('switch_scheduling',
+                                                            'sched_check_connection')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_quick_deployment_load"):
+            self.sched_quick_deployment_load = Config.getboolean('switch_scheduling',
+                                                                 'sched_quick_deployment_load')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_scheduled_plugins"):
+            self.sched_scheduled_plugins = Config.getboolean('switch_scheduling',
+                                                             'sched_scheduled_plugins')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_update_plugin"):
+            self.sched_update_plugin = Config.getboolean('switch_scheduling',
+                                                         'sched_update_plugin')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_network"):
+            self.sched_check_network = Config.getboolean('switch_scheduling',
+                                                         'sched_check_network')
+
+        if Config.has_option("switch_scheduling", "sched_update_agent"):
+            self.sched_update_agent = Config.getboolean('switch_scheduling',
+                                                        'sched_update_agent')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_manage_session"):
+            self.sched_manage_session = Config.getboolean('switch_scheduling',
+                                                          'sched_manage_session')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_reload_deployments"):
+            self.sched_reload_deployments = Config.getboolean('switch_scheduling',
+                                                              'sched_reload_deployments')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_inventory"):
+            self.sched_check_inventory = Config.getboolean('switch_scheduling',
+                                                           'sched_check_inventory')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_session_reload"):
+            self.sched_session_reload = Config.getboolean('switch_scheduling',
+                                                          'sched_session_reload')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_events"):
+            self.sched_check_events = Config.getboolean('switch_scheduling',
+                                                        'sched_check_events')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_cmd_file"):
+            self.sched_check_cmd_file = Config.getboolean('switch_scheduling',
+                                                          'sched_check_cmd_file')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_init_syncthing"):
+            self.sched_init_syncthing = Config.getboolean('switch_scheduling',
+                                                          'sched_init_syncthing')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_synthing_config"):
+            self.sched_check_synthing_config = Config.getboolean('switch_scheduling',
+                                                                 'sched_check_synthing_config')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_syncthing_deployment"):
+            self.sched_check_syncthing_deployment = Config.getboolean('switch_scheduling',
+                                                                      'sched_check_syncthing_deployment')
+
+        self.excludedplugins = []
+        if Config.has_option("excluded_plugins",
+                             "excludedplugins"):
+            excludedpluginstmp = Config.get('excluded_plugins',
+                                             'excludedplugins').split(",")
+            self.excludedplugins = [x.strip() for x in excludedpluginstmp]
+
+        self.excludedscheduledplugins = []
+        if Config.has_option("excluded_scheduled_plugins",
+                             "excludedscheduledplugins"):
+            excludedscheduledpluginstmp = Config.get('excluded_scheduled_plugins',
+                                                      'excludedscheduledplugins').split(",")
+            self.excludedscheduledplugins = [x.strip() for x in excludedscheduledpluginstmp]
+
+
+        self.scheduling_plugin_action = True
+        self.plugin_action = True
+        if Config.has_option("call_plugin",
+                             "scheduling_plugin_action"):
+            self.scheduling_plugin_action = Config.getboolean('call_plugin',
+                                                           'scheduling_plugin_action')
+
+        if Config.has_option("call_plugin",
+                             "plugin_action"):
+            self.plugin_action = Config.getboolean('call_plugin',
+                                                           'plugin_action')
+        # ########################## END DEBUG switch_scheduling ########################
         # configuration monitoring
         if self.agenttype == "machine":
             if Config.has_option("monitoring", "monitoring_agent_config_file"):

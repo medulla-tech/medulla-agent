@@ -55,11 +55,40 @@ class manageschedulerdeploy:
 
     def openbase(self):
         if sys.platform.startswith('darwin'):
-            self.dbcmdscheduler     = plyvel.DB(self.name_basesession, create_if_missing=True)
-            self.dbsessionscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
+            try:
+                self.dbsessionscheduler = plyvel.DB(self.name_basesession, create_if_missing=True)
+            except Exception:
+                logger.error("An error occured while opening the database: %s" % self.name_basesession)
+                os.remove(self.name_basesession)
+                self.dbsessionscheduler = plyvel.DB(self.name_basesession, create_if_missing=True)
+            try:
+                self.dbcmdscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
+            except Exception:
+                logger.error("An error occured while opening the database: %s" % self.name_basecmd)
+                os.remove(self.name_basecmd)
+                self.dbcmdscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
         else:
-            self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
-            self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
+            try:
+                self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
+            except DBInvalidArgError:
+                logger.error("An error occured while opening the bsddb database: %s" % self.name_basecmd)
+                os.remove(self.name_basecmd)
+                self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
+            except Exception as error:
+                logger.error("Opening the bsddb database failed with the error \n %s" % error)
+                os.remove(self.name_basecmd)
+                self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
+
+            try:
+                self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
+            except DBInvalidArgError:
+                logger.error("An error occured while opening the bsddb database: %s" % self.name_basesession)
+                os.remove(self.name_basesession)
+                self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
+            except Exception as error:
+                logger.error("Opening the bsddb database failed with the error \n %s" % error)
+                os.remove(self.name_basecmd)
+                self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
 
     def closebase(self):
         self.dbcmdscheduler.close()
@@ -77,37 +106,52 @@ class manageschedulerdeploy:
 
     def set_sesionscheduler(self, sessionid, objsession):
         sessionid = str(sessionid)
-        self.openbase()
-        if sys.platform.startswith('darwin'):
-            self.dbsessionscheduler.put(bytearray(sessionid),bytearray(objsession))
-        else:
-            self.dbsessionscheduler[sessionid] = objsession
-            self.dbsessionscheduler.sync()
-        self.closebase()
+        try:
+            self.openbase()
+            if sys.platform.startswith('darwin'):
+                self.dbsessionscheduler.put(bytearray(sessionid),bytearray(objsession))
+            else:
+                self.dbsessionscheduler[sessionid] = objsession
+                self.dbsessionscheduler.sync()
+        except Exception as exception_error:
+            logger.error("In the function set_sesionscheduler the plugin %s failed with the error: \n %s" % (self.name_basesession, exception_error))
+        finally:
+            self.closebase()
 
     def get_sesionscheduler(self, sessionid):
         sessionid = str(sessionid)
         data = ""
-        self.openbase()
-        if sys.platform.startswith('darwin'):
-            data = self.dbsessionscheduler.get(bytearray(sessionid))
-            if data is None:
-                data =""
-        else:
-            if str(sessionid) in self.dbsessionscheduler:
-                data = self.dbsessionscheduler[sessionid]
-        self.closebase()
+        try:
+            self.openbase()
+            if sys.platform.startswith('darwin'):
+                data = self.dbsessionscheduler.get(bytearray(sessionid))
+                if data is None:
+                    data =""
+            else:
+                if str(sessionid) in self.dbsessionscheduler:
+                    data = self.dbsessionscheduler[sessionid]
+            self.closebase()
+        except Exception as exception_error:
+            logger.error("In the function get_sesionscheduler the plugin %s failed with the error: \n %s" % (self.name_basesession, exception_error))
+        finally:
+            self.closebase()
         return data
 
     def del_sesionscheduler(self, sessionid):
         data = ""
         sessionid = str(sessionid)
-        self.openbase()
-        if sys.platform.startswith('darwin'):
-            data = self.dbsessionscheduler.delete(bytearray(sessionid))
-        else:
-            if sessionid in self.dbsessionscheduler:
-                del self.dbsessionscheduler[sessionid]
-                self.dbsessionscheduler.sync()
-        self.closebase()
+        try:
+            self.openbase()
+            if sys.platform.startswith('darwin'):
+                data = self.dbsessionscheduler.delete(bytearray(sessionid))
+            else:
+                if sessionid in self.dbsessionscheduler:
+                    del self.dbsessionscheduler[sessionid]
+                    self.dbsessionscheduler.sync()
+            self.closebase()
+        except Exception as exception_error:
+            logger.error("In the function del_sesionscheduler the plugin %s failed with the error: \n %s" % (self.name_basesession, exception_error))
+        finally:
+            self.closebase()
+        
         return data

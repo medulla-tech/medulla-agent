@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.20", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.21", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -188,7 +188,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                why="",
                                module="Deployment | Error | Dependencies | Transfer| Notify",
                                date=None,
-                               fromuser=data['name'],
+                               fromuser="AM %s" % strjidagent,
                                touser="")
             if sessionid in objectxmpp.back_to_deploy:
                 objectxmpp.xmpplog('<span class="log_err">List of abandoned dependencies %s</span>' % objectxmpp.back_to_deploy[sessionid]['Dependency'],
@@ -201,7 +201,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment | Dependencies | Transfer | Notify",
                                    date=None,
-                                   fromuser=data['name'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
             objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                                type='deploy',
@@ -213,7 +213,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                why="",
                                module="Deployment | Terminate | Notify",
                                date=None,
-                               fromuser=data['name'],
+                               fromuser="AM %s" % strjidagent,
                                touser="")
             signalendsessionforARS(data, objectxmpp, sessionid, error=True)
 
@@ -445,7 +445,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                        why="",
                                        module="Deployment",
                                        date=None,
-                                       fromuser=data['name'],
+                                       fromuser="AM %s" % strjidagent,
                                        touser="")
                     data["plan"] = strdeploypack
                     logger.debug("Dependencies list %s" % (objectxmpp.back_to_deploy[sessionid]['Dependency']))
@@ -518,7 +518,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment",
                                    date=None,
-                                   fromuser=datasend['data']['name'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
                 datasend = {'action': "result" + action,
                             'sessionid': sessionid,
@@ -652,7 +652,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment | Notify",
                                    date=None,
-                                   fromuser=data['advanced']['login'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
                 datasend['data']['advanced']['scheduling'] = True
                 objectxmpp.Deploybasesched.set_sesionscheduler(sessionid,json.dumps(datasend))

@@ -22,10 +22,11 @@
 import logging
 import json
 from lib import utils
+from sleekxmpp.exceptions import IqError
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updateuseraccount", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updateuseraccount", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -58,14 +59,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                            },
                                           timeout)
         res = json.loads(iqresult)
-    except IqError:
+        result = res['result']['informationresult']
+        relayserver_pubkey = result['keypub']
+        relayserver_reversessh_idrsa = result['get_ars_key_id_rsa']
+        logger.debug("relayserver_pubkey: %s" % relayserver_pubkey)
+        logger.debug("relayserver_reversessh_idrsa: %s" % relayserver_reversessh_idrsa)
+    except KeyError:
         logger.error("Error getting relayserver pubkey and reversessh idrsa via iq from %s" % jidars)
         return
-    result = res['result']['informationresult']
-    relayserver_pubkey = result['keypub']
-    relayserver_reversessh_idrsa = result['get_ars_key_id_rsa']
-    logger.debug("relayserver_pubkey: %s" % relayserver_pubkey)
-    logger.debug("relayserver_reversessh_idrsa: %s" % relayserver_reversessh_idrsa)
 
     # Add the keys to pulseuser account
     result, msglog = utils.create_idrsa_on_client(username, relayserver_reversessh_idrsa)
