@@ -158,7 +158,7 @@ def updateopenssh(xmppobject, installed_version):
             command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Pulse SSH Server\" start= auto" % sshdaemon_bin_path
             utils.simplecommand(command_sshdaemon)
 
-            utils.simplecommand("sc.exe privs sshd SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
+            utils.simplecommand("sc.exe privs sshdaemon SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
             utils.simplecommand("sc start sshdaemon")
             utils.simplecommand("sc stop sshdaemon")
