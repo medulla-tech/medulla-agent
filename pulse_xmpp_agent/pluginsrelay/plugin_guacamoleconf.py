@@ -30,7 +30,7 @@ import logging
 class GuacamoleError(Exception):
        pass
 
-plugin = {"VERSION": "2.1", "NAME" :"guacamoleconf", "TYPE":"relayserver"}
+plugin = {"VERSION": "2.2", "NAME": "guacamoleconf", "TYPE": "relayserver"}
 logger = logging.getLogger()
 
 def get_free_tcp_port(objectxmpp):
@@ -42,7 +42,7 @@ def get_free_tcp_port(objectxmpp):
     except Exception as e:
         errorstr = "%s" % traceback.format_exc()
         logger.error("\n%s" % (errorstr))
-        errorstr = "error search free port for reverse VNC : %s\n" \
+        errorstr = "Error finding a free port for reverse VNC : %s\n" \
                    "REMOTE traceback on %s\n"\
                                         "%s" % (str(e),
                                                 objectxmpp.boundjid.bare,
@@ -52,9 +52,9 @@ def get_free_tcp_port(objectxmpp):
     return port
 
 def insertprotocole(protocole, hostname):
-    logger.debug("new commection machine %s_%s protcol %s" % (protocole.upper(),
-                                                              hostname,
-                                                              protocole.lower()))
+    logger.debug("New connection for machine %s_%s protcol %s" % (protocole.upper(),
+                                                                  hostname,
+                                                                  protocole.lower()))
     return """INSERT
                 INTO guacamole_connection (connection_name, protocol)
                     VALUES ( '%s_%s', '%s');""" % (protocole.upper(),
@@ -62,15 +62,15 @@ def insertprotocole(protocole, hostname):
                                                    protocole.lower())
 
 def deleteprotocole(protocole, hostname):
-    logger.debug("supp old commection for : %s_%s" % (protocole.upper(),
-                                                      hostname))
+    logger.debug("Deleting old connection for : %s_%s" % (protocole.upper(),
+                                                          hostname))
     return """DELETE FROM `guacamole_connection`
                      WHERE connection_name = '%s_%s';"""%(protocole.upper(),
                                                           hostname)
 
 def insertparameter(index, parameter, value):
-    logger.debug("new params in guacamole base : %s is %s" % (parameter,
-                                                              value))
+    logger.debug("New parameters in guacamole database: %s = %s" % (parameter,
+                                                                    value))
     return """INSERT
                  INTO guacamole_connection_parameter (connection_id,
                                                       parameter_name,
@@ -98,15 +98,15 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     try:
         try:
             db = MySQLdb.connect(host=objectxmpp.config.guacamole_dbhost,
-                                user=objectxmpp.config.guacamole_dbuser,
-                                passwd=objectxmpp.config.guacamole_dbpasswd,
-                                db=objectxmpp.config.guacamole_dbname)
-            logger.debug("connect with params\n" \
-                         "\thost is : %s\n" \
-                         "\tuser is : %s\n" \
-                         "\tdb   is : %s\n" %( objectxmpp.config.guacamole_dbhost,
-                                              objectxmpp.config.guacamole_dbuser,
-                                              objectxmpp.config.guacamole_dbname))
+                                 user=objectxmpp.config.guacamole_dbuser,
+                                 passwd=objectxmpp.config.guacamole_dbpasswd,
+                                 db=objectxmpp.config.guacamole_dbname)
+            logger.debug("Connecting with parameters\n" \
+                         "\thost: %s\n" \
+                         "\tuser: %s\n" \
+                         "\tdb: %s\n" %( objectxmpp.config.guacamole_dbhost,
+                                        objectxmpp.config.guacamole_dbuser,
+                                        objectxmpp.config.guacamole_dbname))
         except Exception as e:
             errorstr = "%s" % traceback.format_exc()
             logger.error("\n%s" % (errorstr))
@@ -115,7 +115,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         "%s" % (str(e),
                                                 objectxmpp.boundjid.bare,
                                                 errorstr)
-            raise GuacamoleError("connect error")
+            raise GuacamoleError("MySQL connection error")
 
 
         cursor = db.cursor()
@@ -150,7 +150,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         "%s" % (str(e),
                                                 objectxmpp.boundjid.bare,
                                                 errorstr)
-            raise GuacamoleError("Mysql error delete proto existant")
+            raise GuacamoleError("MySQL error deleting existing protocol")
         except Exception as e:
             errorstr = "%s" % traceback.format_exc()
             logger.error("\n%s" % (errorstr))
@@ -159,7 +159,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         "%s" % (str(e),
                                                 objectxmpp.boundjid.bare,
                                                 errorstr)
-            raise GuacamoleError("error delete proto existant")
+            raise GuacamoleError("Error deleting existing protocol")
         ###################################
         ## configure parameters
         ###################################
@@ -200,7 +200,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                                            'reverse-connect',
                                                            reverse_connect))
                     else:
-                        logger.error("search free reverse VNC error")
+                        logger.error("Error finding a free port for reverse VNC")
                 finally:
                     sock.close()
 
@@ -240,7 +240,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         "%s" % (str(e),
                                                 objectxmpp.boundjid.bare,
                                                 errorstr)
-            raise GuacamoleError("Mysql error insert proto existant")
+            raise GuacamoleError("MySQL error inserting existing protocol")
         except Exception as e:
             errorstr = "%s" % traceback.format_exc()
             logger.error("\n%s" % (errorstr))
@@ -249,9 +249,9 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                         "%s" % (str(e),
                                                 objectxmpp.boundjid.bare,
                                                 errorstr)
-            raise GuacamoleError("error insert proto existant")
+            raise GuacamoleError("Error inserting existing protocol")
     except Exception as e:
-        logger.error("Guacamole conf error %s" % (str(e)))
+        logger.error("Guacamole configuration error %s" % (str(e)))
         objectxmpp.send_message(mto=message['from'],
                                mbody=json.dumps(dataerreur),
                                mtype='chat')
@@ -260,7 +260,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         # send message result conf guacamol.
         if result['base64'] is True:
             result['data'] = base64.b64encode(json.dumps(result['data']))
-        logger.debug("Send message %s" % result)
+        logger.debug("Sending message %s" % result)
         objectxmpp.send_message(mto=message['from'],
                                 mbody=json.dumps(result),
                                 mtype='chat')
