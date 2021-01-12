@@ -26,7 +26,7 @@ import sys
 import os
 import json
 import logging
-from lib.utils import env
+from lib.utils import Env
 
 if sys.platform.startswith('darwin'):
     import plyvel
