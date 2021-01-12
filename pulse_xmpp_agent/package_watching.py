@@ -36,7 +36,7 @@ import configparser
 import logging
 import getopt
 import base64
-
+from __future__ import print_function
 conf ={}
 
 
@@ -45,6 +45,13 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
                     filename='/var/log/pulse/pulse-package-watching.log',
                     filemode='a')
+
+
+def writeStdErr(message):
+    if sys.version_info >= (3, 0):
+        print(message, file=sys.stderr)
+    else:
+        sys.stderr.write(message)
 
 
 class configerror(Exception):
@@ -300,7 +307,7 @@ if __name__ == '__main__':
                 # exit first parent
                 sys.exit(0)
         except OSError as e:
-            print("Fork #1 failed: %d (%s)" % (e.errno, e.strerror), file=sys.stderr)
+            writeStdErr("Fork #1 failed: %d (%s)" % (e.errno, e.strerror))
             sys.exit(1)
         # dissociate from parent environment
         os.close(sys.stdin.fileno())
@@ -324,6 +331,7 @@ if __name__ == '__main__':
                 #print "echo " + str(pid) + " > " + pidfile
                 sys.exit(0)
         except OSError as e:
+            writeStdErr("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
             print("fork #2 failed: %d (%s)" % (e.errno, e.strerror), file=sys.stderr)
             sys.exit(1)
     else:

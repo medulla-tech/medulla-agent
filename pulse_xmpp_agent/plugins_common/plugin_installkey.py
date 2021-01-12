@@ -77,12 +77,12 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         else:
             notify = "Deployment | Cluster | Notify"
         for line in msg:
-            xmppobject.xmpplog(line,
+            objectxmpp.xmpplog(line,
                                type='deploy',
                                sessionname=sessionid,
                                priority=-1,
                                action="xmpplog",
-                               who= bjectxmpp.boundjid.bare,
+                               who= objectxmpp.boundjid.bare,
                                how="",
                                why="",
                                module=notify,

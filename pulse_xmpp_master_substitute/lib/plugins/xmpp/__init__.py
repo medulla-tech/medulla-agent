@@ -91,6 +91,15 @@ class DomaineTypeDeviceError(Error):
         return "{0} {1}".format(self.__doc__, Exception.__str__(self))
 
 
+class DomainestatusDeviceError(Error):
+    """
+        status is not in domaine 'ready', 'busy', 'warning', 'error'
+    """
+
+    def __str__(self):
+        return "{0} {1}".format(self.__doc__, Exception.__str__(self))
+
+
 class Singleton(object):
 
     def __new__(type, *args):

@@ -38,7 +38,7 @@ from .utils import shellcommandtimeout, \
                    simplecommand, \
                    restartsshd, \
                    install_key_ssh_relayserver, \
-                   showlinelog
+                   showlinelog, \
                    pulseuser_useraccount_mustexist, \
                    pulseuser_profile_mustexist, \
                    create_idrsa_on_client, \

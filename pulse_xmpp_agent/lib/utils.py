@@ -35,6 +35,7 @@ import re
 import traceback
 from pprint import pprint
 import hashlib
+import urllib2
 import base64
 import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
@@ -2664,7 +2665,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error creating key at %s' % id_rsa_path
+    msg = 'Error add key to authorizedkeys: id_rsa missing'
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):

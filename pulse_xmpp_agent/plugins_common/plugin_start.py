@@ -61,7 +61,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         read_conf_plugin_start(objectxmpp)
         objectxmpp.paramsdict=[]
 
-    startupdate={"action": "",
+    startupdateskel={"action": "",
                  "sessionid": utils.getRandomName(6, "startplugin"),
                  "ret": 0,
                  "base64": False,
@@ -77,12 +77,10 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         dataerreur["action"] = "result" + startupdate["action"]
         dataerreur["data"] = {"msg": "error plugin: "+ startupdate["action"]}
         dataerreur["ret"] = 255
-        logger.warning("from plugin_start call %s differed %s" % (pluginstart,
-                                                                  objectxmpp.time_differed_start))
-        params = {"descriptor" : startupdate,
+        logger.error("from plugin_start call %s differed %s" % (pluginstart, objectxmpp.time_differed_start))
+        params ={ "descriptor" : startupdate,
                   "errordescriptor" : dataerreur,
                   "msg" : msg}
-        objectxmpp.paramsdict.append(params)
-
+        objectxmpp.paramsdict.append(params)                    
     objectxmpp.call_plugin_differed(time_differed = objectxmpp.time_differed_start)
 

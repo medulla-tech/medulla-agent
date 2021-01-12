@@ -52,7 +52,7 @@ import requests
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
 import random
-
+import string
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
@@ -65,8 +65,20 @@ if sys.platform.startswith('win'):
     import win32security
     import ntsecuritycon
     import win32net
+    import ctypes
     import win32com.client
     from win32com.client import GetObjectif
+    from ctypes.wintypes import LPCWSTR, LPCSTR
+
+if sys.platform.startswith('linux'):
+    import pwd
+    import grp
+
+if sys.platform.startswith('darwin'):
+    import pwd
+    import grp
+
+
 
 logger = logging.getLogger()
 
@@ -2058,7 +2070,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error creating key at %s' % id_rsa_path
+    msg = 'Error add key to authorizedkeys id_rsa missing'
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
