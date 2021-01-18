@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.64", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.65", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -98,8 +98,8 @@ def updateopenssh(xmppobject, installed_version):
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
-        mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
-        nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
+        mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Mandriva", "OpenSSH")
+        nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Nytrio", "OpenSSH")
         windows_tempdir = os.path.join("C:\\", "Windows", "Temp")
         programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
         rsync_dest_folder = os.path.join("C:\\", "Windows", windows_system)
