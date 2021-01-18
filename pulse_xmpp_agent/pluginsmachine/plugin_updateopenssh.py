@@ -98,7 +98,7 @@ def updateopenssh(xmppobject, installed_version):
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
-        mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Mandriva", "OpenSSH")
+        mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Mandriva", "OpenSSH")
         nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Nytrio", "OpenSSH")
         windows_tempdir = os.path.join("C:\\", "Windows", "Temp")
         programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
