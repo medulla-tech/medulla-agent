@@ -38,7 +38,7 @@ import re
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION": "1.1", "NAME": "startupdate", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "startupdate", "TYPE": "machine"}
 
 def read_conf_plugin_startupdate(objectxmpp):
     objectxmpp.liststartpluginstartupdate = []
@@ -60,12 +60,18 @@ def read_conf_plugin_startupdate(objectxmpp):
         if Config.has_option('plugins', 'inventoryforced'):
             objectxmpp.startupdateinventoryforced = Config.getboolean('plugins', 'inventoryforced')
 
-    if not objectxmpp.liststartpluginstartupdate:
-        plugin_path = os.path.dirname(os.path.realpath(__file__))
-        objectxmpp.liststartpluginstartupdate = [x[7:-3] for x in os.listdir(plugin_path)
-                                                if x.startswith("plugin_update") and
-                                                not x.endswith(".pyc")]
-        objectxmpp.liststartpluginstartupdate.remove("updateagent")
+        if len(objectxmpp.liststartpluginstartupdate) == 1 and \
+            objectxmpp.liststartpluginstartupdate[0] == "all":
+            createlistpluginupdate(objectxmpp)
+    else:
+        createlistpluginupdate(objectxmpp)
+
+def createlistpluginupdate(objectxmpp):
+    plugin_path = os.path.dirname(os.path.realpath(__file__))
+    objectxmpp.liststartpluginstartupdate = [x[7:-3] for x in os.listdir(plugin_path)
+                                            if x.startswith("plugin_update") and
+                                            not x.endswith(".pyc")]
+    objectxmpp.liststartpluginstartupdate.remove("updateagent")
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
