@@ -33,7 +33,7 @@ plugin = {"VERSION": "1.1", "NAME": "scheduling_wsusscn2", "TYPE": "relayserver"
 SCHEDULE = {"schedule" : "30 22 * * 2", "nb" : -1}
 
 def schedule_main(objectxmpp):
-    """ 
+    """
         Download Wsusscn2.cab file
     """
     print "*******************************************"
