@@ -56,6 +56,7 @@ import random
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
+import string
 
 if sys.platform.startswith('win'):
     import wmi
@@ -65,12 +66,35 @@ if sys.platform.startswith('win'):
     import win32security
     import ntsecuritycon
     import win32net
+    import ctypes
     import win32com.client
     from win32com.client import GetObjectif
+    import ctypes
+    from ctypes.wintypes import LPCWSTR, LPCSTR, WinError
+if sys.platform.startswith('linux'):
+    import pwd
+    import grp
+
+if sys.platform.startswith('darwin'):
+    import pwd
+    import grp
 
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
+
+
+class Env(object):
+    agenttype = None # Non specified by default
+    @staticmethod
+    def user_dir():
+        """Get the user folder for linux OS."""
+        if Env.agenttype is None:
+            raise NotImplementedError("The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'")
+        if Env.agenttype == "relayserver":
+            return os.path.join("/", "var", "lib", "pulse2")
+        else:
+            return os.path.expanduser('~pulseuser')
 
 # debug decorator
 def minimum_runtime(t):
@@ -2060,7 +2084,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error creating key at %s' % id_rsa_path
+    msg = 'Error add key to authorizedkeys: id_rsa_path missing'
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):

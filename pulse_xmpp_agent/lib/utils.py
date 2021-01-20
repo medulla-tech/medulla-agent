@@ -492,7 +492,7 @@ def call_plugin(name, *args, **kwargs):
     if args[0].config.plugin_action :
         if args[1] not in args[0].config.excludedplugins:
             nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-            for _ in range(15): logger.error("LOAD %s" % args[1])
+            logger.debug("Loading plugin %s" % args[1])
             # Add compteur appel plugins
             count = 0
             try:
@@ -2664,7 +2664,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error creating key at %s' % id_rsa_path
+    msg = 'Error add key to authorizedkeys: id_rsa missing' 
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):

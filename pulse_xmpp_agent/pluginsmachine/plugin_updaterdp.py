@@ -27,11 +27,11 @@ import zipfile
 import platform
 from lib import utils
 
-RDPVERSION = '0.1'
+RDPVERSION = '0.2'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updaterdp", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updaterdp", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -77,25 +77,26 @@ def updaterdpversion(version):
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+            logger.info("RDP Configuration updated.")
 
 def updaterdp(xmppobject, installed_version):
     logger.info("Updating RDP Configuration.")
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" '\
-            '/v "fDenyTSConnections" /t REG_SZ  /d "0" /f'
+            '/v "fDenyTSConnections" /t REG_DWORD  /d "0x00000000" /f'
         
         utils.simplecommand(cmd)
 
         cmd = 'REG ADD "hklm\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" '\
-            '/v "fSingleSessionPerUser" /t REG_SZ  /d "0" /f'
+            '/v "fSingleSessionPerUser" /t REG_DWORD  /d "0x00000000" /f'
         utils.simplecommand(cmd)
 
         cmd = 'REG ADD "hklm\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp" '\
-            '/v "UserAuthentication" /t REG_SZ  /d "0" /f'
+            '/v "UserAuthentication" /t REG_DWORD  /d "0x00000000" /f'
         utils.simplecommand(cmd)
 
         cmd = 'REG ADD "hklm\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp" '\
-            '/v "SecurityLayer" /t REG_SZ  /d "0" /f'
+            '/v "SecurityLayer" /t REG_DWORD  /d "0x00000000" /f'
         utils.simplecommand(cmd)
        
         utils.simplecommand("netsh advfirewall firewall add rule name=\"Remote Desktop for Pulse RDP\" dir=in action=allow protocol=TCP localport=3389")

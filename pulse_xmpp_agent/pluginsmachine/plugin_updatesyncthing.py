@@ -80,6 +80,7 @@ def updatesyncthingversion(version):
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+            logger.info("Syncthing updated to version %s" % SYNCTHINGVERSION)
 
 def updatesyncthing(xmppobject, installed_version):
     logger.info("Updating Syncthing to version %s" % SYNCTHINGVERSION)
