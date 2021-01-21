@@ -22,11 +22,22 @@
 
 # file : pulse_xmpp_agent/lib/utils.py
 
+import sys
+import urllib
+if sys.version_info[0] == 3:
+    import urllib.request as urllib2
+    from configparser import ConfigParser
+    import binascii
+else:
+    from ConfigParser import ConfigParser
+    import urllib2
+    import urllib
+
+
 import netifaces
 import json
 import subprocess
 import threading
-import sys
 import os
 import fnmatch
 import logging
@@ -35,13 +46,9 @@ import re
 import traceback
 from pprint import pprint
 import hashlib
-import urllib2
 import base64
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
 import pickle
-from .agentconffile import conffilename
-import configparser
+from lib.agentconffile import conffilename
 import socket
 import psutil
 import time
@@ -233,7 +240,7 @@ def listback_to_deploy(objectxmpp):
 def testagentconf(typeconf):
     if typeconf == "relayserver":
         return True
-    Config = configparser.ConfigParser()
+    Config = ConfigParser()
     namefileconfig = conffilename(typeconf)
     Config.read(namefileconfig)
     if Config.has_option("type", "guacamole_baseurl")\
@@ -252,19 +259,28 @@ def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
         obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        if sys.version_info[0] == 3:
+            md5network = hashlib.md5(bytes(obj['result'], 'utf-8')).hexdigest()
+        else:
+            md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('linux'):
         obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        if sys.version_info[0] == 3:
+            md5network = hashlib.md5(bytes(obj['result'], 'utf-8')).hexdigest()
+        else:
+            md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('darwin'):
         obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        if sys.version_info[0] == 3:
+            md5network = hashlib.md5(bytes(obj['result'], 'utf-8')).hexdigest()
+        else:
+            md5network = hashlib.md5(obj['result']).hexdigest()
     return md5network
 
 
 def createfingerprintconf(typeconf):
     namefileconfig = conffilename(typeconf)
-    return hashlib.md5(file_get_contents(namefileconfig)).hexdigest()
+    return hashlib.md5(file_get_binarycontents(namefileconfig)).hexdigest()
 
 
 def confinfoexist():
@@ -326,7 +342,7 @@ def file_get_contents(filename, use_include_path=0,
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, 'rb')
+        fp = open(filename, 'r')
         try:
             if offset > 0:
                 fp.seek(offset)
@@ -335,6 +351,15 @@ def file_get_contents(filename, use_include_path=0,
         finally:
             fp.close()
 
+def file_get_binarycontents(filename, offset=-1, maxlen=-1):
+        fp = open(filename, 'rb')
+        try:
+            if offset > 0:
+                fp.seek(offset)
+            ret = fp.read(maxlen)
+            return ret
+        finally:
+            fp.close()
 
 def file_put_contents(filename, data):
     if not os.path.exists(os.path.dirname(filename)):
@@ -436,7 +461,7 @@ def isWinUserAdmin():
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
         except BaseException:
-            traceback.print_exc()
+            logger.error("\n%s"%(traceback.format_exc()))
             print("Admin check failed, assuming not an admin.")
             return False
     elif os.name == 'posix':
@@ -696,22 +721,32 @@ def isprogramme(name):
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
     obj['code'] = p.wait()
+    if sys.version_info[0] == 3:
+        result=[binascii.b2a_qp(x) for x in result]
     obj['result'] = result
     if obj['result'] != "":
         return True
     else:
         return False
 
-
-def simplecommand(cmd):
-    obj = {}
+def simplecommand(cmd, strimresult=False):
+    obj = {"code" : -1, "result" : ""}
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
     obj['code'] = p.wait()
-    obj['result'] = result
+    if sys.version_info[0] == 3:
+        if strimresult:
+            obj['result']=[x.decode('utf-8').strip() for x in result]
+        else:
+            obj['result']=[x.decode('utf-8') for x in result]
+    else:
+        if strimresult:
+            obj['result']=[x.strip() for x in result]
+        else:
+            obj['result']=[x for x in result]
     return obj
 
 
@@ -721,9 +756,13 @@ def simplecommandstr(cmd):
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
-    result = p.stdout.readlines()
     obj['code'] = p.wait()
-    obj['result'] = "\n".join(result)
+    result = p.stdout.readlines()
+    if sys.version_info[0] == 3:
+        result=[x.decode('utf-8') for x in result]
+    else:
+        result=[x for x in result]
+    obj['result'] = "".join(result)
     return obj
 
 def windowspath(namescript):
@@ -740,41 +779,44 @@ def powerschellscriptps1(namescript):
 
 
 class shellcommandtimeout(object):
-    def __init__(self, cmd, timeout=15):
+    def __init__(self, cmd, timeout=15, strimresult=False):
         self.process = None
         self.obj = {}
+        self.strimresult = strimresult
         self.obj['timeout'] = timeout
         self.obj['cmd'] = cmd
         self.obj['result'] = "result undefined"
         self.obj['code'] = 255
         self.obj['separateurline'] = os.linesep
-
     def run(self):
         def target():
             self.process = subprocess.Popen(self.obj['cmd'],
                                             shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
-            self.obj['result'] = self.process.stdout.readlines()
+            if sys.version_info[0] == 3:
+                if self.strimresult:
+                    self.obj['result']=[x.decode('utf-8').strip() \
+                        for x in self.process.stdout.readlines()]
+                else:
+                    self.obj['result']=[x.decode('utf-8') \
+                        for x in self.process.stdout.readlines()]
+            else:
+                self.obj['result'] = self.process.stdout.readlines()
             self.obj['code'] = self.process.wait()
             self.process.communicate()
         thread = threading.Thread(target=target)
         thread.start()
-
         thread.join(self.obj['timeout'])
         if thread.is_alive():
             print('Terminating process')
             print("timeout %s" % self.obj['timeout'])
             self.process.terminate()
             thread.join()
-
         self.obj['codereturn'] = self.process.returncode
-
         if self.obj['codereturn'] == -15:
             self.result = "error tineout"
-
         return self.obj
-
 
 def servicelinuxinit(name, action):
     """
@@ -1395,8 +1437,9 @@ def check_exist_ip_port(name_domaine_or_ip, port):
         return True or False
     """
     ip = ipfromdns(name_domaine_or_ip)
+   
     try:
-        socket.getaddrinfo(ip, port)
+        socket.getaddrinfo(ip, int(port))
         return True
     except socket.gaierror:
         return False
@@ -2400,7 +2443,7 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
             if result['code'] != 0:
                 msg = 'Error adding %s account to administrators group: %s' % (username, result)
                 return False, msg
-            result = simplecommand(encode_strconsole('REG ADD "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList" /v "%s" /t REG_DWORD /d 0 /f' % username))
+            result = simplecommand(encode_strconsole('REG ADD "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\SpecialAccounts\\UserList" /v "%s" /t REG_DWORD /d 0 /f' % username))
             if result['code'] != 0:
                 msg = 'Error hiding %s account: %s' % (username, result)
                 return False, msg
@@ -2460,12 +2503,12 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
         if not os.path.isdir(homedir):
-            os.makedirs(homedir, 0751)
-        os.chmod(homedir, 0751)
+            os.makedirs(homedir, 0o751)
+        os.chmod(homedir, 0o751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
-            os.makedirs(packagedir, 0764)
+            os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
@@ -2480,12 +2523,12 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
         if not os.path.isdir(homedir):
-            os.makedirs(homedir, 0751)
-        os.chmod(homedir, 0751)
+            os.makedirs(homedir, 0o751)
+        os.chmod(homedir, 0o751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
-            os.makedirs(packagedir, 0764)
+            os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
@@ -2693,8 +2736,8 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
         msg = 'Error getting information for creating home folder for user %s' % username
         return False, msg
     if not os.path.isdir(homedir):
-        os.makedirs(homedir, 0751)
-    os.chmod(homedir, 0751)
+        os.makedirs(homedir, 0o751)
+    os.chmod(homedir, 0o751)
     os.chown(homedir, uid, -1)
     # Check keys
     id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
@@ -2710,13 +2753,13 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
     addtoauth_cmd = 'ssh-keygen -y -f %s > %s' % (id_rsa_key_path, authorized_keys_path)
     simplecommand(encode_strconsole(addtoauth_cmd))
-    os.chmod(os.path.dirname(id_rsa_key_path), 0700)
+    os.chmod(os.path.dirname(id_rsa_key_path), 0o700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
-    os.chmod(id_rsa_key_path, 0600)
+    os.chmod(id_rsa_key_path, 0o600)
     os.chown(id_rsa_key_path, uid, -1)
-    os.chmod(public_key_path, 0644)
+    os.chmod(public_key_path, 0o644)
     os.chown(public_key_path, uid, -1)
-    os.chmod(authorized_keys_path, 0600)
+    os.chmod(authorized_keys_path, 0o600)
     os.chown(authorized_keys_path, uid, -1)
     return True, 'Keys permissions applied on relay'
 
@@ -3028,3 +3071,20 @@ def serialnumbermachine():
     except Exception:
         logger.error("An error occured while using the serialnumbermachine function \n we got the error below \n%s" % (traceback.format_exc()))
     return serial_uuid_machine
+
+def base64strencode(data):
+    result=""
+    if sys.version_info[0] == 3:
+        if isinstance(data, str):
+            data = bytes(data, "utf-8")
+    else:
+        if isinstance(data, bytes):
+            data = data.decode( "utf-8")
+    try:
+        result = base64.b64encode(data)
+        if sys.version_info[0] == 3:
+            result = result.decode()
+    except Exception as e:
+        logger.error("error decode data in function base64strencode %s" % str(e))
+    finally:
+        return result

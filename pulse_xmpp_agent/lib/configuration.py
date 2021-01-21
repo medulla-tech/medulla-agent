@@ -22,17 +22,24 @@
 #
 # file : lib/configuration.py
 #
+
+import sys
+if sys.version_info[0] == 3:
+    from configparser import ConfigParser
+    from slixmpp import jid
+else:
+    from ConfigParser import ConfigParser
+    from sleekxmpp import jid
 import netifaces
 import json
 import sys
 import platform
 import os
 import logging
-import configparser
 from . import utils
 import random
 from .agentconffile import conffilename
-from sleekxmpp import jid
+
 from .agentconffile import directoryconffile
 from .utils import ipfromdns
 import re
@@ -48,7 +55,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     confsubtitute: the substitute to add in the configuration file
 
     """
-    Config = configparser.ConfigParser()
+    Config = ConfigParser()
     Config.read(conffile)
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
@@ -69,7 +76,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
         jidrelayserver: the new jid of the relayserver ( section global )
         baseurlguacamole: the url used for guacamole ( section type )
     """
-    Config = configparser.ConfigParser()
+    Config = ConfigParser()
     Config.read(conffile)
     domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
@@ -125,16 +132,14 @@ def nextalternativeclusterconnection(conffile):
     """
     if not os.path.isfile(conffile):
         return []
-
-    Config = configparser.ConfigParser()
+    Config = ConfigParser()
     Config.read(conffile)
-
     nextserver          = Config.getint('alternativelist', 'nextserver')
     nbserver            = Config.getint('alternativelist', 'nbserver')
     listalternative     = Config.get('alternativelist', 'listars').split(",")
-
+    
     serverjid = listalternative[nextserver-1]
-
+    logger.info("serverjid %s" % serverjid)
     port              = Config.get(serverjid, 'port')
     server            = Config.get(serverjid, 'server')
     guacamole_baseurl = Config.get(serverjid, 'guacamole_baseurl')
@@ -145,11 +150,11 @@ def nextalternativeclusterconnection(conffile):
     nextserver = nextserver + 1
     if nextserver > nbserver:
         nextserver = 1
-
-    Config.set('alternativelist', 'nextserver', nextserver)
+    logger.info("next index alternatif server %s" % nextserver)
+    Config.set('alternativelist', 'nextserver', str(nextserver))
 
     # Writing our configuration file to 'example.cfg'
-    with open(conffile, 'wb') as configfile:
+    with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
     return [serverjid, server, port, guacamole_baseurl, domain, nbserver]
@@ -217,7 +222,7 @@ def loadparameters(namefile, group, key):
         the Value defined by the group/key couple.
     """
 
-    Config = configparser.ConfigParser()
+    Config = ConfigParser()
     Config.read(namefile)
     value = ""
     if Config.has_option("group", "key"):
@@ -226,7 +231,7 @@ def loadparameters(namefile, group, key):
 
 class substitutelist:
     def __init__(self):
-        Config = configparser.ConfigParser()
+        Config = ConfigParser()
         namefileconfig = conffilename('machine')
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
@@ -280,7 +285,7 @@ class substitutelist:
 
 class confParameter:
     def __init__(self, typeconf='machine'):
-        Config = configparser.ConfigParser()
+        Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
@@ -839,7 +844,7 @@ class confParameter:
         self.OperatingSystem = platform.system()
         self.information['os'] = self.OperatingSystem
         self.UnameSystem = platform.uname()
-        self.information['uname'] = self.UnameSystem
+        self.information['uname'] = [x for x in self.UnameSystem]
         self.HostNameSystem = platform.node().split('.')[0]
         self.information['hostname'] = self.HostNameSystem
         self.OsReleaseNumber = platform.release()
@@ -852,7 +857,6 @@ class confParameter:
         self.information['processor'] = self.ProcessorIdentifier
         self.Architecture = platform.architecture()
         self.information['archi'] = self.Architecture
-
         # Http fileviewer server parameters
         self.paths = []
         self.names = []
@@ -907,7 +911,7 @@ class confParameter:
 
 
     def loadparametersplugins(self, namefile):
-        Config = configparser.ConfigParser()
+        Config = ConfigParser()
         Config.read(namefile)
         if os.path.isfile(namefile+".local"):
             Config.read(namefile+".local")
@@ -1068,7 +1072,7 @@ def setconfigfile(listdataconfiguration):
         if len(listdataconfiguration) != 5:
             return False
         if listdataconfiguration[2] != "" and listdataconfiguration[3] != "" and listdataconfiguration[4] != "":
-            fileconf = configparser.ConfigParser()
+            fileconf = ConfigParser()
             fileconf.read(fileofconf)
             # test si section existe.
             if not listdataconfiguration[2] in fileconf.sections():
@@ -1082,7 +1086,7 @@ def setconfigfile(listdataconfiguration):
     elif listdataconfiguration[0].lower() == "del":
         if len(listdataconfiguration) < 4:
             return False
-        fileconf = configparser.ConfigParser()
+        fileconf = ConfigParser()
         fileconf.read(fileofconf)
         if listdataconfiguration[2] != "" and fileconf.has_section(listdataconfiguration[2]):
             if len(fileconf.options(listdataconfiguration[2])) == 0:

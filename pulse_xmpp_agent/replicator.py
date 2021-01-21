@@ -135,6 +135,7 @@ def install_key_register_windows(version):
             return False
     return True
 
+
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
     if (filename.find('://') > 0):
@@ -145,7 +146,7 @@ def file_get_contents(filename, use_include_path=0,
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, 'rb')
+        fp = open(filename, 'r')
         try:
             if (offset > 0):
                 fp.seek(offset)
@@ -153,6 +154,18 @@ def file_get_contents(filename, use_include_path=0,
             return ret
         finally:
             fp.close()
+
+
+def file_get_binarycontents(filename, offset=-1, maxlen=-1):
+        fp = open(filename, 'rb')
+        try:
+            if offset > 0:
+                fp.seek(offset)
+            ret = fp.read(maxlen)
+            return ret
+        finally:
+            fp.close()
+
 
 class Update_Remote_Agent:
     """

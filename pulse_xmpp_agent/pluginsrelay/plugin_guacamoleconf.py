@@ -61,7 +61,7 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
                              db=objetxmpp.config.guacamole_dbname)
     except Exception as e:
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         raise
     cursor = db.cursor()
     result['data']['uuid'] = data['uuid']
@@ -89,11 +89,11 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
     except MySQLdb.Error as e:
         db.close()
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         raise
     except Exception as e:
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         db.close()
         raise
     ###################################
@@ -155,11 +155,11 @@ def action(objetxmpp, action, sessionid, data, message, dataerreur, result):
     except MySQLdb.Error as e:
         db.close()
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         raise
     except Exception as e:
         dataerreur['data']['msg'] = "MySQL Error: %s" % str(e)
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         db.close()
         raise
     db.close()

@@ -300,7 +300,7 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
                 logger.warning("id package missing for info launcher command of kiosk")
         except:
             logger.error("launcher command of kiosk")
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
     else:
         logger.warning("launcher command missing for kiosk")
     grafcetdeploy.grafcet(objectxmpp, datasend)

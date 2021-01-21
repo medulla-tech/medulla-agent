@@ -235,14 +235,24 @@ def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
         obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        if sys.version_info[0] == 3:
+            md5network = hashlib.md5(bytes(obj['result'], 'utf-8')).hexdigest()
+        else:
+            md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('linux'):
         obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        if sys.version_info[0] == 3:
+            md5network = hashlib.md5(bytes(obj['result'], 'utf-8')).hexdigest()
+        else:
+            md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('darwin'):
         obj = simplecommandstr("ipconfig")
-        md5network = hashlib.md5(obj['result']).hexdigest()
+        if sys.version_info[0] == 3:
+            md5network = hashlib.md5(bytes(obj['result'], 'utf-8')).hexdigest()
+        else:
+            md5network = hashlib.md5(obj['result']).hexdigest()
     return md5network
+
 
 
 def createfingerprintconf(typeconf):
@@ -310,7 +320,7 @@ def file_get_contents(filename,
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, 'rb')
+        fp = open(filename, 'r')
         try:
             if (offset > 0):
                 fp.seek(offset)
@@ -319,6 +329,16 @@ def file_get_contents(filename,
         finally:
             fp.close()
 
+
+def file_get_binarycontents(filename, offset=-1, maxlen=-1):
+        fp = open(filename, 'rb')
+        try:
+            if offset > 0:
+                fp.seek(offset)
+            ret = fp.read(maxlen)
+            return ret
+        finally:
+            fp.close()
 
 def file_put_contents(filename, data):
     f = open(filename, 'w')
@@ -415,7 +435,7 @@ def isWinUserAdmin():
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
         except BaseException:
-            traceback.print_exc()
+            logger.error("\n%s"%(traceback.format_exc()))
             print("Admin check failed, assuming not an admin.")
             return False
     elif os.name == 'posix':
@@ -677,16 +697,24 @@ def isprogramme(name):
     else:
         return False
 
-
-def simplecommand(cmd):
-    obj = {}
+def simplecommand(cmd, strimresult=False):
+    obj = {"code" : -1, "result" : ""}
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     result = p.stdout.readlines()
     obj['code'] = p.wait()
-    obj['result'] = result
+    if sys.version_info[0] == 3:
+        if strimresult:
+            obj['result']=[x.decode('utf-8').strip() for x in result]
+        else:
+            obj['result']=[x.decode('utf-8') for x in result]
+    else:
+        if strimresult:
+            obj['result']=[x.strip() for x in result]
+        else:
+            obj['result']=[x for x in result]
     return obj
 
 
@@ -696,9 +724,13 @@ def simplecommandstr(cmd):
                          shell=True,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
-    result = p.stdout.readlines()
     obj['code'] = p.wait()
-    obj['result'] = "\n".join(result)
+    result = p.stdout.readlines()
+    if sys.version_info[0] == 3:
+        result=[x.decode('utf-8') for x in result]
+    else:
+        result=[x for x in result]
+    obj['result'] = "".join(result)
     return obj
 
 def windowspath(namescript):
@@ -715,9 +747,10 @@ def powerschellscriptps1(namescript):
 
 
 class shellcommandtimeout(object):
-    def __init__(self, cmd, timeout=15):
+    def __init__(self, cmd, timeout=15, strimresult=False):
         self.process = None
         self.obj = {}
+        self.strimresult = strimresult
         self.obj['timeout'] = timeout
         self.obj['cmd'] = cmd
         self.obj['result'] = "result undefined"
@@ -730,27 +763,29 @@ class shellcommandtimeout(object):
                                             shell=True,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
-            self.obj['result'] = self.process.stdout.readlines()
+            if sys.version_info[0] == 3:
+                if self.strimresult:
+                    self.obj['result']=[x.decode('utf-8').strip() \
+                        for x in self.process.stdout.readlines()]
+                else:
+                    self.obj['result']=[x.decode('utf-8') \
+                        for x in self.process.stdout.readlines()]
+            else:
+                self.obj['result'] = self.process.stdout.readlines()
             self.obj['code'] = self.process.wait()
             self.process.communicate()
         thread = threading.Thread(target=target)
         thread.start()
-
         thread.join(self.obj['timeout'])
         if thread.is_alive():
             print('Terminating process')
             print("timeout %s" % self.obj['timeout'])
             self.process.terminate()
             thread.join()
-
-        # self.result = self.process.stdout.readlines()
         self.obj['codereturn'] = self.process.returncode
-
         if self.obj['codereturn'] == -15:
             self.result = "error tineout"
-
         return self.obj
-
 
 def servicelinuxinit(name, action):
     obj = {}
@@ -2287,3 +2322,21 @@ class geolocalisation_agent:
             except BaseException:
                 pass
         return None
+
+
+def base64strencode(data):
+    result=""
+    if sys.version_info[0] == 3:
+        if isinstance(data, str):
+            data = bytes(data, "utf-8")
+    else:
+        if isinstance(data, bytes):
+            data = data.decode( "utf-8")
+    try:
+        result = base64.b64encode(data)
+        if sys.version_info[0] == 3:
+            result = result.decode()
+    except Exception as e:
+        logger.error("error decode data in function base64strencode %s" % str(e))
+    finally:
+        return result

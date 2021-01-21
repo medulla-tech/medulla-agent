@@ -19,10 +19,10 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+import sys
 import netifaces
 import subprocess
-import sys
+
 import platform
 import logging
 import re
@@ -88,7 +88,10 @@ class networkagentinfo:
                                  shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
-            result = p.stdout.readlines()
+            if sys.version_info[0] == 3:
+                result = [ x.decode('utf-8') for x in p.stdout.readlines()]
+            else:
+                result = p.stdout.readlines()
             if len(result) > 0:
                 self.messagejson['dhcp'] = 'True'
             else:
@@ -207,7 +210,11 @@ class networkagentinfo:
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        system = result[0].rstrip('\n')
+        if sys.version_info[0] == 3:
+            system = result[0].decode('utf-8').rstrip('\n')
+        else:
+            system = result[0].rstrip('\n')
+        
         """ Returns the list of ip gateways for linux interfaces """
 
         if system == "init":
@@ -215,10 +222,13 @@ class networkagentinfo:
                                  shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
-            result = p.stdout.readlines()
-
+            arrayresult = p.stdout.readlines()
+            if sys.version_info[0] == 3:
+                result = [ x.decode('utf-8').rstrip('\n') for x in arrayresult]
+            else:
+                result = [ x.rstrip('\n') for x in arrayresult]
             for i in range(len(result)):
-                result[i] = result[i].rstrip('\n')
+                #result[i] = result[i].rstrip('\n')
                 d = result[i].split("@")
                 obj1[d[0]] = d[1]
         elif system == "systemd":
@@ -226,9 +236,13 @@ class networkagentinfo:
                                  shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
-            result = p.stdout.readlines()
+            arrayresult = p.stdout.readlines()
+            if sys.version_info[0] == 3:
+                result = [ x.decode('utf-8').rstrip('\n') for x in arrayresult]
+            else:
+                result = [ x.rstrip('\n') for x in arrayresult]
             for i in result:
-                i = i.rstrip('\n')
+                #i = i.rstrip('\n')
                 colonne = i.split(" ")
                 if "DHCPACK" in i:
                     ipdhcp = ""
@@ -367,8 +381,12 @@ class networkagentinfo:
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         result = p.stdout.readlines()
-        for i in result:
-            dns.append(i.rstrip('\n'))
+        if sys.version_info[0] == 3:
+            dns = [x.decode('utf-8').strip() for x in result]
+        else:
+            dns = [x.strip() for x in result]
+        #for i in result:
+            #dns.append(i.rstrip('\n'))
         return dns
 
 def powershellfqdnwindowscommand():

@@ -67,7 +67,7 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
         doTask(optsconsoledebug, optsdeamon, optfileconf)
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
-        traceback.print_exc(file=sys.stdout)
+        logging.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
 
 def doTask( optsconsoledebug, optsdeamon, optfileconf):

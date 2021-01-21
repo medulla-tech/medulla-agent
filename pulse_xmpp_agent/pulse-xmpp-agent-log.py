@@ -329,7 +329,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             'status':regle.status} for id, regle in enumerate(ret)]
             return resultat
         except Exception as e:
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return resultat
 
     def updatedeployresultandstate(self, sessionid, state, result ):
@@ -379,7 +379,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return 1
         except Exception as e:
             logging.getLogger().error(str(e))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return -1
 
     def createlog(self, dataobj):
@@ -416,7 +416,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     touser  = touser)
         except Exception as e:
             logger.error("format log Message  %s %s" %(dataobj, str(e)))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
 
     def registerlogxmpp(self,
                         text,
@@ -477,7 +477,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.updatedeployresultandstate( dataobj['sessionid'], "ABORT PACKAGE EXECUTION ERROR", json.dumps(dataobj['data'], indent=4, sort_keys=True) )
         except Exception as e:
             logger.error("obj Message deploy error  %s %s" %(dataobj, str(e)))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
 
     def searchstatus(self, chaine):
         for t in self.reglestatus:

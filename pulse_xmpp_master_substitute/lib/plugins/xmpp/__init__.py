@@ -532,7 +532,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return listcommand
         except Exception as e:
             logging.getLogger().error(str(e))
-            traceback.print_exc(file=sys.stdout)
+            self.logger.error("\n%s" % (traceback.format_exc()))
             return []
 
     @DatabaseHelper._sessionm
@@ -591,7 +591,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return {"nbtotal": nbtotal ,"result": result_list}
         except Exception as e:
             logging.getLogger().debug("getCommand_action_time error %s->" % str(e))
-            traceback.print_exc(file=sys.stdout)
+            self.logger.error("\n%s" % (traceback.format_exc()))
             return {"nbtotal": 0, "result": result_list}
 
 
@@ -629,7 +629,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     "command_machine": command_qa.command_machine}
         except Exception as e:
             logging.getLogger().error("getCommand_qa_by_cmdid error %s->" % str(e))
-            traceback.print_exc(file=sys.stdout)
+            self.logger.error("\n%s" % (traceback.format_exc()))
             return {"id": "",
                     "command_name": "",
                     "command_action": "",
@@ -5270,7 +5270,7 @@ class XmppMasterDatabase(DatabaseHelper):
         user = str(jid).split("@")[0]
         try:
             sql = """UPDATE `xmppmaster`.`machines`
-                         SET `need_reconf` = '%s'
+                         SET `need_reconf` = %s
                      WHERE
                          `xmppmaster`.`machines`.jid like('%s@%%')""" % (status,
                                                                          user)
@@ -5490,7 +5490,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return listrelayserver
         except Exception as e:
             logging.getLogger().error(str(e))
-            traceback.print_exc(file=sys.stdout)
+            self.logger.error("\n%s" % (traceback.format_exc()))
             return listrelayserver
 
     @DatabaseHelper._sessionm
@@ -5512,7 +5512,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             'status':regle.status} for id, regle in enumerate(ret)]
             return result
         except Exception as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.error("\n%s" % (traceback.format_exc()))
             return result
 
 

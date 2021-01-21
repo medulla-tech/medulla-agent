@@ -1083,7 +1083,7 @@ class Glpi84(DatabaseHelper):
                                 ret.append(partA.like(self.encode(partB)))
                         except Exception as e:
                             print(str(e))
-                            traceback.print_exc(file=sys.stdout)
+                            self.logger.error("\n%s"%(traceback.format_exc()))
                             ret.append(partA.like(self.encode(partB)))
             if ctx.userid != 'root':
                 ret.append(self.__filter_on_entity_filter(None, ctx))

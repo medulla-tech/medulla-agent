@@ -481,7 +481,7 @@ class functionsynchroxmpp:
                 return ""
         except Exception as e:
             print(str(e))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return ""
 
     @staticmethod

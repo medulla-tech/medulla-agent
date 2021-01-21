@@ -21,21 +21,38 @@
 # MA 02110-1301, USA.
 
 # file  : pulse_xmpp_agent/connectionagent.py
+import sys
+
+if sys.version_info[0] == 3:
+    from slixmpp import ClientXMPP
+    from slixmpp import jid
+    from slixmpp.xmlstream import handler, matcher
+    from slixmpp.exceptions import IqError, IqTimeout
+    from slixmpp.xmlstream.stanzabase import ET
+    import slixmpp
+    import asyncio
+else:
+    import imp
+    import sleekxmpp
+    from sleekxmpp.xmlstream import handler, matcher
+    from sleekxmpp.exceptions import IqError, IqTimeout
+    from sleekxmpp.xmlstream.stanzabase import ET
+    from sleekxmpp import jid
+    from sleekxmpp import ClientXMPP
+    imp.reload(sys)
+    sys.setdefaultencoding('utf8')
 
 import shutil
-import sys
 import os
 import logging
-import sleekxmpp
 import platform
 import subprocess
 import base64
 import time
 import json
 import re
-from sleekxmpp import jid
 import traceback
-from sleekxmpp.exceptions import IqError, IqTimeout
+
 from lib.networkinfo import networkagentinfo, organizationbymachine,\
     organizationbyuser, powershellgetlastuser
 from lib.configuration import  confParameter, changeconnection,\
@@ -47,14 +64,15 @@ from lib.utils import DEBUGPULSE, getIpXmppInterface,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent, \
-                        serialnumbermachine
+                        serialnumbermachine, base64strencode
 
 from optparse import OptionParser
 
 from threading import Timer
 from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_windows
 from lib.syncthingapirest import syncthing, syncthingprogram, iddevice
-import imp
+
+
 # Additionnal path for library and plugins
 pathbase = os.path.abspath(os.curdir)
 pathplugins = os.path.join(pathbase, "pluginsmachine")
@@ -66,14 +84,9 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib")
 logger = logging.getLogger()
 
 
-if sys.version_info < (3, 0):
-    imp.reload(sys)
-    sys.setdefaultencoding('utf8')
-else:
-    raw_input = input
 
-class MUCBot(sleekxmpp.ClientXMPP):
-    def __init__(self,conf):#jid, password, room, nick):
+class MUCBot(ClientXMPP):
+    def __init__(self, conf):#jid, password, room, nick):
         self.agent_machine_name= conf.jidagent
         newjidconf = conf.jidagent.split("@")
         resourcejid=newjidconf[1].split("/")
@@ -83,21 +96,24 @@ class MUCBot(sleekxmpp.ClientXMPP):
         conf.jidagent=newjidconf[0]+"@"+resourcejid[0]+"/"+self.HostNameSystem
         self.agentmaster =jid.JID("master@pulse")
         self.session = ""
-        logging.log(DEBUGPULSE,"start machine %s Type %s" %( conf.jidagent, conf.agenttype))
-
-        sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
+        
+        ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
+        #logging.error(DEBUGPULSE,"*************************")
+        #logging.error(DEBUGPULSE,"%s "% json.dumps(self.config.information))
+        #logging.error(DEBUGPULSE,"*************************")
+        
+        
+        
         if not hasattr(self.config, 'geoservers'):
             self.geoservers = "ifconfig.co, if.siveo.net"
 
-        self.geodata = None
-        if self.config.geolocalisation:
-            self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                                 geolocalisation=self.config.geolocalisation,
-                                                 ip_public=None,
-                                                 strlistgeoserveur=self.config.geoservers)
+        self.geodata = geolocalisation_agent(typeuser = 'nomade',
+                                             geolocalisation=True,
+                                             ip_public=None,
+                                             strlistgeoserveur=self.config.geoservers)
 
-            self.ippublic = self.geodata.get_ip_public()
+        self.ippublic = self.geodata.get_ip_public()
 
         if self.ippublic == "" or self.ippublic == None:
             self.ippublic = None
@@ -112,22 +128,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_assessor = jid.JID(self.config.sub_assessor)
         if self.sub_assessor.bare == "":
             self.sub_assessor = self.agentmaster
-
-        self.xmpplog("Starting configurator on machine %s. Assessor : %s" % (conf.jidagent, self.sub_assessor),
-                    type='conf',
-                    priority=-1,
-                    action="xmpplog",
-                    who=self.HostNameSystem,
-                    module="Configuration",
-                    date=None,
-                    fromuser=self.boundjid.bare,
-                    touser="")
-
+        
         #self.config.masterchatroom="%s/MASTER"%self.config.confjidchatroom
-
-        self.add_event_handler("register", self.register, threaded=True)
+        self.add_event_handler("register", self.register)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message)
+        self.add_event_handler('reconnect_delay', self.reconnect_delay1)
+        
+        self.add_event_handler('stream_error', self.stream_error1)
         try:
             self.config.syncthing_on
         except NameError:
@@ -195,13 +203,56 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     mbody = json.dumps(confsyncthing),
                                     mtype = 'chat')
         ################################### syncthing ###################################
+        
+    def reconnect_delay1(self,event):
+        pass
+        
+        
+    def stream_error1(self, mesg):
+        if mesg.get_text() == "User removed":
+            logger.info("compte %s removed by assessor %s" % (self.boundjid.bare, self.sub_assessor))
+            self.disconnect(wait=5)
 
+    #async def start(self, event): only python 3
     def start(self, event):
-        self.get_roster()
         self.send_presence()
-
+        self.get_roster()
+        
+        self.xmpplog("Starting configurator on machine %s. Assessor : %s" % (self.config.jidagent,
+                                                                             self.sub_assessor),
+                    type='conf',
+                    priority=-1,
+                    action="xmpplog",
+                    who=self.HostNameSystem,
+                    module="Configuration",
+                    date=None,
+                    fromuser=self.boundjid.bare,
+                    touser="")
         self.config.ipxmpp = getIpXmppInterface(self.config.confserver, self.config.confport)
+        
         self.infos_machine_assessor()
+
+    
+    def register(self, iq):
+        logging.log(DEBUGPULSE,"register user %s" % self.boundjid)
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
+
+        try:
+            if sys.version_info[0] == 3:
+                resp.send()
+            else:
+                resp.send(now=True)
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            logging.error("Could not register account: %s" %
+                    e.iq['error']['text'])
+            self.disconnect()
+        except IqTimeout:
+            logging.error("No response from server.")
+            self.disconnect()
 
     def xmpplog(self,
                 text,
@@ -248,24 +299,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
-
-
-    def register(self, iq):
-        """ This function is called for automatic registration"""
-        resp = self.Iq()
-        resp['type'] = 'set'
-        resp['register']['username'] = self.boundjid.user
-        resp['register']['password'] = self.password
-        try:
-            resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
-        except IqError as e:
-            logging.error("Could not register account: %s" %\
-                    e.iq['error']['text'])
-        except IqTimeout:
-            logging.error("No response from server.")
-            self.disconnect()
-
+            
     def adddevicesyncthing(self, keydevicesyncthing, namerelay, address = ["dynamic"]):
         resource = jid.JID(namerelay).user[2:]
         if jid.JID(namerelay).bare == "rspulse@pulse":
@@ -321,6 +355,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             index+=1
         return True
 
+    #async def message(self, msg): only python 3
     def message(self, msg):
         if msg['body']=="This room is not anonymous" or msg['subject']=="Welcome!":
             return
@@ -432,9 +467,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mtype = 'chat')
                         #go to next ARS
                         nextalternativeclusterconnection(conffilename("cluster"))
-                        logger.debug("make finger print conf file")
                         refreshfingerprintconf(opts.typemachine)
                     except Exception:
+                        logger.debug("Exception %s"%data)
                         # conpatibility version old agent master
                         changeconnection(conffilename(opts.typemachine),
                                         data['data'][1],
@@ -443,7 +478,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         data['data'][3])
             else:
                 logging.error("configuration dynamic error")
-            self.disconnect(wait=5)
+        
+        
+        self.disconnect(wait=5)
+        # only python 3
+        #await asyncio.sleep(15)
+        if sys.version_info[0] == 3:
+            self.loop.stop()
 
     def terminate(self):
         self.disconnect()
@@ -473,12 +514,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', self.config.keyAES32) \
                 if x.strip() != "" and len(x) == 32][0]
         cipher = AESCipher(self.config.keyAES32)
-        msginfo['data']['codechaine'] = cipher.encrypt(str(self.boundjid))
-
-        #----------------------------------
-        print("affiche object")
-        print(json.dumps(dataobj, indent = 4))
-        #----------------------------------
+        msginfo['data']['codechaine'] = cipher.encrypt(str(self.boundjid)).decode()
         self.send_message(mto = self.sub_assessor,
                             mbody = json.dumps(msginfo),
                             mtype = 'chat')
@@ -507,6 +543,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if os.path.exists(BOOLFILECOMPLETREGISTRATION):
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
+        #(base64.b64encode(bytes(json.dumps(er.messagejson),'utf-8'))).decode('utf-8')
         dataobj = {
             'action': 'connectionconf',
             'from': self.config.jidagent,
@@ -515,7 +552,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
             'platform': platform.platform(),
-            'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
+            'completedatamachine': base64strencode(json.dumps(er.messagejson)) ,
             'plugin': {},
             'portxmpp': self.config.Port,
             'serverxmpp': self.config.Server,
@@ -533,7 +570,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'classutil': self.config.classutil,
             'ippublic': self.ippublic,
             'geolocalisation': {},
-            'adorgbymachine': base64.b64encode(organizationbymachine()),
+            'adorgbymachine':  base64strencode(organizationbymachine()),
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name,
             'uuid_serial_machine' : serialnumbermachine(),
@@ -551,7 +588,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 lastusersession = ""
                 logging.error(str(e))
         if lastusersession != "":
-            dataobj['adorgbyuser'] = base64.b64encode(organizationbyuser(lastusersession))
+            dataobj['adorgbyuser'] = base64strencode(organizationbyuser(lastusersession)) 
         return dataobj
 
 def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile):
@@ -580,7 +617,7 @@ def createDaemon(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglo
             doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
 
 
@@ -629,7 +666,12 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
         sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsrelay"))
     # Setup the command line arguments.
     tg = confParameter(optstypemachine)
+    logging.log(DEBUGPULSE, "Parameter to connect. (%s : %s) on xmpp server."\
+                            " %s"%(tg.confserver,
+                                   tg.confport,
+                                   tg.confserver))
 
+        
     if optstypemachine.lower() in ["machine"]:
         tg.pathplugins = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmachine")
     else:
@@ -637,6 +679,10 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                       "pluginsrelay")
 
     while True:
+        logging.log(DEBUGPULSE,"ipfromdns %s %s" %(ipfromdns(tg.confserver),tg.confserver))
+        
+        logging.log(DEBUGPULSE,"test exists ip %s"% check_exist_ip_port(ipfromdns(tg.confserver), tg.confport))
+        
         if ipfromdns(tg.confserver) != "" and \
             check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
             break
@@ -650,9 +696,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
             logging.log(DEBUGPULSE, "Error while contacting : %s " % tg.confserver)
 
         time.sleep(2)
-
-
     if tg.agenttype != "relayserver":
+       
+        logging.log(DEBUGPULSE,"connect %s %s" % (ipfromdns(tg.confserver),tg.confport))
         xmpp = MUCBot(tg)
         xmpp.register_plugin('xep_0030') # Service Discovery
         xmpp.register_plugin('xep_0045') # Multi-User Chat
@@ -664,21 +710,29 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                           'timeout': 500  })
         xmpp.register_plugin('xep_0077') # In-band Registration
         xmpp['xep_0077'].force_registration = True
-
+        
         # Connect to the XMPP server and start processing XMPP
         # stanzas.address=(args.host, args.port)
-        if xmpp.connect(address=(ipfromdns(tg.confserver),tg.confport)):
+        address=(ipfromdns(tg.confserver), int (tg.confport))
+        logger.debug("CONNECT %s %s" % (ipfromdns(tg.confserver),tg.confport))
+        logger.debug("jid %s" % tg.jidagent)
+        xmpp.connect(address=address)
+        if sys.version_info[0]< 3:
             t = Timer(300, xmpp.terminate)
             t.start()
+        if sys.version_info[0] == 3:
+            # cf https://docs.python.org/3/library/asyncio-eventloop.html
+            #xmpp.process(forever=True, timeout=30)
+            #xmpp.process(forever=False )
+            xmpp.process(forever=True)
+        else:
             xmpp.process(block=True)
             t.cancel()
-            logging.log(DEBUGPULSE,"bye bye connecteur")
-            namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                        "BOOLCONNECTOR")
-            fichier= open(namefilebool,"w")
-            fichier.close()
-        else:
-            logging.log(DEBUGPULSE,"Unable to connect.")
+        logger.debug("bye bye connecteur")
+        namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                    "BOOLCONNECTOR")
+        fichier= open(namefilebool,"w")
+        fichier.close()
     else:
         logging.log(DEBUGPULSE,"Warning: A relay server holds a Static "\
             "configuration. Do not run configurator agent on relay servers.")
@@ -707,8 +761,7 @@ if __name__ == '__main__':
 
     opts, args = optp.parse_args()
     tg = confParameter(opts.typemachine)
-
-    if not opts.deamon :
+    if not opts.deamon :        
         doTask(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)
     else:
         createDaemon(opts.typemachine, opts.consoledebug, opts.deamon, tg.levellog, tg.logfile)

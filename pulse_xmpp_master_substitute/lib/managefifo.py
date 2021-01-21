@@ -74,7 +74,7 @@ class fifodeploy:
             return data
         except Exception as  e:
             logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return {}
 
     def readfifo(self, namefifo):
@@ -91,7 +91,7 @@ class fifodeploy:
             return data
         except Exception as  e:
             logging.getLogger().warning("look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e)))
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return {}
 
     def displayfifo(self):

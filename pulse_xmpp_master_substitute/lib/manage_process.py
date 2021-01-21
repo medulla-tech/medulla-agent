@@ -36,7 +36,7 @@ def processcommand(command , queue_out_session, messagestr, timeout):
     try:
         message = json.loads(messagestr)
     except:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         logging.getLogger().error("error json")
         sys.exit(0)
     try:
@@ -65,7 +65,7 @@ def processcommand(command , queue_out_session, messagestr, timeout):
         logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
         sys.exit(0)
     except :
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         logging.error("error execution process %s sessionid : %s"%(command, message['sessionid']))
         sys.exit(0)
 
@@ -75,7 +75,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
     try:
         message = json.loads(decode_strconsole(messagestr))
     except:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         logging.getLogger().error("error json")
         sys.exit(0)
 
@@ -143,7 +143,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
         logging.getLogger().warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
         sys.exit(0)
     except :
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         logging.getLogger().error("error execution process %s sessionid : %s"%(command,message['sessionid']))
         sys.exit(0)
 
@@ -194,7 +194,7 @@ class process_on_end_send_message_xmpp:
         try:
             message = json.loads(messagestr)
         except:
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             logging.getLogger().error("error json")
             sys.exit(0)
 
@@ -265,7 +265,7 @@ class process_on_end_send_message_xmpp:
             logging.getLogger().warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
         except :
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             logging.getLogger().error("error execution process %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
 
@@ -277,7 +277,7 @@ class process_on_end_send_message_xmpp:
         try:
             message = json.loads(decode_strconsole(messagestr))
         except:
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             logging.getLogger().error("error json")
             sys.exit(0)
         try:
@@ -306,7 +306,7 @@ class process_on_end_send_message_xmpp:
             logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
         except :
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
 
@@ -435,7 +435,7 @@ class mannageprocess:
             logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,sessionid))
             sys.exit(0)
         except :
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             logging.error("error execution process %s sessionid : %s"%(command,sessionid))
             sys.exit(0)
 

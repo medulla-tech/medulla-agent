@@ -97,7 +97,7 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
         filescript.close()
     except Exception as e:
         logger.error(str(e))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         return
 
     msg_script_file_to_remote_agent['data'] = {}
@@ -110,4 +110,4 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
                                 mbody=json.dumps(msg_script_file_to_remote_agent),
                                 mtype='chat')
     except:
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))

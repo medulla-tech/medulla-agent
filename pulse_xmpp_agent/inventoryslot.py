@@ -9894,9 +9894,20 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, 'rb')
+        fp = open(filename, 'r')
         try:
             if (offset > 0):
+                fp.seek(offset)
+            ret = fp.read(maxlen)
+            return ret
+        finally:
+            fp.close()
+
+
+def file_get_binarycontents(filename, offset=-1, maxlen=-1):
+        fp = open(filename, 'rb')
+        try:
+            if offset > 0:
                 fp.seek(offset)
             ret = fp.read(maxlen)
             return ret
@@ -10295,7 +10306,7 @@ def createDaemon(opts, conf):
         doTask(opts,conf)
     except OSError as error:
         logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
-        traceback.print_exc(file=sys.stdout)
+        logger.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
 
 def doTask(opts, conf):

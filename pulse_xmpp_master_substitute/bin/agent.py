@@ -242,7 +242,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     e.iq['error']['text'])
         except IqTimeout:
             logging.error("No response from server.")
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             self.disconnect()
 
     def __bool_data(self, variable, default = False):
@@ -271,7 +271,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto=msg['from'],
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
             return
 
         if 'action' in dataobj and dataobj['action'] == 'infomachine':
@@ -333,11 +333,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                             mbody=json.dumps(dataerreur),
                                             mtype='chat')
                     logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
-                    traceback.print_exc(file=sys.stdout)
+                    logger.error("\n%s"%(traceback.format_exc()))
 
                 except Exception as e:
                     logging.error("execution plugin [%s]  : %s " % (dataobj['action'],str(e)))
-                    traceback.print_exc(file=sys.stdout)
+                    logger.error("\n%s"%(traceback.format_exc()))
                     if dataobj['action'].startswith('result'):
                         return
                     if dataobj['action'] != "resultmsginfoerror":
@@ -358,7 +358,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto=msg['from'],
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
-            traceback.print_exc(file=sys.stdout)
+            logger.error("\n%s"%(traceback.format_exc()))
 
     def iqsendpulse(self, to, datain, timeout):
         # send iq synchronous message
