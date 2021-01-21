@@ -1,20 +1,45 @@
+# -*- coding: utf-8 -*-
+#
+# (c) 2016 siveo, http://www.siveo.net
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+
 # file : descriptor_scheduler_machine/scheduling_logsrotation.py
-from lib.agentconffile import directoryconffile
+
+from lib.agentconffile import directoryconffile, conffilename
 import os
+import sys
 import shutil
 import logging
 import datetime
 import zipfile
 import bz2
 import gzip
+import ConfigParser
+from lib.utils import file_put_contents
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.1", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}
+plugin = {"VERSION": "2.2", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}
 
 # nb -1 infinie
 # everyday at 12:00
-SCHEDULE = {"schedule" : "00 12 * * *", "nb" : -1}
+SCHEDULE = {"schedule" : "0 */2 * * *", "nb" : -1}
 
 def schedule_main(objectxmpp):
     """
@@ -25,61 +50,128 @@ def schedule_main(objectxmpp):
     logger.debug("=================scheduling_logsrotation=================")
     logger.debug("call scheduled %s at %s"%(plugin, str(date)))
     logger.debug("crontab %s"%(SCHEDULE))
-    logger.debug("=====================================================")
-    logger.debug("log file agent is %s.ini" % objectxmpp.config.logfile)
-    logfile = objectxmpp.config.logfile
-    nbrotfile = objectxmpp.config.nbrotfile
-    compress = objectxmpp.config.compress
+    logger.debug("=========================================================")
     num_compteur = getattr(objectxmpp, "num_call_%s" % plugin['NAME'])
     if num_compteur == 0:
         read_config_plugin_agent(objectxmpp)
-    type=compress # type in zip, gzip, bz2, No
-    if os.path.isfile(logfile): # check if we even need to rotate
-        for i in range(nbrotfile, 0, -1): # count backwards
-            old_name = "%s.%s.%s" % (logfile, i, type )
-            new_name = "%s.%s.%s" % (logfile, i + 1, type)
+
+    logger.debug("Parameters\n\tlog file is : %s\n" \
+                 "\tconfiguration file is : %s\n" \
+                 "\tnumber file in rotation is : %s\n" \
+                 "\tcompress type is : %s\n" \
+                 "\ttrigger_size is %s bytes\n" \
+                 "\tLevel logging %s" % (objectxmpp.config.logfile,
+                                        os.path.join(directoryconffile(), "%s.ini" % plugin['NAME']),
+                                        objectxmpp.nbrotfile,
+                                        objectxmpp.compress,
+                                        objectxmpp.trigger_size,
+                                        logging.getLevelName(logger.getEffectiveLevel())))
+
+    type=objectxmpp.compress # type in zip, gzip, bz2, No
+    if type == "no":
+        type = ""
+    elif type == "gzip":
+        type = ".gz"
+    else:
+        type='.'+type
+    if os.path.isfile(objectxmpp.config.logfile) and \
+        os.path.getsize(objectxmpp.config.logfile) >= objectxmpp.trigger_size:
+        # check if we even need to rotate
+        logger.debug("start rotation log %s" % objectxmpp.config.logfile)
+
+        for i in range(objectxmpp.nbrotfile, 0, -1): # count backwards
+            logger.debug("i %s " % (i))
+            if i == 0:
+                old_name = "%s" % (objectxmpp.config.logfile)
+            else:
+                old_name = "%s.%s%s" % (objectxmpp.config.logfile, i, type )
+            new_name = "%s.%s%s" % (objectxmpp.config.logfile, i + 1, type)
             try:
+                logger.debug("copy file log %s to %s" % (old_name, new_name))
                 shutil.copyfile(old_name, new_name)
             except:
                 pass
-        if type == "zip": # utilitaire unzip
+        if objectxmpp.compress == "zip": # utilitaire unzip
             try:
-                with zipfile.ZipFile(logfile + '.1.zip', 'w') as f:
-                    f.write(logfile, logfile + '.1.zip', zipfile.ZIP_DEFLATED)
-                #shutil.copyfile(logfile, logfile + '.1')
+                logger.debug("compress %s in %s" % (objectxmpp.config.logfile,
+                                                    objectxmpp.config.logfile + '.1.zip'))
+                with zipfile.ZipFile(objectxmpp.config.logfile + '.1.zip', 'w') as f:
+                    f.write(objectxmpp.config.logfile, objectxmpp.config.logfile + '.1.zip', zipfile.ZIP_DEFLATED)
+                #shutil.copyfile(objectxmpp.config.logfile, objectxmpp.config.logfile + '.1')
             except:
                 pass
-        elif type == "gzip": # decompress to stdout zcat
+        elif objectxmpp.compress in ["gzip", "gz"]: # decompress to stdout zcat
             try:
-                with open(logfile, 'rb') as f_in:
-                    with gzip.open(logfile + '.1.gz', 'wb') as f_out:
+                logger.debug("copy file log %s to %s" % (objectxmpp.config.logfile,
+                                                         objectxmpp.config.logfile + '.1.gz'))
+                with open(objectxmpp.config.logfile, 'rb') as f_in:
+                    with gzip.open(objectxmpp.config.logfile + '.1.gz', 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
             except:
                 pass
-        elif type == "bz2": # decompress to stdout bzcat
+        elif objectxmpp.compress == "bz2": # decompress to stdout bzcat
             try:
-                with open(logfile, 'rb') as f_in:
-                    with open(logfile + '.1.bz2', 'wb') as f_out:
+                logger.debug("copy file log %s to %s" % (objectxmpp.config.logfile,
+                                                         objectxmpp.config.logfile + '.1.bz2'))
+                with open(objectxmpp.config.logfile, 'rb') as f_in:
+                    with open(objectxmpp.config.logfile + '.1.bz2', 'wb') as f_out:
                         f_out.write(bz2.compress(f_in.read(), 9))
             except:
                 pass
-        elif type == "no":
+        elif objectxmpp.compress == "no":
             try:
-                shutil.copyfile(logfile, logfile + '.1')
+                logger.debug("copy file log %s to %s" % (objectxmpp.config.logfile,
+                                                         objectxmpp.config.logfile + '.1'))
+                shutil.copyfile(objectxmpp.config.logfile, objectxmpp.config.logfile + '.1')
             except:
                 pass
-        open(logfile, 'w').close() # Truncate the log file
+        open(objectxmpp.config.logfile, 'w').close() # Truncate the log file
 
 def read_config_plugin_agent(objectxmpp):
-    configfilename = os.path.join(directoryconffile(), plugin['NAME'])
-    logger.info("Plugin %s configuration file is %s" % (plugin['NAME'],
-                                                        configfilename))
-    if os.path.isfile(configfilename):
-        # lit la configuration
-        # Config = ConfigParser.ConfigParser()
-        # Config.read(configfilename)
-        logger.warning(" implementation config file missing for plugin %s" % plugin['NAME'])
-        pass
-    else:
-        logger.info("configuration file missing for plugin %s " % plugin['NAME'])
+    configfilename = os.path.join(directoryconffile(), "%s.ini" % plugin['NAME'])
+    if not os.path.isfile(configfilename) :
+        logger.warning("there is no configuration file : %s" % configfilename )
+        logger.warning("the missing configuration file is created automatically.")
+        file_put_contents(configfilename,
+                            "# file log is : %s\n" \
+                            "[rotation_file]\n" \
+                            "# number file for rotation\n" \
+                            "nb_rot_file = 6\n" \
+                            "# type compress file rotation  no or zip or gzip or bz2\n" \
+                            "compress = no\n" \
+                            "# if filesize in octed > trigger_size rotation is running\n" \
+                            "trigger_size = 1024\n" %  objectxmpp.config.logfile)
+    Config = ConfigParser.ConfigParser()
+    Config.read(configfilename)
+    try:
+        objectxmpp.nbrotfile = Config.getint('rotation_file', 'nb_rot_file')
+    except BaseException:
+        objectxmpp.nbrotfile = 6
 
+    if objectxmpp.nbrotfile < 1:
+        objectxmpp.nbrotfile = 1
+
+    try:
+        objectxmpp.compress = Config.get('rotation_file', 'compress')
+    except BaseException:
+        objectxmpp.compress = "no"
+
+    objectxmpp.compress = objectxmpp.compress.lower()
+    if objectxmpp.compress not in ["zip", "gzip", "bz2", "no"]:
+        objectxmpp.compress = "no"
+    try:
+        objectxmpp.trigger_size = Config.getint('rotation_file', 'trigger_size')
+    except BaseException:
+        objectxmpp.trigger_size = 1024
+
+    logger.info("Parameters\n\tlog file is : %s\n" \
+                 "\tconfiguration file is : %s\n" \
+                 "\tnumber file in rotation is : %s\n" \
+                 "\tcompress type is : %s\n" \
+                 "\ttrigger_size is %s bytes\n" \
+                 "\tLevel logging %s" % (objectxmpp.config.logfile,
+                                        configfilename,
+                                        objectxmpp.nbrotfile,
+                                        objectxmpp.compress,
+                                        objectxmpp.trigger_size,
+                                        logging.getLevelName(logger.getEffectiveLevel())))

@@ -56,6 +56,7 @@ import string
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
+import string
 
 if sys.platform.startswith('win'):
     import wmi
@@ -68,8 +69,8 @@ if sys.platform.startswith('win'):
     import ctypes
     import win32com.client
     from win32com.client import GetObjectif
-    from ctypes.wintypes import LPCWSTR, LPCSTR
-
+    import ctypes
+    from ctypes.wintypes import LPCWSTR, LPCSTR, WinError
 if sys.platform.startswith('linux'):
     import pwd
     import grp
@@ -78,11 +79,22 @@ if sys.platform.startswith('darwin'):
     import pwd
     import grp
 
-
-
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
+
+
+class Env(object):
+    agenttype = None # Non specified by default
+    @staticmethod
+    def user_dir():
+        """Get the user folder for linux OS."""
+        if Env.agenttype is None:
+            raise NotImplementedError("The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'")
+        if Env.agenttype == "relayserver":
+            return os.path.join("/", "var", "lib", "pulse2")
+        else:
+            return os.path.expanduser('~pulseuser')
 
 # debug decorator
 def minimum_runtime(t):

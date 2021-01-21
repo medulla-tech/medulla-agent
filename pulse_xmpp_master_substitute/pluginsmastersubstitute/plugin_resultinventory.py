@@ -204,6 +204,8 @@ def XmppUpdateInventoried(jid, machine):
                                                                             machine['uuid_inventorymachine']))
                 return True
             XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+            XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
+                                                                      uuid)
             return True
     # update on mac address
     try:
@@ -223,7 +225,7 @@ def XmppUpdateInventoried(jid, machine):
                                                                                     uuid))
                     XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
                                                                                 uuid)
-                XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+                    XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
                 return True
     except KeyError:
         logger.error("An error occurred on machine %s and we did not receive any inventory,"

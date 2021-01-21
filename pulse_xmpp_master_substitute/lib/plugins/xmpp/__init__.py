@@ -100,6 +100,15 @@ class DomainestatusDeviceError(Error):
         return "{0} {1}".format(self.__doc__, Exception.__str__(self))
 
 
+class DomainestatusDeviceError(Error):
+    """
+        status is not in domaine 'ready', 'busy', 'warning', 'error'
+    """
+
+    def __str__(self):
+        return "{0} {1}".format(self.__doc__, Exception.__str__(self))
+
+
 class Singleton(object):
 
     def __new__(type, *args):
@@ -1383,6 +1392,9 @@ class XmppMasterDatabase(DatabaseHelper):
                                              session,
                                              old_id_inventory,
                                              new_id_inventory):
+        if old_id_inventory is None :
+            logging.getLogger().warning("Organization AD id inventory is not exits")
+            return -1
         try:
             session.query(Organization_ad).filter( Organization_ad.id_inventory ==  self.uuidtoid(old_id_inventory)).\
                     update({ Organization_ad.id_inventory : self.uuidtoid(new_id_inventory) })
