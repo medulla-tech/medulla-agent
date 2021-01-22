@@ -23,7 +23,7 @@
 #
 
 import logging
-from utils import getRandomName
+from lib.utils import getRandomName
 import time
 
 logger = logging.getLogger()

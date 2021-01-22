@@ -26,9 +26,7 @@ import os
 import logging
 import logging.config
 from logging.handlers import TimedRotatingFileHandler
-import ConfigParser
 import traceback
-import sleekxmpp
 import platform
 import base64
 import json
@@ -82,11 +80,24 @@ from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
 
-from sleekxmpp.xmlstream import handler, matcher
-from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp.xmlstream.stanzabase import ET
-from sleekxmpp import jid
-import imp
+if sys.version_info[0] == 3:
+    from slixmpp import ClientXMPP
+    from slixmpp import jid
+    from slixmpp.xmlstream import handler, matcher
+    from slixmpp.exceptions import IqError, IqTimeout
+    from slixmpp.xmlstream.stanzabase import ET
+    import slixmpp
+    import asyncio
+    raw_input = input
+else:
+    import sleekxmpp
+    from sleekxmpp.xmlstream import handler, matcher
+    from sleekxmpp.exceptions import IqError, IqTimeout
+    from sleekxmpp.xmlstream.stanzabase import ET
+    from sleekxmpp import jid
+    from sleekxmpp import ClientXMPP
+    sys.setdefaultencoding('utf8')    
+    imp.reload(sys)
 
 if sys.platform.startswith('win'):
     import win32api
@@ -154,11 +165,6 @@ logger = logging.getLogger()
 
 signalint = False
 
-if sys.version_info < (3, 0):
-    imp.reload(sys)
-    sys.setdefaultencoding('utf8')
-else:
-    raw_input = input
 
 class QueueManager(SyncManager):
     pass
