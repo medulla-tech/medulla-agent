@@ -336,6 +336,11 @@ class confParameter:
         except BaseException:
             self.agenttype = "machine"
 
+        if self.agenttype == "machine":
+            self.alwaysnetreconf = False
+            if Config.has_option('connection', 'alwaysnetreconf'):
+                self.alwaysnetreconf = Config.getboolean('connection', 'alwaysnetreconf')
+
         # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":

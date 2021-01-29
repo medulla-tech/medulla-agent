@@ -355,12 +355,19 @@ class manage_kiosk_message:
                     self.logger.debug('RECV NETWORK INTERFACE')
                     #manage message from watching interface
                     #result = result['data']
+                    
                     BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                                "..",
                                                                "BOOLFILECOMPLETREGISTRATION")
                     file_put_contents(BOOLFILECOMPLETREGISTRATION,
                                       "Do not erase.\n"\
                                       "when re-recording, it will be of type 2. full recording.")
+                    if self.objectxmpp.config.alwaysnetreconf:
+                        # politique reconfiguration sur chaque changement de network.
+                        self.logger.warning("No network interface can replace the previous one. Agent reconfiguration needed to resume the service.")
+                        self.objectxmpp.networkMonitor()
+                        return
+
                     if self.objectxmpp.state.ensure('connected'):
                         # toujours connected.
                         self.objectxmpp.md5reseau=refreshfingerprint()
