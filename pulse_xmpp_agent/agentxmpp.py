@@ -1891,6 +1891,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 "this file allows you to request 1 inventory following 1 change of network.\n"\
                                 "The inventory is sent when the agent is no longer in transient mode\n" \
                                 "following changes of interfaces.")
+        force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
+        if os.path.isfile(force_reconfiguration):
+            os.remove(force_reconfiguration)
 
     def networkMonitor(self):
         try:
@@ -1923,7 +1926,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
                 if os.path.isfile(namefilebool):
                     os.remove(namefilebool)
-
                 connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
                 subprocess.call(connectionagentArgs)
 
