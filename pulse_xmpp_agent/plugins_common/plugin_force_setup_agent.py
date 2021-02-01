@@ -51,4 +51,5 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         fromuser = "",
                         touser = "Master")
     #check network and reconfigure machine
-    objectxmpp.networkMonitor()
+    #objectxmpp.networkMonitor()
+    objectxmpp.reconfagent()

@@ -455,6 +455,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         self.update_plugin,
                         repeat=True)
         # if not sys.platform.startswith('win'):
+        self.schedule('check reconf file',
+                        300,
+                        self.checkreconf,
+                        repeat=True)
+        
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
             if self.config.sched_check_network:
@@ -1895,6 +1900,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if os.path.isfile(force_reconfiguration):
             os.remove(force_reconfiguration)
 
+    def reconfagent(self):
+        namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
+        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+        if os.path.isfile(namefilebool):
+            os.remove(namefilebool)
+
+        connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
+        subprocess.call(connectionagentArgs)
+
+        for i in range(15):
+            if os.path.isfile(namefilebool):
+                break
+            time.sleep(2)
+        logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
+        self.force_full_registration()
+        self.restartBot()
+        
+    def checkreconf(self):
+        force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
+        if os.path.isfile(force_reconfiguration):
+            self.reconfagent()
+    
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time  "\
@@ -1922,20 +1949,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     os.remove(force_reconfiguration)
                 #### execution de convigurateur.
                 #### timeout 5 minutes.
-                namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
-                nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                if os.path.isfile(namefilebool):
-                    os.remove(namefilebool)
-                connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
-                subprocess.call(connectionagentArgs)
-
-                for i in range(15):
-                    if os.path.isfile(namefilebool):
-                        break
-                    time.sleep(2)
-                logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
-                self.force_full_registration()
-                self.restartBot()
+                self.reconfagent()
             else:
                 BOOLFILEINVENTORYONCHANGINTERFACE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                     "BOOLFILEINVENTORYONCHANGINTERFACE")

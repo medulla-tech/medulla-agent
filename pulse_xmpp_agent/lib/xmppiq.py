@@ -371,7 +371,8 @@ class functionsynchroxmpp:
                         file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                  "..", filename), "w")
                         file.close()
-                        xmppobject.networkMonitor()
+                        #xmppobject.networkMonitor()
+                        xmppobject.reconfagent()
                     result['result']['informationresult'][info_ask] = "action force " \
                                                     "reconfiguration for"%xmppobject.boundjid.bare
                 if info_ask == "keypub":
