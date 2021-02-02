@@ -384,7 +384,10 @@ class confParameter:
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
-            self.netchanging = 1
+            if sys.platform.startswith('win'):
+                self.netchanging = 0
+            else:
+                self.netchanging = 1
         logger.info('netchanging %s'%self.netchanging)
 
         if Config.has_option("networkstatus", "detectiontime"):
