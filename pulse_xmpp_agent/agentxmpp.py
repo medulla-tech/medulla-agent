@@ -460,7 +460,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         300,
                         self.checkreconf,
                         repeat=True)
-        
+
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
             if self.config.sched_check_network:
@@ -1917,12 +1917,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
         self.force_full_registration()
         self.restartBot()
-        
+
     def checkreconf(self):
         force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
         if os.path.isfile(force_reconfiguration):
             self.reconfagent()
-    
+
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time  "\
@@ -2248,6 +2248,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
+            logger.error("We failed to calculate the subnetnetwork, we hit this backtrace\n")
+            logger.error("\n %s" % (traceback.format_exc()))
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
