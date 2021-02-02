@@ -72,7 +72,7 @@ def updateopensshversion(version):
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
                     '/v "DisplayName" /t REG_SZ  /d "Pulse OpenSSH" /f'
-	    utils.simplecommand(cmdDisplay)
+            utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
