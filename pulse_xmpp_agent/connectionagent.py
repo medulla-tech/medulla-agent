@@ -108,10 +108,13 @@ class MUCBot(ClientXMPP):
         if not hasattr(self.config, 'geoservers'):
             self.geoservers = "ifconfig.co, if.siveo.net"
 
-        self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                             geolocalisation=True,
-                                             ip_public=None,
-                                             strlistgeoserveur=self.config.geoservers)
+        self.ippublic = None
+        self.geodata = None
+        if self.config.geolocalisation:
+            self.geodata = geolocalisation_agent(typeuser = 'nomade',
+                                                 geolocalisation=self.config.geolocalisation,
+                                                 ip_public=None,
+                                                 strlistgeoserveur=self.config.geoservers)
 
         self.ippublic = self.geodata.get_ip_public()
 

@@ -1071,7 +1071,8 @@ class grafcet:
                 return
             self.__action_completed__(self.workingstep)
             if 'set' in self.workingstep:
-                if isinstance(self.workingstep['set'], str):
+                self.workingstep['set'] = base64.b64decode(self.workingstep['set'])
+                if isinstance(self.workingstep['set'], (str, unicode)):
                     self.workingstep['set'] = str(self.workingstep['set'])
                     if self.workingstep['set'] != "":
                         dataconfiguration = self.workingstep['set'].split("@__@")

@@ -42,7 +42,7 @@ import configparser
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.53", "NAME": "registeryagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.54", "NAME": "registeryagent", "TYPE": "substitute"}
 
 # function comment for next feature
 # this functions will be used later
@@ -140,12 +140,14 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 xmppobject.boundjid.bare)
 
             machine = XmppMasterDatabase().getMachinefromjid(data['from'])
-            if len(machine) != 0 and 'regcomplet' in data and data['regcomplet'] is True:
-                if showinfobool:
-                    logger.info("Performing a complete re-registration of the machine %s" % msg['from'])
-                    logger.info("Deleting machine %s in machines table" % msg['from'])
-                XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
-                machine = {}
+            if machine:
+                if 'regcomplet' in data and data['regcomplet'] is True or\
+                    str(jid.JID(data['from']).domain) != str(jid.JID(str(machine['jid'])).domain):
+                    if showinfobool:
+                        logger.info("Performing a complete re-registration of the machine %s" % msg['from'])
+                        logger.info("Deleting machine %s in machines table" % msg['from'])
+                    XmppMasterDatabase().delPresenceMachinebyjiduser(msg['from'].user)
+                    machine = {}
             if showinfobool:
                 if len(machine) != 0:
                     logger.info("Machine %s already exists in base" % msg['from'])
@@ -799,7 +801,7 @@ def callinventory(xmppobject, to):
     try:
         body = {'action': 'inventory',
                 'sessionid': getRandomName(5, "inventory"),
-                'data': {}}
+                'data': {'forced': 'forced'}}
         xmppobject.send_message(mto=to,
                                 mbody=json.dumps(body),
                                 mtype='chat')

@@ -341,6 +341,11 @@ class confParameter:
         except BaseException:
             self.agenttype = "machine"
 
+        if self.agenttype == "machine":
+            self.alwaysnetreconf = False
+            if Config.has_option('connection', 'alwaysnetreconf'):
+                self.alwaysnetreconf = Config.getboolean('connection', 'alwaysnetreconf')
+
         # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":
@@ -384,7 +389,10 @@ class confParameter:
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
-            self.netchanging = 1
+            if sys.platform.startswith('win'):
+                self.netchanging = 0
+            else:
+                self.netchanging = 1
         logger.info('netchanging %s'%self.netchanging)
 
         if Config.has_option("networkstatus", "detectiontime"):
