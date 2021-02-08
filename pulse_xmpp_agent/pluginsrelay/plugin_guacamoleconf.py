@@ -28,7 +28,7 @@ import json
 import logging
 
 class GuacamoleError(Exception):
-       pass
+    pass
 
 plugin = {"VERSION": "2.2", "NAME": "guacamoleconf", "TYPE": "relayserver"}
 logger = logging.getLogger()
