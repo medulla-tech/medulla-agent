@@ -28,9 +28,9 @@ import json
 import logging
 
 class GuacamoleError(Exception):
-       pass
+    pass
 
-plugin = {"VERSION": "2.2", "NAME": "guacamoleconf", "TYPE": "relayserver"}
+plugin = {"VERSION": "2.21", "NAME": "guacamoleconf", "TYPE": "relayserver"}
 logger = logging.getLogger()
 
 def get_free_tcp_port(objectxmpp):
