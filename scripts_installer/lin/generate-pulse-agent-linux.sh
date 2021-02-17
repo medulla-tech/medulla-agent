@@ -73,6 +73,14 @@ check_arguments() {
                 SSH_PORT="${i#*=}"
                 shift
                 ;;
+            --disable-rdp*)
+                DISABLE_RDP=1
+                shift
+                ;;
+            --disable-inventory*)
+                DISABLE_INVENTORY=1
+                shift
+                ;;
             --linux-distros*)
                 DISTROS="${i#*=}"
                 shift
