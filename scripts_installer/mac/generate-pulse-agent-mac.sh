@@ -148,6 +148,10 @@ check_arguments() {
                 TEST_URL="${i#*=}"
                 shift
                 ;;
+            --disable-vnc*)
+                DISABLE_VNC=1
+                shift
+                ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
                 shift
