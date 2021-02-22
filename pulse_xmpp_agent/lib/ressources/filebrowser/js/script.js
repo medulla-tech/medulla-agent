@@ -1,7 +1,7 @@
-$(document).ready( function () {
-    $(jstablenames).DataTable();
-    $( "#tabs" ).tabs();
-    $( ".resizable" ).resizable();
+jQuery(document).ready( function () {
+    jQuery(jstablenames).DataTable();
+    jQuery( "#tabs" ).tabs();
+    jQuery( ".resizable" ).resizable();
 
     redirect = function(url){
       console.log(document.location)
@@ -49,11 +49,11 @@ $(document).ready( function () {
             height: "auto",
             buttons: {
                 "Precedent": function() {
-                    $( this ).dialog( "close" );
+                    jQuery( this ).dialog( "close" );
                     jQuery(list[previous]).trigger('click')
                 },
                 'Next': function() {
-                  $( this ).dialog( "close" );
+                  jQuery( this ).dialog( "close" );
                   jQuery(list[next]).trigger('click')
                 }
             },
