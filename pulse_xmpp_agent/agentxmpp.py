@@ -2645,7 +2645,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     config = confParameter(optstypemachine)
     if config.agenttype in ['machine']:
         port = 52044
-        root_path = os.path.abspath(os.getcwd())
+        root_path = os.path.dirname(os.path.realpath(__file__))
         server_path = os.path.join(root_path, 'lib')
         server_ressources_path = os.path.join(root_path, 'lib', 'ressources')
 
