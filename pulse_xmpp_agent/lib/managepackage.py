@@ -81,7 +81,7 @@ class managepackage:
                 return outputJSONFile
             except Exception as e:
                 logger.error("We failed to decode the file %s" % filename)
-                logger.error("we encountered the error: %s" str(e))
+                logger.error("we encountered the error: %s" % str(e))
         return None
 
     @staticmethod
@@ -97,7 +97,7 @@ class managepackage:
             except Exception as e:
                 logger.error("Please verify the format of the descriptor for"
                              "the package %s." %s)
-                logger.error("we are encountering the error: %s" str(e))
+                logger.error("we are encountering the error: %s" % str(e))
         return None
 
     @staticmethod
@@ -122,7 +122,7 @@ class managepackage:
             except Exception as e:
                 logger.error("Please verify the version for the package %s in the descriptor"
                              "in the xmppdeploy.json file." % package)
-                logger.error("we are encountering the error: %s" str(e))
+                logger.error("we are encountering the error: %s" % str(e))
         return None
 
     @staticmethod
@@ -145,7 +145,7 @@ class managepackage:
             except Exception as e:
                 logger.error("Please verify the name for the package %s in the descriptor"
                              "in the xmppdeploy.json file." % package)
-                logger.error("we are encountering the error: %s" str(e))
+                logger.error("we are encountering the error: %s" % str(e))
         return None
 
     @staticmethod
@@ -166,7 +166,7 @@ class managepackage:
                     return package
             except Exception as e:
                 logger.error("The conf.json for the package %s is missing" % package)
-                logger.error("we are encountering the error: %s" str(e))
+                logger.error("we are encountering the error: %s" % str(e))
                 return None
         logger.error("We did not find the package %s" % package)
         return None
