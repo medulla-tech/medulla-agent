@@ -381,6 +381,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "syncthing",
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
+        # TODO: Disable this try if synthing is not activated. Prevent backtraces
         try:
             hostnameiddevice = None
             if self.boundjid.domain == "pulse":
