@@ -35,7 +35,7 @@ list_modules = ["bootstrap", "jquery", "jqueryui", "datatables", "main"]
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatefileviewer", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "updatefileviewer", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -324,7 +324,7 @@ def updatejqueryui(xmppobject):
 
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, filename_js)).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, 'js', filename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)

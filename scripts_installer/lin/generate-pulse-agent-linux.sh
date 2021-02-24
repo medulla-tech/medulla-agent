@@ -65,12 +65,24 @@ check_arguments() {
                 TEST_URL="${i#*=}"
                 shift
                 ;;
+            --disable-vnc*)
+                DISABLE_VNC=1
+                shift
+                ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
                 SSH_PORT="${i#*=}"
+                shift
+                ;;
+            --disable-rdp*)
+                DISABLE_RDP=1
+                shift
+                ;;
+            --disable-inventory*)
+                DISABLE_INVENTORY=1
                 shift
                 ;;
             --linux-distros*)
