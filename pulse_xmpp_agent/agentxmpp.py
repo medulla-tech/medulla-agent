@@ -2730,7 +2730,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                 if p.is_alive():
                     logger.debug("Alive %s (%s)"%(p.name,p.pid))
                     if p.name == "xmppagent":
-                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\" | grep -v reversessh" % p.pid
                         result = simplecommand(cmd)
                         if result['code'] == 0:
                             if result['result']:
