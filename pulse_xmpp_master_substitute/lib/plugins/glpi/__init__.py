@@ -127,8 +127,6 @@ class Glpi(object):
         ret = glpi.activate()
         self.is_activated = glpi.is_activated
 
-        #return ret
-
     def getMachineBySerial(self, serial):
         global glpi
         return glpi.getMachineBySerial(serial)
@@ -136,6 +134,18 @@ class Glpi(object):
     def getMachineByUuidSetup(self, uuidsetupmachine):
         global glpi
         return glpi.getMachineByUuidSetup(uuidsetupmachine)
+
+    def getMachineInformationByUuidSetup(self, uuidsetupmachine):
+        global glpi
+        return glpi.getMachineInformationByUuidSetup(uuidsetupmachine)
+
+    def getMachineInformationByUuidMachine(self, idmachine):
+        global glpi
+        return glpi.getMachineInformationByUuidMachine(idmachine)
+
+    def machineobjectdymresult(self, ret):
+        global glpi
+        return glpi._machineobjectdymresult(ret)
 
     def getMachineByMacAddress(self, ctx, filter):
         global glpi
