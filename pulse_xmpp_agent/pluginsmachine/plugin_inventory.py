@@ -380,8 +380,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             return
     elif sys.platform.startswith('darwin'):
         try:
-            for nbcmd in range(3):g.urlinventory
-                ## attention this command has been tested on only 1 Mac
+            for nbcmd in range(3):
+                # Warning: this command has been tested on only 1 Mac
                 cmd = "/opt/fusioninventory-agent/bin/fusioninventory-inventory " \
                       "--backend-collect-timeout=%s > %s" % (timeoutfusion,
                                                              inventoryfile)
