@@ -381,6 +381,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "syncthing",
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
+        # TODO: Disable this try if synthing is not activated. Prevent backtraces
         try:
             hostnameiddevice = None
             if self.boundjid.domain == "pulse":
@@ -459,7 +460,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         300,
                         self.checkreconf,
                         repeat=True)
-        
+
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
             if self.config.sched_check_network:
@@ -1916,12 +1917,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
         self.force_full_registration()
         self.restartBot()
-        
+
     def checkreconf(self):
         force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
         if os.path.isfile(force_reconfiguration):
             self.reconfagent()
-    
+
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time  "\
@@ -2247,6 +2248,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
+            logger.error("We failed to calculate the subnetnetwork, we hit this backtrace\n")
+            logger.error("\n %s" % (traceback.format_exc()))
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
@@ -2645,7 +2648,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     config = confParameter(optstypemachine)
     if config.agenttype in ['machine']:
         port = 52044
-        root_path = os.path.abspath(os.getcwd())
+        root_path = os.path.dirname(os.path.realpath(__file__))
         server_path = os.path.join(root_path, 'lib')
         server_ressources_path = os.path.join(root_path, 'lib', 'ressources')
 
@@ -2729,7 +2732,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                 if p.is_alive():
                     logger.debug("Alive %s (%s)"%(p.name,p.pid))
                     if p.name == "xmppagent":
-                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\" | grep -v reversessh" % p.pid
                         result = simplecommand(cmd)
                         if result['code'] == 0:
                             if result['result']:

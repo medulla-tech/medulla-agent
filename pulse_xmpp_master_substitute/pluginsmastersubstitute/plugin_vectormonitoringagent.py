@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
 
 
 def process_system(functionname,
@@ -192,7 +192,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 statusmsg = ""
                 if 'status' in data:
                     statusmsg = json.dumps(data['status'])
-                    id_mom_machine = XmppMasterDatabase().setMonitoring_machine(
+                id_mom_machine = XmppMasterDatabase().setMonitoring_machine(
                                     machine['id'],
                                     machine['hostname'],
                                     date=data['date'],

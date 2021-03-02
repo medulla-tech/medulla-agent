@@ -330,6 +330,42 @@ class manage_kiosk_message:
             finally:
                 self.logger.info('loop event wait stop')
 
+
+    def test_type(self, value):
+        if type(value) is bool or type(value) is int or type(value) is float:
+            return value
+        else:
+            try:
+                return int(value)
+            except:
+                try:
+                    return float(value)
+                except:
+                    _value = value.lstrip(" ").strip(" ").lower().capitalize()
+                    if _value == "True":
+                        return True
+                    elif _value == "False":
+                        return False
+                    else:
+                        return value
+
+    def runjson(self, jsonf, level=0):
+        if type(jsonf) is dict:
+            msg = "%sdict"%(level*'  ')
+            tmp = {}
+            for element in jsonf:
+                tmp[element] = self.runjson(jsonf[element], level=level+1)
+            return tmp
+        elif type(jsonf) is list:
+            tmp = []
+            for element in jsonf:
+                tmp.append(self.runjson(element, level=level+1))
+            return tmp
+        else:
+            tmp = self.test_type(jsonf)
+            return tmp
+
+
     def handle_client_connection(self, recv_msg_from_kiosk):
         substitute_recv = ""
         try:
@@ -344,7 +380,8 @@ class manage_kiosk_message:
             if isBase64(msg):
                 msg = base64.b64decode(msg)
             try:
-                result = json.loads(minifyjsonstringrecv(msg))
+                _result = json.loads(minifyjsonstringrecv(msg))
+                result = self.runjson(_result)
                 self.logger.info("__Event network or kiosk %s"%json.dumps(result,
                                                                      indent = 4))
             except ValueError as e:
@@ -355,7 +392,7 @@ class manage_kiosk_message:
                     self.logger.debug('RECV NETWORK INTERFACE')
                     #manage message from watching interface
                     #result = result['data']
-                    
+
                     BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                                "..",
                                                                "BOOLFILECOMPLETREGISTRATION")
