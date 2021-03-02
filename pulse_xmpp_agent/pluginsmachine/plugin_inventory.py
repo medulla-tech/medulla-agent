@@ -437,7 +437,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                        date=None)
                     raise Exception(str(e))
             else:
-                raise Exception('file inventory no exits')
+                raise Exception('The inventory file does not exists')
         except Exception as e:
             dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (dataerreur['data']['msg'], str(e))
             logger.error("\n%s" % (traceback.format_exc()))
