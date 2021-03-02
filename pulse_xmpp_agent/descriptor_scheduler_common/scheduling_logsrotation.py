@@ -35,7 +35,7 @@ from lib.utils import file_put_contents
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.2", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}
+plugin = {"VERSION": "2.3", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}
 
 # nb -1 infinie
 # everyday at 12:00
@@ -141,7 +141,7 @@ def read_config_plugin_agent(objectxmpp):
                             "# mode compress file rotation  no or zip or gzip or bz2\n" \
                             "compress = no\n" \
                             "# if filesize in octed > trigger_size rotation is running\n" \
-                            "trigger_size = 1024\n" %  objectxmpp.config.logfile)
+                            "trigger_size = 1048576\n" %  objectxmpp.config.logfile)
     Config = ConfigParser.ConfigParser()
     Config.read(configfilename)
     try:
@@ -163,7 +163,7 @@ def read_config_plugin_agent(objectxmpp):
     try:
         objectxmpp.trigger_size = Config.getint('rotation_file', 'trigger_size')
     except BaseException:
-        objectxmpp.trigger_size = 1024
+        objectxmpp.trigger_size = 1048576
 
     logger.info("Parameters\n\tlog file is : %s\n" \
                  "\tconfiguration file is : %s\n" \
