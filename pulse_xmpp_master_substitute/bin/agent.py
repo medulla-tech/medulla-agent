@@ -65,7 +65,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubstitute"))
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter()
-        logging.log(DEBUGPULSE, "start Master sub (%s)" %(self.config.jidmastersubstitute))
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"%s level log sleekxmpp is " %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
+        logging.log(DEBUGPULSE,"Starting Master sub (%s)" %(self.config.jidmastersubstitute))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
 
         ####################Update agent from MAster#############################
@@ -418,4 +424,3 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s"%(traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
-

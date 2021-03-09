@@ -86,6 +86,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"%s level log sleekxmpp is " %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
         if not hasattr(self.config, 'geoservers'):
             self.geoservers = "ifconfig.co, if.siveo.net"
 

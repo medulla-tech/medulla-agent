@@ -197,6 +197,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"%s level log sleekxmpp is " %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.
         netfingerprintstart = createfingerprintnetwork()
