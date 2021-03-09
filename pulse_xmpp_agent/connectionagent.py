@@ -89,7 +89,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         ### update level log for sleekxmpp
         handler_sleekxmpp = logging.getLogger('sleekxmpp')
-        logging.log(DEBUGPULSE,"%s level log sleekxmpp is " %self.config.log_level_sleekxmpp)
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
         handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
 
         if not hasattr(self.config, 'geoservers'):
