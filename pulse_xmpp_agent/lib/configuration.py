@@ -638,32 +638,18 @@ class confParameter:
             logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
 
         try:
-            self.debug = Config.get('global', 'log_level')
+            self.levellog = self._levellogdata(Config.get('global', 'log_level'))
         except BaseException:
-            self.debug = 'NOTSET'
-        self.debug = self.debug.upper()
+            self.levellog = 20
+        try:
+            self.log_level_sleekxmpp = self._levellogdata(Config.get('global', 'log_level_sleekxmpp'))
+        except BaseException:
+            self.log_level_sleekxmpp = 50
 
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get('configuration_server', 'confdomain')
         else:
             self.confdomain = "pulse"
-
-        if self.debug == 'CRITICAL':
-            self.levellog = 50
-        elif self.debug == 'ERROR':
-            self.levellog = 40
-        elif self.debug == 'WARNING':
-            self.levellog = 30
-        elif self.debug == 'INFO':
-            self.levellog = 20
-        elif self.debug == 'DEBUG':
-            self.levellog = 10
-        elif self.debug == 'NOTSET':
-            self.levellog = 0
-        elif self.debug == "LOG" or self.debug == "DEBUGPULSE":
-            self.levellog = 25
-        else:
-            self.levellog = 0o2
 
         try:
             self.classutil = Config.get('global', 'agent_space')
@@ -919,6 +905,25 @@ class confParameter:
         if os.path.isfile(namefile+".local"):
             Config.read(namefile+".local")
         return Config.items("parameters")
+
+    def _levellogdata(self, levelstring):
+        strlevel = levelstring.upper()
+        if strlevel in ['CRITICAL', 'FATAL']:
+            return 50
+        elif strlevel == 'ERROR':
+            return 40
+        elif strlevel in ['WARNING', 'WARN']:
+            return 30
+        elif strlevel == 'INFO':
+            return 20
+        elif strlevel == 'DEBUG':
+            return 10
+        elif strlevel == 'NOTSET':
+            return 0
+        elif strlevel in ['LOG', 'DEBUGPULSE']:
+            return 25
+        else:
+            return 20
 
     def getRandomName(self, nb, pref=""):
         """

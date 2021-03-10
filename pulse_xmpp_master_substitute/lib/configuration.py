@@ -109,9 +109,13 @@ class confParameter:
             self.jidmasterreg = Config.get('connection', 'jidreg')
 
         #GLOBAL CONFIGURATION
-        self.debug = "INFO"
+        self.levellog = 20
         if Config.has_option("global", "log_level"):
-            self.debug = Config.get('global', 'log_level')
+            self.levellog =  self._levellogdata(Config.get('global', 'log_level'))
+        self.log_level_sleekxmpp = 50
+        if Config.has_option("global", "log_level_sleekxmpp"):
+            self.log_level_sleekxmpp =  self._levellogdata(Config.get('global',
+                                                                          'log_level_sleekxmpp'))
 
         self.logfile = "/var/log/mmc/master_inv.log"
         if Config.has_option("global", "logfile"):
@@ -152,22 +156,24 @@ class confParameter:
         if "msc" in self.plugins_list:
             self.readConfmsc(Config)
 
-        if self.debug == 'CRITICAL':
-            self.levellog = 50
-        elif self.debug == 'ERROR':
-            self.levellog = 40
-        elif self.debug == 'WARNING':
-            self.levellog = 30
-        elif self.debug == 'INFO':
-            self.levellog = 20
-        elif self.debug == 'DEBUG':
-            self.levellog = 10
-        elif self.debug == 'NOTSET':
-            self.levellog = 0
-        elif self.debug == "LOG" or self.debug == "DEBUGPULSE":
-            self.levellog = 25
+    def _levellogdata(self, levelstring):
+        strlevel = levelstring.upper()
+        if strlevel in ['CRITICAL', 'FATAL']:
+            return 50
+        elif strlevel == 'ERROR':
+            return 40
+        elif strlevel in ['WARNING', 'WARN']:
+            return 30
+        elif strlevel == 'INFO':
+            return 20
+        elif strlevel == 'DEBUG':
+            return 10
+        elif strlevel == 'NOTSET':
+            return 0
+        elif strlevel in ['LOG', 'DEBUGPULSE']:
+            return 25
         else:
-            self.levellog = 0o2
+            return 20
 
     def readConfkiosk(self, confiobject):
         self.kiosk_dbhost = "localhost"

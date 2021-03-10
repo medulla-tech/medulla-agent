@@ -19,7 +19,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with MMC.  If not, see <http://www.gnu.org/licenses/>.
-
+# file pulse_xmpp_master_substitute/lib/plugins/glpi/file __init__.py
 """
 This module declare all the necessary stuff to connect to a glpi database in it's
 version 9.2
