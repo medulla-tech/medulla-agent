@@ -38,7 +38,7 @@ if sys.platform.startswith('win'):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.2", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "3.5", "NAME": "inventory", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -47,6 +47,21 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     strjidagent = str(xmppobject.boundjid.bare)
     boolchange = True
     namefilexml = ""
+    if hasattr(xmppobject.config, 'via_xmpp'):
+        if xmppobject.config.via_xmpp == 'False':
+            if not hasattr(xmppobject.config, 'urlinventory'):
+                logger.error("urlinventory must be defined in inventory.ini if via_xmpp is False")
+                xmppobject.xmpplog("urlinventory must be defined in inventory.ini if via_xmpp is False",
+                                   type='deploy',
+                                   sessionname=sessionid,
+                                   priority=-1,
+                                   action="xmpplog",
+                                   who=strjidagent,
+                                   module="Notify | Inventory | Error",
+                                   date=None)
+                return
+    else:
+        xmppobject.config.via_xmpp = 'True'
     if hasattr(xmppobject.config, 'json_file_extend_inventory'):
         if os.path.exists(xmppobject.config.json_file_extend_inventory):
             dd = extend_xmlfile(xmppobject)
@@ -115,9 +130,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                                                   timeoutfusion))
                 general_options = "--backend-collect-timeout=%s" % timeoutfusion
                 location_option = "--local=\"%s\"" % inventoryfile
-                if hasattr(xmppobject.config, 'via_xmpp'):
-                    if xmppobject.config.via_xmpp == 'False':
-                        location_option = "--server=\"%s\"" % xmppobject.config.urlinventory
+                if xmppobject.config.via_xmpp == 'False':
+                    location_option = "--server=\"%s\"" % xmppobject.config.urlinventory
                 if namefilexml and os.path.exists(namefilexml):
                     cmd = "fusioninventory-agent %s %s "\
                         "--additional-content=%s" % (general_options,
@@ -213,9 +227,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             general_options = "--config=none --scan-profiles " \
                 "--backend-collect-timeout=%s" % timeoutfusion
             location_option = "--local=\"%s\"" % inventoryfile
-            if hasattr(xmppobject.config, 'via_xmpp'):
-                if xmppobject.config.via_xmpp == 'False':
-                    location_option = "--server=\"%s\"" % xmppobject.config.urlinventory
+            if xmppobject.config.via_xmpp == 'False':
+                location_option = "--server=\"%s\"" % xmppobject.config.urlinventory
             if hasattr(xmppobject.config, 'collector'):
                 if xmppobject.config.collector == 'ocs':
                     program = os.path.join(os.environ["ProgramFiles(x86)"],
@@ -223,9 +236,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                            'OCSInventory.exe')
                     general_options = "/debug /force"
                     location_option = "/xml=\"%s\" /S" % inventoryfile
-                    if hasattr(xmppobject.config, 'via_xmpp'):
-                        if xmppobject.config.via_xmpp == 'False':
-                            location_option = "/server=\"%s\"" % xmppobject.config.urlinventory
+                    if xmppobject.config.via_xmpp == 'False':
+                        location_option = "/server=\"%s\"" % xmppobject.config.urlinventory
 
             for nbcmd in range(3):
 
