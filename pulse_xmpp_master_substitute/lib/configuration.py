@@ -19,7 +19,7 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+# file /pulse_xmpp_master_substitute/lib/configuration.py
 import sys
 import os
 import logging
@@ -109,9 +109,13 @@ class confParameter:
             self.jidmasterreg = Config.get('connection', 'jidreg')
 
         #GLOBAL CONFIGURATION
-        self.debug = "INFO"
+        self.levellog = 20
         if Config.has_option("global", "log_level"):
-            self.debug = Config.get('global', 'log_level')
+            self.levellog =  self._levellogdata(Config.get('global', 'log_level'))
+        self.log_level_sleekxmpp = 50
+        if Config.has_option("global", "log_level_sleekxmpp"):
+            self.log_level_sleekxmpp =  self._levellogdata(Config.get('global',
+                                                                          'log_level_sleekxmpp'))
 
         self.logfile = "/var/log/mmc/master_inv.log"
         if Config.has_option("global", "logfile"):
@@ -152,22 +156,24 @@ class confParameter:
         if "msc" in self.plugins_list:
             self.readConfmsc(Config)
 
-        if self.debug == 'CRITICAL':
-            self.levellog = 50
-        elif self.debug == 'ERROR':
-            self.levellog = 40
-        elif self.debug == 'WARNING':
-            self.levellog = 30
-        elif self.debug == 'INFO':
-            self.levellog = 20
-        elif self.debug == 'DEBUG':
-            self.levellog = 10
-        elif self.debug == 'NOTSET':
-            self.levellog = 0
-        elif self.debug == "LOG" or self.debug == "DEBUGPULSE":
-            self.levellog = 25
+    def _levellogdata(self, levelstring):
+        strlevel = levelstring.upper()
+        if strlevel in ['CRITICAL', 'FATAL']:
+            return 50
+        elif strlevel == 'ERROR':
+            return 40
+        elif strlevel in ['WARNING', 'WARN']:
+            return 30
+        elif strlevel == 'INFO':
+            return 20
+        elif strlevel == 'DEBUG':
+            return 10
+        elif strlevel == 'NOTSET':
+            return 0
+        elif strlevel in ['LOG', 'DEBUGPULSE']:
+            return 25
         else:
-            self.levellog = 0o2
+            return 20
 
     def readConfkiosk(self, confiobject):
         self.kiosk_dbhost = "localhost"
@@ -286,9 +292,34 @@ class confParameter:
         if confiobject.has_option("state", "red"):
             self.red = confiobject.getint("state", "red")
 
+        # This will be used to configure the machine table from glpi
+        # The reg_key_ shown are displayed as reg_key_1 reg_key_2
         self.summary = ['cn', 'description', 'os', 'type', 'user', 'entity']
         if confiobject.has_option("computer_list", "summary"):
             self.summary = confiobject.get("computer_list", "summary").split(' ')
+
+        ## Registry keys that need to be pushed in an inventory
+        ## Format: reg_key_x = path_to_key|key_label_shown_in_mmc
+        ## eg.:
+        ## reg_key_1 = HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\EnableLUA|LUAEnabled
+        ## reg_key_2 = HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProductName|WindowsVersion
+        ## max_key_index = 2
+
+        ##reg_key_1 = HKEY_CURRENT_USER\Software\test\dede|dede
+        #reg_key_1 = HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\EnableLUA|LUAEnabled
+        #reg_key_2 = HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\ProductName|ProductName
+        #max_key_index=2
+
+        self.max_key_index = 50
+        if confiobject.has_option("inventory", "max_key_index"):
+            self.max_key_index = confiobject.getint("inventory", "max_key_index")
+        # create mutex
+        self.arraykeys=[]
+        for index_key in range(1, self.max_key_index+1):
+            if confiobject.has_option("inventory", "reg_key_%s" % index_key):
+                self.arraykeys.append( confiobject.get("inventory", "reg_key_%s" % index_key))
+
+        self.max_key_index = len(self.arraykeys)
 
         self.av_false_positive = []
         if confiobject.has_option("antivirus", "av_false_positive"):

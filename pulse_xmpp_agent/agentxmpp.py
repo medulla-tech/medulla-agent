@@ -204,6 +204,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.
         netfingerprintstart = createfingerprintnetwork()
@@ -467,7 +473,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         300,
                         self.checkreconf,
                         repeat=True)
-        
+
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
             if self.config.sched_check_network:
@@ -1924,12 +1930,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
         self.force_full_registration()
         self.restartBot()
-        
+
     def checkreconf(self):
         force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
         if os.path.isfile(force_reconfiguration):
             self.reconfagent()
-    
+
     def networkMonitor(self):
         try:
             logging.log(DEBUGPULSE,"network monitor time  "\
@@ -2255,6 +2261,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
+            logger.error("We failed to calculate the subnetnetwork, we hit this backtrace\n")
+            logger.error("\n %s" % (traceback.format_exc()))
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
@@ -2738,7 +2746,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                 if p.is_alive():
                     logger.debug("Alive %s (%s)"%(p.name,p.pid))
                     if p.name == "xmppagent":
-                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\" | grep -v reversessh" % p.pid
                         result = simplecommand(cmd)
                         if result['code'] == 0:
                             if result['result']:

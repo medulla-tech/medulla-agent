@@ -127,8 +127,6 @@ class resource_plugin:
                 # recuperation du typeaction
                 if self.resource[nameresource]["typeaction"] \
                         == "call_function":
-                    for _ in range(25):
-                        logger.error("from action_resource ****** call_function *****")
                     self.resource[nameresource]["plugin_name"](
                         self.resource[nameresource]["argv"],
                         self.resource[nameresource]["kwargs"])
