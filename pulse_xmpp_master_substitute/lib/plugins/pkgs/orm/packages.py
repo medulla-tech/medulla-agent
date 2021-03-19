@@ -190,6 +190,17 @@ class Packages(object):
         else:
             return ""
 
+    def getpkgs_share_id(self):
+        if self.pkgs_share_id is not None:
+            return self.pkgs_share_id
+        else:
+            return None
+        
+    def getedition_status(self):
+        if self.edition_status is not None:
+            return self.edition_status
+        else:
+            return None
 
     def to_array(self):
         """
