@@ -752,7 +752,7 @@ class PkgsDatabase(DatabaseHelper):
         session.flush()
         return [x for x in result]
 
-   @DatabaseHelper._sessionm
+    @DatabaseHelper._sessionm
     def pkgs_sharing_rule_search(self,
                                  session,
                                  user_information,
