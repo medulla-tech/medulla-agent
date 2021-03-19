@@ -495,16 +495,6 @@ class PkgsDatabase(DatabaseHelper):
             return []
 
     @DatabaseHelper._sessionm
-    def pkgs_regiter_synchro_package(self, session, uuidpackage, typesynchro ):
-        #list id server relay
-        list_server_relay = self.get_List_jid_ServerRelay_enable(enabled=1)
-        for jid in list_server_relay:
-            #exclude local package server
-            if jid[0].startswith("rspulse@pulse/"):
-                continue
-            self.setSyncthingsync(uuidpackage, jid[0], typesynchro , watching = 'yes')
-
-    @DatabaseHelper._sessionm
     def pkgs_unregister_synchro_package(self, session, uuidpackage, typesynchro, jid_relayserver):
         listdata=jid_relayserver.split("@")
         if len(listdata)> 0:
@@ -622,7 +612,8 @@ class PkgsDatabase(DatabaseHelper):
                        name, comments,
                        enabled, share_type,
                        uri, ars_name,
-                       ars_id, share_path):
+                       ars_id, share_path,
+                       usedquotas, quotas):
         try:
             new_Pkgs_shares = Pkgs_shares()
             new_Pkgs_shares.name = name
@@ -633,6 +624,8 @@ class PkgsDatabase(DatabaseHelper):
             new_Pkgs_shares.ars_name = ars_name
             new_Pkgs_shares.ars_id = ars_id
             new_Pkgs_shares.share_path = share_path
+            new_Pkgs_shares.usedquotas = usedquotas
+            new_Pkgs_shares.quotas = quotas
             session.add(new_Pkgs_shares)
             session.commit()
             session.flush()
@@ -779,7 +772,7 @@ class PkgsDatabase(DatabaseHelper):
                     pkgs.pkgs_rules_local.id AS id_rule,
                     pkgs.pkgs_rules_local.pkgs_rules_algos_id AS algos_id,
                     pkgs.pkgs_rules_local.order AS order_rule,
-                    pkgs.pkgs_rules_local.suject AS suject,
+                    pkgs.pkgs_rules_local.subject AS subject,
                     pkgs.pkgs_rules_local.permission AS permission,
                     pkgs.pkgs_shares.quotas AS quotas,
                     pkgs.pkgs_shares.usedquotas AS usedquotas
@@ -847,6 +840,27 @@ class PkgsDatabase(DatabaseHelper):
         return ret
 
     @DatabaseHelper._sessionm
+    def nb_package_in_sharing(self, session, share_id=None):
+
+        sql ="""SELECT
+                    COUNT(*)
+                FROM
+                    pkgs.packages
+                WHERE
+                    packages.pkgs_share_id is NULL;"""
+        logging.getLogger().debug(str(sql))
+        if share_id is not None:
+            sql ="""SELECT
+                        COUNT(*)
+                    FROM
+                        pkgs.packages
+                    WHERE
+                        packages.pkgs_share_id = %s;"""%(share_id)
+        session.commit()
+        session.flush()
+        return [x for x in result][0][0]
+
+    @DatabaseHelper._sessionm
     def pkgs_sharing_admin_profil(self, session):
         """
             This function is used to obtain packages list
@@ -890,5 +904,11 @@ class PkgsDatabase(DatabaseHelper):
                 resuldict['ars_id'] = y[7]
                 resuldict['share_path'] = y[8]
                 resuldict['permission'] = "rw"
+                resuldict['quotas'] = y[9]
+                resuldict['usedquotas'] = y[10]
                 ret.append(resuldict)
+                if resuldict['type'] == 'global':
+                    resuldict['nbpackage'] = self.nb_package_in_sharing(share_id=None)
+                else:
+                    resuldict['nbpackage'] = self.nb_package_in_sharing(share_id=resuldict['id_sharing'])
         return ret
