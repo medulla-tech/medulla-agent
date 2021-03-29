@@ -2909,7 +2909,7 @@ class process_xmpp_agent():
                     setgetcountcycle(1)
                     try:
                         timealternatifars = random.randint(*xmpp.config.timealternatif)
-                        logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
+                        logging.log(DEBUGPULSE,"waiting %s for reconnection alternatif ARS"%timealternatifars)
                         time.sleep(timealternatifars)
                         newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
 
