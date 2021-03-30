@@ -81,7 +81,7 @@ class managepackage:
         if sharedir is None:
             dirpackage = managepackage.packagedir()
         else:
-            sharedir = os.path.abspath(os.path.realpath(dirpartage))
+            sharedir = os.path.abspath(os.path.realpath(sharedir))
         for x in  managepackage.search_list_package():
             print x , os.path.join(dirpackage, os.path.basename(x))
             try:
@@ -146,7 +146,7 @@ class managepackage:
                     return outputJSONFile
             except Exception as e:
                 logger.error("Please verify the format of the descriptor for"
-                             "the package %s." %s)
+                             "the package %s." % packagename)
                 logger.error("we are encountering the error: %s" % str(e))
         return None
 
