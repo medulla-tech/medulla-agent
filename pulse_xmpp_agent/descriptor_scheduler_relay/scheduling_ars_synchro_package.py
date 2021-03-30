@@ -26,13 +26,13 @@ import logging
 import sys
 from lib.managepackage import managepackage
 
-plugin = {"VERSION" : "1.1", "NAME" : "scheduling_ars_synchro_package",  "TYPE" : "all", "SCHEDULED" : True}
+plugin = {"VERSION" : "1.2", "NAME" : "scheduling_ars_synchro_package",  "TYPE" : "all", "SCHEDULED" : True}
 
 # nb  -1 infinie
 SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
 
 def schedule_main(objectxmpp):
-    logging.getLogger().debug("==========Plugin scheduling_ars_synchronization==========")
+    logging.getLogger().debug("==========Plugin scheduling_ars_synchro_package==========")
     logging.getLogger().debug(plugin)
     logging.getLogger().debug("=========================================================")
 
