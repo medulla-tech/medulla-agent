@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.65", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.66", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -42,10 +42,37 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Update if version is lower
         installed_version = checkopensshversion()
+        check_if_binary_ok()
         if StrictVersion(installed_version) < StrictVersion(OPENSSHVERSION):
             updateopenssh(xmppobject, installed_version)
     except Exception:
         pass
+
+def check_if_binary_ok():
+    if sys.platform.startswith('win'):
+        # We check if we have the Regedit entry
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" /s | Find "DisplayVersion"'
+        result = utils.simplecommand(cmd)
+
+        if result['code'] == 0:
+            regedit = True
+
+        # We check if the openssh binary is correctly installed.
+        opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
+        sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
+
+        if os.path.isfile(sshdaemon_bin_path):
+            logger.debug("OpenSSH is correctly installed. Nothing to do")
+        else:
+            logger.error("Something went wrong, we need to reinstall the component.")
+
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
+                '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            result = utils.simplecommand(cmd)
+            if result['code'] == 0:
+                logger.debug("The OpenSSH module is ready to be reinstalled.")
+            else:
+                logger.debug("We failed to reinitialize the registry entry.")
 
 
 def checkopensshversion():
