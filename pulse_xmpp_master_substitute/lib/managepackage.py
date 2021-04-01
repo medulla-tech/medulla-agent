@@ -95,7 +95,7 @@ class managepackage:
                     return outputJSONFile
             except Exception as e:
                 logger.error("Please verify the format of the descriptor for"
-                             "the package %s." %s)
+                             "the package %s." % packagename)
                 logger.error("we are encountering the error: %s" % str(e))
         return None
 
