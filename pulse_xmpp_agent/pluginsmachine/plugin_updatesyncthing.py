@@ -30,11 +30,13 @@ import tempfile
 import shutil
 import ConfigParser
 from lib import utils
+from xml.etree import ElementTree
+
 SYNCTHINGVERSION = '1.6.1'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.10", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.11", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -82,6 +84,16 @@ def updatesyncthingversion(version):
             utils.simplecommand(cmd)
             logger.info("Syncthing updated to version %s" % SYNCTHINGVERSION)
 
+def configuresyncthing(config_file):
+    tree = ElementTree.parse(config_file)
+    config = tree.getroot()
+    config.find("./options/urAccepted").text = -1
+    config.find("./options/autoUpgradeIntervalH").text = 0
+    config.find("./options/localAnnounceEnabled").text = 'false'
+    config.find("./options/globalAnnounceEnabled").text = 'false'
+    config.find("./options/relaysEnabled").text = 'false'
+    tree.write(config_file)
+
 def updatesyncthing(xmppobject, installed_version):
     logger.info("Updating Syncthing to version %s" % SYNCTHINGVERSION)
     if sys.platform.startswith('win'):
@@ -115,6 +127,9 @@ def updatesyncthing(xmppobject, installed_version):
 
             mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
             utils.simplecommand(mklink_command)
+
+            # Configure syncthing
+            configuresyncthing(os.path.join(syncthingconfig_path, 'config.xml'))
 
             # Enable syncthing now it is installed
             agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")
