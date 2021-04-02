@@ -34,11 +34,12 @@ logger = logging.getLogger()
 if sys.platform.startswith('win'):
     from lib import registerwindows
     import _winreg
+from xml.etree import ElementTree
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.5", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "3.6", "NAME": "inventory", "TYPE": "machine"}
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -234,7 +235,18 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                     program = os.path.join(os.environ["ProgramFiles(x86)"],
                                            'OCS Inventory Agent',
                                            'OCSInventory.exe')
-                    general_options = "/debug /force"
+                    admininfoconf = os.path.join(os.environ["Programdata"],
+                                                 'OCS Inventory NG',
+                                                 'Agent',
+                                                 'admininfo.conf')
+                    if os.path.exists(admininfoconf):
+                        tree = ElementTree.parse(admininfoconf)
+                        accountinfo = tree.getroot()
+                        tag = accountinfo.find("./KEYVALUE").text
+                    try: 
+                        general_options = "/debug /force /tag=\"%s\"" % tag
+                    except NameError:
+                        general_options = "/debug /force"
                     location_option = "/xml=\"%s\" /S" % inventoryfile
                     if xmppobject.config.via_xmpp == 'False':
                         location_option = "/server=\"%s\"" % xmppobject.config.urlinventory
