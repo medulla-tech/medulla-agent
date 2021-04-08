@@ -26,18 +26,10 @@ echo "INFO: Generating package ${PACKAGE_NAME}..."
 # Detect if uuid or uuidgen is available
 if [ -x "$(command -v uuid)" ]; then
   PACKAGE_UUID=$(uuid)
-  DEPS_UUID=$(uuid)
-  NETCHECK_UUID=$(uuid)
   echo "  Package UUID: ${PACKAGE_UUID}"
-  echo "  Dependencies UUID: ${DEPS_UUID}"
-  echo "  Netcheck UUID: ${NETCHECK_UUID}"
 elif [ -x "$(command -v uuidgen)" ]; then
   PACKAGE_UUID=$(uuidgen)
-  DEPS_UUID=$(uuidgen)
-  NETCHECK_UUID=$(uuidgen)
   echo "  Package UUID: ${PACKAGE_UUID}"
-  echo "  Dependencies UUID: ${DEPS_UUID}"
-  echo "  Netcheck UUID: ${NETCHECK_UUID}"
 else
   echo "ERROR: Please install uuid or uuidgen."
   exit 1
@@ -60,11 +52,11 @@ fi
 
 # First check if the package exists.
 # If it is the case, keep its uuid for deleting it after generation.
-old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
+old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/sharing/global/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
 
 # Create the package
-mkdir -p /var/lib/pulse2/packages/${PACKAGE_UUID}
-pushd /var/lib/pulse2/packages/${PACKAGE_UUID}
+mkdir -p /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
+pushd /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
 
 # Copy the agent and plugins to the package folder
 cp ${PULSE_AGENT_PATH}/${PULSE_AGENT_FILENAME} .
@@ -79,10 +71,7 @@ cat <<EOF > xmppdeploy.json
         "software": "agentxmpp",
         "transferfile": true,
         "methodetransfert": "pushrsync",
-        "Dependency": [
-            "${DEPS_UUID}",
-            "${NETCHECK_UUID}"
-        ],
+        "Dependency": [],
         "version": "${AGENT_VERSION}",
         "metagenerator": "manual"
     },
@@ -234,22 +223,14 @@ popd
 echo "INFO: Generating package ${PACKAGE_NAME}... Done"
 
 # Change permissions on the package
-chown -R syncthing: /var/lib/pulse2/packages/${PACKAGE_UUID}
+chown -R syncthing: /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
 
 # Delete old version if found
 if [[ ${old_uuid} != '' ]]; then
   echo "INFO: Deleting pakage ${old_uuid}..."
-  rm -rf /var/lib/pulse2/packages/${old_uuid}
+  rm -rf /var/lib/pulse2/packages/sharing/global/${old_uuid}
   echo "INFO: Deleting pakage ${old_uuid}... Done"
 fi
-
-# Generate Pulse Agent dependencies package
-BASEDIR=$(dirname $0)
-${BASEDIR}/generate-agent-deps-package ${DEPS_UUID}
-
-# Generate netcheck package
-BASEDIR=$(dirname $0)
-${BASEDIR}/generate-netcheck-package ${NETCHECK_UUID}
 
 # Restart package server
 echo "INFO: Restarting package server..."
