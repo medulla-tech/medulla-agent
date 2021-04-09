@@ -63,7 +63,7 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.1.4"
+AGENT_VERSION="2.1.5"
 HOMEBREW_VERSION="1.5.12"
 FUSION_INVENTORY_AGENT_NAME="FusionInventory-Agent"
 FUSION_INVENTORY_AGENT_VERSION="2.4-1"
@@ -148,12 +148,24 @@ check_arguments() {
                 TEST_URL="${i#*=}"
                 shift
                 ;;
+            --disable-vnc*)
+                DISABLE_VNC=1
+                shift
+                ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
                 SSH_PORT="${i#*=}"
+                shift
+                ;;
+            --disable-rdp*)
+                DISABLE_RDP=1
+                shift
+                ;;
+            --disable-inventory*)
+                DISABLE_INVENTORY=1
                 shift
                 ;;
             --linux-distros*)

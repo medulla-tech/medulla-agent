@@ -2424,6 +2424,22 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         profile already exists, it return False otherwise.
     """
     if sys.platform.startswith('win'):
+        # We define the sid
+        usersid = get_user_sid(username)
+
+        regquery = 'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s.bak" /v "ProfileImagePath" /s'% usersid
+        resultquery = simplecommand(encode_strconsole(regquery))
+        if resultquery['code'] == 0:
+            # There a .bak entry, we need to remove the it
+            regdel = 'REG DELETE "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s.bak" /f' % usersid
+            resultdel = simplecommand(encode_strconsole(regdel))
+            if resultdel['code'] == 0:
+                logging.getLogger().info("We correctly removed the backup profile")
+            else:
+                logging.getLogger().error("Error while deleting the backup profile")
+        else:
+            logging.getLogger().debug("There is not .bak entry, we have nothing to do")
+
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
@@ -2434,7 +2450,6 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             # Delete all profiles if found
             delete_profile(username)
             # Create the profile
-            usersid = get_user_sid(username)
             ptr_profilepath = ctypes.create_unicode_buffer(260)
             userenvdll.CreateProfile(LPCWSTR(usersid),
                                      LPCWSTR(username),

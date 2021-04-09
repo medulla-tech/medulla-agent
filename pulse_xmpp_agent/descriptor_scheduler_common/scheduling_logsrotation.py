@@ -35,7 +35,7 @@ from lib.utils import file_put_contents
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "2.2", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}
+plugin = {"VERSION": "2.3", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True}
 
 # nb -1 infinie
 # everyday at 12:00
@@ -58,7 +58,7 @@ def schedule_main(objectxmpp):
     logger.debug("Parameters\n\tlog file is : %s\n" \
                  "\tconfiguration file is : %s\n" \
                  "\tnumber file in rotation is : %s\n" \
-                 "\tcompress type is : %s\n" \
+                 "\tcompress Mode is : %s\n" \
                  "\ttrigger_size is %s bytes\n" \
                  "\tLevel logging %s" % (objectxmpp.config.logfile,
                                         os.path.join(directoryconffile(), "%s.ini" % plugin['NAME']),
@@ -67,13 +67,14 @@ def schedule_main(objectxmpp):
                                         objectxmpp.trigger_size,
                                         logging.getLevelName(logger.getEffectiveLevel())))
 
-    type=objectxmpp.compress # type in zip, gzip, bz2, No
-    if type == "no":
-        type = ""
-    elif type == "gzip":
-        type = ".gz"
+    compressionMode=objectxmpp.compress # mode in zip, gzip, bz2, No
+
+    if compressionMode == "no":
+        compressionMode = ""
+    elif compressionMode == "gzip":
+        compressionMode = ".gz"
     else:
-        type='.'+type
+        compressionMode = '.' + compressionMode
     if os.path.isfile(objectxmpp.config.logfile) and \
         os.path.getsize(objectxmpp.config.logfile) >= objectxmpp.trigger_size:
         # check if we even need to rotate
@@ -84,8 +85,8 @@ def schedule_main(objectxmpp):
             if i == 0:
                 old_name = "%s" % (objectxmpp.config.logfile)
             else:
-                old_name = "%s.%s%s" % (objectxmpp.config.logfile, i, type )
-            new_name = "%s.%s%s" % (objectxmpp.config.logfile, i + 1, type)
+                old_name = "%s.%s%s" % (objectxmpp.config.logfile, i, compressionMode )
+            new_name = "%s.%s%s" % (objectxmpp.config.logfile, i + 1, compressionMode)
             try:
                 logger.debug("copy file log %s to %s" % (old_name, new_name))
                 shutil.copyfile(old_name, new_name)
@@ -137,10 +138,10 @@ def read_config_plugin_agent(objectxmpp):
                             "[rotation_file]\n" \
                             "# number file for rotation\n" \
                             "nb_rot_file = 6\n" \
-                            "# type compress file rotation  no or zip or gzip or bz2\n" \
+                            "# mode compress file rotation  no or zip or gzip or bz2\n" \
                             "compress = no\n" \
                             "# if filesize in octed > trigger_size rotation is running\n" \
-                            "trigger_size = 1024\n" %  objectxmpp.config.logfile)
+                            "trigger_size = 1048576\n" %  objectxmpp.config.logfile)
     Config = ConfigParser.ConfigParser()
     Config.read(configfilename)
     try:
@@ -162,12 +163,12 @@ def read_config_plugin_agent(objectxmpp):
     try:
         objectxmpp.trigger_size = Config.getint('rotation_file', 'trigger_size')
     except BaseException:
-        objectxmpp.trigger_size = 1024
+        objectxmpp.trigger_size = 1048576
 
     logger.info("Parameters\n\tlog file is : %s\n" \
                  "\tconfiguration file is : %s\n" \
                  "\tnumber file in rotation is : %s\n" \
-                 "\tcompress type is : %s\n" \
+                 "\tcompress mode is : %s\n" \
                  "\ttrigger_size is %s bytes\n" \
                  "\tLevel logging %s" % (objectxmpp.config.logfile,
                                         configfilename,

@@ -158,6 +158,49 @@ class Syncthing_machine(Base, XmppMasterDBObj):
     fk_arscluster = Column(Integer, ForeignKey('syncthing_ars_cluster.id'), nullable=False)
     syncthing_ars_cluster = relationship(Syncthing_ars_cluster)
 
+class Glpi_entity(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'glpi_entity'
+    # ====== Fields =============================
+    # Here we define columns for the table machines.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    complete_name = Column(String(512), nullable=False)
+    name = Column(String(45), nullable=False)
+    glpi_id = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return "<entity('%s','%s', '%s')>" % (self.name, self.complete_name, self.glpi_id)
+
+    def get_data(self):
+        return{ 'id' : self.id,
+                'complete_name' : self.complete_name,
+                'name' : self.name,
+                'glpi_id' : self.glpi_id
+               }
+
+class Glpi_location(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'glpi_location'
+    # ====== Fields =============================
+    # Here we define columns for the table machines.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    complete_name = Column(String(512), nullable=False)
+    name = Column(String(45), nullable=False)
+    glpi_id = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return "<location('%s','%s', '%s')>" % (self.name, self.complete_name, self.glpi_id)
+
+    def get_data(self):
+        return{ 'id' : self.id,
+                'complete_name' : self.complete_name,
+                'name' : self.name,
+                'glpi_id' : self.glpi_id
+               }
+
+
 class Machines(Base, XmppMasterDBObj):
     # ====== Table name =========================
     __tablename__ = 'machines'
@@ -187,6 +230,46 @@ class Machines(Base, XmppMasterDBObj):
     kiosk_presence = Column(Enum('False', 'True'))
     lastuser = Column(String(45))
     keysyncthing = Column(String(70), default="")
+    glpi_description = Column(String(90), default="")
+    glpi_owner_firstname = Column(String(45), default="")
+    glpi_owner_realname = Column(String(45), default="")
+    glpi_owner = Column(String(45), default="")
+    model = Column(String(45), default="")
+    manufacturer = Column(String(45), default="")
+    # ====== ForeignKey =============================
+    # machines_id = Column(Integer, nullable=False)
+    glpi_entity_id = Column(Integer, ForeignKey('glpi_entity.id'))
+    glpi_entity = relationship(Glpi_entity)
+    glpi_location_id = Column(Integer, ForeignKey('glpi_location.id'))
+    glpi_location = relationship(Glpi_location)
+
+
+class Glpi_Register_Keys(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = 'glpi_register_keys'
+    # ====== Fields =============================
+    # Here we define columns for the table machines.
+    # Notice that each column is also a normal Python instance attribute.
+    # id = Column(Integer, primary_key=True)
+    name = Column(String(90), nullable=False)
+    value = Column(String(90), nullable=False)
+    comment =  Column(String(90))
+    # ====== ForeignKey =============================
+    machines_id = Column(Integer, ForeignKey('machines.id'))
+    machines = relationship(Machines)
+
+    def __repr__(self):
+        return "<register_keys('%s','%s', '%s', '%s')>" % (self.name, self.value, self.comment, self.machines_id)
+
+    def get_data(self):
+        return{ 'id' : self.id,
+                'name' : self.name,
+                'value' : self.value,
+                'comment' : self.comment,
+                'machines_id' : self.machines_id
+               }
+
+
 
 class Network(Base, XmppMasterDBObj):
     # ====== Table name =========================

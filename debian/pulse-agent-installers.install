@@ -32,8 +32,8 @@ var/lib/pulse2/clients/mac/postflight.in
 var/lib/pulse2/clients/mac/pulse-filetree-generator
 var/lib/pulse2/clients/mac/rbash
 var/lib/pulse2/clients/mac/runpulseagent
-var/lib/pulse2/clients/pulse-xmpp-agent-2.1.4.tar.gz
-var/lib/pulse2/clients/pulse-machine-plugins-2.1.4.tar.gz
+var/lib/pulse2/clients/pulse-xmpp-agent-2.1.5.tar.gz
+var/lib/pulse2/clients/pulse-machine-plugins-2.1.5.tar.gz
 var/lib/pulse2/clients/style.css
 var/lib/pulse2/clients/win/agent-installer.nsi.in
 var/lib/pulse2/clients/win/artwork

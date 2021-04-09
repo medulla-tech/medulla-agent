@@ -86,9 +86,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
         if not hasattr(self.config, 'geoservers'):
             self.geoservers = "ifconfig.co, if.siveo.net"
 
+        self.ippublic = None
         self.geodata = None
         if self.config.geolocalisation:
             self.geodata = geolocalisation_agent(typeuser = 'nomade',
@@ -541,7 +548,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
         else:
-            logging.warning('geolocalisation imposible')
+            logging.warning('geolocalisation disabled')
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
             try:
