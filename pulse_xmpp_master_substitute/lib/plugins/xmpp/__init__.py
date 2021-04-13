@@ -6534,7 +6534,7 @@ class XmppMasterDatabase(DatabaseHelper):
                               session,
                               enable=1):
         sql = ''' SELECT DISTINCT
-                    device_type
+                    LOWER(device_type)
                 FROM
                     xmppmaster.mon_device_service
                 WHERE
