@@ -136,9 +136,6 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/updatetightvnc.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
-	cp scripts_installer/generate-agent-deps-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
-	cp scripts_installer/generate-netcheck-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
-	cp scripts_installer/generate-service-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/HEADER.html $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/style.css $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
@@ -153,8 +150,6 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	cp scripts_installer/mac/generate-pulse-agent-mac.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
-	#cp scripts_installer/generate-kiosk-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win
-	#chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac/generate-kiosk-package
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	cp -r scripts_installer/lin/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/lin
 	mkdir -p $(CURDIR)/debian/tmp/var/lib/pulse2/clients/mac
@@ -170,10 +165,6 @@ override_dh_auto_install:
 	cp -fr scripts_installer/win/artwork/* $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/artwork
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/*.sh
 	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-agent-package
-	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-agent-deps-package
-	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-netcheck-package
-	chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/generate-service-package
-	#chmod +x $(CURDIR)/debian/tmp/var/lib/pulse2/clients/win/generate-kiosk-package
 	GIT_SSL_NO_VERIFY=true git clone https://USER:PASSWORD@github.com/pulse-project/pulse-filetree-generator.git
 	mv pulse-filetree-generator pulse-filetree-generator-${FILETREE_VERSION}
 	g++ -O3 -std=c++11 pulse-filetree-generator-${FILETREE_VERSION}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator

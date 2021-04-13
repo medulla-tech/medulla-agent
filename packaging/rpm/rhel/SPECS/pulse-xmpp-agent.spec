@@ -392,9 +392,6 @@ cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/
 cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-netcheck-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-service-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/HEADER.html %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/style.css %buildroot%_var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/clients/win
@@ -409,8 +406,6 @@ chmod +x %buildroot%_var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
 cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
-#cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients/win
-#chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-kiosk-package
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
@@ -426,10 +421,6 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
 cp -fr scripts_installer/win/artwork/* %buildroot%_var/lib/pulse2/clients/win/artwork
 chmod +x %buildroot%_var/lib/pulse2/clients/*.sh
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-deps-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-netcheck-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-service-package
-#chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-kiosk-package
 GIT_SSL_NO_VERIFY=true git clone https://USER:PASSWORD@github.com/pulse-project/pulse-filetree-generator.git
 mv pulse-filetree-generator pulse-filetree-generator-%{filetree_version}
 g++ -O3 -std=c++11 pulse-filetree-generator-%{filetree_version}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator

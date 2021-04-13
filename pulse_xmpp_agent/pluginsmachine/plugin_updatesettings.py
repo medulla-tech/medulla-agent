@@ -24,7 +24,7 @@ from lib.configuration import setconfigfile
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatesettings", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}
 
 # Examples
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
@@ -45,20 +45,24 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     msg = []
     # get the value of each parameter and update the config files
 
-    nb_iter = int(nb_params) + 1
-    for num in range(1, nb_iter):
-        param_num = 'param_' + str(num)
-        msglog = "Processing parameter %s" % eval(param_num)
+    try:
+        nb_iter = int(nb_params) + 1
+        for num in range(1, nb_iter):
+            param_num = 'param_' + str(num)
+            msglog = "Processing parameter %s" % eval(param_num)
+            msg.append(msglog)
+            datasetting = eval(param_num).split("@__@")
+            if len(datasetting) > 0 and (datasetting[0].lower() == "add" or datasetting[0].lower() =="del" ):
+                if not setconfigfile(datasetting):
+                    msglog = "Error setting parameter %s" % eval(param_num)
+                    logger.error(msglog)
+                    msg.append(msglog)
+                else:
+                    msglog = "Parameter %s successfully processed" % eval(param_num)
+                    msg.append(msglog)
+    except NameError:
+        msglog = "Parameters not defined at start of plugin. Nothing to do"
         msg.append(msglog)
-        datasetting = eval(param_num).split("@__@")
-        if len(datasetting) > 0 and (datasetting[0].lower() == "add" or datasetting[0].lower() =="del" ):
-            if not setconfigfile(datasetting):
-                msglog = "Error setting parameter %s" % eval(param_num)
-                logger.error(msglog)
-                msg.append(msglog)
-            else:
-                msglog = "Parameter %s successfully processed" % eval(param_num)
-                msg.append(msglog)
 
     # Write message to logger
     for line in msg:
