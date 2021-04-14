@@ -6435,53 +6435,60 @@ class XmppMasterDatabase(DatabaseHelper):
                           doc,
                           status_event=1,
                           hostname=None):
-
         if objectlist_local_rule:
             # apply binding to find out if an alert or event is defined
             for z in objectlist_local_rule:
-                result = self.__binding_application(doc,
-                                                    z['binding'],
-                                                    z['device_type'])
-                if isinstance(result, basestring):
-                    # exception case
-                    # create event if action associated to exception error
-                    if z['error_on_binding'] is None:
-                        return False
-                    bindingcmd = z['error_on_binding']
-                elif result:
+                msg, result = self.__binding_application_check(doc,
+                                                               z['binding'],
+                                                               z['device_type'])
+                if result == -1:
+                    if z['error_on_binding'] is None or \
+                        z['error_on_binding'].strip() == "":
+                        # aucun trairement sur error
+                        continue
+                elif result == 1:
                     # alert True
                     # create event if action associated to true
-                    if z['succes_binding_cmd'] is None:
-                        return False
+                    if z['succes_binding_cmd'] is None or \
+                        z['succes_binding_cmd'].strip() == "":
+                        # aucun trairement sur success binding
+                        continue
+                    # 1 event est a prendre en compte.
                     bindingcmd = z['succes_binding_cmd']
-                else:
-                    # create event if action associated to false
-                    if z['no_success_binding_cmd'] is None:
-                        return False
+                elif result == 0:
+                    # alert False
+                    # create event if action associated to False
+                    if z['no_success_binding_cmd'] is None or \
+                        z['no_success_binding_cmd'].strip() == "":
+                        continue
                     bindingcmd = z['no_success_binding_cmd']
-
-                #logging.getLogger().debug("id_machine %s"%id_machine)
-                #logging.getLogger().debug("id_device %s"%id_device)
-                #logging.getLogger().debug("z['id'] %s"%z['id'])
-                #logging.getLogger().debug("bindingcmd %s"%bindingcmd)
-                #logging.getLogger().debug("z['type_event'] %s"%z['type_event'])
-                #logging.getLogger().debug("status_event %s"%status_event)
-                if hostname is not None:
-                    self.remise_status_event(z['id'],
-                                             0,
-                                             hostname)
+                else:
+                    #cas pas encore prevu
+                    continue
+                #if hostname is not None:
+                    #self.remise_status_event(z['id'],
+                                             #0,
+                                             #hostname)
+                self.logger.debug("%s create event %s " %(z['device_type'],
+                                                          z['type_event']))
                 self.setMonitoring_event(id_machine,
                                          id_device,
                                          z['id'],
                                          bindingcmd,
                                          type_event=z['type_event'],
                                          status_event=1)
+
     @DatabaseHelper._sessionm
     def remise_status_event(self,
                             session,
                             id_rule,
                             status_event,
                             hostname):
+        """
+            this function update status event
+            1 event for process
+            0 event terminate.
+        """
         try:
             sql="""UPDATE `xmppmaster`.`mon_event`
                         JOIN
