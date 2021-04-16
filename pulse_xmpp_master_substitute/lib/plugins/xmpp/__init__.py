@@ -1524,7 +1524,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            glpi_owner="",
                            model="",
                            manufacturer="",
-                           glpi_entity_id=None,
+                           glpi_entity_id=1,
                            glpi_location_id=None):
 
         if uuid_inventorymachine is None:
