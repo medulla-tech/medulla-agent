@@ -69,6 +69,10 @@ import sys
 import re
 import uuid
 from lib.configuration import confParameter
+from lib.utils import getRandomName, file_get_content, file_put_content
+import pickle
+import stat
+import subprocess
 import functools
 
 try:
@@ -6344,6 +6348,8 @@ class XmppMasterDatabase(DatabaseHelper):
     def setMonitoring_device_reg(self,
                                  session,
                                  hostname,
+                                 xmppobject,
+                                 sessionid,
                                  mon_machine_id,
                                  device_type,
                                  serial,
@@ -6374,6 +6380,8 @@ class XmppMasterDatabase(DatabaseHelper):
             if objectlist_local_rule:
                 # A rule is defined for this device on this machine
                 self._action_new_event(objectlist_local_rule,
+                                           xmppobject,
+                                           sessionid,
                                        mon_machine_id,
                                        id_device_reg,
                                        doc,
@@ -6392,6 +6400,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                                               localrule=False)
                 if objectlist_local_rule:
                     self._action_new_event(objectlist_local_rule,
+                                           xmppobject,
+                                           sessionid,
                                            mon_machine_id,
                                            id_device_reg,
                                            doc,
@@ -6434,16 +6444,386 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
             return -1
 
+    @DatabaseHelper._sessionm
+    def get_info_event(self,
+                       session,
+                       id_device,
+                       outformat = None):
+        def is_number_string(s):
+            """ Returns True is string is a number. """
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+
+        def is_integer_string():
+            if is_number_string():
+                try:
+                    int(s)
+                    return True
+                except ValueError:
+                    return False
+            else:
+                return False
+
+        def is_float_string():
+            if is_number_string():
+                try:
+                    int(s)
+                    return False
+                except ValueError:
+                    return True
+            else:
+                return False
+
+        keys = ['mon_event_id',
+                'mon_event_status_event',
+                'mon_event_type_event',
+                'mon_event_cmd',
+                'mon_event_id_rule',
+                'mon_event_machines_id',
+                'mon_event_id_device',
+                'mon_event_parameter_other',
+                'mon_event_ack_user',
+                'mon_event_ack_date',
+                'mon_rules_id',
+                'mon_rules_hostname',
+                'mon_rules_device_type',
+                'mon_rules_binding',
+                'mon_rules_succes_binding_cmd',
+                'mon_rules_no_success_binding_cmd',
+                'mon_rules_error_on_binding',
+                'mon_rules_type_event',
+                'mon_rules_user',
+                'mon_rules_comment',
+                'mon_machine_id',
+                'mon_machine_machines_id',
+                'mon_machine_date',
+                'mon_machine_hostname',
+                'mon_machine_statusmsg',
+                'mon_devices_id',
+                'mon_devices_mon_machine_id',
+                'mon_devices_device_type',
+                'mon_devices_serial',
+                'mon_devices_firmware',
+                'mon_devices_status',
+                'mon_devices_alarm_msg',
+                'mon_devices_doc']
+
+        sql="""
+            SELECT
+            mon_event.id as mon_event_id,
+            mon_event.status_event as mon_event_status_event,
+            mon_event.type_event as mon_event_type_event,
+            mon_event.cmd as mon_event_cmd,
+            mon_event.id_rule as mon_event_id_rule ,
+            mon_event.machines_id as mon_event_machines_id,
+            mon_event.id_device as mon_event_id_device,
+            mon_event.parameter_other as mon_event_parameter_other,
+            mon_event.ack_user as mon_event_ack_user,
+            mon_event.ack_date as mon_event_ack_date,
+            mon_rules.id as mon_rules_id ,
+            mon_rules.hostname as mon_rules_hostname,
+            mon_rules.device_type as mon_rules_device_type,
+            mon_rules.binding as mon_rules_binding,
+            mon_rules.succes_binding_cmd as mon_rules_succes_binding_cmd,
+            mon_rules.no_success_binding_cmd as mon_rules_no_success_binding_cmd,
+            mon_rules.error_on_binding as mon_rules_error_on_binding,
+            mon_rules.type_event as mon_rules_type_event,
+            mon_rules.user as mon_rules_user,
+            mon_rules.comment as mon_rules_comment,
+            mon_machine.id as mon_machine_id,
+            mon_machine.machines_id as mon_machine_machines_id,
+            mon_machine.date as mon_machine_date,
+            mon_machine.hostname as mon_machine_hostname,
+            mon_machine.statusmsg as mon_devices_id,
+            mon_devices.id as mon_devices_id,
+            mon_devices.mon_machine_id as mon_devices_mon_machine_id ,
+            mon_devices.device_type as mon_devices_device_type,
+            mon_devices.serial as mon_devices_serial,
+            mon_devices.firmware as mon_devices_firmware,
+            mon_devices.status asmon_devices_status,
+            mon_devices.alarm_msg as mon_devices_alarm_msg,
+            mon_devices.doc as mon_devices_doc
+            FROM
+                xmppmaster.mon_event
+                    JOIN
+                xmppmaster.mon_rules ON xmppmaster.mon_rules.id = xmppmaster.mon_event.id_rule
+                    JOIN
+                xmppmaster.mon_machine ON xmppmaster.mon_machine.id = xmppmaster.mon_event.machines_id
+                    JOIN
+                xmppmaster.mon_devices ON xmppmaster.mon_devices.id = xmppmaster.mon_event.id_device
+            WHERE
+                xmppmaster.mon_event.id = %s;""" %(id_device)
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        #logging.getLogger().debug("JFKJFK %s"%sql)
+        python_dict = {}
+        tupleresult =  [i for i in result]
+        if tupleresult:
+            for count, value in enumerate(tupleresult[0]):
+                tp=type(value)
+                if tp == datetime  or tp == datetime.time:
+                    value = value.strftime('%Y-%m-%d %H:%M:%S')
+                python_dict[keys[count]] = value
+        if outformat is None:
+            return python_dict
+        #serialization for remplace in script
+        if outformat == "json_string":
+            return json.dumps(python_dict)
+        elif outformat == "pickle_string":
+            import pickle
+            return pickle.dumps(python_dict)
+        elif outformat == "cgi_string":
+            import urllib
+            return urllib.urlencode(python_dict)
+        elif outformat == "bash_string":
+            # creation string parameter for bash script.
+            return self._template_bash_string_event(python_dict)
+        elif outformat == "python_string":
+            # creation string parameter for bash script.
+            return self._template_python_string_event(python_dict)
+        elif outformat == "html_string":
+            #return string html format event
+            return self._template_html_event(python_dict)
+        else:
+            return ""
+
+    def replace_in_file_exist_template(self, srcfile, destfile, oldvalue, newvalue):
+        fin = open(srcfile, "rt")
+        data = fin.read()
+        data = data.replace(oldvalue, newvalue)
+        fin.close()
+        fin = open(srcfile, "wt")
+        fin.write(data)
+        fin.close()
+
+    def replace_in_file_template(self, srcfile, destfile, oldvalue, newvalue):
+        logging.getLogger().debug("JFKJFK replace_in_file_template")
+        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % srcfile)
+        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % destfile)
+        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % oldvalue)
+        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % newvalue)
+        fin  = open(srcfile, "rt")
+        fout = open(destfile, "wt")
+        #for each line in the input file
+        for line in fin:
+            #read replace the string and write to output file
+            fout.write(line.replace(oldvalue, newvalue))
+        #close input and output files
+        fin.close()
+        fout.close()
+
+    def _template_bash_string_event(self, python_dict):
+        bash_string=""
+        for t in python_dict:
+            bash_string = bash_string + "%s=%s\n"%(t,python_dict[t])
+        return bash_string
+
+    def _template_python_string_event(self, python_dict):
+        # creation string parameter for bash script.
+        python_string=""
+        for t in python_dict:
+            logging.getLogger().debug("JFKJFK %s : %s"%(type(python_dict[t]),python_dict[t]))
+            valor = python_dict[t]
+            if isinstance(valor, basestring):
+                logging.getLogger().debug("JFKJFK str rrrrrrrr")
+                if is_number_string(valor):
+                    python_string = python_string + "%s = %s \n"%(t, valor)
+                else:
+                    valor = python_dict[t].replace ('"','\\"')
+                    python_string = python_string + "%s = \"%s\" \n"%(t, valor)
+            else:
+                python_string = python_string + "%s = %s \n"%(t, valor)
+            python_string = python_string.replace('"None"', "None")
+            python_string = python_string.replace('"false"', "False")
+            python_string = python_string.replace('"true"', "True")
+            python_string = python_string.replace('"null"', "None")
+            python_string = python_string.replace('"NULL"', "None")
+        return python_string
+
+    def _template_html_event(self, dictresult):
+        templateevent ="""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title></title>
+<style type="text/css">
+table {
+border:3px solid #6495ed;
+border-collapse:collapse;
+width:90%;
+margin:auto;
+}
+thead, tfoot {
+background-color:#D0E3FA;
+background-image:url(sky.jpg);
+border:1px solid #6495ed;
+}
+tbody {
+background-color:#FFFFFF;
+border:1px solid #6495ed;
+}
+th {
+font-family:monospace;
+border:1px dotted #6495ed;
+padding:5px;
+background-color:#EFF6FF;
+width:25%;
+}
+td {
+font-family:sans-serif;
+font-size:80%;
+border:1px solid #6495ed;
+padding:5px;
+text-align:left;
+}
+caption {
+font-family:sans-serif;
+}
+
+</style>
+</head>
+<body>
+
+<h1>ALERT @mon_devices_device_type@ : e.
+</h1>
+<h2>MAchine @mon_machine_hostname@</h2>
+
+<!-- DEVICE INFORMATION -->
+<!-- mon_devices_mon_machine_id = @mon_devices_mon_machine_id@ -->
+<!-- mon_devices_doc = @mon_devices_doc@ -->
+<!-- mon_devices_status = @mon_devices_status@ -->
+<!-- mon_devices_device_type = @mon_devices_device_type@ -->
+<!-- mon_devices_firmware = @mon_devices_firmware@ -->
+<!-- mon_devices_alarm_msg = @mon_devices_alarm_msg@ -->
+<!-- mon_devices_serial = @mon_devices_serial@ -->
+<!-- mon_devices_id = @mon_devices_id@ -->
+<table>
+  <!-- <caption>Device information</caption> -->
+   <thead>
+        <tr>
+            <th colspan="5">DEVICE</th>
+        </tr>
+    </thead>
+  <tbody>
+    <tr>
+      <th scope="col">status</th>
+      <th scope="col">firmware</th>
+      <th scope="col">serial</th>
+      <th scope="col">alarm_msg</th>
+      <th scope="col">retour</th>
+    </tr>
+    <tr>
+      <td>@mon_devices_status@</td>
+      <td>@mon_devices_firmware@</td>
+      <td>@mon_devices_serial@</td>
+      <td>@mon_devices_alarm_msg@</td>
+      <td><code>@mon_devices_doc@</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- MACHINES INFORMATION -->
+<!-- mon_machine_hostname = @mon_machine_hostname@
+mon_machine_statusmsg =@mon_machine_statusmsg@
+mon_machine_date = @mon_machine_date@
+mon_machine_id = @mon_machine_id@
+mon_machine_machines_id = @mon_machine_machines_id@ -->
+
+<table>
+  <!-- <caption>Device information</caption> -->
+   <thead>
+        <tr>
+            <th colspan="2">MACHINE</th>
+        </tr>
+    </thead>
+  <tbody>
+    <tr>
+      <th scope="col">host</th>
+      <th scope="col">date</th>
+    </tr>
+    <tr>
+
+      <td>@mon_machine_hostname@</td>
+      <td>@mon_machine_date@</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- EVENT INFORMATION -->
+<!-- mon_event_type_event = @mon_event_type_event@
+mon_event_id = @mon_event_id@
+mon_event_cmd = @mon_event_cmd@
+mon_event_status_event = @mon_event_status_event@
+mon_event_machines_id = @mon_event_machines_id@
+mon_event_id_device = @mon_event_id_device@
+mon_event_id_rule = @mon_event_id_rule@
+mon_event_ack_date = @mon_event_ack_date@
+mon_event_parameter_other = @mon_event_parameter_other@
+mon_event_ack_user = @mon_event_ack_user@ -->
+
+<!-- RULES INFORMATION -->
+<!-- mon_rules_user = @mon_rules_user@
+mon_rules_error_on_binding = @mon_rules_error_on_binding@
+mon_rules_id = @mon_rules_id@
+mon_rules_hostname = @mon_rules_hostname@
+mon_rules_succes_binding_cmd = @mon_rules_succes_binding_cmd@
+mon_rules_comment = @mon_rules_comment@
+mon_rules_binding = @mon_rules_binding@
+mon_rules_type_event = @mon_rules_type_event@
+mon_rules_device_type = @mon_rules_device_type@
+mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
+
+<table>
+  <!-- <caption>Device information</caption> -->
+   <thead>
+        <tr>
+            <th colspan="4">RULES</th>
+        </tr>
+    </thead>
+  <tbody>
+    <tr>
+      <th scope="col">Type</th>
+      <th scope="col">comments</th>
+      <th scope="col">BINDING</th>
+    </tr>
+    <tr>
+      <td>@mon_rules_type_event@</td>
+      <td>@mon_rules_comment@</td>
+      <td><code>@mon_rules_binding@</code></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>"""
+        for t in dictresult:
+            search="@%s@"%t
+            templateevent = templateevent.replace(search, str(dictresult[t]))
+            self.logger.debug("JFKJFK search %s" % search)
+            self.logger.debug("JFKJFK replace %s" % str(dictresult[t]))
+        return templateevent
+
     def _action_new_event(self,
                           objectlist_local_rule,
+                                 xmppobject,
+                                 sessionid,
                           id_machine,
                           id_device,
                           doc,
                           status_event=1,
                           hostname=None):
+        self.logger.debug("JFKJFK _action_new_event")
         if objectlist_local_rule:
             # apply binding to find out if an alert or event is defined
             for z in objectlist_local_rule:
+                self.logger.debug("JFKJFK  z['type_event'] = %s " %( z['type_event']))
+                self.logger.debug("JFKJFK %s" % z)
+                #{'comment': None, 'succes_binding_cmd': '/tmp/script.test', 'no_success_binding_cmd': None, 'user': None, 'device_type': 'nfcReader', 'error_on_binding': None, 'hostname': 'deb10-90', 'binding': "resultbinding = True if int(data['counters']['reads']) >= 15 else False", 'id': 11L, 'type_event': 'script'}
+                bindingcmd=""
                 msg, result = self.__binding_application_check(doc,
                                                                z['binding'],
                                                                z['device_type'])
@@ -6477,12 +6857,92 @@ class XmppMasterDatabase(DatabaseHelper):
                                              #hostname)
                 self.logger.debug("%s create event %s " %(z['device_type'],
                                                           z['type_event']))
-                self.setMonitoring_event(id_machine,
+                idevent = self.setMonitoring_event(id_machine,
                                          id_device,
                                          z['id'],
                                          bindingcmd,
                                          type_event=z['type_event'],
                                          status_event=1)
+                script_monitoring = os.path.join("/","var","lib","pulse2","script_monitoring")
+                if not os.path.exists(script_monitoring): os.makedirs(script_monitoring)
+                tmpprocessmonitoring = os.path.join("/", "var", "lib", "pulse2", "tmpprocessmonitoring")
+                if not os.path.exists(tmpprocessmonitoring): os.makedirs(tmpprocessmonitoring)
+                namescript = "%s_%s_%s_%s"%(id_device,
+                                                z['type_event'],
+                                                getRandomName(5, pref=datetime.now().strftime("%a_%d%b%Y_%Hh%M")),
+                                                bindingcmd)
+                dest_script = os.path.join(tmpprocessmonitoring, namescript)
+                self.logger.debug("JFKJFK  dede z['type_event'] = %s " %( z['type_event']))
+                self.logger.debug("JFKJFK  bindingcmd z['type_event'] = %s " %(bindingcmd))
+
+                if bindingcmd != "":
+                    src_script = os.path.join(script_monitoring, bindingcmd)
+                    if z['type_event'] == "script_python" and \
+                        os.path.isfile(src_script) and \
+                                bindingcmd.endswith("py"):
+                        # on doit executer le script python
+                        # le sript python doit contenir la texte suivant pour template.
+                        # serialisationpickleevent = "@@@@@event@@@@@"
+
+                        # on copy le script dans tmpprocessmonitoring le script python pour cet event.
+                        serializeinformation = self.get_info_event(idevent, outformat = "pickle_string")
+                        self.logger.debug("JFKJFK serializeinformation = %s " %(serializeinformation))
+                        self.replace_in_file_template(src_script,
+                                                      dest_script,
+                                                     "@@@@@event@@@@@",
+                                                     serializeinformation)
+                        pid =subprocess.Popen(["python", dest_script]).pid
+
+                    elif z['type_event'] == "email" and \
+                        os.path.isfile(src_script) and \
+                                bindingcmd.endswith("py"):
+                        # on doit executer le script python
+                        # le sript python doit contenir la texte suivant pour template.
+                        # serialisationpickleevent = "@@@@@event@@@@@"
+
+                        # on copy le script dans tmpprocessmonitoring le script python pour cet event.
+                        serializeinformation = self.get_info_event(idevent, outformat = "html_string")
+                        self.logger.debug("JFKJFK serializeinformation = %s " %(serializeinformation))
+                        self.replace_in_file_template(src_script,
+                                                      dest_script,
+                                                     "@@@@@event@@@@@",
+                                                     serializeinformation)
+                        self.logger.error("JFKJFK  dede z['user'] = %s " %( z['user']))
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@to_addrs_string@@@@@",
+                                                             z['user'])
+
+                        ##pid =subprocess.Popen(["python", dest_script]).pid
+                        pid =subprocess.Popen(["python", dest_script]).pid
+                        # call script python directement
+
+                    elif z['type_event'] == "json_string" and \
+                        os.path.isfile(src_script):
+                        serializeinformation_json =""
+                        serializeinformation_json = self.get_info_event(idevent, outformat = "json_string")
+                        self.replace_in_file_template(src_script,
+                                                      dest_script,
+                                                     "@@@@@event@@@@@",
+                                                     serializeinformation_json)
+                        os.chmod(dest_script, stat.S_IEXEC)
+                        self.logger.error("JFKJFK  Programme = %s " %(dest_script))
+                        pid =subprocess.Popen( dest_script).pid
+                    elif z['type_event'] == "xmppmsg":
+                        # send message user a jid reception
+                        # comment le json du message a envoyer
+                        if  z['user'] != "" and "@" in z['user']:
+                            serializeinformation = self.get_info_event(idevent, outformat = "pickle_string")
+                            datal = pickle.loads(serializeinformation)
+                            datal['mon_rules_comment'] = ""
+                            serializeinformation_json=json.dumps(datal, indent=4)
+                            z['comment'] = z['comment'].replace("@@@@@event@@@@@", serializeinformation_json)
+                            z['comment'] = z['comment'].replace("@@@@@session_id@@@@@", str(sessionid))
+                            # z['comment'] json message
+                            xmppobject.send_message(mto=z['user'],
+                                                    mbody=z['comment'],
+                                                    mtype='chat')
+
 
     @DatabaseHelper._sessionm
     def remise_status_event(self,

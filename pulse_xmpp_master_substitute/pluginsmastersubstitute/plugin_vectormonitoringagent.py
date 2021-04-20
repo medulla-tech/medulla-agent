@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.3", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
 
 
 def process_system(functionname,
@@ -58,6 +58,8 @@ def process_system(functionname,
             alarm_msg = data['alarms']
         del data['alarms']
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
+                                                  xmppobject,
+                                                  sessionid,
                                                   id_mon_machine,
                                                   device_type,
                                                   serial,
@@ -91,6 +93,8 @@ def process_nfcreader(functionname,
             alarm_msg = data['message']
         del data['message']
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
+                                                  xmppobject,
+                                                  sessionid,
                                                   id_mon_machine,
                                                   device_type,
                                                   serial,
@@ -100,10 +104,12 @@ def process_nfcreader(functionname,
                                                   json.dumps(data['metriques']))
 
 def process_generic(functionname,
-                       data,
-                       id_machine,
-                       hostname,
-                       id_mon_machine):
+                    xmppobject,
+                    sessionid,
+                    data,
+                    id_machine,
+                    hostname,
+                    id_mon_machine):
     device_type = functionname[8:]
     logger.debug("Device %s" % device_type)
     serial, status, firmware, alarm_msg = ["", "ready", "", []]
@@ -138,6 +144,8 @@ def process_generic(functionname,
                                                             json.dumps(alarm_msg),
                                                             json.dumps(data['metriques'])))
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
+                                                  xmppobject,
+                                                  sessionid,
                                                   id_mon_machine,
                                                   device_type,
                                                   serial,
@@ -160,7 +168,7 @@ def callFunction(functionname, *args, **kwargs):
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("#################################################")
-    logger.debug(plugin)
+    logger.debug("call plugin %s from %s" % (plugin,message['from']))
     logger.debug(json.dumps(data, indent=4))
     logger.debug("#################################################")
 
@@ -194,6 +202,8 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                     if devicename.lower() in xmppobject.typelistMonitoring_device:
                         # globals()["process_%s"%element](data['opticalReader'])
                         callFunction(devicename,
+                                        xmppobject,
+                                        sessionid,
                                         element[devicename],
                                         machine['id'],
                                         machine['hostname'],
