@@ -1,5 +1,13 @@
+pulse-xmpp-agent 2.1.5
+======================
+* [FEATURE] Add the support of OCS
+* [BUGFIX] Add robustness for pulseuser profile checking
+
 pulse-xmpp-agent 2.1.4
 ======================
+* [FEATURE] Add of a parameter to force configuration in case of network change
+* [BUGFIX] Fix replicator.py for relay automatic updates
+* [BUGFIX] Fix a segfault in guacamoleconf
 
 pulse-xmpp-agent 2.1.3
 ======================
