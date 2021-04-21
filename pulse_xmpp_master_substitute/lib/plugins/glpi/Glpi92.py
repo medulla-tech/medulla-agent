@@ -3795,7 +3795,6 @@ class Glpi92(DatabaseHelper):
                             resultrecord[keynameresult] = ""
                         else:
                             typestr = str(type(getattr(ret, keynameresult)))
-
                             if "class" in typestr:
                                 try:
                                     if 'decimal.Decimal' in typestr:
@@ -3809,13 +3808,17 @@ class Glpi92(DatabaseHelper):
                                 if isinstance(getattr(ret, keynameresult), datetime.datetime):
                                     resultrecord[keynameresult] = getattr(ret, keynameresult).strftime("%m/%d/%Y %H:%M:%S")
                                 else:
-                                    resultrecord[keynameresult] = getattr(ret, keynameresult)
+                                    if isinstance(getattr(ret, keynameresult), basestring):
+                                        resultrecord[keynameresult] =  getattr(ret, keynameresult).decode('utf-8',  errors='ignore')
+                                    else:
+                                        resultrecord[keynameresult] = getattr(ret, keynameresult)
                     except AttributeError:
                         resultrecord[keynameresult] = ""
         except Exception as e:
             self.logger.error("We encountered the error %s" % str(e) )
             self.logger.error("\n with the backtrace \n%s" % (traceback.format_exc()))
         return resultrecord
+
 
     def _machineobject(self, ret):
         """ result view glpi_computers_pulse """
