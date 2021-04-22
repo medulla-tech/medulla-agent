@@ -38,7 +38,7 @@ import re
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION": "1.2", "NAME": "startupdate", "TYPE": "machine"}
+plugin = {"VERSION": "1.3", "NAME": "startupdate", "TYPE": "machine"}
 
 def read_conf_plugin_startupdate(objectxmpp):
     objectxmpp.liststartpluginstartupdate = []
@@ -63,6 +63,10 @@ def read_conf_plugin_startupdate(objectxmpp):
         if len(objectxmpp.liststartpluginstartupdate) == 1 and \
             objectxmpp.liststartpluginstartupdate[0] == "all":
             createlistpluginupdate(objectxmpp)
+        elif 'updatesettings' not in objectxmpp.liststartpluginstartupdate and \
+            os.path.isfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'plugin_updatesettings.py')):
+            # Run updatesettings if not explicitly defined in liststartplugin
+            objectxmpp.liststartpluginstartupdate.append("updatesettings")
     else:
         createlistpluginupdate(objectxmpp)
 

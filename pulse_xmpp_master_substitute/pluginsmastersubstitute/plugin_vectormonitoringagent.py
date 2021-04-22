@@ -124,6 +124,21 @@ def process_generic(functionname,
         elif isinstance(data['message'], list):
             alarm_msg = data['message']
         del data['message']
+    logger.debug("call setMonitoring_device_reg hostname %s\n"\
+                                        " id_mon_machine %s \n"\
+                                        " device_type, %s\n"\
+                                        " serial %s \n" \
+                                        " firmware %s\n" \
+                                        " status %s\n" \
+                                        " alarm_msg %s\n" \
+                                        " metriques %s"% (hostname,
+                                                            id_mon_machine,
+                                                            device_type,
+                                                            serial,
+                                                            firmware,
+                                                            status,
+                                                            json.dumps(alarm_msg),
+                                                            json.dumps(data['metriques'])))
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
                                                   id_mon_machine,
                                                   device_type,

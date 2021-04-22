@@ -156,6 +156,9 @@ class confParameter:
         if "msc" in self.plugins_list:
             self.readConfmsc(Config)
 
+        if "pkgs" in self.plugins_list:
+            self.readConfpkgs(Config)
+
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()
         if strlevel in ['CRITICAL', 'FATAL']:
@@ -219,6 +222,30 @@ class confParameter:
         self.msc_dbpasswd = "mmc"
         if confiobject.has_option("mscdatabase", "msc_dbpasswd"):
             self.msc_dbpasswd = confiobject.get('mscdatabase', 'msc_dbpasswd')
+
+    def readConfpkgs(self, confiobject):
+        self.pkgs_dbpooltimeout = 30
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbpooltimeout"):
+            self.pkgs_dbpooltimeout = confiobject.getint('pkgsdatabase', 'pkgs_dbpooltimeout')
+        self.pkgs_dbhost = "localhost"
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbhost"):
+            self.pkgs_dbhost = confiobject.get('pkgsdatabase', 'pkgs_dbhost')
+
+        self.pkgs_dbport = "3306"
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbport"):
+            self.pkgs_dbport = confiobject.get('pkgsdatabase', 'pkgs_dbport')
+
+        self.pkgs_dbname = "pkgs"
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbname"):
+            self.pkgs_dbname = confiobject.get('pkgsdatabase', 'pkgs_dbname')
+
+        self.pkgs_dbuser = "mmc"
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbuser"):
+            self.pkgs_dbuser = confiobject.get('pkgsdatabase', 'pkgs_dbuser')
+
+        self.pkgs_dbpasswd = "mmc"
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbpasswd"):
+            self.pkgs_dbpasswd = confiobject.get('pkgsdatabase', 'pkgs_dbpasswd')
 
     def readConfxmpp(self, confiobject):
         self.xmpp_dbhost = "localhost"

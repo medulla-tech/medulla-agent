@@ -2475,7 +2475,7 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         resultquery = simplecommand(encode_strconsole(regquery))
         if resultquery['code'] == 0:
             # There a .bak entry, we need to remove the it
-            regdel = 'REG DELETE "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s.bak /f"' % usersid
+            regdel = 'REG DELETE "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s.bak" /f' % usersid
             resultdel = simplecommand(encode_strconsole(regdel))
             if resultdel['code'] == 0:
                 logging.getLogger().info("We correctly removed the backup profile")

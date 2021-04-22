@@ -648,7 +648,6 @@ class Glpi84(DatabaseHelper):
                             resultrecord[keynameresult] = ""
                         else:
                             typestr = str(type(getattr(ret, keynameresult)))
-
                             if "class" in typestr:
                                 try:
                                     if 'decimal.Decimal' in typestr:
@@ -662,13 +661,17 @@ class Glpi84(DatabaseHelper):
                                 if isinstance(getattr(ret, keynameresult), datetime.datetime):
                                     resultrecord[keynameresult] = getattr(ret, keynameresult).strftime("%m/%d/%Y %H:%M:%S")
                                 else:
-                                    resultrecord[keynameresult] = getattr(ret, keynameresult)
+                                    if isinstance(getattr(ret, keynameresult), basestring):
+                                        resultrecord[keynameresult] =  getattr(ret, keynameresult).decode('utf-8',  errors='ignore')
+                                    else:
+                                        resultrecord[keynameresult] = getattr(ret, keynameresult)
                     except AttributeError:
                         resultrecord[keynameresult] = ""
         except Exception as e:
             self.logger.error("We encountered the error %s" % str(e) )
             self.logger.error("\n with the backtrace \n%s" % (traceback.format_exc()))
         return resultrecord
+
 
     @DatabaseHelper._sessionm
     def get_machines_list(self, session, start, end, ctx):
@@ -773,7 +776,7 @@ class Glpi84(DatabaseHelper):
                                     'operatingsystems_id',
                                     'operatingsystemversions_id',
                                     'operatingsystemservicepacks_id']
-                                  
+
             for addcolunm in listcolumaddforinfo                     :
                 query = query.add_column(getattr(Machine, addcolunm).label(addcolunm))
 

@@ -60,9 +60,8 @@ class managepackage:
         Returns:
             It returns the list of the packages.
         """
-        return [ os.path.join(managepackage.packagedir(),x) for x in os.listdir(managepackage.packagedir()) \
-            if os.path.isdir(os.path.join(managepackage.packagedir(),x)) \
-                and str(os.path.join(managepackage.packagedir(),x))[-9:] != ".stfolder" ]
+        listfolder = [ x for x in os.listdir(managepackage.packagedir()) if len(x) == 36] 
+        return [ os.path.join(managepackage.packagedir(),x) for x in listfolder]
 
     @staticmethod
     def loadjsonfile(filename):
@@ -96,7 +95,7 @@ class managepackage:
                     return outputJSONFile
             except Exception as e:
                 logger.error("Please verify the format of the descriptor for"
-                             "the package %s." %s)
+                             "the package %s." % packagename)
                 logger.error("we are encountering the error: %s" % str(e))
         return None
 
@@ -168,7 +167,6 @@ class managepackage:
             except Exception as e:
                 logger.error("The conf.json for the package %s is missing" % package)
                 logger.error("we are encountering the error: %s" % str(e))
-                return None
         logger.error("We did not find the package %s" % package)
         return None
 
