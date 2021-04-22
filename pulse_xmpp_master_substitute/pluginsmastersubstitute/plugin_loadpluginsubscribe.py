@@ -201,8 +201,9 @@ def changed_status(self, presence):
                         self.send_message(mto=ars['jid'],
                                           mbody=json.dumps(cluster),
                                           mtype='chat')
-        except Exception:
-            logger.error("%s" % (traceback.format_exc()))
+        except Exception as e:
+            logger.error("We encountered the error %s" % str(e))
+            logger.error("the backtrace is: \n %s" % (traceback.format_exc()))
     elif presence['type'] == "available":
         lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
         if lastevent:
