@@ -895,7 +895,7 @@ def test_consolidation_inventory(xmppobject, sessionid, data, showinfobool, msg,
                                                      showinfobool)
 
         if setupuuid:
-            logger.info("setupuuid %s" % setupuuid)
+            logger.debug("setupuuid %s" % setupuuid)
             # structure machine de glpi_computer table pour uuid setup .data['uuid_serial_machine']
             # on a 1 setup uuid on consolide xmpp et glpi sur uuid_serial_machine
             uuid = 'UUID' + str(setupuuid['data']['id'][0])
@@ -966,7 +966,7 @@ def test_consolidation_inventory(xmppobject, sessionid, data, showinfobool, msg,
                                                                                                     idmachine))
                 setupuuid = getMachineInformationByUuidMachine(uuid, showinfobool=True)
                 if setupuuid:
-                    logger.info("setupuuid %s" % setupuuid)
+                    logger.debug("setupuuid %s" % setupuuid)
                     # structure machine de glpi_computer table pour uuid setup .data['uuid_serial_machine']
                     # on a 1 setup uuid on consolide xmpp et glpi sur uuid_serial_machine
                     uuid = 'UUID' + str(setupuuid['data']['id'][0])
