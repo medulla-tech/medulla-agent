@@ -87,7 +87,7 @@ def read_conf_load_plugin_subscribe(objectxmpp):
 
 def changed_status(self, presence):
     frommsg = jid.JID(presence['from'])
-    logger.info("Message from %s" % frommsg)
+    logger.debug("Message from %s" % frommsg)
     spresence = str(presence['from'])
     try:
         if frommsg.bare == self.boundjid.bare:
@@ -219,7 +219,7 @@ def changed_status(self, presence):
                                                    status=1,
                                                    updowntime=0,
                                                    date=None)
-        logger.info("update MACH or ARS %s Online" % spresence)
+        logger.info("The machine or ARS %s is now Online" % spresence)
         result = XmppMasterDatabase().initialisePresenceMachine(spresence,
                                                                 presence=1)
         if result is None or len(result) == 0:
