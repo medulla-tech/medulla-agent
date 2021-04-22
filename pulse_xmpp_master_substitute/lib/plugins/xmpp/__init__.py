@@ -6349,6 +6349,7 @@ class XmppMasterDatabase(DatabaseHelper):
                                  session,
                                  hostname,
                                  xmppobject,
+                                 msg_from,
                                  sessionid,
                                  mon_machine_id,
                                  device_type,
@@ -6380,8 +6381,9 @@ class XmppMasterDatabase(DatabaseHelper):
             if objectlist_local_rule:
                 # A rule is defined for this device on this machine
                 self._action_new_event(objectlist_local_rule,
-                                           xmppobject,
-                                           sessionid,
+                                       xmppobject,
+                                       msg_from,
+                                       sessionid,
                                        mon_machine_id,
                                        id_device_reg,
                                        doc,
@@ -6401,12 +6403,13 @@ class XmppMasterDatabase(DatabaseHelper):
                 if objectlist_local_rule:
                     self._action_new_event(objectlist_local_rule,
                                            xmppobject,
+                                           msg_from,
                                            sessionid,
                                            mon_machine_id,
                                            id_device_reg,
                                            doc,
                                            status_event=1,
-                                            hostname=hostname)
+                                           hostname=hostname)
             logging.getLogger().debug("==================================")
             return id_device_reg
         except Exception as e:
@@ -6559,7 +6562,6 @@ class XmppMasterDatabase(DatabaseHelper):
         result = session.execute(sql)
         session.commit()
         session.flush()
-        #logging.getLogger().debug("JFKJFK %s"%sql)
         python_dict = {}
         tupleresult =  [i for i in result]
         if tupleresult:
@@ -6601,11 +6603,6 @@ class XmppMasterDatabase(DatabaseHelper):
         fin.close()
 
     def replace_in_file_template(self, srcfile, destfile, oldvalue, newvalue):
-        logging.getLogger().debug("JFKJFK replace_in_file_template")
-        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % srcfile)
-        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % destfile)
-        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % oldvalue)
-        logging.getLogger().debug("JFKJFK replace_in_file_template %s" % newvalue)
         fin  = open(srcfile, "rt")
         fout = open(destfile, "wt")
         #for each line in the input file
@@ -6626,10 +6623,8 @@ class XmppMasterDatabase(DatabaseHelper):
         # creation string parameter for bash script.
         python_string=""
         for t in python_dict:
-            logging.getLogger().debug("JFKJFK %s : %s"%(type(python_dict[t]),python_dict[t]))
             valor = python_dict[t]
             if isinstance(valor, basestring):
-                logging.getLogger().debug("JFKJFK str rrrrrrrr")
                 if is_number_string(valor):
                     python_string = python_string + "%s = %s \n"%(t, valor)
                 else:
@@ -6803,26 +6798,25 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         for t in dictresult:
             search="@%s@"%t
             templateevent = templateevent.replace(search, str(dictresult[t]))
-            self.logger.debug("JFKJFK search %s" % search)
-            self.logger.debug("JFKJFK replace %s" % str(dictresult[t]))
         return templateevent
 
     def _action_new_event(self,
                           objectlist_local_rule,
-                                 xmppobject,
-                                 sessionid,
+                          xmppobject,
+                          msg_from,
+                          sessionid,
                           id_machine,
                           id_device,
                           doc,
                           status_event=1,
                           hostname=None):
-        self.logger.debug("JFKJFK _action_new_event")
         if objectlist_local_rule:
             # apply binding to find out if an alert or event is defined
             for z in objectlist_local_rule:
-                self.logger.debug("JFKJFK  z['type_event'] = %s " %( z['type_event']))
-                self.logger.debug("JFKJFK %s" % z)
-                #{'comment': None, 'succes_binding_cmd': '/tmp/script.test', 'no_success_binding_cmd': None, 'user': None, 'device_type': 'nfcReader', 'error_on_binding': None, 'hostname': 'deb10-90', 'binding': "resultbinding = True if int(data['counters']['reads']) >= 15 else False", 'id': 11L, 'type_event': 'script'}
+
+                self.logger.debug("rule %s : event type : %s on device %s" %( z['id'],
+                                                                             str(z['type_event']),
+                                                                             str(z['device_type'])) )
                 bindingcmd=""
                 msg, result = self.__binding_application_check(doc,
                                                                z['binding'],
@@ -6831,6 +6825,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if z['error_on_binding'] is None or \
                         z['error_on_binding'].strip() == "":
                         # aucun trairement sur error
+                        self.logger.error("No treatment on error  %s " %(z))
                         continue
                 elif result == 1:
                     # alert True
@@ -6838,6 +6833,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if z['succes_binding_cmd'] is None or \
                         z['succes_binding_cmd'].strip() == "":
                         # aucun trairement sur success binding
+                        self.logger.warning("No treatment on expected success  %s " %(z))
                         continue
                     # 1 event est a prendre en compte.
                     bindingcmd = z['succes_binding_cmd']
@@ -6846,23 +6842,26 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     # create event if action associated to False
                     if z['no_success_binding_cmd'] is None or \
                         z['no_success_binding_cmd'].strip() == "":
+                        self.logger.warning("No treatment on"\
+                            " expected no success  %s " % (z))
                         continue
                     bindingcmd = z['no_success_binding_cmd']
                 else:
                     #cas pas encore prevu
+                    self.logger.warning("No treatment on"\
+                            "missing on def binding action%s " % (z))
                     continue
-                #if hostname is not None:
-                    #self.remise_status_event(z['id'],
-                                             #0,
-                                             #hostname)
-                self.logger.debug("%s create event %s " %(z['device_type'],
-                                                          z['type_event']))
+
                 idevent = self.setMonitoring_event(id_machine,
                                          id_device,
                                          z['id'],
                                          bindingcmd,
                                          type_event=z['type_event'],
                                          status_event=1)
+                self.logger.debug("%s create event %s [%s]" %(z['device_type'],
+                                                              z['type_event'],
+                                                              idevent))
+                #traitement event
                 script_monitoring = os.path.join("/","var","lib","pulse2","script_monitoring")
                 if not os.path.exists(script_monitoring): os.makedirs(script_monitoring)
                 tmpprocessmonitoring = os.path.join("/", "var", "lib", "pulse2", "tmpprocessmonitoring")
@@ -6872,26 +6871,44 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                                 getRandomName(5, pref=datetime.now().strftime("%a_%d%b%Y_%Hh%M")),
                                                 bindingcmd)
                 dest_script = os.path.join(tmpprocessmonitoring, namescript)
-                self.logger.debug("JFKJFK  dede z['type_event'] = %s " %( z['type_event']))
-                self.logger.debug("JFKJFK  bindingcmd z['type_event'] = %s " %(bindingcmd))
-
                 if bindingcmd != "":
                     src_script = os.path.join(script_monitoring, bindingcmd)
-                    if z['type_event'] == "script_python" and \
+                    if z['type_event'] == "ack":
+                        continue
+                    elif z['type_event'] == "log":
+                        self.logger.debug("from %s log  %s" %(str(msg_from),
+                                                              z))
+                    elif z['type_event'] == "script_python" and \
                         os.path.isfile(src_script) and \
                                 bindingcmd.endswith("py"):
                         # on doit executer le script python
-                        # le sript python doit contenir la texte suivant pour template.
+                        # le sript python doit contenir
+                        # import suivant
+                        # import pickle
+                        # et le texte suivant pour template.
                         # serialisationpickleevent = "@@@@@event@@@@@"
+                        # variable messagefrom = "@@@@@msgfrom@@@@@"
+                        # le script possede toutes les donne pour pouvoir effectier 1 traitement
 
                         # on copy le script dans tmpprocessmonitoring le script python pour cet event.
                         serializeinformation = self.get_info_event(idevent, outformat = "pickle_string")
-                        self.logger.debug("JFKJFK serializeinformation = %s " %(serializeinformation))
+
                         self.replace_in_file_template(src_script,
                                                       dest_script,
                                                      "@@@@@event@@@@@",
                                                      serializeinformation)
-                        pid =subprocess.Popen(["python", dest_script]).pid
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@msgfrom@@@@@",
+                                                             str(msg_from))
+                        self.replace_in_file_exist_template(dest_script,
+                                                            dest_script,
+                                                            "@@@@@binding@@@@@",
+                                                            str(bindingcmd))
+                        pid =subprocess.Popen(["python", dest_script], stdin=None, stdout=None, stderr=None).pid
+                        self.logger.debug("call script python pid %s : %s " %(pid,
+                                                                              dest_script))
+                        self.update_status_event(idevent)
 
                     elif z['type_event'] == "email" and \
                         os.path.isfile(src_script) and \
@@ -6902,20 +6919,27 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
                         # on copy le script dans tmpprocessmonitoring le script python pour cet event.
                         serializeinformation = self.get_info_event(idevent, outformat = "html_string")
-                        self.logger.debug("JFKJFK serializeinformation = %s " %(serializeinformation))
                         self.replace_in_file_template(src_script,
                                                       dest_script,
                                                      "@@@@@event@@@@@",
                                                      serializeinformation)
-                        self.logger.error("JFKJFK  dede z['user'] = %s " %( z['user']))
                         self.replace_in_file_exist_template(dest_script,
                                                              dest_script,
                                                              "@@@@@to_addrs_string@@@@@",
                                                              z['user'])
-
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@msgfrom@@@@@",
+                                                             str(msg_from))
+                        self.replace_in_file_exist_template(dest_script,
+                                                            dest_script,
+                                                            "@@@@@binding@@@@@",
+                                                            str(bindingcmd))
                         ##pid =subprocess.Popen(["python", dest_script]).pid
-                        pid =subprocess.Popen(["python", dest_script]).pid
-                        # call script python directement
+                        pid =subprocess.Popen(["python", dest_script], stdin=None, stdout=None, stderr=None).pid
+                        self.logger.debug("call script pid %s  : %s " %(pid,
+                                                                        dest_script))
+                        self.update_status_event(idevent)
 
                     elif z['type_event'] == "json_string" and \
                         os.path.isfile(src_script):
@@ -6925,24 +6949,75 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                                       dest_script,
                                                      "@@@@@event@@@@@",
                                                      serializeinformation_json)
+                        self.replace_in_file_exist_template(dest_script,
+                                                            dest_script,
+                                                            "@@@@@msgfrom@@@@@",
+                                                            str(msg_from))
+                        self.replace_in_file_exist_template(dest_script,
+                                                            dest_script,
+                                                            "@@@@@binding@@@@@",
+                                                            str(bindingcmd))
                         os.chmod(dest_script, stat.S_IEXEC)
-                        self.logger.error("JFKJFK  Programme = %s " %(dest_script))
-                        pid =subprocess.Popen( dest_script).pid
+                        pid =subprocess.Popen( dest_script, stdin=None, stdout=None, stderr=None).pid
+                        self.logger.debug("call script python pid %s : %s " %(pid,
+                                                                              dest_script))
+                        self.update_status_event(idevent)
                     elif z['type_event'] == "xmppmsg":
                         # send message user a jid reception
                         # comment le json du message a envoyer
+                        destinataire = ""
                         if  z['user'] != "" and "@" in z['user']:
+                            # message to user
+                            destinataire = z['user']
+                        elif  z['user'] == "this":
+                            destinataire = xmppobject.boundjid.bare
+                        else:
+                            destinataire = str(msg_from)
+                        if destinataire != "":
                             serializeinformation = self.get_info_event(idevent, outformat = "pickle_string")
                             datal = pickle.loads(serializeinformation)
                             datal['mon_rules_comment'] = ""
                             serializeinformation_json=json.dumps(datal, indent=4)
                             z['comment'] = z['comment'].replace("@@@@@event@@@@@", serializeinformation_json)
                             z['comment'] = z['comment'].replace("@@@@@session_id@@@@@", str(sessionid))
+                            z['comment'] = z['comment'].replace("@@@@@msgfrom@@@@@", str(msg_from))
+                            z['comment'] = z['comment'].replace("@@@@@binding@@@@@", bindingcmd)
                             # z['comment'] json message
-                            xmppobject.send_message(mto=z['user'],
+                            xmppobject.send_message(mto=str(msg_from),
                                                     mbody=z['comment'],
                                                     mtype='chat')
+                            self.logger.debug("msg to %s" %(str(msg_from)))
+                            self.update_status_event(idevent)
+                    elif z['type_event'] == "cmd terminal":
+                        cmd = bindingcmd
+                        if z['user'] is None or z['user'].strip() =="":
+                            z['user'] = "root"
+                        if  z['user'] != "root"  :
+                            cmd = bindingcmd.replace('"','\\"')
+                            cmd = """/bin/su - %s -c "%s" """ % (z['user'], cmd)
+                        self.logger.debug("command %s" %(cmd))
+                        with open(os.path.join(tmpprocessmonitoring,
+                                               "monitoring_cmd_terminal_stdout.txt"),"ab") as out:
+                            # if strerr in other file
+                        #,\
+                             #open(os.path.join(tmpprocessmonitoring,
+                                               #"monitoring_cmd_terminal_stderr.txt"),"ab") as err:
+                            out.write("\n--------------------------\n" \
+                                      "evenement %s \n" \
+                                      "command : %s\n" \
+                                      "out cmd : "%(idevent, cmd))
+                            #err.write("\n--------------------------\n" \
+                                      #"evenement %s \n" \
+                                      #"command : %s\n " \
+                                      #"error cmd : "%(idevent, cmd))
 
+                            pid = subprocess.Popen([cmd] , shell=True, stdin=None, stdout=out, stderr=out).pid
+                            self.logger.debug("call script  pid %s : %s " %(pid,
+                                                                            bindingcmd))
+                        self.update_status_event(idevent)
+                    else:
+                        #pas de stype trouver
+                        self.update_status_event(idevent, 2)
 
     @DatabaseHelper._sessionm
     def remise_status_event(self,

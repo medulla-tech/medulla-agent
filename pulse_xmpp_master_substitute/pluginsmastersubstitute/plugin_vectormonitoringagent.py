@@ -33,12 +33,14 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.3", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
 
-
 def process_system(functionname,
-                      data,
-                      id_machine,
-                      hostname,
-                      id_mon_machine):
+                   xmppobject,
+                   msg_from,
+                   sessionid,
+                   data,
+                   id_machine,
+                   hostname,
+                   id_mon_machine):
     device_type = functionname[8:]
     logger.debug("Device %s" % device_type)
     serial, status, firmware, alarm_msg = ["", "ready", "", []]
@@ -59,6 +61,7 @@ def process_system(functionname,
         del data['alarms']
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
                                                   xmppobject,
+                                                  msg_from,
                                                   sessionid,
                                                   id_mon_machine,
                                                   device_type,
@@ -69,13 +72,14 @@ def process_system(functionname,
                                                   json.dumps(data['metriques']))
 
 def process_nfcreader(functionname,
-                         data,
-                         id_machine,
-                         hostname,
-                         id_mon_machine):
+                      xmppobject,
+                      msg_from,
+                      sessionid,
+                      data,
+                      id_machine,
+                      hostname,
+                      id_mon_machine):
     device_type = functionname[8:]
-    logger.debug("===========================================================")
-    logger.debug("Device %s" % device_type)
     serial, status, firmware, alarm_msg = ["", "ready", "", []]
     if "serial" in data:
         serial = data['serial']
@@ -94,6 +98,7 @@ def process_nfcreader(functionname,
         del data['message']
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
                                                   xmppobject,
+                                                  msg_from,
                                                   sessionid,
                                                   id_mon_machine,
                                                   device_type,
@@ -105,6 +110,7 @@ def process_nfcreader(functionname,
 
 def process_generic(functionname,
                     xmppobject,
+                    msg_from,
                     sessionid,
                     data,
                     id_machine,
@@ -145,6 +151,7 @@ def process_generic(functionname,
                                                             json.dumps(data['metriques'])))
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
                                                   xmppobject,
+                                                  msg_from,
                                                   sessionid,
                                                   id_mon_machine,
                                                   device_type,
@@ -203,6 +210,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                         # globals()["process_%s"%element](data['opticalReader'])
                         callFunction(devicename,
                                         xmppobject,
+                                        str(message['from']),
                                         sessionid,
                                         element[devicename],
                                         machine['id'],
