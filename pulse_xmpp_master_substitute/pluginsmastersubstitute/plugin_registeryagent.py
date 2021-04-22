@@ -197,7 +197,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     '',
                                                     xmppobject.boundjid.bare)
                 if machine['enabled'] == 1:
-                    logger.info("Machine %s registered with %s" %
+                    logger.debug("Machine %s registered with the id: %s" %
                                                     (msg['from'], machine['id']))
                     XmppMasterDatabase().setlogxmpp("Machine %s registered with %s" % (msg['from'],
                                                                                        machine['id']),
