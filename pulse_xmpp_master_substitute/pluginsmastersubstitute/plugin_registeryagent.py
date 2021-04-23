@@ -338,7 +338,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                                                             showinfobool,
                                                                                             msg,
                                                                                             machine['id'])
-                            logger.info("result test_consolidation_inventory  %s %s" % (btestfindcomputer, idglpimachine))
+                            if showinfobool:
+                                if btestfindcomputer:
+                                    logger.info("The consolidation of the inventory for the machine with the glpi id %s passed" % idglpimachine)
+                                else:
+                                    logger.info("The consolidation of the inventory for the machine with the glpi id %s failed" % idglpimachine)
+
                             if not btestfindcomputer:
                                 # pas trouver inventaire dans glpi
                                 if showinfobool:
