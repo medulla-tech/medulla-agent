@@ -121,11 +121,11 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
     logger.info("CONFIGURATION AGENT MACHINE %s" % host)
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
         showinfomachine = True
-        logger.info("showinfomachine = %s in file assessor_agent.ini(.local)" % (host))
+        logger.info("showinfomachine is enabled for the machine %s" % (host))
     else:
         showinfomachine = False
-        logger.info("gives showinfomachine in assessor_agent.ini(.local)"
-                    " for display infos on %s" % (host))
+        logger.debug("showinfomachine option is not enabled for the machine %s " % host)
+        logger.debug("If you want to enable it, add the information in the assessor_agent.ini(.local) file")
 
     if data['adorgbymachine'] is not None and data['adorgbymachine'] != "":
         data['adorgbymachine'] = base64.b64decode(data['adorgbymachine'])
