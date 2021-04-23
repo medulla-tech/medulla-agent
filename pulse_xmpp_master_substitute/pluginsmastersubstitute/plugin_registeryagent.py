@@ -164,7 +164,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     macadresssort=sorted([ x['macnotshortened'] for x in  \
                                             data['information']['listipinfo']])
                     macadressstr=",".join(macadresssort)
-                    logger.info("macadressstr %s " %macadressstr)
+                    if showinfobool:
+                        logger.info("The mac addresses on the machine: %s " % macadressstr)
+
                     if result[0] is None or result[0] != macadressstr:
                         if result[0] is not None:
                             logger.warning("mac adress diff :\n\t %s : %s\n\t "\
