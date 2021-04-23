@@ -5713,7 +5713,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def SetPresenceMachine(self, session, jid, presence=0):
         """
-            chang presence in table machines
+            This function is used update the availability of a machine.
+            Args:
+                session: The SQLAlchemy session
+                jid: the jid of the machine
+                presence: The availability of the machine
+            Returns:
+                It returns True if the SQL request ended correctly. False otherwise
         """
         user = str(jid).split("@")[0]
         try:
@@ -5728,8 +5734,8 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
-            logging.getLogger().error("SetPresenceMachine : %s" % str(e))
+        except Exception as e:
+            logging.getLogger().error("The SetPresenceMachine function ended with the error: %s" % str(e))
             return False
 
     @DatabaseHelper._sessionm
