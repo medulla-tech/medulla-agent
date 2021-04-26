@@ -315,8 +315,6 @@ class manage_kiosk_message:
         self.logger.info('loop event wait start')
         while self.running:
             try:
-                # lit event
-                self.logger.info('avant get')
                 event = self.queue_in.get(5)
                 self.logger.info('Loop event wait start')
                 if event == self.key_quit:
