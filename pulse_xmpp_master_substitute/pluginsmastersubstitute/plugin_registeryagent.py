@@ -640,6 +640,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 return
                         else:
                             logger.warning("information about the operating system is missing for %s" % (msg['from'].bare))
+                        try:
+                            xmppobject.listmodulemmc
+                        except AttributeError:
+                            xmppobject.listmodulemmc=[]
                         if "kiosk" in xmppobject.listmodulemmc and kiosk_presence:
                             # send a data message to kiosk when an inventory is registered
                             handlerkioskpresence(xmppobject,
