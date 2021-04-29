@@ -985,6 +985,7 @@ def test_consolidation_inventory(xmppobject, sessionid, data, showinfobool, msg,
                     logger.info("** Calling updateMachineidinventory uuid %s for machine %s id %s" % (uuid,
                                                                                                     msg['from'],
                                                                                                     idmachine))
+                setupuuid=False
                 try:
                     setupuuid = getMachineInformationByUuidMachine(uuid, showinfobool=True)
                 except Exception:
