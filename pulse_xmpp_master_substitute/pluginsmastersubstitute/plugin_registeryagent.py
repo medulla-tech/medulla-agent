@@ -985,8 +985,12 @@ def test_consolidation_inventory(xmppobject, sessionid, data, showinfobool, msg,
                     logger.info("** Calling updateMachineidinventory uuid %s for machine %s id %s" % (uuid,
                                                                                                     msg['from'],
                                                                                                     idmachine))
-                setupuuid = getMachineInformationByUuidMachine(uuid, showinfobool=True)
-                if setupuuid:
+                try:
+                    setupuuid = getMachineInformationByUuidMachine(uuid, showinfobool=True)
+                except Exception:
+                    setupuuid = {}
+
+                if isinstance(setupuuid, dict) and 'count' in setupuuid and setupuuid['count'] != 0:
                     if showinfobool:
                         logger.info("setupuuid %s" % setupuuid)
                     # structure machine de glpi_computer table pour uuid setup .data['uuid_serial_machine']
