@@ -31,7 +31,7 @@ from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import date, datetime, timedelta
-
+import pprint
 # PULSE2 modules
 from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regles, Has_machinesusers,\
     Has_relayserverrules, Has_guacamole, Base, UserLog, Deploy, Has_login_command, Logs, ParametersDeploy, \
@@ -5781,7 +5781,13 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def updatedeployresultandstate(self, session, sessionid, state, result):
-        jsonresult = json.loads(result)
+        try:
+            jsonresult = json.loads(result)
+        except Exception as e:
+            self.logger.error(str(e))
+            self.logger.error("error convertion str in string json to dict")
+            self.logger.error("string %s" % result)
+            return -1
         jsonautre = copy.deepcopy(jsonresult)
         del jsonautre['descriptor']
         del jsonautre['packagefile']
@@ -5826,6 +5832,12 @@ class XmppMasterDatabase(DatabaseHelper):
             return 1
         except Exception, e:
             self.logger.error(str(e))
+            self.logger.error("function updatedeployresultandstate parameter debug error")
+            self.logger.error("params debug :\nsession id : "\
+                "%s\nstate : %s\nresult deployement: %s\n" %(sessionid,
+                                                            state,
+                                                            pprint.pformat(jsonresult,
+                                                                           indent=4) ))
             self.logger.error("\n%s" % (traceback.format_exc()))
             return -1
 
