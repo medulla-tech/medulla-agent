@@ -5208,6 +5208,51 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
+    def getMachinedeployexistonHostname(self, session, hostname):
+        machinesexits = []
+        try:
+            sql="""SELECT
+                    machines.id AS id,
+                    machines.uuid_inventorymachine AS uuid,
+                    machines.uuid_serial_machine AS serial,
+                    GROUP_CONCAT(network.mac) AS macs
+                FROM
+                    xmppmaster.machines
+                        JOIN
+                    xmppmaster.network ON machines.id = network.machines_id
+                WHERE
+                    machines.agenttype = 'machine'
+                        AND machines.hostname LIKE '%s'
+                GROUP BY machines.id;""" % hostname.strip()
+            machines = session.execute(sql)
+        except Exception as e:
+            logging.getLogger().error("function getMachinedeployexistonHostname %s" % str(e))
+            return machinesexits
+        for machine in machines:
+            mach = {'id'     :  machine.id,
+                    'uuid'   : machine.uuid,
+                    'macs'   : machine.macs,
+                    'serial' : machine.serial}
+            machinesexits.append(mach)
+        return machinesexits
+
+    @DatabaseHelper._sessionm
+    def getMachineHostname(self, session, hostname):
+        try:
+            machine = session.query(Machines.id,
+                                    Machines.uuid_inventorymachine).\
+                                        filter(Machines.hostname == hostname).first()
+            session.commit()
+            session.flush()
+            if machine:
+                return {"id": machine.id,
+                        "uuid_inventorymachine": machine.uuid_inventorymachine}
+        except Exception as e:
+            logging.getLogger().error("function getMachineHostname %s" % str(e))
+
+        return {}
+
+    @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineHostname(self, session, hostname,
                                                enable=1, agenttype="machine"):
         querymachine = session.query(Machines)
@@ -5789,8 +5834,14 @@ class XmppMasterDatabase(DatabaseHelper):
             self.logger.error("string %s" % result)
             return -1
         jsonautre = copy.deepcopy(jsonresult)
-        del jsonautre['descriptor']
-        del jsonautre['packagefile']
+        try:
+            del jsonautre['descriptor']
+        except KeyError:
+            pass
+        try:
+            del jsonautre['packagefile']
+        except KeyError:
+            pass
         #DEPLOYMENT START
         try:
             deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()

@@ -110,17 +110,44 @@ def scheduledeploy(self):
                 XmppMasterDatabase().refresh_syncthing_deploy_clean(deploydata['id'])
     except Exception:
         pass
-    listobjnoexist = []
     listobjsupp = []
     # Search deploy to running
     resultdeploymachine = MscDatabase().deployxmpp()
     for deployobject in resultdeploymachine:
         # creation deployment
         UUID = deployobject['UUID']
+        UUIDSTR = UUID.replace('UUID', "")
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
         if resultpresence[UUID][1] == 0:
-            sessiondeployementless = name_random(5, "missingagent")
-            listobjnoexist.append(deployobject)
+            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+            if re_search:
+                msg.append( "<span class='log_err'>Consolidation GLPI XMPP ERROR for machine %s. " \
+                            "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
+                                                                                UUIDSTR))
+                for mach in re_search:
+                    msg.append( "<span> Action : Please check"\
+                        " that mac address or serial is/are properly"\
+                            " imported in GLPI: serial (%s) or macs(%s)</span>"% (mach['serial'],
+                                                                                mach['macs']))
+                MSG_ERROR = "ABORT INCONSISTENT GLPI INFORMATION"
+                sessiondeployementless = name_random(5, "glpixmppconsolidationerror")
+            else:
+                MSG_ERROR = "ABORT MISSING AGENT"
+                sessiondeployementless = name_random(5, "missingagent")
+                msg.append( "<span class='log_err'>Agent missing on machine %s. " \
+                            "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
+                                                                                UUIDSTR))
+                msg.append( "Action : Check that the machine "\
+                            "agent is working, or install the agent on the"\
+                            " machine %s (%s) if it is missing." % (deployobject['name'],
+                                                                    UUIDSTR))
+
+                logging.warning("No machine found on hostname. You must verify consolidation GLPI with xmpp")
+                logging.warning("INFO\nGLPI : name %s uuid %s " % (deployobject['name'],
+                                                                deployobject['UUID']))
+                logging.warning("INFO\nXMPP : No machine found for %s" % (deployobject['name']))
+
+            #listobjnoexist.append(deployobject)
             # incription dans deploiement cette machine sans agent
             XmppMasterDatabase().adddeploy(deployobject['commandid'],
                                            deployobject['name'],

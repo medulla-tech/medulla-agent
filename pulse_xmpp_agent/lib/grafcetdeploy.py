@@ -476,12 +476,15 @@ class grafcet:
                 quiterror = self.datasend['data']['descriptor']['info']['quitonerror']
             try:
                 del self.datasend['data']['result']
-            except BaseException:
+            except KeyError:
                 pass
             try:
                 del self.datasend['data']['methodetransfert']
+            except KeyError:
+                pass
+            try:
                 del self.datasend['data']['path']
-            except BaseException:
+            except KeyError:
                 pass
             try:
                 del self.datasend['data']['restart']
@@ -491,25 +494,33 @@ class grafcet:
                 del self.datasend['data']['sessionreload']
             except KeyError:
                 pass
-            del self.datasend['data']['stepcurrent']
-            del self.datasend['data']['Devent']
-            del self.datasend['data']['Dtypequery']
+            try:
+                del self.datasend['data']['stepcurrent']
+            except KeyError:
+                pass
+            try:
+                del self.datasend['data']['Devent']
+            except KeyError:
+                pass
+            try:
+                del self.datasend['data']['Dtypequery']
+            except KeyError:
+                pass
             try:
                 self.datasend['data']['environ'] = str(os.environ)
-            except BaseException:
+            except KeyError:
                 pass
             self.datasend['ret'] = ret
             os.chdir(managepackage.packagedir())
             if clear:
                 if sys.platform.startswith('win'):
-                    print "supprime file"
-                    print "rmdir /s /q \"%s\"" % self.datasend['data']['pathpackageonmachine']
                     os.system("rmdir /s /q \"%s\"" %
                               self.datasend['data']['pathpackageonmachine'])
                 else:
                     os.system("rm -Rf %s" %
                               self.datasend['data']['pathpackageonmachine'])
             datas = self.datasend
+
             if msgstate != "":
                 self.datasend['data']['msgstate'] = msgstate
             self.datasend['data']['uname'] = [x for x in platform.uname()]
@@ -521,31 +532,60 @@ class grafcet:
             self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
                                          mbody=json.dumps(logstruct),
                                          mtype='chat')
-            try:
-                del datas['data']['descriptor']['sequence']
-            except BaseException:
-                pass
-            try:
-                del datas['data']['environ']
-                del datas['data']['packagefile']
-                del datas['data']['transfert']
-            except BaseException:
-                pass
-            self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
-                                         mbody=json.dumps(datas),
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            err = str( traceback.format_exc())
+            logger.error("\n%s" % (err))
+            logstruct = copy.deepcopy(self.datasend)
+            logstruct['data']['action'] = logstruct['action']
+            logstruct['action'] = "xmpplog"
+            logstruct['data']['ret'] = ret
+            logstruct['data']['sessionid'] = self.sessionid
+            logstruct['data']['tracebackmachine'] = err
+            logstruct['ret'] = 255
+            self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
+                                         mbody=json.dumps(logstruct),
                                          mtype='chat')
+
+        try:
+            del datas['data']['descriptor']['sequence']
+        except KeyError:
+            pass
+        try:
+            del datas['data']['environ']
+        except KeyError:
+            pass
+        try:
+            del datas['data']['packagefile']
+        except KeyError:
+            pass
+        try:
+            del datas['data']['transfert']
+        except KeyError:
+            pass
+        try:
+            self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
+                                            mbody=json.dumps(datas),
+                                            mtype='chat')
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            err = str( traceback.format_exc())
+            logger.error("\n%s" % (err))
+        try:
             datapackage = self.datasend
             mach = self.datasend['data']['jidmachine']
             datapackage['data'] = {}
             if(msgstate != ""):
                 datapackage['msgstate'] = {"msg": msgstate,
-                                           "quitonerror": quiterror}
+                                            "quitonerror": quiterror}
             datapackage['action'] = 'applicationdeploymentjson'
-            print "signal grafcet terminate%s" % datapackage
+
+            #print "signal grafcet terminate%s" % datapackage
+
             self.objectxmpp.send_message(mto=mach,
-                                         mbody=json.dumps(datapackage,
-                                                          encoding="utf-8"),
-                                         mtype='chat')
+                                        mbody=json.dumps(datapackage,
+                                                        encoding="utf-8"),
+                                        mtype='chat')
 
             if shutdownmachine or restarmachine:
                 self.objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
@@ -560,28 +600,25 @@ class grafcet:
                                         date=None,
                                         fromuser=login,
                                         touser="")
+        except Exception:
+            logging.getLogger().error(str(e))
+            err = str( traceback.format_exc())
+            logger.error("\n%s" % (err))
+        try:
             if shutdownmachine:
                 shutdown_command()
-
+        except Exception:
+            logging.getLogger().error(str(e))
+            err = str( traceback.format_exc())
+            logger.error("\n%s" % (err))
+        try:
             if restarmachine :
                 reboot_command()
-
-        except Exception as e:
+        except Exception:
             logging.getLogger().error(str(e))
-            logger.error("\n%s" % (traceback.format_exc()))
-            self.datasend['ret'] = 255
-            datas['ret'] = 255
-            logstruct = copy.deepcopy(self.datasend)
-            logstruct['data']['action'] = logstruct['action']
-            logstruct['action'] = "xmpplog"
-            logstruct['data']['ret'] = ret
-            logstruct['data']['sessionid'] = self.sessionid
-            self.objectxmpp.send_message(mto=self.objectxmpp.sub_logger,
-                                         mbody=json.dumps(logstruct),
-                                         mtype='chat')
-            self.objectxmpp.send_message(mto=self.datasend['data']['jidmaster'],
-                                         mbody=json.dumps(datas),
-                                         mtype='chat')
+            err = str( traceback.format_exc())
+            logger.error("\n%s" % (err))
+
 
     def steplog(self):
         """inscrit log"""
@@ -2036,8 +2073,6 @@ class grafcet:
             ) in self.datasend['data']['pathpackageonmachine']:
                 os.chdir(managepackage.packagedir())
                 if sys.platform.startswith('win'):
-                    print "supprime file %s "
-                    print "rmdir /s /q \"%s\"" % self.datasend['data']['pathpackageonmachine']
                     os.system("rmdir /s /q \"%s\"" %
                               self.datasend['data']['pathpackageonmachine'])
                 else:
