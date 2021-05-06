@@ -1,3 +1,20 @@
+pulse-xmpp-agent 2.1.6 (unreleased)
+======================
+* [FEATURE] Change some infos messages into debug
+* [FEATURE] Document more functions
+* [BUGFIX]  Fix backtrace during deployment
+* [BUGFIX]  Fix detection of online/offline machine in the Glpi view
+* [BUGFIX]  Fix escaping symbols to fix backtraces
+* [BUGFIX]  Fix support of older SQLAlchey
+* [BUGFIX]  Fix registry when there is no uuidsetup defined
+* [BUGFIX]  Grant Rights for Admin on the ARS Cluster.
+* [BUGFIX]  Only show setupuuid info message if showinfobool is enable
+* [BUGFIX]  Fix a backtrace when we have a machine with an inventory but no uuid_serial_machine.
+* [BUGFIX]  Fix glpi 9.2 support (add back missing functions)
+* [BUGFIX]  Fix support of accentuated letters glpi <-> pulse
+* [BUGFIX]  Fix glpi 9.5 support
+* [BUGFIX]  Initialise listmodulemmc before use
+
 pulse-xmpp-agent 2.1.5
 ======================
 * [FEATURE] Add the support of OCS
