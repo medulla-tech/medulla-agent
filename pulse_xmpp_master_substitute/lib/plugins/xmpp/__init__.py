@@ -4983,7 +4983,7 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error("Error debug for the getidlistPresenceMachine function!")
             logging.getLogger().error("The presence of the machine is:  %s" % presence)
             logging.getLogger().error("The sql error is: %s" % sql)
-            logging.getLogger().error("the Exception catched is %s" % str(e)
+            logging.getLogger().error("the Exception catched is %s" % str(e))
             return []
 
     @DatabaseHelper._sessionm
