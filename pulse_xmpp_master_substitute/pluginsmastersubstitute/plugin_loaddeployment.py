@@ -155,7 +155,7 @@ def scheduledeploy(self):
                                            deployobject['name'],
                                            UUID,
                                            deployobject['login'],
-                                           "ABORT MISSING AGENT",
+                                           MSG_ERROR,
                                            sessiondeployementless,
                                            user=deployobject['login'],
                                            login=deployobject['login'],
