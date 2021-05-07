@@ -167,13 +167,7 @@ def scheduledeploy(self):
                                            result="",
                                            syncthing=0)
 
-            msg.append("<span class='log_err'>Agent missing on machine %s. " \
-                       "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
-                                                                         UUID))
-            msg.append("Action : Check that the machine "\
-                "agent is working, or install the agent on the"\
-                    " machine %s (%s) if it is missing." % (deployobject['name'],
-                                                            UUID))
+
             for logmsg in msg:
                 self.xmpplog(logmsg,
                              type='deploy',
