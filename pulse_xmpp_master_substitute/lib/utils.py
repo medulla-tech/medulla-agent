@@ -1119,7 +1119,6 @@ def ipV4toDecimal(ipv4):
     return (int(d[0]) * 256 * 256 * 256) + (int(d[1])
                                             * 256 * 256) + (int(d[2]) * 256) + int(d[3])
 
-
 def decimaltoIpV4(ipdecimal):
     a = float(ipdecimal) / (256 * 256 * 256)
     b = (a - int(a)) * 256
@@ -1127,12 +1126,17 @@ def decimaltoIpV4(ipdecimal):
     d = (c - int(c)) * 256
     return "%s.%s.%s.%s" % (int(a), int(b), int(c), int(d))
 
-
 def subnetnetwork(adressmachine, mask):
     adressmachine = adressmachine.split(":")[0]
     reseaumachine = ipV4toDecimal(adressmachine) & ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
 
+def subnet_address(address,maskvalue):
+    addr = [int(x) for x in adress.split(".")]
+    mask = [int(x) for x in maskvalue.split(".")]
+    subnet = [addr[i] & mask[i] for i in range(4)]
+    broadcast =  [(addr[i] & mask[i]) | (255^mask[i]) for i in range(4)]
+    return ".".join([str(x) for x in subnet]), '.'.join([str(x) for x in broadcast])
 
 def find_ip():
     candidates =[]

@@ -4803,8 +4803,17 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getPresenceExistuuids(self, session, uuids):
+        """
+        This function is used to obtain the presence and the GLPI uuid
+        of machines based on the uuids.
+        Args:
+            session: SQLAlchemy session
+            uuids: uuid of the machine we are searching
+        Return: This fonction return a dictionnary:
+                {'UUID_GLPI': [presence of the machine, initialised glpi uuid]}
+        """
         if isinstance(uuids, basestring):
-            uuids=[uuids]
+            uuids = [uuids]
         result = { }
         for uuidmachine in uuids:
             result[uuidmachine] = [0,0]
@@ -4813,13 +4822,39 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         for linemachine in machinespresente:
-            out = 0;
+            out = 0
             if linemachine.enabled is True:
                 out = 1
-            print linemachine.uuid_inventorymachine
             result[linemachine.uuid_inventorymachine] = [out, 1]
 
         return result
+
+    @DatabaseHelper._sessionm
+    def update_uuid_inventory(self, session, sql_id, uuid):
+        """
+        This function is used to update the uuid_inventorymachine value
+        in the database for a specific machine.
+        Args:
+            session: The SQLAlchemy session
+            sql_id: the id of the machine in the SQL database
+            uuid: The uuid_inventorymachine of the machine
+        Return:
+           It returns None if it failed to update the machine uuid_inventorymachine.
+        """
+        try:
+            sql = """UPDATE `xmppmaster`.`machines`
+                    SET
+                        `uuid_inventorymachine` = '%s'
+                    WHERE
+                        `id`  = %s;""" % (uuid, sql_id)
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+            return result
+        except Exception as e:
+            logging.getLogger().error("Function update_uuid_inventory")
+            logging.getLogger().error("We got the error: %s" % str(e))
+            return None
 
     # Topology
     @DatabaseHelper._sessionm

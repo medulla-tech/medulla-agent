@@ -118,8 +118,28 @@ def scheduledeploy(self):
         UUID = deployobject['UUID']
         UUIDSTR = UUID.replace('UUID', "")
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
+        re_search = []
         if resultpresence[UUID][1] == 0:
+            ## il n'y a pas de uuid glpi
             re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+            if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
+                update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
+                if update_result is not None:
+                    if update_result.rowcount > 0:
+                        logger.info("update uuid inventory %s for machine %s" % (UUID, deployobject['name']))
+                resultpresence[UUID][1] = 1
+                resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
+                self.xmpplog("Attaching GLPI identifier [%s] in xmppmaster machine [%s]" % (UUID, deployobject['name']),
+                             type='deploy',
+                             sessionname="no_session",
+                             priority=-1,
+                             action="xmpplog",
+                             why=self.boundjid.bare,
+                             module="Deployment | Start | Creation| Notify",
+                             date=None,
+                             fromuser=deployobject['login'])
+
+        if resultpresence[UUID][1] == 0:
             if re_search:
                 msg.append( "<span class='log_err'>Consolidation GLPI XMPP ERROR for machine %s. " \
                             "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
@@ -1151,10 +1171,11 @@ def read_conf_loaddeployment(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
 
     if not os.path.isfile(pathfileconf):
-        deployment_end_timeout = 300
-        deployment_scan_interval = 30
-        wol_interval = 60
-        session_check_interval = 15
+        objectxmpp.deployment_end_timeout = 300
+        objectxmpp.deployment_scan_interval = 30
+        objectxmpp.wol_interval = 60
+        objectxmpp.session_check_interval = 15
+        objectxmpp.Recover_GLPI_Identifier_from_name = False
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1177,6 +1198,11 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.session_check_interval =  Config.getint('parameters', 'session_check_interval')
         else:
             objectxmpp.session_check_interval = 15
+
+        if Config.has_option("parameters", "Recover_GLPI_Identifier_from_name"):
+            objectxmpp.Recover_GLPI_Identifier_from_name =  Config.getboolean('parameters', 'Recover_GLPI_Identifier_from_name')
+        else:
+            objectxmpp.Recover_GLPI_Identifier_from_name = False
 
     # initialisation des object for deployement
 
