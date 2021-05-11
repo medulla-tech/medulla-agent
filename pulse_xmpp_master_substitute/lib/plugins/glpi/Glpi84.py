@@ -635,7 +635,7 @@ class Glpi84(DatabaseHelper):
                     ret[q[2]] = [q[1], q[2], q[3], listid]
         return ret
 
-    def _machineobjectdymresult(self, ret):
+    def _machineobjectdymresult(self, ret, encode= 'iso-8859-1'):
         """
             this function return dict result sqlalchimy
         """
@@ -661,10 +661,14 @@ class Glpi84(DatabaseHelper):
                                 if isinstance(getattr(ret, keynameresult), datetime.datetime):
                                     resultrecord[keynameresult] = getattr(ret, keynameresult).strftime("%m/%d/%Y %H:%M:%S")
                                 else:
-                                    if isinstance(getattr(ret, keynameresult), basestring):
-                                        resultrecord[keynameresult] =  getattr(ret, keynameresult).decode('utf-8',  errors='ignore')
+                                    strre = getattr(ret, keynameresult)
+                                    if isinstance(strre, basestring):
+                                        if encode != "utf8":
+                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode).encode('utf8')
+                                        else:
+                                            resultrecord[keynameresult] =  "%s"%strre.encode('utf8')
                                     else:
-                                        resultrecord[keynameresult] = getattr(ret, keynameresult)
+                                        resultrecord[keynameresult] = strre
                     except AttributeError:
                         resultrecord[keynameresult] = ""
         except Exception as e:

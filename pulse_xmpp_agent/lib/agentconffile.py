@@ -22,6 +22,10 @@
 
 import sys
 import os
+import shutil
+import logging
+logger = logging.getLogger()
+
 
 def directoryconffile():
     """
@@ -108,3 +112,49 @@ def conffilename(agenttype):
     else:
         return conffilenameparameter
 
+
+def conffilenametmp(agenttype):
+    """
+        This function define where the configuration file tmp is located.
+
+        Args:
+            agenttype: type of the agent, relay or machine or cluster for RelayServer
+
+        Returns:
+            Return the config file path
+
+    """
+    if agenttype in ["machine"]:
+        conffilenameparameter = "agentconftmp.ini"
+    elif agenttype in ["cluster"]:
+        conffilenameparameter = "clustertmp.ini"
+    else:
+        conffilenameparameter = "relayconftmp.ini"
+
+    if directoryconffile() is not None:
+        fileconf = os.path.join(directoryconffile(), conffilenameparameter)
+    else:
+        fileconf = conffilenameparameter
+
+    if conffilenameparameter == "clustertmp.ini":
+        return fileconf
+
+    return fileconf
+
+
+def rotation_file(namefile, suffixe=""):
+    """
+    This function exec rotation file.
+
+        Args:
+            namefile: name file rotation
+
+    """
+    if suffixe != "": suffixe = "_" + suffixe
+    for x in range(5,0,-1):
+        src = "%s%s_%s"%(namefile,suffixe, x)
+        dest = "%s%s_%s"%(namefile,suffixe, x+1)
+        if  os.path.isfile(src):
+            shutil.copyfile(src, dest)
+        if x == 1:
+            shutil.copyfile(namefile, dest)

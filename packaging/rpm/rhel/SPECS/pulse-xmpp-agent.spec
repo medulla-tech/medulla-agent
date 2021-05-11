@@ -47,6 +47,7 @@ Requires:       python-wakeonlan
 Requires:       python-crypto
 Requires:       python-cherrypy
 Requires:       net-tools
+Requires:       jq
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -164,6 +165,7 @@ fi
 Summary:        Pulse 2 common files
 Group:          System/Servers
 Requires:       python-enum34
+Requires:       jq
 BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
