@@ -32,7 +32,7 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.01", "NAME": "xmpplog", "TYPE": "substitute"}
+plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
@@ -40,14 +40,13 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
     if compteurcallplugin == 0:
-        #load regle of satus
-        xmppobject.reglestatus = []
+        xmppobject.status_rules = []
         loggerliststatus = XmppMasterDatabase().get_log_status()
         try:
             for t in XmppMasterDatabase().get_log_status():
                 t['compile_re'] = re.compile(t['regexplog'])
-                xmppobject.reglestatus.append(t)
-            logger.debug("regle status initialise%s"% xmppobject.reglestatus)
+                xmppobject.status_rules.append(t)
+            logger.debug("We initialized to the rule: %s"% xmppobject.status_rules)
         except:
             logger.error("\n%s" % (traceback.format_exc()))
         read_conf_log_agent(xmppobject)
@@ -58,9 +57,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if re_status['status'] != "":
                 XmppMasterDatabase().updatedeploytosessionid(re_status['status'],
                                                              dataobj['sessionid'])
-                logging.debug("applique status %s for sessionid %s" % (re_status['status'], dataobj['sessionid']))
+                logging.debug("We applied the status %s for the sessionid %s" % (re_status['status'], dataobj['sessionid']))
             else:
-                logging.debug("applique pas de status for sessionid %s" % (dataobj['sessionid']))
+                logging.debug("We have not applied any status for the sessionid %s" % (dataobj['sessionid']))
         if data["action"] == 'xmpplog':
             createlog(xmppobject, data)
         elif data["action"] == 'resultapplicationdeploymentjson':
@@ -172,15 +171,14 @@ def xmpplogdeploy(xmppobject, data):
         logger.error("\n%s" % (traceback.format_exc()))
 
 def read_conf_log_agent(xmppobject):
-    # logger.debug("Initialisation plugin :% s "%plugin["NAME"])
     namefichierconf = plugin['NAME'] + ".ini"
     pathfileconf = os.path.join(xmppobject.config.pathdirconffile, namefichierconf)
     if not os.path.isfile(pathfileconf):
         pass
 
 def searchstatus(xmppobject, chaine):
-    for t in xmppobject.reglestatus:
+    for t in xmppobject.status_rules:
         if  t['compile_re'].match(chaine):
-            logger.debug("la chaine \"%s\"  matche pour [%s] et renvoi le status suivant \"%s\"" % (chaine, t['regexplog'], t['status']))
+            logger.debug("The string \"%s\" match for [%s] and return the following status \"%s\"" % (chaine, t['regexplog'], t['status']))
             return { "status": t['status'], "logmessage": chaine}
     return { "status": "", "logmessage": chaine}
