@@ -63,8 +63,8 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
 def read_conf_load_plugin_subscribe(objectxmpp):
     """
-        lit la configuration du plugin
-        le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
+        It reads the configuration plugin
+        The folder where the configuration file must be is in the objectxmpp.config.pathdirconffile variable.
     """
     # namefichierconf = plugin['NAME'] + ".ini"
     # pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
