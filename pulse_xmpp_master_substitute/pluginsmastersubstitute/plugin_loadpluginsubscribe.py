@@ -66,23 +66,7 @@ def read_conf_load_plugin_subscribe(objectxmpp):
         It reads the configuration plugin
         The folder where the configuration file must be is in the objectxmpp.config.pathdirconffile variable.
     """
-    # namefichierconf = plugin['NAME'] + ".ini"
-    # pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
-    # if not os.path.isfile(pathfileconf):
-    # pass
-    # else:
-    # Config = ConfigParser.ConfigParser()
-    # Config.read(pathfileconf)
-    # if os.path.exists(pathfileconf + ".local"):
-    # Config.read(pathfileconf + ".local")
     objectxmpp.changed_status = types.MethodType(changed_status, objectxmpp)
-    # objectxmpp.presence_subscribe = types.MethodType(presence_subscribe, objectxmpp)
-    # objectxmpp.presence_subscribed = types.MethodType(presence_subscribed, objectxmpp)
-    # objectxmpp.changed_subscription = types.MethodType(changed_subscription, objectxmpp)
-    # objectxmpp.presence_unavailable = types.MethodType(presence_unavailable, objectxmpp)
-    # objectxmpp.presence_available = types.MethodType(presence_available, objectxmpp)
-    # objectxmpp.presence_unsubscribe = types.MethodType(presence_unsubscribe, objectxmpp)
-    # objectxmpp.presence_unsubscribed = types.MethodType(presence_unsubscribed, objectxmpp)
 
 
 def changed_status(self, presence):
