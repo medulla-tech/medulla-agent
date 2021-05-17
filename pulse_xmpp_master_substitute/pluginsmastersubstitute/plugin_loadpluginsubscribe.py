@@ -35,7 +35,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.1", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
+plugin = {"VERSION": "1.10", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -111,7 +111,7 @@ def changed_status(self, presence):
         if result and result['enabled'] == 0:
             return
         try:
-            logger.debug("update offline for %s" % (spresence))
+            logger.info("The machine or ARS %s is now Offline" % spresence)
             result = XmppMasterDatabase().initialisePresenceMachine(spresence)
             XmppMasterDatabase().setlogxmpp("%s offline" % spresence,
                                             "info",
