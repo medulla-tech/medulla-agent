@@ -181,7 +181,7 @@ def changed_status(self, presence):
                                }
 
                     for ars in listrelayserver:
-                        logger.debug("Remove Resource on ARS %s for MACH %s " % (ars, spresence))
+                        logger.debug("We remove the ressource on the ARS %s for the machine %s" % (ars, spresence))
                         self.send_message(mto=ars['jid'],
                                           mbody=json.dumps(cluster),
                                           mtype='chat')
