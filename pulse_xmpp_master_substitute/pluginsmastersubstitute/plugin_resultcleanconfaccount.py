@@ -27,7 +27,7 @@ from utils import simplecommandstr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "resultcleanconfaccount", "TYPE" : "substitute", "FEATURE": "assessor"}
+plugin = {"VERSION": "1.1", "NAME": "resultcleanconfaccount", "TYPE" : "substitute", "FEATURE": "assessor"}
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -35,12 +35,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logging.getLogger().debug(plugin)
     logging.getLogger().debug("=====================================================")
     try:
-        destinataire = str(msg['from'].user)
+        recipient = str(msg['from'].user)
         if data['useraccount'].startswith("conf"):
             logger.debug('Clear MUC conf account')
-            cmd = "ejabberdctl unregister %s pulse"%destinataire
-            a = simplecommandstr(cmd)
-            logger.debug(a['result'])
-            logger.info("The account %s has been removed :[%s]"%(destinataire, str(msg['from'].resource)))
+            cmd = "ejabberdctl unregister %s pulse" % recipient
+            unregister_command = simplecommandstr(cmd)
+            logger.debug(unregister_command['result'])
+            logger.info("The ejabberd account %s has been removed for the machine: %s" % (recipient, str(msg['from'].resource)))
     except Exception:
         pass

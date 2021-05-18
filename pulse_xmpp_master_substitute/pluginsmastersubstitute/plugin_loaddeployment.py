@@ -1000,13 +1000,14 @@ def totimestamp(self, dt, epoch=datetime.datetime(1970,1,1)):
     td = dt - epoch
     # return td.total_seconds()
     return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
+
 def syncthingdeploy(self):
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
-    if len(iddeploylist)!= 0:
+    if len(iddeploylist) != 0:
         for iddeploy in iddeploylist:
-            logging.debug("*** initialisation deploy syncthing group%s" % iddeploy)
-            # les tables sont creates
-            # maintenant on appelle le plugin master de syncthing
+            logging.debug("We correctly initialized the synching deploy for the group: %s" % iddeploy)
+            # The tables are created.
+            # We now call the syncthing master plugin
             data = {"subaction": "initialisation",
                     "iddeploy": iddeploy}
             logging.debug("*** Call plugin deploysyncthing")
@@ -1015,7 +1016,7 @@ def syncthingdeploy(self):
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
     else:
-        logging.debug("not initialisation")
+        logging.debug("We failed to initialise the syncthing deploy.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
