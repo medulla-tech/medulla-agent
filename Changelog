@@ -2,6 +2,7 @@ pulse-xmpp-agent 2.1.6 (unreleased)
 ======================
 * [FEATURE] Change some infos messages into debug
 * [FEATURE] Document more functions
+* [FEATURE] Convergences are now identified by their name + date
 * [BUGFIX]  Fix backtrace during deployment
 * [BUGFIX]  Fix detection of online/offline machine in the Glpi view
 * [BUGFIX]  Fix escaping symbols to fix backtraces
