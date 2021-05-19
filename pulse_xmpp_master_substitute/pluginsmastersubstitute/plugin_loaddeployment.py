@@ -924,7 +924,8 @@ def applicationdeploymentjson(self,
         state = "DEPLOYMENT START"
         data['wol'] = 0
         # data['advanced']['syncthing'] = 1
-        if data['advanced']['grp'] is not None and \
+        if data['advanced'] and \
+            data['advanced']['grp'] is not None and \
             'syncthing' in data['advanced'] and \
             data['advanced']['syncthing'] == 1 and \
                 nbdeploy > 2:
@@ -943,7 +944,7 @@ def applicationdeploymentjson(self,
             msg.append("Starting peer deployment on machine %s" % jidmachine)
         else:
             msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
-            if data['advanced']['syncthing'] == 1:
+            if data['advanced'] and data['advanced']['syncthing'] == 1:
                 msg.append("<span class='log_warn'>There are not enough machines " \
                            "to deploy in peer mode</span>")
 
@@ -986,7 +987,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if data['advanced']['syncthing'] == 0:
+    if  'syncthing' not in  data['advanced'] or if data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
