@@ -3150,13 +3150,20 @@ class XmppMasterDatabase(DatabaseHelper):
                         rebootrequired,
                         shutdownrequired,
                         bandwidth,
+                        syncthing,
                         params):
         try:
             new_logincommand = Has_login_command()
-            new_logincommand.login = login
+            try:
+                new_logincommand.login = login
+            except Exception:
+                new_logincommand.login = "unknown"
             new_logincommand.command = commandid
             new_logincommand.count_deploy_progress = 0
-            new_logincommand.bandwidth = int(bandwidth)
+            try:
+                new_logincommand.bandwidth = int(bandwidth)
+            except Exception:
+                new_logincommand.bandwidth = 0
             if grpid != "":
                 new_logincommand.grpid = grpid
             if instructions_datetime_for_exec != "":
@@ -3175,9 +3182,16 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_logincommand.shutdownrequired = False
             else:
                 new_logincommand.shutdownrequired = True
-            if (type(params) is list or type(params) is dict) and len(params) != 0:
-                new_logincommand.params_json = json.dumps(params)
-
+            if syncthing == 0:
+                new_logincommand.syncthing = False
+            else:
+                new_logincommand.syncthing = True
+            try:
+                if (type(params) is list or type(params) is dict) and len(params) != 0:
+                    new_logincommand.params_json = json.dumps(params)
+            except Exception as e:
+                logging.getLogger().error("We encountered an error. The error message is %s" % str(e))
+                logging.getLogger().error("Please, verify the parameters %s" % params)
             session.add(new_logincommand)
             session.commit()
             session.flush()
