@@ -847,6 +847,10 @@ def applicationdeploymentjson(self,
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
+    if not objdeployadvanced:
+        logger.error("The line has_login_command for the idcommand %s is missing" % idcommand)
+        logger.error("To solve this, please remove the group, and recreate it")
+
     if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
         userjid=jid.JID(jidrelay).user
         iprelay = XmppMasterDatabase().ipserverARS(userjid)[0]
@@ -924,7 +928,8 @@ def applicationdeploymentjson(self,
         state = "DEPLOYMENT START"
         data['wol'] = 0
         # data['advanced']['syncthing'] = 1
-        if data['advanced']['grp'] is not None and \
+        if data['advanced'] and \
+            data['advanced']['grp'] is not None and \
             'syncthing' in data['advanced'] and \
             data['advanced']['syncthing'] == 1 and \
                 nbdeploy > 2:
@@ -943,7 +948,7 @@ def applicationdeploymentjson(self,
             msg.append("Starting peer deployment on machine %s" % jidmachine)
         else:
             msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
-            if data['advanced']['syncthing'] == 1:
+            if data['advanced'] and data['advanced']['syncthing'] == 1:
                 msg.append("<span class='log_warn'>There are not enough machines " \
                            "to deploy in peer mode</span>")
 
@@ -986,7 +991,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if data['advanced']['syncthing'] == 0:
+    if  'syncthing' not in  data['advanced'] or if data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
@@ -1010,13 +1015,12 @@ def syncthingdeploy(self):
             # We now call the syncthing master plugin
             data = {"subaction": "initialisation",
                     "iddeploy": iddeploy}
-            logging.debug("*** Call plugin deploysyncthing")
             self.callpluginsubstitute("deploysyncthing",
                                       data,
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
     else:
-        logging.debug("We failed to initialise the syncthing deploy.")
+        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
