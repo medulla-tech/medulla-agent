@@ -1011,13 +1011,12 @@ def syncthingdeploy(self):
             # We now call the syncthing master plugin
             data = {"subaction": "initialisation",
                     "iddeploy": iddeploy}
-            logging.debug("*** Call plugin deploysyncthing")
             self.callpluginsubstitute("deploysyncthing",
                                       data,
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
     else:
-        logging.debug("We failed to initialise the syncthing deploy.")
+        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:

@@ -111,14 +111,23 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   data,
                                                   msg):
     """
-        applies the allocation rules algorithms to determine the chosen relayserver.
+    Allocate the Relay server of the machine and reconfigure the agent.
+
+    Args:
+        objectxmpp: Reference object to the xmpp server
+        action: Name of the plugin
+        sessionid: The SQL Alchemy session
+        data: The xmpp message.
+        msg: A dictionnary with informations like from and to where are going the messages.
     """
     codechaine="%s" % (msg['from'])
+
     try:
         host = codechaine.split('/')[1]
     except Exception:
         host = msg['from']
-    logger.info("CONFIGURATION AGENT MACHINE %s" % host)
+
+    logger.debug("We configure the machine agent for the machine: %s" % host)
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
         showinfomachine = True
         logger.info("showinfomachine is enabled for the machine %s" % (host))

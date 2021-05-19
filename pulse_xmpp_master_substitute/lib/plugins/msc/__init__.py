@@ -975,10 +975,11 @@ class MscDatabase(DatabaseHelper):
         updatemachine = []
         machine_list = []
         machine_do_deploy = {}
+        self.logger.debug("Looking to new machines to deploy")
         datenow = datetime.datetime.now()
         datestr = datenow.strftime('%Y-%m-%d %H:%M:%S')
         for msc_machine_to_deploy in selectedMachines:
-            self.logger.debug("machine %s [%s] presente for deploy package %s" % (msc_machine_to_deploy.target_target_name,
+            self.logger.debug("machine %s [%s] available for deploy package %s" % (msc_machine_to_deploy.target_target_name,
                                                                                   msc_machine_to_deploy.target_target_uuid,
                                                                                   msc_machine_to_deploy.commands_package_id))
             title = str(msc_machine_to_deploy.commands_title)
