@@ -991,7 +991,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if  'syncthing' not in  data['advanced'] or if data['advanced']['syncthing'] == 0:
+    if  'syncthing' not in  data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
