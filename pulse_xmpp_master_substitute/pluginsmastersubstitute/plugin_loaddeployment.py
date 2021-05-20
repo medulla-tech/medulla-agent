@@ -1019,8 +1019,6 @@ def syncthingdeploy(self):
                                       data,
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
-    else:
-        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
