@@ -110,17 +110,64 @@ def scheduledeploy(self):
                 XmppMasterDatabase().refresh_syncthing_deploy_clean(deploydata['id'])
     except Exception:
         pass
-    listobjnoexist = []
     listobjsupp = []
     # Search deploy to running
     resultdeploymachine = MscDatabase().deployxmpp()
     for deployobject in resultdeploymachine:
         # creation deployment
         UUID = deployobject['UUID']
+        UUIDSTR = UUID.replace('UUID', "")
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
+        re_search = []
         if resultpresence[UUID][1] == 0:
-            sessiondeployementless = name_random(5, "missingagent")
-            listobjnoexist.append(deployobject)
+            ## il n'y a pas de uuid glpi
+            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+            if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
+                update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
+                if update_result is not None:
+                    if update_result.rowcount > 0:
+                        logger.info("update uuid inventory %s for machine %s" % (UUID, deployobject['name']))
+                resultpresence[UUID][1] = 1
+                resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
+                self.xmpplog("Attaching GLPI identifier [%s] in xmppmaster machine [%s]" % (UUID, deployobject['name']),
+                             type='deploy',
+                             sessionname="no_session",
+                             priority=-1,
+                             action="xmpplog",
+                             why=self.boundjid.bare,
+                             module="Deployment | Start | Creation| Notify",
+                             date=None,
+                             fromuser=deployobject['login'])
+
+        if resultpresence[UUID][1] == 0:
+            if re_search:
+                msg.append( "<span class='log_err'>Consolidation GLPI XMPP ERROR for machine %s. " \
+                            "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
+                                                                                UUIDSTR))
+                for mach in re_search:
+                    msg.append( "<span> Action : Please check"\
+                        " that mac address or serial is/are properly"\
+                            " imported in GLPI: serial (%s) or macs(%s)</span>"% (mach['serial'],
+                                                                                mach['macs']))
+                MSG_ERROR = "ABORT INCONSISTENT GLPI INFORMATION"
+                sessiondeployementless = name_random(5, "glpixmppconsolidationerror")
+            else:
+                MSG_ERROR = "ABORT MISSING AGENT"
+                sessiondeployementless = name_random(5, "missingagent")
+                msg.append( "<span class='log_err'>Agent missing on machine %s. " \
+                            "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
+                                                                                UUIDSTR))
+                msg.append( "Action : Check that the machine "\
+                            "agent is working, or install the agent on the"\
+                            " machine %s (%s) if it is missing." % (deployobject['name'],
+                                                                    UUIDSTR))
+
+                logging.warning("No machine found on hostname. You must verify consolidation GLPI with xmpp")
+                logging.warning("INFO\nGLPI : name %s uuid %s " % (deployobject['name'],
+                                                                deployobject['UUID']))
+                logging.warning("INFO\nXMPP : No machine found for %s" % (deployobject['name']))
+
+            #listobjnoexist.append(deployobject)
             # incription dans deploiement cette machine sans agent
             XmppMasterDatabase().adddeploy(deployobject['commandid'],
                                            deployobject['name'],
@@ -128,7 +175,7 @@ def scheduledeploy(self):
                                            deployobject['name'],
                                            UUID,
                                            deployobject['login'],
-                                           "ABORT MISSING AGENT",
+                                           MSG_ERROR,
                                            sessiondeployementless,
                                            user=deployobject['login'],
                                            login=deployobject['login'],
@@ -140,13 +187,7 @@ def scheduledeploy(self):
                                            result="",
                                            syncthing=0)
 
-            msg.append("<span class='log_err'>Agent missing on machine %s. " \
-                       "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
-                                                                         UUID))
-            msg.append("Action : Check that the machine "\
-                "agent is working, or install the agent on the"\
-                    " machine %s (%s) if it is missing." % (deployobject['name'],
-                                                            UUID))
+
             for logmsg in msg:
                 self.xmpplog(logmsg,
                              type='deploy',
@@ -349,7 +390,7 @@ def scheduledeployrecoveryjob(self):
                 XmppMasterDatabase().update_state_deploy(int(machine['id']), "DEPLOYMENT START")
                 # relance deployement on machine online"
                 # il faut verifier qu'il y ai 1 groupe deja en syncthing.alors seulement on peut decoder de l'incorporer
-                if data['advanced']['grp'] is not None and \
+                if 'grp' in data['advanced'] and data['advanced']['grp'] is not None and \
                     'syncthing' in data['advanced'] and \
                         data['advanced']['syncthing'] == 1 and \
                             XmppMasterDatabase().nbsyncthingdeploy(machine['group_uuid'],
@@ -806,6 +847,10 @@ def applicationdeploymentjson(self,
         return False
     objdeployadvanced = XmppMasterDatabase().datacmddeploy(idcommand)
 
+    if not objdeployadvanced:
+        logger.error("The line has_login_command for the idcommand %s is missing" % idcommand)
+        logger.error("To solve this, please remove the group, and recreate it")
+
     if jidmachine is not None and jidmachine != "" and jidrelay is not None and jidrelay != "":
         userjid=jid.JID(jidrelay).user
         iprelay = XmppMasterDatabase().ipserverARS(userjid)[0]
@@ -883,7 +928,8 @@ def applicationdeploymentjson(self,
         state = "DEPLOYMENT START"
         data['wol'] = 0
         # data['advanced']['syncthing'] = 1
-        if data['advanced']['grp'] is not None and \
+        if data['advanced'] and \
+            data['advanced']['grp'] is not None and \
             'syncthing' in data['advanced'] and \
             data['advanced']['syncthing'] == 1 and \
                 nbdeploy > 2:
@@ -902,7 +948,7 @@ def applicationdeploymentjson(self,
             msg.append("Starting peer deployment on machine %s" % jidmachine)
         else:
             msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
-            if data['advanced']['syncthing'] == 1:
+            if data['advanced'] and data['advanced']['syncthing'] == 1:
                 msg.append("<span class='log_warn'>There are not enough machines " \
                            "to deploy in peer mode</span>")
 
@@ -945,7 +991,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if data['advanced']['syncthing'] == 0:
+    if  'syncthing' not in  data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
@@ -959,22 +1005,20 @@ def totimestamp(self, dt, epoch=datetime.datetime(1970,1,1)):
     td = dt - epoch
     # return td.total_seconds()
     return (td.microseconds + (td.seconds + td.days * 86400) * 10**6) / 10**6
+
 def syncthingdeploy(self):
     iddeploylist = XmppMasterDatabase().deploysyncthingxmpp()
-    if len(iddeploylist)!= 0:
+    if len(iddeploylist) != 0:
         for iddeploy in iddeploylist:
-            logging.debug("*** initialisation deploy syncthing group%s" % iddeploy)
-            # les tables sont creates
-            # maintenant on appelle le plugin master de syncthing
+            logging.debug("We correctly initialized the synching deploy for the group: %s" % iddeploy)
+            # The tables are created.
+            # We now call the syncthing master plugin
             data = {"subaction": "initialisation",
                     "iddeploy": iddeploy}
-            logging.debug("*** Call plugin deploysyncthing")
             self.callpluginsubstitute("deploysyncthing",
                                       data,
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
-    else:
-        logging.debug("not initialisation")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
@@ -1130,10 +1174,11 @@ def read_conf_loaddeployment(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
 
     if not os.path.isfile(pathfileconf):
-        deployment_end_timeout = 300
-        deployment_scan_interval = 30
-        wol_interval = 60
-        session_check_interval = 15
+        objectxmpp.deployment_end_timeout = 300
+        objectxmpp.deployment_scan_interval = 30
+        objectxmpp.wol_interval = 60
+        objectxmpp.session_check_interval = 15
+        objectxmpp.Recover_GLPI_Identifier_from_name = False
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1156,6 +1201,11 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.session_check_interval =  Config.getint('parameters', 'session_check_interval')
         else:
             objectxmpp.session_check_interval = 15
+
+        if Config.has_option("parameters", "Recover_GLPI_Identifier_from_name"):
+            objectxmpp.Recover_GLPI_Identifier_from_name =  Config.getboolean('parameters', 'Recover_GLPI_Identifier_from_name')
+        else:
+            objectxmpp.Recover_GLPI_Identifier_from_name = False
 
     # initialisation des object for deployement
 

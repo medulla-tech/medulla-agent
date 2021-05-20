@@ -31,7 +31,7 @@ from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import date, datetime, timedelta
-
+import pprint
 # PULSE2 modules
 from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regles, Has_machinesusers,\
     Has_relayserverrules, Has_guacamole, Base, UserLog, Deploy, Has_login_command, Logs, ParametersDeploy, \
@@ -210,11 +210,11 @@ class XmppMasterDatabase(DatabaseHelper):
                                name):
         """
             this functions addition ou update table in table log xmpp.
-        #"""
+        """
         try:
             q = session.query(Agentsubscription)
             q = q.filter(Agentsubscription.name==name)
-            record = q.one_or_none()
+            record = q.first()
             if record:
                 record.name = name
                 session.commit()
@@ -224,6 +224,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return self.setagentsubscription(name)
         except Exception, e:
             logging.getLogger().error(str(e))
+            return None
 
     @DatabaseHelper._sessionm
     def setSubscription(self,
@@ -256,7 +257,7 @@ class XmppMasterDatabase(DatabaseHelper):
         try:
             q = session.query(Subscription)
             q = q.filter(Subscription.macadress==macadress)
-            record = q.one_or_none()
+            record = q.first()
             if record:
                 record.macadress = macadress
                 record.idagentsubscription = idagentsubscription
@@ -267,6 +268,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 return self.setSubscription(macadress, idagentsubscription)
         except Exception, e:
             logging.getLogger().error(str(e))
+            return None
 
     @DatabaseHelper._sessionm
     def setuplistSubscription(self,
@@ -1168,7 +1170,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `glpi_location_id` = %s
                 WHERE
                     `id` = '%s';''' % ("UUID%s" % glpiinformation['data']['uuidglpicomputer'][0],
-                                    glpiinformation['data']['description'][0].replace("'", "\\'"),
+                                    glpiinformation['data']['description'][0].replace('"','\\"').replace("'","\\'"),
                                     glpiinformation['data']['owner_firstname'][0],
                                     glpiinformation['data']['owner_realname'][0],
                                     glpiinformation['data']['owner'][0],
@@ -1524,7 +1526,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            glpi_owner="",
                            model="",
                            manufacturer="",
-                           glpi_entity_id=None,
+                           glpi_entity_id=1,
                            glpi_location_id=None):
 
         if uuid_inventorymachine is None:
@@ -3148,13 +3150,20 @@ class XmppMasterDatabase(DatabaseHelper):
                         rebootrequired,
                         shutdownrequired,
                         bandwidth,
+                        syncthing,
                         params):
         try:
             new_logincommand = Has_login_command()
-            new_logincommand.login = login
+            try:
+                new_logincommand.login = login
+            except Exception:
+                new_logincommand.login = "unknown"
             new_logincommand.command = commandid
             new_logincommand.count_deploy_progress = 0
-            new_logincommand.bandwidth = int(bandwidth)
+            try:
+                new_logincommand.bandwidth = int(bandwidth)
+            except Exception:
+                new_logincommand.bandwidth = 0
             if grpid != "":
                 new_logincommand.grpid = grpid
             if instructions_datetime_for_exec != "":
@@ -3173,9 +3182,16 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_logincommand.shutdownrequired = False
             else:
                 new_logincommand.shutdownrequired = True
-            if (type(params) is list or type(params) is dict) and len(params) != 0:
-                new_logincommand.params_json = json.dumps(params)
-
+            if syncthing == 0:
+                new_logincommand.syncthing = False
+            else:
+                new_logincommand.syncthing = True
+            try:
+                if (type(params) is list or type(params) is dict) and len(params) != 0:
+                    new_logincommand.params_json = json.dumps(params)
+            except Exception as e:
+                logging.getLogger().error("We encountered an error. The error message is %s" % str(e))
+                logging.getLogger().error("Please, verify the parameters %s" % params)
             session.add(new_logincommand)
             session.commit()
             session.flush()
@@ -4801,8 +4817,17 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getPresenceExistuuids(self, session, uuids):
+        """
+        This function is used to obtain the presence and the GLPI uuid
+        of machines based on the uuids.
+        Args:
+            session: SQLAlchemy session
+            uuids: uuid of the machine we are searching
+        Return: This fonction return a dictionnary:
+                {'UUID_GLPI': [presence of the machine, initialised glpi uuid]}
+        """
         if isinstance(uuids, basestring):
-            uuids=[uuids]
+            uuids = [uuids]
         result = { }
         for uuidmachine in uuids:
             result[uuidmachine] = [0,0]
@@ -4811,13 +4836,39 @@ class XmppMasterDatabase(DatabaseHelper):
         session.commit()
         session.flush()
         for linemachine in machinespresente:
-            out = 0;
+            out = 0
             if linemachine.enabled is True:
                 out = 1
-            print linemachine.uuid_inventorymachine
             result[linemachine.uuid_inventorymachine] = [out, 1]
 
         return result
+
+    @DatabaseHelper._sessionm
+    def update_uuid_inventory(self, session, sql_id, uuid):
+        """
+        This function is used to update the uuid_inventorymachine value
+        in the database for a specific machine.
+        Args:
+            session: The SQLAlchemy session
+            sql_id: the id of the machine in the SQL database
+            uuid: The uuid_inventorymachine of the machine
+        Return:
+           It returns None if it failed to update the machine uuid_inventorymachine.
+        """
+        try:
+            sql = """UPDATE `xmppmaster`.`machines`
+                    SET
+                        `uuid_inventorymachine` = '%s'
+                    WHERE
+                        `id`  = %s;""" % (uuid, sql_id)
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+            return result
+        except Exception as e:
+            logging.getLogger().error("Function update_uuid_inventory")
+            logging.getLogger().error("We got the error: %s" % str(e))
+            return None
 
     # Topology
     @DatabaseHelper._sessionm
@@ -4944,6 +4995,45 @@ class XmppMasterDatabase(DatabaseHelper):
             return a
         except:
             return a
+
+    @DatabaseHelper._sessionm
+    def getidlistPresenceMachine(self, session, presence=None):
+        """
+        This function is used to retrieve the list of the machines based on the 'presence' argument.
+
+        Args:
+            session: The SQLAlchemy session
+            presence: if True, it returns the list of the machine with an agent up.
+                      if False, it returns the list of the machine with an agent down.
+                      if None, it returns the list with all the machines.
+        Returns:
+            It returns the list of the machine based on the 'presence' argument.
+        """
+        strpresence = ""
+        try:
+            if presence is not None:
+                if presence == True:
+                    strpresence = " and enabled = 1"
+                else:
+                    strpresence = " and enabled = 0"
+            sql = """SELECT
+                        SUBSTR(uuid_inventorymachine, 5)
+                    FROM
+                        xmppmaster.machines
+                    WHERE
+                        agenttype = 'machine'
+                    and
+                        uuid_inventorymachine IS NOT NULL %s;"""%strpresence
+            presencelist = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [ x[0] for x in  presencelist ]
+        except Exception as e:
+            logging.getLogger().error("Error debug for the getidlistPresenceMachine function!")
+            logging.getLogger().error("The presence of the machine is:  %s" % presence)
+            logging.getLogger().error("The sql error is: %s" % sql)
+            logging.getLogger().error("the Exception catched is %s" % str(e))
+            return []
 
     @DatabaseHelper._sessionm
     def getxmppmasterfilterforglpi(self, session, listqueryxmppmaster=None):
@@ -5165,6 +5255,51 @@ class XmppMasterDatabase(DatabaseHelper):
                       "enabled": 0
                       }
         return result
+
+    @DatabaseHelper._sessionm
+    def getMachinedeployexistonHostname(self, session, hostname):
+        machinesexits = []
+        try:
+            sql="""SELECT
+                    machines.id AS id,
+                    machines.uuid_inventorymachine AS uuid,
+                    machines.uuid_serial_machine AS serial,
+                    GROUP_CONCAT(network.mac) AS macs
+                FROM
+                    xmppmaster.machines
+                        JOIN
+                    xmppmaster.network ON machines.id = network.machines_id
+                WHERE
+                    machines.agenttype = 'machine'
+                        AND machines.hostname LIKE '%s'
+                GROUP BY machines.id;""" % hostname.strip()
+            machines = session.execute(sql)
+        except Exception as e:
+            logging.getLogger().error("function getMachinedeployexistonHostname %s" % str(e))
+            return machinesexits
+        for machine in machines:
+            mach = {'id'     :  machine.id,
+                    'uuid'   : machine.uuid,
+                    'macs'   : machine.macs,
+                    'serial' : machine.serial}
+            machinesexits.append(mach)
+        return machinesexits
+
+    @DatabaseHelper._sessionm
+    def getMachineHostname(self, session, hostname):
+        try:
+            machine = session.query(Machines.id,
+                                    Machines.uuid_inventorymachine).\
+                                        filter(Machines.hostname == hostname).first()
+            session.commit()
+            session.flush()
+            if machine:
+                return {"id": machine.id,
+                        "uuid_inventorymachine": machine.uuid_inventorymachine}
+        except Exception as e:
+            logging.getLogger().error("function getMachineHostname %s" % str(e))
+
+        return {}
 
     @DatabaseHelper._sessionm
     def getGuacamoleRelayServerMachineHostname(self, session, hostname,
@@ -5713,7 +5848,13 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def SetPresenceMachine(self, session, jid, presence=0):
         """
-            chang presence in table machines
+            This function is used update the availability of a machine.
+            Args:
+                session: The SQLAlchemy session
+                jid: the jid of the machine
+                presence: The availability of the machine
+            Returns:
+                It returns True if the SQL request ended correctly. False otherwise
         """
         user = str(jid).split("@")[0]
         try:
@@ -5728,16 +5869,28 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return True
-        except Exception, e:
-            logging.getLogger().error("SetPresenceMachine : %s" % str(e))
+        except Exception as e:
+            logging.getLogger().error("The SetPresenceMachine function ended with the error: %s" % str(e))
             return False
 
     @DatabaseHelper._sessionm
     def updatedeployresultandstate(self, session, sessionid, state, result):
-        jsonresult = json.loads(result)
+        try:
+            jsonresult = json.loads(result)
+        except Exception as e:
+            self.logger.error(str(e))
+            self.logger.error("error convertion str in string json to dict")
+            self.logger.error("string %s" % result)
+            return -1
         jsonautre = copy.deepcopy(jsonresult)
-        del jsonautre['descriptor']
-        del jsonautre['packagefile']
+        try:
+            del jsonautre['descriptor']
+        except KeyError:
+            pass
+        try:
+            del jsonautre['packagefile']
+        except KeyError:
+            pass
         #DEPLOYMENT START
         try:
             deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()
@@ -5779,6 +5932,12 @@ class XmppMasterDatabase(DatabaseHelper):
             return 1
         except Exception, e:
             self.logger.error(str(e))
+            self.logger.error("function updatedeployresultandstate parameter debug error")
+            self.logger.error("params debug :\nsession id : "\
+                "%s\nstate : %s\nresult deployement: %s\n" %(sessionid,
+                                                            state,
+                                                            pprint.pformat(jsonresult,
+                                                                           indent=4) ))
             self.logger.error("\n%s" % (traceback.format_exc()))
             return -1
 
