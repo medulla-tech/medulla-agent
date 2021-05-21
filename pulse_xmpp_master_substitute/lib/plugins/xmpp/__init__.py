@@ -1675,7 +1675,8 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.execute(sql)
                     session.commit()
                     session.flush()
-                self.checknewjid(jid)
+                else:
+                    self.checknewjid(jid)
             except Exception, e:
                 logging.getLogger().error(str(e))
                 msg=str(e)
