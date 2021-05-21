@@ -15,6 +15,7 @@ pulse-xmpp-agent 2.1.6 (unreleased)
 * [BUGFIX]  Fix support of accentuated letters glpi <-> pulse
 * [BUGFIX]  Fix glpi 9.5 support
 * [BUGFIX]  Initialise listmodulemmc before use
+* [BUGFIX]  Fix registering ARS
 
 pulse-xmpp-agent 2.1.5
 ======================
