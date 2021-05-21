@@ -5106,6 +5106,72 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
+    def update_Presence_Relay(self, session, jid, presence=0):
+        """
+            Update the presence in the relay and machine SQL Tables
+            Args:
+                session: The SQL Alchemy session
+                jid: jid of the relay to update
+                presence: Availability of the relay
+                          0: Set the relay as offline
+                          1: Set the relay as online
+        """
+        try:
+            user = str(jid).split("@")[0]
+
+            sql = """UPDATE
+                        `xmppmaster`.`machines`
+                    SET
+                        `enabled` = '%s'
+                    WHERE
+                        `xmppmaster`.`machines`.`jid` like('%s@%%');""" % (presence,
+                                                                           user)
+            session.execute(sql)
+            sql = """UPDATE
+                        `xmppmaster`.`relayserver`
+                    SET
+                        `enabled` = '%s'
+                    WHERE
+                        `xmppmaster`.`relayserver`.`jid` like('%s@%%');""" % (presence,
+                                                                              user)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error("Function : update_Presence_Relay, we got the error: " % str(e))
+            logging.getLogger().error("We encountered the backtrace: \n%s" % traceback.format_exc())
+
+    @DatabaseHelper._sessionm
+    def is_machine_reconf_needed(self, session, jid, reconf=1):
+        """
+            Tell if we need to start a reconfiguration of the machines assigned to a relay.
+            Args:
+                session: The SQL Alchemy session
+                jid: jid of the relay to update
+                reconf: Tell if we need to reconfigure the machines.
+                        0: No reconf needed
+                        1: A reconfigurtion is needed
+        """
+        try:
+            user = str(jid).split("@")[0]
+            set_reconf = """UPDATE
+                        `xmppmaster`.`machines`
+                     SET
+                        `need_reconf` = '%s'
+                     WHERE
+                        `xmppmaster`.`machines`.`agenttype` like ("machine")
+                        AND
+                        `xmppmaster`.`machines`.`groupdeploy` like('%s@%%');""" % (reconf,
+                                                                                   user)
+            session.execute(set_reconf)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error("Function : is_machine_reconf_needed, we got the error: " % str(e))
+            logging.getLogger().error("We encountered the backtrace: \n%s" % traceback.format_exc())
+
+
+    @DatabaseHelper._sessionm
     def delPresenceMachine(self, session, jid):
         result = ['-1']
         typemachine = "machine"
