@@ -1,4 +1,4 @@
-pulse-xmpp-agent 2.1.6 (unreleased)
+pulse-xmpp-agent 2.1.6
 ======================
 * [FEATURE] Change some infos messages into debug
 * [FEATURE] Document more functions
@@ -16,6 +16,7 @@ pulse-xmpp-agent 2.1.6 (unreleased)
 * [BUGFIX]  Fix glpi 9.5 support
 * [BUGFIX]  Initialise listmodulemmc before use
 * [BUGFIX]  Fix registering ARS
+* [BUGFIX]  Uninstall python and reinstall it if we failed the python pip step
 
 pulse-xmpp-agent 2.1.5
 ======================

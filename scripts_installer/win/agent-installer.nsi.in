@@ -192,6 +192,7 @@ Section "Python" sec_py
   Var /GLOBAL PYTHON_FILENAME
   StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
   ; Install Python
+  InstallPython:
   StrCpy $0 `msiexec /i "$INSTDIR\tmp\$PYTHON_FILENAME" /quiet /qn /norestart ALLUSERS=1 ADDLOCAL=ALL REMOVE="pip_feature"`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
@@ -222,12 +223,25 @@ Section "Python" sec_py
   Pop $1 # return value/error/timeout
   ${LogString} "Return code was: $1"
   ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "pip installation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 105
-    Quit
+
+    ; Seems Python is installed.
+    ${LogString} "Uninstalling 64bit python if found..."
+    StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813233} /qn /norestart`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+
+    ; Clear Python is missed configured
+    ${LogString} "Clearing python if found..."
+    StrCpy $0 `taskkill /F /IM python*`
+    nsExec::ExecToLog $0
+    StrCpy $0 `taskkill /F /IM syncthing*`
+    nsExec::ExecToLog $0
+    StrCpy $0 `attrib -r -s -h -a "C:\Python27"`
+    nsExec::ExecToLog $0
+    StrCpy $0 `rd /s /q "C:\Python27"`
+    nsExec::ExecToLog $0
+    ${LogString} `Return code 0: $0`
+    Goto InstallPython
   ${EndIf}
 
   ; Install of Visual C++ Compiler for Python
