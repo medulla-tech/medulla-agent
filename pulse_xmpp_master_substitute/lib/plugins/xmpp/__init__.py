@@ -151,7 +151,7 @@ class XmppMasterDatabase(DatabaseHelper):
         if self.is_activated:
             return None
         self.logger = logging.getLogger()
-        self.logger.debug("xmpp activation")
+        self.logger.debug("Xmpp activation")
         self.engine = None
         #self.dbpoolrecycle = 60
         #self.dbpoolsize = 5
@@ -159,20 +159,23 @@ class XmppMasterDatabase(DatabaseHelper):
         self.sessionglpi = None
         self.config = confParameter()
         # utilisation xmppmaster
-        self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
-                                                                                 self.config.xmpp_dbpasswd,
-                                                                                 self.config.xmpp_dbhost,
-                                                                                 self.config.xmpp_dbport,
-                                                                                 self.config.xmpp_dbname),
-                                                     pool_recycle=self.config.dbpoolrecycle,
-                                                     pool_size=self.config.dbpoolsize)
-        self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
-        self.is_activated = True
-        self.logger.debug("xmpp finish activation")
-
-    # xmppmaster FUNCTIONS
-
-    # xmppmaster FUNCTIONS FOR Subscription
+        try:
+            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
+                                                                                     self.config.xmpp_dbpasswd,
+                                                                                     self.config.xmpp_dbhost,
+                                                                                     self.config.xmpp_dbport,
+                                                                                     self.config.xmpp_dbname),
+                                                         pool_recycle=self.config.dbpoolrecycle,
+                                                         pool_size=self.config.dbpoolsize)
+            self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+            self.is_activated = True
+            self.logger.debug("Xmpp activation done.")
+            return True
+        except Exception as e:
+            self.logger.error("We failed to connect to the Xmpp database.")
+            self.logger.error("Please verify your configuration")
+            self.is_activated = False
+            return False
 
     @DatabaseHelper._sessionm
     def setagentsubscription(self,
