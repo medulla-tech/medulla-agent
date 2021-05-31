@@ -950,7 +950,7 @@ def applicationdeploymentjson(self,
             msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
             if data['advanced'] and data['advanced']['syncthing'] == 1:
                 msg.append("<span class='log_warn'>There are not enough machines " \
-                           "to deploy in peer mode</span>")
+                           "to deploy in Syncthing mode</span>")
 
             data['advanced']['syncthing'] = 0
             result = None
