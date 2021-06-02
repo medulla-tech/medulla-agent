@@ -79,7 +79,6 @@ def scheduledeploy(self):
     # TODO
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
-    msg=[]
     list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
     for arssyncthing in list_ars_syncthing_pause:
         datasend = {"action": "deploysyncthing",
@@ -114,6 +113,7 @@ def scheduledeploy(self):
     # Search deploy to running
     resultdeploymachine = MscDatabase().deployxmpp()
     for deployobject in resultdeploymachine:
+        msg = []
         # creation deployment
         UUID = deployobject['UUID']
         UUIDSTR = UUID.replace('UUID', "")
@@ -991,7 +991,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if  'syncthing' not in  data['advanced'] or data['advanced']['syncthing'] == 0:
+    if  'syncthing' not in data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
