@@ -19,6 +19,7 @@ when we cannot contact a database ).
 * [BUGFIX]  Initialise listmodulemmc before use
 * [BUGFIX]  Fix registering ARS
 * [BUGFIX]  Uninstall python and reinstall it if we failed the python pip step
+* [BUGFIX]  Change cluster_resources sql column size to 255
 
 pulse-xmpp-agent 2.1.5
 ======================
