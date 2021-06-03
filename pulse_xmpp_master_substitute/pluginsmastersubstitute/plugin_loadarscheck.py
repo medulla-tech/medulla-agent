@@ -147,7 +147,7 @@ def arscheck(self):
                 XmppMasterDatabase().update_Presence_Relay(ars['jid'], presence=1)
     except Exception as e:
         logger.error("We failed to check the ARS Status")
-        logger.error("The backtrace of this error is \n %s" traceback.format_exc())
+        logger.error("The backtrace of this error is \n %s" % traceback.format_exc())
     finally:
         self.ressource_scan_available = True
 
