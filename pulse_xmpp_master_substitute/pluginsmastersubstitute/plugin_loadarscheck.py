@@ -95,16 +95,17 @@ def arscheck(self):
 
         # We give some time for the relay server, to be correctly/fully started
         for jidaction in listaction:
+            logger.error("jidaction %s" % jidaction)
             time.sleep(1)
             arsstatus = self.ping_ejabberd_and_relay(jidaction)
             if arsstatus['server']['presence'] == 0 or \
                 arsstatus['ars']['presence'] == 0:
                 if self.update_table:
                     # Update relay and machine table.
-                    XmppMasterDatabase().update_Presence_Relay(jidaction['jid'])
 
-                    logger.debug("update on ping ars %s" % jidaction['jid'])
-                    self.xmpplog("update on ping ars %s" % jidaction['jid'],
+                    XmppMasterDatabase().update_Presence_Relay(jidaction)
+
+                    self.xmpplog("update on ping ars %s" % jidaction,
                                  type='Monitoring',
                                  sessionname=sessionid,
                                  priority=-1,
@@ -112,14 +113,14 @@ def arscheck(self):
                                  why=self.boundjid.bare,
                                  module="Notify | Substitut | Monitoring",
                                  date=None,
-                                 fromuser=jidaction['jid'])
+                                 fromuser=jidaction)
                     if self.monitoring_message_on_machine_no_presence:
-                        logger.debug("The Ars %s is down" % jidaction['jid'])
-                        self.message_datas_to_monitoring_loadarscheck (jidaction['jid'], "ARS %s Down" % jidaction['jid'],
+                        logger.debug("The Ars %s is down" % jidaction)
+                        self.message_datas_to_monitoring_loadarscheck (jidaction, "The Ars %s is down" % jidaction,
                                                                        informationaction="ack")
                     if self.action_reconf_ars_machines:
                         # update machine for reconf
-                        self.xmpplog("Reconfigure all the machines belonging to the ars %s" % jidaction['jid'],
+                        self.xmpplog("Reconfigure all the machines belonging to the ars %s" % jidaction,
                                      type='Monitoring',
                                      sessionname=sessionid,
                                      priority=-1,
@@ -127,8 +128,8 @@ def arscheck(self):
                                      why=self.boundjid.bare,
                                      module="Notify | Substitut | Monitoring",
                                      date=None,
-                                     fromuser=ars['jid'])
-                        XmppMasterDatabase().is_machine_reconf_needed(jidaction['jid'])
+                                     fromuser=jidaction)
+                        XmppMasterDatabase().is_machine_reconf_needed(jidaction)
 
         for ars in disabled_ars:
             arsstatus = self.ping_ejabberd_and_relay(ars['jid'])
@@ -144,6 +145,9 @@ def arscheck(self):
                              date=None,
                              fromuser=ars['jid'])
                 XmppMasterDatabase().update_Presence_Relay(ars['jid'], presence=1)
+    except Exception as e:
+        logger.error("We failed to check the ARS Status")
+        logger.error("The backtrace of this error is \n %s" traceback.format_exc())
     finally:
         self.ressource_scan_available = True
 
