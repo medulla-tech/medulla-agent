@@ -2929,6 +2929,16 @@ class process_xmpp_agent():
                     except Exception:
                         logging.log(40," ERROR analyse alternative connection")
                         logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
+                else:
+                    logging.log(40,"The file %s is missing" % conffilename("cluster"))
+                    setgetcountcycle(1)
+                    if setgetcountcycle(-1) > 3:
+                        setgetcountcycle()
+                        logging.log(DEBUGPULSE,"We need to restart the configurator as the file cluster.ini is missing")
+                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                        args = ['python', nameprogconnection, '-t', 'machine']
+                        subprocess.call(args)
+                        time.sleep(10)
         terminateserver(xmpp)
 
 class process_agent_search():
