@@ -440,6 +440,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             #write alternative configuration
                             alternativeclusterconnection(conffilenametmp("cluster"),
                                                          data['data'])
+                            alternativeclusterconnection(conffilename("cluster"),
+                                                         data['data'])
                             confaccountclear={  "action": "resultcleanconfaccount",
                                                 "sessionid" : getRandomName(6, "delconf"),
                                                 "ret" : 0,
