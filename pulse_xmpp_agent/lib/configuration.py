@@ -53,6 +53,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
+        confsubtitute[t] = list(set(confsubtitute[t]))
         Config.set('substitute', t, ",".join(confsubtitute[t]))
     logger.info("write parameter subtitute")
     with open(conffile, 'w') as configfile:
