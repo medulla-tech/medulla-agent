@@ -120,8 +120,7 @@ def scheduledeploy(self):
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
         re_search = []
         if resultpresence[UUID][1] == 0:
-            ## il n'y a pas de uuid glpi
-            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'].split('.')[0])
             if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
                 update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
                 if update_result is not None:
