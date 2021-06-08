@@ -5949,9 +5949,19 @@ class XmppMasterDatabase(DatabaseHelper):
             jsonresult = json.loads(result)
         except Exception as e:
             self.logger.error(str(e))
-            self.logger.error("error convertion str in string json to dict")
-            self.logger.error("string %s" % result)
+            self.logger.error("We failed to convert the result into a json format")
+            self.logger.error("The string we failed to convert is: %s" % result)
             return -1
+
+        if  'descriptor' not in jsonresult:
+            jsonresult['descriptor'] = {}
+
+        if 'sequence' not in jsonresult['descriptor']:
+            jsonresult['descriptor']['sequence'] = {}
+
+        if 'info' not in jsonresult['descriptor']:
+            jsonresult['descriptor']['info'] = {}
+
         jsonautre = copy.deepcopy(jsonresult)
         try:
             del jsonautre['descriptor']
