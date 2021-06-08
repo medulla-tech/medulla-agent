@@ -2663,8 +2663,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         server_conf = {
             # Root access
             'global':{
-                'server.socket_host': '0.0.0.0',
-                'server.socket_port': port,
+                'server.socket_host': config.fv_host,
+                'server.socket_port': config.fv_port,
             },
             '/': {
                 #'tools.staticdir.on': True,
@@ -2712,8 +2712,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
 
         cherrypy.server.unsubscribe()
         server1 = cherrypy._cpserver.Server()
-        server1.socket_port = port
-        server1._socket_host = '0.0.0.0'
+        server1.socket_port = config.fv_port
+        server1._socket_host = config.fv_host
 
         # ===
         # Do not remove the following lines
