@@ -5992,6 +5992,10 @@ class XmppMasterDatabase(DatabaseHelper):
                                 }
                 else:
                     jsonbase = json.loads(deploysession.result)
+
+                    if 'infoslist' not in jsonbase:
+                        jsonbase['infoslist'] = []
+
                     jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
                     jsonbase['otherinfos'].append(jsonautre)
