@@ -35,7 +35,7 @@ logger = logging.getLogger()
 
 # plugin run wake on lan on mac address
 # group mac address wakeonlangroup different wakeonlan
-plugin = {"VERSION": "1.0", "NAME": "wakeonlangroup", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "wakeonlangroup", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, message, ret):
     logger.debug("=====================================================")
@@ -64,8 +64,8 @@ def action(xmppobject, action, sessionid, data, message, ret):
                                                              encoding='latin1'),
                                             mtype='chat')
                     msglog = "A WOL request has been sent from the ARS %s " \
-                             "to the mac address %s" % (serverrelay['jid'],
-                                                        data['macadress'])
+                             "to %s mac address" % (serverrelay['jid'],
+                                                    len(data['macadress']))
                     historymessage(xmppobject, sessionid, msglog)
                     logger.debug(msglog)
             else:
