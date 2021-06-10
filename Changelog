@@ -1,5 +1,6 @@
 pulse-xmpp-agent 2.1.7 (unreleased)
 ======================
+* [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.
 
 pulse-xmpp-agent 2.1.6
 ======================
