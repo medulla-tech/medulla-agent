@@ -1081,18 +1081,13 @@ def pulgindeploy1(func):
 
 # determine address ip utiliser pour xmpp
 
-
 def getIpXmppInterface(ipadress1, Port):
     resultip = ''
     ipadress = ipfromdns(ipadress1)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, ipadress))
         if obj['code'] != 0:
             logging.getLogger().error('error command netstat : %s' % obj['result'])
@@ -1106,12 +1101,8 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
         obj = simplecommand(
             "netstat -an | findstr %s | findstr ESTABLISHED" %
-            Port)
-        logging.log(
-            DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
             Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1122,12 +1113,8 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
             (Port, ipadress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
