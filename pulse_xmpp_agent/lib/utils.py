@@ -1081,14 +1081,28 @@ def pulgindeploy1(func):
 
 # determine address ip utiliser pour xmpp
 
-def getIpXmppInterface(ipadress1, Port):
+def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
+    """
+        This function is used to retrieve the local IP from the client which is talking
+        with the ejabberd server.
+        For this we need to use netstat.
+        It returns:
+            TCP    10.16.53.17:49711      10.16.24.239:5222      ESTABLISHED
+        and we split to obtain the first IP of the line.
+
+        Args:
+            xmpp_server_ipaddress: IP of the xmpp server
+        Returns:
+            It returns the local IP from the client which is talking
+            with the ejabberd server.
+    """
     resultip = ''
-    ipadress = ipfromdns(ipadress1)
+    xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
+            (Port, xmpp_server_ipaddress))
         if obj['code'] != 0:
             logging.getLogger().error('error command netstat : %s' % obj['result'])
             logging.getLogger().error('error install package net-tools')
@@ -1102,7 +1116,7 @@ def getIpXmppInterface(ipadress1, Port):
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
-            "netstat -an | findstr %s | findstr ESTABLISHED" %
+            'netstat -an | findstr %s | findstr "ESTABLISHED SYN_SENT SYN_RECV"' %
             Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1115,7 +1129,7 @@ def getIpXmppInterface(ipadress1, Port):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
+            (Port, xmpp_server_ipaddress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
