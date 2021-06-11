@@ -5991,16 +5991,23 @@ class XmppMasterDatabase(DatabaseHelper):
                                 "user": deploysession.login
                                 }
                 else:
+                    need_info = False
                     jsonbase = json.loads(deploysession.result)
 
                     if 'infoslist' not in jsonbase:
                         jsonbase['infoslist'] = []
+                        need_info = True
 
                     if 'descriptorslist' not in jsonbase:
                         jsonbase['descriptorslist'] = []
+                        need_info = True
 
                     if 'otherinfos' not in jsonbase:
                         jsonbase['otherinfos'] = []
+                        need_info = True
+
+                    if need_info:
+                        self.logger.info("The content of the uncomplete json file is \n %s" % deploysession.result)
 
                     jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
