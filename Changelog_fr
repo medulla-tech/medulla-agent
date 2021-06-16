@@ -2,6 +2,8 @@ pulse-xmpp-agent 2.1.7 (unreleased)
 ======================
 * [CORRECTION DE BUG]  Correction de la détection de l'adresse IP du serveur
 XMPP lorsque l'agent démarre.
+* [CORRECTION DE BUG]  Correction d'un plantage lorsqu'il y a des 'locations'
+en double
 
 pulse-xmpp-agent 2.1.6
 ======================

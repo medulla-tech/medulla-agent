@@ -850,7 +850,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            complete_name = None,
                            name = None):
         try:
-            result_entity = session.query(Glpi_entity).filter( Glpi_entity.glpi_id == glpi_id ).one()
+            result_entity = session.query(Glpi_entity).filter( Glpi_entity.glpi_id == glpi_id ).first()
             if result_entity:
                 if complete_name is not None:
                     result_entity.complete_name = complete_name
@@ -875,7 +875,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            complete_name = None,
                            name = None):
         try:
-            result_location = session.query(Glpi_location).filter( Glpi_location.glpi_id == glpi_id ).one()
+            result_location = session.query(Glpi_location).filter( Glpi_location.glpi_id == glpi_id ).first()
             if result_location:
                 if complete_name is not None:
                     result_location.complete_name = complete_name
@@ -930,7 +930,7 @@ class XmppMasterDatabase(DatabaseHelper):
         #logging.getLogger().error("get_Glpi_entity")
         try:
             result_entity = session.query(Glpi_entity).\
-                filter( Glpi_entity.glpi_id == glpi_id ).one()
+                filter( Glpi_entity.glpi_id == glpi_id ).first()
             session.commit()
             session.flush()
             if result_entity:
@@ -954,7 +954,7 @@ class XmppMasterDatabase(DatabaseHelper):
         #logging.getLogger().error("get_Glpi_location")
         try:
             result_location = session.query(Glpi_location).\
-                filter( Glpi_location.glpi_id == glpi_id ).one()
+                filter( Glpi_location.glpi_id == glpi_id ).first()
             session.commit()
             session.flush()
             if result_location:
