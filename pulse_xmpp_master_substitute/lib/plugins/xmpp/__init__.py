@@ -153,8 +153,6 @@ class XmppMasterDatabase(DatabaseHelper):
         self.logger = logging.getLogger()
         self.logger.debug("Xmpp activation")
         self.engine = None
-        #self.dbpoolrecycle = 60
-        #self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
