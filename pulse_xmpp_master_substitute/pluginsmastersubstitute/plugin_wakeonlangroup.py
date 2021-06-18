@@ -35,7 +35,7 @@ logger = logging.getLogger()
 
 # plugin run wake on lan on mac address
 # group mac address wakeonlangroup different wakeonlan
-plugin = {"VERSION": "1.0", "NAME": "wakeonlangroup", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "wakeonlangroup", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, message, ret):
     logger.debug("=====================================================")
@@ -57,15 +57,15 @@ def action(xmppobject, action, sessionid, data, message, ret):
                               'data': {'macaddress': ""}}
             serverrelaylist = XmppMasterDatabase().random_list_ars_relay_one_only_in_cluster()
             if 'macadress' in data:
-                senddataplugin['data']['macadress'] = data['macadress']
+                senddataplugin['data']['macaddress'] = data['macadress']
                 for serverrelay in serverrelaylist:
                     xmppobject.send_message(mto=serverrelay['jid'],
                                             mbody=json.dumps(senddataplugin,
                                                              encoding='latin1'),
                                             mtype='chat')
                     msglog = "A WOL request has been sent from the ARS %s " \
-                             "to the mac address %s" % (serverrelay['jid'],
-                                                        data['macadress'])
+                             "to %s mac address" % (serverrelay['jid'],
+                                                    len(data['macadress']))
                     historymessage(xmppobject, sessionid, msglog)
                     logger.debug(msglog)
             else:

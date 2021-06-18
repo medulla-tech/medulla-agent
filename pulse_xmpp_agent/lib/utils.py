@@ -1081,19 +1081,28 @@ def pulgindeploy1(func):
 
 # determine address ip utiliser pour xmpp
 
+def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
+    """
+        This function is used to retrieve the local IP from the client which is talking
+        with the ejabberd server.
+        For this we need to use netstat.
+        It returns:
+            TCP    10.16.53.17:49711      10.16.24.239:5222      ESTABLISHED
+        and we split to obtain the first IP of the line.
 
-def getIpXmppInterface(ipadress1, Port):
+        Args:
+            xmpp_server_ipaddress: IP of the xmpp server
+        Returns:
+            It returns the local IP from the client which is talking
+            with the ejabberd server.
+    """
     resultip = ''
-    ipadress = ipfromdns(ipadress1)
+    xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
+            (Port, xmpp_server_ipaddress))
         if obj['code'] != 0:
             logging.getLogger().error('error command netstat : %s' % obj['result'])
             logging.getLogger().error('error install package net-tools')
@@ -1106,12 +1115,8 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
         obj = simplecommand(
-            "netstat -an | findstr %s | findstr ESTABLISHED" %
-            Port)
-        logging.log(
-            DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
+            'netstat -an | findstr %s | findstr "ESTABLISHED SYN_SENT SYN_RECV"' %
             Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1122,13 +1127,9 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
+            (Port, xmpp_server_ipaddress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')

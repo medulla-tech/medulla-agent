@@ -335,8 +335,14 @@ class MUCBot(sleekxmpp.ClientXMPP):
         session = self.Session()
         jsonresult = json.loads(result)
         jsonautre = copy.deepcopy(jsonresult)
-        del (jsonautre['descriptor'])
-        del (jsonautre['packagefile'])
+        try:
+            del jsonautre['descriptor']
+        except KeyError:
+            pass
+        try:
+            del jsonautre['packagefile']
+        except KeyError:
+            pass
         #DEPLOYMENT START
         try:
             deploysession = session.query(Deploy).filter(Deploy.sessionid == sessionid).one()

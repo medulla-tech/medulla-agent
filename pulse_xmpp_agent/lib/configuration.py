@@ -53,6 +53,7 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
+        confsubtitute[t] = list(set(confsubtitute[t]))
         Config.set('substitute', t, ",".join(confsubtitute[t]))
     logger.info("write parameter subtitute")
     with open(conffile, 'w') as configfile:
@@ -94,10 +95,7 @@ def alternativeclusterconnection(conffile, data):
         conffile: the configuration file in which we add the alternative cluster
         data: the informations about the cluster
     """
-    # todo del of list the ars without ip
-    #for arsdataconection in data:
-        #if ipfromdns(str(arsdataconection[0])) != "" and check_exist_ip_port(ipfromdns(str(arsdataconection[0])), str(arsdataconection[1])):
-            #print ipfromdns(str(arsdataconection[0]))
+    logger.debug("We write the file %s to handle alternative connections" % conffile)
     with open(conffile, 'w') as configfile:
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]

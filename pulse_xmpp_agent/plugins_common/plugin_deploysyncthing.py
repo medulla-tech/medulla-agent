@@ -57,8 +57,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
             if data['subaction'] == "notify_machine_deploy_syncthing":
                 if not objectxmpp.config.syncthing_on:
                     objectxmpp.xmpplog("<span class='log_err'>"\
-                        "Syncthing enabled parameter: no. "\
-                            "Not creating descriptor file</span>",
+                                       "Syncthing is disabled"\
+                                       "We cannot deploy using this method</span>",
                                         type='deploy',
                                         sessionname=sessionid,
                                         priority=-1,
@@ -269,8 +269,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         else:
             if not objectxmpp.config.syncthing_on:
                 objectxmpp.xmpplog("<span class='log_err'>"\
-                                   "Syncthing enabled parameter: no. "\
-                                   "Not creating ars file</span>",
+                                   "Syncthing is disabled"\
+                                   "We cannot deploy using this method</span>",
                                    type='deploy',
                                    sessionname=sessionid,
                                    priority=-1,

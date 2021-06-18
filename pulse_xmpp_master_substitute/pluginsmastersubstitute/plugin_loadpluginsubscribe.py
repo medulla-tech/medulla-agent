@@ -35,7 +35,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.1", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
+plugin = {"VERSION": "1.10", "NAME": "loadpluginsubscribe", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -63,31 +63,15 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
 def read_conf_load_plugin_subscribe(objectxmpp):
     """
-        lit la configuration du plugin
-        le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
+        It reads the configuration plugin
+        The folder where the configuration file must be is in the objectxmpp.config.pathdirconffile variable.
     """
-    # namefichierconf = plugin['NAME'] + ".ini"
-    # pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
-    # if not os.path.isfile(pathfileconf):
-    # pass
-    # else:
-    # Config = ConfigParser.ConfigParser()
-    # Config.read(pathfileconf)
-    # if os.path.exists(pathfileconf + ".local"):
-    # Config.read(pathfileconf + ".local")
     objectxmpp.changed_status = types.MethodType(changed_status, objectxmpp)
-    # objectxmpp.presence_subscribe = types.MethodType(presence_subscribe, objectxmpp)
-    # objectxmpp.presence_subscribed = types.MethodType(presence_subscribed, objectxmpp)
-    # objectxmpp.changed_subscription = types.MethodType(changed_subscription, objectxmpp)
-    # objectxmpp.presence_unavailable = types.MethodType(presence_unavailable, objectxmpp)
-    # objectxmpp.presence_available = types.MethodType(presence_available, objectxmpp)
-    # objectxmpp.presence_unsubscribe = types.MethodType(presence_unsubscribe, objectxmpp)
-    # objectxmpp.presence_unsubscribed = types.MethodType(presence_unsubscribed, objectxmpp)
 
 
 def changed_status(self, presence):
     frommsg = jid.JID(presence['from'])
-    logger.info("Message from %s" % frommsg)
+    logger.debug("Message from %s" % frommsg)
     spresence = str(presence['from'])
     try:
         if frommsg.bare == self.boundjid.bare:
@@ -111,7 +95,7 @@ def changed_status(self, presence):
         if result and result['enabled'] == 0:
             return
         try:
-            logger.debug("update offline for %s" % (spresence))
+            logger.info("The machine or ARS %s is now Offline" % spresence)
             result = XmppMasterDatabase().initialisePresenceMachine(spresence)
             XmppMasterDatabase().setlogxmpp("%s offline" % spresence,
                                             "info",
@@ -197,12 +181,13 @@ def changed_status(self, presence):
                                }
 
                     for ars in listrelayserver:
-                        logger.debug("Remove Resource on ARS %s for MACH %s " % (ars, spresence))
+                        logger.debug("We remove the ressource on the ARS %s for the machine %s" % (ars, spresence))
                         self.send_message(mto=ars['jid'],
                                           mbody=json.dumps(cluster),
                                           mtype='chat')
-        except Exception:
-            logger.error("%s" % (traceback.format_exc()))
+        except Exception as e:
+            logger.error("We encountered the error %s" % str(e))
+            logger.error("the backtrace is: \n %s" % (traceback.format_exc()))
     elif presence['type'] == "available":
         lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
         if lastevent:
@@ -218,7 +203,7 @@ def changed_status(self, presence):
                                                    status=1,
                                                    updowntime=0,
                                                    date=None)
-        logger.info("update MACH or ARS %s Online" % spresence)
+        logger.info("The machine or ARS %s is now Online" % spresence)
         result = XmppMasterDatabase().initialisePresenceMachine(spresence,
                                                                 presence=1)
         if result is None or len(result) == 0:

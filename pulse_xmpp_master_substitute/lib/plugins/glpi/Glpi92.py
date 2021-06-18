@@ -3782,7 +3782,7 @@ class Glpi92(DatabaseHelper):
         session.close()
         return ret
 
-    def _machineobjectdymresult(self, ret):
+    def _machineobjectdymresult(self, ret, encode= 'iso-8859-1'):
         """
             this function return dict result sqlalchimy
         """
@@ -3795,7 +3795,6 @@ class Glpi92(DatabaseHelper):
                             resultrecord[keynameresult] = ""
                         else:
                             typestr = str(type(getattr(ret, keynameresult)))
-
                             if "class" in typestr:
                                 try:
                                     if 'decimal.Decimal' in typestr:
@@ -3809,13 +3808,21 @@ class Glpi92(DatabaseHelper):
                                 if isinstance(getattr(ret, keynameresult), datetime.datetime):
                                     resultrecord[keynameresult] = getattr(ret, keynameresult).strftime("%m/%d/%Y %H:%M:%S")
                                 else:
-                                    resultrecord[keynameresult] = getattr(ret, keynameresult)
+                                    strre = getattr(ret, keynameresult)
+                                    if isinstance(strre, basestring):
+                                        if encode != "utf8":
+                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode).encode('utf8')
+                                        else:
+                                            resultrecord[keynameresult] =  "%s"%strre.encode('utf8')
+                                    else:
+                                        resultrecord[keynameresult] = strre
                     except AttributeError:
                         resultrecord[keynameresult] = ""
         except Exception as e:
             self.logger.error("We encountered the error %s" % str(e) )
             self.logger.error("\n with the backtrace \n%s" % (traceback.format_exc()))
         return resultrecord
+
 
     def _machineobject(self, ret):
         """ result view glpi_computers_pulse """

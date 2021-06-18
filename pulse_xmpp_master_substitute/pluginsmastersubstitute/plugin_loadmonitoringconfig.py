@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2021 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -38,7 +38,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin is called at agent start
 
-plugin = {"VERSION": "1.0", "NAME": "loadmonitoringconfig", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "loadmonitoringconfig", "TYPE": "substitute"}
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
@@ -105,7 +105,13 @@ def read_conf_load_plugin_monitoring_version_config(objectxmpp):
 
 def plugin_loadmonitoringconfig(self, msg, data):
     """
-        this function is called by the substitute that implements this plugin
+        This function is used load the configuration of the plugin. We also update
+        it if needed.
+
+        Args:
+            msg: informations from where and to who goes the messages.
+            data: XMPP messages sent to the plugin
+
     """
     try:
         if data['agenttype'] in ["relayserver"]:
@@ -132,15 +138,15 @@ def plugin_loadmonitoringconfig(self, msg, data):
         if 'md5_conf_monitoring' in data :
             if data['md5_conf_monitoring'] != self.monitoring_agent_config_file_md5 and \
                 self.monitoring_agent_config_file_content != "":
-                # Insall config file, create configuration message and send
+                # Install config file, create configuration message and send
                 fichierdata = {'action': 'installconfmonitoring',
                                'base64': False,
                                'sessionid': name_random(5, pref="confmonitoring"),
                                'data': {'pluginname': 'monitoring_config_file',
                                         'content': self.monitoring_agent_config_file_content}}
 
-                logger.debug("fichierdata %s "
-                             % (json.dumps(fichierdata, indent=4)))
+                logger.debug("The new configuration is %s " % (json.dumps(fichierdata,
+                                                                          indent=4)))
                 try:
                     self.send_message(mto=msg['from'],
                                     mbody=json.dumps(fichierdata),
@@ -149,8 +155,6 @@ def plugin_loadmonitoringconfig(self, msg, data):
                     logger.debug("Error creating configuration message for "
                                  "plugin %s: %s"%(plugin['NAME'], str(e)))
                     logger.error("\n%s"%(traceback.format_exc()))
-            else:
-                logger.warning("Monitoring configuration up to date")
     except Exception as e:
         logger.debug("Plugin %s : %s"%(plugin['NAME'], str(e)))
         logger.error("\n%s"%(traceback.format_exc()))

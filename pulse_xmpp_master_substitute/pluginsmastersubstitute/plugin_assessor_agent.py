@@ -111,21 +111,30 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   data,
                                                   msg):
     """
-        applies the allocation rules algorithms to determine the chosen relayserver.
+    Allocate the Relay server of the machine and reconfigure the agent.
+
+    Args:
+        objectxmpp: Reference object to the xmpp server
+        action: Name of the plugin
+        sessionid: The SQL Alchemy session
+        data: The xmpp message.
+        msg: A dictionnary with informations like from and to where are going the messages.
     """
     codechaine="%s" % (msg['from'])
+
     try:
         host = codechaine.split('/')[1]
     except Exception:
         host = msg['from']
-    logger.info("CONFIGURATION AGENT MACHINE %s" % host)
+
+    logger.debug("We configure the machine agent for the machine: %s" % host)
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
         showinfomachine = True
-        logger.info("showinfomachine = %s in file assessor_agent.ini(.local)" % (host))
+        logger.info("showinfomachine is enabled for the machine %s" % (host))
     else:
         showinfomachine = False
-        logger.info("gives showinfomachine in assessor_agent.ini(.local)"
-                    " for display infos on %s" % (host))
+        logger.debug("showinfomachine option is not enabled for the machine %s " % host)
+        logger.debug("If you want to enable it, add the information in the assessor_agent.ini(.local) file")
 
     if data['adorgbymachine'] is not None and data['adorgbymachine'] != "":
         data['adorgbymachine'] = base64.b64decode(data['adorgbymachine'])
@@ -257,8 +266,14 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         result1 = XmppMasterDatabase().IdlonglatServerRelay(data['classutil'])
                         for x in result1:
                             # pour tout les relay on clacule la distance a vol oiseau.
-                            if x[1] != "" and x[2] != "":
-                                pointrelay = Point(float(x[2]), float(x[1]))
+                            if x[1] != "" and x[2] != "" and \
+                                x[1] != "unknown" and x[2] != "unknown":
+                                try:
+                                    xpoint = float(x[2])
+                                    ypoint = float(x[1])
+                                except Exception:
+                                    continue
+                                pointrelay = Point(xpoint, ypoint)
                                 if str(pointrelay.lat) == str(pointmachine.lat) and \
                                     str(pointrelay.lon) == str(pointmachine.lon):
                                     distancecalculated = 0
@@ -389,6 +404,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 if len(result1) > 0:
                     if showinfomachine:
                         logger.info("Applied rule : AD organized by machines")
+                        logger.info("We matched the relayserver ID: %s" % result1)
+
                     result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(result1[0].id)
                     msg_log("AD organized by machine",
                             data['information']['info']['hostname'],
