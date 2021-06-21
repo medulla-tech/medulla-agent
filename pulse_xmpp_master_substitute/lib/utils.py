@@ -1916,12 +1916,12 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
         if not os.path.isdir(homedir):
-            os.makedirs(homedir, 0751)
+            os.makedirs(homedir, 0o751)
         os.chmod(homedir, 0751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
-            os.makedirs(packagedir, 0764)
+            os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0764)
         os.chown(packagedir, uid, gidroot)
@@ -1936,12 +1936,12 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             msg = 'Error getting information for creating home folder for user %s' % username
             return False, msg
         if not os.path.isdir(homedir):
-            os.makedirs(homedir, 0751)
+            os.makedirs(homedir, 0o751)
         os.chmod(homedir, 0751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
-            os.makedirs(packagedir, 0764)
+            os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
         os.chmod(packagedir, 0764)
         os.chown(packagedir, uid, gidroot)
@@ -2006,7 +2006,7 @@ def create_idrsa_on_client(username='pulseuser', key=''):
     result = simplecommand(encode_strconsole(delete_keyfile_cmd))
     logger.debug('Creating id_rsa file in %s' % id_rsa_path)
     if not os.path.isdir(os.path.dirname(id_rsa_path)):
-        os.makedirs(os.path.dirname(id_rsa_path), 0700)
+        os.makedirs(os.path.dirname(id_rsa_path), 0o700)
     file_put_contents(id_rsa_path, key)
     result, logs = apply_perms_sshkey(id_rsa_path, True)
     if result is False:
@@ -2103,7 +2103,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
     if not os.path.isfile(authorized_keys_path):
         logger.debug('Creating authorized_keys file in %s' % authorized_keys_path)
         if not os.path.isdir(os.path.dirname(authorized_keys_path)):
-            os.makedirs(os.path.dirname(authorized_keys_path), 0700)
+            os.makedirs(os.path.dirname(authorized_keys_path), 0o700)
         file_put_contents(authorized_keys_path, key)
     else:
         authorized_keys_content = file_get_contents(authorized_keys_path)
@@ -2149,7 +2149,7 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
         msg = 'Error getting information for creating home folder for user %s' % username
         return False, msg
     if not os.path.isdir(homedir):
-        os.makedirs(homedir, 0751)
+        os.makedirs(homedir, 0o751)
     os.chmod(homedir, 0751)
     os.chown(homedir, uid, -1)
     # Check keys
@@ -2160,7 +2160,7 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     if result['code'] != 0:
         logger.debug('Creating id_rsa file in %s' % id_rsa_key_path)
         if not os.path.isdir(os.path.dirname(id_rsa_key_path)):
-            os.makedirs(os.path.dirname(id_rsa_key_path), 0700)
+            os.makedirs(os.path.dirname(id_rsa_key_path), 0o700)
         keygen_cmd = 'ssh-keygen -q -N "" -b 2048 -t rsa -f %s' % id_rsa_key_path
         result = simplecommand(encode_strconsole(keygen_cmd))
     authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
