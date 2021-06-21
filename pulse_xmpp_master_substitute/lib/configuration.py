@@ -131,7 +131,7 @@ class confParameter:
             self.pluginliststart = Config.get('plugins', 'pluginliststart')
         self.pluginliststart = [x.strip() for x in self.pluginliststart.split(",") if x.strip() != ""]
         ################################################################
-        self.dbpoolrecycle = 5
+        self.dbpoolrecycle = 3600
         self.dbpoolsize = 60
         if Config.has_option("main", "dbpoolrecycle"):
             self.dbpoolrecycle = Config.getint('main', 'dbpoolrecycle')
