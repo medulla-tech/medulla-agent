@@ -24,9 +24,16 @@
 This module just give access to small functions needed by both 0.7 and 0.8 backend
 """
 
-from pulse2.utils import grepv
+# from pulse2.utils import grepv
 import exceptions
 import logging
+import re
+
+
+def grepv(string, list):
+    expr = re.compile(string)
+    return [item for item in list if not expr.search(item)]
+
 
 def encode_utf8(self, s):
     return s

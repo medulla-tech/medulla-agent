@@ -109,28 +109,28 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
         logger.info("activate XMPP")
         if not XmppMasterDatabase().activate():
             logger.error("We failed to connect the Xmpp database.")
-            logger.error("Please verify your configuration in %s" % configuration_file)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     if "kiosk" in tg.plugins_list:
         logger.info("activate KIOSK")
         if not KioskDatabase().activate():
             logger.error("We failed to connect the Kiok database.")
-            logger.error("Please verify your configuration in %s" % configuration_file)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     if "msc" in tg.plugins_list:
         logger.info("activate MSC")
         if not MscDatabase().activate():
             logger.error("We failed to connect the Msc database.")
-            logger.error("Please verify your configuration in %s" % configuration_file)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     if "pkgs" in tg.plugins_list:
         logger.info("activate PKGS")
         if not PkgsDatabase().activate():
             logger.error("We failed to connect the Pkgs database.")
-            logger.error("Please verify your configuration in %s" % configuration_file)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     xmpp = MUCBot( )

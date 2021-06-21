@@ -28,7 +28,6 @@ import logging
 import re
 import traceback
 import sys
-from sets import Set
 import datetime
 import calendar
 import hashlib
@@ -237,7 +236,7 @@ class Glpi95(DatabaseHelper):
                   'glpi_domains', 'glpi_computermodels', 'glpi_networks'):
             setattr(self, i, Table(i, self.metadata, autoload=True))
             j = self.getTableName(i)
-            exec "class %s(DbTOA): pass" % j
+            exec ("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, i))
             self.klass[i] = eval(j)
 
@@ -253,7 +252,7 @@ class Glpi95(DatabaseHelper):
         for i in self.devices:
             setattr(self, i, Table("glpi_%s" % i, self.metadata, autoload=True))
             j = self.getTableName(i)
-            exec "class %s(DbTOA): pass" % j
+            exec ("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, i))
             self.klass[i] = eval(j)
 
@@ -262,7 +261,7 @@ class Glpi95(DatabaseHelper):
                     Column('%s_id' % i, Integer, ForeignKey('glpi_%s.id' % i)),
                     autoload=True))
             j = self.getTableName("computers_%s" % i)
-            exec "class %s(DbTOA): pass" % j
+            exec ("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, "computers_%s" % i))
             self.klass["computers_%s" % i] = eval(j)
 
@@ -1092,7 +1091,7 @@ class Glpi95(DatabaseHelper):
                             else:
                                 ret.append(partA.like(self.encode(partB)))
                         except Exception as e:
-                            print str(e)
+                            #print str(e)
                             self.logger.error("\n%s"%(traceback.format_exc()))
                             ret.append(partA.like(self.encode(partB)))
             if ctx.userid != 'root':
@@ -2297,7 +2296,7 @@ class Glpi95(DatabaseHelper):
 
             session.close()
             return True
-        except Exception, e:
+        except Exception as e:
             self.logger.error(e)
             return False
 

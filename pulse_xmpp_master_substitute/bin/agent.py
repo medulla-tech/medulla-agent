@@ -22,16 +22,16 @@
 
 #fish: pulse_xmpp_master_substitute/bin/agent.py
 
-from sleekxmpp import jid
+from slixmpp import jid
 import sys
 import os
 import logging
 import base64
 import json
 import time
-import sleekxmpp
-from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp.xmlstream.stanzabase import ET
+import slixmpp
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream.stanzabase import ET
 from lib.configuration import confParameter
 from lib.utils import DEBUGPULSE, getRandomName, call_plugin
 
@@ -61,19 +61,19 @@ def getComputerByMac( mac):
     return ret
 
 #### faire singeton
-class MUCBot(sleekxmpp.ClientXMPP):
+class MUCBot(slixmpp.ClientXMPP):
     def __init__(self):#jid, password, room, nick):
         self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubstitute"))
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter()
 
-        ### update level log for sleekxmpp
-        handler_sleekxmpp = logging.getLogger('sleekxmpp')
-        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
-        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+        ### update level log for slixmpp
+        handler_slixmpp = logging.getLogger('slixmpp')
+        logging.log(DEBUGPULSE,"slixmpp log level is %s" %self.config.log_level_slixmpp)
+        handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
         logging.log(DEBUGPULSE,"Starting Master sub (%s)" %(self.config.jidmastersubstitute))
-        sleekxmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
+        slixmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
 
         ####################Update agent from MAster#############################
         #self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))

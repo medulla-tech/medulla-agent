@@ -161,7 +161,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     #Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
                     if uuidglpi != -1:
                         Glpi().addRegistryCollectContent(uuidglpi, registry_id, key_name, reg_key_value)
-                except Exception, e:
+                except Exception as e:
                     logger.error("getting key: %s\n%s" %(str(e),traceback.format_exc()))
                     pass
         #time.sleep(25)

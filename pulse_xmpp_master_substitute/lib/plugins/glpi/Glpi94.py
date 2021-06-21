@@ -28,7 +28,6 @@ import logging
 import re
 import traceback
 import sys
-from sets import Set
 import datetime
 import calendar
 import hashlib

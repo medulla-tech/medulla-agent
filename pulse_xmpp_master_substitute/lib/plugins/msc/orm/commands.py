@@ -30,13 +30,15 @@ import logging
 import sqlalchemy
 import datetime
 
-# ORM mappings
-from pulse2.database.msc.orm.commands_on_host import CommandsOnHost, stopCommandOnHost
-from pulse2.database.msc.orm.commands_on_host import CoHManager
-from pulse2.database.msc.orm.target import Target
+## ORM mappings
+# TODO: PORT PYTHON3
+#from pulse2.database.msc.orm.commands_on_host import CommandsOnHost, stopCommandOnHost
+#from pulse2.database.msc.orm.commands_on_host import CoHManager
+#from pulse2.database.msc.orm.target import Target
 
-# Pulse 2 stuff
-from pulse2.scheduler.timeaxis import LaunchTimeResolver
+## Pulse 2 stuff
+# TODO: PORT PYTHON3
+#from pulse2.scheduler.timeaxis import LaunchTimeResolver
 
 
 class Commands(object):

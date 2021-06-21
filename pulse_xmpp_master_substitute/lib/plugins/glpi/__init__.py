@@ -32,11 +32,9 @@ import json
 import requests
 import traceback
 import sys
-from sets import Set
 import datetime
 import calendar, hashlib
 import time
-from configobj import ConfigObj
 from xmlrpc.client import ProtocolError
 import functools
 from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
