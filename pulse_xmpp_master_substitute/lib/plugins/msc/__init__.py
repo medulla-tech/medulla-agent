@@ -213,31 +213,37 @@ class MscDatabase(DatabaseHelper):
         self.config = confParameter()
 
         self.session = None
-        self.engine_mscmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.msc_dbuser,
-                                                                                self.config.msc_dbpasswd,
-                                                                                self.config.msc_dbhost,
-                                                                                self.config.msc_dbport,
-                                                                                self.config.msc_dbname),
-                                                    pool_recycle=self.config.dbpoolrecycle,
-                                                    pool_size=self.config.dbpoolsize,
-                                                    pool_timeout=self.config.msc_dbpooltimeout,
-                                                    convert_unicode=True)
+        try:
+            self.engine_mscmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.msc_dbuser,
+                                                                                    self.config.msc_dbpasswd,
+                                                                                    self.config.msc_dbhost,
+                                                                                    self.config.msc_dbport,
+                                                                                    self.config.msc_dbname),
+                                                        pool_recycle=self.config.dbpoolrecycle,
+                                                        pool_size=self.config.dbpoolsize,
+                                                        pool_timeout=self.config.msc_dbpooltimeout,
+                                                        convert_unicode=True)
 
-        self.metadata = MetaData(self.engine_mscmmaster_base)
-        if not self.initTables():
+            self.metadata = MetaData(self.engine_mscmmaster_base)
+            if not self.initTables():
+                return False
+
+            self.initMappers()
+            self.metadata.create_all()
+            # FIXME: should be removed
+            self.session = create_session(bind=self.engine_mscmmaster_base)
+            if self.session is not None:
+            # self.session = sessionmaker(bind=self.engine_xmppmmaster_base)
+                self.is_activated = True
+                self.logger.debug("Msc database connected")
+                return True
+            self.logger.error("Msc database connecting")
             return False
-
-        self.initMappers()
-        self.metadata.create_all()
-        # FIXME: should be removed
-        self.session = create_session(bind=self.engine_mscmmaster_base)
-        if self.session is not None:
-        # self.session = sessionmaker(bind=self.engine_xmppmmaster_base)
-            self.is_activated = True
-            self.logger.debug("Msc database connected")
-            return True
-        self.logger.error("Msc database connecting")
-        return False
+        except Exception as e:
+            self.logger.error("We failed to connect to the Msc database.")
+            self.logger.error("Please verify your configuration")
+            self.is_activated = False
+            return False
 
     def initTables(self):
         """

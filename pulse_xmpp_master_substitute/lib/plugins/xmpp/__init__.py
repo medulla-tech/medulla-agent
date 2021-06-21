@@ -151,28 +151,29 @@ class XmppMasterDatabase(DatabaseHelper):
         if self.is_activated:
             return None
         self.logger = logging.getLogger()
-        self.logger.debug("xmpp activation")
+        self.logger.debug("Xmpp activation")
         self.engine = None
-        #self.dbpoolrecycle = 60
-        #self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
         # utilisation xmppmaster
-        self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
-                                                                                 self.config.xmpp_dbpasswd,
-                                                                                 self.config.xmpp_dbhost,
-                                                                                 self.config.xmpp_dbport,
-                                                                                 self.config.xmpp_dbname),
-                                                     pool_recycle=self.config.dbpoolrecycle,
-                                                     pool_size=self.config.dbpoolsize)
-        self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
-        self.is_activated = True
-        self.logger.debug("xmpp finish activation")
-
-    # xmppmaster FUNCTIONS
-
-    # xmppmaster FUNCTIONS FOR Subscription
+        try:
+            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
+                                                                                     self.config.xmpp_dbpasswd,
+                                                                                     self.config.xmpp_dbhost,
+                                                                                     self.config.xmpp_dbport,
+                                                                                     self.config.xmpp_dbname),
+                                                         pool_recycle=self.config.dbpoolrecycle,
+                                                         pool_size=self.config.dbpoolsize)
+            self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+            self.is_activated = True
+            self.logger.debug("Xmpp activation done.")
+            return True
+        except Exception as e:
+            self.logger.error("We failed to connect to the Xmpp database.")
+            self.logger.error("Please verify your configuration")
+            self.is_activated = False
+            return False
 
     @DatabaseHelper._sessionm
     def setagentsubscription(self,
@@ -1675,7 +1676,8 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.execute(sql)
                     session.commit()
                     session.flush()
-                self.checknewjid(jid)
+                else:
+                    self.checknewjid(jid)
             except Exception, e:
                 logging.getLogger().error(str(e))
                 msg=str(e)
@@ -4167,7 +4169,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
             where
                 `has_relayserverrules`.`rules_id` = %d
-                    AND `has_relayserverrules`.`subject` = '%s'
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
@@ -4180,7 +4182,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
             where
                 `has_relayserverrules`.`rules_id` = %d
-                    AND `has_relayserverrules`.`subject` = '%s'
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
@@ -4208,7 +4210,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
             where
                 `has_relayserverrules`.`rules_id` = %d
-                    AND `has_relayserverrules`.`subject` = '%s'
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
@@ -4221,7 +4223,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
             where
                 `has_relayserverrules`.`rules_id` = %d
-                    AND `has_relayserverrules`.`subject` = '%s'
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
@@ -4250,7 +4252,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
             where
                 `has_relayserverrules`.`rules_id` = %d
-                    AND `has_relayserverrules`.`subject` = '%s'
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
@@ -4263,7 +4265,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
             where
                 `has_relayserverrules`.`rules_id` = %d
-                    AND `has_relayserverrules`.`subject` = '%s'
+                    AND '%s' REGEXP `has_relayserverrules`.`subject`
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
@@ -5105,6 +5107,72 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
+    def update_Presence_Relay(self, session, jid, presence=0):
+        """
+            Update the presence in the relay and machine SQL Tables
+            Args:
+                session: The SQL Alchemy session
+                jid: jid of the relay to update
+                presence: Availability of the relay
+                          0: Set the relay as offline
+                          1: Set the relay as online
+        """
+        try:
+            user = str(jid).split("@")[0]
+
+            sql = """UPDATE
+                        `xmppmaster`.`machines`
+                    SET
+                        `enabled` = '%s'
+                    WHERE
+                        `xmppmaster`.`machines`.`jid` like('%s@%%');""" % (presence,
+                                                                           user)
+            session.execute(sql)
+            sql = """UPDATE
+                        `xmppmaster`.`relayserver`
+                    SET
+                        `enabled` = '%s'
+                    WHERE
+                        `xmppmaster`.`relayserver`.`jid` like('%s@%%');""" % (presence,
+                                                                              user)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error("Function : update_Presence_Relay, we got the error: " % str(e))
+            logging.getLogger().error("We encountered the backtrace: \n%s" % traceback.format_exc())
+
+    @DatabaseHelper._sessionm
+    def is_machine_reconf_needed(self, session, jid, reconf=1):
+        """
+            Tell if we need to start a reconfiguration of the machines assigned to a relay.
+            Args:
+                session: The SQL Alchemy session
+                jid: jid of the relay to update
+                reconf: Tell if we need to reconfigure the machines.
+                        0: No reconf needed
+                        1: A reconfigurtion is needed
+        """
+        try:
+            user = str(jid).split("@")[0]
+            set_reconf = """UPDATE
+                        `xmppmaster`.`machines`
+                     SET
+                        `need_reconf` = '%s'
+                     WHERE
+                        `xmppmaster`.`machines`.`agenttype` like ("machine")
+                        AND
+                        `xmppmaster`.`machines`.`groupdeploy` like('%s@%%');""" % (reconf,
+                                                                                   user)
+            session.execute(set_reconf)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error("Function : is_machine_reconf_needed, we got the error: " % str(e))
+            logging.getLogger().error("We encountered the backtrace: \n%s" % traceback.format_exc())
+
+
+    @DatabaseHelper._sessionm
     def delPresenceMachine(self, session, jid):
         result = ['-1']
         typemachine = "machine"
@@ -5879,9 +5947,19 @@ class XmppMasterDatabase(DatabaseHelper):
             jsonresult = json.loads(result)
         except Exception as e:
             self.logger.error(str(e))
-            self.logger.error("error convertion str in string json to dict")
-            self.logger.error("string %s" % result)
+            self.logger.error("We failed to convert the result into a json format")
+            self.logger.error("The string we failed to convert is: %s" % result)
             return -1
+
+        if  'descriptor' not in jsonresult:
+            jsonresult['descriptor'] = {}
+
+        if 'sequence' not in jsonresult['descriptor']:
+            jsonresult['descriptor']['sequence'] = {}
+
+        if 'info' not in jsonresult['descriptor']:
+            jsonresult['descriptor']['info'] = {}
+
         jsonautre = copy.deepcopy(jsonresult)
         try:
             del jsonautre['descriptor']
@@ -5911,7 +5989,24 @@ class XmppMasterDatabase(DatabaseHelper):
                                 "user": deploysession.login
                                 }
                 else:
+                    need_info = False
                     jsonbase = json.loads(deploysession.result)
+
+                    if 'infoslist' not in jsonbase:
+                        jsonbase['infoslist'] = []
+                        need_info = True
+
+                    if 'descriptorslist' not in jsonbase:
+                        jsonbase['descriptorslist'] = []
+                        need_info = True
+
+                    if 'otherinfos' not in jsonbase:
+                        jsonbase['otherinfos'] = []
+                        need_info = True
+
+                    if need_info:
+                        self.logger.info("The content of the uncomplete json file is \n %s" % deploysession.result)
+
                     jsonbase['infoslist'].append(jsonresult['descriptor']['info'])
                     jsonbase['descriptorslist'].append(jsonresult['descriptor']['sequence'])
                     jsonbase['otherinfos'].append(jsonautre)

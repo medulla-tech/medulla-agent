@@ -404,6 +404,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 if len(result1) > 0:
                     if showinfomachine:
                         logger.info("Applied rule : AD organized by machines")
+                        logger.info("We matched the relayserver ID: %s" % result1)
+
                     result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(result1[0].id)
                     msg_log("AD organized by machine",
                             data['information']['info']['hostname'],

@@ -67,15 +67,15 @@ class sessiondatainfo:
         return json.dumps(session)
 
     def sauvesession(self):
-    """
-    Create file with the sessionid in the name.
-    It saves the file in the python pulse_xmpp_master_substitute folder.
-    Return:
-        It returns True if the file is well created.
-        False, otherwise
-    """
+        """
+            Create file with the sessionid in the name.
+            It saves the file in the python pulse_xmpp_master_substitute folder.
+            Return:
+                It returns True if the file is well created.
+                False, otherwise
+        """
         namefilesession = os.path.join(self.pathfile, self.sessionid)
-        logging.getLogger().debug("save session in file %s" % namefilesession)
+        logging.getLogger().debug("save session in file %s" % self.sessionid)
         session = {'sessionid': self.sessionid,
                    'timevalid': self.timevalid,
                    'datasession': self.datasession}

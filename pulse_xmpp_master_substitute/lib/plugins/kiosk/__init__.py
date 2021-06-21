@@ -106,16 +106,23 @@ class KioskDatabase(DatabaseHelper):
         self.sessionkiosk = None
         self.config = confParameter()
         # utilisation xmppmaster
-        self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.kiosk_dbuser,
-                                                                          self.config.kiosk_dbpasswd,
-                                                                          self.config.kiosk_dbhost,
-                                                                          self.config.kiosk_dbport,
-                                                                          self.config.kiosk_dbname),
-                                                                          pool_recycle = self.config.dbpoolrecycle,
-                                                                          pool_size = self.config.dbpoolsize)
-        self.Sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
-        self.is_activated = True
-        self.logger.debug("kiosk finish activation")
+        try:
+            self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.kiosk_dbuser,
+                                                                               self.config.kiosk_dbpasswd,
+                                                                               self.config.kiosk_dbhost,
+                                                                               self.config.kiosk_dbport,
+                                                                               self.config.kiosk_dbname),
+                                                   pool_recycle = self.config.dbpoolrecycle,
+                                                   pool_size = self.config.dbpoolsize)
+            self.Sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
+            self.is_activated = True
+            self.logger.debug("kiosk finish activation")
+            return True
+        except Exception as e:
+            self.logger.error("We failed to connect to the Kiosk database.")
+            self.logger.error("Please verify your configuration")
+            self.is_activated = False
+            return False
 
     def initMappers(self):
         """

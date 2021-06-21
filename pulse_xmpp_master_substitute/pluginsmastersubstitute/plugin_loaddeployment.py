@@ -79,7 +79,6 @@ def scheduledeploy(self):
     # TODO
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
-    msg=[]
     list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
     for arssyncthing in list_ars_syncthing_pause:
         datasend = {"action": "deploysyncthing",
@@ -114,14 +113,14 @@ def scheduledeploy(self):
     # Search deploy to running
     resultdeploymachine = MscDatabase().deployxmpp()
     for deployobject in resultdeploymachine:
+        msg = []
         # creation deployment
         UUID = deployobject['UUID']
         UUIDSTR = UUID.replace('UUID', "")
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
         re_search = []
         if resultpresence[UUID][1] == 0:
-            ## il n'y a pas de uuid glpi
-            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'].split('.')[0])
             if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
                 update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
                 if update_result is not None:
@@ -950,7 +949,7 @@ def applicationdeploymentjson(self,
             msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
             if data['advanced'] and data['advanced']['syncthing'] == 1:
                 msg.append("<span class='log_warn'>There are not enough machines " \
-                           "to deploy in peer mode</span>")
+                           "to deploy in Syncthing mode</span>")
 
             data['advanced']['syncthing'] = 0
             result = None
@@ -991,7 +990,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if  'syncthing' not in  data['advanced'] or if data['advanced']['syncthing'] == 0:
+    if  'syncthing' not in data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
@@ -1019,8 +1018,6 @@ def syncthingdeploy(self):
                                       data,
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
-    else:
-        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
