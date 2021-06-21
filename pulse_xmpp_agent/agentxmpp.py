@@ -152,7 +152,7 @@ class TimedCompressedRotatingFileHandler(TimedRotatingFileHandler):
         super(TimedCompressedRotatingFileHandler, self).doRollover()
         try:
             dfn = self.get_files_by_date()
-        except:
+        except Exception:
             return
         dfn_zipped = '{}.zip'.format(dfn)
         if os.path.exists(dfn_zipped):
@@ -740,7 +740,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             config = self.syncthing.get_config() # content all config
             # logger.debug("\n%s"%(json.dumps(config, indent=4 )))
-        except:
+        except Exception:
             #logger.error("\n%s"%(traceback.format_exc()))
             return
         if len(config) == 0:
@@ -861,7 +861,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         for filears in listfilearssyncthing:
             try:
                 syncthingtojson = managepackage.loadjsonfile(filears)
-            except:
+            except Exception:
                 syncthingtojson = None
 
             if syncthingtojson != None:
@@ -2249,7 +2249,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 xmppmask = t['mask']
                 try:
                     xmppbroadcast = t['broadcast']
-                except :
+                except Exception:
                     xmppbroadcast = ""
                 xmppdhcp = t['dhcp']
                 xmppdhcpserver = t['dhcpserver']

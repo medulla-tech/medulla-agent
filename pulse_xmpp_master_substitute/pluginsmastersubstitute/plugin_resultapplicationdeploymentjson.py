@@ -70,5 +70,5 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
                             fromuser="",
                             touser="")
         xmppsub.sessiondeploysubstitute.clearnoevent(sessionid)
-    except:
+    except Exception:
         logger.error("%s" % (traceback.format_exc()))

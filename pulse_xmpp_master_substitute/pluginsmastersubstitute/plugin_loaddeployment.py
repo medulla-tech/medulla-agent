@@ -209,7 +209,7 @@ def scheduledeploy(self):
                 deployobject['wol'] = 1
         try:
             self.machineDeploy[UUID].append(deployobject)
-        except:
+        except Exception:
             # creation list deployement
             self.machineDeploy[UUID] = []
             self.machineDeploy[UUID].append(deployobject)
@@ -687,7 +687,7 @@ def applicationdeployjsonuuid(self,
                              fromuser=login)
             logger.error("deploy %s error on machine %s" % (name, uuidmachine))
             return False
-    except:
+    except Exception:
         logger.error("%s" % (traceback.format_exc()))
         logger.error("deploy %s error on machine %s" % (name, uuidmachine))
         XmppMasterDatabase().adddeploy(idcommand,

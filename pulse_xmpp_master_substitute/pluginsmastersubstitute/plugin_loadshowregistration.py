@@ -45,7 +45,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
         if compteurcallplugin == 0:
             read_conf_showregistration(objectxmpp)
-    except:
+    except Exception:
         logger.error("plugin %s\n%s"%(plugin['NAME'], traceback.format_exc()))
 
 

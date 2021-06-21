@@ -277,7 +277,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 t['compile_re'] = re.compile(t['regexplog'])
                 self.reglestatus.append(t)
             logger.debug("regle status initialise%s"% self.reglestatus)
-        except:
+        except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
 
     def register(self, iq):

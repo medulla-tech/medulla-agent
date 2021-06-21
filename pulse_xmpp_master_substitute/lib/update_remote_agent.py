@@ -43,7 +43,7 @@ class Update_Remote_Agent:
                           "lib_agent": {},
                           "script_agent": {},
                           "fingerprint": ""}
-        # verify exist dir and create si not exit. The default mode is 0777 (octal)
+        # verify exist dir and create si not exit. The default mode is 0o777 (octal)
         dir_create = [dir_agent_base,
                       os.path.join(dir_agent_base, 'lib'),
                       os.path.join(dir_agent_base, 'script')]

@@ -178,7 +178,7 @@ class MUCBot(ClientXMPP):
             # Before reinitialisation we remove the config.xml file
             try:
                 os.remove(self.fichierconfsyncthing)
-            except :
+            except Exception:
                 pass
             self.Ctrlsyncthingprogram = syncthingprogram(agenttype=self.config.agenttype)
             self.Ctrlsyncthingprogram.restart_syncthing()
@@ -190,7 +190,7 @@ class MUCBot(ClientXMPP):
                 else:
                     try:
                         os.remove(tmpfile)
-                    except :
+                    except Exception:
                         pass
                 time.sleep(1)
                 try:
@@ -560,7 +560,7 @@ class MUCBot(ClientXMPP):
                 xmppmask = t['mask']
                 try:
                     xmppbroadcast = t['broadcast']
-                except :
+                except Exception:
                     xmppbroadcast = ""
                 xmppdhcp = t['dhcp']
                 xmppdhcpserver = t['dhcpserver']

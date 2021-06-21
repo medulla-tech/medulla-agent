@@ -96,7 +96,7 @@ class sessiondatainfo:
         logging.getLogger().debug("UPDATE SESSION")
         try:
             session = loadjsonfile(namefilesession)
-        except :
+        except Exception:
             logging.getLogger().error("update session [unable to read the list of session files] del fichier" %namefilesession)
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
@@ -196,7 +196,7 @@ class session:
     def removefilesessionifnotsignal(self, namefilesession):
         try:
             session = loadjsonfile(namefilesession)
-        except :
+        except Exception:
             logging.getLogger().error("reading file session error : del session file : %s" %namefilesession)
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)

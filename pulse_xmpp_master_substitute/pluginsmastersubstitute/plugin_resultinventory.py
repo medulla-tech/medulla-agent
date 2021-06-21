@@ -48,7 +48,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.info("Received inventory from %s in inventory substitute agent" % (msg['from']))
         try:
             url = xmppobject.config.inventory_url
-        except:
+        except Exception:
             url = "http://localhost:9999/"
         inventory = zlib.decompress(base64.b64decode(data['inventory']))
         request = urllib.request.Request(url, inventory, HEADER)
@@ -107,7 +107,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         # save registry inventory
         try:
             reginventory = json.loads(base64.b64decode(data['reginventory']))
-        except:
+        except Exception:
             reginventory = False
         # send inventory to inventory server
 

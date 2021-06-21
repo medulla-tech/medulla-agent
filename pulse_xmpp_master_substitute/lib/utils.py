@@ -1541,7 +1541,7 @@ def is_findHostfromHostname(hostname):
     try:
         host = socket.gethostbyname(hostname)
         return True
-    except:
+    except Exception:
         pass
     return False
 
@@ -1549,7 +1549,7 @@ def is_findHostfromIp(ip):
     try:
         host = socket.gethostbyaddr(ip)
         return True
-    except:
+    except Exception:
         pass
     return False
 
@@ -1917,13 +1917,13 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             return False, msg
         if not os.path.isdir(homedir):
             os.makedirs(homedir, 0o751)
-        os.chmod(homedir, 0751)
+        os.chmod(homedir, 0o751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
             os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
-        os.chmod(packagedir, 0764)
+        os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
         msg = '%s profile created successfully at %s' % (username, homedir)
         return True, msg
@@ -1937,13 +1937,13 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             return False, msg
         if not os.path.isdir(homedir):
             os.makedirs(homedir, 0o751)
-        os.chmod(homedir, 0751)
+        os.chmod(homedir, 0o751)
         os.chown(homedir, uid, gid)
         packagedir = os.path.join(homedir, 'packages')
         if not os.path.isdir(packagedir):
             os.makedirs(packagedir, 0o764)
         gidroot = grp.getgrnam("root").gr_gid
-        os.chmod(packagedir, 0764)
+        os.chmod(packagedir, 0o764)
         os.chown(packagedir, uid, gidroot)
         msg = '%s profile created successfully at %s' % (username, homedir)
         return True, msg
@@ -2067,8 +2067,8 @@ def apply_perms_sshkey(path, private=True):
         try:
             os.chown(os.path.dirname(path), uid, gid)
             os.chown(path, uid, gid)
-            os.chmod(os.path.dirname(path), 0700)
-            os.chmod(path, 0600)
+            os.chmod(os.path.dirname(path), 0o700)
+            os.chmod(path, 0o600)
         except Exception as e:
             msg = 'Error setting permissions on %s for user %s: %s' % (path, pwd.getpwuid(uid).pw_name, str(e))
             return False, msg
@@ -2150,7 +2150,7 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
         return False, msg
     if not os.path.isdir(homedir):
         os.makedirs(homedir, 0o751)
-    os.chmod(homedir, 0751)
+    os.chmod(homedir, 0o751)
     os.chown(homedir, uid, -1)
     # Check keys
     id_rsa_key_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'id_rsa')
@@ -2166,13 +2166,13 @@ def reversessh_keys_mustexist_on_relay(username='reversessh'):
     authorized_keys_path = os.path.join(os.path.expanduser('~%s' % username), '.ssh', 'authorized_keys')
     addtoauth_cmd = 'ssh-keygen -y -f %s > %s' % (id_rsa_key_path, authorized_keys_path)
     simplecommand(encode_strconsole(addtoauth_cmd))
-    os.chmod(os.path.dirname(id_rsa_key_path), 0700)
+    os.chmod(os.path.dirname(id_rsa_key_path), 0o700)
     os.chown(os.path.dirname(id_rsa_key_path), uid, -1)
-    os.chmod(id_rsa_key_path, 0600)
+    os.chmod(id_rsa_key_path, 0o600)
     os.chown(id_rsa_key_path, uid, -1)
-    os.chmod(public_key_path, 0644)
+    os.chmod(public_key_path, 0o644)
     os.chown(public_key_path, uid, -1)
-    os.chmod(authorized_keys_path, 0600)
+    os.chmod(authorized_keys_path, 0o600)
     os.chown(authorized_keys_path, uid, -1)
     return True, 'Keys permissions applied on relay'
 
@@ -2313,7 +2313,7 @@ class geolocalisation_agent:
         try:
             r = requests.get(url)
             return r.json()
-        except:
+        except Exception:
             return None
 
     @staticmethod
@@ -2321,7 +2321,7 @@ class geolocalisation_agent:
         try:
             objip = json.loads(urllib.request.urlopen(url).read())
             return objip
-        except:
+        except Exception:
             return None
 
     @staticmethod

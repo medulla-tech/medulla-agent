@@ -47,7 +47,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 t['compile_re'] = re.compile(t['regexplog'])
                 xmppobject.status_rules.append(t)
             logger.debug("We initialized to the rule: %s"% xmppobject.status_rules)
-        except:
+        except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         read_conf_log_agent(xmppobject)
     try :

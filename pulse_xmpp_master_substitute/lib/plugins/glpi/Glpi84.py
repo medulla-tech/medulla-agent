@@ -387,7 +387,7 @@ class Glpi84(DatabaseHelper):
                 autoload = True)
             mapper(FusionAntivirus, self.fusionantivirus)
             self.logger.debug('... Success !!')
-        except:
+        except Exception:
             self.logger.warn('Load of fusion antivirus table failed')
             self.logger.warn('This means you can not know antivirus statuses of your machines.')
             self.logger.warn('This feature comes with Fusioninventory GLPI plugin')
@@ -1040,7 +1040,7 @@ class Glpi84(DatabaseHelper):
                     if filt['hostname'].lower().startswith('uuid') and len(filt['hostname'])>3:
                         try:
                             clauses.append(self.machine.c.id==fromUUID(filt['hostname']))
-                        except:
+                        except Exception:
                             pass
                     if 'cn' in self.config.summary:
                         clauses.append(self.machine.c.name.like('%'+filt['hostname']+'%'))
@@ -1425,7 +1425,7 @@ class Glpi84(DatabaseHelper):
             for i in ['location', 'ctxlocation']:
                 try:
                     filt.pop(i)
-                except:
+                except Exception:
                     pass
             ret = self.getRestrictedComputersList(ctx,
                                                   0,
@@ -2907,7 +2907,7 @@ class Glpi84(DatabaseHelper):
     def getSearchOptionValue(self, log):
         try:
             return self.searchOptions['en_US'][str(log.id_search_option)]
-        except:
+        except Exception:
             if log.id_search_option != 0:
                 logging.getLogger().warn('I can\'t get a search option for id %s' % log.id_search_option)
             return ''
@@ -3025,7 +3025,7 @@ class Glpi84(DatabaseHelper):
         field = self.getLinkedActions()
         try:
             return field[itemtype]
-        except:
+        except Exception:
             return itemtype
 
     def getUnknownPXEOSId(self, unknownOsString):

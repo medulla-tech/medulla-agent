@@ -123,7 +123,7 @@ def deployPluginscheduled(self, msg, plugin):
         fileplugin = open(namefile, "rb")
         data = fileplugin.read()
         fileplugin.close()
-    except:
+    except Exception:
         logger.error("File read error\n%s"%(traceback.format_exc()))
         return
     fichierdata['action'] = 'installpluginscheduled'
@@ -138,7 +138,7 @@ def deployPluginscheduled(self, msg, plugin):
         self.send_message(mto=msg['from'],
                             mbody=json.dumps(fichierdata),
                             mtype='chat')
-    except:
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
 def loadPluginschedulerList(self):
@@ -157,6 +157,6 @@ def loadPluginschedulerList(self):
                     self.plugindatascheduler[plugin['NAME']] = plugin['VERSION']
                     try:
                         self.plugintypescheduler[plugin['NAME']] = plugin['TYPE']
-                    except:
+                    except Exception:
                         self.plugintypescheduler[plugin['NAME']] = "machine"
                     break

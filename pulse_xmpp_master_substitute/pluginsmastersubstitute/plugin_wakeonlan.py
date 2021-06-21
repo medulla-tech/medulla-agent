@@ -48,7 +48,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         logger.debug("compteurcallplugin %s" % compteurcallplugin)
         if compteurcallplugin == 0:
             read_conf_wol(xmppobject)
-    except:
+    except Exception:
         logger.error("plugin %s\n%s" % (plugin['NAME'], traceback.format_exc()))
 
     try:

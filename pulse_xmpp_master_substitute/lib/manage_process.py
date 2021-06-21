@@ -35,7 +35,7 @@ def processcommand(command , queue_out_session, messagestr, timeout):
     logging.error("########processcommand")
     try:
         message = json.loads(messagestr)
-    except:
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
         logging.getLogger().error("error json")
         sys.exit(0)
@@ -64,7 +64,7 @@ def processcommand(command , queue_out_session, messagestr, timeout):
     except KeyboardInterrupt:
         logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
         sys.exit(0)
-    except :
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
         logging.error("error execution process %s sessionid : %s"%(command, message['sessionid']))
         sys.exit(0)
@@ -74,7 +74,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
     command = decode_strconsole(command)
     try:
         message = json.loads(decode_strconsole(messagestr))
-    except:
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
         logging.getLogger().error("error json")
         sys.exit(0)
@@ -103,7 +103,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
             result  = [x.strip() for x in result if x !='']
             try:
                 message['data']['oldresult'] = decode_strconsole(str(result[-1]))
-            except :
+            except Exception:
                 message['data']['oldresult'] = ""
             for t in workingstep:
                 if t == "@resultcommand":
@@ -142,7 +142,7 @@ def processstepcommand ( command , queue_out_session, messagestr, timeout, step)
     except KeyboardInterrupt:
         logging.getLogger().warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
         sys.exit(0)
-    except :
+    except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
         logging.getLogger().error("error execution process %s sessionid : %s"%(command,message['sessionid']))
         sys.exit(0)
@@ -193,7 +193,7 @@ class process_on_end_send_message_xmpp:
         logging.getLogger().error("########processstepcommand")
         try:
             message = json.loads(messagestr)
-        except:
+        except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
             logging.getLogger().error("error json")
             sys.exit(0)
@@ -264,7 +264,7 @@ class process_on_end_send_message_xmpp:
         except KeyboardInterrupt:
             logging.getLogger().warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
-        except :
+        except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
             logging.getLogger().error("error execution process %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
@@ -276,7 +276,7 @@ class process_on_end_send_message_xmpp:
         logging.error("########processcommand")
         try:
             message = json.loads(decode_strconsole(messagestr))
-        except:
+        except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
             logging.getLogger().error("error json")
             sys.exit(0)
@@ -305,7 +305,7 @@ class process_on_end_send_message_xmpp:
         except KeyboardInterrupt:
             logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
-        except :
+        except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
             logging.error("error execution process %s sessionid : %s"%(command,message['sessionid']))
             sys.exit(0)
@@ -434,7 +434,7 @@ class mannageprocess:
         except KeyboardInterrupt:
             logging.warn("KeyboardInterrupt process  %s sessionid : %s"%(command,sessionid))
             sys.exit(0)
-        except :
+        except Exception:
             logger.error("\n%s"%(traceback.format_exc()))
             logging.error("error execution process %s sessionid : %s"%(command,sessionid))
             sys.exit(0)
