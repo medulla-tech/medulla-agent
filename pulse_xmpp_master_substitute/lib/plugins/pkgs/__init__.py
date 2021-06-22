@@ -102,13 +102,33 @@ class PkgsDatabase(DatabaseHelper):
 
         self.session = None
         try:
+            self.config.pkgs_dbpoolrecycle
+            self.poolrecycle = self.config.pkgs_dbpoolrecycle
+        except Exception:
+            self.poolrecycle = self.config.dbpoolrecycle
+
+        try:
+            self.config.pkgs_dbpoolsize
+            self.poolsize = self.config.pkgs_dbpoolsize
+        except Exception:
+            self.poolsize = self.config.dbpoolsize
+        self.logger.info("Msc parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s"%(self.config.pkgs_dbuser,
+                                                self.config.pkgs_dbhost,
+                                                self.config.pkgs_dbport,
+                                                self.config.pkgs_dbname,
+                                                self.poolrecycle,
+                                                self.poolsize))
+
+        try:
             self.engine_pkgsmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.pkgs_dbuser,
                                                                                      self.config.pkgs_dbpasswd,
                                                                                      self.config.pkgs_dbhost,
                                                                                      self.config.pkgs_dbport,
                                                                                      self.config.pkgs_dbname),
-                                                         pool_recycle=self.config.dbpoolrecycle,
-                                                         pool_size=self.config.dbpoolsize,
+                                                         pool_recycle=self.poolrecycle,
+                                                         pool_size=self.poolsize,
                                                          pool_timeout=self.config.pkgs_dbpooltimeout,
                                                          convert_unicode=True)
 

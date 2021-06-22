@@ -92,14 +92,35 @@ class Glpi(object):
         self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
+
+        try:
+            self.config.glpi_dbpoolrecycle
+            self.poolrecycle = self.config.glpi_dbpoolrecycle
+        except Exception:
+            self.poolrecycle = self.config.dbpoolrecycle
+
+        try:
+            self.config.glpi_dbpoolsize
+            self.poolsize = self.config.glpi_dbpoolsize
+        except Exception:
+            self.poolsize = self.config.dbpoolsize
+        self.logger.info("Glpi parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s"%(self.config.glpi_dbuser,
+                                                self.config.glpi_dbhost,
+                                                self.config.glpi_dbport,
+                                                self.config.glpi_dbname,
+                                                self.poolrecycle,
+                                                self.poolsize))
+
         try:
             self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.glpi_dbuser,
                                                                          self.config.glpi_dbpasswd,
                                                                          self.config.glpi_dbhost,
                                                                          self.config.glpi_dbport,
                                                                          self.config.glpi_dbname),
-                                             pool_recycle = self.config.dbpoolrecycle,
-                                             pool_size = self.config.dbpoolsize)
+                                             pool_recycle = self.poolrecycle,
+                                             pool_size = self.poolsize)
 
             try:
                 self._glpi_version = self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
