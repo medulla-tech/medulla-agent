@@ -597,9 +597,12 @@ class confParameter:
                 self.logfile = os.path.join(
                     "/", "var", "log", "pulse", defaultnamelogfile)
 
-        # information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get('configuration_server', 'confserver')
+            listserver = [ ipfromdns(x.strip()) for x in self.confserver.split(",")
+                        if x.strip() != ""]
+            listserver = list(set(listserver))
+            self.confserver = listserver[random.randint(0,len(listserver)-1)]
         if Config.has_option("configuration_server", "confport"):
             self.confport = Config.get('configuration_server', 'confport')
         if Config.has_option("configuration_server", "confpassword"):
