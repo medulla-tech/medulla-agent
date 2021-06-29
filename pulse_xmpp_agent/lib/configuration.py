@@ -39,6 +39,13 @@ import re
 
 logger = logging.getLogger()
 
+def uniq(input):
+  output = []
+  for x in input:
+    if x not in output:
+      output.append(x)
+  return output
+
 def changeconfigurationsubtitute(conffile, confsubtitute):
     """
     This function allow to modify the machine agent to use substitute by default
@@ -53,9 +60,10 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
-        confsubtitute[t] = list(set(confsubtitute[t]))
-        Config.set('substitute', t, ",".join(confsubtitute[t]))
-    logger.info("write parameter subtitute")
+        uniq_list = uniq(confsubtitute[t])
+        Config.set('substitute', t, ",".join(uniq_list))
+        logger.info("application substitut %s for %s"%(uniq_list[0],t))
+    logger.debug("writing parameters of the substitutes")
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
