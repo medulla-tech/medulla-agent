@@ -80,24 +80,150 @@ def changed_status(self, presence):
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
         pass
+    try:
+        hostname = spresence.split('.', 1)[0]
+        jidsubscripbe = spresence.split('/', 1)[0]
+        lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
+        if presence['type'] == 'unavailable':
+            if lastevent and lastevent[0]['status'] == 1:
+                XmppMasterDatabase().setUptime_machine(hostname,
+                                                    spresence,
+                                                    status=0,
+                                                    updowntime=time.time() - lastevent[0]['time'],
+                                                    date=None)
+            result = XmppMasterDatabase().getMachinefromjid(spresence)
+            if result and result['enabled'] == 0:
+                return
+            try:
+                logger.info("The machine or ARS %s is now Offline" % spresence)
+                result = XmppMasterDatabase().initialisePresenceMachine(spresence)
+                XmppMasterDatabase().setlogxmpp("%s offline" % spresence,
+                                                "info",
+                                                '',
+                                                -1,
+                                                spresence,
+                                                '',
+                                                '',
+                                                'Presence',
+                                                '',
+                                                '',
+                                                self.boundjid.bare)
+                if result is None or len(result) == 0:
+                    return
+                if "type" in result and result['type'] == "relayserver":
+                    # recover list of cluster ARS
+                    listrelayserver = XmppMasterDatabase().getRelayServerofclusterFromjidars(spresence)
+                    cluster = {'action': "cluster",
+                            'sessionid': name_random(5, "cluster"),
+                            'data': {'subaction': 'initclusterlist',
+                                        'data': listrelayserver
+                                        }
+                                }
+                    # all Relays server in the cluster are notified.
+                    logger.debug("Notify to all ARS, offline ARS %s" % spresence)
+                    for ARScluster in listrelayserver:
+                        self.send_message(mto=ARScluster,
+                                        mbody=json.dumps(cluster),
+                                        mtype='chat')
+                else:
+                    obj = XmppMasterDatabase().getcluster_resources(spresence)
+                    arscluster = []
+                    for t in obj['resource']:
+                        if t['jidmachine'] == spresence:
+                            logger.debug("*** resource recovery on ARS %s for deploy"\
+                                        "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
+                                                                                            t['sessionid'],
+                                                                                            t['hostname']))
+                            arscluster.append([t['jidrelay'],
+                                            t['sessionid'],
+                                            t['hostname'],
+                                            t['jidmachine']])
 
-    hostname = spresence.split('.', 1)[0]
-    jidsubscripbe = spresence.split('/', 1)[0]
-    lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
-    if presence['type'] == 'unavailable':
-        if lastevent and lastevent[0]['status'] == 1:
-            XmppMasterDatabase().setUptime_machine(hostname,
-                                                   spresence,
-                                                   status=0,
-                                                   updowntime=time.time() - lastevent[0]['time'],
-                                                   date=None)
-        result = XmppMasterDatabase().getMachinefromjid(spresence)
-        if result and result['enabled'] == 0:
-            return
-        try:
-            logger.info("The machine or ARS %s is now Offline" % spresence)
-            result = XmppMasterDatabase().initialisePresenceMachine(spresence)
-            XmppMasterDatabase().setlogxmpp("%s offline" % spresence,
+                            ret = XmppMasterDatabase().updatedeploystate1(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
+                            if ret >= 1:
+                                logger.debug("Update deploy Status for Machine OffLine %s" % t['jidmachine'])
+                                self.xmpplog("Freeing deployment resource on ARS %s"\
+                                            "sessionid %s on machine %s (connection loss)" % (t['jidrelay'],
+                                                                                            t['sessionid'],
+                                                                                            t['hostname']),
+                                            type='deploy',
+                                            sessionname=t['sessionid'],
+                                            priority=-1,
+                                            action="xmpplog",
+                                            who="",
+                                            how="",
+                                            why=t['jidmachine'],
+                                            module="Deployment| Notify | Cluster",
+                                            date=None,
+                                            fromuser="",
+                                            touser="")
+
+                                self.xmpplog('Waiting for reboot',
+                                            type='deploy',
+                                            sessionname=t['sessionid'],
+                                            priority=-1,
+                                            action="xmpplog",
+                                            who=t['jidmachine'],
+                                            how="",
+                                            why="",
+                                            module="Deployment | Error | Terminate | Notify",
+                                            date=None,
+                                            fromuser="master",
+                                            touser="")
+                    if len(arscluster) > 0:
+                        listrelayserver = XmppMasterDatabase().getRelayServer(enable=True)
+                        cluster = {'action': "cluster",
+                                'sessionid': name_random(5, "cluster"),
+                                'data': {'subaction': 'removeresource',
+                                            'data': {"jidmachine": spresence
+                                                    }
+                                            }
+                                }
+
+                        for ars in listrelayserver:
+                            logger.debug("We remove the ressource on the ARS %s for the machine %s" % (ars, spresence))
+                            self.send_message(mto=ars['jid'],
+                                            mbody=json.dumps(cluster),
+                                            mtype='chat')
+            except Exception as e:
+                logger.error("We encountered the error %s" % str(e))
+                logger.error("the backtrace is: \n %s" % (traceback.format_exc()))
+        elif presence['type'] == "available":
+            lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
+            if lastevent:
+                if lastevent[0]['status'] == 0:
+                    XmppMasterDatabase().setUptime_machine(hostname,
+                                                        spresence,
+                                                        status=1,
+                                                        updowntime=time.time() - lastevent[0]['time'],
+                                                        date=None)
+            else:
+                XmppMasterDatabase().setUptime_machine(hostname,
+                                                    spresence,
+                                                    status=1,
+                                                    updowntime=0,
+                                                    date=None)
+            logger.info("The machine or ARS %s is now Online" % spresence)
+            result = XmppMasterDatabase().initialisePresenceMachine(spresence,
+                                                                    presence=1)
+            if result is None or len(result) == 0:
+                return
+            if "type" in result and result['type'] == "machine":
+                try:
+                    if "reconf" in result and result['reconf'] == 1:
+                        result1 = self.iqsendpulse(presence['from'],
+                                                        {"action": "information",
+                                                        "data": {"listinformation": ["force_reconf"],
+                                                                "param" : {} }},
+                                                5)
+                except Exception:
+                    pass
+                try:
+                    XmppMasterDatabase().updateMachinereconf(spresence)
+                except Exception:
+                    logger.error("\n%s" % (traceback.format_exc()))
+
+            XmppMasterDatabase().setlogxmpp("%s online" % spresence,
                                             "info",
                                             '',
                                             -1,
@@ -108,129 +234,5 @@ def changed_status(self, presence):
                                             '',
                                             '',
                                             self.boundjid.bare)
-            if result is None or len(result) == 0:
-                return
-            if "type" in result and result['type'] == "relayserver":
-                # recover list of cluster ARS
-                listrelayserver = XmppMasterDatabase().getRelayServerofclusterFromjidars(spresence)
-                cluster = {'action': "cluster",
-                           'sessionid': name_random(5, "cluster"),
-                           'data': {'subaction': 'initclusterlist',
-                                    'data': listrelayserver
-                                    }
-                            }
-                # all Relays server in the cluster are notified.
-                logger.debug("Notify to all ARS, offline ARS %s" % spresence)
-                for ARScluster in listrelayserver:
-                    self.send_message(mto=ARScluster,
-                                      mbody=json.dumps(cluster),
-                                      mtype='chat')
-            else:
-                obj = XmppMasterDatabase().getcluster_resources(spresence)
-                arscluster = []
-                for t in obj['resource']:
-                    if t['jidmachine'] == spresence:
-                        logger.debug("*** resource recovery on ARS %s for deploy"\
-                                     "sessionid %s on machine  (connection loss) %s " % (t['jidrelay'],
-                                                                                         t['sessionid'],
-                                                                                         t['hostname']))
-                        arscluster.append([t['jidrelay'],
-                                           t['sessionid'],
-                                           t['hostname'],
-                                           t['jidmachine']])
-
-                        ret = XmppMasterDatabase().updatedeploystate1(t['sessionid'], "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)")
-                        if ret >= 1:
-                            logger.debug("Update deploy Status for Machine OffLine %s" % t['jidmachine'])
-                            self.xmpplog("Freeing deployment resource on ARS %s"\
-                                         "sessionid %s on machine %s (connection loss)" % (t['jidrelay'],
-                                                                                           t['sessionid'],
-                                                                                           t['hostname']),
-                                         type='deploy',
-                                         sessionname=t['sessionid'],
-                                         priority=-1,
-                                         action="xmpplog",
-                                         who="",
-                                         how="",
-                                         why=t['jidmachine'],
-                                         module="Deployment| Notify | Cluster",
-                                         date=None,
-                                         fromuser="",
-                                         touser="")
-
-                            self.xmpplog('Waiting for reboot',
-                                         type='deploy',
-                                         sessionname=t['sessionid'],
-                                         priority=-1,
-                                         action="xmpplog",
-                                         who=t['jidmachine'],
-                                         how="",
-                                         why="",
-                                         module="Deployment | Error | Terminate | Notify",
-                                         date=None,
-                                         fromuser="master",
-                                         touser="")
-                if len(arscluster) > 0:
-                    listrelayserver = XmppMasterDatabase().getRelayServer(enable=True)
-                    cluster = {'action': "cluster",
-                               'sessionid': name_random(5, "cluster"),
-                               'data': {'subaction': 'removeresource',
-                                        'data': {"jidmachine": spresence
-                                                 }
-                                        }
-                               }
-
-                    for ars in listrelayserver:
-                        logger.debug("We remove the ressource on the ARS %s for the machine %s" % (ars, spresence))
-                        self.send_message(mto=ars['jid'],
-                                          mbody=json.dumps(cluster),
-                                          mtype='chat')
-        except Exception as e:
-            logger.error("We encountered the error %s" % str(e))
-            logger.error("the backtrace is: \n %s" % (traceback.format_exc()))
-    elif presence['type'] == "available":
-        lastevent = XmppMasterDatabase().last_event_presence_xmpp(spresence)
-        if lastevent:
-            if lastevent[0]['status'] == 0:
-                XmppMasterDatabase().setUptime_machine(hostname,
-                                                       spresence,
-                                                       status=1,
-                                                       updowntime=time.time() - lastevent[0]['time'],
-                                                       date=None)
-        else:
-            XmppMasterDatabase().setUptime_machine(hostname,
-                                                   spresence,
-                                                   status=1,
-                                                   updowntime=0,
-                                                   date=None)
-        logger.info("The machine or ARS %s is now Online" % spresence)
-        result = XmppMasterDatabase().initialisePresenceMachine(spresence,
-                                                                presence=1)
-        if result is None or len(result) == 0:
-            return
-        if "type" in result and result['type'] == "machine":
-            try:
-                if "reconf" in result and result['reconf'] == 1:
-                    result1 = self.iqsendpulse(presence['from'],
-                                                    {"action": "information",
-                                                     "data": {"listinformation": ["force_reconf"],
-                                                              "param" : {} }},
-                                               5)
-            except Exception:
-                pass
-            try:
-                XmppMasterDatabase().updateMachinereconf(spresence)
-            except Exception:
-                logger.error("\n%s" % (traceback.format_exc()))
-
-        XmppMasterDatabase().setlogxmpp("%s online" % spresence,
-                                        "info",
-                                        '',
-                                        -1,
-                                        spresence,
-                                        '',
-                                        '',
-                                        'Presence',
-                                        '',
-                                        '',
-                                        self.boundjid.bare)
+    except Exception:
+        logger.error("\n%s" % (traceback.format_exc()))
