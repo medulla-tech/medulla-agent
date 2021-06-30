@@ -75,7 +75,6 @@ class sessiondatainfo:
                 False, otherwise
         """
         namefilesession = os.path.join(self.pathfile, self.sessionid)
-        logging.getLogger().debug("save session in file %s" % self.sessionid)
         session = {'sessionid': self.sessionid,
                    'timevalid': self.timevalid,
                    'datasession': self.datasession}
