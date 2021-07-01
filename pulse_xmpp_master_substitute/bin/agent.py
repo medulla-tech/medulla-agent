@@ -200,6 +200,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         if 'xmpp' in self.config.plugins_list:
             XmppMasterDatabase().setlogxmpp(text,
                                             type=type,

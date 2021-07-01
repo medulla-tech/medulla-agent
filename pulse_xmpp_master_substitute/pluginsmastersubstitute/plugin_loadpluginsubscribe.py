@@ -106,7 +106,7 @@ def changed_status(self, presence):
                                                 '',
                                                 'Presence',
                                                 '',
-                                                '',
+                                                self.boundjid.bare,
                                                 self.boundjid.bare)
                 if result is None or len(result) == 0:
                     return
@@ -232,7 +232,7 @@ def changed_status(self, presence):
                                             '',
                                             'Presence',
                                             '',
-                                            '',
+                                            self.boundjid.bare,
                                             self.boundjid.bare)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))

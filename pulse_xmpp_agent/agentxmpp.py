@@ -1715,6 +1715,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         msgbody = {}
         data = {'log': 'xmpplog',
                 'text': text,
