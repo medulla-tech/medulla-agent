@@ -167,6 +167,7 @@ def updateopenssh(xmppobject, installed_version):
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
                     logger.debug("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
+                    return
 
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
@@ -177,6 +178,7 @@ def updateopenssh(xmppobject, installed_version):
                 shutil.copytree(os.path.join(install_tempdir, extracted_path), opensshdir_path)
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
+                return
 
             os.chdir(current_dir)
 
@@ -194,6 +196,7 @@ def updateopenssh(xmppobject, installed_version):
                 shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(programdata_path, "sshd_config"))
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
+                return
 
             # Now we customize the config file
             sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
@@ -215,6 +218,7 @@ def updateopenssh(xmppobject, installed_version):
         else:
             # Download error
             logger.error("%s" % txtmsg)
+            return
 
 
 
@@ -242,6 +246,7 @@ def updateopenssh(xmppobject, installed_version):
                             shutil.copy(full_rsync_file_name, os.path.join(rsync_dest_folder, rsync_file))
                         except Exception as e:
                             logger.debug("Failed to copy the files:  %s" % e)
+                            return
 
             os.chdir(current_dir)
 
