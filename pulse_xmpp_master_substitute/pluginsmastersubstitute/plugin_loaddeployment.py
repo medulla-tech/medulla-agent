@@ -537,6 +537,24 @@ def applicationdeployjsonuuid(self,
         msg=[]
         # search group deploy and jid machine
         objmachine = XmppMasterDatabase().getGuacamoleRelayServerMachineUuid(uuidmachine, None)
+        if 'error' in objmachine and objmachine['error'] == "MultipleResultsFound" :
+            logger.warn('getGuacamoleRelayServerMachineUuid %s' % objmachine['error'])
+            objmachine1 = XmppMasterDatabase().get_machine_with_dupplicate_uuidinventory(uuidmachine, None)
+            logger.warn('get_machine_with_dupplicate_uuidinventory %s' % objmachine1)
+            grparray=[]
+            jidarray=[]
+            keysyncthingarray=[]
+            for z in objmachine1:
+                grparray.append( z['groupdeploy'])
+                jidarray.append( z['jid'])
+                keysyncthingarray.append( z['keysyncthing'])
+            grparray=list(set(grparray))
+            jidarray=list(set(jidarray))
+            keysyncthingarray=list(set(keysyncthingarray))
+            jidrelay=",".join(grparray)
+            jidmachine=",".join(jidarray)
+            keysyncthing=",".join(keysyncthingarray)
+            raise Exception("MultipleResultsFound")
         jidrelay = objmachine['groupdeploy']
         jidmachine = objmachine['jid']
         keysyncthing = objmachine['keysyncthing']
@@ -687,9 +705,17 @@ def applicationdeployjsonuuid(self,
                              fromuser=login)
             logger.error("deploy %s error on machine %s" % (name, uuidmachine))
             return False
-    except:
+    except Exception as e:
+        logger.error("%s" % (str(e)))
         logger.error("%s" % (traceback.format_exc()))
         logger.error("deploy %s error on machine %s" % (name, uuidmachine))
+
+        if str(e) == "MultipleResultsFound":
+            statusmsg = "ABORT DUPLICATE MACHINES"
+        else:
+            statusmsg = "ERROR UNKNOWN ERROR"
+
+
         XmppMasterDatabase().adddeploy(idcommand,
                                        jidmachine,
                                        jidrelay,
@@ -707,8 +733,12 @@ def applicationdeployjsonuuid(self,
                                        macadress=macadress,
                                        result="",
                                        syncthing=0)
-        msg.append("<span class='log_err'>Error creating deployment on machine %s "\
-                   "[%s]</span>" % (name, uuidmachine))
+        msg.append("<span class='log_err'>Error creating deployment on machine[ %s ] "\
+                   "[%s] package[%s]</span>" % (jidmachine, uuidmachine,name))
+        if str(e) == "MultipleResultsFound":
+            msg.append("<span class='log_err'>The following machines " \
+                "(%s) have the same GLPI ID: %s</span>" % (jidmachine,
+                                                           uuidmachine ))
         for logmsg in msg:
             self.xmpplog(logmsg,
                          type='deploy',
