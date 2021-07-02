@@ -310,14 +310,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
-
+        self.sub_subscribe_all = []
         if not hasattr(self.config, 'sub_subscribe'):
             self.sub_subscribe = self.agentmaster
         else:
+            if isinstance(self.config.sub_subscribe, list):
+                self.sub_subscribe_all = [jid.JID(x) for x in self.config.sub_subscribe]
             if isinstance(self.config.sub_subscribe, list) and\
                 len(self.config.sub_subscribe) > 0:
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe[0])
             else:
+                self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
         if not hasattr(self.config, 'sub_logger'):
@@ -1498,14 +1501,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logger.info("unsubscribe %s"%self.sub_subscribe)
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
                 #self.del_roster_item(t)
-                self.update_roster(t, subscription='remove')
+                self.update_roster(t, subscription='none')
+
+    def unsubscribe_substitute_subscribe(self):
+        """
+        This function is used to unsubscribe the substitute subscribe
+        It sends a presence message with type "unsubscribe"
+        """
+        logger.info("The list of the substitutes is: %s" % self.sub_subscribe_all)
+
+        keyroster = str(self.boundjid.bare)
+        for sub_subscribed in self.sub_subscribe_all:
+            if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
+                continue
+            logger.info("We unsubscribe %s" % sub_subscribed)
+            self.send_presence (pto=sub_subscribed, ptype='unsubscribe')
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        logger.info("subscribe to %s agent"%self.sub_subscribe.user)
-        self.send_presence ( pto = self.sub_subscribe, ptype = 'subscribe' )
+        logger.info("subscribe to %s agent" % self.sub_subscribe.user)
+        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         self.unsubscribe_agent()
+        self.unsubscribe_substitute_subscribe()
         self.ipconnection = self.config.Server
 
         if  self.config.agenttype in ['relayserver']:
