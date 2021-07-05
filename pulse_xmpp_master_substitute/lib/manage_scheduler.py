@@ -52,40 +52,26 @@ class manage_scheduler:
      Nb makes it possible to limit the operation a n times.
     """
     def __init__(self, objectxmpp):
-        #creation repertoire si non exist.
         try:
-            objectxmpp.config.listcrontabforpluginscheduled = objectxmpp.config.listcrontabforpluginscheduled.replace(os.linesep,"").replace("'",'"').strip('"')
-            try :
-                objcromtabconf = json.loads(objectxmpp.config.listcrontabforpluginscheduled)
-            except Exception as e:
-                logging.getLogger().error("Error json parameters listcrontabforpluginscheduled file manage_scheduler.ini")
-                logging.getLogger().error(str(e))
-        except AttributeError as e:
-            logging.getLogger().warning("If you use the configuration to schedule some plugins,"\
-                    "do not forget to add conf in manage_scheduler.ini for these plugins."\
-                    "json parameters listcrontabforpluginscheduled."\
-                    "and declare the configuration of the scheduler in agentconf.ini"\
-                    "[Plugin]"\
-                    "pluginlist = manage_scheduler")
-            objcromtabconf = {}
             logging.getLogger().warning(str(e))
-
+        objcrontabconf = {}
         self.taches = []
 
         self.now = datetime.now()
 
         self.objectxmpp = objectxmpp
 
-        #addition path to sys
+        # Addition path to sys
         if  self.objectxmpp.config.agenttype in ['relayserver']:
             descriptor_scheduler = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptor_scheduler_relay")
         elif self.objectxmpp.config.agenttype in ['machine']:
             descriptor_scheduler = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptor_scheduler_machine")
+        elif self.objectxmpp.config.agenttype in ['substitute']:
+            descriptor_scheduler = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "descriptor_scheduler_substitute")
         self.directoryschedule =  os.path.abspath(descriptor_scheduler)
-        #print "directory to descriptor scheduler (%s : %s)"%(self.objectxmpp.config.agenttype, self.directoryschedule )
         sys.path.append(self.directoryschedule)
 
-        #creation repertoire si non exist
+        # We create the folder if it does not exist
         if not os.path.exists(self.directoryschedule):
             logging.getLogger().debug("create directory scheduler %s"%self.directoryschedule)
             os.makedirs(self.directoryschedule, 0700 )
@@ -98,13 +84,12 @@ class manage_scheduler:
         for x in os.listdir(self.directoryschedule):
             if x.endswith(".pyc") or not x.startswith("scheduling"):
                 continue
-            #recupere SCHEDULERDATA
             name = x[11:-3]
             try:
                 datascheduler = self.litschedule(name)
                 datascheduler['nameplugin'] = name
                 datascheduler['schedule'] = self.replacecrontabdescriptor(datascheduler['schedule'])
-                for i in objcromtabconf:
+                for i in objcrontabconf:
                     if i['nameplugin'] == name :
                         i['schedule'] = self.replacecrontabdescriptor(i['schedule'])
                         datascheduler = i
