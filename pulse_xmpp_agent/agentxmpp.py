@@ -1498,30 +1498,29 @@ class MUCBot(sleekxmpp.ClientXMPP):
             for t in self.roster[keyroster]:
                 if t == self.boundjid.bare or t in [self.sub_subscribe]:
                     continue
-                logger.info("unsubscribe %s"%self.sub_subscribe)
+                self.limit_message_presence_clean_substitute.append(t)
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
-                #self.del_roster_item(t)
-                self.update_roster(t, subscription='none')
+                self.update_roster(t, subscription='remove')
 
     def unsubscribe_substitute_subscribe(self):
         """
         This function is used to unsubscribe the substitute subscribe
         It sends a presence message with type "unsubscribe"
         """
-        logger.info("The list of the substitutes is: %s" % self.sub_subscribe_all)
-
         keyroster = str(self.boundjid.bare)
         for sub_subscribed in self.sub_subscribe_all:
             if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
                 continue
-            logger.info("We unsubscribe %s" % sub_subscribed)
-            self.send_presence (pto=sub_subscribed, ptype='unsubscribe')
+            if t not in  self.limit_message_presence_clean_substitute:
+                self.send_presence (pto=t, ptype='unsubscribe')
+                self.update_roster(t, subscription='remove')
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
         logger.info("subscribe to %s agent" % self.sub_subscribe.user)
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
+        self.limit_message_presence_clean_substitute = []
         self.unsubscribe_agent()
         self.unsubscribe_substitute_subscribe()
         self.ipconnection = self.config.Server
