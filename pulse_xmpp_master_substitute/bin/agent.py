@@ -244,7 +244,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto = jid.JID(self.config.sub_logger),
                                 mbody=json.dumps(msgbody),
                                 mtype='chat')
-                                mtype='chat')
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
