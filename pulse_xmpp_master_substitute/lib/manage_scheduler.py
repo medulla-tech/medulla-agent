@@ -52,8 +52,6 @@ class manage_scheduler:
      Nb makes it possible to limit the operation a n times.
     """
     def __init__(self, objectxmpp):
-        try:
-            logging.getLogger().warning(str(e))
         objcrontabconf = {}
         self.taches = []
 
