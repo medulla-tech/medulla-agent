@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2021 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -29,17 +29,20 @@ import types
 import ConfigParser
 from lib.plugins.xmpp import XmppMasterDatabase
 from sleekxmpp import jid
+import traceback
+
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.3", "NAME" : "loadautoupdate", "TYPE" : "substitute"}
+plugin = {"VERSION": "1.4", "NAME": "loadautoupdate", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s"%(plugin, msg['from']))
+    logger.debug("data %s "%json.dumps(data,indent=4))
     logger.debug("=====================================================")
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
@@ -56,6 +59,34 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                             objectxmpp.generate_baseagent_fingerprint_interval,
                             objectxmpp.loadfingerprint,
                             repeat=True)
+        if objectxmpp.modeupdating.lower()  == "scheduling":
+            objectxmpp.schedule('update_agent_tream',
+                                objectxmpp.modeupdatingfrequence,
+                                objectxmpp.updatingmachine,
+                                repeat=True)
+
+def updatingmachine(self):
+    """
+        This is used to monitor the machines that needs to be updated 
+    """
+    try:
+        descriptoragent = self.Update_Remote_Agentlist.get_md5_descriptor_agent()
+        datasend = {"action": "updateagent",
+                    "data": {'subaction': 'descriptor',
+                             'descriptoragent': descriptoragent},
+                    "ret": 0,
+                    "sessionid": getRandomName(5, "updateagent")}
+        machines_to_update = XmppMasterDatabase().getUpdate_machine(status = "updating",
+                                                      nblimit=objectxmpp.modeupdatingnbmachine)
+        logger.debug("machines_to_update = %s" % machines_to_update)
+        for machine in machines_to_update:
+            if self.autoupdatebyrelay:
+                datasend['data']['ars_update'] = machine[1]
+            self.send_message(machine[0],
+                      mbody=json.dumps(datasend),
+                      mtype='chat')
+    except Exception as e:
+        logger.error("\n%s"%(traceback.format_exc()))
 
 def loadfingerprint(self):
     """
@@ -65,7 +96,6 @@ def loadfingerprint(self):
                                                        self.autoupdate)
     logger.debug("load fingerprint: %s"%\
         self.Update_Remote_Agentlist.get_fingerprint_agent_base())
-
 
 def read_conf_remote_update(objectxmpp):
     namefichierconf = plugin['NAME'] + ".ini"
@@ -83,6 +113,9 @@ def read_conf_remote_update(objectxmpp):
         objectxmpp.autoupdate = True
         objectxmpp.generate_baseagent_fingerprint_interval = 900
         objectxmpp.autoupdatebyrelay = True
+        objectxmpp.modeupdating = "auto"
+        objectxmpp.modeupdatingfrequence = 60
+        objectxmpp.modeupdatingnbmachine = 100
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -106,38 +139,91 @@ def read_conf_remote_update(objectxmpp):
             objectxmpp.generate_baseagent_fingerprint_interval = Config.getint('parameters', 'generate_baseagent_fingerprint_interval')
         else:
             objectxmpp.generate_baseagent_fingerprint_interval = 900
+
+        if Config.has_option("parameters", "updatemode"):
+            objectxmpp.modeupdating = Config.get('parameters', 'updatemode')
+        else:
+            objectxmpp.modeupdating = "auto"
+
+        # Value list for the Permitted Mode Parameter
+        permitted_mode_parameter = ['auto','scheduling']
+        if objectxmpp.modeupdating not in permitted_mode_parameter :
+            logger.warning("mode updating incorrect value %s" %objectxmpp.modeupdating)
+            logger.warning("mode updating permited value in %s" % permitted_mode_parameter)
+            logger.warning("applies the value \"auto\" to the parameter mode updating")
+            objectxmpp.modeupdating = "auto"
+
+        # frequence traitement updating
+        if Config.has_option("parameters", "updatingfrequence"):
+            objectxmpp.modeupdatingfrequence = Config.getint('parameters', 'updatingfrequence')
+        else:
+            objectxmpp.modeupdatingfrequence = 60
+
+        if Config.has_option("parameters", "updatingnbmachine"):
+            objectxmpp.modeupdatingnbmachine = Config.getint('parameters', 'updatingnbmachine')
+        else:
+            objectxmpp.modeupdatingnbmachine = 100
+
     logger.debug("directory base agent is %s"%objectxmpp.diragentbase)
     logger.debug("autoupdate agent is %s"%objectxmpp.autoupdate)
     logger.debug("generate baseagent "\
         "fingerprint interval agent is %s"%objectxmpp.generate_baseagent_fingerprint_interval)
-
+    logger.debug("mode updating is %s"%objectxmpp.modeupdating)
+    if objectxmpp.modeupdating != "auto":
+        logger.debug("mode updating frequence is %s"%objectxmpp.modeupdatingfrequence)
+        logger.debug("mode updating nombre machine is %s"%objectxmpp.modeupdatingnbmachine)
     objectxmpp.senddescriptormd5 = types.MethodType(senddescriptormd5, objectxmpp)
     objectxmpp.plugin_loadautoupdate = types.MethodType(plugin_loadautoupdate, objectxmpp)
+    objectxmpp.updatingmachine = types.MethodType(updatingmachine, objectxmpp)
 
 def senddescriptormd5(self, to):
     """
         send the agent's figerprint descriptor in database to update the machine
         Update remote agent
     """
-    datasend = {"action": "updateagent",
-                "data": {'subaction': 'descriptor',
-                            'descriptoragent': self.Update_Remote_Agentlist.get_md5_descriptor_agent()},
-                'ret': 0,
-                'sessionid': getRandomName(5, "updateagent")}
-    # Send catalog of files.
-    logger.debug("Send descriptor to agent [%s] for update" % to)
-    if self.autoupdatebyrelay:
-        relayjid = XmppMasterDatabase().groupdeployfromjid(to)
-        relayjid = jid.JID(str(relayjid[0])).bare
-        datasend['data']['ars_update'] = relayjid
-    self.send_message(to,
-                      mbody=json.dumps(datasend),
-                      mtype='chat')
+    try:
+        datasend = {"action": "updateagent",
+                    "data": {'subaction': 'descriptor',
+                                'descriptoragent': self.Update_Remote_Agentlist.get_md5_descriptor_agent()},
+                    'ret': 0,
+                    'sessionid': getRandomName(5, "updateagent")}
+        # Send catalog of files.
+        logger.debug("Send descriptor to agent [%s] for update" % to)
+        if self.autoupdatebyrelay:
+            relayjid = XmppMasterDatabase().groupdeployfromjid(to)
+            relayjid = jid.JID(str(relayjid[0])).bare
+            datasend['data']['ars_update'] = relayjid
+        self.send_message(to,
+                        mbody=json.dumps(datasend),
+                        mtype='chat')
+    except Exception as e:
+        logger.error("\n%s"%(traceback.format_exc()))
 
 def plugin_loadautoupdate(self, msg, data):
-    # Manage update remote agent
-    if self.autoupdate and 'md5agent' in data and \
-        self.Update_Remote_Agentlist.get_fingerprint_agent_base() != data['md5agent']:
-        if data['md5agent'].upper() != "DEV" or data['md5agent'].upper() != "DEBUG":
-            # send md5 descriptor of the agent for remote update.
-            self.senddescriptormd5(msg['from'])
+    try:
+        msgfrom=str(jid.JID(msg['from']).bare)
+        msgmachine=str(jid.JID(msg['from']).user)
+        if self.autoupdate and \
+            all([x in  data.keys() for x in ['information',
+                                            'deployment',
+                                            'md5agent',
+                                            'agenttype']]) and \
+            self.Update_Remote_Agentlist.get_fingerprint_agent_base() != data['md5agent'] and \
+            data['md5agent'].upper() not in ["DEV", "DEBUG" ]:
+            # update agent to do
+            # Manage update remote agent
+            if self.modeupdating.lower() == "auto":
+                # send md5 descriptor of the agent for remote update.
+                self.senddescriptormd5(msgfrom)
+            else:
+                # verify key exist
+                XmppMasterDatabase().setUpdate_machine( data['information']['dnshostname'],
+                                                        msgfrom,
+                                                        ars = data['deployment'],
+                                                        status = "ready",
+                                                        descriptor=data['agenttype'],
+                                                        md5=data['md5agent'])
+        else:
+            logger.debug("aucune mise a jour for machine %s " % msgmachine)
+    except Exception as e:
+        logger.error("\n%s"%(traceback.format_exc()))
