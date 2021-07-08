@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2021 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -220,6 +220,35 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             #clean session
             objectxmpp.session.clearnoevent(sessionid)
             #clean if not session
+            utils.cleanbacktodeploy(objectxmpp)
+            return
+        # Check if the descriptor is complete
+        if 'descriptor' in data and 'advanced' not in data:
+            objectxmpp.xmpplog('<span class="log_err">Abort deployement section avanced missing in descriptor</span>',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Error",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Terminate | Notify",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.session.clearnoevent(sessionid)
             utils.cleanbacktodeploy(objectxmpp)
             return
 
@@ -674,6 +703,56 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         #logger.debug("%s"%json.dumps(data, indent=4))
         namefolder = None
         msgdeploy=[]
+
+        if 'descriptor' in data and 'advanced' not in data:
+            logger.debug("DEPLOYMENT ABORTED: ADVANCED DESCRIPTOR MISSING")
+            objectxmpp.xmpplog('<span class="log_err">Deployment aborted: section key "avanced" missing</span>',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Error",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Terminate | Notify",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.session.clearnoevent(sessionid)
+            utils.cleanbacktodeploy(objectxmpp)
+
+            datalog = {'action': "result%s" % action,
+                       'sessionid': sessionid,
+                       'ret': 255,
+                       'base64': False,
+                       'data': data
+                      }
+            objectxmpp.send_message(mto="master@pulse/MASTER",
+                                    mbody=json.dumps(datalog),
+                                    mtype='chat')
+            datalog['data']['action'] = datalog['action']
+            datalog['action'] = "xmpplog"
+            datalog['data']['ret'] = 255
+            datalog['data']['sessionid'] = sessionid
+            objectxmpp.send_message(mto=objectxmpp.sub_logger,
+                                    mbody=json.dumps(datalog),
+                                    mtype='chat')
+            if objectxmpp.session.isexist(sessionid):
+                objectxmpp.session.clearnoevent(sessionid)
+            return
+
         if objectxmpp.config.max_size_stanza_xmpp != 0:
             if 'descriptor' in data and \
                 'info' in data['descriptor'] and \
