@@ -35,7 +35,7 @@ import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
 from lib.managepackage import managepackage
-from lib.managesession import session
+from lib.managesession import session, clean_session
 from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, file_get_contents, file_put_contents
 import ConfigParser
 import types
@@ -1193,7 +1193,9 @@ def read_conf_loaddeployment(objectxmpp):
     # dictionary used for deploy
 
     objectxmpp.wolglobal_set = set()  # use group wol
-
+    #clean old session
+    foldersession = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "sessiondeploysubstitute"))
+    clean_session(foldersession)
     # initialise session object
     objectxmpp.sessiondeploysubstitute = session("sessiondeploysubstitute")
     objectxmpp.machineDeploy = {}

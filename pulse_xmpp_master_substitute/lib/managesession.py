@@ -26,6 +26,30 @@ import os
 import json
 import logging
 from utils import loadjsonfile
+from os import listdir
+import time
+import traceback
+
+
+def clean_session(folder_session):
+    tt = time.time()
+    fichiers = [os.path.join(folder_session, f) for f in listdir(folder_session) if len(f) == 25 and os.path.isfile(os.path.join(folder_session, f)) ]
+    for fic in fichiers:
+        creation =  os.path.getmtime(fic)
+        try:
+            with open(fic) as json_data:
+                data_dict = json.load(json_data)
+            if (data_dict['timevalid'] + creation) < tt:
+                # delete file
+                #print "delete %s"%fic
+                os.remove(fic)
+            else:
+                pass
+                #print "session  %s non terminer"%fic
+        except:
+            os.remove(fic)
+            errorstr = "%s" % traceback.format_exc()
+
 
 class Session(Exception):
     pass
