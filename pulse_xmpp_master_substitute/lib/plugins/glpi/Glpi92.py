@@ -651,11 +651,16 @@ class Glpi92(DatabaseHelper):
             d = XmppMasterDatabase().getlistPresenceMachineid()
             listid = [x.replace("UUID", "") for x in d]
             ret["computerpresence"] = ["computerpresence","xmppmaster",filt["computerpresence"] , listid]
-        elif "query" in filt and filt['query'][0] == "AND":
+        elif "query" in filt and filt['query'][0] in ["AND", "OR", "NOT"]:
             for q in filt['query'][1]:
-                if len(q) >=3 and (q[2] == "Online computer" or q[2] == "OU user" or q[2] == "OU machine"):
-                    listid = XmppMasterDatabase().getxmppmasterfilterforglpi(q)
-                    ret[q[2]] = [q[1], q[2], q[3], listid]
+                #if len(q) >=3: and  q[2].lower() in ["online computer", "ou user", "ou machine"]:
+                if len(q) >=3:
+                    if  q[2].lower() in ["online computer",
+                                         'ou machine',
+                                         'ou user']:
+                        listid = XmppMasterDatabase().getxmppmasterfilterforglpi(q)
+                        q.append(listid)
+                        ret[q[2]] = [q[1], q[2], q[3], listid]
         return ret
 
     def getMachineByUuidSetup(self, uuidsetupmachine):
@@ -715,7 +720,10 @@ class Glpi92(DatabaseHelper):
 
             query_filter = None
 
-            filters = [self.machine.c.is_deleted == 0, self.machine.c.is_template == 0, self.__filter_on_filter(query), self.__filter_on_entity_filter(query, ctx)]
+            filters = [self.machine.c.is_deleted == 0,
+                       self.machine.c.is_template == 0,
+                       self.__filter_on_filter(query),
+                       self.__filter_on_entity_filter(query, ctx)]
 
             join_query, query_filter = self.filter(ctx, self.machine, filt, session.query(Machine), self.machine.c.id, filters)
 
@@ -811,15 +819,15 @@ class Glpi92(DatabaseHelper):
                 query = query.select_from(join_query).filter(query_filter)
             query = query.filter(self.machine.c.is_deleted == 0).filter(self.machine.c.is_template == 0)
             if ret:
-                if "Online computer" in ret:
-                    if ret["Online computer"][2] == "True":
-                        query = query.filter(Machine.id.in_(ret["Online computer"][3]))
-                    else:
-                        query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
-                if "OU user" in ret:
-                    query = query.filter(Machine.id.in_(ret["OU user"][3]))
-                if "OU machine" in ret:
-                    query = query.filter(Machine.id.in_(ret["OU machine"][3]))
+                #if "online computer" in ret:
+                    #if ret["online computer"][2] == "True":
+                        #query = query.filter(Machine.id.in_(ret["online computer"][3]))
+                    #else:
+                        #query = query.filter(Machine.id.notin_(ret["online computer"][3]))
+                #if "ou user" in ret:
+                    #query = query.filter(Machine.id.in_(ret["ou user"][3]))
+                #if "ou machine" in ret:
+                    #query = query.filter(Machine.id.in_(ret["ou machine"][3]))
                 if "computerpresence" in ret:
                     if ret["computerpresence"][2] == "presence":
                         query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
@@ -1067,7 +1075,7 @@ class Glpi92(DatabaseHelper):
         """
         Map a name and request parameters on a sqlalchemy request
         """
-        if len(query) == 4:
+        if len(query) >= 4:
             # in case the glpi database is in latin1, don't forget dyngroup is in utf8
             # => need to convert what comes from the dyngroup database
             query[3] = self.encode(query[3])
