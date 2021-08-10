@@ -1493,38 +1493,44 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.update_plugin()
 
     def unsubscribe_agent(self):
-        keyroster = str(self.boundjid.bare)
-        if keyroster in self.roster:
-            for t in self.roster[keyroster]:
-                if t == self.boundjid.bare or t in [self.sub_subscribe]:
-                    continue
-                self.limit_message_presence_clean_substitute.append(t)
-                self.send_presence ( pto = t, ptype = 'unsubscribe' )
-                self.update_roster(t, subscription='remove')
+        try:
+            keyroster = str(self.boundjid.bare)
+            if keyroster in self.roster:
+                for t in self.roster[keyroster]:
+                    if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                        continue
+                    self.limit_message_presence_clean_substitute.append(t)
+                    self.send_presence ( pto = t, ptype = 'unsubscribe' )
+                    self.update_roster(t, subscription='remove')
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
 
     def unsubscribe_substitute_subscribe(self):
         """
         This function is used to unsubscribe the substitute subscribe
         It sends a presence message with type "unsubscribe"
         """
-        keyroster = str(self.boundjid.bare)
-        for sub_subscribed in self.sub_subscribe_all:
-            if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
-                continue
-            if t not in  self.limit_message_presence_clean_substitute:
-                self.send_presence (pto=t, ptype='unsubscribe')
-                self.update_roster(t, subscription='remove')
+        try:
+            keyroster = str(self.boundjid.bare)
+            for sub_subscribed in self.sub_subscribe_all:
+                if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
+                    continue
+                if t not in  self.limit_message_presence_clean_substitute:
+                    self.send_presence (pto=t, ptype='unsubscribe')
+                    self.update_roster(t, subscription='remove')
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
         logger.info("subscribe to %s agent" % self.sub_subscribe.user)
-        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         self.limit_message_presence_clean_substitute = []
         self.unsubscribe_agent()
         self.unsubscribe_substitute_subscribe()
         self.ipconnection = self.config.Server
 
+        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         if  self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
