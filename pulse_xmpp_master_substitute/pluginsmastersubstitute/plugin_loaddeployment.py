@@ -40,14 +40,14 @@ from lib.utils import getRandomName, call_plugin, name_random, name_randomplus, 
 import ConfigParser
 import types
 import datetime
-#from datetime import datetime
 import random
 import re
 from sleekxmpp import jid
+import time
+
 logger = logging.getLogger()
 
-
-plugin = {"VERSION": "1.2", "NAME": "loaddeployment", "TYPE": "substitute"}
+plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"}
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
     try:
@@ -58,6 +58,7 @@ def action(objectxmpp, action, sessionid, data, msg, ret):
 
         if compteurcallplugin == 0:
             read_conf_loaddeployment(objectxmpp)
+            objectxmpp.process_load_deployment_on=True
         # must list plugin substitute for deploy
         # wakeonlan, wakeonlangroup, deploysyncthing, resultenddeploy,
         # ___________________ code  _____________________
@@ -79,178 +80,222 @@ def scheduledeploy(self):
     # TODO
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
-    list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
-    for arssyncthing in list_ars_syncthing_pause:
-        datasend = {"action": "deploysyncthing",
-                    "sessionid": name_random(5, "pausesyncthing"),
-                    "data": {"subaction": "pausefolder",
-                             "folder": arssyncthing[2]}
-                    }
-        listars = arssyncthing[1].split(",")
-        for arssyncthing in listars:
-            self.send_message(mto=arssyncthing,
-                              mbody=json.dumps(datasend),
-                              mtype='chat')
+    
+    nb_machine_select_for_deploy_cycle=0
+    datetimenow = datetime.datetime.now()
+    startfunc=time.time()
+    if not self.process_load_deployment_on:
+        logger.warning("lock new cycle deploy : process precedent no terminate")
+        return
+    else:
+        logger.debug("start cycle deploy[%s mach./%s secondes]"%(self.deployment_nbr_mach_cycle,
+                                                                 self.deployment_scan_interval))
     try:
-        deploys_to_clean = XmppMasterDatabase().get_syncthing_deploy_to_clean()
-        if type(deploys_to_clean) is list:
-            for deploydata in deploys_to_clean:
-                ars = XmppMasterDatabase().get_list_ars_from_cluster(deploydata['numcluster'])
-                datasend = {"action": "deploysyncthing",
-                            "sessionid": name_random(5, "cleansyncthing"),
-                            "data": {"subaction": "cleandeploy",
-                                     "iddeploy": deploydata['directory_tmp'],
-                                     "jidmachines": deploydata['jidmachines'],
-                                     "jidrelays": deploydata['jidrelays']}}
-                for relay in ars:
-                    self.send_message(mto=relay['jid'],
-                                      mbody=json.dumps(datasend),
-                                      mtype='chat')
-                XmppMasterDatabase().refresh_syncthing_deploy_clean(deploydata['id'])
+        self.process_load_deployment_on = False
+        msg=[]
+        try:
+            self.mycompteurcallplugin+=1
+            if not self.mycompteurcallplugin % 6:
+                list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
+                for arssyncthing in list_ars_syncthing_pause:
+                    datasend = {"action": "deploysyncthing",
+                                "sessionid": name_random(5, "pausesyncthing"),
+                                "data": {"subaction": "pausefolder",
+                                        "folder": arssyncthing[2]}
+                                }
+                    listars = arssyncthing[1].split(",")
+                    for arssyncthing in listars:
+                        self.send_message(mto=arssyncthing,
+                                        mbody=json.dumps(datasend),
+                                        mtype='chat')
+                deploys_to_clean = XmppMasterDatabase().get_syncthing_deploy_to_clean()
+                if type(deploys_to_clean) is list:
+                    for deploydata in deploys_to_clean:
+                        ars = XmppMasterDatabase().get_list_ars_from_cluster(deploydata['numcluster'])
+                        datasend = {"action": "deploysyncthing",
+                                    "sessionid": name_random(5, "cleansyncthing"),
+                                    "data": {"subaction": "cleandeploy",
+                                            "iddeploy": deploydata['directory_tmp'],
+                                            "jidmachines": deploydata['jidmachines'],
+                                            "jidrelays": deploydata['jidrelays']}}
+                        for relay in ars:
+                            self.send_message(mto=relay['jid'],
+                                            mbody=json.dumps(datasend),
+                                            mtype='chat')
+                        XmppMasterDatabase().refresh_syncthing_deploy_clean(deploydata['id'])
+        except AttributeError:
+            self.mycompteurcallplugin=0
+        except Exception:
+            logger.error("%s" % (traceback.format_exc()))
+        listobjsupp = []
+        try:
+            # Search deploy to running
+            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=100)
+        except Exception:
+            logger.error("%s" % (traceback.format_exc()))
+
+        if nb_machine_select_for_deploy_cycle == 0:
+            return
+
+        uuidlist=[]
+        for deployobject in resultdeploymachine:
+            uuidlist.append(deployobject['UUID'])
+        resultpresence = XmppMasterDatabase().getPresenceExistuuids(uuidlist)
+
+
+        for deployobject in resultdeploymachine:
+            # creation deployment
+            UUID = deployobject['UUID']
+            UUIDSTR = UUID.replace('UUID', "")
+            #resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
+            re_search = []
+            if resultpresence[UUID][1] == 0:
+                ## il n'y a pas de uuid glpi
+                re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+                if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
+                    update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
+                    if update_result is not None:
+                        if update_result.rowcount > 0:
+                            logger.info("update uuid inventory %s for machine %s" % (UUID, deployobject['name']))
+                    resultpresence[UUID][1] = 1
+                    reloadresultpresence_uuid = XmppMasterDatabase().getPresenceExistuuids(UUID)
+                    resultpresence[UUID]=reloadresultpresence_uuid[UUID]
+                    self.xmpplog("Attaching GLPI identifier [%s] in xmppmaster machine [%s]" % (UUID, deployobject['name']),
+                                type='deploy',
+                                sessionname="no_session",
+                                priority=-1,
+                                action="xmpplog",
+                                why=self.boundjid.bare,
+                                module="Deployment | Start | Creation| Notify",
+                                date=None,
+                                fromuser=deployobject['login'])
+
+            if resultpresence[UUID][1] == 0:#verify si reinitialiser presence
+                if re_search:
+                    msg.append( "<span class='log_err'>Consolidation GLPI XMPP ERROR for machine %s. " \
+                                "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
+                                                                                    UUIDSTR))
+                    for mach in re_search:
+                        msg.append( "<span> Action : Please check"\
+                            " that mac address or serial is/are properly"\
+                                " imported in GLPI: serial (%s) or macs(%s)</span>"% (mach['serial'],
+                                                                                    mach['macs']))
+                    MSG_ERROR = "ABORT INCONSISTENT GLPI INFORMATION"
+                    sessiondeployementless = name_random(5, "glpixmppconsolidationerror")
+                else:
+                    MSG_ERROR = "ABORT MISSING AGENT"
+                    sessiondeployementless = name_random(5, "missingagent")
+                    msg.append( "<span class='log_err'>Agent missing on machine %s. " \
+                                "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
+                                                                                    UUIDSTR))
+                    msg.append( "Action : Check that the machine "\
+                                "agent is working, or install the agent on the"\
+                                " machine %s (%s) if it is missing." % (deployobject['name'],
+                                                                        UUIDSTR))
+
+                    logging.warning("No machine found on hostname. You must verify consolidation GLPI with xmpp")
+                    logging.warning("INFO\nGLPI : name %s uuid %s " % (deployobject['name'],
+                                                                    deployobject['UUID']))
+                    logging.warning("INFO\nXMPP : No machine found for %s" % (deployobject['name']))
+
+                #listobjnoexist.append(deployobject)
+                # incription dans deploiement cette machine sans agent
+                XmppMasterDatabase().adddeploy(deployobject['commandid'],
+                                            deployobject['name'],
+                                            deployobject['name'],
+                                            deployobject['name'],
+                                            UUID,
+                                            deployobject['login'],
+                                            MSG_ERROR,
+                                            sessiondeployementless,
+                                            user=deployobject['login'],
+                                            login=deployobject['login'],
+                                            title=deployobject['title'],
+                                            group_uuid=deployobject['GUID'],
+                                            startcmd=deployobject['start_date'],
+                                            endcmd=deployobject['end_date'],
+                                            macadress=deployobject['mac'],
+                                            result="",
+                                            syncthing=0)
+
+
+                for logmsg in msg:
+                    self.xmpplog(logmsg,
+                                type='deploy',
+                                sessionname=sessiondeployementless,
+                                priority=-1,
+                                action="xmpplog",
+                                why=self.boundjid.bare,
+                                module="Deployment | Start | Creation",
+                                date=None,
+                                fromuser=deployobject['login'])
+                continue
+
+
+            if datetimenow < deployobject['start_date']:
+                deployobject['wol'] = 2
+            else:
+                if resultpresence[UUID][0] == 1:
+                    # If a machine is present, add deployment in deploy list to manage.
+                    deployobject['wol'] = 0
+                else:
+                    deployobject['wol'] = 1
+            try:
+                self.machineDeploy[UUID].append(deployobject)
+            except:
+                # creation list deployement
+                self.machineDeploy[UUID] = []
+                self.machineDeploy[UUID].append(deployobject)
+
+        listobjsupp = []
+        nbdeploy=len(self.machineDeploy)
+        for deployuuid in self.machineDeploy:
+            try:
+                deployobject = self.machineDeploy[deployuuid].pop(0)
+                listobjsupp.append(deployuuid)
+                logging.debug("send deploy on machine %s package %s" % (deployuuid,
+                                                                        deployobject['pakkageid']))
+
+                self.applicationdeployjsonUuidMachineAndUuidPackage(deployuuid,
+                                                                    deployobject['pakkageid'],
+                                                                    deployobject['commandid'],
+                                                                    deployobject['login'],
+                                                                    30,
+                                                                    encodebase64=False,
+                                                                    start_date=deployobject['start_date'],
+                                                                    end_date=deployobject['end_date'],
+                                                                    title=deployobject['title'],
+                                                                    macadress=deployobject['mac'],
+                                                                    GUID=deployobject['GUID'],
+                                                                    nbdeploy=nbdeploy,
+                                                                    wol=deployobject['wol'])
+            except Exception:
+                logger.error("%s" % (traceback.format_exc()))
+                listobjsupp.append(deployuuid)
+            if deployobject['wol'] == 1:
+                listmacadress = [x.strip() for x in deployobject['mac'].split("||")]
+                for macadressdata in listmacadress:
+                    self._addsetwol(self.wolglobal_set, macadressdata)
+        self.wolglobal_set.discard("")
+        if len(self.wolglobal_set):
+            self._sendwolgroup(self.wolglobal_set)
+        self.wolglobal_set.clear()
+        for objsupp in listobjsupp:
+            try:
+                del self.machineDeploy[objsupp]
+            except Exception:
+                pass
+        self.syncthingdeploy()
     except Exception:
-        pass
-    listobjsupp = []
-    # Search deploy to running
-    resultdeploymachine = MscDatabase().deployxmpp()
-    for deployobject in resultdeploymachine:
-        msg = []
-        # creation deployment
-        UUID = deployobject['UUID']
-        UUIDSTR = UUID.replace('UUID', "")
-        resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
-        re_search = []
-        if resultpresence[UUID][1] == 0:
-            re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'].split('.')[0])
-            if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
-                update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
-                if update_result is not None:
-                    if update_result.rowcount > 0:
-                        logger.info("update uuid inventory %s for machine %s" % (UUID, deployobject['name']))
-                resultpresence[UUID][1] = 1
-                resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
-                self.xmpplog("Attaching GLPI identifier [%s] in xmppmaster machine [%s]" % (UUID, deployobject['name']),
-                             type='deploy',
-                             sessionname="no_session",
-                             priority=-1,
-                             action="xmpplog",
-                             why=self.boundjid.bare,
-                             module="Deployment | Start | Creation| Notify",
-                             date=None,
-                             fromuser=deployobject['login'])
-
-        if resultpresence[UUID][1] == 0:
-            if re_search:
-                msg.append( "<span class='log_err'>Consolidation GLPI XMPP ERROR for machine %s. " \
-                            "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
-                                                                                UUIDSTR))
-                for mach in re_search:
-                    msg.append( "<span> Action : Please check"\
-                        " that mac address or serial is/are properly"\
-                            " imported in GLPI: serial (%s) or macs(%s)</span>"% (mach['serial'],
-                                                                                mach['macs']))
-                MSG_ERROR = "ABORT INCONSISTENT GLPI INFORMATION"
-                sessiondeployementless = name_random(5, "glpixmppconsolidationerror")
-            else:
-                MSG_ERROR = "ABORT MISSING AGENT"
-                sessiondeployementless = name_random(5, "missingagent")
-                msg.append( "<span class='log_err'>Agent missing on machine %s. " \
-                            "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
-                                                                                UUIDSTR))
-                msg.append( "Action : Check that the machine "\
-                            "agent is working, or install the agent on the"\
-                            " machine %s (%s) if it is missing." % (deployobject['name'],
-                                                                    UUIDSTR))
-
-                logging.warning("No machine found on hostname. You must verify consolidation GLPI with xmpp")
-                logging.warning("INFO\nGLPI : name %s uuid %s " % (deployobject['name'],
-                                                                deployobject['UUID']))
-                logging.warning("INFO\nXMPP : No machine found for %s" % (deployobject['name']))
-
-            #listobjnoexist.append(deployobject)
-            # incription dans deploiement cette machine sans agent
-            XmppMasterDatabase().adddeploy(deployobject['commandid'],
-                                           deployobject['name'],
-                                           deployobject['name'],
-                                           deployobject['name'],
-                                           UUID,
-                                           deployobject['login'],
-                                           MSG_ERROR,
-                                           sessiondeployementless,
-                                           user=deployobject['login'],
-                                           login=deployobject['login'],
-                                           title=deployobject['title'],
-                                           group_uuid=deployobject['GUID'],
-                                           startcmd=deployobject['start_date'],
-                                           endcmd=deployobject['end_date'],
-                                           macadress=deployobject['mac'],
-                                           result="",
-                                           syncthing=0)
-
-
-            for logmsg in msg:
-                self.xmpplog(logmsg,
-                             type='deploy',
-                             sessionname=sessiondeployementless,
-                             priority=-1,
-                             action="xmpplog",
-                             why=self.boundjid.bare,
-                             module="Deployment | Start | Creation",
-                             date=None,
-                             fromuser=deployobject['login'])
-            continue
-
-        if datetime.datetime.now() < deployobject['start_date']:
-            deployobject['wol'] = 2
-        else:
-            if resultpresence[UUID][0] == 1:
-                # If a machine is present, add deployment in deploy list to manage.
-                deployobject['wol'] = 0
-            else:
-                deployobject['wol'] = 1
-        try:
-            self.machineDeploy[UUID].append(deployobject)
-        except:
-            # creation list deployement
-            self.machineDeploy[UUID] = []
-            self.machineDeploy[UUID].append(deployobject)
-
-    listobjsupp = []
-    nbdeploy=len(self.machineDeploy)
-    for deployuuid in self.machineDeploy:
-        try:
-            deployobject = self.machineDeploy[deployuuid].pop(0)
-            listobjsupp.append(deployuuid)
-            logging.debug("send deploy on machine %s package %s" % (deployuuid,
-                                                                    deployobject['pakkageid']))
-            self.applicationdeployjsonUuidMachineAndUuidPackage(deployuuid,
-                                                                deployobject['pakkageid'],
-                                                                deployobject['commandid'],
-                                                                deployobject['login'],
-                                                                30,
-                                                                encodebase64=False,
-                                                                start_date=deployobject['start_date'],
-                                                                end_date=deployobject['end_date'],
-                                                                title=deployobject['title'],
-                                                                macadress=deployobject['mac'],
-                                                                GUID=deployobject['GUID'],
-                                                                nbdeploy=nbdeploy,
-                                                                wol=deployobject['wol'])
-        except Exception:
-            listobjsupp.append(deployuuid)
-        if deployobject['wol'] == 1:
-            listmacadress = [x.strip() for x in deployobject['mac'].split("||")]
-            for macadressdata in listmacadress:
-                self._addsetwol(self.wolglobal_set, macadressdata)
-    self.wolglobal_set.discard("")
-    if len(self.wolglobal_set):
-        self._sendwolgroup(self.wolglobal_set)
-    self.wolglobal_set.clear()
-    for objsupp in listobjsupp:
-        try:
-            del self.machineDeploy[objsupp]
-        except Exception:
-            pass
-    self.syncthingdeploy()
+        logger.error("%s" % (traceback.format_exc()))
+    finally:
+        self.process_load_deployment_on = True
+        if nb_machine_select_for_deploy_cycle:
+            timef = time.time()-startfunc
+            logger.info("scheduledeploy : mach %s time %s t/m %s" % (nb_machine_select_for_deploy_cycle,
+                                                                    timef,
+                                                                    (timef/nb_machine_select_for_deploy_cycle) \
+                                                                    if nb_machine_select_for_deploy_cycle else "--" ))
 
 def scheduledeployrecoveryjob(self):
     msglog = []
@@ -750,8 +795,6 @@ def applicationdeployjsonuuid(self,
                          fromuser=login)
         return False
 
-
-
 def applicationdeploymentjson(self,
                               jidrelay,
                               jidmachine,
@@ -979,7 +1022,7 @@ def applicationdeploymentjson(self,
             msg.append("Starting deployment on machine %s from ARS %s" % (jidmachine,jidrelay))
             if data['advanced'] and data['advanced']['syncthing'] == 1:
                 msg.append("<span class='log_warn'>There are not enough machines " \
-                           "to deploy in Syncthing mode</span>")
+                           "to deploy in peer mode</span>")
 
             data['advanced']['syncthing'] = 0
             result = None
@@ -1020,7 +1063,7 @@ def applicationdeploymentjson(self,
                                    macadress=macadress,
                                    result=result,
                                    syncthing=avacedpara)
-    if  'syncthing' not in data['advanced'] or data['advanced']['syncthing'] == 0:
+    if 'syncthing' not in  data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
                                                   jidmachine,
@@ -1048,6 +1091,8 @@ def syncthingdeploy(self):
                                       data,
                                       sessionid=name_randomplus(25,
                                                                 pref="deploysyncthing"))
+    else:
+        logging.debug("This is not a syncthing deploy, so we did not initialize it.")
 
 def callpluginsubstitute(self, plugin, data, sessionid=None):
     if sessionid is None:
@@ -1193,7 +1238,7 @@ def read_conf_loaddeployment(objectxmpp):
     # dictionary used for deploy
 
     objectxmpp.wolglobal_set = set()  # use group wol
-    #clean old session
+    #clean old folder session
     foldersession = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "sessiondeploysubstitute"))
     clean_session(foldersession)
     # initialise session object
@@ -1206,7 +1251,8 @@ def read_conf_loaddeployment(objectxmpp):
 
     if not os.path.isfile(pathfileconf):
         objectxmpp.deployment_end_timeout = 300
-        objectxmpp.deployment_scan_interval = 30
+        objectxmpp.deployment_scan_interval = 10
+        objectxmpp.deployment_nbr_mach_cycle = 100
         objectxmpp.wol_interval = 60
         objectxmpp.session_check_interval = 15
         objectxmpp.Recover_GLPI_Identifier_from_name = False
@@ -1221,7 +1267,12 @@ def read_conf_loaddeployment(objectxmpp):
         if Config.has_option("parameters", "deployment_scan_interval"):
             objectxmpp.deployment_scan_interval =  Config.getint('parameters', 'deployment_scan_interval')
         else:
-            objectxmpp.deployment_scan_interval = 30
+            objectxmpp.deployment_scan_interval = 10
+
+        if Config.has_option("parameters", "deployment_nbr_mach_cycle"):
+            objectxmpp.deployment_nbr_mach_cycle =  Config.getint('parameters', 'deployment_nbr_mach_cycle')
+        else:
+            objectxmpp.deployment_nbr_mach_cycle = 100
 
         if Config.has_option("parameters", "deployment_end_timeout"):
             objectxmpp.deployment_end_timeout =  Config.getint('parameters', 'deployment_end_timeout')
