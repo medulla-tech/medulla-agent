@@ -1,4 +1,4 @@
-pulse-xmpp-agent 2.1.7 (unreleased)
+pulse-xmpp-agent 2.1.7
 ======================
 * [CORRECTION DE BUG]  Correction de la détection de l'adresse IP du serveur
 XMPP lorsque l'agent démarre.

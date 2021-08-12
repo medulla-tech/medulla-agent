@@ -26,7 +26,7 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NETWORKVERSION = '2.1.6'
+NETWORKVERSION = '2.1.7'
 
 logger = logging.getLogger()
 
