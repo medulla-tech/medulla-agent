@@ -158,36 +158,25 @@ class XmppMasterDatabase(DatabaseHelper):
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
-        # utilisation xmppmaster
-        # dbpoolrecycle & dbpoolsize global conf
-        # si sizepool et recycle  parametres sont definies pour xmpp, ils sont utilises
-        try:
-            self.config.xmpp_dbpoolrecycle
-            self.poolrecycle = self.config.xmpp_dbpoolrecycle
-        except Exception:
-            self.poolrecycle = self.config.dbpoolrecycle
-
-        try:
-            self.config.xmpp_dbpoolsize
-            self.poolsize = self.config.xmpp_dbpoolsize
-        except Exception:
-            self.poolsize = self.config.dbpoolsize
         self.logger.info("Xmpp parameters connections is "\
             " user = %s,host = %s, port = %s, schema = %s,"\
-            " poolrecycle = %s, poolsize = %s"%(self.config.xmpp_dbuser,
-                                                self.config.xmpp_dbhost,
-                                                self.config.xmpp_dbport,
-                                                self.config.xmpp_dbname,
-                                                self.poolrecycle,
-                                                self.poolsize))
+            " poolrecycle = %s, poolsize = %s, pool_timeout %s" % (self.config.xmpp_dbuser,
+                                                                   self.config.xmpp_dbhost,
+                                                                   self.config.xmpp_dbport,
+                                                                   self.config.xmpp_dbname,
+                                                                   self.config.xmpp_dbpoolrecycle,
+                                                                   self.config.xmpp_dbpoolsize,
+                                                                   self.config.xmpp_dbpooltimeout))
         try:
             self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
-                                                                                    self.config.xmpp_dbpasswd,
-                                                                                    self.config.xmpp_dbhost,
-                                                                                    self.config.xmpp_dbport,
-                                                                                    self.config.xmpp_dbname),
-                                                        pool_recycle=self.poolrecycle,
-                                                        pool_size=self.poolsize)
+                                                                                     self.config.xmpp_dbpasswd,
+                                                                                     self.config.xmpp_dbhost,
+                                                                                     self.config.xmpp_dbport,
+                                                                                     self.config.xmpp_dbname),
+                                                        pool_recycle=self.config.xmpp_dbpoolrecycle,
+                                                        pool_size=self.config.xmpp_dbpoolsize,
+                                                        pool_timeout=self.config.xmpp_dbpooltimeout,
+                                                        convert_unicode=True)
             self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
             Base.prepare(self.engine_xmppmmaster_base, reflect=True)
             self.Update_machine = Base.classes.update_machine

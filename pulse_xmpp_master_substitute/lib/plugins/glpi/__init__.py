@@ -93,35 +93,25 @@ class Glpi(object):
         self.sessionxmpp = None
         self.sessionglpi = None
 
-        try:
-            self.config.glpi_dbpoolrecycle
-            self.poolrecycle = self.config.glpi_dbpoolrecycle
-        except Exception:
-            self.poolrecycle = self.config.dbpoolrecycle
-
-        try:
-            self.config.glpi_dbpoolsize
-            self.poolsize = self.config.glpi_dbpoolsize
-        except Exception:
-            self.poolsize = self.config.dbpoolsize
         self.logger.info("Glpi parameters connections is "\
             " user = %s,host = %s, port = %s, schema = %s,"\
-            " poolrecycle = %s, poolsize = %s"%(self.config.glpi_dbuser,
-                                                self.config.glpi_dbhost,
-                                                self.config.glpi_dbport,
-                                                self.config.glpi_dbname,
-                                                self.poolrecycle,
-                                                self.poolsize))
-
+            " poolrecycle = %s, poolsize = %s, pool_timeout %s" % (self.config.glpi_dbuser,
+                                                                   self.config.glpi_dbhost,
+                                                                   self.config.glpi_dbport,
+                                                                   self.config.glpi_dbname,
+                                                                   self.config.xmpp_dbpoolrecycle,
+                                                                   self.config.xmpp_dbpoolsize,
+                                                                   self.config.xmpp_dbpooltimeout))
         try:
             self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.glpi_dbuser,
                                                                          self.config.glpi_dbpasswd,
                                                                          self.config.glpi_dbhost,
                                                                          self.config.glpi_dbport,
                                                                          self.config.glpi_dbname),
-                                             pool_recycle = self.poolrecycle,
-                                             pool_size = self.poolsize)
-
+                                              pool_recycle=self.config.glpi_dbpoolrecycle,
+                                              pool_size=self.config.glpi_dbpoolsize,
+                                              pool_timeout=self.config.glpi_dbpooltimeout,
+                                              convert_unicode=True)
             try:
                 self._glpi_version = self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
             except OperationalError:
