@@ -187,8 +187,7 @@ def __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata):
     xmppobject.config.pakage_print_fingers_base = pakage_print_fingers_base
 
     logger.info("%s" % xmppobject.config.pakage_print_fingers_base)
-    xmppobject.config.list_folder_sources = ['/var/lib/pulse2/packagesglobal',
-                                             '/var/lib/pulse2/packageslocal']
+    xmppobject.config.list_folder_sources = ['/var/lib/pulse2/packages/sharing/global']
     xmppobject.config.location_packages = '/var/lib/pulse2/packages'
     xmppobject.config.modulo = 20
 
