@@ -206,16 +206,16 @@ class Glpi92(DatabaseHelper):
         except OperationalError:
             self._glpi_version = self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
 
-        if LooseVersion(self._glpi_version) >=  LooseVersion("9.1") and LooseVersion(self._glpi_version) <=  LooseVersion("9.1.7"):
+        if LooseVersion(self._glpi_version) >=  LooseVersion("9.2") and LooseVersion(self._glpi_version) <=  LooseVersion("9.2.9"):
             logging.getLogger().debug('GLPI version %s found !' % self._glpi_version)
         else:
-            logging.getLogger().debug('GLPI higher than version 9.1 was not detected')
+            logging.getLogger().debug('GLPI higher than version 9.2 was not detected')
         self.Session = sessionmaker(bind=self.engine_glpi)
         self.metadata = MetaData(self.engine_glpi)
         self.initMappers()
         self.logger.info("Glpi is in version %s" % (self.glpi_version))
         self.metadata.create_all()
-        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.1')
+        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.2')
         self.is_activated = True
         self.logger.debug("Glpi finish activation")
 
