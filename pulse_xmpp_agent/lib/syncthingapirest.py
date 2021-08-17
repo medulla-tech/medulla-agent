@@ -79,6 +79,18 @@ def conf_ars_deploy(port=23000,
     if adressurl != "":
         pathxmldevice = ".//device[@name ='%s']/address" % name
         listresult = root.xpath(pathxmldevice)
+        if len(listresult) != 1:
+            if len(listresult) == 0:
+                msg ="%s device is not present in Synthing configuration."\
+                            " Please make sure Syncthing is properly configured" % name
+            else:
+                msg ="Two devices or more named '%s' are configured in Syncthing."\
+                    " Please check Syncthing config to remove the unused one" % name
+            logger.error("%s" % msg)
+            pathxmldeviceerrormsg = ".//device[@name ='%s']" % name
+            listresulterrordevice = root.xpath(pathxmldeviceerrormsg)
+            for devicexml in listresulterrordevice:
+                 logger.error("%s"%etree.tostring(devicexml, pretty_print=True))
         if listresult:
             device = listresult[0].getparent()
             for t in listresult:
@@ -88,12 +100,10 @@ def conf_ars_deploy(port=23000,
             device.append(etree.XML("<address>%s</address>" % adresstcp))
             save_xml_file(root, configfile)
 
-
 def save_xml_file(elementxml,
                   configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
-
 
 def iddevice(configfile="/var/lib/pulse2/.config/syncthing/config.xml",
              hostname=None):
