@@ -7,7 +7,7 @@ Uploaders: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
 Build-Depends: debhelper (>= 9),
                dh-python,
                python-all-dev (>= 2.6.6-3~),
-	       python-setuptools, git
+	       python-setuptools, git, sudo 
 Standards-Version: 3.9.8
 Homepage: http://cyberelk.net/tim/software/pycups/
 Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/python-cups.git

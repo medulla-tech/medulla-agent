@@ -15,18 +15,13 @@ var/lib/pulse2/clients/lin/deb/pulse-agent-linux/debian/control.in
 var/lib/pulse2/clients/lin/deb/pulse-agent-linux/debian/pulse-agent-linux.install
 var/lib/pulse2/clients/lin/deb/pulse-agent-linux/debian/pulse-agent-linux.postinst.in
 var/lib/pulse2/clients/lin/deb/pulse-agent-linux/debian/rules
-var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr
-var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
-var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin/pulse-filetree-generator
 var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 var/lib/pulse2/clients/lin/install-pulse-agent-linux.sh.in
 var/lib/pulse2/clients/lin/rpm/package/SOURCES/postinst
-var/lib/pulse2/clients/lin/rpm/package/SOURCES/pulse-filetree-generator
 var/lib/pulse2/clients/mac/Info.plist.in
 var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
 var/lib/pulse2/clients/mac/net.siveo.pulse_xmpp_agent.plist
 var/lib/pulse2/clients/mac/postflight.in
-var/lib/pulse2/clients/mac/pulse-filetree-generator
 var/lib/pulse2/clients/mac/rbash
 var/lib/pulse2/clients/mac/runpulseagent
 var/lib/pulse2/clients/pulse-xmpp-agent-2.1.7.tar.gz
@@ -50,7 +45,6 @@ var/lib/pulse2/clients/win/libs/Junction.nsh
 var/lib/pulse2/clients/win/netcheck-service.py
 var/lib/pulse2/clients/win/networkevents.py
 var/lib/pulse2/clients/win/pulse-agent-task.xml
-var/lib/pulse2/clients/win/pulse-filetree-generator.exe
 var/lib/pulse2/clients/win/pulse-service.py
 var/lib/pulse2/clients/win/powershell-policy-remotesigned.pol
 var/lib/pulse2/xmpp_baseremoteagent
