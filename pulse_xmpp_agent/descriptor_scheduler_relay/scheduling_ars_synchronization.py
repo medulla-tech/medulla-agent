@@ -235,18 +235,18 @@ def __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata):
                                                 for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', list_folder_sources) \
                                                     if x.strip() != ""]
         # FIXME: Implement me
-        # if Config.has_section("figersprint"):
-            # if Config.has_option("figersprint",
+        # if Config.has_section("fingerprint"):
+            # if Config.has_option("fingerprint",
                                  # "exclude"):
-                # exclude = Config.get('figersprint',
+                # exclude = Config.get('fingerprint',
                                       # 'exclude')
                 # xmppobject.config.exclude =  [str(x.strip()) \
                                                 # for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', exclude) \
                                                     # if x.strip() != "" ]
 
-            # if Config.has_option("figersprint",
+            # if Config.has_option("fingerprint",
                                  # "modulo"):
-                # xmppobject.config.modulo = Config.getint('figersprint',
+                # xmppobject.config.modulo = Config.getint('fingerprint',
                                                          # 'modulo')
         # if Config.has_section("xmpp_master_db"):
             # if Config.has_option("xmpp_master_db",
