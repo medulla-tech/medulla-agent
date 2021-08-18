@@ -30,6 +30,7 @@ from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, d
 from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.ext.automap import automap_base
 from datetime import date, datetime, timedelta
 import pprint
 # PULSE2 modules
