@@ -48,10 +48,6 @@ def action( objectxmpp, action, sessionid, data, message, dataerror):
         result = []
         for machine in data['jid_machines']:
             user, host = machine.split('/')[0].split('@')
-            _result = utils.simplecommand('ejjaberdctrl unregister %s %s'%(user, host))
+            _result = utils.simplecommand('ejaberdctrl unregister %s %s' % (user, host))
 
             result.append(_result)
-
-    #objectxmpp.send_message( mto=message['from'],
-    #                 mbody=json.dumps(result),
-    #                 mtype='chat')
