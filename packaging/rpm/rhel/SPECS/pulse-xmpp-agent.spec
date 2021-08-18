@@ -301,6 +301,7 @@ rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machin
 rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
 cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
 cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
