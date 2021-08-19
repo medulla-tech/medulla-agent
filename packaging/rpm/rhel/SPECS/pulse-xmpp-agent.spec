@@ -339,6 +339,7 @@ cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_
 cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/descriptor_scheduler_substitutedescriptor_scheduler_substitute %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
