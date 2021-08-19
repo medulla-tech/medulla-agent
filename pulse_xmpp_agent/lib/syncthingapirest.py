@@ -73,21 +73,35 @@ def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/con
 
 def conf_ars_deploy(port=23000,
                     configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
-                    name="pulse"):
+                    deviceName="pulse"):
+    """
+    It updates the address field in the configuration file for the specified device.
+
+    Args:
+        port: The synthinc port used
+        configifile: The syncthing configuration file used
+        deviceName: The syncthing's device name
+
+    Returns:
+        It create a new syncthing configuration file with the new informations
+    """
+    if deviceName != "":
+        logger.info("xml conf : %s device  %s" % (configfile, deviceName))
+
     root, adressurl = read_serverannonce(configfile)
     if adressurl != "":
-        pathxmldevice = ".//device[@name ='%s']" % name
+        pathxmldevice = ".//device[@name ='%s']" % deviceName
         listresult = root.xpath(pathxmldevice)
         if len(listresult) != 1:
             if len(listresult) == 0:
                 msg ="%s device is not present in Synthing configuration."\
-                            " Please make sure Syncthing is properly configured" % name
+                            " Please make sure Syncthing is properly configured" % deviceName
             else:
                 msg ="Two devices or more named '%s' are configured in Syncthing."\
-                    " Please check Syncthing config [%s] to remove the unused one" % (name, configfile)
+                    " Please check Syncthing config [%s] to remove the unused one" % (deviceName, configfile)
 
             logger.error("%s" % msg)
-            pathxmldeviceerrormsg = ".//device[@name ='%s']" % name
+            pathxmldeviceerrormsg = ".//device[@name ='%s']" % deviceName
             listresulterrordevice = root.xpath(pathxmldeviceerrormsg)
             for devicexml in listresulterrordevice:
                  logger.error("%s"%etree.tostring(devicexml, pretty_print=True))
@@ -105,28 +119,42 @@ def save_xml_file(elementxml,
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
 
-def iddevice(configfile="/var/lib/pulse2/.config/syncthing/config.xml",
-             hostname=None):
-    try:
-        if hostname is None:
-            hostname = socket.gethostname()
+def iddevice(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml", deviceName=None):
+    """
+        This function retrieve the id of the syncthing device.
+        Args:
+            configfile: The configuration file where the id are searched.
+            deviceName: The syncthing's device name.
 
-        if hostname != "":
-            logger.info("xml conf : %s device id for hostname machine %s" % (configfile, hostname))
+        Returns:
+            It returns the id of the syncthing device.
+    """
+    try:
+        if deviceName is None:
+            deviceName = socket.gethostname()
+
+        if deviceName != "":
+            logger.debug("The configuration file is %s" % configfile)
+            logger.debug("The device name is %s" % deviceName)
+
             tree = etree.parse(configfile)
             root = tree.getroot()
-            pathxmldevice = ".//device[@name='%s']" % hostname
+            pathxmldevice = ".//device[@name='%s']" % deviceName
             listresult = root.xpath(pathxmldevice)
-            devid = listresult[0].attrib['id']
-            logger.info("find device id %s" % (devid))
-            return devid
+            if len(listresult) == 0:
+                msg = "The device named %s is not present in the syncthing's configuration."\
+                        " There is no id for this device." % deviceName
+                logger.warning("%s" % msg)
+                return ""
+            deviceID = listresult[0].attrib['id']
+            logger.info("find device id %s" % (deviceID))
+            return deviceID
         else:
             return ""
     except Exception as e :
         logger.error("%s search iddevice syncthing %s" % (str(e), configfile))
         logger.error("\n%s" % (traceback.format_exc()))
         return ""
-
 
 """
     class use for xmpp on each server syncthing in local
