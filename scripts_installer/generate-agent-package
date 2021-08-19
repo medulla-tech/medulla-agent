@@ -232,7 +232,11 @@ if [[ ${old_uuid} != '' ]]; then
   echo "INFO: Deleting pakage ${old_uuid}... Done"
 fi
 
-# Restart package server
-echo "INFO: Restarting package server..."
-service pulse2-package-server restart
-echo "INFO: Restarting package server... Done"
+# Insert package in database
+echo "INFO: Generating package links and database records..."
+DBHOST=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbhost 2> /dev/null || echo localhost)
+DBPORT=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbport 2> /dev/null || echo 3306)
+DBPASS=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbpasswd)
+DBUSER=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbuser 2> /dev/null || echo mmc)
+/usr/sbin/pulse2-generation_package.py -H ${DBHOST} -P ${DBPORT} -u ${DBUSER} -p ${DBPASS} -g -m -l -r > /tmp/pulse2-generation_package.log
+echo "INFO: Generating package links and database records... Done"
