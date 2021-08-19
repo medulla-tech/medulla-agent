@@ -71,13 +71,12 @@ def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/con
             return root, hostname
     return root, ""
 
-
 def conf_ars_deploy(port=23000,
                     configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
                     name="pulse"):
     root, adressurl = read_serverannonce(configfile)
     if adressurl != "":
-        pathxmldevice = ".//device[@name ='%s']/address" % name
+        pathxmldevice = ".//device[@name ='%s']" % name
         listresult = root.xpath(pathxmldevice)
         if len(listresult) != 1:
             if len(listresult) == 0:
@@ -85,7 +84,8 @@ def conf_ars_deploy(port=23000,
                             " Please make sure Syncthing is properly configured" % name
             else:
                 msg ="Two devices or more named '%s' are configured in Syncthing."\
-                    " Please check Syncthing config to remove the unused one" % name
+                    " Please check Syncthing config [%s] to remove the unused one" % (name, configfile)
+
             logger.error("%s" % msg)
             pathxmldeviceerrormsg = ".//device[@name ='%s']" % name
             listresulterrordevice = root.xpath(pathxmldeviceerrormsg)
