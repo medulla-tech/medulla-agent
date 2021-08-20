@@ -206,7 +206,7 @@ Requires:   nsis-plugins-Pwgen
 Requires:   nsis-plugins-AccessControl
 Requires:   nsis-plugins-Inetc
 Requires:   nsis-plugins-TextReplace
-
+Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
 Files to create pulse windows installer
