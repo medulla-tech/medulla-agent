@@ -161,9 +161,17 @@ class manage_scheduler:
         for y in deleted:
             self.taches.remove(y)
 
+
     def call_scheduling_main(self, name, *args, **kwargs):
+        logging.getLogger().debug("execution of the plugin scheduling_%s" % name)
+        try:
+            count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+            count=count+1
+        except AttributeError:
+            count=0
+        logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
+        setattr(self.objectxmpp, "num_call_scheduling_%s"%name, count)
         mod = __import__("scheduling_%s"%name)
-        logging.getLogger().debug("exec plugin scheduling_%s"%name)
         mod.schedule_main(*args, **kwargs)
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
