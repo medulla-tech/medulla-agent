@@ -20,7 +20,9 @@
 # MA 02110-1301, USA.
 
 # file : /descriptor_scheduler_substitute/scheduling_sub_logsrotation.py
-
+"""
+    This plugin is created to help rotating logs
+"""
 import os
 import shutil
 import logging
@@ -158,7 +160,7 @@ def read_config_plugin_agent(objectxmpp):
                           "# Log file compression chosen in the following list: no | zip | gzip | bz2\n" \
                           "compress = no\n" \
                           "# Maximum file size in bytes. If file size > trigger_size, log is rotated\n" \
-                          "trigger_size = 5242880\n" %  objectxmpp.config.logfile)
+                          "trigger_size = 5242880\n" % objectxmpp.config.logfile)
     Config = ConfigParser.ConfigParser()
     Config.read(objectxmpp.pathfileconf)
     try:
