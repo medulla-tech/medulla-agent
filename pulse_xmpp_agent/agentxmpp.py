@@ -373,7 +373,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.fichierconfsyncthing = os.path.join(self.config.syncthing_home, 'config.xml')
                 conf_ars_deploy(self.config.syncthing_port,
                                 configfile=self.fichierconfsyncthing,
-                                name="pulse")
+                                deviceName="pulse")
             else:
                 self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                          ".config",
@@ -395,7 +395,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             hostnameiddevice = None
             if self.boundjid.domain == "pulse":
                 hostnameiddevice = "pulse"
-            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, hostname=hostnameiddevice)
+            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice)
         except Exception:
             pass
 
