@@ -41,13 +41,13 @@ def action( objectxmpp, action, sessionid, data, message, dataerror):
         result = []
         for machine in data['jid_machines']:
             user, host = machine.split('/')[0].split('@')
-            _result = utils.simplecommand('ejabberdctl  ban_account %s %s %s'%(user, host, data['subaction']))
+            _result = utils.simplecommand('ejabberdctl ban_account %s %s %s'%(user, host, data['subaction']))
             result.append(_result)
 
     if data['subaction'] == 'direct_unban':
         result = []
         for machine in data['jid_machines']:
             user, host = machine.split('/')[0].split('@')
-            _result = utils.simplecommand('ejaberdctrl unregister %s %s' % (user, host))
+            _result = utils.simplecommand('ejabberdctl unregister %s %s' % (user, host))
 
             result.append(_result)
