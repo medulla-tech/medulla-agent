@@ -141,12 +141,12 @@ def read_conf_wol(xmppobject):
         logger.error("The configuration file for the plugin %s is missing.\n" \
                      "It should be located to %s)" % (plugin['NAME'], pathfileconf))
         if not xmppobject.wakeonlangroupremotelan:
-            logger.error("default parameters is\nremotelan %s"\
-                "\nwakeonlanport %s\ntargetsubnet %s" %(xmppobject.wakeonlangroupremotelan,
-                                                        xmppobject.wakeonlangroupport,
-                                                        xmppobject.wakeonlantargetsubnet))
+            logger.error("The used parameters are\nremotelan %s"\
+                "\nwakeonlanport %s\ntargetsubnet %s" % (xmppobject.wakeonlangroupremotelan,
+                                                         xmppobject.wakeonlangroupport,
+                                                         xmppobject.wakeonlantargetsubnet))
         else:
-            logger.error("default parameters is remotelan %s" %(xmppobject.wakeonlangroupremotelan))
+            logger.error("The default parameters for remotelan is %s" %( xmppobject.wakeonlangroupremotelan))
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -164,9 +164,9 @@ def read_conf_wol(xmppobject):
             if Config.has_option("parameters", "targetsubnet"):
                 xmppobject.wakeonlantargetsubnet = Config.getboolean('parameters', 'targetsubnet')
         if not xmppobject.wakeonlangroupremotelan:
-            logger.info("parameters is\nremotelan %s"\
-                "\nwakeonlanport %s\ntargetsubnet %s" %(xmppobject.wakeonlangroupremotelan,
-                                                        xmppobject.wakeonlangroupport,
-                                                        xmppobject.wakeonlantargetsubnet))
+            logger.debug("The used parameters are\nremotelan %s"\
+                "\nwakeonlanport %s\ntargetsubnet %s" % (xmppobject.wakeonlangroupremotelan,
+                                                         xmppobject.wakeonlangroupport,
+                                                         xmppobject.wakeonlantargetsubnet))
         else:
-            logger.info("parameters is remotelan %s" %(xmppobject.wakeonlangroupremotelan))
+            logger.info("The default parameters for remotelan is %s" % (xmppobject.wakeonlangroupremotelan))
