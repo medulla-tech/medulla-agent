@@ -126,18 +126,19 @@ def scheduledeploy(self):
         except AttributeError:
             self.mycompteurcallplugin = 0
         except Exception:
-            logger.error("%s" % (traceback.format_exc()))
+            logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
         listobjsupp = []
         try:
-            # Search deploy to running
+            # Searching for deployements to start
             nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=self.deployment_nbr_mach_cycle)
-        except Exception:
-            logger.error("%s" % (traceback.format_exc()))
+        except Exception as error_while_deploy:
+            logger.error("We encountered the following error while trying to deploy: \n %s" % error_while_deploy)
+            logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
 
         if nb_machine_select_for_deploy_cycle == 0:
             return
 
-        uuidlist=[]
+        uuidlist = []
         for deployobject in resultdeploymachine:
             uuidlist.append(deployobject['UUID'])
         resultpresence = XmppMasterDatabase().getPresenceExistuuids(uuidlist)
@@ -147,10 +148,9 @@ def scheduledeploy(self):
             # creation deployment
             UUID = deployobject['UUID']
             UUIDSTR = UUID.replace('UUID', "")
-            #resultpresence = XmppMasterDatabase().getPresenceExistuuids(UUID)
             re_search = []
             if resultpresence[UUID][1] == 0:
-                ## il n'y a pas de uuid glpi
+                # il n'y a pas de uuid glpi
                 re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
                 if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
                     update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
