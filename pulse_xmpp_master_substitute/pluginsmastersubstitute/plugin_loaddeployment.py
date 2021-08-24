@@ -81,27 +81,27 @@ def scheduledeploy(self):
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
     
-    nb_machine_select_for_deploy_cycle=0
+    nb_machine_select_for_deploy_cycle = 0
     datetimenow = datetime.datetime.now()
-    startfunc=time.time()
+    startfunc = time.time()
     if not self.process_load_deployment_on:
-        logger.warning("lock new cycle deploy : process precedent no terminate")
+        logger.warning("We cannot start a new deployment cyle. The previous one is still running.")
         return
     else:
-        logger.debug("start cycle deploy[%s mach./%s secondes]"%(self.deployment_nbr_mach_cycle,
-                                                                 self.deployment_scan_interval))
+        logger.debug("We start a new deployment cycle of %s computers. Next check in %s seconds" % (self.deployment_nbr_mach_cycle,
+                                                                                                    self.deployment_scan_interval))
     try:
         self.process_load_deployment_on = False
-        msg=[]
+        msg = []
         try:
             self.mycompteurcallplugin+=1
             if not self.mycompteurcallplugin % 6:
-                list_ars_syncthing_pause =  XmppMasterDatabase().get_ars_for_pausing_syncthing(2)
+                list_ars_syncthing_pause = XmppMasterDatabase().get_ars_for_pausing_syncthing()
                 for arssyncthing in list_ars_syncthing_pause:
                     datasend = {"action": "deploysyncthing",
                                 "sessionid": name_random(5, "pausesyncthing"),
                                 "data": {"subaction": "pausefolder",
-                                        "folder": arssyncthing[2]}
+                                         "folder": arssyncthing[2]}
                                 }
                     listars = arssyncthing[1].split(",")
                     for arssyncthing in listars:
@@ -115,16 +115,16 @@ def scheduledeploy(self):
                         datasend = {"action": "deploysyncthing",
                                     "sessionid": name_random(5, "cleansyncthing"),
                                     "data": {"subaction": "cleandeploy",
-                                            "iddeploy": deploydata['directory_tmp'],
-                                            "jidmachines": deploydata['jidmachines'],
-                                            "jidrelays": deploydata['jidrelays']}}
+                                             "iddeploy": deploydata['directory_tmp'],
+                                             "jidmachines": deploydata['jidmachines'],
+                                             "jidrelays": deploydata['jidrelays']}}
                         for relay in ars:
                             self.send_message(mto=relay['jid'],
                                             mbody=json.dumps(datasend),
                                             mtype='chat')
                         XmppMasterDatabase().refresh_syncthing_deploy_clean(deploydata['id'])
         except AttributeError:
-            self.mycompteurcallplugin=0
+            self.mycompteurcallplugin = 0
         except Exception:
             logger.error("%s" % (traceback.format_exc()))
         listobjsupp = []
