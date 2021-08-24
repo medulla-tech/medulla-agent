@@ -130,7 +130,7 @@ def scheduledeploy(self):
         listobjsupp = []
         try:
             # Search deploy to running
-            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=100)
+            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=self.deployment_nbr_mach_cycle)
         except Exception:
             logger.error("%s" % (traceback.format_exc()))
 
