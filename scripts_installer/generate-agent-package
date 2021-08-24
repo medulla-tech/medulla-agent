@@ -66,6 +66,7 @@ cp ${PULSE_AGENT_PATH}/${PULSE_MACHINE_PLUGINS_FILENAME} .
 cat <<EOF > xmppdeploy.json
 {
     "info": {
+        "localisation_server": "global",
         "description": "${PACKAGE_DESC}",
         "name": "${PACKAGE_NAME} v${AGENT_VERSION}",
         "software": "agentxmpp",
@@ -214,7 +215,7 @@ EOF
 
 # Generate conf.json
 cat <<EOF > conf.json
-{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux,win,mac", "entity_id": "0", "sub_packages": [], "reboot": 0, "version": "${AGENT_VERSION}",
+{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux,win,mac", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "reboot": 0, "version": "${AGENT_VERSION}",
 "inventory": {"associateinventory": "1", "licenses": "10000", "queries": {"Qversion": "${AGENT_VERSION}*", "Qvendor": "", "boolcnd": "", "Qsoftware": "pulse*agent"}}, "id": "${PACKAGE_UUID}", "name": "${PACKAGE_NAME} v${AGENT_VERSION}", "metagenerator": "manual"}
 EOF
 
