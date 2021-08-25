@@ -1515,9 +1515,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
             for sub_subscribed in self.sub_subscribe_all:
                 if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
                     continue
-                if t not in  self.limit_message_presence_clean_substitute:
-                    self.send_presence (pto=t, ptype='unsubscribe')
-                    self.update_roster(t, subscription='remove')
+                if sub_subscribed not in  self.limit_message_presence_clean_substitute:
+                    self.send_presence (pto=sub_subscribed, ptype='unsubscribe')
+                    self.update_roster(sub_subscribed, subscription='remove')
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
