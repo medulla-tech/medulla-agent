@@ -388,8 +388,6 @@ class manage_kiosk_message:
             try:
                 if 'interface' in result:
                     self.logger.debug('RECV NETWORK INTERFACE')
-                    #manage message from watching interface
-                    #result = result['data']
 
                     BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                                "..",
@@ -414,20 +412,20 @@ class manage_kiosk_message:
                         self.objectxmpp.config.ipxmpp = getIpXmppInterface(self.objectxmpp.config.Server,
                                                                            self.objectxmpp.config.Port)
                     if self.objectxmpp.config.ipxmpp in result['removedinterface']:
-                        self.logger.info("__IP Interface used to xmpp Server %s__"%self.objectxmpp.config.ipxmpp)
+                        self.logger.info("The IP address used to contact the XMPP Server is: %s" % self.objectxmpp.config.ipxmpp)
                         self.logger.info("__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__")
                         logmsg = "The new network interface can replace the previous one. "\
                                  "The service will resume after restarting the agent"
                         if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
-                            #on fait juste 1 restart
+                            # We only do a restart
                             self.logger.warning(logmsg)
                             self.objectxmpp.md5reseau=refreshfingerprint()
                             self.objectxmpp.restartBot()
                         else:
-                            #on reconfigure la totale
-                            time.sleep(15) # l activation de la nouvelle interface peut prendre 1 moment
+                            # We reconfigure all
+                            time.sleep(15) # Activating the new interface can take a while.
                             if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
-                                #on fait juste 1 restart
+                                # We only do a restart
                                 self.logger.warning(logmsg)
                                 self.objectxmpp.md5reseau=refreshfingerprint()
                                 self.objectxmpp.restartBot()
