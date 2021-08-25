@@ -32,7 +32,7 @@ import ConfigParser
 from lib import utils
 from xml.etree import ElementTree
 
-SYNCTHINGVERSION = '1.6.1'
+SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
