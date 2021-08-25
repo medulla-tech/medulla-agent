@@ -36,7 +36,7 @@ SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.20", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.21", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -48,6 +48,12 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         installed_version = checksyncthingversion()
         if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
             updatesyncthing(xmppobject, installed_version)
+
+        # Configure syncthing
+        syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
+        if os.path.isfile(syncthing_configfile):
+            configuresyncthing(syncthing_configfile)
+
     except Exception:
         pass
 
@@ -127,9 +133,6 @@ def updatesyncthing(xmppobject, installed_version):
 
             mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
             utils.simplecommand(mklink_command)
-
-            # Configure syncthing
-            configuresyncthing(os.path.join(syncthingconfig_path, 'config.xml'))
 
             # Enable syncthing now it is installed
             agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")
