@@ -416,18 +416,18 @@ class manage_kiosk_message:
                         self.logger.info("__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__")
                         logmsg = "The new network interface can replace the previous one. "\
                                  "The service will resume after restarting the agent"
-                        if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
+                        if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port):
                             # We only do a restart
                             self.logger.warning(logmsg)
-                            self.objectxmpp.md5reseau=refreshfingerprint()
+                            self.objectxmpp.md5reseau = refreshfingerprint()
                             self.objectxmpp.restartBot()
                         else:
                             # We reconfigure all
                             time.sleep(15) # Activating the new interface can take a while.
-                            if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
+                            if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port):
                                 # We only do a restart
                                 self.logger.warning(logmsg)
-                                self.objectxmpp.md5reseau=refreshfingerprint()
+                                self.objectxmpp.md5reseau = refreshfingerprint()
                                 self.objectxmpp.restartBot()
                             else:
                                 self.logger.warning("No network interface can replace the previous one. "\
@@ -444,13 +444,13 @@ class manage_kiosk_message:
                             self.objectxmpp.networkMonitor()
                         else:
                             self.logger.warning("The new network interface is directly usable. Nothing to do")
-                            self.objectxmpp.md5reseau=refreshfingerprint()
+                            self.objectxmpp.md5reseau = refreshfingerprint()
                             self.objectxmpp.update_plugin()
                     return
             except Exception as e:
-                self.logger.error("%s"%str(e))
+                self.logger.error("%s" % str(e))
                 return
-            #manage message from tcp connection
+            # Manage message from tcp connection
             self.logger.debug('RECV FROM TCP/IP CLIENT')
             if 'uuid' in result:
                 datasend['data']['uuid'] = result['uuid']
@@ -473,18 +473,17 @@ class manage_kiosk_message:
                     datasend['data']['subaction'] =  'update'
                 elif result['action'] == 'kioskLog':
                     if 'message' in result and result['message'] != "":
-                        self.objectxmpp.xmpplog(
-                                    result['message'],
-                                    type = 'noset',
-                                    sessionname = '',
-                                    priority = 0,
-                                    action = "xmpplog",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "Planned",
-                                    why = "",
-                                    module = "Kiosk | Notify",
-                                    fromuser = "",
-                                    touser = "")
+                        self.objectxmpp.xmpplog(result['message'],
+                                                type='noset',
+                                                sessionname='',
+                                                priority=0,
+                                                action ="xmpplog",
+                                                who=self.objectxmpp.boundjid.bare,
+                                                how="Planned",
+                                                why="",
+                                                module="Kiosk | Notify",
+                                                fromuser="",
+                                                touser="")
                         if 'type' in result:
                             if result['type'] == "info":
                                 self.logger.getself.logger().info(result['message'])
@@ -508,16 +507,16 @@ class manage_kiosk_message:
                 else:
                     #bad action
                     self.logger.getLogger().warning("this action is not taken "\
-                                                    "into account : %s"%result['action'])
+                                                    "into account : %s" % result['action'])
                     return
                 if substitute_recv:
                     self.logger.warning("send to %s " % substitute_recv)
-                    self.objectxmpp.send_message(  mbody = json.dumps(datasend),
-                            mto = substitute_recv,
-                            mtype ='chat')
+                    self.objectxmpp.send_message(mbody=json.dumps(datasend),
+                                                 mto=substitute_recv,
+                                                 mtype='chat')
                 else:
-                    #call plugin on master
+                    # Call plugin on master
                     self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
             self.logger.error("message to kiosk server : %s" % str(e))
-            self.logger.error("\n%s"%(traceback.format_exc()))
+            self.logger.error("\n%s" % (traceback.format_exc()))
