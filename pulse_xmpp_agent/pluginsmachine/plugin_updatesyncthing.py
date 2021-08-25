@@ -36,7 +36,7 @@ SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.20", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
