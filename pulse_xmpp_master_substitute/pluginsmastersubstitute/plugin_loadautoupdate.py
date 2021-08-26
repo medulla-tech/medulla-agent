@@ -214,13 +214,13 @@ def senddescriptormd5(self, to):
 
 def plugin_loadautoupdate(self, msg, data):
     try:
-        msgfrom=str(jid.JID(msg['from']).bare)
-        msgmachine=str(jid.JID(msg['from']).user)
+        msgfrom = str(jid.JID(msg['from']).bare)
+        msgmachine = str(jid.JID(msg['from']).user)
         if self.autoupdate and \
             all([x in  data.keys() for x in ['information',
-                                            'deployment',
-                                            'md5agent',
-                                            'agenttype']]) and \
+                                             'deployment',
+                                             'md5agent',
+                                             'agenttype']]) and \
             self.Update_Remote_Agentlist.get_fingerprint_agent_base() != data['md5agent'] and \
             data['md5agent'].upper() not in ["DEV", "DEBUG" ]:
             # update agent to do
@@ -230,13 +230,13 @@ def plugin_loadautoupdate(self, msg, data):
                 self.senddescriptormd5(msgfrom)
             else:
                 # verify key exist
-                XmppMasterDatabase().setUpdate_machine( data['information']['dnshostname'],
-                                                        msgfrom,
-                                                        ars = data['deployment'],
-                                                        status = "ready",
-                                                        descriptor=data['agenttype'],
-                                                        md5=data['md5agent'])
+                XmppMasterDatabase().setUpdate_machine(data['information']['info']['hostname'],
+                                                       msgfrom,
+                                                       ars=data['deployment'],
+                                                       status="ready",
+                                                       descriptor=data['agenttype'],
+                                                       md5=data['md5agent'])
         else:
-            logger.debug("aucune mise a jour for machine %s " % msgmachine)
+            logger.debug("There is no update for %s " % msgmachine)
     except Exception as e:
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
