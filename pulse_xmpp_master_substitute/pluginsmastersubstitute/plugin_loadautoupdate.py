@@ -65,7 +65,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                                 objectxmpp.updatingmachine,
                                 repeat=True)
 
-def updatingmachine(self):
+def updatingmachine(self, objectxmpp):
     """
         This is used to monitor the machines that needs to be updated 
     """
