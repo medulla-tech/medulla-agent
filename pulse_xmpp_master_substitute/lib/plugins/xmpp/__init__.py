@@ -7149,7 +7149,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 nblimit: Number maximum of machines allowed to be updated at once.
         """
 
-        sql ="""SELECT
+        sql = """SELECT
                     MIN(id) AS minid , MAX(id) AS maxid
                 FROM
                     (SELECT id
@@ -7157,9 +7157,9 @@ class XmppMasterDatabase(DatabaseHelper):
                             update_machine
                         WHERE
                             status LIKE '%s'
-                        LIMIT %s) AS dt;""" %(status,
-                                              nblimit)
-        machines_jid_for_updating=[]
+                        LIMIT %s) AS dt;""" % (status,
+                                               nblimit)
+        machines_jid_for_updating = []
         borne = session.execute(sql)
 
         result = [x for x in borne][0]
@@ -7187,8 +7187,8 @@ class XmppMasterDatabase(DatabaseHelper):
                     WHERE
                         id >= %s and id <= %s and
                             status LIKE '%s';"""%(minid,
-                                                maxid,
-                                                status)
+                                                  maxid,
+                                                  status)
             resultquery = session.execute(sql)
 
             session.commit()
