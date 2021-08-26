@@ -169,13 +169,22 @@ def read_conf_remote_update(objectxmpp):
             objectxmpp.modeupdatingnbmachine = 100
 
     logger.debug("directory base agent is %s" % objectxmpp.diragentbase)
+    if objectxmpp.autoupdate is True:
+        logger.debug("Autoupdate is enabled")
+    else:
+        logger.debug("Autoupdate is disabled")
     logger.debug("autoupdate agent is %s" % objectxmpp.autoupdate)
     logger.debug("generate baseagent "\
         "fingerprint interval agent is %s" % objectxmpp.generate_baseagent_fingerprint_interval)
     logger.debug("mode updating is %s" % objectxmpp.modeupdating)
     if objectxmpp.modeupdating != "auto":
-        logger.debug("mode updating frequence is %s" % objectxmpp.modeupdatingfrequence)
-        logger.debug("mode updating nombre machine is %s" % objectxmpp.modeupdatingnbmachine)
+        logger.debug("The check for updates will be proceed every %s seconds" % objectxmpp.modeupdatingfrequence)
+    if objectxmpp.modeupdatingnbmachine == 0:
+        logger.debug("0 computers will be updated (by configuration)")
+    elif objectxmpp.modeupdatingnbmachine == 1:
+        logger.debug("Updates will be done one by one (by configuration)")
+    else:
+        logger.debug("We will update %s machines at the same time" % objectxmpp.modeupdatingnbmachine)
     objectxmpp.senddescriptormd5 = types.MethodType(senddescriptormd5, objectxmpp)
     objectxmpp.plugin_loadautoupdate = types.MethodType(plugin_loadautoupdate, objectxmpp)
     objectxmpp.updatingmachine = types.MethodType(updatingmachine, objectxmpp)
