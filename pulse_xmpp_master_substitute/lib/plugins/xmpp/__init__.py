@@ -7137,7 +7137,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getUpdate_machine(self,
                           session,
-                          status="updating",
+                          status="ready",
                           nblimit=1000):
         """
             This function is used to retrieve the machines in the pending list
@@ -7178,7 +7178,7 @@ class XmppMasterDatabase(DatabaseHelper):
             resultquery = session.execute(sql)
 
             for record_updating_machine in resultquery:
-                machines_jid_for_updating.append( (record_updating_machine.jid, record_updating_machine.ars,))
+                machines_jid_for_updating.append((record_updating_machine.jid, record_updating_machine.ars))
 
             sql=""" delete
 

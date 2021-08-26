@@ -78,8 +78,8 @@ def updatingmachine(objectxmpp):
                              'descriptoragent': descriptoragent},
                     "ret": 0,
                     "sessionid": getRandomName(5, "updateagent")}
-        machines_to_update = XmppMasterDatabase().getUpdate_machine(status = "updating",
-                                                      nblimit=objectxmpp.modeupdatingnbmachine)
+        machines_to_update = XmppMasterDatabase().getUpdate_machine(status="ready",
+                                                                    nblimit=objectxmpp.modeupdatingnbmachine)
         logger.debug("machines_to_update = %s" % machines_to_update)
         for machine in machines_to_update:
             if objectxmpp.autoupdatebyrelay:
