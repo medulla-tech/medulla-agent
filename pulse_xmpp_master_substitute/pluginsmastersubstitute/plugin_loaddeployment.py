@@ -152,7 +152,7 @@ def scheduledeploy(self):
             if resultpresence[UUID][1] == 0:
                 # il n'y a pas de uuid glpi
                 re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
-                if self.Recover_GLPI_Identifier_from_name and len(re_search) == 1:
+                if self.recover_glpi_identifier_from_name and len(re_search) == 1:
                     update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
                     if update_result is not None:
                         if update_result.rowcount > 0:
@@ -1255,7 +1255,7 @@ def read_conf_loaddeployment(objectxmpp):
         objectxmpp.deployment_nbr_mach_cycle = 100
         objectxmpp.wol_interval = 60
         objectxmpp.session_check_interval = 15
-        objectxmpp.Recover_GLPI_Identifier_from_name = False
+        objectxmpp.recover_glpi_identifier_from_name = False
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1284,10 +1284,10 @@ def read_conf_loaddeployment(objectxmpp):
         else:
             objectxmpp.session_check_interval = 15
 
-        if Config.has_option("parameters", "Recover_GLPI_Identifier_from_name"):
-            objectxmpp.Recover_GLPI_Identifier_from_name =  Config.getboolean('parameters', 'Recover_GLPI_Identifier_from_name')
+        if Config.has_option("parameters", "recover_glpi_identifier_from_name"):
+            objectxmpp.recover_glpi_identifier_from_name =  Config.getboolean('parameters', 'recover_glpi_identifier_from_name')
         else:
-            objectxmpp.Recover_GLPI_Identifier_from_name = False
+            objectxmpp.recover_glpi_identifier_from_name = False
 
     # initialisation des object for deployement
 
