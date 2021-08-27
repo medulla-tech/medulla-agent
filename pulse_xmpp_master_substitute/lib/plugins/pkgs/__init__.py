@@ -112,11 +112,12 @@ class PkgsDatabase(DatabaseHelper):
                                                                    self.config.pkgs_dbpooltimeout))
 
         try:
-            self.engine_pkgsmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.pkgs_dbuser,
+            self.engine_pkgsmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.pkgs_dbuser,
                                                                                      self.config.pkgs_dbpasswd,
                                                                                      self.config.pkgs_dbhost,
                                                                                      self.config.pkgs_dbport,
-                                                                                     self.config.pkgs_dbname),
+                                                                                     self.config.pkgs_dbname,
+                                                                                     self.config.charset),
                                                          pool_recycle=self.config.pkgs_dbpoolrecycle,
                                                          pool_size=self.config.pkgs_dbpoolsize,
                                                          pool_timeout=self.config.pkgs_dbpooltimeout,

@@ -223,11 +223,12 @@ class MscDatabase(DatabaseHelper):
                                                               self.config.msc_dbpoolsize,
                                                               self.config.msc_dbpooltimeout))
         try:
-            self.engine_mscmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.msc_dbuser,
+            self.engine_mscmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.msc_dbuser,
                                                                                     self.config.msc_dbpasswd,
                                                                                     self.config.msc_dbhost,
                                                                                     self.config.msc_dbport,
-                                                                                    self.config.msc_dbname),
+                                                                                    self.config.msc_dbname,
+                                                                                    self.config.charset),
                                                         pool_recycle=self.config.msc_dbpoolrecycle,
                                                         pool_size=self.config.msc_dbpoolsize,
                                                         pool_timeout=self.config.msc_dbpooltimeout,
