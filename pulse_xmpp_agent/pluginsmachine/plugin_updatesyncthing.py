@@ -50,6 +50,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             updatesyncthing(xmppobject, installed_version)
 
         # Configure syncthing
+        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
         syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
         if os.path.isfile(syncthing_configfile):
             configuresyncthing(syncthing_configfile)
