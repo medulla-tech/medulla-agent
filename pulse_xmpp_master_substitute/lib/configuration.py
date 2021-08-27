@@ -133,10 +133,13 @@ class confParameter:
         ################################################################
         self.dbpoolrecycle = 3600
         self.dbpoolsize = 60
+        self.charset = "utf8"
         if Config.has_option("main", "dbpoolrecycle"):
             self.dbpoolrecycle = Config.getint('main', 'dbpoolrecycle')
         if Config.has_option("main", "dbpoolsize"):
             self.dbpoolsize = Config.getint('main', 'dbpoolsize')
+        if Config.has_option("main", "charset"):
+            self.charset = Config.get('main', 'charset')
         #PLUGIN LIST
         # activate connection to base module
         self.plugins_list = ["xmpp", "glpi", "kiosk"]

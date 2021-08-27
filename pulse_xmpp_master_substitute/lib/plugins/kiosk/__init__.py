@@ -115,11 +115,12 @@ class KioskDatabase(DatabaseHelper):
                                                                   self.config.kiosk_dbpoolsize,
                                                                   self.config.kiosk_dbpooltimeout))
         try:
-            self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.kiosk_dbuser,
+            self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.kiosk_dbuser,
                                                                                self.config.kiosk_dbpasswd,
                                                                                self.config.kiosk_dbhost,
                                                                                self.config.kiosk_dbport,
-                                                                               self.config.kiosk_dbname),
+                                                                               self.config.kiosk_dbname,
+                                                                               self.config.charset),
                                                    pool_recycle=self.config.kiosk_dbpoolrecycle,
                                                    pool_size=self.config.kiosk_dbpoolsize,
                                                    pool_timeout=self.config.kiosk_dbpooltimeout,

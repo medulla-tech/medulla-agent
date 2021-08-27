@@ -169,11 +169,12 @@ class XmppMasterDatabase(DatabaseHelper):
                                                                    self.config.xmpp_dbpoolsize,
                                                                    self.config.xmpp_dbpooltimeout))
         try:
-            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
+            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.xmpp_dbuser,
                                                                                      self.config.xmpp_dbpasswd,
                                                                                      self.config.xmpp_dbhost,
                                                                                      self.config.xmpp_dbport,
-                                                                                     self.config.xmpp_dbname),
+                                                                                     self.config.xmpp_dbname,
+                                                                                     self.config.charset),
                                                         pool_recycle=self.config.xmpp_dbpoolrecycle,
                                                         pool_size=self.config.xmpp_dbpoolsize,
                                                         pool_timeout=self.config.xmpp_dbpooltimeout,

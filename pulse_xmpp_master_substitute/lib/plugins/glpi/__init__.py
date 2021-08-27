@@ -103,11 +103,12 @@ class Glpi(object):
                                                                    self.config.xmpp_dbpoolsize,
                                                                    self.config.xmpp_dbpooltimeout))
         try:
-            self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.glpi_dbuser,
+            self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.glpi_dbuser,
                                                                          self.config.glpi_dbpasswd,
                                                                          self.config.glpi_dbhost,
                                                                          self.config.glpi_dbport,
-                                                                         self.config.glpi_dbname),
+                                                                         self.config.glpi_dbname,
+                                                                         self.config.charset),
                                               pool_recycle=self.config.glpi_dbpoolrecycle,
                                               pool_size=self.config.glpi_dbpoolsize,
                                               pool_timeout=self.config.glpi_dbpooltimeout,
