@@ -149,18 +149,20 @@ def scheduledeploy(self):
             UUID = deployobject['UUID']
             UUIDSTR = UUID.replace('UUID', "")
             re_search = []
+            hostname = deployobject['name'].split(".", 1)[0]
+
             if resultpresence[UUID][1] == 0:
-                # il n'y a pas de uuid glpi
-                re_search = XmppMasterDatabase().getMachinedeployexistonHostname(deployobject['name'])
+                # There is no GLPI UUID
+                re_search = XmppMasterDatabase().getMachinedeployexistonHostname(hostname)
                 if self.recover_glpi_identifier_from_name and len(re_search) == 1:
                     update_result = XmppMasterDatabase().update_uuid_inventory(re_search[0]['id'], UUID)
                     if update_result is not None:
                         if update_result.rowcount > 0:
-                            logger.info("update uuid inventory %s for machine %s" % (UUID, deployobject['name']))
+                            logger.info("update uuid inventory %s for machine %s" % (UUID, hostname))
                     resultpresence[UUID][1] = 1
                     reloadresultpresence_uuid = XmppMasterDatabase().getPresenceExistuuids(UUID)
-                    resultpresence[UUID]=reloadresultpresence_uuid[UUID]
-                    self.xmpplog("Attaching GLPI identifier [%s] in xmppmaster machine [%s]" % (UUID, deployobject['name']),
+                    resultpresence[UUID] = reloadresultpresence_uuid[UUID]
+                    self.xmpplog("Attaching GLPI identifier [%s] in xmppmaster machine [%s]" % (UUID, hostname),
                                 type='deploy',
                                 sessionname="no_session",
                                 priority=-1,
@@ -170,7 +172,7 @@ def scheduledeploy(self):
                                 date=None,
                                 fromuser=deployobject['login'])
 
-            if resultpresence[UUID][1] == 0:#verify si reinitialiser presence
+            if resultpresence[UUID][1] == 0:
                 if re_search:
                     msg.append( "<span class='log_err'>Consolidation GLPI XMPP ERROR for machine %s. " \
                                 "Deployment impossible : GLPI ID is %s</span>" % (deployobject['name'],
@@ -1259,6 +1261,10 @@ def read_conf_loaddeployment(objectxmpp):
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
+
+        if os.path.exists(pathfileconf + ".local"):
+            Config.read(pathfileconf + ".local")
+
         if Config.has_option("parameters", "wol_interval"):
             objectxmpp.wol_interval =  Config.getint('parameters', 'wol_interval')
         else:
