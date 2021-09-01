@@ -7057,6 +7057,9 @@ class XmppMasterDatabase(DatabaseHelper):
                 jid: The jid of the machine to update
                 ars: The ARS on which the machine is connected
                 status: The status of the update (ready, updating, ... )
+                        ready: Machines that need an update. Those kind of machines
+                               won't be updated automatically.
+                        updating: Machines that will be updated automatically.
                 descriptor: All the md5sum of files that needs to be updated.
                 md5: md5 of the md5 of files ( that helps to see quickly if an update is needed )
                 date_creation: Date when it has been added on the update table.
@@ -7097,6 +7100,9 @@ class XmppMasterDatabase(DatabaseHelper):
                 jid: The jid of the machine to update
                 ars: The ARS on which the machine is connected
                 status: The status of the update (ready, updating, ... )
+                        ready: Machines that need an update. Those kind of machines
+                               won't be updated automatically.
+                        updating: Machines that will be updated automatically.
                 descriptor: All the md5sum of files that needs to be updated.
                 md5: md5 of the md5 of files ( that helps to see quickly if an update is needed )
                 date_creation: Date when it has been added on the update table.
