@@ -78,7 +78,6 @@ def check_if_binary_ok():
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
         is_ssh_started = utils.simplecommand("sc.exe query sshdaemon")
-        logger.error("Resultat de is_ssh_started: %s" % is_ssh_started)
         if is_ssh_started['code'] == 0:
             state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
             if state == "STOPPED":
