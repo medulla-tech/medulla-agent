@@ -346,6 +346,21 @@ class confParameter:
             if Config.has_option('connection', 'alwaysnetreconf'):
                 self.alwaysnetreconf = Config.getboolean('connection', 'alwaysnetreconf')
 
+            filePath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                    ".."))
+            path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
+            if self.alwaysnetreconf :
+                # We create the bool file that will force the reconfiguration
+                if not os.path.exists(path_reconf_nomade):
+                    fh = open(path_reconf_nomade, "w")
+                    fh.write("DO NOT REMOVE \n"\
+                        "parameter alwaysnetreconf is True\n "\
+                            "it will reconfigure the machine at every start")
+                    fh.close()
+            else:
+                if os.path.exists(path_reconf_nomade):
+                    os.remove(path_reconf_nomade)
+
         # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":

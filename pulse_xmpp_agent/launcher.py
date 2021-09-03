@@ -73,6 +73,11 @@ if __name__ == '__main__':
 
     testspeedagent = networkchanged or configchanged or not testagenttype
 
+    path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
+    if os.path.exists(path_reconf_nomade):
+        testspeedagent = True
+        print ("The file %s exists. We wille reconfigure at every start" % path_reconf_nomade)
+
     if  testspeedagent:
         print ("search configuration from master")
 
