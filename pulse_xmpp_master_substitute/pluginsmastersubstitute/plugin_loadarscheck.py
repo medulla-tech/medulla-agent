@@ -250,7 +250,7 @@ def read_conf_loadarscheck(objectxmpp):
 
     if not os.path.isfile(pathfileconf):
         # not config files
-        objectxmpp.check_ars_scan_interval = 120
+        objectxmpp.check_ars_scan_interval = 600
         objectxmpp.check_timeout_ping = 5
         objectxmpp.update_table = True
         objectxmpp.action_reconf_ars_machines = True
