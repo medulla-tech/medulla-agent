@@ -259,6 +259,10 @@ def read_conf_loadarscheck(objectxmpp):
     else:
         ars_config = ConfigParser.ConfigParser()
         ars_config.read(pathfileconf)
+
+        if os.path.exists(pathfileconf + ".local"):
+            ars_config.read(pathfileconf + ".local")
+
         if ars_config.has_option("parameters", "check_ars_scan_interval"):
             objectxmpp.check_ars_scan_interval = ars_config.getint('parameters',
                                                                    'check_ars_scan_interval')
