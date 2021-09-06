@@ -254,7 +254,7 @@ def read_conf_loadarscheck(objectxmpp):
         objectxmpp.check_timeout_ping = 5
         objectxmpp.update_table = True
         objectxmpp.action_reconf_ars_machines = True
-        objectxmpp.monitoring_message_on_machine_no_presence = False
+        objectxmpp.monitoring_message_on_machine_no_presence = True
         objectxmpp.monitor_agent="master_mon@pulse"
     else:
         ars_config = ConfigParser.ConfigParser()
