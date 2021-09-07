@@ -36,7 +36,7 @@ SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.21", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.22", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -99,6 +99,8 @@ def configuresyncthing(config_file):
     config.find("./options/localAnnounceEnabled").text = 'false'
     config.find("./options/globalAnnounceEnabled").text = 'false'
     config.find("./options/relaysEnabled").text = 'false'
+    config.find("./options/stunKeepaliveSeconds").text = 0
+    config.find("./options/crashReportingEnabled").text = 'false'
     tree.write(config_file)
 
 def updatesyncthing(xmppobject, installed_version):
