@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.21", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.22", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -220,35 +220,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             #clean session
             objectxmpp.session.clearnoevent(sessionid)
             #clean if not session
-            utils.cleanbacktodeploy(objectxmpp)
-            return
-        # Check if the descriptor is complete
-        if 'descriptor' in data and 'advanced' not in data:
-            objectxmpp.xmpplog('<span class="log_err">Abort deployement section avanced missing in descriptor</span>',
-                               type='deploy',
-                               sessionname=sessionid,
-                               priority=-1,
-                               action="xmpplog",
-                               who=strjidagent,
-                               how="",
-                               why="",
-                               module="Deployment | Error",
-                               date=None,
-                               fromuser="AM %s" % strjidagent,
-                               touser="")
-            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                               type='deploy',
-                               sessionname=sessionid,
-                               priority=-1,
-                               action="xmpplog",
-                               who=strjidagent,
-                               how="",
-                               why="",
-                               module="Deployment | Terminate | Notify",
-                               date=None,
-                               fromuser="AM %s" % strjidagent,
-                               touser="")
-            objectxmpp.session.clearnoevent(sessionid)
             utils.cleanbacktodeploy(objectxmpp)
             return
 
@@ -534,6 +505,35 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     'base64': False
                     }
 
+        # Check if the descriptor is complete
+        if 'descriptor' in data and 'advanced' not in data:
+            objectxmpp.xmpplog('<span class="log_err">Abort deployement section avanced missing in descriptor</span>',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Error",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Terminate | Notify",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.session.clearnoevent(sessionid)
+            utils.cleanbacktodeploy(objectxmpp)
+            return
 
         if 'stepcurrent' not in datasend['data']:
             if not cleandescriptor(data):
