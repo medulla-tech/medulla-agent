@@ -76,7 +76,7 @@ if __name__ == '__main__':
     path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
     if os.path.exists(path_reconf_nomade):
         testspeedagent = True
-        print ("The file %s exists. We wille reconfigure at every start" % path_reconf_nomade)
+        print ("The file %s exists. We will reconfigure at every start" % path_reconf_nomade)
 
     if  testspeedagent:
         print ("search configuration from master")
