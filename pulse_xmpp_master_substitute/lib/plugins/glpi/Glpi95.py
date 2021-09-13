@@ -189,13 +189,14 @@ class Glpi95(DatabaseHelper):
         self.sessionxmpp = None
         self.sessionglpi = None
 
-        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.glpi_dbuser,
+        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=utf8' % (self.config.glpi_dbuser,
                                                                      self.config.glpi_dbpasswd,
                                                                      self.config.glpi_dbhost,
                                                                      self.config.glpi_dbport,
                                                                      self.config.glpi_dbname),
                                          pool_recycle=self.config.dbpoolrecycle,
-                                         pool_size=self.config.dbpoolsize)
+                                         pool_size=self.config.dbpoolsize,
+                                         convert_unicode = True)
 
         try:
             self._glpi_version = self.engine_glpi.execute('SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')

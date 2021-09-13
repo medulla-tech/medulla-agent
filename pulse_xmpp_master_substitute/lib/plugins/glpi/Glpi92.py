@@ -192,13 +192,14 @@ class Glpi92(DatabaseHelper):
         self.sessionglpi = None
 
         #utilisation glpi base
-        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.glpi_dbuser,
+        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=utf8'%( self.config.glpi_dbuser,
                                                                 self.config.glpi_dbpasswd,
                                                                 self.config.glpi_dbhost,
                                                                 self.config.glpi_dbport,
                                                                 self.config.glpi_dbname),
                                     pool_recycle = self.config.dbpoolrecycle,
-                                    pool_size = self.config.dbpoolsize
+                                    pool_size = self.config.dbpoolsize,
+                                    convert_unicode = True
         )
 
         try:
@@ -3794,6 +3795,8 @@ class Glpi92(DatabaseHelper):
         """
             this function return dict result sqlalchimy
         """
+        
+        
         resultrecord = {}
         try:
             if ret :
@@ -3819,7 +3822,7 @@ class Glpi92(DatabaseHelper):
                                     strre = getattr(ret, keynameresult)
                                     if isinstance(strre, basestring):
                                         if encode != "utf8":
-                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode).encode('utf8')
+                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode,'ignore').encode('utf8')
                                         else:
                                             resultrecord[keynameresult] =  "%s"%strre.encode('utf8')
                                     else:
