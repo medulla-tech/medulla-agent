@@ -2208,7 +2208,8 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         error = False
         if sys.platform.startswith('linux'):
             path_key_priv =  os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
-            localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            #localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            localdest = " '%s'" % (managepackage.managepackage.packagedir())
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
@@ -2223,7 +2224,8 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             execscp = '"c:\progra~1\OpenSSH\scp.exe"'
         elif sys.platform.startswith('darwin'):
             path_key_priv =  os.path.join("/", "var", "root", ".ssh", "id_rsa")
-            localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            #localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            localdest = " '%s'" % (managepackage.managepackage.packagedir())
         else :
             return False
 
@@ -2235,7 +2237,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
             cmd = """ "c:\progra~1\OpenSSH\scp.exe"%s -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """ % (scp_limit_rate_ko, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
         if cmdmode == "rsync":
-            cmdtransfert =  " %s -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
+            cmdtransfert =  " %s -L -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
             cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """ % (cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         cmdexec =  cmd + remotesrc + localdest
