@@ -1674,6 +1674,13 @@ class grafcet:
         if inventory:
             # genere inventaire et envoi inventaire
             # call plugin inventory pour master.
+            if sys.platform.startswith('linux'):
+                inventoryfile = os.path.join("/", "tmp", "inventory.txt")
+            elif sys.platform.startswith('win'):
+                inventoryfile = os.path.join(os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
+            elif sys.platform.startswith('darwin'):
+                inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
+
             self.objectxmpp.xmpplog('Starting inventory',
                                     type='deploy',
                                     sessionname=self.sessionid,
@@ -1691,10 +1698,10 @@ class grafcet:
                                                 sessionid=self.sessionid)
             except Exception as e:
                 print str(e)
-            #waitting active generated new inventory
+            # Waiting active generated new inventory
             doinventory = False
             timeinventory = 0
-            for indextime in range(48):  # waitting max 2 minutes
+            for indextime in range(48):  # Waiting max 2 minutes
                 if os.path.isfile(inventoryfile):
                     doinventory = True
                     timeinventory = (indextime + 1) * 5
