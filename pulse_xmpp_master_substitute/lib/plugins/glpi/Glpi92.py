@@ -587,7 +587,6 @@ class Glpi92(DatabaseHelper):
 
     def __filter_on_filter(self, query):
         if self.config.filter_on is not None:
-            logging.getLogger().debug('function __filter_on_filter  self.config.filter_on is  %s'%self.config.filter_on)
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
                 try:
