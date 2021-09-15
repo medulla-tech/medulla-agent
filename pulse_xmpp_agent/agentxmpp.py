@@ -741,7 +741,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         if len(config) == 0:
             return
-        if len(config['pendingDevices']) > 0:
+        if 'pendingDevices' in config and len(config['pendingDevices']) > 0:
             if self.pendingdevice_accept(config):
                 self.syncthingreconfigure = True;
             config['pendingDevices']=[]
