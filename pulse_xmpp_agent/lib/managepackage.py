@@ -1,5 +1,24 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8; -*-
+# 
+# (c) 2016-2021 siveo, http://www.siveo.net
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
 
 import sys
 import os
@@ -9,8 +28,10 @@ import logging
 
 logger = logging.getLogger()
 
-
 class managepackage:
+    # variable de classe
+    agenttype="relayserver"
+
     @staticmethod
     def packagedir():
         """
@@ -19,7 +40,10 @@ class managepackage:
         @return: string: The path of the package folder.
         """
         if sys.platform.startswith('linux'):
-            return os.path.join("/", "var", "lib", "pulse2", "packages")
+            if managepackage.agenttype == "relayserver":
+                return os.path.join("/", "var", "lib", "pulse2", "packages")
+            else:
+                return os.path.join(os.path.expanduser('~pulseuser'), 'packages')
         elif sys.platform.startswith('win'):
             return os.path.join(
                 os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages")
@@ -30,69 +54,197 @@ class managepackage:
             return None
 
     @staticmethod
+    def search_list_package():
+        """
+            This function searches packages in the global and
+            local shares.
+        """
+        packagelist = []
+        dirpackage = os.path.join("/", "var", "lib", "pulse2", "packages")
+        global_package_folder = os.path.join(dirpackage, "sharing", "global")
+        packagelist = [os.path.join(global_package_folder, f)
+                for f in os.listdir(global_package_folder) if len(f) == 36]
+        local_package_folder  = os.path.join(dirpackage, "sharing")
+        share_pathname = [os.path.join(local_package_folder, f)
+                for f in os.listdir(local_package_folder) if f != "global"]
+        for part in share_pathname:
+            filelist = [os.path.join(part, f) for f in os.listdir(part) if len(f) == 36]
+            packagelist += filelist
+        return packagelist
+
+    @staticmethod
+    def package_for_deploy_from_share(sharedir=None):
+        """
+            This function creates symlinks in the packages directory
+            to the target in the local/global share
+        """
+        if sharedir is None:
+            dirpackage = managepackage.packagedir()
+        else:
+            sharedir = os.path.abspath(os.path.realpath(sharedir))
+        for x in  managepackage.search_list_package():
+            print x , os.path.join(dirpackage, os.path.basename(x))
+            try:
+                os.symlink(x , os.path.join(dirpackage, os.path.basename(x)))
+            except OSError:
+                pass
+
+    @staticmethod
+    def remove_symlinks(dirpackage=None):
+        """
+            This function remove symlinks
+        """
+        if dirpackage is None:
+            dirpackage = managepackage.packagedir()
+        else:
+            dirpackage = os.path.abspath(os.path.realpath(dirpackage))
+        packagelist = [os.path.join(dirpackage, f) for f in os.listdir(dirpackage) if len(f) == 36]
+        for fi in packagelist:
+            if os.path.islink(fi) and not os.path.exists(fi):
+                os.remove(fi)
+
+    @staticmethod
     def listpackages():
-        return [os.path.join(managepackage.packagedir(), x) for x in os.listdir(
-            managepackage.packagedir()) if os.path.isdir(os.path.join(managepackage.packagedir(), x))]
+        """
+        This functions is used to list the packages
+        Returns:
+            It returns the list of the packages.
+        """
+        listfolder = [ x for x in os.listdir(managepackage.packagedir()) if len(x) == 36] 
+        return [ os.path.join(managepackage.packagedir(),x) for x in listfolder]
 
     @staticmethod
     def loadjsonfile(filename):
+        """
+        This function is used to load a json file
+        Args:
+            filename: The filename of the json file to load
+        Returns:
+            It returns the content of the JSON file
+        """
+
         if os.path.isfile(filename):
             with open(filename, 'r') as info:
-                dd = info.read()
+                jsonFile = info.read()
             try:
-                jr = json.loads(dd.decode('utf-8', 'ignore'))
-                return jr
+                outputJSONFile = json.loads(jsonFile.decode('utf-8', 'ignore'))
+                return outputJSONFile
             except Exception as e:
-                logger.error(
-                    "filename %s error while decoding [%s]" %
-                    (filename, str(e)))
+                logger.error("We failed to decode the file %s" % filename)
+                logger.error("we encountered the error: %s" % str(e))
         return None
 
     @staticmethod
     def getdescriptorpackagename(packagename):
         for package in managepackage.listpackages():
             try:
-                jr = managepackage.loadjsonfile(
+                outputJSONFile = managepackage.loadjsonfile(
                     os.path.join(package, "xmppdeploy.json"))
-                if 'info' in jr \
-                        and ('software' in jr['info'] and 'version' in jr['info']) \
-                        and (jr['info']['software'] == packagename or jr['info']['name'] == packagename):
-                    return jr
+                if 'info' in outputJSONFile \
+                        and ('software' in outputJSONFile['info'] and 'version' in outputJSONFile['info']) \
+                        and (outputJSONFile['info']['software'] == packagename or outputJSONFile['info']['name'] == packagename):
+                    return outputJSONFile
             except Exception as e:
-                logger.error(
-                    "package %s verify format descriptor [%s]" %
-                    (package, str(e)))
+                logger.error("Please verify the format of the descriptor for"
+                             "the package %s." % packagename)
+                logger.error("we are encountering the error: %s" % str(e))
         return None
 
     @staticmethod
     def getversionpackagename(packagename):
+        """
+        This function is used to get the version of the package
+        WARNING: If more one package share the same name,
+                 this function will return the first one.
+        Args:
+            packagename: This is the name of the package
+        Returns:
+            It returns the version of the package
+        """
         for package in managepackage.listpackages():
             # print os.path.join(package,"xmppdeploy.json")
             try:
-                jr = managepackage.loadjsonfile(
-                    os.path.join(package, "xmppdeploy.json"))
-                if 'info' in jr \
-                        and ('software' in jr['info'] and 'version' in jr['info']) \
-                        and (jr['info']['software'] == packagename or jr['info']['name'] == packagename):
-                    return jr['info']['version']
+                outputJSONFile = managepackage.loadjsonfile(os.path.join(package, "xmppdeploy.json"))
+                if 'info' in outputJSONFile \
+                        and ('software' in outputJSONFile['info'] and 'version' in outputJSONFile['info']) \
+                        and (outputJSONFile['info']['software'] == packagename or outputJSONFile['info']['name'] == packagename):
+                    return outputJSONFile['info']['version']
             except Exception as e:
-                logger.error(
-                    "package %s verify format descriptor xmppdeploy.json [%s]" %
-                    (package, str(e)))
+                logger.error("Please verify the version for the package %s in the descriptor"
+                             "in the xmppdeploy.json file." % package)
+                logger.error("we are encountering the error: %s" % str(e))
         return None
 
     @staticmethod
     def getpathpackagename(packagename):
+        """
+        This function is used to get the name of the package
+        Args:
+            packagename: This is the name of the package
+        Returns:
+            It returns the name of the package
+        """
         for package in managepackage.listpackages():
             try:
-                jr = managepackage.loadjsonfile(
+                outputJSONFile = managepackage.loadjsonfile(
                     os.path.join(package, "xmppdeploy.json"))
-                if 'info' in jr \
-                    and (('software' in jr['info'] and jr['info']['software'] == packagename)
-                         or ('name' in jr['info'] and jr['info']['name'] == packagename)):
+                if 'info' in outputJSONFile \
+                    and (('software' in outputJSONFile['info'] and outputJSONFile['info']['software'] == packagename)
+                         or ('name' in outputJSONFile['info'] and outputJSONFile['info']['name'] == packagename)):
                     return package
             except Exception as e:
-                logger.error("package %s missing [%s]" % (package, str(e)))
+                logger.error("Please verify the name for the package %s in the descriptor"
+                             "in the xmppdeploy.json file." % package)
+                logger.error("we are encountering the error: %s" % str(e))
+        return None
+
+    @staticmethod
+    def getpathpackagebyuuid(uuidpackage):
+        """
+        This function is used to find the package based on the uuid
+        Args:
+            uuidpackage: The uuid of the package we are searching
+        Returns:
+            We return the package, it returns None if any error or if
+                the package is not found.
+        """
+        for package in managepackage.listpackages():
+            try:
+                outputJSONFile = managepackage.loadjsonfile(
+                    os.path.join(package, "conf.json"))
+                if 'id' in outputJSONFile and outputJSONFile['id'] == uuidpackage:
+                    return package
+            except Exception as e:
+                logger.error("The conf.json for the package %s is missing" % package)
+                logger.error("we are encountering the error: %s" % str(e))
+        logger.error("We did not find the package %s" % package)
+        return None
+
+
+    @staticmethod
+    def getversionpackageuuid(packageuuid):
+        """
+        This function is used to find the version of the package based
+            on the uuid
+        Args:
+            packageuuid: The uuid of the package we are searching
+        Returns:
+            We return the version of package, it returns None if
+                any error or if the package is not found.
+        """
+        for package in managepackage.listpackages():
+            try:
+                outputJSONFile = managepackage.loadjsonfile(
+                    os.path.join(package, "conf.json"))
+                if 'id' in outputJSONFile and outputJSONFile['id'] == packageuuid \
+                    and 'version' in outputJSONFile:
+                    return outputJSONFile['version']
+            except Exception as e:
+                logger.error(
+                    "package %s verify format descriptor conf.json [%s]" %
+                    (packageuuid, str(e)))
+        logger.error("package %s verify version" \
+                        "in descriptor conf.json [%s]" %(packageuuid))
         return None
 
     @staticmethod
@@ -102,8 +254,8 @@ class managepackage:
             uuidpackage,
             "xmppdeploy.json")
         if os.path.isfile(pathpackage):
-            jr = managepackage.loadjsonfile(pathpackage)
-            return jr['info']['name']
+            outputJSONFile = managepackage.loadjsonfile(pathpackage)
+            return outputJSONFile['info']['name']
         return None
 
     @staticmethod
@@ -114,8 +266,8 @@ class managepackage:
             "xmppdeploy.json")
         if os.path.isfile(jsonfile):
             try:
-                jr = managepackage.loadjsonfile(jsonfile)
-                return jr
+                outputJSONFile = managepackage.loadjsonfile(jsonfile)
+                return outputJSONFile
             except Exception:
                 return None
 

@@ -1,3 +1,15 @@
+pulse-xmpp-agent (2.1.5-1) unstable; urgency=low
+  
+ * New version 2.1.5
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 31 Mar 2021 10:48:04 +0200
+
+pulse-xmpp-agent (2.1.4-1) unstable; urgency=low
+  
+ * New version 2.1.4
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Fri, 19 Mar 2021 10:48:04 +0200
+
 pulse-xmpp-agent (2.0.8-1) unstable; urgency=low
   
  * New version 2.0.8

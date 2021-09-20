@@ -100,34 +100,77 @@ class networkagentinfo:
 
         elif sys.platform.startswith('win'):
             """ revoit objet reseau windows """
+            #interface active only
+            #pythoncom.CoInitialize()
+            #try:
+                #wmi_obj = wmi.WMI()
+                #wmi_sql = "select * from Win32_NetworkAdapterConfiguration where IPEnabled=TRUE"
+                #wmi_out = wmi_obj.query(wmi_sql)
+            #finally:
+                #pythoncom.CoUninitialize()
+            #for dev in wmi_out:
+                #objnet = {}
+                #objnet['macaddress'] = dev.MACAddress
+                #objnet['ipaddress'] = dev.IPAddress[0]
+                #try:
+                    #objnet['gateway'] = dev.DefaultIPGateway[0]
+                #except BaseException:
+                    #objnet['gateway'] = ""
+                #objnet['mask'] = dev.IPSubnet[0]
+                #objnet['dhcp'] = dev.DHCPEnabled
+                #objnet['dhcpserver'] = dev.DHCPServer
+                #self.messagejson['listipinfo'].append(objnet)
+                #try:
+                    #self.messagejson['listdns'].append(
+                        #dev.DNSServerSearchOrder[0])
+                #except BaseException:
+                    #pass
+                #self.messagejson['dnshostname'] = dev.DNSHostName
+            #self.messagejson['msg'] = platform.system()
+            # all interface
             pythoncom.CoInitialize()
             try:
                 wmi_obj = wmi.WMI()
-                wmi_sql = "select * from Win32_NetworkAdapterConfiguration where IPEnabled=TRUE"
+                wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
                 wmi_out = wmi_obj.query(wmi_sql)
             finally:
                 pythoncom.CoUninitialize()
             for dev in wmi_out:
                 objnet = {}
+                if dev.MACAddress is None:
+                    continue
                 objnet['macaddress'] = dev.MACAddress
-                objnet['ipaddress'] = dev.IPAddress[0]
+                objnet['Description'] = dev.Description
+                try:
+                    objnet['ipaddress'] = dev.IPAddress[0]
+                except BaseException:
+                    objnet['ipaddress'] = None
                 try:
                     objnet['gateway'] = dev.DefaultIPGateway[0]
                 except BaseException:
                     objnet['gateway'] = ""
-                objnet['mask'] = dev.IPSubnet[0]
-                objnet['dhcp'] = dev.DHCPEnabled
-                objnet['dhcpserver'] = dev.DHCPServer
+                try:
+                    objnet['mask'] = dev.IPSubnet[0]
+                except BaseException:
+                    objnet['mask'] = None
+                try:
+                    objnet['dhcp'] = dev.DHCPEnabled
+                except BaseException:
+                    objnet['dhcp'] = None
+                try:
+                    objnet['dhcpserver'] = dev.DHCPServer
+                except BaseException:
+                    objnet['dhcpserver'] = None
                 self.messagejson['listipinfo'].append(objnet)
                 try:
-                    self.messagejson['listdns'].append(
-                        dev.DNSServerSearchOrder[0])
+                    self.messagejson['listdns'].append(dev.DNSServerSearchOrder[0])
                 except BaseException:
                     pass
-                self.messagejson['dnshostname'] = dev.DNSHostName
-            self.messagejson['msg'] = platform.system()
+                try:
+                    self.messagejson['dnshostname'] = dev.DNSHostName
+                except BaseException:
+                    pass
             return self.messagejson
-
         elif sys.platform.startswith('darwin'):
             return self.MacOsNetworkInfo()
         else:

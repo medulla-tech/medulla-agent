@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2021 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.1", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.22", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -188,7 +188,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                why="",
                                module="Deployment | Error | Dependencies | Transfer| Notify",
                                date=None,
-                               fromuser=data['name'],
+                               fromuser="AM %s" % strjidagent,
                                touser="")
             if sessionid in objectxmpp.back_to_deploy:
                 objectxmpp.xmpplog('<span class="log_err">List of abandoned dependencies %s</span>' % objectxmpp.back_to_deploy[sessionid]['Dependency'],
@@ -201,7 +201,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment | Dependencies | Transfer | Notify",
                                    date=None,
-                                   fromuser=data['name'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
             objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
                                type='deploy',
@@ -213,7 +213,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                why="",
                                module="Deployment | Terminate | Notify",
                                date=None,
-                               fromuser=data['name'],
+                               fromuser="AM %s" % strjidagent,
                                touser="")
             signalendsessionforARS(data, objectxmpp, sessionid, error=True)
 
@@ -445,7 +445,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                        why="",
                                        module="Deployment",
                                        date=None,
-                                       fromuser=data['name'],
+                                       fromuser="AM %s" % strjidagent,
                                        touser="")
                     data["plan"] = strdeploypack
                     logger.debug("Dependencies list %s" % (objectxmpp.back_to_deploy[sessionid]['Dependency']))
@@ -505,6 +505,35 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     'base64': False
                     }
 
+        # Check if the descriptor is complete
+        if 'descriptor' in data and 'advanced' not in data:
+            objectxmpp.xmpplog('<span class="log_err">Abort deployement section avanced missing in descriptor</span>',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Error",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Terminate | Notify",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.session.clearnoevent(sessionid)
+            utils.cleanbacktodeploy(objectxmpp)
+            return
 
         if 'stepcurrent' not in datasend['data']:
             if not cleandescriptor(data):
@@ -518,7 +547,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment",
                                    date=None,
-                                   fromuser=datasend['data']['name'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
                 datasend = {'action': "result" + action,
                             'sessionid': sessionid,
@@ -652,7 +681,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                    why="",
                                    module="Deployment | Notify",
                                    date=None,
-                                   fromuser=data['advanced']['login'],
+                                   fromuser="AM %s" % strjidagent,
                                    touser="")
                 datasend['data']['advanced']['scheduling'] = True
                 objectxmpp.Deploybasesched.set_sesionscheduler(sessionid,json.dumps(datasend))
@@ -674,6 +703,56 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         #logger.debug("%s"%json.dumps(data, indent=4))
         namefolder = None
         msgdeploy=[]
+
+        if 'descriptor' in data and 'advanced' not in data:
+            logger.debug("DEPLOYMENT ABORTED: ADVANCED DESCRIPTOR MISSING")
+            objectxmpp.xmpplog('<span class="log_err">Deployment aborted: section key "avanced" missing</span>',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Error",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Terminate | Notify",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.session.clearnoevent(sessionid)
+            utils.cleanbacktodeploy(objectxmpp)
+
+            datalog = {'action': "result%s" % action,
+                       'sessionid': sessionid,
+                       'ret': 255,
+                       'base64': False,
+                       'data': data
+                      }
+            objectxmpp.send_message(mto="master@pulse/MASTER",
+                                    mbody=json.dumps(datalog),
+                                    mtype='chat')
+            datalog['data']['action'] = datalog['action']
+            datalog['action'] = "xmpplog"
+            datalog['data']['ret'] = 255
+            datalog['data']['sessionid'] = sessionid
+            objectxmpp.send_message(mto=objectxmpp.sub_logger,
+                                    mbody=json.dumps(datalog),
+                                    mtype='chat')
+            if objectxmpp.session.isexist(sessionid):
+                objectxmpp.session.clearnoevent(sessionid)
+            return
+
         if objectxmpp.config.max_size_stanza_xmpp != 0:
             if 'descriptor' in data and \
                 'info' in data['descriptor'] and \
@@ -684,7 +763,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 namefolder = os.path.basename(data['path'])
 
             if namefolder is not None:
-                folder = os.path.join(utils._path_package(), namefolder)
+                folder = os.path.join(managepackage.managepackage.packagedir(), namefolder)
                 pathaqpackage = os.path.join(utils._path_packagequickaction(), namefolder)
                 pathxmpppackage = "%s.xmpp" % pathaqpackage
                 if not os.path.exists(pathxmpppackage) or \
@@ -1172,7 +1251,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                fromuser=data['login'],
                                touser="")
             timeoutmax = 20  # timeout 20 seconde
-            cmdreverse = "netstat -van4 | grep 127.0.0.1:%s" % remoteport
+            cmdreverse = "netstat -van4 | grep %s" % remoteport
             timeattente = 1
             objectxmpp.xmpplog('Waiting mount of reverse ssh tunnel for port %s' % (remoteport),
                                type='deploy',
@@ -1774,123 +1853,43 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                             module = "Deployment | Error",
                             date = None )
 
-    file_key_pub_ars = os.path.join('/',
-                                    'root',
-                                    '.ssh',
-                                    'id_rsa.pub')
-    file_key_reverse_private_ars = os.path.join('/',
-                                        'var',
-                                        'lib',
-                                        'pulse2',
-                                        'clients',
-                                        'reversessh',
-                                        '.ssh',
-                                        'id_rsa')
-    if not os.path.exists(file_key_reverse_private_ars):
-        # protege ressource
-        try:
-            objectxmpp.mutex.acquire(1)
-            if not os.path.exists(file_key_reverse_private_ars):
-                objectxmpp.xmpplog( "Warning: Reverse ssh key missing",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                if not os.path.exists(os.path.dirname(file_key_reverse_private_ars)):
-                    objectxmpp.xmpplog( "Creating %s"%os.path.dirname(file_key_reverse_private_ars),
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    os.makedirs(os.path.dirname(file_key_reverse_private_ars))
-                obj = utils.simplecommand("grep reversessh /etc/passwd | awk  -F \":\"  '{print $1;}'")
-                for lineresult in obj['result']:
-                    if str(lineresult) == "reversessh":
-                        objectxmpp.xmpplog( "reversessh user present on relay server",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                        break
-                else:
-                    objectxmpp.xmpplog( "Creating reversessh user on relay server",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    obj = utils.simplecommand("adduser --system --quiet " \
-                                        "--home /var/lib/pulse2/clients/reversessh " \
-                                        "--shell /bin/rbash " \
-                                        "--disabled-password " \
-                                        "reversessh")
-                    # create keygen
-                    if os.path.exists(file_key_reverse_private_ars):
-                        os.remove(file_key_reverse_private_ars)
-                    if os.path.exists("%s.pub"%file_key_reverse_private_ars):
-                        os.remove("%s.pub"%file_key_reverse_private_ars)
-                    if os.path.exists("/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys"):
-                        os.remove("/var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-                    logger.debug("cmd : ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
-
-                    objectxmpp.xmpplog( "Creating ssh keys for reversessh user on relay server",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    obj = utils.simplecommand("ssh-keygen -q -N \"\" -b 2048 -t rsa -f /var/lib/pulse2/clients/reversessh/.ssh/id_rsa")
-                    objectxmpp.xmpplog( str(obj['result']),
-                                type = 'deploy',
-                                sessionname = sessionid,
-                                priority = 0,
-                                action = "xmpplog",
-                                who = fromrelay,
-                                module = "Deployment | Install",
-                                date = None )
-                    # chang permition
-                    objectxmpp.xmpplog( "Setting proper permissions on the ssh keys",
-                                        type = 'deploy',
-                                        sessionname = sessionid,
-                                        priority = 0,
-                                        action = "xmpplog",
-                                        who = fromrelay,
-                                        module = "Deployment | Install",
-                                        date = None )
-                    utils.simplecommand("cp -a /var/lib/pulse2/clients/reversessh/.ssh/id_rsa.pub /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-                    utils.simplecommand("chown -R reversessh: /var/lib/pulse2/clients/reversessh/.ssh")
-                    utils.simplecommand("chmod 700 /var/lib/pulse2/clients/reversessh/.ssh")
-                    utils.simplecommand("chmod 600 /var/lib/pulse2/clients/reversessh/.ssh/authorized_keys")
-        finally:
-            logger.debug("libere mutex")
-            objectxmpp.mutex.release()
-    keyreversessh = utils.file_get_contents(file_key_reverse_private_ars)
-    key = utils.file_get_contents(file_key_pub_ars)
+    # Make sure reversessh account and keys exist
+    msg = []
+    username = 'reversessh'
+    result, msglog = utils.reversessh_useraccount_mustexist_on_relay(username)
+    if result is False:
+        logger.error(msglog)
+    msg.append(msglog)
+    result, msglog = utils.reversessh_keys_mustexist_on_relay(username)
+    if result is False:
+        logger.error(msglog)
+    msg.append(msglog)
+    # Write message to logger
+    for line in msg:
+        objectxmpp.xmpplog(line,
+                           type = 'deploy',
+                           sessionname = sessionid,
+                           priority = 0,
+                           action = "xmpplog",
+                           who = fromrelay,
+                           module = "Deployment | Install",
+                           date = None )
+    # Install keys on client
+    keyreversessh = utils.get_relayserver_reversessh_idrsa(username)
+    key = utils.get_relayserver_pubkey('root')
     time_out_install_key = 60
-    resultiqstr = objectxmpp.iqsendpulse( tomachine,
-                                          { "action": "keyinstall",
-                                            "data": { "key" : key,
-                                                      "keyreverseprivatssh" : keyreversessh ,
-                                                      "sessionid" : sessionid,
-                                                      "from" : fromrelay }
-                                           }, time_out_install_key)
+    resultiqstr = objectxmpp.iqsendpulse(tomachine,
+                                         {"action": "keyinstall",
+                                          "data": {"key": key,
+                                                   "keyreverseprivatssh": keyreversessh,
+                                                   "sessionid": sessionid,
+                                                   "from" : fromrelay}
+                                          },
+                                         time_out_install_key)
     resultiq = json.loads(resultiqstr)
     msglogbool = False
     if 'ret' in resultiq and resultiq['ret'] != 0:
-        logger.error("Install of relay server key %s on machine %s"%(fromrelay,tomachine))
+        logger.error("Install of relay server key %s on machine %s" % (fromrelay, tomachine))
         if  'data' in resultiq and 'msg_error' in resultiq['data']:
             logger.error("Error description : %s"%json.dumps(resultiq['data']['msg_error'], indent = 4))
             objectxmpp.xmpplog( "Error on machine %s"%resultiq['data']['msg_error'],
@@ -1903,16 +1902,13 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                             date = None )
         msglogbool = True
     if "err" in resultiq:
-        logger.error("Install ARS key %s on machine %s timed out %s"%(fromrelay,
+        logger.error("Install ARS key %s on machine %s timed out %s" % (fromrelay,
                                                                         tomachine,
                                                                         time_out_install_key))
         msglogbool = True
     if msglogbool:
         msgerror = "Check why we cannot install the ars %s " \
-                "public key which is contained in the %s " \
-                "file on the %s machine" % (file_key_pub_ars,
-                                            fromrelay,
-                                            tomachine)
+                "keys on the machine %s" % (fromrelay, tomachine)
         logger.error(msgerror)
         objectxmpp.xmpplog( msgerror,
                             type = 'deploy',
@@ -2184,6 +2180,9 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, limit_rate_ko=None):
         c.close()
 
 def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmdmode="rsync"):
+    """
+            # call function from agent machine
+    """
     logger.info("###################################################")
     logger.info("pull_package_transfert_rsync : " + cmdmode)
     logger.info("###################################################")
@@ -2208,8 +2207,9 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         execscp = "scp"
         error = False
         if sys.platform.startswith('linux'):
-            path_key_priv = os.path.join("/", "var", "lib", "pulse2", ".ssh", "id_rsa")
-            localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            path_key_priv =  os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            #localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            localdest = " '%s'" % (managepackage.managepackage.packagedir())
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
@@ -2224,7 +2224,8 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             execscp = '"c:\progra~1\OpenSSH\scp.exe"'
         elif sys.platform.startswith('darwin'):
             path_key_priv =  os.path.join("/", "var", "root", ".ssh", "id_rsa")
-            localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            #localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            localdest = " '%s'" % (managepackage.managepackage.packagedir())
         else :
             return False
 
@@ -2236,7 +2237,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
             cmd = """ "c:\progra~1\OpenSSH\scp.exe"%s -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """ % (scp_limit_rate_ko, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
         if cmdmode == "rsync":
-            cmdtransfert =  " %s -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
+            cmdtransfert =  " %s -L -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
             cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """ % (cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         cmdexec =  cmd + remotesrc + localdest

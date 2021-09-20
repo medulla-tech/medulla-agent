@@ -30,7 +30,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.0", "NAME": "start", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "start", "TYPE": "substitute"}
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -39,6 +39,8 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
     # send demande module mmc actif sur master
+    logger.debug("Looking for installed mmc modules")
+    objectxmpp.listmodulemmc = []
     objectxmpp.send_message(mto=objectxmpp.agentmaster,
                             mbody=json.dumps(data_struct_message("enable_mmc_module")),
                             mtype='chat')

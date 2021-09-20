@@ -11,10 +11,10 @@ echo "#########################"
 echo
 
 # Create pulse user
-adduser --system --group --home /var/lib/pulse2 --shell /bin/rbash --disabled-password pulseuser
-if ! [ -d "/var/lib/pulse2/.ssh" ]; then
+adduser --system --group --home /home/pulseuser --shell /bin/rbash --disabled-password pulseuser
+if ! [ -d "/home/pulseuser/.ssh" ]; then
     echo "Create missing SSH profile ..."
-    mkdir -p /var/lib/pulse2/.ssh
+    mkdir -p /home/pulseuser/.ssh
 fi
 
 
@@ -28,9 +28,9 @@ echo "############"
 echo
 
 # Copy SSH keys
-chown -R pulseuser: /var/lib/pulse2
-chmod -R 700 /var/lib/pulse2
-chmod 600 /var/lib/pulse2/.ssh/authorized_keys
+chown -R pulseuser: /home/pulseuser
+chmod -R 700 /home/pulseuser
+chmod 600 /home/pulseuser/.ssh/authorized_keys
 
 sed -i "s/^#?Port .*$/Port ${SSH_PORT}/" /etc/ssh/sshd_config
 

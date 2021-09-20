@@ -22,7 +22,7 @@
 
 import logging
 import os
-plugin = {"VERSION" : "1.3", "NAME" : "force_setup_agent",  "TYPE" : "all"}
+plugin = {"VERSION" : "1.4", "NAME" : "force_setup_agent",  "TYPE" : "all"}
 
 logger = logging.getLogger()
 
@@ -51,4 +51,5 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                         fromuser = "",
                         touser = "Master")
     #check network and reconfigure machine
-    objectxmpp.networkMonitor()
+    #objectxmpp.networkMonitor()
+    objectxmpp.reconfagent()

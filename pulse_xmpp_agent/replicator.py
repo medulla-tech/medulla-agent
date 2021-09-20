@@ -233,14 +233,16 @@ def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
     copytree2 ( agent_folder , rollback_pulse_xmpp_agent)
 
 
+
 def module_needed(agent_image, verbose = False):
     #sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__))))
     # create file __init.py si non exist
     boolfichier = False
     error  = False
-    if not os.path.isfile("img_agent/__init__.py"):
+    initfile =  os.path.join( os.path.dirname(os.path.realpath(__file__)),"img_agent", "__init__.py")
+    if not os.path.isfile(initfile):
         boolfichier = True
-        open("img_agent/__init__.py", "w").close()
+        open(initfile, "w").close()
     list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
     for filename in list_script_python_for_update:
         try:
@@ -252,7 +254,7 @@ def module_needed(agent_image, verbose = False):
             pass
     if  boolfichier:
         try:
-            os.remove("img_agent/__init__.py")
+            os.remove(initfile)
         except:
             print "Error while deleting file __init__.py"
     if error:
@@ -266,6 +268,7 @@ def module_needed(agent_image, verbose = False):
                 print('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename))
             return False
     return True
+
 
 if __name__ == "__main__":
     # execute only if run as a script

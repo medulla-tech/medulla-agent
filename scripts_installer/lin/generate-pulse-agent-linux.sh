@@ -30,13 +30,14 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="2.1.1"
+AGENT_VERSION="2.1.7"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
-PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler.ini"
+PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
-
+PULSE_START_CONFFILE_FILENAME="start.ini"
+PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 
 # Go to own folder
 cd "$(dirname $0)"
@@ -64,12 +65,24 @@ check_arguments() {
                 TEST_URL="${i#*=}"
                 shift
                 ;;
+            --disable-vnc*)
+                DISABLE_VNC=1
+                shift
+                ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
                 SSH_PORT="${i#*=}"
+                shift
+                ;;
+            --disable-rdp*)
+                DISABLE_RDP=1
+                shift
+                ;;
+            --disable-inventory*)
+                DISABLE_INVENTORY=1
                 shift
                 ;;
             --linux-distros*)
@@ -173,11 +186,11 @@ generate_agent_package() {
 
 	# We copy the config files to deb bundle
 	mkdir -p deb/pulse-agent-linux/etc/pulse-xmpp-agent
-	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME; do
+	for config_files in $PULSE_AGENT_CONFFILE_FILENAME $PULSE_SCHEDULER_CONFFILE_FILENAME $PULSE_INVENTORY_CONFFILE_FILENAME $PULSE_STARTUPDATE_CONFFILE_FILENAME $PULSE_START_CONFFILE_FILENAME; do
 		cp /var/lib/pulse2/clients/config/$config_files deb/pulse-agent-linux/etc/pulse-xmpp-agent/
 	done
-	mkdir -p deb/pulse-agent-linux/var/lib/pulse2/.ssh
-	cp -fv $SSH_PUB_KEY deb/pulse-agent-linux/var/lib/pulse2/.ssh/authorized_keys
+	mkdir -p deb/pulse-agent-linux/home/pulseuser/.ssh
+	cp -fv $SSH_PUB_KEY deb/pulse-agent-linux/home/pulseuser/.ssh/authorized_keys
 
 	colored_echo green "### INFO  Generating agent package... Done"
 }
@@ -265,6 +278,10 @@ install_repos() {
             ubuntu-xenial)
                 install_package pulse-agent-linux-repo-xenial
                 INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-xenial}" )
+                ;;
+            ubuntu-focal)
+                install_package pulse-agent-linux-repo-focal
+                INSTALLED_REPOS=( "${INSTALLED_REPOS[@]/pulse-agent-linux-repo-focal}" )
                 ;;
             *)
                 echo "the distribution $distro is not yet supported"

@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.1.1
+Version:	2.1.7
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -44,6 +44,10 @@ Requires:       python-inotify
 Requires:       python-dateutil
 Requires:       python2-psutil
 Requires:       python-wakeonlan
+Requires:       python-crypto
+Requires:       python-cherrypy
+Requires:       net-tools
+Requires:       jq
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -122,6 +126,12 @@ if systemctl -q is-enabled pulse-xmpp-master-substitute-reconfigurator ; then
     echo "..done"
 fi
 
+if systemctl -q is-enabled pulse-xmpp-master-substitute-monitoring ; then
+    echo -n "Restarting pulse-xmpp-master-substitute-monitoring service..."
+    systemctl restart pulse-xmpp-master-substitute-monitoring
+    echo "..done"
+fi
+
 %files -n pulse-xmpp-agent-relay
 %_prefix/lib/systemd/system/pulse-xmpp-agent-log.service
 %_prefix/lib/systemd/system/pulse-xmpp-agent-relay.service
@@ -137,7 +147,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/wakeonlan.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
-%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler_relay.ini
 %_var/log/pulse
 %dir %{python2_sitelib}/pulse_xmpp_agent/
 %{python2_sitelib}/pulse_xmpp_agent/lib/
@@ -154,6 +164,8 @@ fi
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
+Requires:       python-enum34
+Requires:       jq
 BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
@@ -172,6 +184,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 
 
 #--------------------------------------------------------------------
@@ -193,7 +206,7 @@ Requires:   nsis-plugins-Pwgen
 Requires:   nsis-plugins-AccessControl
 Requires:   nsis-plugins-Inetc
 Requires:   nsis-plugins-TextReplace
-
+Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
 Files to create pulse windows installer
@@ -227,9 +240,13 @@ fi
 %files -n pulse-agent-installers
 %_var/lib/pulse2/clients
 %config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
-%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
-%_var/lib/pulse2/xmpp_baseremoteagent/
+%config(noreplace) %_var/lib/pulse2/clients/config/start.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
+%attr(0755,syncthing,syncthing)  %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
 
@@ -245,8 +262,6 @@ plugins for pulse xmppmaster
 %files -n pulse-xmppmaster-agentplugins
 %_var/lib/pulse2/xmpp_baseplugin
 %_var/lib/pulse2/xmpp_basepluginscheduler
-%_var/lib/pulse2/clients/config/
-%_var/lib/pulse2/clients/config/inventory.ini
 
 #--------------------------------------------------------------------
 
@@ -286,6 +301,7 @@ rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machin
 rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
 cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
 cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
@@ -314,7 +330,7 @@ cp pulse_xmpp_agent/config/reverse_ssh_on.ini %buildroot%_sysconfdir/pulse-xmpp-
 cp pulse_xmpp_agent/config/wakeonlan.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
-cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/manage_scheduler_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
@@ -323,6 +339,7 @@ cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_
 cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/descriptor_scheduler_substitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
@@ -371,20 +388,20 @@ rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/descriptor_scheduler_rela
 rm -fv %buildroot%_var/lib/pulse2/xmpp_baseremoteagent/pluginsrelay/plugin_*.py
 mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/manage_scheduler.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/manage_scheduler_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/start.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-agent-deps-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-netcheck-package %buildroot%_var/lib/pulse2/clients
-cp scripts_installer/generate-service-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/HEADER.html %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/style.css %buildroot%_var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/generate-pulse-agent-win.sh %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/agent-installer.nsi.in %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/pulse-agent-task.xml %buildroot%_var/lib/pulse2/clients/win
-cp scripts_installer/win/pulse-filetree-generator.exe %buildroot%_var/lib/pulse2/clients/win
 chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-pulse-agent-win.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp scripts_installer/lin/generate-pulse-agent-linux.sh %buildroot%_var/lib/pulse2/clients/lin
@@ -392,8 +409,6 @@ chmod +x %buildroot%_var/lib/pulse2/clients/lin/generate-pulse-agent-linux.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
 cp scripts_installer/mac/generate-pulse-agent-mac.sh %buildroot%_var/lib/pulse2/clients/mac
 chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-pulse-agent-mac.sh
-#cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients/win
-#chmod +x %buildroot%_var/lib/pulse2/clients/mac/generate-kiosk-package
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp -r scripts_installer/lin/* %buildroot%_var/lib/pulse2/clients/lin
 mkdir -p %buildroot%_var/lib/pulse2/clients/mac
@@ -409,21 +424,6 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
 cp -fr scripts_installer/win/artwork/* %buildroot%_var/lib/pulse2/clients/win/artwork
 chmod +x %buildroot%_var/lib/pulse2/clients/*.sh
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-deps-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-netcheck-package
-chmod +x %buildroot%_var/lib/pulse2/clients/generate-service-package
-#chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-kiosk-package
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-filetree-generator.git
-mv pulse-filetree-generator pulse-filetree-generator-%{filetree_version}
-g++ -O3 -std=c++11 pulse-filetree-generator-%{filetree_version}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
-mkdir -p %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
-cp pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
-chmod +x %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin/pulse-filetree-generator
-mkdir -p %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES
-cp pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES
-chmod +x %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES/pulse-filetree-generator
-mv pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/mac
-chmod +x %buildroot%_var/lib/pulse2/clients/mac/pulse-filetree-generator
 cp pulse_xmpp_agent/script/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/

@@ -23,42 +23,65 @@
 import sys, os
 import logging
 from lib import utils
+from lib.agentconffile import directoryconffile
+import ConfigParser
+import re
+
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "2.0", "NAME" : "start", "TYPE" : "all"}
+plugin = {"VERSION" : "2.1", "NAME" : "start", "TYPE" : "all"}
+
+def read_conf_plugin_start(objectxmpp):
+    objectxmpp.liststartplugin = []
+    configfilename = os.path.join(directoryconffile(),"start.ini")
+    objectxmpp.time_differed_start = 10
+    if os.path.isfile(configfilename):
+        # lit la configuration
+        Config = ConfigParser.ConfigParser()
+        Config.read(configfilename)
+        if Config.has_option('plugins', 'time_differed_start'):
+           objectxmpp.time_differed_start = Config.getint('plugins', 'time_differed_start')
+        if Config.has_option('plugins', 'liststartplugin'):
+            liststartplugin = Config.get('plugins', 'liststartplugin')
+            objectxmpp.liststartplugin = [x for x in
+                                            re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
+                                                     liststartplugin)
+                                            if x.strip()!=""]
 
 def action( objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s"%(plugin, message['from']))
     logger.debug("###################################################")
-    if objectxmpp.config.agenttype in ['machine']:
-        logger.debug("#################AGENT MACHINE#####################")
-        logger.debug("###################################################")
-        if sys.platform.startswith('win'):
-            #injection version clef de registre
-            logger.debug("INJECTION KEY REGISTER VERSION")
-            pathversion = os.path.join(objectxmpp.pathagent, "agentversion")
-            if os.path.isfile(pathversion):
-                version = utils.file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
-                if len(version) < 20:
-                    logger.debug("Version AGENT is " + version)
-                    import _winreg
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
-                                        0 ,
-                                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-                    _winreg.SetValueEx ( key,
-                                        'DisplayVersion'  ,
-                                        0,
-                                        _winreg.REG_SZ,
-                                        version)
-                    _winreg.CloseKey(key)
-        elif sys.platform.startswith('linux') :
-            pass
-        elif sys.platform.startswith('darwin'):
-            pass
-    else:
-        logger.debug("###################################################")
-        logger.debug("##############AGENT RELAY SERVER###################")
-        logger.debug("###################################################")
+
+    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+    logger.debug("compteurcallplugin = %s" % compteurcallplugin )
+    if compteurcallplugin == 0:
+        logger.debug("configure plugin %s" % action)
+        read_conf_plugin_start(objectxmpp)
+        objectxmpp.paramsdict=[]
+
+    startupdateskel={"action": "",
+                 "sessionid": utils.getRandomName(6, "startplugin"),
+                 "ret": 0,
+                 "base64": False,
+                 "data": {}}
+    msg = {'from': objectxmpp.boundjid.bare,
+        "to" : objectxmpp.boundjid.bare,
+        'type': 'chat' }
+
+    for pluginstart in objectxmpp.liststartplugin:
+        dataerreur =  startupdateskel.copy()
+        startupdate =  startupdateskel.copy()
+        startupdate["action"] = pluginstart
+        dataerreur["action"] = "result" + startupdate["action"]
+        dataerreur["data"] = {"msg": "error plugin: "+ startupdate["action"]}
+        dataerreur["ret"] = 255
+        logger.info("Call of %s by plugin_start differed by %s s" % (pluginstart,
+                                                                objectxmpp.time_differed_start))
+        params ={ "descriptor" : startupdate,
+                  "errordescriptor" : dataerreur,
+                  "msg" : msg}
+        objectxmpp.paramsdict.append(params)                    
+
+    objectxmpp.call_plugin_differed(time_differed = objectxmpp.time_differed_start)
