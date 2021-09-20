@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -27,10 +27,6 @@ import os
 import sys
 import logging
 import json
-import zlib
-import base64
-import traceback
-import random
 import hashlib
 import shutil
 import urllib2
@@ -93,7 +89,7 @@ def copytree2(src, dst, symlinks=False):
     return True
 
 def search_action_on_agent_cp_and_del(fromimg, frommachine):
-    """ 
+    """
         return 2 lists
         list files to copi from img to mach
         list files to supp in mach
@@ -114,9 +110,9 @@ def search_action_on_agent_cp_and_del(fromimg, frommachine):
             file_supp_in_mach.append(namefichier)
     for namefichier in fromimg:
         #search fichier missing dans mach
-        if not namefichier in frommachine:
+        if namefichier not in frommachine:
             file_missing_in_mach.append(namefichier)
-    #les fichiers manquant dans machine sont aussi des fichier a rajouter.  
+    #les fichiers manquant dans machine sont aussi des fichier a rajouter.
     fichier_to_copie =  list(replace_file_mach_by_file_img)
     fichier_to_copie.extend(file_missing_in_mach)
     return fichier_to_copie, file_supp_in_mach
@@ -129,7 +125,7 @@ def install_key_register_windows(version):
                                     "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
                                     0 ,
                                     _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-            _winreg.SetValueEx ( key, 
+            _winreg.SetValueEx ( key,
                                 'DisplayVersion'  ,
                                 0,
                                 _winreg.REG_SZ,
@@ -160,9 +156,9 @@ def file_get_contents(filename, use_include_path=0,
 
 class Update_Remote_Agent:
     """
-        this class make finderspring of agent.
-        Param : dir_agent_base is location of agent
-        Param : autoupdate is switch for enable or disable remote update. 
+        this class calculates the fingerprint of the agent.
+        Param : dir_agent_base is the location of agent
+        Param : autoupdate is the switch for enabling or disabling remote update.
     """
     def __init__(self, dir_agent_base, autoupdate = True):
         self.dir_agent_base = dir_agent_base
@@ -237,14 +233,16 @@ def prepare_folder_rollback(rollback_pulse_xmpp_agent, agent_folder):
     copytree2 ( agent_folder , rollback_pulse_xmpp_agent)
 
 
+
 def module_needed(agent_image, verbose = False):
     #sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__))))
     # create file __init.py si non exist
     boolfichier = False
     error  = False
-    if not os.path.isfile("img_agent/__init__.py"):
+    initfile =  os.path.join( os.path.dirname(os.path.realpath(__file__)),"img_agent", "__init__.py")
+    if not os.path.isfile(initfile):
         boolfichier = True
-        open("img_agent/__init__.py", "w").close()
+        open(initfile, "w").close()
     list_script_python_for_update = ['agentxmpp.py', 'launcher.py', 'connectionagent.py', 'replicator.py']
     for filename in list_script_python_for_update:
         try:
@@ -256,7 +254,7 @@ def module_needed(agent_image, verbose = False):
             pass
     if  boolfichier:
         try:
-            os.remove("img_agent/__init__.py")
+            os.remove(initfile)
         except:
             print "Error while deleting file __init__.py"
     if error:
@@ -270,6 +268,7 @@ def module_needed(agent_image, verbose = False):
                 print('Some python modules needed for running lib/%s are missing. We will not switch to new agent' % (filename))
             return False
     return True
+
 
 if __name__ == "__main__":
     # execute only if run as a script
@@ -297,11 +296,11 @@ if __name__ == "__main__":
     # First check if machine has all necessary python modules to load image
     if not module_needed(img_agent, verbose = (options.verbose or options.info)):
         if options.verbose or options.info:
-            print 'KO: missing modules in image'
+            print 'KO: missing python modules in image'
         else:
             sys.exit(122)
     elif options.verbose or options.info:
-        print 'OK: no missing modules in image'
+        print 'OK: no missing python modules in image'
 
     # folder for save file supp
     rollback_pulse_xmpp_agent = os.path.abspath( os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -318,14 +317,14 @@ if __name__ == "__main__":
     if options.verbose or options.info:
         print "--------------------------------------------"
         if descriptoragent['fingerprint'] != descriptorimage['fingerprint']:
-            print "the fingerprint are different between the agent and the image"
+            print "The fingerprints are different between the agent and the image"
         else:
-            print "the fingerprint are the same between the agent and the image"
+            print "The fingerprints are the same between the agent and the image"
         print "--------------------------------------------"
         if descriptoragent['version'] != descriptorimage['version']:
-            print "the version are different between the agent and the image"
+            print "The versions are different between the agent and the image"
         else:
-            print "the version are the same between the agent and the image"
+            print "The versions are the same between the agent and the image"
         print "--------------------------------------------"
         print objdescriptoragent.dir_agent_base
         print json.dumps(descriptoragent, indent = 4)
@@ -337,13 +336,13 @@ if __name__ == "__main__":
     if  descriptorimage['fingerprint'] == descriptoragent['fingerprint']:
         if options.verbose or options.info:
             print "No UPDATING, no diff between agent and agentimage"
-            print "Agent synchro"
+            print "Agent up to date"
         sys.exit(0)
     else:
         try:
             for directory_agent in descriptoragent:
                 if directory_agent  in ["fingerprint",
-                                        "version", 
+                                        "version",
                                         "version_agent"]:
                     continue
                 # search les differences.
@@ -365,7 +364,7 @@ if __name__ == "__main__":
                             print "Replace or add agent files"
                             print json.dumps(diff2, indent = 4,  sort_keys=True)
                         if len(supp2) > 0 :
-                            print "unused agent file"
+                            print "Unused agent file"
                             print json.dumps(supp2, indent = 4,  sort_keys=True)
                 if not options.info:
                     for delfile in supp2:

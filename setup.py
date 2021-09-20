@@ -1,5 +1,5 @@
 #
-# (c) 2016-2017 siveo, http://www.siveo.net
+# (c) 2016-2020 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -19,41 +19,25 @@
 # MA 02110-1301, USA.
 
 from setuptools import setup
-from distutils.command.install import INSTALL_SCHEMES
-
-import os
-import sys
-
-if sys.platform.startswith('linux'):
-    fileconf = os.path.join("/", "etc" ,"pulse-xmpp-agent")
-elif sys.platform.startswith('win'):
-    fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
-elif sys.platform.startswith('darwin'):
-    fileconf = os.path.join("/", "Library", "Application Support", "Pulse", "etc")
-
-for scheme in INSTALL_SCHEMES.values():
-    scheme['data'] = os.path.join(scheme['purelib'], "pulse_xmpp_agent")
 
 setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GPL License',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
     ],
 
-    keywords='pulse xmpp agent',
+    keywords='pulse-xmpp-agent',
     name='pulse_xmpp_agent',
-    version='2.0.0.1',
+    version='2.1.7',
     debian_distro='stretch',
-    description = 'XMPP Agent for pulse',
+    description='pulse-xmpp-agent',
     url='https://www.siveo.net/',
-    packages=['pulse_xmpp_agent', 'pulse_xmpp_agent.lib', 'pulse_xmpp_agent.pluginsmachine', 'pulse_xmpp_agent.pluginsrelay', 'pulse_xmpp_agent.script', 'pulse_xmpp_agent.descriptor_scheduler_machine'],
-    data_files=[('script', ['pulse_xmpp_agent/script/getlastuser.ps1', 'pulse_xmpp_agent/script/create-profile.ps1']),
-                  ('', ['pulse_xmpp_agent/agentversion']),],
+    packages=['pulse_xmpp_agent'],
     test_suite='',
     package_data={},
     entry_points={},

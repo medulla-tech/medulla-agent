@@ -21,7 +21,6 @@
 
 import glob
 import os
-import sys
 import json
 import logging
 import time
@@ -171,6 +170,8 @@ class fifodeploy:
             del self.SESSIONdeploy[sessionid]
             pathnamefile = os.path.join(self.dirsavedatafifo, namefile)
             os.remove(pathnamefile)
+        except KeyError:
+            Logger.warning("the session %s no longer exists."%sessionid)
         except Exception as  e:
             Logger.error("del session fifo %s err : [%s]" % (sessionid, str(e)))
             Logger.error("\n%s"%(traceback.format_exc()))

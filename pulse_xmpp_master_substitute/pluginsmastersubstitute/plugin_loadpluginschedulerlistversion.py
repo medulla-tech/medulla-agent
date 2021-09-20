@@ -22,12 +22,9 @@
 
 import base64
 import json
-import sys, os
+import os
 import logging
-import platform
-from lib.utils import file_get_contents, getRandomName, data_struct_message
 import traceback
-from sleekxmpp import jid
 import types
 import ConfigParser
 logger = logging.getLogger()
@@ -45,8 +42,12 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
     if compteurcallplugin == 0:
         read_conf_load_plugin_scheduler_list_version(objectxmpp)
-        objectxmpp.schedule('updatelistpluginscheduler', 1000, objectxmpp.loadPluginschedulerList, repeat=True)
-    objectxmpp.loadPluginschedulerList()
+        objectxmpp.schedule('updatelistpluginscheduler',
+                            objectxmpp.reload_schedulerplugins_interval,
+                            objectxmpp.loadPluginschedulerList,
+                            repeat=True)
+        logger.debug("%s"%hasattr(objectxmpp, "loadPluginschedulerList"))
+        objectxmpp.loadPluginschedulerList()
 
 def read_conf_load_plugin_scheduler_list_version(objectxmpp):
     """
@@ -57,17 +58,24 @@ def read_conf_load_plugin_scheduler_list_version(objectxmpp):
     pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file missing\n  %s\neg conf:" \
-            "\n[parameters]\ndirpluginlistscheduled = /var/lib/pulse2/xmpp_basepluginscheduler/"%(plugin['NAME'], pathfileconf))
+            "\n[parameters]\ndirschedulerplugins = /var/lib/pulse2/xmpp_basepluginscheduler/"%(plugin['NAME'], pathfileconf))
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_basepluginscheduler")
-        objectxmpp.dirpluginlistscheduled = "/var/lib/pulse2/xmpp_basepluginscheduler"
+        objectxmpp.dirschedulerplugins = "/var/lib/pulse2/xmpp_basepluginscheduler"
+        objectxmpp.reload_schedulerplugins_interval=2000
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
-        objectxmpp.dirpluginlistscheduled = "/var/lib/pulse2/xmpp_basepluginscheduler"
-        if Config.has_option("parameters", "dirpluginlistscheduled"):
-            objectxmpp.dirpluginlistscheduled = Config.get('parameters', 'dirpluginlistscheduled')
+        objectxmpp.dirschedulerplugins = "/var/lib/pulse2/xmpp_basepluginscheduler"
+        if Config.has_option("parameters", "dirschedulerplugins"):
+            objectxmpp.dirschedulerplugins = Config.get('parameters', 'dirschedulerplugins')
+        if Config.has_option("parameters", "reload_schedulerplugins_interval"):
+            objectxmpp.reload_schedulerplugins_interval = Config.getint('parameters', 'reload_schedulerplugins_interval')
+        else:
+            objectxmpp.reload_schedulerplugins_interval = 2000
+    logger.debug("directory base scheduler plugins is %s"% objectxmpp.dirschedulerplugins)
+    logger.debug("reload scheduler plugins interval%s"%objectxmpp.reload_schedulerplugins_interval)
     # function definie dynamiquement
     objectxmpp.plugin_loadpluginschedulerlistversion = types.MethodType(plugin_loadpluginschedulerlistversion, objectxmpp)
     objectxmpp.deployPluginscheduled = types.MethodType(deployPluginscheduled, objectxmpp)
@@ -81,7 +89,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                     # deploy on version changes
                     logger.debug ("update plugin %s on agent %s"%(k, msg['from']))
                     self.deployPluginscheduled(msg, k)
-                    self.restartAgent(msg['from'])
+                    self.restartmachineasynchrone(msg['from'])
                     break
                 else:
                     logger.debug("No version change for %s on agent %s"%(k, msg['from']))
@@ -91,21 +99,21 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
                 if k in self.plugintypescheduler:
                     if self.plugintypescheduler[k] == 'all':
                         self.deployPluginscheduled(msg, k)
-                        self.restartAgent(msg['from'])
+                        self.restartmachineasynchrone(msg['from'])
                         break
                     if self.plugintypescheduler[k] == 'relayserver' and data['agenttype'] == "relayserver":
                         self.deployPluginscheduled(msg, k)
-                        self.restartAgent(msg['from'])
+                        self.restartmachineasynchrone(msg['from'])
                         break
                     if self.plugintypescheduler[k] == 'machine' and data['agenttype'] == "machine":
                         self.deployPluginscheduled(msg, k)
-                        self.restartAgent(msg['from'])
+                        self.restartmachineasynchrone(msg['from'])
                         break
 
 def deployPluginscheduled(self, msg, plugin):
     data = ''
     fichierdata = {}
-    namefile = os.path.join(self.config.dirschedulerplugins, "%s.py" % plugin)
+    namefile = os.path.join(self.dirschedulerplugins, "%s.py" % plugin)
     if os.path.isfile(namefile):
         logger.debug("File plugin scheduled found %s" % namefile)
     else:
@@ -137,9 +145,9 @@ def loadPluginschedulerList(self):
     logger.debug("Verify base plugin scheduler")
     self.plugindatascheduler = {}
     self.plugintypescheduler = {}
-    for element in os.listdir(self.dirpluginlistscheduled):
+    for element in os.listdir(self.dirschedulerplugins):
         if element.endswith('.py') and element.startswith('scheduling_'):
-            f = open(os.path.join(self.dirpluginlistscheduled, element), 'r')
+            f = open(os.path.join(self.dirschedulerplugins, element), 'r')
             lignes = f.readlines()
             f.close()
             for ligne in lignes:

@@ -19,37 +19,27 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+
+#fish: pulse_xmpp_master_substitute/bin/agent.py
+
+from sleekxmpp import jid
 import sys
 import os
 import logging
-import platform
 import base64
 import json
 import time
-import threading
 import sleekxmpp
-from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
-from sleekxmpp import jid
-import subprocess
+from sleekxmpp.xmlstream.stanzabase import ET
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin, ipfromdns
-from lib.logcolor import add_coloring_to_emit_ansi, add_coloring_to_emit_windows
+from lib.utils import DEBUGPULSE, getRandomName, call_plugin
 
 import traceback
-from optparse import OptionParser
-from multiprocessing import Queue
-from multiprocessing.managers import SyncManager
-import psutil
 import signal
-from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, DateTime, Text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-import imp
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
+from lib.manage_scheduler import manage_scheduler
 
 import random
 
@@ -76,8 +66,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubstitute"))
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter()
-        logging.log(DEBUGPULSE, "start Master sub (%s)" %(self.config.jidmastersubstitute))
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
+        logging.log(DEBUGPULSE,"Starting Master sub (%s)" %(self.config.jidmastersubstitute))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
+
+        # We define the type of the Agent
+        self.config.agenttype = 'substitute'
+        self.manage_scheduler = manage_scheduler(self)
+        self.schedule('schedulerfunction',
+                            10 ,
+                            self.schedulerfunction,
+                            repeat=True)
+        logger.debug("##############################################")
 
         ####################Update agent from MAster#############################
         #self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
@@ -91,27 +96,27 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler('message', self.message, threaded=True)
-        #self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
-        #self.add_event_handler("loginfotomaster", self.loginfotomaster)
-        self.add_event_handler('changed_status', self.changed_status)
+        # self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
+        # self.add_event_handler("loginfotomaster", self.loginfotomaster)
+        # self.add_event_handler('changed_status', self.changed_status)
         self.add_event_handler("restartmachineasynchrone",
                                self.restartmachineasynchrone, threaded=True)
 
-        #self.register_handler(handler.Callback(
-                                    #'CustomXEP Handler',
-                                    #matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
-                                    #self._handle_custom_iq))
+        # self.register_handler(handler.Callback(
+        # 'CustomXEP Handler',
+        # matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
+        # self._handle_custom_iq))
 
     def send_message_to_master(self , msg):
         self.send_message(  mbody = json.dumps(msg),
                             mto = '%s/MASTER'%self.agentmaster,
                             mtype ='chat')
 
-    def changed_status(self, message):
-        #print "%s %s"%(message['from'], message['type'])
-        if message['from'].user == 'master':
-            if message['type'] == 'available':
-               pass
+    # def changed_status(self, message):
+    # print "%s %s"%(message['from'], message['type'])
+    # if message['from'].user == 'master':
+    # if message['type'] == 'available':
+    # pass
 
     def start(self, event):
         self.shutdown = False
@@ -119,17 +124,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logging.log(DEBUGPULSE,"subscribe xmppmaster")
         self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
-        self.xmpplog("Start Agent master inventory",
+
+        self.xmpplog("Starting substitute agent",
                     type = 'info',
                     sessionname = "",
                     priority = -1,
-                    action = "",
+                    action = "xmpplog",
                     who = self.boundjid.bare,
                     how = "",
                     why = "",
-                    module = "AM",
                     date = None ,
-                    fromuser = "MASTER",
+                    fromuser = self.boundjid.bare,
                     touser = "")
 
         #call plugin start
@@ -141,11 +146,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             "data" : {}}
         dataerreur={ "action" : "result" + startparameter["action"],
                      "data" : { "msg" : "error plugin : " + startparameter["action"]},
-                     'sessionid' : startparameter['sessionid'],
-                     'ret' : 255,
-                     'base64' : False}
-        msg = {'from' : self.boundjid.bare, "to" : self.boundjid.bare, 'type' : 'chat' }
-        if not 'data' in startparameter:
+                     'sessionid': startparameter['sessionid'],
+                     'ret': 255,
+                     'base64': False}
+        msg = {'from': self.boundjid.bare, "to" : self.boundjid.bare, 'type': 'chat' }
+        if 'data' not in startparameter:
             startparameter['data'] = {}
         module = "%s/plugin_%s.py"%(self.modulepath,  startparameter["action"])
         call_plugin( module,
@@ -164,7 +169,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     "sessionid" : getRandomName(6, "eventwin"),
                     "ret" : 0,
                     "base64" : False,
-                    'data' : { 'machine' : self.boundjid.jid ,
+                    'data': { 'machine': self.boundjid.jid ,
                                'event'   : "CTRL_C_EVENT" }
                     }
         self.send_message_to_master(msgevt)
@@ -175,12 +180,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
     def restartAgent(self, to):
         self.send_message(mto=to,
                           mbody=json.dumps({'action': 'restartbot',
-                                        'data': ''}),
-                          mtype='chat')
-
-    def restartAgent(self, to):
-        self.send_message(mto=to,
-                          mbody=json.dumps({'action': 'restartbotrandom',
                                         'data': ''}),
                           mtype='chat')
 
@@ -199,7 +198,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 type = 'noset',
                 sessionname = '',
                 priority = 0,
-                action = "",
+                action = "xmpplog",
                 who = "",
                 how = "",
                 why = "",
@@ -207,25 +206,46 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 date = None ,
                 fromuser = "",
                 touser = ""):
+        if sessionname == "":
+            sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
-        msgbody = { 'log' : 'xmpplog',
-                    'text' : text,
-                    'type': type,
-                    'session' : sessionname,
-                    'priority': priority,
-                    'action' : action ,
-                    'who': who,
-                    'how' : how,
-                    'why' : why,
-                    'module': module,
-                    'date' : None ,
-                    'fromuser' : fromuser,
-                    'touser' : touser
-                    }
-        self.send_message(  mto = jid.JID(self.config.jidlog),
-                            mbody=json.dumps(msgbody),
-                            mtype='chat')
+        if touser == "":
+            touser = self.boundjid.bare
+        if 'xmpp' in self.config.plugins_list:
+            XmppMasterDatabase().setlogxmpp(text,
+                                            type=type,
+                                            sessionname=sessionname,
+                                            priority=priority,
+                                            who=who,
+                                            how=how,
+                                            why=why,
+                                            module=module,
+                                            action='',
+                                            touser=touser,
+                                            fromuser= fromuser)
+        else:
+            msgbody = {"action" : 'xmpplog',
+                    'sessionid': sessionname}
+            msgbody['data'] =  {'log': 'xmpplog',
+                                'text': text,
+                                'type': type,
+                                'session': sessionname,
+                                'priority': priority,
+                                'action': action ,
+                                'who': who,
+                                'how': how,
+                                'why': why,
+                                'module': module,
+                                'date': None ,
+                                'fromuser': fromuser,
+                                'touser': touser
+                                }
+            self.send_message(  mto = jid.JID(self.config.sub_logger),
+                                mbody=json.dumps(msgbody),
+                                mtype='chat')
+    def schedulerfunction(self):
+        self.manage_scheduler.process_on_event()
 
     def register(self, iq):
         """ This function is called for automatic registation """
@@ -237,8 +257,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" %\
-                    e.iq['error']['text'])
+            if e.iq['error']['code'] == "409":
+                logging.warning("Could not register account %s : User already exists" %\
+                        resp['register']['username'])
+            else:
+                logging.error("Could not register account %s : %s" %\
+                        (resp['register']['username'], e.iq['error']['text']))
         except IqTimeout:
             logging.error("No response from server.")
             traceback.print_exc(file=sys.stdout)
@@ -274,10 +298,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
 
         if 'action' in dataobj and dataobj['action'] == 'infomachine':
-            dd ={'data' : dataobj,
-                 'action' : dataobj['action'],
-                 'sessionid' : getRandomName(6, "registration"),
-                'ret' : 0
+            dd ={'data': dataobj,
+                 'action': dataobj['action'],
+                 'sessionid': getRandomName(6, "registration"),
+                'ret': 0
                  }
             dataobj = dd
 
@@ -295,7 +319,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 else:
                     mydata = dataobj['data']
 
-                if not dataobj.has_key('sessionid'):
+                if 'sessionid' not in dataobj:
                     dataobj['sessionid']= getRandomName(6, "misssingid")
                     logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'], dataobj['sessionid']))
 
@@ -310,11 +334,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
                     dataerreur={ "action" : "result" + dataobj['action'],
                      "data" : { "msg" : "error plugin : " + dataobj['action']},
-                     'sessionid' : getRandomName(6, "misssingid"),
-                     'ret' : 255,
-                     'base64' : False}
+                     'sessionid': getRandomName(6, "misssingid"),
+                     'ret': 255,
+                     'base64': False}
                     module = "%s/plugin_%s.py"%(self.modulepath, dataobj['action'])
-                    if not 'ret' in dataobj:
+                    if 'ret' not in dataobj:
                         dataobj['ret'] = 0
                     call_plugin( module,
                                  self,
@@ -358,3 +382,63 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                         mbody=json.dumps(dataerreur),
                                         mtype='chat')
             traceback.print_exc(file=sys.stdout)
+
+    def iqsendpulse(self, to, datain, timeout):
+        # send iq synchronous message
+        if type(datain) == dict or type(datain) == list:
+            try:
+                data = json.dumps(datain)
+            except Exception as e:
+                logging.error("iqsendpulse : encode json : %s" % str(e))
+                return '{"err" : "%s"}' % str(e).replace('"', "'")
+        elif type(datain) == unicode:
+            data = str(datain)
+        else:
+            data = datain
+        try:
+            data = data.encode("base64")
+        except Exception as e:
+            logging.error("iqsendpulse : encode base64 : %s" % str(e))
+            return '{"err" : "%s"}' % str(e).replace('"', "'")
+        try:
+            iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
+            itemXML = ET.Element('{%s}data' % data)
+            for child in iq.xml:
+                if child.tag.endswith('query'):
+                    child.append(itemXML)
+            try:
+                result = iq.send(timeout=timeout)
+                if result['type'] == 'result':
+                    for child in result.xml:
+                        if child.tag.endswith('query'):
+                            for z in child:
+                                if z.tag.endswith('data'):
+                                    # decode result
+                                    # TODO : Replace print by log
+                                    #print z.tag[1:-5]
+                                    return base64.b64decode(z.tag[1:-5])
+                                    try:
+                                        data = base64.b64decode(z.tag[1:-5])
+                                        # TODO : Replace print by log
+                                        #print "RECEIVED data"
+                                        #print data
+                                        return data
+                                    except Exception as e:
+                                        logging.error("iqsendpulse : %s" % str(e))
+                                        logger.error("\n%s"%(traceback.format_exc()))
+                                        return '{"err" : "%s"}' % str(e).replace('"', "'")
+                                    return "{}"
+            except IqError as e:
+                err_resp = e.iq
+                logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
+                logger.error("\n%s"%(traceback.format_exc()))
+                return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
+
+            except IqTimeout:
+                logging.error("iqsendpulse : Timeout Error")
+                return '{"err" : "Timeout Error"}'
+        except Exception as e:
+            logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
+            logger.error("\n%s"%(traceback.format_exc()))
+            return '{"err" : "%s"}' % str(e).replace('"', "'")
+        return "{}"

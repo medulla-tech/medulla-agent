@@ -20,6 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+# file : pulse_xmpp_agent/lib/manage_event.py
+
 import json
 from multiprocessing import TimeoutError
 import threading
@@ -101,7 +103,7 @@ class manage_event:
     def manage_event_loop(self):
         # traitement message interne
         for i in self.event:
-            if not 'event' in i:
+            if 'event' not in i:
                 # message de type loop
                 jidto = jid.JID(str(i['to'])).bare
                 msg = {
@@ -128,7 +130,7 @@ class manage_event:
     def delmessage_loop(self, devent):
         # supprime message loop devent
         for i in self.event:
-            if not 'event' in i:
+            if 'event' not in i:
                 if i['data']['Devent'] == devent:
                     self.event.remove(i)
                     break
@@ -136,7 +138,7 @@ class manage_event:
     def delmessage_loop_Dtypequery(self, Dtypequery):
         # supprime message loop devent
         for i in self.event:
-            if not 'event' in i:
+            if 'event' not in i:
                 if i['data']['Dtypequery'] == Dtypequery:
                     self.event.remove(i)
                     break
@@ -159,6 +161,7 @@ class manage_event:
                         recipienterror = message['data']['toerror']
                         del message['data']['tosucces']
                         del message['data']['toerror']
+                        codeerror = int(message['data']['codeerror'])
                         if recipienterror != None and message['data']['codeerror'] != 0:
                             del message['data']['codeerror']
                             self.objectxmpp.send_message(mto=recipienterror,
@@ -181,27 +184,28 @@ class manage_event:
                                     event['eventMessageraw']['data']['stepcurrent']) - 1
                                 for i in event['eventMessageraw']['data']['descriptor']['sequence']:
                                     if int(i['step']) == nb_currentworkingset:
+                                        i['codereturn'] = codeerror
                                         logging.debug(
                                             'deploy [process command : %s ]\n%s' %
                                             (event['eventMessageraw']['sessionid'], json.dumps(
                                                 i, indent=4, sort_keys=True)))
                                         if 'command' in i:
                                             if i['codereturn'] == 0:
-                                                color = "green"
+                                                log_class = "log_ok"
                                             else:
-                                                color = "red"
+                                                log_class = "log_err"
 
-                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span style="color: %s;"> '\
+                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span class="%s"> '\
                                                                         '[Process command] errorcode %s for'\
                                                                         'command : %s <span>' % (event['eventMessageraw']['data']['name'],
                                                                                                     i['step'],
-                                                                                                    color,
+                                                                                                    log_class,
                                                                                                     i['codereturn'],
                                                                                                     i['command'][:20]),
                                                                         type = 'deploy',
                                                                         sessionname = event['eventMessageraw']['sessionid'],
                                                                         priority = i['step'],
-                                                                        action = "",
+                                                                        action = "xmpplog",
                                                                         who = self.objectxmpp.boundjid.bare,
                                                                         how = "",
                                                                         why = "",
@@ -214,7 +218,7 @@ class manage_event:
                                                                     type = 'deploy',
                                                                     sessionname = event['eventMessageraw']['sessionid'],
                                                                     priority = i['step'],
-                                                                    action = "",
+                                                                    action = "xmpplog",
                                                                     who = self.objectxmpp.boundjid.bare,
                                                                     how = "",
                                                                     why = "",

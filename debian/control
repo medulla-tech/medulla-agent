@@ -7,28 +7,37 @@ Uploaders: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
 Build-Depends: debhelper (>= 9),
                dh-python,
                python-all-dev (>= 2.6.6-3~),
-	       python-setuptools
+	       python-setuptools, git, sudo 
 Standards-Version: 3.9.8
 Homepage: http://cyberelk.net/tim/software/pycups/
 Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/python-cups.git
 Vcs-Browser: https://anonscm.debian.org/cgit/python-modules/packages/python-cups.git
 X-Python-Version: >= 2.7
 
-Package: pulse-xmpp-agent
+Package: pulse-xmpp-agent-relay
 Architecture: all
 Provides: ${python:Provides}
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-utils, python-mysqldb-dbg, python-croniter, python-psutil, python-crypto, python-lxml, python-dateutil, python-six
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python-sleekxmpp, python-netifaces, python-configparser, python-zipfile2, python-pycurl, python-mysqldb-dbg, python-croniter, python-psutil, python-crypto, python-lxml, python-requests, python-sftp, python-pyinotify, python-wakeonlan, python-cherrypy3, net-tools, jq
 Description: Pulse xmpp agent
-Breaks: pulse-agent-installers  (<< 1.9.1)
-Replaces: pulse-agent-installers (<< 1.9.1)
-
-Package: pulse-xmpp-agent-scheduler-machine
-Architecture: all
-Provides: ${python:Provides}
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, pulse-xmpp-agent
-Description: Machine Scheduler for Pulse Xmpp Agent 
+Breaks: pulse-agent-installers  (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.5), pulse-xmpp-agent (<< 2.0.5)
+Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay , pulse-xmpp-agent
 
 Package: pulse-xmpp-master-substitute
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, jq
 Description: Pulse master agent substitute
+
+Package: pulse-xmppmaster-agentplugins
+Architecture: all
+Provides: ${python:Provides}
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Description: plugins for pulse xmppmaster
+
+Package: pulse-agent-installers
+Architecture: all
+Pre-Depends: pulse-filetree-generator
+Depends: ${misc:Depends}, pulse-xmpp-agent-deps (>= 1.8), dos2unix, unzip, zip, nsis-plugins-accesscontrol, nsis-plugins-inetc, nsis-plugins-pwgen, nsis-plugins-zipdll, uuid, nsis-plugins-textreplace, pulse-kiosk-agent-deps, xz-utils, dpkg-dev, debhelper (>= 9), python-all-dev (>= 2.6.6-3~), build-essential, createrepo, crudini
+Description: Pulse 2 Xmpp agent installer
+Breaks: pulse-xmppmaster-agentplugins (<< 2.0.7)
+Replaces: pulse-xmppmaster-agentplugins
+

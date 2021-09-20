@@ -28,13 +28,13 @@ import os
 import logging
 import zlib
 from time import sleep
-from utils import getRandomName, file_put_contents, file_get_contents
+from utils import getRandomName, file_get_contents
 import traceback
 
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "resultupdateagent", "TYPE": "master"}
+plugin = {"VERSION": "1.1", "NAME": "resultupdateagent", "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):
@@ -46,7 +46,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         if data['subaction'] == "update_me":
             # load version agent agentversion
             version = file_get_contents(os.path.join(
-                xmppobject.diragentbase, "agentversion"))
+                xmppobject.diragentbase, "agentversion")).replace("\n","").replace("\r","").strip()
             if 'descriptoragent' in data:
                 if 'program_agent' in data['descriptoragent'] and len(data['descriptoragent']['program_agent']) != 0:
                     logger.debug("Update program script in remote agent [%s]" % message['from'])
@@ -82,7 +82,7 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
     elif type == "script_agent":
         namescriptfile = os.path.join(xmppobject.diragentbase, "script", filename)
     else:
-        logger.error("script type incorect for transfert script to update remote agent")
+        logger.error("Incorrect script type for adding to update remote agent")
         return
     if os.path.isfile(namescriptfile):
         logger.debug("File script found %s" % namescriptfile)

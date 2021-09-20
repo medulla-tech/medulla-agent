@@ -1,0 +1,785 @@
+;
+; (c) 2016 siveo, http://www.siveo.net
+;
+; This file is part of Pulse 2, http://www.siveo.net
+;
+; Pulse 2 is free software; you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 2 of the License, or
+; (at your option) any later version.
+;
+; Pulse 2 is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with Pulse 2; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+; MA 02110-1301, USA.
+
+
+; Make sure the installer runs as admin
+RequestExecutionLevel admin
+
+
+; Define a few variables
+!define PRODUCT_NAME "Pulse Agent"
+!define PRODUCT_PUBLISHER "SIVEO"
+!define PRODUCT_WEB_SITE "http://www.siveo.net"
+!define AGENT_VERSION "@@AGENT_VERSION@@"
+!define PRODUCT_DIR_REGKEY "Software\${PRODUCT_PUBLISHER}\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
+!define PRODUCT_UNINST_ROOT_KEY "HKLM"
+!define AGENT_DEPS_NAME "${PRODUCT_NAME} dependencies"
+!define PRODUCT_DEPS_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${AGENT_DEPS_NAME}"
+!define USERDIR "c:\Users"
+!define PROGRAMDATA "C:\ProgramData"
+
+; Variables replaced by the script calling the nsi
+!define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
+!define PY_VCPYTHON27_FILENAME "@@PY_VCPYTHON27_FILENAME@@"
+!define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
+
+!define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
+!define AGENT_PLUGINS_FILENAME "@@AGENT_PLUGINS_FILENAME@@"
+!define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
+!define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
+!define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
+!define PULSE_SCHEDULER_CONFFILE "@@PULSE_SCHEDULER_CONFFILE@@"
+!define PULSE_INVENTORY_CONFFILE "@@PULSE_INVENTORY_CONFFILE@@"
+!define PULSE_STARTUPDATE_CONFFILE "@@PULSE_STARTUPDATE_CONFFILE@@"
+!define PULSE_START_CONFFILE "@@PULSE_START_CONFFILE@@"
+!define PULSE_AGENT_MODULE "@@PULSE_AGENT_MODULE@@"
+!define PULSE_AGENT_TASK_XML_FILENAME "@@PULSE_AGENT_TASK_XML_FILENAME@@"
+!define LAUNCHER_SSH_KEY "@@LAUNCHER_SSH_KEY@@"
+!define SSH_PORT "@@SSH_PORT@@"
+!define INVENTORY_TAG "@@INVENTORY_TAG@@"
+!define GENERATED_SIZE "@@GENERATED_SIZE@@"
+!define RFB_PORT "@@RFB_PORT@@"
+!define CREATE_PROFILE_FILENAME "@@CREATE_PROFILE_FILENAME@@"
+!define PULSE_SERVICE_FILENAME "@@PULSE_SERVICE_FILENAME@@"
+!define CHERRYPY_NAME "@@CHERRYPY_NAME@@"
+!define CHERRYPY_VERSION "@@CHERRYPY_VERSION@@"
+!define PRODUCT_CHERRYPY_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${CHERRYPY_NAME}"
+!define NETWORK_NAME "@@NETWORK_NAME@@"
+!define NETWORK_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${NETWORK_NAME}"
+!define OPENSSH_NAME "@@OPENSSH_NAME@@"
+!define OPENSSH_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${OPENSSH_NAME}"
+!define RDP_NAME "@@RDP_NAME@@"
+!define RDP_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${RDP_NAME}"
+!define SYNCTHING_NAME "@@SYNCTHING_NAME@@"
+!define SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SYNCTHING_NAME}"
+!define FILETREE_NAME "@@FILETREE_NAME@@"
+!define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
+SetCompressor lzma
+
+; Modern UI installer stuff
+!include "MUI2.nsh"
+!define MUI_ABORTWARNING
+#!define MUI_ICON "artwork/install.ico"
+!define MUI_WELCOMEPAGE_TITLE_3LINES
+#!define MUI_HEADERIMAGE
+#!define MUI_HEADERIMAGE_RIGHT
+#!define MUI_HEADERIMAGE_BITMAP "artwork/header.bmp"
+#!define MUI_WELCOMEFINISHPAGE_BITMAP "artwork/wizard.bmp"
+
+; UI pages
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_COMPONENTS
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_LANGUAGE "English"
+
+; Other useful modules
+!addincludedir libs
+!include "WinVer.nsh"
+!include "FileFunc.nsh"
+!include "zipdll.nsh"
+!include "LogicLib.nsh"
+!Include "LogString.nsh"
+!Include "psexec.nsh"
+!include "x64.nsh"
+!include "TextReplace.nsh"
+!include "TextFunc.nsh"
+!include "Junction.nsh"
+
+Var FIREWALL
+
+Name "${PRODUCT_NAME} ${AGENT_VERSION}"
+!If "${INVENTORY_TAG}" == ''
+  OutFile "Pulse-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}.exe"
+!Else
+  OutFile "Pulse-Agent-windows-${GENERATED_SIZE}-${AGENT_VERSION}-${INVENTORY_TAG}.exe"
+!EndIf
+!If "$PROGRAMFILES64" != ""
+  InstallDir "$PROGRAMFILES64\Pulse"
+!Else
+  InstallDir "$PROGRAMFILES\Pulse"
+!EndIf
+InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
+ShowInstDetails show
+
+; Define a few settings
+Section -SETTINGS
+  SetOutPath "$INSTDIR"
+SectionEnd
+
+!define DownloadFile "!insertmacro DownloadFile"
+!macro DownloadFile url filename
+  ${LogString} "Downloading ${url}"
+  inetc::get /NOCANCEL ${url} ${filename} /END
+  Pop $0 ;Get the return value
+  StrCmp $0 "OK" +8
+    ${LogString} "Download failed: $0"
+    ${IfNot} ${Silent}
+      MessageBox MB_OK|MB_ICONSTOP "Download of ${url} failed: $0$\n\
+      Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 103
+    Quit
+  ${LogString} "Return code was: $0"
+!macroend
+
+
+; ####################### Python installation #######################
+Section "Python" sec_py
+  SetOutPath "$INSTDIR\tmp"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
+  @@FULL_OR_DL_PYTHON64@@
+  @@FULL_OR_DL_PY_VCPYTHON27@@
+  @@FULL_OR_DL_LIBCURL@@
+  ${LogString} "Python Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; On win32 clean old python if installed
+  ${If} ${RunningX64}
+    ClearErrors
+    ExecWait '"python" -V'
+    ${IfNot} ${Errors}
+        ; Seems Python is installed. We'll try to uninstall the 32bit version
+        ${LogString} "Uninstalling 32bit python if found..."
+        StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813232} /qn /norestart`
+        ${LogString} "Running $0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+        ${Switch} $1
+          ${Case} "0"
+              StrCpy $0 `Return code was: $1`
+              ${Break}
+          ${Case} "1605"
+              ;1605 This error is returned when you attempted to uninstall an application that isn't actually installed on a target system.
+              StrCpy $0 `No previous installation`
+              ${Break}
+          ${Default}
+              ${LogString} `Something else happened : $1`
+              ${IfNot} ${Silent}
+                  MessageBox MB_OK|MB_ICONSTOP "Uninstalling 32bit python failed. $\n\
+                  Please check the logs in $INSTDIR\tmp\install.log"
+              ${EndIf}
+              SetErrorLevel 102
+              Quit
+        ${EndSwitch}
+        ${LogString} $0
+    ${EndIf}
+  ${EndIf}
+
+  ; Install of Python
+  ; Get location
+  Var /GLOBAL PYTHON_FILENAME
+  StrCpy $PYTHON_FILENAME "${PYTHON64_FILENAME}"
+  ; Install Python
+  InstallPython:
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\$PYTHON_FILENAME" /quiet /qn /norestart ALLUSERS=1 ADDLOCAL=ALL REMOVE="pip_feature"`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "3010"
+        StrCpy $0 `Return code : 3010 OK`
+        ;3010 ERROR_SUCCESS_REBOOT_REQUIRED
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Python installation failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 104
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  ; Install pip
+  StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+
+    ; Seems Python is installed.
+    ${LogString} "Uninstalling 64bit python if found..."
+    StrCpy $0 `msiexec /x {79F081BF-7454-43DB-BD8F-9EE596813233} /qn /norestart`
+    ${LogString} "Running $0"
+    nsExec::ExecToLog $0
+
+    ; Clear Python is missed configured
+    ${LogString} "Clearing python if found..."
+    StrCpy $0 `taskkill /F /IM python*`
+    nsExec::ExecToLog $0
+    StrCpy $0 `taskkill /F /IM syncthing*`
+    nsExec::ExecToLog $0
+    StrCpy $0 `attrib -r -s -h -a "C:\Python27"`
+    nsExec::ExecToLog $0
+    StrCpy $0 `rd /s /q "C:\Python27"`
+    nsExec::ExecToLog $0
+    ${LogString} `Return code 0: $0`
+    Goto InstallPython
+  ${EndIf}
+
+  ; Install of Visual C++ Compiler for Python
+  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}" /quiet /qn /norestart ALLUSERS=1`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Visual C++ Compiler for Python installation failed. $\n\
+        Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 106
+    Quit
+  ${EndIf}
+
+  ; Copy libcurl DLL to system32 folder
+  ClearErrors
+  CopyFiles /SILENT "$INSTDIR\tmp\${LIBCURL_FILENAME}" "$SYSDIR"
+  ; This requires a reboot
+  SetRebootFlag true
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "libcurl dll installation failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 107
+    Quit
+  ${EndIf}
+
+  Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
+  Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
+  Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
+SectionEnd
+
+; ####################### Installation of Pulse Agent #######################
+Section "!${PRODUCT_NAME}" sec_app
+  SetOutPath "$INSTDIR\tmp"
+  File "../${PULSE_AGENT_FILENAME}"
+  File "../${AGENT_PLUGINS_FILENAME}"
+  ${LogString} ""
+  ${LogString} "Downloads all dependencies"
+  ${LogString} "------------------------------------------------------"
+  @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
+  @@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@
+
+  ${LogString} "Pulse Agent Installation...."
+  ${LogString} "------------------------------------------------------"
+
+  ; Remove Pulse folder if present
+  ClearErrors
+  ReadRegStr $0 ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString"
+  ${IfNot} ${Errors}
+    ; Remove pulse parameters Folder
+    Delete "$INSTDIR\etc\*.*"
+    ; Remove files from bin
+    Delete "$INSTDIR\bin\*.py*"
+  ${EndIf}
+
+  ; Install of Pulse agent
+  StrCpy $0 `C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Pulse Agent installation failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 128
+    Quit
+  ${EndIf}
+
+  ; Copy of agent config file
+  ClearErrors
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_AGENT_CONFFILE}"
+  ; Copy of agent scheduler config file only if it does not already exist (using overwrite flag)
+  SetOutPath "$INSTDIR\etc"
+  SetOverwrite off
+  File "../config/${PULSE_SCHEDULER_CONFFILE}"
+  SetOverwrite on
+  ; Copy of inventory config file
+  SetOutPath "$INSTDIR\etc"
+  File "../config/${PULSE_INVENTORY_CONFFILE}"
+  ; Copy of start update plugins config files
+  File "../config/${PULSE_STARTUPDATE_CONFFILE}"
+  File "../config/${PULSE_START_CONFFILE}"
+  ; Copy of update plugins conf file
+  File "../config/${PULSE_UPDATEOPENSSH_CONFFILE}"
+  File "../config/${PULSE_UPDATETIGHTVNC_CONFFILE}"
+  ${If} ${Errors}
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 133
+    Quit
+  ${EndIf}
+
+  ; Create log folder to hold agent logs
+  CreateDirectory $INSTDIR\var\log
+
+  ; Create Pulse service
+  SetOutPath "$INSTDIR\bin"
+  File "${PULSE_SERVICE_FILENAME}"
+  StrCpy $0 `SCHTASKS /Delete /TN "${PRODUCT_NAME}" /F`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${Switch} $1
+    ${Case} "0"
+        StrCpy $0 `Return code : $1`
+        ${Break}
+    ${Case} "1"
+        ;1 The system cannot find the file specified..
+        StrCpy $0 `No Pulse Agent task was found`
+        ${Break}
+    ${Default}
+        StrCpy $0 `Return code : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Pulse Agent tasks removal failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 102
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error installing Pulse Agent service. $\n\
+	Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 134
+    Quit
+  ${EndIf}
+
+  ; Create packages folder to hold packages to be deployed on client
+  CreateDirectory $INSTDIR\var\tmp\packages
+  ; Create bin folder
+  CreateDirectory $INSTDIR\bin
+
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error updating Pulse Agent service. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 135
+    Quit
+  ${EndIf}
+
+  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
+  ${LogString} "Running $0"
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  ${LogString} "Return code was: $1"
+  ${IfNot} $1 == 0
+    ${IfNot} ${Silent}
+        MessageBox MB_OK|MB_ICONSTOP "Error restarting Pulse Agent service. $\n\
+    Please check the logs in $INSTDIR\tmp\install.log"
+    ${EndIf}
+    SetErrorLevel 136
+    Quit
+  ${EndIf}
+
+  SectionIn RO
+  WriteUninstaller $INSTDIR\uninstall.exe
+  ; Add ourselves to Add/remove programs
+  ${If} ${RunningX64}
+      SetRegView 64
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+
+
+  ${Else}
+      SetRegView 32
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayName" "${PRODUCT_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "InstallLocation" "$INSTDIR"
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoModify" 1
+      WriteRegDWORD ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "NoRepair" 1
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayName" "${AGENT_DEPS_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "DisplayVersion" "${AGENT_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_DEPS_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayName" "${CHERRYPY_NAME}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "DisplayVersion" "${CHERRYPY_VERSION}"
+      WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_CHERRYPY_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+  ${EndIf}
+
+  ; Write the version installed in registry
+  ${If} ${RunningX64}
+      SetRegView 64
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${AGENT_VERSION}"
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+  ${Else}
+      SetRegView 32
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "CurrentVersion" "${AGENT_VERSION}"
+      WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallLocation" "$INSTDIR"
+  ${EndIf}
+
+  Delete $INSTDIR\tmp\${PULSE_AGENT_FILENAME}
+  Delete $INSTDIR\tmp\${AGENT_PLUGINS_FILENAME}
+  Delete $INSTDIR\tmp\${PULSE_AGENT_TASK_XML_FILENAME}
+  @@DELETE_PY_MODULES_FILENAMES@@
+
+  ${If} ${RunningX64}
+    RMDir /r "$PROGRAMFILES\Pulse"
+  ${EndIf}
+
+  Sleep 20000
+SectionEnd
+
+; What needs to be done for uninstalling
+Section "Uninstall"
+
+  ; Ensure service is running
+  StrCpy $0 `net start pulseagent`
+  nsExec::ExecToLog $0
+
+  RMDir /r /REBOOTOK "$INSTDIR"
+
+  DeleteRegKey HKLM "${PRODUCT_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DEPS_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+  DeleteRegKey HKLM "${NETWORK_UNINST_KEY}"
+  DeleteRegKey HKLM "${OPENSSH_UNINST_KEY}"
+  DeleteRegKey HKLM "${PRODUCT_CHERRYPY_UNINST_KEY}"
+  DeleteRegKey HKLM "${RDP_UNINST_KEY}"
+  DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
+  DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
+
+  ; Stop all Pulse services
+  Call un.StopPulseServices
+SectionEnd
+
+; Functions
+
+Function .onInit
+  ; XP or later
+  ${IfNot} ${AtLeastWinXP}
+    MessageBox MB_OK|MB_ICONSTOP "XP and above required for running ${PRODUCT_NAME}"
+    SetErrorLevel 137
+    Quit
+  ${EndIf}
+
+  ; Make sure client is 64bits
+  ${IfNot} ${RunningX64}
+    ${IfNot} ${Silent}
+    MessageBox MB_OK|MB_ICONSTOP "Pulse Agent only runs on 64bits architecture"
+    ${EndIf}
+    SetErrorLevel 666
+    Quit
+  ${EndIf}
+
+  ; Make sure we are running as admin
+  UserInfo::GetAccountType
+  pop $0
+  ${If} $0 != "admin" ;Require admin rights on NT4+
+    MessageBox MB_OK|MB_ICONSTOP "Administrator rights required!"
+    SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+    Quit
+  ${EndIf}
+
+  ; Create registry keys in 64bit section
+  SetRegView 64
+
+  ; Install log initialization
+  !If "$PROGRAMFILES64" != ""
+    StrCpy $INSTDIR "$PROGRAMFILES64\Pulse"
+  !Else
+    StrCpy $INSTDIR "$PROGRAMFILES\Pulse"
+  !EndIf
+  CreateDirectory "$INSTDIR\tmp"
+  ${LogInit} "$INSTDIR\tmp\install.log"
+  ${LogString} "Starting install..."
+  !insertmacro GetTime
+  ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
+  ${LogString} "Start time: $3 $0/$1/$2 at $4:$5:$6"
+
+  ; Unlock Powershell
+  ${LogString} ""
+  ${LogString} "Backup and unlock powershell execution policy"
+  ${LogString} "------------------------------------------------------"
+  CreateDirectory "$INSTDIR\bin"
+  SetOutPath "$INSTDIR\bin"
+
+  ; Detect Firewall status
+  StrCpy $0 `netsh advfirewall show allprofiles`
+  ${LogString} "Running $0"
+  nsExec::ExecToStack $0
+  Pop $0
+  Pop $1
+  StrCpy $FIREWALL $0
+  ${LogString} "Firewall status is : $FIREWALL"
+
+FunctionEnd
+
+Function un.onInit
+  ; Create registry keys in 64bit section
+  SetRegView 64
+FunctionEnd
+
+Function .onGUIEnd
+  ; Write the log file
+  !insertmacro Log_Close
+FunctionEnd
+
+Function .onMouseOverSection
+  ; Find which section the mouse is over, and set the corresponding description.
+  FindWindow $R0 "#32770" "" $HWNDPARENT
+  GetDlgItem $R0 $R0 1043 ; description item (must be added to the UI)
+
+  StrCmp $0 ${sec_py} 0 +3
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:The Python interpreter. \
+          This is required for ${PRODUCT_NAME} to run."
+
+  StrCmp $0 ${sec_app} "" +2
+    SendMessage $R0 ${WM_SETTEXT} 0 "STR:${PRODUCT_NAME}"
+FunctionEnd
+
+; Macro Stop all Pulse services
+!macro StopPulseServices UN
+  Function ${UN}StopPulseServices
+
+  StrCpy $0 `sc query sshd`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop sshd`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old sshd agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query ssh-agent`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop ssh-agent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Old ssh-agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 143
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query pulseagent`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop pulseagent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Case} "1062"
+        ;1062 The service has not been started
+        StrCpy $0 `Service is already stopped`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Pulse agent stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 144
+        Quit
+  ${EndSwitch}
+
+  StrCpy $0 `sc delete pulseagent`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been removed`
+            ${Break}
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `The service does not exists`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Pulse agent service uninstall failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 145
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+
+  StrCpy $0 `sc query pulsenetworknotify`
+  nsExec::ExecToLog $0
+  Pop $1 # return value/error/timeout
+  StrCpy $0 `net stop pulsenetworknotify`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been stopped`
+            ${Break}
+          ${Default}
+            StrCpy $0 `Service is already stopped`
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `No previous installation`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Network Notify stop failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 144
+        Quit
+  ${EndSwitch}
+
+  StrCpy $0 `sc delete pulsenetworknotify`
+  ${LogString} `Running $0`
+  ${Switch} $1
+    ${Case} "0"
+        nsExec::ExecToLog $0
+        Pop $1 # return value/error/timeout
+          ${Switch} $1
+          ${Case} "0"
+            StrCpy $0 `Service has been removed`
+            ${Break}
+          ${EndSwitch}
+        ${Break}
+    ${Case} "1060"
+        ;1060 The specified service does not exist as an installed service.
+        StrCpy $0 `The service does not exists`
+        ${Break}
+    ${Default}
+        ${LogString} `Something else happened : $1`
+        ${IfNot} ${Silent}
+            MessageBox MB_OK|MB_ICONSTOP "Network Notify service uninstall failed. $\n\
+            Please check the logs in $INSTDIR\tmp\install.log"
+        ${EndIf}
+        SetErrorLevel 145
+        Quit
+  ${EndSwitch}
+  ${LogString} $0
+  FunctionEnd
+
+!macroend
+!insertmacro StopPulseServices ""
+!insertmacro StopPulseServices "un."

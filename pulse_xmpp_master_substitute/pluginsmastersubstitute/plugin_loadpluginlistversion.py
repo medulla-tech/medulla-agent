@@ -22,17 +22,10 @@
 
 import base64
 import json
-import sys, os
+import os
 import logging
-import platform
-from lib.utils import file_get_contents, \
-                      getRandomName, \
-                      data_struct_message, \
-                      add_method
 import traceback
-from sleekxmpp import jid
 import ConfigParser
-from ConfigParser import  NoOptionError, NoSectionError
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
 
@@ -41,7 +34,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.0", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
+plugin = {"VERSION" : "1.1", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
 
 def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
@@ -53,9 +46,12 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
 
     if compteurcallplugin == 0:
         read_conf_load_plugin_list_version(objectxmpp)
-        objectxmpp.schedule('updatelistplugin', 900, objectxmpp.loadPluginList, repeat=True)
-
-    objectxmpp.loadPluginList()
+        objectxmpp.schedule('updatelistplugin',
+                            objectxmpp.reload_plugins_interval,
+                            objectxmpp.loadPluginList,
+                            repeat=True)
+        logger.debug("status plugin : %s"%hasattr(objectxmpp, "loadPluginList"))
+        objectxmpp.loadPluginList()
 
 def read_conf_load_plugin_list_version(objectxmpp):
     """
@@ -69,9 +65,9 @@ def read_conf_load_plugin_list_version(objectxmpp):
     if not os.path.isfile(pathfileconf):
         logger.error("plugin %s\nConfiguration file  missing\n  %s" \
             "\neg conf:\n[parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"%(plugin['NAME'], pathfileconf))
-
         logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
+        objectxmpp.reload_plugins_interval=1000
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -80,6 +76,13 @@ def read_conf_load_plugin_list_version(objectxmpp):
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
         if Config.has_option("parameters", "dirpluginlist"):
             objectxmpp.dirpluginlist = Config.get('parameters', 'dirpluginlist')
+
+        if Config.has_option("parameters", "reload_plugins_interval"):
+            objectxmpp.reload_plugins_interval = Config.getint('parameters', 'reload_plugins_interval')
+        else:
+            objectxmpp.reload_plugins_interval = 1000
+    logger.debug("directory base plugins is %s"% objectxmpp.dirpluginlist)
+    logger.debug("reload plugins interval%s"%objectxmpp.reload_plugins_interval)
     # loadPluginList function definie dynamiquement
     objectxmpp.file_deploy_plugin = []
     objectxmpp.loadPluginList = types.MethodType(loadPluginList, objectxmpp)
@@ -87,7 +90,7 @@ def read_conf_load_plugin_list_version(objectxmpp):
     #objectxmpp.restartAgent = types.MethodType(restartAgent, objectxmpp)
     objectxmpp.remoteinstallPlugin = types.MethodType(remoteinstallPlugin, objectxmpp)
     objectxmpp.deployPlugin = types.MethodType(deployPlugin, objectxmpp)
-    objectxmpp.pulgin_loadpluginlistversion = types.MethodType(pulgin_loadpluginlistversion, objectxmpp)
+    objectxmpp.plugin_loadpluginlistversion = types.MethodType(plugin_loadpluginlistversion, objectxmpp)
 
 def loadPluginList(self):
     """ charges les informations des plugins 'nom plugins et version' pour
@@ -111,7 +114,7 @@ def loadPluginList(self):
                     self.plugindata[plugin['NAME']] = plugin['VERSION']
                     try:
                         self.plugintype[plugin['NAME']] = plugin['TYPE']
-                    except:
+                    except Exception:
                         self.plugintype[plugin['NAME']] = "machine"
                     break
         else:
@@ -139,37 +142,37 @@ def remoteinstallPlugin(self):
         self.event('restartmachineasynchrone', jidmachine)
 
 def deployPlugin(self, jid, plugin):
-        content = ''
-        fichierdata = {}
-        namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
-        if os.path.isfile(namefile):
-            logger.debug("File plugin found %s" % namefile)
-        else:
-            logger.error("File plugin found %s" % namefile)
-            return
-        try:
-            fileplugin = open(namefile, "rb")
-            content = fileplugin.read()
-            fileplugin.close()
-        except:
-            logger.error("File read error\n%s"%(traceback.format_exc()))
-            return
-        fichierdata['action'] = 'installplugin'
-        fichierdata['data'] = {}
-        dd = {}
-        dd['datafile'] = content
-        dd['pluginname'] = "plugin_%s.py" % plugin
-        fichierdata['data'] = base64.b64encode(json.dumps(dd))
-        fichierdata['sessionid'] = "sans"
-        fichierdata['base64'] = True
-        try:
-            self.send_message(mto=jid,
-                              mbody=json.dumps(fichierdata),
-                              mtype='chat')
-        except:
-            logger.error("\n%s"%(traceback.format_exc()))
+    content = ''
+    fichierdata = {}
+    namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
+    if os.path.isfile(namefile):
+        logger.debug("File plugin found %s" % namefile)
+    else:
+        logger.error("The plugin file %s does not exists" % namefile)
+        return
+    try:
+        fileplugin = open(namefile, "rb")
+        content = fileplugin.read()
+        fileplugin.close()
+    except Exception:
+        logger.error("File read error\n%s" % (traceback.format_exc()))
+        return
+    fichierdata['action'] = 'installplugin'
+    fichierdata['data'] = {}
+    dd = {}
+    dd['datafile'] = content
+    dd['pluginname'] = "plugin_%s.py" % plugin
+    fichierdata['data'] = base64.b64encode(json.dumps(dd))
+    fichierdata['sessionid'] = "sans"
+    fichierdata['base64'] = True
+    try:
+        self.send_message(mto=jid,
+                          mbody=json.dumps(fichierdata),
+                          mtype='chat')
+    except Exception:
+        logger.error("\n%s"%(traceback.format_exc()))
 
-def pulgin_loadpluginlistversion(self, msg, data):
+def plugin_loadpluginlistversion(self, msg, data):
     #function de rappel dans boucle de message.
     #cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
     # Show plugins information logs
@@ -180,7 +183,7 @@ def pulgin_loadpluginlistversion(self, msg, data):
             # Check version
             if data['plugin'][k] != v:
                 deploy = True
-        except:
+        except Exception:
             deploy = True
         if data['agenttype'] != "all":
             if data['agenttype'] == "relayserver" and self.plugintype[k] == 'machine':
@@ -188,11 +191,13 @@ def pulgin_loadpluginlistversion(self, msg, data):
             if data['agenttype'] == "machine" and self.plugintype[k] == 'relayserver':
                 deploy = False
         if deploy:
-            logger.info("update %s version %s to version %s on Agent " % (k,
-                                                                    data['plugin'][k],
-                                                                    v,
-                                                                    msg['from']))
+            try:
+                logger.info("update %s version %s to version %s on Agent " % (k,
+                                                                              data['plugin'][k],
+                                                                              v))
+            except KeyError:
+                logger.info("install %s version %s to version on Agent " % (k,v))
             self.file_deploy_plugin.append(
                 {'dest': msg['from'], 'plugin': k, 'type': 'deployPlugin'})
-
             #return True
+    self.remoteinstallPlugin()

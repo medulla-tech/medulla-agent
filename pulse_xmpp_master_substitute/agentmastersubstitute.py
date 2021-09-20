@@ -22,7 +22,6 @@
 import sys
 import os
 import logging
-from sleekxmpp.exceptions import IqError
 from lib.configuration import confParameter
 from lib.utils import DEBUGPULSE, ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi
@@ -32,6 +31,8 @@ from optparse import OptionParser
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
+from lib.plugins.msc import MscDatabase
+from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
 
 
@@ -92,19 +93,42 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     # Setup the command line arguments.
     tg = confParameter( optfileconf )
 
+    configuration_file = "/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini.local"
     # activate module.
-
     if "glpi" in tg.plugins_list:
         logger.info("activate GLPI")
-        Glpi().activate()
+        if not Glpi().activate():
+            logger.error("We failed to connect the Glpi database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     if "xmpp" in tg.plugins_list:
         logger.info("activate XMPP")
-        XmppMasterDatabase().activate()
+        if not XmppMasterDatabase().activate():
+            logger.error("We failed to connect the Xmpp database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     if "kiosk" in tg.plugins_list:
         logger.info("activate KIOSK")
-        KioskDatabase().activate()
+        if not KioskDatabase().activate():
+            logger.error("We failed to connect the Kiok database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
+
+    if "msc" in tg.plugins_list:
+        logger.info("activate MSC")
+        if not MscDatabase().activate():
+            logger.error("We failed to connect the Msc database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
+
+    if "pkgs" in tg.plugins_list:
+        logger.info("activate PKGS")
+        if not PkgsDatabase().activate():
+            logger.error("We failed to connect the Pkgs database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     xmpp = MUCBot( )
     xmpp.register_plugin('xep_0030') # Service Discovery
@@ -113,7 +137,7 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     xmpp.register_plugin('xep_0050') # Adhoc Commands
     xmpp.register_plugin('xep_0199', {'keepalive': True,
                                       'frequency': 600,
-                                      'interval' : 600, 
+                                      'interval': 600,
                                       'timeout'  : 500  })
     xmpp.register_plugin('xep_0077') # In-band Registration
     xmpp['xep_0077'].force_registration = True
@@ -126,7 +150,8 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
             xmpp.process(block=True)
             logging.log(DEBUGPULSE,"terminate infocommand")
             #event for quit loop server tcpserver for kiosk
-        if xmpp.shutdown:break
+        if xmpp.shutdown:
+            break
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux') and  os.getuid() != 0:
@@ -140,7 +165,7 @@ if __name__ == '__main__':
     fileallkey = os.path.join(
             Setdirectorytempinfo(),
             "master-all-RSA.key" )
-    if not (os.path.isfile(filekeypublic) and os.path.isfile(filekeypublic)):
+    if not (os.path.isfile(filekeypublic) and os.path.isfile(fileallkey)):
         print "key missing"
         print ("install key of master in \n\t%s\n\t%s\n\n"%(filekeypublic, fileallkey) )
         print("find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key ")

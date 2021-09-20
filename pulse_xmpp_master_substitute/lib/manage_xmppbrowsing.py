@@ -21,13 +21,14 @@
 #
 # file manage_xmppbrowsing.py
 
-import os, sys
-import json, re
+import os
+import sys
 import logging
-from utils import shellcommandtimeout, file_get_content, simplecommand, decode_strconsole, encode_strconsole
-import zlib
-import base64
+from utils import file_get_content, \
+                  simplecommand, \
+                  decode_strconsole
 import math
+import traceback
 
 logger = logging.getLogger()
 
@@ -54,13 +55,22 @@ class xmppbrowsing:
         #determination programme et fichier generé pour la hierarchi des dossiers
         if sys.platform.startswith('linux'):
             self.jsonfile = os.path.join("/","tmp","treejson.json")
-            self.programmetreejson = os.path.join("/","usr","sbin","pulse-filetree-generator")
+            self.programmetreejson = os.path.join("/",
+                                                  "usr",
+                                                  "sbin",
+                                                  "pulse-filetree-generator")
         elif sys.platform.startswith('win'):
-            self.jsonfile = os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json")
-            self.programmetreejson = os.path.join(os.environ["ProgramFiles"],"Pulse","bin","pulse-filetree-generator.exe")
+            self.jsonfile = os.path.join(os.environ["ProgramFiles"],
+                                         "Pulse",
+                                         "tmp",
+                                         "treejson.json")
+            self.programmetreejson = os.path.join(os.environ["ProgramFiles"],
+                                                  "Pulse",
+                                                  "bin",
+                                                  "pulse-filetree-generator.exe")
         elif sys.platform.startswith('darwin'):
-            self.jsonfile = os.path.join("/","tmp","treejson.json")
-            self.programmetreejson = os.path.join("/","Library","Application Support","Pulse","bin","pulse-filetree-generator")
+            self.jsonfile = os.path.join("/opt", "Pulse", "tmp", "treejson.json")
+            self.programmetreejson = os.path.join("/opt", "Pulse", "bin", "pulse-filetree-generator")
 
         if defaultdir is not None:
             self.defaultdir = defaultdir
@@ -69,38 +79,39 @@ class xmppbrowsing:
 
     def strjsontree(self):
         try:
-            self.jsonfile = self.jsonfile.replace("/","\\");
-            self.jsonfile = self.jsonfile.replace("\\\\","\\");
-            self.jsonfile = self.jsonfile.replace("\"","");
-            if os.path.isfile(self.jsonfile):
-                cont = file_get_content(self.jsonfile)
+            if sys.platform.startswith('win'):
+                cont = file_get_content(os.path.join(os.environ["ProgramFiles"],"Pulse","tmp","treejson.json"))
                 l = decode_strconsole(cont)
                 return l
             else:
-                self.createjsontree()
-            l = decode_strconsole(file_get_content(self.jsonfile))
-            return l
-        except Exception as e:            logger.error("strjsontree %s"%str(e))
+                return {}
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            logger.error("strjsontree %s"%str(e))
         return  {}
 
     def createjsontree(self):
         logging.getLogger().debug("Creation hierarchi file")
         if sys.platform.startswith('win'):
-            cmd ='%s %s %s'%(self.programmetreejson,self.rootfilesystem, self.jsonfile)
+            cmd ='%s %s %s'%(self.programmetreejson,
+                             self.rootfilesystem,
+                             self.jsonfile)
         else:
-            cmd ='%s -r \'%s\' -o "%s"'%(self.programmetreejson, self.rootfilesystem, self.jsonfile)
+            cmd ='%s -r \'%s\' -o "%s"'%(self.programmetreejson,
+                                         self.rootfilesystem,
+                                         self.jsonfile)
         msg = "Generation tree.json command : [%s] "%cmd
         logging.getLogger().debug("%s : "%cmd)
         obj = simplecommand(cmd)
         if obj['code'] != 0 :
             logger.error(obj['result'])
-            if self.objectxmpp != None:
-                self.objectxmpp.xmpplog("error generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
+            if self.objectxmpp is not None:
+                self.objectxmpp.xmpplog("Error generating tree for machine %s [command :%s]"%(self.objectxmpp.boundjid.bare,
                                                                                          cmd),
                                         type = 'noset',
                                         sessionname = '',
                                         priority = 0,
-                                        action = "",
+                                        action = "xmpplog",
                                         who = self.objectxmpp.boundjid.bare,
                                         how = "Remote",
                                         why = "",
@@ -108,19 +119,19 @@ class xmppbrowsing:
                                         fromuser = "",
                                         touser = "")
             return
-        if self.objectxmpp != None:
-                self.objectxmpp.xmpplog("generate tree for machine %s [cmd :%s]"%(self.objectxmpp.boundjid.bare,
-                                                                                  cmd),
-                                        type = 'noset',
-                                        sessionname = '',
-                                        priority = 0,
-                                        action = "",
-                                        who = self.objectxmpp.boundjid.bare,
-                                        how = "Remote",
-                                        why = "",
-                                        module = "Error| Notify | browsing",
-                                        fromuser = "",
-                                        touser = "")
+        if self.objectxmpp is not None:
+            self.objectxmpp.xmpplog("Generating tree for machine %s [command :%s]" % (self.objectxmpp.boundjid.bare,
+                                                                                      cmd),
+                                    type='noset',
+                                    sessionname='',
+                                    priority=0,
+                                    action="xmpplog",
+                                    who=self.objectxmpp.boundjid.bare,
+                                    how="Remote",
+                                    why="",
+                                    module="Error| Notify | browsing",
+                                    fromuser="",
+                                    touser="")
         logger.debug(msg)
 
     def _convert_size(self, size_bytes):
@@ -151,7 +162,7 @@ class xmppbrowsing:
         ###path_abs_current
         logging.getLogger().debug("---------------------------------------------------------")
         logging.getLogger().debug("search files and folders list for %s : "%path_abs_current)
-        logging.getLogger().debug("---------------------------------------------------------")        
+        logging.getLogger().debug("---------------------------------------------------------")
         boolhierarchy = False
         if path_abs_current is  None or path_abs_current == "":
             self.initialisation = 0

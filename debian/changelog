@@ -1,3 +1,33 @@
+pulse-xmpp-agent (2.1.5-1) unstable; urgency=low
+  
+ * New version 2.1.5
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 31 Mar 2021 10:48:04 +0200
+
+pulse-xmpp-agent (2.1.4-1) unstable; urgency=low
+  
+ * New version 2.1.4
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Fri, 19 Mar 2021 10:48:04 +0200
+
+pulse-xmpp-agent (2.0.8-1) unstable; urgency=low
+  
+ * New version 2.0.8
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 28 Apr 2020 16:55:04 +0200
+
+pulse-xmpp-agent (2.0.7-1) unstable; urgency=low
+
+ * New version 2.0.7
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Thu, 09 Apr 2020 09:59:04 +0200
+
+pulse-xmpp-agent (2.0.6-1) unstable; urgency=low
+
+ * New version 2.0.6
+
+ -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 30 Jan 2017 14:21:01 +0200
+
 pulse-xmpp-agent (1.2-1) unstable; urgency=low
 
  * New version 1.2 ( 0da3aff0602261922c4d4edac87a587d281f6afd )
@@ -36,7 +66,7 @@ pulse-xmpp-agent (1.0-6) unstable; urgency=low
 
 pulse-xmpp-agent (1.0-5) unstable; urgency=low
 
- * Fix startup script 
+ * Fix startup script
 
  -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Mon, 09 Jan 2017 14:21:01 +0200
 
@@ -90,13 +120,13 @@ pulse-xmpp-agent (0.1-39) unstable; urgency=low
 
 pulse-xmpp-agent (0.1-38) unstable; urgency=low
 
- * Fix translations ( 44dd6f028ce3af1904dc99635631ef541b4dfd64 ) 
+ * Fix translations ( 44dd6f028ce3af1904dc99635631ef541b4dfd64 )
 
  -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
 
 pulse-xmpp-agent (0.1-37) unstable; urgency=low
 
- * Translation fixes ( 0a3e7df763f17052576e35c9469cfdc50b13376c ) 
+ * Translation fixes ( 0a3e7df763f17052576e35c9469cfdc50b13376c )
 
  -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
 
@@ -114,7 +144,7 @@ pulse-xmpp-agent (0.1-35) unstable; urgency=low
 
 pulse-xmpp-agent (0.1-34) unstable; urgency=low
 
- * Remove quotes from guacamole baseurl ( e220ad29a1848d971c0750650c568b48080a45a1 ) 
+ * Remove quotes from guacamole baseurl ( e220ad29a1848d971c0750650c568b48080a45a1 )
 
  -- Nicolas Lécureuil <nicolas.lecureuil@siveo.net>  Tue, 11 Oct 2016 14:21:01 +0200
 

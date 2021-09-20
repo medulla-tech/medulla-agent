@@ -25,7 +25,31 @@ import glob
 import os
 import json
 import logging
-from utils import decode_strconsole, loadjsonfile
+from utils import loadjsonfile
+from os import listdir
+import time
+import traceback
+
+
+def clean_session(folder_session):
+    tt = time.time()
+    fichiers = [os.path.join(folder_session, f) for f in listdir(folder_session) if len(f) == 25 and os.path.isfile(os.path.join(folder_session, f)) ]
+    for fic in fichiers:
+        creation =  os.path.getmtime(fic)
+        try:
+            with open(fic) as json_data:
+                data_dict = json.load(json_data)
+            if (data_dict['timevalid'] + creation) < tt:
+                # delete file
+                #print "delete %s"%fic
+                os.remove(fic)
+            else:
+                pass
+                #print "session  %s non terminer"%fic
+        except:
+            os.remove(fic)
+            errorstr = "%s" % traceback.format_exc()
+
 
 class Session(Exception):
     pass
@@ -67,22 +91,25 @@ class sessiondatainfo:
         return json.dumps(session)
 
     def sauvesession(self):
+        """
+            Create file with the sessionid in the name.
+            It saves the file in the python pulse_xmpp_master_substitute folder.
+            Return:
+                It returns True if the file is well created.
+                False, otherwise
+        """
         namefilesession = os.path.join(self.pathfile, self.sessionid)
-        logging.getLogger().debug("save session in file %s" % namefilesession)
-        session = {
-            'sessionid': self.sessionid,
-            'timevalid': self.timevalid,
-            'datasession': self.datasession}
-        # write session.
+        session = {'sessionid': self.sessionid,
+                   'timevalid': self.timevalid,
+                   'datasession': self.datasession}
         try:
             with open(namefilesession, 'w') as f:
                 json.dump(session, f, indent=4)
             return True
         except Exception as e:
-            logging.getLogger().error("impossible ecrire la session %s : %s" %(namefilesession, str(e)))
-            logging.getLogger().error("del fille session")
+            logging.getLogger().error("We encountered an issue while creating the session %s" % namefilesession)
+            logging.getLogger().error("The error is %s" % str(e))
             if os.path.isfile(namefilesession):
-                logging.getLogger().error("fille session %s does not exist"%namefilesession)
                 os.remove(namefilesession)
             return False
         return True
@@ -104,7 +131,7 @@ class sessiondatainfo:
     def removesessionfile(self):
         namefilesession = os.path.join(self.pathfile, self.sessionid)
         if os.path.isfile(namefilesession):
-                os.remove(namefilesession)
+            os.remove(namefilesession)
 
     def getdatasession(self):
         return self.datasession
@@ -121,7 +148,6 @@ class sessiondatainfo:
             return True
         else:
             return self.sauvesession()
-
 
     def settimeout(self, timeminute=10):
         self.timevalid = timeminute
@@ -144,18 +170,14 @@ class sessiondatainfo:
 class session:
     def __init__(self, typemachine=None):
         self.sessiondata = []
-        if(typemachine == "relayserver"):
-            self.dirsavesession = os.path.join(
-                os.path.dirname(
-                    os.path.realpath(__file__)),
-                "..",
-                "sessionsrelayserver")
-        elif typemachine == "machine":
-            self.dirsavesession = os.path.join(os.path.dirname(
-                os.path.realpath(__file__)), "..", "sessionsmachine")
-        else:
-            self.dirsavesession = os.path.join(os.path.dirname(
-                os.path.realpath(__file__)), "..", "sessions")
+        self.sessiondata = []
+        if typemachine is None:
+            typemachine = "sessions"
+        self.dirsavesession = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            "..",
+            str(typemachine))
         if not os.path.exists(self.dirsavesession):
             os.makedirs(self.dirsavesession, mode=0o007)
         logging.getLogger().debug("Manager Session : %s" % self.dirsavesession)
@@ -203,7 +225,7 @@ class session:
                 os.remove(namefilesession)
             return False
         if 'datasession' in session and 'data' in session['datasession'] and 'sessionreload' in session[
-                'datasession']['data'] and session['datasession']['data']['sessionreload'] == True:
+                'datasession']['data'] and session['datasession']['data']['sessionreload'] is True:
             logging.getLogger().debug(
                 "Reload Session %s :  signaled reloadable" %
                 self.dirsavesession)
@@ -340,3 +362,9 @@ class session:
         for i in self.sessiondata:
             if i.sessionid == sessionid:
                 i.setdatasession(data)
+
+    def sessiongetdata(self, sessionid):
+        for i in self.sessiondata:
+            if i.sessionid == sessionid:
+                return i.getdatasession()
+        return None

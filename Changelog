@@ -1,7 +1,144 @@
-pulse-xmpp-agent 2.0.0.1
+pulse-xmpp-agent 2.1.7
 ======================
+* [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.
+* [BUGFIX]  Fix backtrace in the substitute registration when there is more
+than on location.
+* [BUGFIX]  Fix handling some accounts creation
+
+pulse-xmpp-agent 2.1.6
+======================
+* [FEATURE] Change some infos messages into debug
+* [FEATURE] Document more functions
+* [FEATURE] Convergences are now identified by their name + date
+* [FEATURE] Add more error messages to help to find where are the problems. (
+when we cannot contact a database ).
+* [BUGFIX]  Fix backtrace during deployment
+* [BUGFIX]  Fix detection of online/offline machine in the Glpi view
+* [BUGFIX]  Fix escaping symbols to fix backtraces
+* [BUGFIX]  Fix support of older SQLAlchey
+* [BUGFIX]  Fix registry when there is no uuidsetup defined
+* [BUGFIX]  Grant Rights for Admin on the ARS Cluster.
+* [BUGFIX]  Only show setupuuid info message if showinfobool is enable
+* [BUGFIX]  Fix a backtrace when we have a machine with an inventory but no uuid_serial_machine.
+* [BUGFIX]  Fix glpi 9.2 support (add back missing functions)
+* [BUGFIX]  Fix support of accentuated letters glpi <-> pulse
+* [BUGFIX]  Fix glpi 9.5 support
+* [BUGFIX]  Initialise listmodulemmc before use
+* [BUGFIX]  Fix registering ARS
+* [BUGFIX]  Uninstall python and reinstall it if we failed the python pip step
+* [BUGFIX]  Change cluster_resources sql column size to 255
+
+pulse-xmpp-agent 2.1.5
+======================
+* [FEATURE] Add the support of OCS
+* [BUGFIX] Add robustness for pulseuser profile checking
+
+pulse-xmpp-agent 2.1.4
+======================
+* [FEATURE] Add of a parameter to force configuration in case of network change
+* [BUGFIX] Fix replicator.py for relay automatic updates
+* [BUGFIX] Fix a segfault in guacamoleconf
+
+pulse-xmpp-agent 2.1.3
+======================
+* [FEATURE]  Add plugin to install fileviewer
+* [FEATURE]  Add Glpi 9.5 support
+* [FEATURE]  Add Openssh update plugin
+* [FEATURE]  Add Syncthing update plugin
+* [FEATURE]  Add FusionInventory update plugin
+* [FEATURE]  Add Pulse Network Notify update plugin
+* [FEATURE]  Add Tighvnc update plugin
+* [FEATURE]  Clean installer to install only pulse + python  (and deps)
+* [FEATURE]  Fix creation of reverse ssh tunnel
+* [FEATURE]  Add monitoring support
+* [FEATURE]  Add updateuseraccount plugin to create windows pulseuser account
+* [FEATURE]  Fix restarting Agentxmpp if a processus die
+* [FEATURE]  Add log compression support on windows
+* [FEATURE]  Fix finding hostname where domain is written in the /etc/hostname file
+* [BUGFIX] Fix systemd support
+* [BUGFIX] Change pulseuser home folder from /var/lib/pulse2 to /home/pulseuser
+* [BUGFIX] Fix syncthing support
+* [BUGFIX] Fix debugs to be more understandable
+* [BUGFIX] Fix GLPI 0.84 support
+
+pulse-xmpp-agent 2.1.2
+======================
+* [FEATURE]  Use FusionInventory 2.5.2
+
+pulse-xmpp-agent 2.1.1
+======================
+* [FEATURE]  Agents now use ifconfig.co webservice to find location
+* [FEATURE]  Automatic inventories are now sent only if they have changed
+* [FEATURE]  Guacamole operations are now linked to XMPP inventory instead of GLPI
+* [FEATURE]  Update synthing version used to 1.6.1
+* [FEATURE]  Add support for regular expressions for blacklisted mac addresses
+* [FEATURE]  Agents autoupdate by relay servers is now the default method
+* [FEATURE]  P2P deployment now uses separate syncthing instance
+* [BUGFIX]   Fix running of fusion inventory
+* [BUGFIX]   Fix reconfiguration of machines
+* [BUGFIX]   Fix transfer rate limitation for deployments
+* [BUGFIX]   Eliminate mac addresses that are blacklisted as soon as they are received
+* [BUGFIX]   Fix deletion of pulse user profile in agent installer
+* [BUGFIX]   Fix deletion of OpenSSH in agent installer
+* [BUGFIX]   Fix macOS installer
+
+pulse-xmpp-agent 2.1.0
+======================
+* [FEATURE]  Quick deployment: new mode for small packages
+* [FEATURE]  New reconf substitute to allow mass-reconfiguration of machine agents
+* [FEATURE]  New user for transferring files from client machine to pulse main server
+* [BUGFIX]   Improve installer when run in restricted powershell policies
+* [BUGFIX]   Fix linux installer
+* [BUGFIX]   Fix and improve configuration of remote desktop protocols
+
+pulse-xmpp-agent 2.0.7
+======================
+* [BUGFIX]   Improve the handling of errors in the installer
+* [BUGFIX]   Auto-correct deployment errors that can be corrected
+* [BUGFIX]   Fix agent errors linked to internal servers and named pipes
+* [FEATURE]  Optimize the size of the installers
+* [FEATURE]  Pulldirect is now default method if push fails
+
+pulse-xmpp-agent 2.0.6
+======================
+* [BUGFIX]   Review messages sent to the logger
+* [BUGFIX]   Fix Agent Details quick action where the image is not generated
+* [BUGFIX]   Fix Agent Details quick action where the image is not generated
+* [FEATURE]  Allow autoupdate by relay servers instead of main pulse in multisite setups
+* [FEATURE]  Define additional statuses for deployments
+* [FEATURE]  Allow to have more debug information for specific machines only
+* [FEATURE]  Define intervals for calculating fingerprints and reloading plugins
+
+pulse-xmpp-agent 2.0.5
+======================
+* [FEATURE]  Integration of logger and deployment substitutes
+* [BUGFIX]   Fix sockets that are stuck in TIME_WAIT state
+* [BUGFIX]   Force configuration of guacamole if no connection present
+
+pulse-xmpp-agent 2.0.4
+======================
+* [FEATURE]  Integration of assessor and registration substitutes
+
+pulse-xmpp-agent 2.0.3
+======================
+* [BUGFIX]  Fix problem where agent stops after cycling through the alternate
+			connections if no server is available
+* [BUGFIX]  Fix agent configuration when Pulse server is not available when
+			configurator runs
 * [BUGFIX]  Fixe error search last name user on windows
-* [BUGFIX]  Fix searching IP for geolocalisation
+
+pulse-xmpp-agent 2.0.2
+======================
+* Improve use of pulse/pulseuser for file transfert
+
+pulse-xmpp-agent 2.0.1
+======================
+* [Feature] Enable substitute agents by default
+* [Feature] Allow to limite transfert rate when using syncthing
+* [Feature] Add Glpi substitute support
+* [Feature] Allow to use pullrsync without package server
+* [BUGFIX]  Improve syncthing support and API
+* [BUGFIX]  Fix default creation of syncthing config.xml file
 
 pulse-xmpp-agent 2.0.0
 ======================

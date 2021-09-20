@@ -1,0 +1,25 @@
+#!/bin/sh
+# postinst script for #PACKAGE#
+#
+# see: dh_installdeb(1)
+
+set -e
+
+rm -fv /var/lib/pulse2/imaging/postinst/winutils/Pulse-Agent*latest* 
+
+if [ ! -d "/var/lib/pulse2/clients/win" ]; then
+    mkdir /var/lib/pulse2/clients/win
+fi
+
+if [ -d "/var/lib/pulse2/clients/win32" ]; then
+    mv /var/lib/pulse2/clients/win32/*.exe /var/lib/pulse2/clients/win/
+    rm -fr /var/lib/pulse2/clients/win32/
+fi
+
+if [ -d "/var/lib/pulse2/clients/linux" ]; then
+    rm -fr /var/lib/pulse2/clients/linux/
+fi
+
+#DEBHELPER#
+
+exit 0

@@ -24,8 +24,8 @@ kiosk database handler
 """
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
-from sqlalchemy.orm import sessionmaker; Session = sessionmaker()
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import DBAPIError, NoSuchTableError
 from sqlalchemy import update
 from datetime import date, datetime, timedelta
 # PULSE2 modules
@@ -41,9 +41,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
 import functools
-from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.orm import Query
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -51,10 +49,12 @@ except ImportError:
 
 from sqlalchemy.orm import scoped_session
 
+Session = sessionmaker()
+
 class Singleton(object):
 
     def __new__(type, *args):
-        if not '_the_instance' in type.__dict__:
+        if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -105,17 +105,35 @@ class KioskDatabase(DatabaseHelper):
         self.sessionglpi = None
         self.sessionkiosk = None
         self.config = confParameter()
-        # utilisation xmppmaster
-        self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.kiosk_dbuser,
-                                                                          self.config.kiosk_dbpasswd,
-                                                                          self.config.kiosk_dbhost,
-                                                                          self.config.kiosk_dbport,
-                                                                          self.config.kiosk_dbname),
-                                                                          pool_recycle = self.config.dbpoolrecycle,
-                                                                          pool_size = self.config.dbpoolsize)
-        self.Sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
-        self.is_activated = True
-        self.logger.debug("kiosk finish activation")
+        self.logger.info("kiosk parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s, pooltimeout %s" % (self.config.kiosk_dbuser,
+                                                                  self.config.kiosk_dbhost,
+                                                                  self.config.kiosk_dbport,
+                                                                  self.config.kiosk_dbname,
+                                                                  self.config.kiosk_dbpoolrecycle,
+                                                                  self.config.kiosk_dbpoolsize,
+                                                                  self.config.kiosk_dbpooltimeout))
+        try:
+            self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.kiosk_dbuser,
+                                                                               self.config.kiosk_dbpasswd,
+                                                                               self.config.kiosk_dbhost,
+                                                                               self.config.kiosk_dbport,
+                                                                               self.config.kiosk_dbname,
+                                                                               self.config.charset),
+                                                   pool_recycle=self.config.kiosk_dbpoolrecycle,
+                                                   pool_size=self.config.kiosk_dbpoolsize,
+                                                   pool_timeout=self.config.kiosk_dbpooltimeout,
+                                                   convert_unicode=True)
+            self.Sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
+            self.is_activated = True
+            self.logger.debug("kiosk finish activation")
+            return True
+        except Exception as e:
+            self.logger.error("We failed to connect to the Kiosk database.")
+            self.logger.error("Please verify your configuration")
+            self.is_activated = False
+            return False
 
     def initMappers(self):
         """
@@ -134,7 +152,8 @@ class KioskDatabase(DatabaseHelper):
                 logging.getLogger().error(e)
             except Exception, e:
                 logging.getLogger().error(e)
-            if ret: break
+            if ret:
+                break
         if not ret:
             raise "Database kiosk connection error"
         return ret

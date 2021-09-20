@@ -1,0 +1,244 @@
+#!/bin/bash
+
+# -*- coding: utf-8; -*-
+#
+# (c) 2017 siveo, http://www.siveo.net
+#
+# Author(s):
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2.  If not, see <http://www.gnu.org/licenses/>.
+
+echo "INFO: Generating package ${PACKAGE_NAME}..."
+
+# Detect if uuid or uuidgen is available
+if [ -x "$(command -v uuid)" ]; then
+  PACKAGE_UUID=$(uuid)
+  echo "  Package UUID: ${PACKAGE_UUID}"
+elif [ -x "$(command -v uuidgen)" ]; then
+  PACKAGE_UUID=$(uuidgen)
+  echo "  Package UUID: ${PACKAGE_UUID}"
+else
+  echo "ERROR: Please install uuid or uuidgen."
+  exit 1
+fi
+
+# A few settings
+PACKAGE_NAME="Pulse Agent"
+PACKAGE_DESC="XMPP Agent for machines managed by Pulse"
+AGENT_VERSION=$(grep ^AGENT_VERSION= /var/lib/pulse2/clients/win/generate-pulse-agent-win.sh | cut -d '"' -f2)
+PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
+PULSE_MACHINE_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
+PULSE_AGENT_PATH="/var/lib/pulse2/clients"
+dig `hostname -f` +nosearch +short | tail -n1 | grep -q -E '([0-9]{1,3}\.){3}[0-9]{1,3}'
+if [ $? -eq 0 ]; then
+	BASE_URL=http://`hostname -f`/downloads
+else
+	BASE_URL=http://`hostname`/downloads
+fi
+
+
+# First check if the package exists.
+# If it is the case, keep its uuid for deleting it after generation.
+old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/sharing/global/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
+
+# Create the package
+mkdir -p /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
+pushd /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
+
+# Copy the agent and plugins to the package folder
+cp ${PULSE_AGENT_PATH}/${PULSE_AGENT_FILENAME} .
+cp ${PULSE_AGENT_PATH}/${PULSE_MACHINE_PLUGINS_FILENAME} .
+
+# Generate xmppdeploy.json
+cat <<EOF > xmppdeploy.json
+{
+    "info": {
+        "localisation_server": "global",
+        "previous_localisation_server": "global",
+        "description": "${PACKAGE_DESC}",
+        "name": "${PACKAGE_NAME} v${AGENT_VERSION}",
+        "software": "agentxmpp",
+        "transferfile": true,
+        "methodetransfert": "pushrsync",
+        "Dependency": [],
+        "version": "${AGENT_VERSION}",
+        "metagenerator": "manual"
+    },
+    "win": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "typescript": "Batch",
+                "script": "pip install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/win/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
+                "step": 1,
+                "codereturn": "",
+                "action": "actionprocessscriptfile",
+                "success": 2,
+                "error": 7,
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "action": "action_comment",
+                "comment": "INSTALL ENDED RESTART MACHINE",
+                "step": 2
+            },
+            {
+                "typescript": "python",
+"script": "import _winreg\r\nkey = _winreg.OpenKey( _winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\\\\\\Microsoft\\\\\\\Windows\\\\\\\CurrentVersion\\\\\\\Uninstall\\\\\\\Pulse Agent\\\\\\\', 0 , _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY )\r\n_winreg.SetValueEx(key,  'DisplayVersion'  , 0, _winreg.REG_SZ, '${AGENT_VERSION}')\r\n_winreg.CloseKey(key)",
+                "actionlabel": "020e0912",
+                "codereturn": "",
+                "step": 3,
+                "success": 4,
+                "error": 7,
+                "action": "actionprocessscriptfile"
+            },
+            {
+                "action": "actionrestart",
+                "targetrestart": "AM",
+                "step": 4,
+                "error": 7
+            },
+            {
+                "action": "action_comment",
+                "comment": "AGENT MACHINE RESTARTED",
+                "step": 5,
+                "error": 7
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 6
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 7
+            }
+        ]
+    },
+    "linux": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "typescript": "Batch",
+                "script": "pip install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/lin/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
+                "step": 1,
+                "codereturn": "",
+                "action": "actionprocessscriptfile",
+                "success": 3,
+                "error": 4,
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "action": "actionrestart",
+                "targetrestart": "AM",
+                "step": 2
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 3
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 4
+            }
+        ]
+    },
+    "mac": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "typescript": "Batch",
+                "script": "/usr/local/bin/pip2 install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/mac/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
+                "step": 1,
+                "codereturn": "",
+                "action": "actionprocessscriptfile",
+                "success": 3,
+                "error": 4,
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "action": "actionrestart",
+                "targetrestart": "AM",
+                "step": 2
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 3
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 4
+            }
+        ]
+    },
+    "metaparameter": {
+        "win": {
+            "label": {
+            }
+        },
+        "linux": {
+            "label": {
+            }
+        },
+        "mac": {
+            "label": {
+            }
+        },
+        "os": [
+            "win",
+            "linux",
+            "mac"
+        ]
+    }
+}
+EOF
+
+# Generate conf.json
+cat <<EOF > conf.json
+{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux,win,mac", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${AGENT_VERSION}",
+"inventory": {"associateinventory": "1", "licenses": "10000", "queries": {"Qversion": "${AGENT_VERSION}*", "Qvendor": "", "boolcnd": "", "Qsoftware": "pulse*agent"}}, "id": "${PACKAGE_UUID}", "name": "${PACKAGE_NAME} v${AGENT_VERSION}", "metagenerator": "manual"}
+EOF
+
+popd
+
+echo "INFO: Generating package ${PACKAGE_NAME}... Done"
+
+# Change permissions on the package
+chown -R syncthing: /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
+
+# Delete old version if found
+if [[ ${old_uuid} != '' ]]; then
+  echo "INFO: Deleting pakage ${old_uuid}..."
+  rm -rf /var/lib/pulse2/packages/sharing/global/${old_uuid}
+  echo "INFO: Deleting pakage ${old_uuid}... Done"
+fi
+
+# Insert package in database
+echo "INFO: Generating package links and database records..."
+DBHOST=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbhost 2> /dev/null || echo localhost)
+DBPORT=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbport 2> /dev/null || echo 3306)
+DBPASS=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbpasswd)
+DBUSER=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbuser 2> /dev/null || echo mmc)
+/usr/sbin/pulse2-generation_package.py -H ${DBHOST} -P ${DBPORT} -u ${DBUSER} -p ${DBPASS} -g -m -l -r > /tmp/pulse2-generation_package.log
+echo "INFO: Generating package links and database records... Done"

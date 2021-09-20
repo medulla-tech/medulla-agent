@@ -22,8 +22,19 @@
 
 import sys
 import os
+import shutil
+import logging
+logger = logging.getLogger()
+
 
 def directoryconffile():
+    """
+        This function provide the path to the configuration files of pulse-xmpp-agent.
+
+        Return:
+            it returns the path to the configuration files if it exists
+            it returns None if the path does not exist
+    """
     if sys.platform.startswith('linux'):
         fileconf = os.path.join(
             "/",
@@ -36,9 +47,7 @@ def directoryconffile():
             "etc")
     elif sys.platform.startswith('darwin'):
         fileconf = os.path.join(
-            "/",
-            "Library",
-            "Application Support",
+            "/opt",
             "Pulse",
             "etc")
     if os.path.isdir(fileconf):
@@ -46,16 +55,41 @@ def directoryconffile():
     else:
         return None
 
+
+def pulseTempDir():
+    """
+    This function permits to obtain the temporary folder.
+
+    Returns:
+        It returns the path of pulse temporary folder
+    """
+    if sys.platform.startswith('linux'):
+        tempdir = os.path.join(
+            "/",
+            "tmp")
+    elif sys.platform.startswith('win'):
+        tempdir = os.path.join(
+            os.environ["ProgramFiles"],
+            "Pulse",
+            "tmp")
+    elif sys.platform.startswith('darwin'):
+        tempdir = os.path.join(
+            "/opt",
+            "Pulse",
+            "tmp")
+
+    return tempdir
+
+
 def conffilename(agenttype):
     """
-        Function defining where the configuration file is located.
-        configuration file for the type of machine and the Operating System
+        This function define where the configuration file is located.
 
         Args:
-        agenttype: type of the agent, relay or machine or (cluster for ARS)
+            agenttype: type of the agent, relay or machine or cluster for RelayServer
 
         Returns:
-        Return the config file path
+            Return the config file path
 
     """
     if agenttype in ["machine"]:
@@ -64,32 +98,63 @@ def conffilename(agenttype):
         conffilenameparameter = "cluster.ini"
     else:
         conffilenameparameter = "relayconf.ini"
-    if sys.platform.startswith('linux'):
-        fileconf = os.path.join(
-            "/",
-            "etc",
-            "pulse-xmpp-agent",
-            conffilenameparameter)
-    elif sys.platform.startswith('win'):
-        fileconf = os.path.join(
-            os.environ["ProgramFiles"],
-            "Pulse",
-            "etc",
-            conffilenameparameter)
-    elif sys.platform.startswith('darwin'):
-        fileconf = os.path.join(
-            "/",
-            "Library",
-            "Application Support",
-            "Pulse",
-            "etc",
-            conffilenameparameter)
+
+    if directoryconffile() is not None:
+        fileconf = os.path.join(directoryconffile(), conffilenameparameter)
     else:
         fileconf = conffilenameparameter
+
     if conffilenameparameter == "cluster.ini":
         return fileconf
+
     if os.path.isfile(fileconf):
         return fileconf
     else:
         return conffilenameparameter
 
+
+def conffilenametmp(agenttype):
+    """
+        This function define where the configuration file tmp is located.
+
+        Args:
+            agenttype: type of the agent, relay or machine or cluster for RelayServer
+
+        Returns:
+            Return the config file path
+
+    """
+    if agenttype in ["machine"]:
+        conffilenameparameter = "agentconftmp.ini"
+    elif agenttype in ["cluster"]:
+        conffilenameparameter = "clustertmp.ini"
+    else:
+        conffilenameparameter = "relayconftmp.ini"
+
+    if directoryconffile() is not None:
+        fileconf = os.path.join(directoryconffile(), conffilenameparameter)
+    else:
+        fileconf = conffilenameparameter
+
+    if conffilenameparameter == "clustertmp.ini":
+        return fileconf
+
+    return fileconf
+
+
+def rotation_file(namefile, suffixe=""):
+    """
+    This function exec rotation file.
+
+        Args:
+            namefile: name file rotation
+
+    """
+    if suffixe != "": suffixe = "_" + suffixe
+    for x in range(5,0,-1):
+        src = "%s%s_%s"%(namefile,suffixe, x)
+        dest = "%s%s_%s"%(namefile,suffixe, x+1)
+        if  os.path.isfile(src):
+            shutil.copyfile(src, dest)
+        if x == 1:
+            shutil.copyfile(namefile, dest)
