@@ -73,7 +73,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         '',
                                         'QuickAction |Inventory | Inventory requested',
                                         '',
-                                        '',
+                                        xmppobject.boundjid.bare,
                                         xmppobject.boundjid.bare)
         if nbsize < 250:
             XmppMasterDatabase().setlogxmpp('<span class="log_warn">Inventory XML size: %s byte</span>' % nbsize,
@@ -85,10 +85,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             '',
                                             'Inventory | Notify',
                                             '',
-                                            '',
+                                            xmppobject.boundjid.bare,
                                             xmppobject.boundjid.bare)
         time.sleep(15)
-        if not XmppUpdateInventoried(msg['from'], machine):
+        uuidglpi = XmppUpdateInventoried(msg['from'], machine)
+        if  uuidglpi == -1:
             logger.error("After injection of the inventory, no inventory is found for the address Macs." )
             XmppMasterDatabase().setlogxmpp('<span class="log_err">Injection of inventory for machine %s failed</span>' % (msg['from']),
                                             "Inventory",
@@ -99,7 +100,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             '',
                                             'Inventory | Notify | Error',
                                             '',
-                                            '',
+                                            xmppobject.boundjid.bare,
                                             xmppobject.boundjid.bare)
 
         # save registry inventory
@@ -118,7 +119,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         '',
                                         'QuickAction | Inventory | Inventory requested',
                                         '',
-                                        '',
+                                        xmppobject.boundjid.bare,
                                         xmppobject.boundjid.bare)
 
         if reginventory:
@@ -154,13 +155,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     '',
                                                     'QuickAction |Inventory | Inventory requested',
                                                     '',
-                                                    '',
+                                                    xmppobject.boundjid.bare,
                                                     xmppobject.boundjid.bare)
-                    Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
+                    #Glpi().addRegistryCollectContent(machine['id'], registry_id, key_name, reg_key_value)
+                    if uuidglpi != -1:
+                        Glpi().addRegistryCollectContent(uuidglpi, registry_id, key_name, reg_key_value)
                 except Exception, e:
                     logger.error("getting key: %s\n%s" %(str(e),traceback.format_exc()))
                     pass
-        time.sleep(25)
+        #time.sleep(25)
         # restart agent
         # xmppobject.restartAgent(msg['from'])
     except Exception, e:
@@ -201,9 +204,11 @@ def XmppUpdateInventoried(jid, machine):
                 logger.debug("correct uuid_inventorymachine " \
                     "in table machine id(%s) uuid_inventorymachine(%s)" %  (machine['id'],
                                                                             machine['uuid_inventorymachine']))
-                return True
+                return setupuuid['id']
             XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
-            return True
+            XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
+                                                                      uuid)
+            return setupuuid['id']
     # update on mac address
     try:
         result = XmppMasterDatabase().listMacAdressforMachine(machine['id'])
@@ -222,11 +227,11 @@ def XmppUpdateInventoried(jid, machine):
                                                                                     uuid))
                     XmppMasterDatabase().replace_Organization_ad_id_inventory(machine['uuid_inventorymachine'],
                                                                                 uuid)
-                XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
-                return True
+                    XmppMasterDatabase().updateMachineidinventory(uuid, machine['id'])
+                return computer.id
     except KeyError:
         logger.error("An error occurred on machine %s and we did not receive any inventory,"
                      "make sure fusioninventory is running correctly" % machine)
     except Exception:
         logger.error("** Update error on inventory %s\n%s" % (jid, traceback.format_exc()))
-    return False
+    return -1

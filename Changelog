@@ -1,3 +1,44 @@
+pulse-xmpp-agent 2.1.7
+======================
+* [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.
+* [BUGFIX]  Fix backtrace in the substitute registration when there is more
+than on location.
+* [BUGFIX]  Fix handling some accounts creation
+
+pulse-xmpp-agent 2.1.6
+======================
+* [FEATURE] Change some infos messages into debug
+* [FEATURE] Document more functions
+* [FEATURE] Convergences are now identified by their name + date
+* [FEATURE] Add more error messages to help to find where are the problems. (
+when we cannot contact a database ).
+* [BUGFIX]  Fix backtrace during deployment
+* [BUGFIX]  Fix detection of online/offline machine in the Glpi view
+* [BUGFIX]  Fix escaping symbols to fix backtraces
+* [BUGFIX]  Fix support of older SQLAlchey
+* [BUGFIX]  Fix registry when there is no uuidsetup defined
+* [BUGFIX]  Grant Rights for Admin on the ARS Cluster.
+* [BUGFIX]  Only show setupuuid info message if showinfobool is enable
+* [BUGFIX]  Fix a backtrace when we have a machine with an inventory but no uuid_serial_machine.
+* [BUGFIX]  Fix glpi 9.2 support (add back missing functions)
+* [BUGFIX]  Fix support of accentuated letters glpi <-> pulse
+* [BUGFIX]  Fix glpi 9.5 support
+* [BUGFIX]  Initialise listmodulemmc before use
+* [BUGFIX]  Fix registering ARS
+* [BUGFIX]  Uninstall python and reinstall it if we failed the python pip step
+* [BUGFIX]  Change cluster_resources sql column size to 255
+
+pulse-xmpp-agent 2.1.5
+======================
+* [FEATURE] Add the support of OCS
+* [BUGFIX] Add robustness for pulseuser profile checking
+
+pulse-xmpp-agent 2.1.4
+======================
+* [FEATURE] Add of a parameter to force configuration in case of network change
+* [BUGFIX] Fix replicator.py for relay automatic updates
+* [BUGFIX] Fix a segfault in guacamoleconf
+
 pulse-xmpp-agent 2.1.3
 ======================
 * [FEATURE]  Add plugin to install fileviewer

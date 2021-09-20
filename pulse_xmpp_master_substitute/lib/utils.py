@@ -56,6 +56,7 @@ import random
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
+import string
 
 if sys.platform.startswith('win'):
     import wmi
@@ -65,12 +66,35 @@ if sys.platform.startswith('win'):
     import win32security
     import ntsecuritycon
     import win32net
+    import ctypes
     import win32com.client
     from win32com.client import GetObjectif
+    import ctypes
+    from ctypes.wintypes import LPCWSTR, LPCSTR, WinError
+if sys.platform.startswith('linux'):
+    import pwd
+    import grp
+
+if sys.platform.startswith('darwin'):
+    import pwd
+    import grp
 
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
+
+
+class Env(object):
+    agenttype = None # Non specified by default
+    @staticmethod
+    def user_dir():
+        """Get the user folder for linux OS."""
+        if Env.agenttype is None:
+            raise NotImplementedError("The class attribute aggenttype need to be initialized\neg:  Env.agenttype = 'machine'")
+        if Env.agenttype == "relayserver":
+            return os.path.join("/", "var", "lib", "pulse2")
+        else:
+            return os.path.expanduser('~pulseuser')
 
 # debug decorator
 def minimum_runtime(t):
@@ -1095,7 +1119,6 @@ def ipV4toDecimal(ipv4):
     return (int(d[0]) * 256 * 256 * 256) + (int(d[1])
                                             * 256 * 256) + (int(d[2]) * 256) + int(d[3])
 
-
 def decimaltoIpV4(ipdecimal):
     a = float(ipdecimal) / (256 * 256 * 256)
     b = (a - int(a)) * 256
@@ -1103,12 +1126,17 @@ def decimaltoIpV4(ipdecimal):
     d = (c - int(c)) * 256
     return "%s.%s.%s.%s" % (int(a), int(b), int(c), int(d))
 
-
 def subnetnetwork(adressmachine, mask):
     adressmachine = adressmachine.split(":")[0]
     reseaumachine = ipV4toDecimal(adressmachine) & ipV4toDecimal(mask)
     return decimaltoIpV4(reseaumachine)
 
+def subnet_address(address,maskvalue):
+    addr = [int(x) for x in adress.split(".")]
+    mask = [int(x) for x in maskvalue.split(".")]
+    subnet = [addr[i] & mask[i] for i in range(4)]
+    broadcast =  [(addr[i] & mask[i]) | (255^mask[i]) for i in range(4)]
+    return ".".join([str(x) for x in subnet]), '.'.join([str(x) for x in broadcast])
 
 def find_ip():
     candidates =[]
@@ -2060,7 +2088,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error creating key at %s' % id_rsa_path
+    msg = 'Error add key to authorizedkeys: id_rsa_path missing'
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):

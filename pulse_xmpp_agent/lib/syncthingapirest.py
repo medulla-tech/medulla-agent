@@ -44,12 +44,13 @@ from lxml import etree
 import urllib
 import socket
 from threading import Lock
-from utils import Program, getRandomName, simplecommand, file_put_contents
+from utils import Program, getRandomName, simplecommand, file_put_contents, simplecommand
 import logging
 import traceback
 import time
 import os
 import sys
+import ConfigParser
 from urlparse import urlparse
 
 logger = logging.getLogger()
@@ -70,14 +71,40 @@ def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/con
             return root, hostname
     return root, ""
 
-
 def conf_ars_deploy(port=23000,
                     configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
-                    name="pulse"):
+                    deviceName="pulse"):
+    """
+    It updates the address field in the configuration file for the specified device.
+
+    Args:
+        port: The synthinc port used
+        configifile: The syncthing configuration file used
+        deviceName: The syncthing's device name
+
+    Returns:
+        It create a new syncthing configuration file with the new informations
+    """
+    if deviceName != "":
+        logger.info("xml conf : %s device  %s" % (configfile, deviceName))
+
     root, adressurl = read_serverannonce(configfile)
     if adressurl != "":
-        pathxmldevice = ".//device[@name ='%s']/address" % name
+        pathxmldevice = ".//device[@name ='%s']" % deviceName
         listresult = root.xpath(pathxmldevice)
+        if len(listresult) != 1:
+            if len(listresult) == 0:
+                msg ="%s device is not present in Synthing configuration."\
+                            " Please make sure Syncthing is properly configured" % deviceName
+            else:
+                msg ="Two devices or more named '%s' are configured in Syncthing."\
+                    " Please check Syncthing config [%s] to remove the unused one" % (deviceName, configfile)
+
+            logger.error("%s" % msg)
+            pathxmldeviceerrormsg = ".//device[@name ='%s']" % deviceName
+            listresulterrordevice = root.xpath(pathxmldeviceerrormsg)
+            for devicexml in listresulterrordevice:
+                 logger.error("%s"%etree.tostring(devicexml, pretty_print=True))
         if listresult:
             device = listresult[0].getparent()
             for t in listresult:
@@ -87,35 +114,47 @@ def conf_ars_deploy(port=23000,
             device.append(etree.XML("<address>%s</address>" % adresstcp))
             save_xml_file(root, configfile)
 
-
 def save_xml_file(elementxml,
                   configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
 
+def iddevice(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml", deviceName=None):
+    """
+        This function retrieve the id of the syncthing device.
+        Args:
+            configfile: The configuration file where the id are searched.
+            deviceName: The syncthing's device name.
 
-def iddevice(configfile="/var/lib/pulse2/.config/syncthing/config.xml",
-             hostname=None):
+        Returns:
+            It returns the id of the syncthing device.
+    """
     try:
-        if hostname is None:
-            hostname = socket.gethostname()
+        if deviceName is None:
+            deviceName = socket.gethostname()
 
-        if hostname != "":
-            logger.info("xml conf : %s device id for hostname machine %s" % (configfile, hostname))
+        if deviceName != "":
+            logger.debug("The configuration file is %s" % configfile)
+            logger.debug("The device name is %s" % deviceName)
+
             tree = etree.parse(configfile)
             root = tree.getroot()
-            pathxmldevice = ".//device[@name='%s']" % hostname
+            pathxmldevice = ".//device[@name='%s']" % deviceName
             listresult = root.xpath(pathxmldevice)
-            devid = listresult[0].attrib['id']
-            logger.info("find device id %s" % (devid))
-            return devid
+            if len(listresult) == 0:
+                msg = "The device named %s is not present in the syncthing's configuration."\
+                        " There is no id for this device." % deviceName
+                logger.warning("%s" % msg)
+                return ""
+            deviceID = listresult[0].attrib['id']
+            logger.info("find device id %s" % (deviceID))
+            return deviceID
         else:
             return ""
     except Exception as e :
         logger.error("%s search iddevice syncthing %s" % (str(e), configfile))
         logger.error("\n%s" % (traceback.format_exc()))
         return ""
-
 
 """
     class use for xmpp on each server syncthing in local
@@ -1370,9 +1409,38 @@ class syncthingprogram(Program):
                 self.logfile = "%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']
 
             self.stop_syncthing()
-            cmd = ['%s\\Pulse\\bin\\syncthing.exe'%os.environ['programfiles'],
-                   "-home=%s"%self.home,
-                   "-logfile=%s"%self.logfile]
+
+            agentconf = os.path.join(os.environ['programfiles'], "Pulse", "etc", "agentconf.ini")
+            Config = ConfigParser.ConfigParser()
+            Config.read(agentconf)
+
+            syncthing_bin = os.path.join(os.environ['programfiles'], "Pulse", "bin", "syncthing.exe")
+
+            if not os.path.isfile(syncthing_bin):
+                logger.error("Syncthing is not installed, Changing configuration to not use it yet.")
+
+                is_syncthing_activated = 1
+                if Config.has_option("syncthing", "activation"):
+                    is_syncthing_activated = Config.get('syncthing', 'activation')
+
+                if is_syncthing_activated:
+                    Config.set('syncthing', 'activation', "0")
+                    with open(agentconf, 'w') as configfile:
+                        Config.write(configfile)
+
+                query_cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /s | Find "DisplayVersion"'
+                query_result = simplecommand(query_cmd)
+                if query_result['code'] == 0:
+                    delete_cmd = 'reg delete "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /f'
+                    delete_result = simplecommand(delete_cmd)
+                    if delete_result['code'] == 0:
+                        logger.debug("Syncthing has been removed from the registry")
+
+
+            cmd = [ "%s" % syncthing_bin,
+                   "-home=%s" % self.home,
+                   "-logfile=%s" % self.logfile]
+
             if not self.console:
                 cmd.append('-no-console')
             if not self.browser:

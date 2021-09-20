@@ -39,6 +39,7 @@ import traceback
 import signal
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
+from lib.manage_scheduler import manage_scheduler
 
 import random
 
@@ -65,8 +66,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubstitute"))
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter()
-        logging.log(DEBUGPULSE, "start Master sub (%s)" %(self.config.jidmastersubstitute))
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
+        logging.log(DEBUGPULSE,"Starting Master sub (%s)" %(self.config.jidmastersubstitute))
         sleekxmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
+
+        # We define the type of the Agent
+        self.config.agenttype = 'substitute'
+        self.manage_scheduler = manage_scheduler(self)
+        self.schedule('schedulerfunction',
+                            10 ,
+                            self.schedulerfunction,
+                            repeat=True)
+        logger.debug("##############################################")
 
         ####################Update agent from MAster#############################
         #self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
@@ -194,6 +210,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         if 'xmpp' in self.config.plugins_list:
             XmppMasterDatabase().setlogxmpp(text,
                                             type=type,
@@ -226,6 +244,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.send_message(  mto = jid.JID(self.config.sub_logger),
                                 mbody=json.dumps(msgbody),
                                 mtype='chat')
+    def schedulerfunction(self):
+        self.manage_scheduler.process_on_event()
 
     def register(self, iq):
         """ This function is called for automatic registation """
@@ -237,8 +257,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" %\
-                    e.iq['error']['text'])
+            if e.iq['error']['code'] == "409":
+                logging.warning("Could not register account %s : User already exists" %\
+                        resp['register']['username'])
+            else:
+                logging.error("Could not register account %s : %s" %\
+                        (resp['register']['username'], e.iq['error']['text']))
         except IqTimeout:
             logging.error("No response from server.")
             traceback.print_exc(file=sys.stdout)
@@ -418,4 +442,3 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logger.error("\n%s"%(traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
-

@@ -26,6 +26,30 @@ import os
 import json
 import logging
 from utils import loadjsonfile
+from os import listdir
+import time
+import traceback
+
+
+def clean_session(folder_session):
+    tt = time.time()
+    fichiers = [os.path.join(folder_session, f) for f in listdir(folder_session) if len(f) == 25 and os.path.isfile(os.path.join(folder_session, f)) ]
+    for fic in fichiers:
+        creation =  os.path.getmtime(fic)
+        try:
+            with open(fic) as json_data:
+                data_dict = json.load(json_data)
+            if (data_dict['timevalid'] + creation) < tt:
+                # delete file
+                #print "delete %s"%fic
+                os.remove(fic)
+            else:
+                pass
+                #print "session  %s non terminer"%fic
+        except:
+            os.remove(fic)
+            errorstr = "%s" % traceback.format_exc()
+
 
 class Session(Exception):
     pass
@@ -67,22 +91,25 @@ class sessiondatainfo:
         return json.dumps(session)
 
     def sauvesession(self):
+        """
+            Create file with the sessionid in the name.
+            It saves the file in the python pulse_xmpp_master_substitute folder.
+            Return:
+                It returns True if the file is well created.
+                False, otherwise
+        """
         namefilesession = os.path.join(self.pathfile, self.sessionid)
-        logging.getLogger().debug("save session in file %s" % namefilesession)
-        session = {
-            'sessionid': self.sessionid,
-            'timevalid': self.timevalid,
-            'datasession': self.datasession}
-        # write session.
+        session = {'sessionid': self.sessionid,
+                   'timevalid': self.timevalid,
+                   'datasession': self.datasession}
         try:
             with open(namefilesession, 'w') as f:
                 json.dump(session, f, indent=4)
             return True
         except Exception as e:
-            logging.getLogger().error("impossible ecrire la session %s : %s" %(namefilesession, str(e)))
-            logging.getLogger().error("del fille session")
+            logging.getLogger().error("We encountered an issue while creating the session %s" % namefilesession)
+            logging.getLogger().error("The error is %s" % str(e))
             if os.path.isfile(namefilesession):
-                logging.getLogger().error("fille session %s does not exist"%namefilesession)
                 os.remove(namefilesession)
             return False
         return True

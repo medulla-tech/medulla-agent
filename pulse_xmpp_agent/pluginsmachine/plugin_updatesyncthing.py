@@ -30,11 +30,13 @@ import tempfile
 import shutil
 import ConfigParser
 from lib import utils
-SYNCTHINGVERSION = '1.6.1'
+from xml.etree import ElementTree
+
+SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.10", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.22", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -46,6 +48,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         installed_version = checksyncthingversion()
         if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
             updatesyncthing(xmppobject, installed_version)
+
+        # Configure syncthing
+        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
+        syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
+        if os.path.isfile(syncthing_configfile):
+            configuresyncthing(syncthing_configfile)
+
     except Exception:
         pass
 
@@ -80,6 +89,19 @@ def updatesyncthingversion(version):
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+            logger.info("Syncthing updated to version %s" % SYNCTHINGVERSION)
+
+def configuresyncthing(config_file):
+    tree = ElementTree.parse(config_file)
+    config = tree.getroot()
+    config.find("./options/urAccepted").text = -1
+    config.find("./options/autoUpgradeIntervalH").text = 0
+    config.find("./options/localAnnounceEnabled").text = 'false'
+    config.find("./options/globalAnnounceEnabled").text = 'false'
+    config.find("./options/relaysEnabled").text = 'false'
+    config.find("./options/stunKeepaliveSeconds").text = 0
+    config.find("./options/crashReportingEnabled").text = 'false'
+    tree.write(config_file)
 
 def updatesyncthing(xmppobject, installed_version):
     logger.info("Updating Syncthing to version %s" % SYNCTHINGVERSION)

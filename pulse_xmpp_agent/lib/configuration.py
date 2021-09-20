@@ -39,6 +39,13 @@ import re
 
 logger = logging.getLogger()
 
+def uniq(input):
+  output = []
+  for x in input:
+    if x not in output:
+      output.append(x)
+  return output
+
 def changeconfigurationsubtitute(conffile, confsubtitute):
     """
     This function allow to modify the machine agent to use substitute by default
@@ -53,8 +60,10 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     if not Config.has_section('substitute'):
         Config.add_section('substitute')
     for t in confsubtitute['conflist']:
-        Config.set('substitute', t, ",".join(confsubtitute[t]))
-    logger.info("write parameter subtitute")
+        uniq_list = uniq(confsubtitute[t])
+        Config.set('substitute', t, ",".join(uniq_list))
+        logger.info("application substitut %s for %s"%(uniq_list[0],t))
+    logger.debug("writing parameters of the substitutes")
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
@@ -94,10 +103,7 @@ def alternativeclusterconnection(conffile, data):
         conffile: the configuration file in which we add the alternative cluster
         data: the informations about the cluster
     """
-    # todo del of list the ars without ip
-    #for arsdataconection in data:
-        #if ipfromdns(str(arsdataconection[0])) != "" and check_exist_ip_port(ipfromdns(str(arsdataconection[0])), str(arsdataconection[1])):
-            #print ipfromdns(str(arsdataconection[0]))
+    logger.debug("We write the file %s to handle alternative connections" % conffile)
     with open(conffile, 'w') as configfile:
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]
@@ -290,7 +296,6 @@ class confParameter:
         self.Server = ipfromdns(Config.get('connection', 'server'))
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
-        #jfk
         self.namefileconfig = namefileconfig
         #parameters AM and kiosk tcp server
         self.am_local_port = 8765
@@ -336,6 +341,26 @@ class confParameter:
         except BaseException:
             self.agenttype = "machine"
 
+        if self.agenttype == "machine":
+            self.alwaysnetreconf = False
+            if Config.has_option('connection', 'alwaysnetreconf'):
+                self.alwaysnetreconf = Config.getboolean('connection', 'alwaysnetreconf')
+
+            filePath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                    ".."))
+            path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
+            if self.alwaysnetreconf:
+                # We create the bool file that will force the reconfiguration
+                if not os.path.exists(path_reconf_nomade):
+                    fh = open(path_reconf_nomade, "w")
+                    fh.write("DO NOT REMOVE \n"\
+                        "parameter alwaysnetreconf is True\n "\
+                            "it will reconfigure the machine at every start")
+                    fh.close()
+            else:
+                if os.path.exists(path_reconf_nomade):
+                    os.remove(path_reconf_nomade)
+
         # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":
@@ -379,7 +404,10 @@ class confParameter:
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
         else:
-            self.netchanging = 1
+            if sys.platform.startswith('win'):
+                self.netchanging = 0
+            else:
+                self.netchanging = 1
         logger.info('netchanging %s'%self.netchanging)
 
         if Config.has_option("networkstatus", "detectiontime"):
@@ -530,7 +558,7 @@ class confParameter:
             jidsufixe = utils.getRandomName(3)
             utils.file_put_contents(jidsufixetempinfo, jidsufixe)
         # if aucune interface. il n'y a pas de macs adress. ressource missing
-        try:            
+        try:
             ressource = utils.name_jid()
         except:
             ressource = "missingmac"
@@ -568,9 +596,9 @@ class confParameter:
         self.compress = self.compress.lower()
         if self.compress not in ["zip", "gzip", "bz2","No"]:
             self.compress = "no"
-        defaultnamelogfile = "xmpp-agent-machine.log"  
+        defaultnamelogfile = "xmpp-agent-machine.log"
         if self.agenttype == "relayserver":
-            defaultnamelogfile = "xmpp-agent-relay.log"  
+            defaultnamelogfile = "xmpp-agent-relay.log"
         try:
             self.logfile = Config.get('global', 'logfile')
         except BaseException:
@@ -592,9 +620,12 @@ class confParameter:
                 self.logfile = os.path.join(
                     "/", "var", "log", "pulse", defaultnamelogfile)
 
-        # information configuration dynamique
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get('configuration_server', 'confserver')
+            listserver = [ ipfromdns(x.strip()) for x in self.confserver.split(",")
+                        if x.strip() != ""]
+            listserver = list(set(listserver))
+            self.confserver = listserver[random.randint(0,len(listserver)-1)]
         if Config.has_option("configuration_server", "confport"):
             self.confport = Config.get('configuration_server', 'confport')
         if Config.has_option("configuration_server", "confpassword"):
@@ -631,32 +662,18 @@ class confParameter:
             logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
 
         try:
-            self.debug = Config.get('global', 'log_level')
+            self.levellog = self._levellogdata(Config.get('global', 'log_level'))
         except BaseException:
-            self.debug = 'NOTSET'
-        self.debug = self.debug.upper()
+            self.levellog = 20
+        try:
+            self.log_level_sleekxmpp = self._levellogdata(Config.get('global', 'log_level_sleekxmpp'))
+        except BaseException:
+            self.log_level_sleekxmpp = 50
 
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get('configuration_server', 'confdomain')
         else:
             self.confdomain = "pulse"
-
-        if self.debug == 'CRITICAL':
-            self.levellog = 50
-        elif self.debug == 'ERROR':
-            self.levellog = 40
-        elif self.debug == 'WARNING':
-            self.levellog = 30
-        elif self.debug == 'INFO':
-            self.levellog = 20
-        elif self.debug == 'DEBUG':
-            self.levellog = 10
-        elif self.debug == 'NOTSET':
-            self.levellog = 0
-        elif self.debug == "LOG" or self.debug == "DEBUGPULSE":
-            self.levellog = 25
-        else:
-            self.levellog = 0o2
 
         try:
             self.classutil = Config.get('global', 'agent_space')
@@ -698,7 +715,132 @@ class confParameter:
                                                     "inventory_interval")
             if self.inventory_interval !=0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
+        # ########################## DEBUG switch_scheduling ########################
+        #clean session if ban jid for deploy
+        self.sched_remove_ban = True
+        self.sched_check_connection = True
+        self.sched_quick_deployment_load = True
+        # switch exec plugin scheduling
+        self.sched_scheduled_plugins = True
+        self.sched_update_plugin = True
+        self.sched_check_network = True
+        # controle si doit installer image
+        self.sched_update_agent = True
+        self.sched_manage_session = True
+        self.sched_reload_deployments = True
+        self.sched_check_inventory = True
+        self.sched_session_reload = True
+        self.sched_check_events  = True
+        self.sched_check_cmd_file = True
+        self.sched_init_syncthing = True
+        self.sched_check_syncthing_deployment = True
+        self.sched_check_synthing_config = True
+        if Config.has_option("switch_scheduling",
+                             "sched_remove_ban"):
+            self.sched_remove_ban = Config.getboolean('switch_scheduling',
+                                                      'sched_remove_ban')
 
+        if Config.has_option("switch_scheduling",
+                             "sched_check_connection"):
+            self.sched_check_connection = Config.getboolean('switch_scheduling',
+                                                            'sched_check_connection')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_quick_deployment_load"):
+            self.sched_quick_deployment_load = Config.getboolean('switch_scheduling',
+                                                                 'sched_quick_deployment_load')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_scheduled_plugins"):
+            self.sched_scheduled_plugins = Config.getboolean('switch_scheduling',
+                                                             'sched_scheduled_plugins')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_update_plugin"):
+            self.sched_update_plugin = Config.getboolean('switch_scheduling',
+                                                         'sched_update_plugin')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_network"):
+            self.sched_check_network = Config.getboolean('switch_scheduling',
+                                                         'sched_check_network')
+
+        if Config.has_option("switch_scheduling", "sched_update_agent"):
+            self.sched_update_agent = Config.getboolean('switch_scheduling',
+                                                        'sched_update_agent')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_manage_session"):
+            self.sched_manage_session = Config.getboolean('switch_scheduling',
+                                                          'sched_manage_session')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_reload_deployments"):
+            self.sched_reload_deployments = Config.getboolean('switch_scheduling',
+                                                              'sched_reload_deployments')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_inventory"):
+            self.sched_check_inventory = Config.getboolean('switch_scheduling',
+                                                           'sched_check_inventory')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_session_reload"):
+            self.sched_session_reload = Config.getboolean('switch_scheduling',
+                                                          'sched_session_reload')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_events"):
+            self.sched_check_events = Config.getboolean('switch_scheduling',
+                                                        'sched_check_events')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_cmd_file"):
+            self.sched_check_cmd_file = Config.getboolean('switch_scheduling',
+                                                          'sched_check_cmd_file')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_init_syncthing"):
+            self.sched_init_syncthing = Config.getboolean('switch_scheduling',
+                                                          'sched_init_syncthing')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_synthing_config"):
+            self.sched_check_synthing_config = Config.getboolean('switch_scheduling',
+                                                                 'sched_check_synthing_config')
+
+        if Config.has_option("switch_scheduling",
+                             "sched_check_syncthing_deployment"):
+            self.sched_check_syncthing_deployment = Config.getboolean('switch_scheduling',
+                                                                      'sched_check_syncthing_deployment')
+
+        self.excludedplugins = []
+        if Config.has_option("excluded_plugins",
+                             "excludedplugins"):
+            excludedpluginstmp = Config.get('excluded_plugins',
+                                             'excludedplugins').split(",")
+            self.excludedplugins = [x.strip() for x in excludedpluginstmp]
+
+        self.excludedscheduledplugins = []
+        if Config.has_option("excluded_scheduled_plugins",
+                             "excludedscheduledplugins"):
+            excludedscheduledpluginstmp = Config.get('excluded_scheduled_plugins',
+                                                      'excludedscheduledplugins').split(",")
+            self.excludedscheduledplugins = [x.strip() for x in excludedscheduledpluginstmp]
+
+
+        self.scheduling_plugin_action = True
+        self.plugin_action = True
+        if Config.has_option("call_plugin",
+                             "scheduling_plugin_action"):
+            self.scheduling_plugin_action = Config.getboolean('call_plugin',
+                                                           'scheduling_plugin_action')
+
+        if Config.has_option("call_plugin",
+                             "plugin_action"):
+            self.plugin_action = Config.getboolean('call_plugin',
+                                                           'plugin_action')
+        # ########################## END DEBUG switch_scheduling ########################
         # configuration monitoring
         if self.agenttype == "machine":
             if Config.has_option("monitoring", "monitoring_agent_config_file"):
@@ -787,6 +929,48 @@ class confParameter:
         if os.path.isfile(namefile+".local"):
             Config.read(namefile+".local")
         return Config.items("parameters")
+
+        if Config.has_option('fileviewer', 'host'):
+            self.fv_host = Config.get('fileviewer', 'host')
+        else:
+            self.fv_host = "127.0.0.1"
+
+        if Config.has_option('fileviewer', 'port'):
+            self.fv_port = Config.getint('fileviewer', 'port')
+        else:
+            self.fv_port = 52044
+
+        if Config.has_option('fileviewer', 'maxwidth'):
+            self.fv_maxwidth = Config.getint('fileviewer', 'maxwidth')
+        else:
+            self.fv_maxwidth = 800
+
+        if Config.has_option('fileviewer', 'minwidth'):
+            self.fv_minwidth = Config.getint('fileviewer', 'minwidth')
+        else:
+            self.fv_minwidth = 600
+
+        if self.fv_minwidth > self.fv_maxwidth:
+            self.fv_minwidth, self.fv_maxwidth = self.fv_maxwidth, self.fv_minwidth
+
+    def _levellogdata(self, levelstring):
+        strlevel = levelstring.upper()
+        if strlevel in ['CRITICAL', 'FATAL']:
+            return 50
+        elif strlevel == 'ERROR':
+            return 40
+        elif strlevel in ['WARNING', 'WARN']:
+            return 30
+        elif strlevel == 'INFO':
+            return 20
+        elif strlevel == 'DEBUG':
+            return 10
+        elif strlevel == 'NOTSET':
+            return 0
+        elif strlevel in ['LOG', 'DEBUGPULSE']:
+            return 25
+        else:
+            return 20
 
     def getRandomName(self, nb, pref=""):
         """

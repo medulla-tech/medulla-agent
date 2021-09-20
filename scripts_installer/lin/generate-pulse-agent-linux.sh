@@ -30,7 +30,7 @@
 . /etc/os-release
 
 # To be defined
-AGENT_VERSION="2.1.3"
+AGENT_VERSION="2.1.7"
 SIVEO_BASE_URL="https://agents.siveo.net"
 SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
@@ -65,12 +65,24 @@ check_arguments() {
                 TEST_URL="${i#*=}"
                 shift
                 ;;
+            --disable-vnc*)
+                DISABLE_VNC=1
+                shift
+                ;;
             --vnc-port*)
                 VNC_PORT="${i#*=}"
                 shift
                 ;;
             --ssh-port*)
                 SSH_PORT="${i#*=}"
+                shift
+                ;;
+            --disable-rdp*)
+                DISABLE_RDP=1
+                shift
+                ;;
+            --disable-inventory*)
+                DISABLE_INVENTORY=1
                 shift
                 ;;
             --linux-distros*)

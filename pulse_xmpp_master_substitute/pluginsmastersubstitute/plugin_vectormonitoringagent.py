@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
 
 
 def process_system(functionname,
@@ -124,6 +124,21 @@ def process_generic(functionname,
         elif isinstance(data['message'], list):
             alarm_msg = data['message']
         del data['message']
+    logger.debug("call setMonitoring_device_reg hostname %s\n"\
+                                        " id_mon_machine %s \n"\
+                                        " device_type, %s\n"\
+                                        " serial %s \n" \
+                                        " firmware %s\n" \
+                                        " status %s\n" \
+                                        " alarm_msg %s\n" \
+                                        " metriques %s"% (hostname,
+                                                            id_mon_machine,
+                                                            device_type,
+                                                            serial,
+                                                            firmware,
+                                                            status,
+                                                            json.dumps(alarm_msg),
+                                                            json.dumps(data['metriques'])))
     XmppMasterDatabase().setMonitoring_device_reg(hostname,
                                                   id_mon_machine,
                                                   device_type,
@@ -192,7 +207,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                 statusmsg = ""
                 if 'status' in data:
                     statusmsg = json.dumps(data['status'])
-                    id_mom_machine = XmppMasterDatabase().setMonitoring_machine(
+                id_mom_machine = XmppMasterDatabase().setMonitoring_machine(
                                     machine['id'],
                                     machine['hostname'],
                                     date=data['date'],

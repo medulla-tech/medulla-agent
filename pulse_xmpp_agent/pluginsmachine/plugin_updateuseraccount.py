@@ -26,7 +26,7 @@ from sleekxmpp.exceptions import IqError
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updateuseraccount", "TYPE": "machine"}
+plugin = {"VERSION": "1.6", "NAME": "updateuseraccount", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -67,6 +67,23 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     except KeyError:
         logger.error("Error getting relayserver pubkey and reversessh idrsa via iq from %s" % jidars)
         return
+    
+    try:
+        iqresult = xmppobject.iqsendpulse('rspulse@pulse',
+                                          {"action": "information",
+                                           "data": {"listinformation": ["get_ars_key_id_rsa",
+                                                                        "keypub"],
+                                                    "param": {}
+                                                    }
+                                           },
+                                          timeout)
+        res = json.loads(iqresult)
+        result = res['result']['informationresult']
+        mainserver_pubkey = result['keypub']
+        logger.debug("mainserver_pubkey: %s" % mainserver_pubkey)
+    except KeyError:
+        logger.error("Error getting mainserver pubkey via iq from rspulse@pulse")
+        return
 
     # Add the keys to pulseuser account
     result, msglog = utils.create_idrsa_on_client(username, relayserver_reversessh_idrsa)
@@ -74,6 +91,10 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         logger.error(msglog)
     msg.append(msglog)
     result, msglog = utils.add_key_to_authorizedkeys_on_client(username, relayserver_pubkey)
+    if result is False:
+        logger.error(msglog)
+    msg.append(msglog)
+    result, msglog = utils.add_key_to_authorizedkeys_on_client(username, mainserver_pubkey)
     if result is False:
         logger.error(msglog)
     msg.append(msglog)

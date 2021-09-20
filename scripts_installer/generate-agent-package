@@ -26,18 +26,10 @@ echo "INFO: Generating package ${PACKAGE_NAME}..."
 # Detect if uuid or uuidgen is available
 if [ -x "$(command -v uuid)" ]; then
   PACKAGE_UUID=$(uuid)
-  DEPS_UUID=$(uuid)
-  NETCHECK_UUID=$(uuid)
   echo "  Package UUID: ${PACKAGE_UUID}"
-  echo "  Dependencies UUID: ${DEPS_UUID}"
-  echo "  Netcheck UUID: ${NETCHECK_UUID}"
 elif [ -x "$(command -v uuidgen)" ]; then
   PACKAGE_UUID=$(uuidgen)
-  DEPS_UUID=$(uuidgen)
-  NETCHECK_UUID=$(uuidgen)
   echo "  Package UUID: ${PACKAGE_UUID}"
-  echo "  Dependencies UUID: ${DEPS_UUID}"
-  echo "  Netcheck UUID: ${NETCHECK_UUID}"
 else
   echo "ERROR: Please install uuid or uuidgen."
   exit 1
@@ -60,11 +52,11 @@ fi
 
 # First check if the package exists.
 # If it is the case, keep its uuid for deleting it after generation.
-old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
+old_uuid=$(grep "${PACKAGE_NAME} v${AGENT_VERSION}" /var/lib/pulse2/packages/sharing/global/* -R | grep xmppdeploy.json | grep -P -o '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')
 
 # Create the package
-mkdir -p /var/lib/pulse2/packages/${PACKAGE_UUID}
-pushd /var/lib/pulse2/packages/${PACKAGE_UUID}
+mkdir -p /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
+pushd /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
 
 # Copy the agent and plugins to the package folder
 cp ${PULSE_AGENT_PATH}/${PULSE_AGENT_FILENAME} .
@@ -74,15 +66,14 @@ cp ${PULSE_AGENT_PATH}/${PULSE_MACHINE_PLUGINS_FILENAME} .
 cat <<EOF > xmppdeploy.json
 {
     "info": {
+        "localisation_server": "global",
+        "previous_localisation_server": "global",
         "description": "${PACKAGE_DESC}",
         "name": "${PACKAGE_NAME} v${AGENT_VERSION}",
         "software": "agentxmpp",
         "transferfile": true,
         "methodetransfert": "pushrsync",
-        "Dependency": [
-            "${DEPS_UUID}",
-            "${NETCHECK_UUID}"
-        ],
+        "Dependency": [],
         "version": "${AGENT_VERSION}",
         "metagenerator": "manual"
     },
@@ -225,7 +216,7 @@ EOF
 
 # Generate conf.json
 cat <<EOF > conf.json
-{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux", "entity_id": "0", "sub_packages": [], "reboot": 0, "version": "${AGENT_VERSION}",
+{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux,win,mac", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${AGENT_VERSION}",
 "inventory": {"associateinventory": "1", "licenses": "10000", "queries": {"Qversion": "${AGENT_VERSION}*", "Qvendor": "", "boolcnd": "", "Qsoftware": "pulse*agent"}}, "id": "${PACKAGE_UUID}", "name": "${PACKAGE_NAME} v${AGENT_VERSION}", "metagenerator": "manual"}
 EOF
 
@@ -234,24 +225,20 @@ popd
 echo "INFO: Generating package ${PACKAGE_NAME}... Done"
 
 # Change permissions on the package
-chown -R syncthing: /var/lib/pulse2/packages/${PACKAGE_UUID}
+chown -R syncthing: /var/lib/pulse2/packages/sharing/global/${PACKAGE_UUID}
 
 # Delete old version if found
 if [[ ${old_uuid} != '' ]]; then
   echo "INFO: Deleting pakage ${old_uuid}..."
-  rm -rf /var/lib/pulse2/packages/${old_uuid}
+  rm -rf /var/lib/pulse2/packages/sharing/global/${old_uuid}
   echo "INFO: Deleting pakage ${old_uuid}... Done"
 fi
 
-# Generate Pulse Agent dependencies package
-BASEDIR=$(dirname $0)
-${BASEDIR}/generate-agent-deps-package ${DEPS_UUID}
-
-# Generate netcheck package
-BASEDIR=$(dirname $0)
-${BASEDIR}/generate-netcheck-package ${NETCHECK_UUID}
-
-# Restart package server
-echo "INFO: Restarting package server..."
-service pulse2-package-server restart
-echo "INFO: Restarting package server... Done"
+# Insert package in database
+echo "INFO: Generating package links and database records..."
+DBHOST=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbhost 2> /dev/null || echo localhost)
+DBPORT=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbport 2> /dev/null || echo 3306)
+DBPASS=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbpasswd)
+DBUSER=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbuser 2> /dev/null || echo mmc)
+/usr/sbin/pulse2-generation_package.py -H ${DBHOST} -P ${DBPORT} -u ${DBUSER} -p ${DBPASS} -g -m -l -r > /tmp/pulse2-generation_package.log
+echo "INFO: Generating package links and database records... Done"

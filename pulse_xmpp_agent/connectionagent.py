@@ -41,7 +41,7 @@ from lib.networkinfo import networkagentinfo, organizationbymachine,\
 from lib.configuration import  confParameter, changeconnection,\
     alternativeclusterconnection, nextalternativeclusterconnection,\
         substitutelist, changeconfigurationsubtitute
-from lib.agentconffile import conffilename
+from lib.agentconffile import conffilename, conffilenametmp, rotation_file
 from lib.utils import DEBUGPULSE, getIpXmppInterface,\
         subnetnetwork, check_exist_ip_port, ipfromdns,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
@@ -86,15 +86,31 @@ class MUCBot(sleekxmpp.ClientXMPP):
 
         sleekxmpp.ClientXMPP.__init__(self, conf.jidagent, conf.confpassword)
         self.config = conf
+
+        #create tmp config file
+        namefileconfiguration = conffilename(self.config.agenttype)
+        namefileconfigurationtmp = conffilenametmp(self.config.agenttype)
+        logging.log(DEBUGPULSE,"copy  %s %s" % (namefileconfiguration,
+                                                namefileconfigurationtmp))
+        shutil.copyfile(namefileconfiguration, namefileconfigurationtmp)
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
         if not hasattr(self.config, 'geoservers'):
             self.geoservers = "ifconfig.co, if.siveo.net"
 
-        self.geodata = geolocalisation_agent(typeuser = 'nomade',
-                                             geolocalisation=True,
-                                             ip_public=None,
-                                             strlistgeoserveur=self.config.geoservers)
+        self.ippublic = None
+        self.geodata = None
+        if self.config.geolocalisation:
+            self.geodata = geolocalisation_agent(typeuser = 'nomade',
+                                                 geolocalisation=self.config.geolocalisation,
+                                                 ip_public=None,
+                                                 strlistgeoserveur=self.config.geoservers)
 
-        self.ippublic = self.geodata.get_ip_public()
+            self.ippublic = self.geodata.get_ip_public()
 
         if self.ippublic == "" or self.ippublic == None:
             self.ippublic = None
@@ -217,6 +233,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         msgbody = {}
         data = {'log': 'xmpplog',
                 'text': text,
@@ -257,8 +275,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             resp.send(now=True)
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" %\
-                    e.iq['error']['text'])
+            if e.iq['error']['code'] == "409":
+                logging.warning("Could not register account %s : User already exists" %\
+                        resp['register']['username'])
+            else:
+                logging.error("Could not register account %s : %s" %\
+                        (resp['register']['username'], e.iq['error']['text']))
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
@@ -407,37 +429,59 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 mbody = json.dumps(confsyncthing),
                                                 mtype = 'chat')
                     try:
-                        #else:
-                            #logging.info("Start relay server
                         if "substitute" in data:
-                            changeconfigurationsubtitute(conffilename(opts.typemachine),
+                            logger.debug("substitute information")
+                            changeconfigurationsubtitute(conffilenametmp(opts.typemachine),
                                                          data['substitute'])
-                        changeconnection(conffilename(opts.typemachine),
+                    except Exception as e:
+                        logger.error("change configuration subtitute ko")
+
+                    try:
+                        changeconnection(conffilenametmp(opts.typemachine),
                                         data['data'][0][1],
                                         data['data'][0][0],
                                         data['data'][0][2],
                                         data['data'][0][3])
-                        #write alternative configuration
-                        alternativeclusterconnection(conffilename("cluster"),data['data'])
-                        confaccountclear={  "action": "resultcleanconfaccount",
-                                            "sessionid" : getRandomName(6, "delconf"),
-                                            "ret" : 0,
-                                            "base64" : False,
-                                            "data":  { 'useraccount': str(self.boundjid.user)}}
-                        self.send_message(mto =  msg['from'],
-                                        mbody = json.dumps(confaccountclear),
-                                        mtype = 'chat')
-                        #go to next ARS
-                        nextalternativeclusterconnection(conffilename("cluster"))
-                        logger.debug("make finger print conf file")
-                        refreshfingerprintconf(opts.typemachine)
+                        try:
+                            #write alternative configuration
+                            alternativeclusterconnection(conffilenametmp("cluster"),
+                                                         data['data'])
+                            alternativeclusterconnection(conffilename("cluster"),
+                                                         data['data'])
+                            confaccountclear={  "action": "resultcleanconfaccount",
+                                                "sessionid" : getRandomName(6, "delconf"),
+                                                "ret" : 0,
+                                                "base64" : False,
+                                                "data":  { 'useraccount': str(self.boundjid.user)}}
+                            self.send_message(mto =  msg['from'],
+                                              mbody = json.dumps(confaccountclear),
+                                              mtype = 'chat')
+                            #go to next ARS
+                            nextalternativeclusterconnection(conffilenametmp("cluster"))
+
+                            namefileconfiguration = conffilename(self.config.agenttype)
+                            namefileconfigurationtmp = conffilenametmp(self.config.agenttype)
+                            logger.debug("rotate configuration")
+                            rotation_file(namefileconfiguration)
+                            logger.debug("write new configuration")
+                            shutil.copyfile(namefileconfigurationtmp,namefileconfiguration)
+                            logger.debug("make finger print conf file")
+                            refreshfingerprintconf(opts.typemachine)
+                        except Exception:
+                            logger.error("configuration connection %s" % traceback.format_exc())
+                            logger.error("configuration no changing")
                     except Exception:
                         # conpatibility version old agent master
-                        changeconnection(conffilename(opts.typemachine),
+                        try:
+                            logger.debug("old configuration structure")
+                            changeconnection(conffilenametmp(opts.typemachine),
                                         data['data'][1],
                                         data['data'][0],
                                         data['data'][2],
                                         data['data'][3])
+                        except Exception:
+                            logger.error("configuration connection %s" % traceback.format_exc())
+                            logger.error("configuration no changing")
             else:
                 logging.error("configuration dynamic error")
             self.disconnect(wait=5)
@@ -539,7 +583,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
         else:
-            logging.warning('geolocalisation imposible')
+            logging.warning('geolocalisation disabled')
         lastusersession = powershellgetlastuser()
         if lastusersession == "":
             try:

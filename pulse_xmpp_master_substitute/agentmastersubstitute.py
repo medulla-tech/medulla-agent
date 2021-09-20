@@ -32,6 +32,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
+from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
 
 
@@ -92,23 +93,42 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
     # Setup the command line arguments.
     tg = confParameter( optfileconf )
 
+    configuration_file = "/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini.local"
     # activate module.
-
     if "glpi" in tg.plugins_list:
         logger.info("activate GLPI")
-        Glpi().activate()
+        if not Glpi().activate():
+            logger.error("We failed to connect the Glpi database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     if "xmpp" in tg.plugins_list:
         logger.info("activate XMPP")
-        XmppMasterDatabase().activate()
+        if not XmppMasterDatabase().activate():
+            logger.error("We failed to connect the Xmpp database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     if "kiosk" in tg.plugins_list:
         logger.info("activate KIOSK")
-        KioskDatabase().activate()
+        if not KioskDatabase().activate():
+            logger.error("We failed to connect the Kiok database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     if "msc" in tg.plugins_list:
         logger.info("activate MSC")
-        MscDatabase().activate()
+        if not MscDatabase().activate():
+            logger.error("We failed to connect the Msc database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
+
+    if "pkgs" in tg.plugins_list:
+        logger.info("activate PKGS")
+        if not PkgsDatabase().activate():
+            logger.error("We failed to connect the Pkgs database.")
+            logger.error("Please verify your configuration in %s" % configuration_file)
+            return
 
     xmpp = MUCBot( )
     xmpp.register_plugin('xep_0030') # Service Discovery

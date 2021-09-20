@@ -31,12 +31,18 @@ from lib.utils import ipfromdns, \
 from lib.localisation import Point
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.manageADorganization import manage_fqdn_window_activedirectory
+
 from random import randint
 import operator
 import traceback
 import ConfigParser
 import netaddr
 from math import cos, sin, atan2, sqrt
+try:
+    from lib.stat import statcallplugin
+    statfuncton = True
+except:
+    statfuncton = False
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
@@ -47,7 +53,6 @@ DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor"}
 
-
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
@@ -55,8 +60,13 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
     try:
         compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
         if compteurcallplugin == 0:
+            if statfuncton:
+                objectxmpp.stat_assessor_agent = statcallplugin(objectxmpp,
+                                                                plugin['NAME'])
             read_conf_assessor(objectxmpp)
-
+        else:
+            if statfuncton:
+                objectxmpp.stat_assessor_agent.statutility()
         if objectxmpp.assessor_agent_errorconf:
             logger.error("error configuration no process action %s for machine %s" % (action, msg['from']))
             sendErrorConnectionConf(objectxmpp,sessionid,msg)
@@ -111,21 +121,30 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                                   data,
                                                   msg):
     """
-        applies the allocation rules algorithms to determine the chosen relayserver.
+    Allocate the Relay server of the machine and reconfigure the agent.
+
+    Args:
+        objectxmpp: Reference object to the xmpp server
+        action: Name of the plugin
+        sessionid: The SQL Alchemy session
+        data: The xmpp message.
+        msg: A dictionnary with informations like from and to where are going the messages.
     """
     codechaine="%s" % (msg['from'])
+
     try:
         host = codechaine.split('/')[1]
     except Exception:
         host = msg['from']
-    logger.info("CONFIGURATION AGENT MACHINE %s" % host)
+
+    logger.debug("We configure the machine agent for the machine: %s" % host)
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
         showinfomachine = True
-        logger.info("showinfomachine = %s in file assessor_agent.ini(.local)" % (host))
+        logger.info("showinfomachine is enabled for the machine %s" % (host))
     else:
         showinfomachine = False
-        logger.info("gives showinfomachine in assessor_agent.ini(.local)"
-                    " for display infos on %s" % (host))
+        logger.debug("showinfomachine option is not enabled for the machine %s " % host)
+        logger.debug("If you want to enable it, add the information in the assessor_agent.ini(.local) file")
 
     if data['adorgbymachine'] is not None and data['adorgbymachine'] != "":
         data['adorgbymachine'] = base64.b64decode(data['adorgbymachine'])
@@ -257,8 +276,14 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         result1 = XmppMasterDatabase().IdlonglatServerRelay(data['classutil'])
                         for x in result1:
                             # pour tout les relay on clacule la distance a vol oiseau.
-                            if x[1] != "" and x[2] != "":
-                                pointrelay = Point(float(x[2]), float(x[1]))
+                            if x[1] != "" and x[2] != "" and \
+                                x[1] != "unknown" and x[2] != "unknown":
+                                try:
+                                    xpoint = float(x[2])
+                                    ypoint = float(x[1])
+                                except Exception:
+                                    continue
+                                pointrelay = Point(xpoint, ypoint)
                                 if str(pointrelay.lat) == str(pointmachine.lat) and \
                                     str(pointrelay.lon) == str(pointmachine.lon):
                                     distancecalculated = 0
@@ -389,6 +414,8 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 if len(result1) > 0:
                     if showinfomachine:
                         logger.info("Applied rule : AD organized by machines")
+                        logger.info("We matched the relayserver ID: %s" % result1)
+
                     result = XmppMasterDatabase().IpAndPortConnectionFromServerRelay(result1[0].id)
                     msg_log("AD organized by machine",
                             data['information']['info']['hostname'],
@@ -474,7 +501,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                         '',
                                         'Configuration | Assessor',
                                         '',
-                                        '',
+                                        objectxmpp.boundjid.bare,
                                         objectxmpp.boundjid.bare)
 
     except Exception:
@@ -488,7 +515,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                         '',
                                         'Configuration | Assessor',
                                         '',
-                                        '',
+                                        objectxmpp.boundjid.bare,
                                         objectxmpp.boundjid.bare)
         try:
             result = XmppMasterDatabase().jidrelayserverforip(objectxmpp.assessor_agent_serverip)
@@ -508,7 +535,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                             '',
                                             'Configuration | Notify | Assessor',
                                             '',
-                                            '',
+                                            objectxmpp.boundjid.bare,
                                             objectxmpp.boundjid.bare)
     try:
         try:
@@ -543,7 +570,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                         '',
                                         'Configuration | Notify | Assessor',
                                         '',
-                                        '',
+                                        objectxmpp.boundjid.bare,
                                         objectxmpp.boundjid.bare)
             XmppMasterDatabase().setlogxmpp(msglog,
                                         "conf",
@@ -554,7 +581,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                         '',
                                         'Configuration | Notify | Assessor',
                                         '',
-                                        '',
+                                        objectxmpp.boundjid.bare,
                                         objectxmpp.boundjid.bare)
             return
         z = [listars[x] for x in listars]
@@ -624,7 +651,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                         '',
                                         'Configuration | Notify | Assessor',
                                         '',
-                                        '',
+                                        objectxmpp.boundjid.bare,
                                         objectxmpp.boundjid.bare)
         XmppMasterDatabase().setlogxmpp("Error: %s" % (traceback.format_exc()),
                                         "conf",
@@ -635,7 +662,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                                         '',
                                         'Configuration | Notify | Assessor',
                                         '',
-                                        '',
+                                        objectxmpp.boundjid.bare,
                                         objectxmpp.boundjid.bare)
 def msg_log(msg_header, hostname, user, result, objectxmpp, data):
     if data['machine'].split(".")[0] in objectxmpp.assessor_agent_showinfomachine:
@@ -736,12 +763,14 @@ def read_conf_assessor(objectxmpp):
     """
     objectxmpp.assessor_agent_errorconf = False
     namefichierconf = plugin['NAME'] + ".ini"
-    objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
+    objectxmpp.pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf)
     if not os.path.isfile(objectxmpp.pathfileconf):
         logger.error("plugin %s\nConfiguration file  missing\n  %s" % (plugin['NAME'],
                                                                        objectxmpp.pathfileconf))
         message_config(plugin['NAME'], objectxmpp.pathfileconf)
         objectxmpp.assessor_agent_errorconf = True
+        if statfuncton:
+            objectxmpp.stat_assessor_agent.display_param_config( msg="DEFAULT")
         return False
     else:
         objectxmpp.assessor_agent_errorconf = False
@@ -828,10 +857,14 @@ def read_conf_assessor(objectxmpp):
                 logger.error("see parameter [guacamole_baseurl] "
                              "missing in file : %s " % objectxmpp.pathfileconf)
                 objectxmpp.assessor_agent_errorconf = True
-
+            if statfuncton:
+                objectxmpp.stat_assessor_agent.load_param_lap_time_stat_(Config)
+                objectxmpp.stat_assessor_agent.display_param_config("CONFIG")
         else:
             logger.error("see SECTION [parameters] mising in file : %s " % objectxmpp.pathfileconf)
             objectxmpp.assessor_agent_errorconf = True
+            if statfuncton:
+                objectxmpp.stat_assessor_agent.display_param_config("DEFAULT")
         if objectxmpp.assessor_agent_errorconf:
             message_config(plugin['NAME'], objectxmpp.pathfileconf)
             return False

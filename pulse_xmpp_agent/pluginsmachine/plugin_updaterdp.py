@@ -77,6 +77,7 @@ def updaterdpversion(version):
                     '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+            logger.info("RDP Configuration updated.")
 
 def updaterdp(xmppobject, installed_version):
     logger.info("Updating RDP Configuration.")

@@ -489,27 +489,24 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
-    nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-    # Add compteur appel plugins
-    count = 0
-    try:
-        count = getattr(args[0], "num_call%s" % args[1])
-    except AttributeError:
-        count = 0
-        setattr(args[0], "num_call%s"%args[1], count)
-    pluginaction = loadModule(nameplugin)
-    pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count + 1)
-
-# def load_plugin(name):
-    # mod = __import__("plugin_%s" % name)
-    # return mod
-
-
-# def call_plugin(name, *args, **kwargs):
-    # pluginaction = load_plugin(name)
-    # pluginaction.action(*args, **kwargs)
-
+    if args[0].config.plugin_action :
+        if args[1] not in args[0].config.excludedplugins:
+            nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+            logger.debug("Loading plugin %s" % args[1])
+            # Add compteur appel plugins
+            count = 0
+            try:
+                count = getattr(args[0], "num_call%s" % args[1])
+            except AttributeError:
+                count = 0
+                setattr(args[0], "num_call%s"%args[1], count)
+            pluginaction = loadModule(nameplugin)
+            pluginaction.action(*args, **kwargs)
+            setattr(args[0], "num_call%s" % args[1], count + 1)
+        else:
+                logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
+    else:
+        logging.getLogger().debug("The plugin %s is not allowed due to plugin_action parameter" % args[1])
 
 def getshortenedmacaddress():
     listmacadress = {}
@@ -1084,19 +1081,28 @@ def pulgindeploy1(func):
 
 # determine address ip utiliser pour xmpp
 
+def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
+    """
+        This function is used to retrieve the local IP from the client which is talking
+        with the ejabberd server.
+        For this we need to use netstat.
+        It returns:
+            TCP    10.16.53.17:49711      10.16.24.239:5222      ESTABLISHED
+        and we split to obtain the first IP of the line.
 
-def getIpXmppInterface(ipadress1, Port):
+        Args:
+            xmpp_server_ipaddress: IP of the xmpp server
+        Returns:
+            It returns the local IP from the client which is talking
+            with the ejabberd server.
+    """
     resultip = ''
-    ipadress = ipfromdns(ipadress1)
+    xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
     if sys.platform.startswith('linux'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
-            (Port, ipadress))
+            (Port, xmpp_server_ipaddress))
         if obj['code'] != 0:
             logging.getLogger().error('error command netstat : %s' % obj['result'])
             logging.getLogger().error('error install package net-tools')
@@ -1109,12 +1115,8 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[3].split(':')[0]
     elif sys.platform.startswith('win'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an | findstr %s | findstr ESTABLISHED" % Port
         obj = simplecommand(
-            "netstat -an | findstr %s | findstr ESTABLISHED" %
-            Port)
-        logging.log(
-            DEBUGPULSE, "netstat -an | findstr %s | findstr ESTABLISHED" %
+            'netstat -an | findstr %s | findstr "ESTABLISHED SYN_SENT SYN_RECV"' %
             Port)
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
@@ -1125,13 +1127,9 @@ def getIpXmppInterface(ipadress1, Port):
                 resultip = b[1].split(':')[0]
     elif sys.platform.startswith('darwin'):
         logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
-        print "netstat -an |grep %s |grep %s| grep ESTABLISHED" % (Port, ipadress)
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
-        logging.log(
-            DEBUGPULSE, "netstat -an |grep %s |grep %s| grep ESTABLISHED" %
-            (Port, ipadress))
+            (Port, xmpp_server_ipaddress))
         if len(obj['result']) != 0:
             for i in range(len(obj['result'])):
                 obj['result'][i] = obj['result'][i].rstrip('\n')
@@ -2427,6 +2425,22 @@ def pulseuser_profile_mustexist(username='pulseuser'):
         profile already exists, it return False otherwise.
     """
     if sys.platform.startswith('win'):
+        # We define the sid
+        usersid = get_user_sid(username)
+
+        regquery = 'REG QUERY "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s.bak" /v "ProfileImagePath" /s'% usersid
+        resultquery = simplecommand(encode_strconsole(regquery))
+        if resultquery['code'] == 0:
+            # There a .bak entry, we need to remove the it
+            regdel = 'REG DELETE "HKLM\Software\Microsoft\Windows NT\CurrentVersion\ProfileList\%s.bak" /f' % usersid
+            resultdel = simplecommand(encode_strconsole(regdel))
+            if resultdel['code'] == 0:
+                logging.getLogger().info("We correctly removed the backup profile")
+            else:
+                logging.getLogger().error("Error while deleting the backup profile")
+        else:
+            logging.getLogger().debug("There is not .bak entry, we have nothing to do")
+
         # Initialise userenv.dll
         userenvdll = ctypes.WinDLL('userenv.dll')
         # Define profile path that is needed
@@ -2437,7 +2451,6 @@ def pulseuser_profile_mustexist(username='pulseuser'):
             # Delete all profiles if found
             delete_profile(username)
             # Create the profile
-            usersid = get_user_sid(username)
             ptr_profilepath = ctypes.create_unicode_buffer(260)
             userenvdll.CreateProfile(LPCWSTR(usersid),
                                      LPCWSTR(username),
@@ -2667,7 +2680,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error creating key at %s' % id_rsa_path
+    msg = 'Error add key to authorizedkeys: id_rsa missing' 
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
@@ -3026,7 +3039,7 @@ def serialnumbermachine():
                 a=[x.strip().decode('utf-8', 'ignore') for x in result['result']]
                 serial_uuid_machine = ''.join(a).replace('UUID','').strip()
         else:
-            logger.warning("function serialnumbermachine No Implemented for os %s" % sys.platform)
+            logger.warning("the serialnumbermachine function is not implemented for your os: %s" % sys.platform)
     except Exception:
-        logger.error("function serialnumbermachine\n%s" % (traceback.format_exc()))
+        logger.error("An error occured while using the serialnumbermachine function \n we got the error below \n%s" % (traceback.format_exc()))
     return serial_uuid_machine

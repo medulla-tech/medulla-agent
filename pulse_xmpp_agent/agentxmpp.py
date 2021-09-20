@@ -197,6 +197,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
+
+        ### update level log for sleekxmpp
+        handler_sleekxmpp = logging.getLogger('sleekxmpp')
+        logging.log(DEBUGPULSE,"Sleekxmpp log level is %s" %self.config.log_level_sleekxmpp)
+        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.
         netfingerprintstart = createfingerprintnetwork()
@@ -206,7 +212,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                    'fingerprintnetwork')
         logging.debug("filename: %s" % filetempinfolibfingerprint)
         if os.path.exists(filetempinfolibfingerprint):
-            logging.debug("actuel fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
+            logging.debug("current fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
             # comparaison
             if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
                 logging.warning("after start : registration must update the information in the xmpp tables.")
@@ -304,14 +310,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
-
+        self.sub_subscribe_all = []
         if not hasattr(self.config, 'sub_subscribe'):
             self.sub_subscribe = self.agentmaster
         else:
+            if isinstance(self.config.sub_subscribe, list):
+                self.sub_subscribe_all = [jid.JID(x) for x in self.config.sub_subscribe]
             if isinstance(self.config.sub_subscribe, list) and\
                 len(self.config.sub_subscribe) > 0:
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe[0])
             else:
+                self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
         if not hasattr(self.config, 'sub_logger'):
@@ -364,7 +373,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.fichierconfsyncthing = os.path.join(self.config.syncthing_home, 'config.xml')
                 conf_ars_deploy(self.config.syncthing_port,
                                 configfile=self.fichierconfsyncthing,
-                                name="pulse")
+                                deviceName="pulse")
             else:
                 self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                          ".config",
@@ -381,11 +390,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                 "syncthing",
                                                 "config.xml")
             self.tmpfile = "/tmp/confsyncting.txt"
+        # TODO: Disable this try if synthing is not activated. Prevent backtraces
         try:
             hostnameiddevice = None
             if self.boundjid.domain == "pulse":
                 hostnameiddevice = "pulse"
-            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, hostname=hostnameiddevice)
+            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice)
         except Exception:
             pass
 
@@ -404,22 +414,28 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.ban_deploy_sessionid_list = set() # List id sessions that are banned
         self.lapstimebansessionid = 900     # ban session id 900 secondes
         self.banterminate = { } # used for clear id session banned
-        self.schedule('removeban', 30, self.remove_sessionid_in_ban_deploy_sessionid_list, repeat=True)
+        if self.config.sched_remove_ban:
+            self.schedule('removeban',
+                          30,
+                          self.remove_sessionid_in_ban_deploy_sessionid_list,
+                          repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
-        self.schedule('check established connection',
-                      laps_time_check_established_connection,
-                      self.established_connection,
-                      repeat=True)
+        if self.config.sched_check_connection:
+            self.schedule(  'check established connection',
+                            laps_time_check_established_connection,
+                            self.established_connection,
+                            repeat=True)
         if self.config.agenttype in ['relayserver']:
             #scheduled task that calls the slot plugin for sending the quick deployments that have not been processed.
-            self.schedule('Quick deployment load',
-                        15,
-                        self.QDeployfile,
-                        repeat=True)
+            if self.config.sched_quick_deployment_load:
+                self.schedule('Quick deployment load',
+                            15,
+                            self.QDeployfile,
+                            repeat=True)
 
         if not hasattr(self.config, 'geolocalisation'):
             self.config.geolocalisation = True
@@ -438,35 +454,46 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.config.public_ip = None
 
         self.md5reseau = refreshfingerprint()
-        self.schedule('schedulerfunction',
-                      10 ,
-                      self.schedulerfunction,
-                      repeat=True)
-        self.schedule('update plugin',
-                      laps_time_update_plugin,
-                      self.update_plugin,
-                      repeat=True)
+        if self.config.sched_scheduled_plugins:
+            self.schedule('schedulerfunction',
+                            10 ,
+                            self.schedulerfunction,
+                            repeat=True)
+        if self.config.sched_update_plugin:
+            self.schedule('update plugin',
+                        laps_time_update_plugin,
+                        self.update_plugin,
+                        repeat=True)
         # if not sys.platform.startswith('win'):
+        self.schedule('check reconf file',
+                        300,
+                        self.checkreconf,
+                        repeat=True)
+
         if self.config.netchanging == 1:
             logging.warning("Network Changing enable")
-            self.schedule('check network',
-                        self.laps_time_networkMonitor,
-                        self.networkMonitor,
-                        repeat=True)
+            if self.config.sched_check_network:
+                self.schedule('check network',
+                                self.laps_time_networkMonitor,
+                                self.networkMonitor,
+                                repeat=True)
         else:
             logging.warning("Network Changing disable")
-        self.schedule('check AGENT INSTALL', 350,
-                      self.checkinstallagent,
-                      repeat=True)
-        self.schedule('manage session',
-                      laps_time_handlemanagesession,
-                      self.handlemanagesession,
-                      repeat=True)
+        if self.config.sched_update_agent:
+            self.schedule('check AGENT INSTALL', 350,
+                        self.checkinstallagent,
+                        repeat=True)
+        if self.config.sched_manage_session:
+            self.schedule('manage session',
+                        laps_time_handlemanagesession,
+                        self.handlemanagesession,
+                        repeat=True)
         if self.config.agenttype in ['relayserver']:
-            self.schedule('reloaddeploy',
-                          15,
-                          self.reloaddeploy,
-                          repeat=True)
+            if self.config.sched_reload_deployments:
+                self.schedule('reloaddeploy',
+                            15,
+                            self.reloaddeploy,
+                            repeat=True)
 
             # ######################Update remote agent#########################
             self.diragentbase = os.path.join('/',
@@ -487,24 +514,26 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 logging.warning("chang minimun time cyclic inventory : 3600")
                 logging.warning("we make sure that the time for "\
                     " the inventories is greater than or equal to 1 hour.")
-            self.schedule('event inventory',
-                          self.config.inventory_interval,
-                          self.handleinventory,
-                          repeat=True)
+            if self.config.sched_check_inventory:
+                self.schedule('event inventory',
+                            self.config.inventory_interval,
+                            self.handleinventory,
+                            repeat=True)
         else:
             logging.warning("not enable cyclic inventory")
 
         #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ['relayserver']:
-            self.schedule('session reload',
-                          15,
-                          self.reloadsesssion,
-                          repeat=False)
-
-        self.schedule('reprise_evenement',
-                      10,
-                      self.handlereprise_evenement,
-                      repeat=True)
+            if self.config.sched_session_reload:
+                self.schedule('session reload',
+                            15,
+                            self.reloadsesssion,
+                            repeat=False)
+        if self.config.sched_check_events:
+            self.schedule('reprise_evenement',
+                        10,
+                        self.handlereprise_evenement,
+                        repeat=True)
 
         self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
@@ -561,15 +590,16 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                     matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,
                                                                              "custom_xep")),
                                     self._handle_custom_iq))
-        self.schedule('execcmdfile',
-                      laps_time_action_extern,
-                      self.execcmdfile,
-                      repeat=True)
-
-        self.schedule('initsyncthing',
-                      15,
-                      self.initialise_syncthing,
-                      repeat=False)
+        if self.config.sched_check_cmd_file:
+            self.schedule('execcmdfile',
+                        laps_time_action_extern,
+                        self.execcmdfile,
+                        repeat=True)
+        if self.config.sched_init_syncthing:
+            self.schedule('initsyncthing',
+                        15,
+                        self.initialise_syncthing,
+                        repeat=False)
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
@@ -711,7 +741,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         if len(config) == 0:
             return
-        if len(config['pendingDevices']) > 0:
+        if 'pendingDevices' in config and len(config['pendingDevices']) > 0:
             if self.pendingdevice_accept(config):
                 self.syncthingreconfigure = True;
             config['pendingDevices']=[]
@@ -1463,24 +1493,45 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.update_plugin()
 
     def unsubscribe_agent(self):
-        keyroster = str(self.boundjid.bare)
-        if keyroster in self.roster:
-            for t in self.roster[keyroster]:
-                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+        try:
+            keyroster = str(self.boundjid.bare)
+            if keyroster in self.roster:
+                for t in self.roster[keyroster]:
+                    if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                        continue
+                    self.limit_message_presence_clean_substitute.append(t)
+                    self.send_presence ( pto = t, ptype = 'unsubscribe' )
+                    self.update_roster(t, subscription='remove')
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
+
+    def unsubscribe_substitute_subscribe(self):
+        """
+        This function is used to unsubscribe the substitute subscribe
+        It sends a presence message with type "unsubscribe"
+        """
+        try:
+            keyroster = str(self.boundjid.bare)
+            for sub_subscribed in self.sub_subscribe_all:
+                if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
                     continue
-                logger.info("unsubscribe %s"%self.sub_subscribe)
-                self.send_presence ( pto = t, ptype = 'unsubscribe' )
-                #self.del_roster_item(t)
-                self.update_roster(t, subscription='remove')
+                if sub_subscribed not in  self.limit_message_presence_clean_substitute:
+                    self.send_presence (pto=sub_subscribed, ptype='unsubscribe')
+                    self.update_roster(sub_subscribed, subscription='remove')
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        logger.info("subscribe to %s agent"%self.sub_subscribe.user)
-        self.send_presence ( pto = self.sub_subscribe, ptype = 'subscribe' )
-        self.unsubscribe_agent()
+        logger.info("subscribe to %s agent" % self.sub_subscribe.user)
+        self.limit_message_presence_clean_substitute = []
         self.ipconnection = self.config.Server
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        self.unsubscribe_agent()
+        self.unsubscribe_substitute_subscribe()
 
+        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         if  self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
@@ -1488,8 +1539,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
-
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
@@ -1553,13 +1602,37 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     msg,
                     dataerreur)
 
+    def call_plugin_differed(self, time_differed = 5):
+        try:
+            for pluginname in self.paramsdict:
+                self.schedule(  pluginname["descriptor"]["action"],
+                                time_differed ,
+                                self.call_plugin_deffered_mode,
+                                repeat=False,
+                                kwargs = {},
+                                args=())
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
+
+    def call_plugin_deffered_mode(self, *args, **kwargs):
+        try:
+            newparams = self.paramsdict.pop(0)
+            call_plugin(newparams["descriptor"]["action"],
+                        self,
+                        newparams["descriptor"]["action"],
+                        newparams["descriptor"]['sessionid'],
+                        newparams["descriptor"]['data'],
+                        newparams["msg"],
+                        newparams["errordescriptor"])
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
 
 
     def initialise_syncthing(self):
-        logger.info("____________________________________________")
-        logger.info("___________ INITIALISE SYNCTHING ___________")
-        logger.info("____________________________________________")
         try:
+            logger.info("____________________________________________")
+            logger.info("___________ INITIALISE SYNCTHING ___________")
+            logger.info("____________________________________________")
             self.config.syncthing_on
         except NameError:
             self.config.syncthing_on = False
@@ -1567,8 +1640,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         ################################### initialise syncthing ###################################
         if self.config.syncthing_on:
             if self.config.agenttype not in ['relayserver']:
-                self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
-            self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
+                if self.config.sched_check_syncthing_deployment:
+                    self.schedule('scan_syncthing_deploy', 55, self.scan_syncthing_deploy, repeat=True)
+            if self.config.sched_check_synthing_config:
+                self.schedule('synchro_synthing', 60, self.synchro_synthing, repeat=True)
             if logger.level <= 10:
                 console = False
                 browser = True
@@ -1662,6 +1737,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         msgbody = {}
         data = {'log': 'xmpplog',
                 'text': text,
@@ -1850,6 +1927,31 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 "this file allows you to request 1 inventory following 1 change of network.\n"\
                                 "The inventory is sent when the agent is no longer in transient mode\n" \
                                 "following changes of interfaces.")
+        force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
+        if os.path.isfile(force_reconfiguration):
+            os.remove(force_reconfiguration)
+
+    def reconfagent(self):
+        namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
+        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+        if os.path.isfile(namefilebool):
+            os.remove(namefilebool)
+
+        connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
+        subprocess.call(connectionagentArgs)
+
+        for i in range(15):
+            if os.path.isfile(namefilebool):
+                break
+            time.sleep(2)
+        logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
+        self.force_full_registration()
+        self.restartBot()
+
+    def checkreconf(self):
+        force_reconfiguration = os.path.join(os.path.dirname(os.path.realpath(__file__)), "action_force_reconfiguration")
+        if os.path.isfile(force_reconfiguration):
+            self.reconfagent()
 
     def networkMonitor(self):
         try:
@@ -1878,21 +1980,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     os.remove(force_reconfiguration)
                 #### execution de convigurateur.
                 #### timeout 5 minutes.
-                namefilebool = os.path.join(os.path.dirname(os.path.realpath(__file__)), "BOOLCONNECTOR")
-                nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
-                if os.path.isfile(namefilebool):
-                    os.remove(namefilebool)
-
-                connectionagentArgs = ['python', nameprogconnection, '-t', 'machine']
-                subprocess.call(connectionagentArgs)
-
-                for i in range(15):
-                    if os.path.isfile(namefilebool):
-                        break
-                    time.sleep(2)
-                logging.log(DEBUGPULSE,"RESTART AGENT [%s] for new configuration" % self.boundjid.user)
-                self.force_full_registration()
-                self.restartBot()
+                self.reconfagent()
             else:
                 BOOLFILEINVENTORYONCHANGINTERFACE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                     "BOOLFILEINVENTORYONCHANGINTERFACE")
@@ -1976,10 +2064,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
             if e.iq['error']['code'] == "409":
-                logging.info("Could not register account: User already exists")
+                logging.warning("Could not register account %s : User already exists" %\
+                        resp['register']['username'])
             else:
-                logging.error("Could not register account: %s" %\
-                        e.iq['error']['text'])
+                logging.error("Could not register account %s : %s" %\
+                        (resp['register']['username'], e.iq['error']['text']))
         except IqTimeout:
             logging.error("No response from server.")
             logger.error("\n%s"%(traceback.format_exc()))
@@ -2190,6 +2279,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         try:
             subnetreseauxmpp =  subnetnetwork(self.config.ipxmpp, xmppmask)
         except Exception:
+            logger.error("We failed to calculate the subnetnetwork, we hit this backtrace\n")
+            logger.error("\n %s" % (traceback.format_exc()))
             logreception = """
 Imposible calculate subnetnetwork verify the configuration of %s [%s]
 Check if ip [%s] is correct:
@@ -2269,9 +2360,10 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                         os.path.exists(self.config.monitoring_agent_config_file):
                             dataobj['md5_conf_monitoring'] =  hashlib.md5(file_get_contents(self.config.monitoring_agent_config_file)).hexdigest()
         except AttributeError:
-            logging.warning('conf file monitoring missing')
+            logging.debug('The monitoring configuration file is missing')
         except Exception as e:
-            logging.error('%s error on file config monitoring'%str(e))
+            logging.error('%s error on file config monitoring' % str(e))
+
         if self.config.agenttype in ['relayserver']:
             try:
                 dataobj['syncthing_port'] = self.config.syncthing_port
@@ -2280,7 +2372,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
         else:
-            logging.warning('geolocalisation not defined')
+            logging.debug('The geolocalisation is disabled')
         try:
             if  self.config.agenttype in ['relayserver']:
                 dataobj["moderelayserver"] = self.config.moderelayserver
@@ -2587,7 +2679,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
     config = confParameter(optstypemachine)
     if config.agenttype in ['machine']:
         port = 52044
-        root_path = os.path.abspath(os.getcwd())
+        root_path = os.path.dirname(os.path.realpath(__file__))
         server_path = os.path.join(root_path, 'lib')
         server_ressources_path = os.path.join(root_path, 'lib', 'ressources')
 
@@ -2596,8 +2688,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         server_conf = {
             # Root access
             'global':{
-                'server.socket_host': '0.0.0.0',
-                'server.socket_port': port,
+                'server.socket_host': config.fv_host,
+                'server.socket_port': config.fv_port,
             },
             '/': {
                 #'tools.staticdir.on': True,
@@ -2645,8 +2737,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
 
         cherrypy.server.unsubscribe()
         server1 = cherrypy._cpserver.Server()
-        server1.socket_port = port
-        server1._socket_host = '0.0.0.0'
+        server1.socket_port = config.fv_port
+        server1._socket_host = config.fv_host
 
         # ===
         # Do not remove the following lines
@@ -2671,7 +2763,7 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
                 if p.is_alive():
                     logger.debug("Alive %s (%s)"%(p.name,p.pid))
                     if p.name == "xmppagent":
-                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\""%p.pid
+                        cmd = "ps ax | grep $(pgrep --parent %s) | grep \"defunct\" | grep -v reversessh" % p.pid
                         result = simplecommand(cmd)
                         if result['code'] == 0:
                             if result['result']:
@@ -2842,7 +2934,7 @@ class process_xmpp_agent():
                     setgetcountcycle(1)
                     try:
                         timealternatifars = random.randint(*xmpp.config.timealternatif)
-                        logging.log(DEBUGPULSE,"waiting %s for reconection alternatif ARS"%timealternatifars)
+                        logging.log(DEBUGPULSE,"waiting %s for reconnection alternatif ARS"%timealternatifars)
                         time.sleep(timealternatifars)
                         newparametersconnect = nextalternativeclusterconnection(conffilename("cluster"))
 
@@ -2862,6 +2954,16 @@ class process_xmpp_agent():
                     except Exception:
                         logging.log(40," ERROR analyse alternative connection")
                         logging.log(40," Check file %s"%conffilename(xmpp.config.agenttype))
+                else:
+                    logging.log(40,"The file %s is missing" % conffilename("cluster"))
+                    setgetcountcycle(1)
+                    if setgetcountcycle(-1) > 3:
+                        setgetcountcycle()
+                        logging.log(DEBUGPULSE,"We need to restart the configurator as the file cluster.ini is missing")
+                        nameprogconnection = os.path.join(os.path.dirname(os.path.realpath(__file__)), "connectionagent.py")
+                        args = ['python', nameprogconnection, '-t', 'machine']
+                        subprocess.call(args)
+                        time.sleep(10)
         terminateserver(xmpp)
 
 class process_agent_search():

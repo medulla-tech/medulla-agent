@@ -214,7 +214,7 @@ class process_tcp_serveur():
         self.logger.debug("_______________________________________________")
         pid = os.getpid()
         while not self.eventkill.wait(1):
-            self.logger.debug("SERVER KIOSK ON pid server KIOS process is %s" % pid)
+            self.logger.debug("The process of the KIOSK server is %s" % pid)
             try:
                 rr, rw, err = select.select([self.sock],[],[self.sock], 7)
             except Exception as e:
@@ -225,7 +225,7 @@ class process_tcp_serveur():
                 self.logger.error('Quit connection kiosk')
                 break
             except KeyboardInterrupt:
-                self.logger.error("INTERRUPTED SERVER KIOSK CTRL+C")
+                self.logger.error("The KIOSK server has been interupted by CTRL+C")
                 break
             if self.sock in rr:
                 try:
@@ -315,8 +315,6 @@ class manage_kiosk_message:
         self.logger.info('loop event wait start')
         while self.running:
             try:
-                # lit event
-                self.logger.info('avant get')
                 event = self.queue_in.get(5)
                 self.logger.info('Loop event wait start')
                 if event == self.key_quit:
@@ -329,6 +327,42 @@ class manage_kiosk_message:
                 pass
             finally:
                 self.logger.info('loop event wait stop')
+
+
+    def test_type(self, value):
+        if type(value) is bool or type(value) is int or type(value) is float:
+            return value
+        else:
+            try:
+                return int(value)
+            except:
+                try:
+                    return float(value)
+                except:
+                    _value = value.lstrip(" ").strip(" ").lower().capitalize()
+                    if _value == "True":
+                        return True
+                    elif _value == "False":
+                        return False
+                    else:
+                        return value
+
+    def runjson(self, jsonf, level=0):
+        if type(jsonf) is dict:
+            msg = "%sdict"%(level*'  ')
+            tmp = {}
+            for element in jsonf:
+                tmp[element] = self.runjson(jsonf[element], level=level+1)
+            return tmp
+        elif type(jsonf) is list:
+            tmp = []
+            for element in jsonf:
+                tmp.append(self.runjson(element, level=level+1))
+            return tmp
+        else:
+            tmp = self.test_type(jsonf)
+            return tmp
+
 
     def handle_client_connection(self, recv_msg_from_kiosk):
         substitute_recv = ""
@@ -344,7 +378,8 @@ class manage_kiosk_message:
             if isBase64(msg):
                 msg = base64.b64decode(msg)
             try:
-                result = json.loads(minifyjsonstringrecv(msg))
+                _result = json.loads(minifyjsonstringrecv(msg))
+                result = self.runjson(_result)
                 self.logger.info("__Event network or kiosk %s"%json.dumps(result,
                                                                      indent = 4))
             except ValueError as e:
@@ -353,14 +388,19 @@ class manage_kiosk_message:
             try:
                 if 'interface' in result:
                     self.logger.debug('RECV NETWORK INTERFACE')
-                    #manage message from watching interface
-                    #result = result['data']
+
                     BOOLFILECOMPLETREGISTRATION = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                                "..",
                                                                "BOOLFILECOMPLETREGISTRATION")
                     file_put_contents(BOOLFILECOMPLETREGISTRATION,
                                       "Do not erase.\n"\
                                       "when re-recording, it will be of type 2. full recording.")
+                    if self.objectxmpp.config.alwaysnetreconf:
+                        # politique reconfiguration sur chaque changement de network.
+                        self.logger.warning("No network interface can replace the previous one. Agent reconfiguration needed to resume the service.")
+                        self.objectxmpp.networkMonitor()
+                        return
+
                     if self.objectxmpp.state.ensure('connected'):
                         # toujours connected.
                         self.objectxmpp.md5reseau=refreshfingerprint()
@@ -372,22 +412,22 @@ class manage_kiosk_message:
                         self.objectxmpp.config.ipxmpp = getIpXmppInterface(self.objectxmpp.config.Server,
                                                                            self.objectxmpp.config.Port)
                     if self.objectxmpp.config.ipxmpp in result['removedinterface']:
-                        self.logger.info("__IP Interface used to xmpp Server %s__"%self.objectxmpp.config.ipxmpp)
+                        self.logger.info("The IP address used to contact the XMPP Server is: %s" % self.objectxmpp.config.ipxmpp)
                         self.logger.info("__DETECT SUPP INTERFACE USED FOR CONNECTION AGENT MACHINE TO EJABBERD__")
                         logmsg = "The new network interface can replace the previous one. "\
                                  "The service will resume after restarting the agent"
-                        if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
-                            #on fait juste 1 restart
+                        if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port):
+                            # We only do a restart
                             self.logger.warning(logmsg)
-                            self.objectxmpp.md5reseau=refreshfingerprint()
+                            self.objectxmpp.md5reseau = refreshfingerprint()
                             self.objectxmpp.restartBot()
                         else:
-                            #on reconfigure la totale
-                            time.sleep(15) # l activation de la nouvelle interface peut prendre 1 moment
-                            if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port ):
-                                #on fait juste 1 restart
+                            # We reconfigure all
+                            time.sleep(15) # Activating the new interface can take a while.
+                            if is_connectedServer(self.objectxmpp.ipconnection, self.objectxmpp.config.Port):
+                                # We only do a restart
                                 self.logger.warning(logmsg)
-                                self.objectxmpp.md5reseau=refreshfingerprint()
+                                self.objectxmpp.md5reseau = refreshfingerprint()
                                 self.objectxmpp.restartBot()
                             else:
                                 self.logger.warning("No network interface can replace the previous one. "\
@@ -404,13 +444,13 @@ class manage_kiosk_message:
                             self.objectxmpp.networkMonitor()
                         else:
                             self.logger.warning("The new network interface is directly usable. Nothing to do")
-                            self.objectxmpp.md5reseau=refreshfingerprint()
+                            self.objectxmpp.md5reseau = refreshfingerprint()
                             self.objectxmpp.update_plugin()
                     return
             except Exception as e:
-                self.logger.error("%s"%str(e))
+                self.logger.error("%s" % str(e))
                 return
-            #manage message from tcp connection
+            # Manage message from tcp connection
             self.logger.debug('RECV FROM TCP/IP CLIENT')
             if 'uuid' in result:
                 datasend['data']['uuid'] = result['uuid']
@@ -433,18 +473,17 @@ class manage_kiosk_message:
                     datasend['data']['subaction'] =  'update'
                 elif result['action'] == 'kioskLog':
                     if 'message' in result and result['message'] != "":
-                        self.objectxmpp.xmpplog(
-                                    result['message'],
-                                    type = 'noset',
-                                    sessionname = '',
-                                    priority = 0,
-                                    action = "xmpplog",
-                                    who = self.objectxmpp.boundjid.bare,
-                                    how = "Planned",
-                                    why = "",
-                                    module = "Kiosk | Notify",
-                                    fromuser = "",
-                                    touser = "")
+                        self.objectxmpp.xmpplog(result['message'],
+                                                type='noset',
+                                                sessionname='',
+                                                priority=0,
+                                                action ="xmpplog",
+                                                who=self.objectxmpp.boundjid.bare,
+                                                how="Planned",
+                                                why="",
+                                                module="Kiosk | Notify",
+                                                fromuser="",
+                                                touser="")
                         if 'type' in result:
                             if result['type'] == "info":
                                 self.logger.getself.logger().info(result['message'])
@@ -468,16 +507,16 @@ class manage_kiosk_message:
                 else:
                     #bad action
                     self.logger.getLogger().warning("this action is not taken "\
-                                                    "into account : %s"%result['action'])
+                                                    "into account : %s" % result['action'])
                     return
                 if substitute_recv:
                     self.logger.warning("send to %s " % substitute_recv)
-                    self.objectxmpp.send_message(  mbody = json.dumps(datasend),
-                            mto = substitute_recv,
-                            mtype ='chat')
+                    self.objectxmpp.send_message(mbody=json.dumps(datasend),
+                                                 mto=substitute_recv,
+                                                 mtype='chat')
                 else:
-                    #call plugin on master
+                    # Call plugin on master
                     self.objectxmpp.send_message_to_master(datasend)
         except Exception as e:
             self.logger.error("message to kiosk server : %s" % str(e))
-            self.logger.error("\n%s"%(traceback.format_exc()))
+            self.logger.error("\n%s" % (traceback.format_exc()))

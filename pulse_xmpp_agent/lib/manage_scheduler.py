@@ -54,6 +54,7 @@ class manage_scheduler:
     def __init__(self, objectxmpp):
         #creation repertoire si non exist.
         try:
+            self.objectxmpp = objectxmpp
             objectxmpp.config.listcrontabforpluginscheduled = objectxmpp.config.listcrontabforpluginscheduled.replace(os.linesep,"").replace("'",'"').strip('"')
             try :
                 objcromtabconf = json.loads(objectxmpp.config.listcrontabforpluginscheduled)
@@ -74,7 +75,7 @@ class manage_scheduler:
 
         self.now = datetime.now()
 
-        self.objectxmpp = objectxmpp
+
 
         #addition path to sys
         if  self.objectxmpp.config.agenttype in ['relayserver']:
@@ -162,10 +163,10 @@ class manage_scheduler:
     def process_on_event(self):
         now = datetime.now()
         secondeunix = time.mktime(now.timetuple())
-        deleted=[]
+        deleted = []
         for t in self.taches:
-            if (secondeunix - t["exectime"])  > 0:
-                #replace exectime
+            if (secondeunix - t["exectime"]) > 0:
+                # Replace exectime
                 t["count"] = t["count"] + 1
                 if "nbcount" in t and t["nbcount"] != -1 and  t["count"] > t["nbcount"]:
                     deleted.append(t)
@@ -179,24 +180,28 @@ class manage_scheduler:
             self.taches.remove(y)
 
     def call_scheduling_main(self, name, *args, **kwargs):
-        mod = __import__("scheduling_%s"%name)
-        logging.getLogger().debug("exec plugin scheduling_%s"%name)
-        # Add compteur appel plugins
-        count = 0
-        try:
-            count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
-        except AttributeError:
-            count = 0
-            setattr(self.objectxmpp, "num_call_scheduling_%s"%name, count)
-        logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
-        mod.schedule_main(*args, **kwargs)
-        setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count + 1)
+        if self.objectxmpp.config.scheduling_plugin_action :
+            if name not in self.objectxmpp.config.excludedscheduledplugins :
+                logging.getLogger().debug("execution of the plugin scheduling_%s" % name)
+                try:
+                    count = getattr(self.objectxmpp, "num_call_scheduling_%s" % name)
+                    count = count + 1
+                except AttributeError:
+                    count=0
+                logging.getLogger().debug("num_call_scheduling_%s  %s" % (name, count))
+                setattr(self.objectxmpp, "num_call_scheduling_%s" % name, count)
+                mod = __import__("scheduling_%s" % name)
+                mod.schedule_main(*args, **kwargs)
+            else:
+                logging.getLogger().debug("The plugin %s is not allowed to run as it has been excluded" % name)
+        else:
+            logging.getLogger().debug("the parameter scheduling_plugin_action does not allow the call of the plugin %s" % name)
 
     def call_scheduling_mainspe(self, name, *args, **kwargs):
-        mod = __import__("scheduling_%s"%name)
+        mod = __import__("scheduling_%s" % name)
 
         return mod.schedule_main
 
     def litschedule(self, name):
-        mod = __import__("scheduling_%s"%name)
+        mod = __import__("scheduling_%s" % name)
         return mod.SCHEDULE
