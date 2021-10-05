@@ -136,7 +136,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 '',
                                                 'Registration',
                                                 '',
-                                                '',
+                                                xmppobject.boundjid.bare,
                                                 xmppobject.boundjid.bare)
             if 'oldjid' in data:
                 logger.debug("The hostname changed from %s to %s" % (data['oldjid'], data['from']))
@@ -196,7 +196,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     '',
                                                     'Registration | Notify',
                                                     '',
-                                                    '',
+                                                    xmppobject.boundjid.bare,
                                                     xmppobject.boundjid.bare)
                 if machine['enabled'] == 1:
                     logger.debug("Machine %s registered with the id: %s" %
@@ -211,7 +211,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     '',
                                                     'Registration | Notify',
                                                     '',
-                                                    '',
+                                                    xmppobject.boundjid.bare,
                                                     xmppobject.boundjid.bare)
 
                     if showinfobool:
@@ -543,7 +543,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 '',
                                                 'Registration | Notify',
                                                 '',
-                                                '',
+                                                xmppobject.boundjid.bare,
                                                 xmppobject.boundjid.bare)
             if idmachine != -1:
                 if showinfobool:
@@ -573,7 +573,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 '',
                                                 'Registration | Notify',
                                                 '',
-                                                '',
+                                                xmppobject.boundjid.bare,
                                                 xmppobject.boundjid.bare)
                 if showinfobool:
                     logger.info("Machine %s added to machines table" % idmachine)
@@ -591,7 +591,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                     '',
                                                     'Registration | Notify | Error | Alert',
                                                     '',
-                                                    '',
+                                                    xmppobject.boundjid.bare,
                                                     xmppobject.boundjid.bare)
                 XmppMasterDatabase().delNetwork_for_machines_id(idmachine)
                 for i in data['information']["listipinfo"]:
@@ -669,7 +669,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                         '',
                                                         'Remote_desktop | Guacamole | Service | Auto',
                                                         '',
-                                                        '',
+                                                        xmppobject.boundjid.bare,
                                                         "Master")
                     else:
                         if showinfobool:
@@ -683,7 +683,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                         '',
                                                         'QuickAction | Inventory | Inventory requested',
                                                         '',
-                                                        '',
+                                                        xmppobject.boundjid.bare,
                                                         "Master")
                         callinventory(xmppobject, data['from'])
                         if showinfobool:
@@ -700,7 +700,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                                 '',
                                                 'Registration | Notify | Error | Alert',
                                                 '',
-                                                '',
+                                                xmppobject.boundjid.bare,
                                                 xmppobject.boundjid.bare)
                 return
 
@@ -714,7 +714,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                             '',
                                             'Registration | Notify',
                                             '',
-                                            '',
+                                            xmppobject.boundjid.bare,
                                             xmppobject.boundjid.bare)
             pluginfunction=[str("plugin_%s" % x) for x in xmppobject.pluginlistunregistered]
             if showinfobool:
@@ -755,7 +755,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         '',
                                         'Registration | Notify | Error | Alert',
                                         '',
-                                        '',
+                                        xmppobject.boundjid.bare,
                                         xmppobject.boundjid.bare)
 
 def test_mac_address_black_list(macaddress, table_reg_for_match, showinfobool=True):
@@ -962,7 +962,7 @@ def test_consolidation_inventory(xmppobject, sessionid, data, showinfobool, msg,
                                             '',
                                             'Registration | Notify | Error | Alert',
                                             '',
-                                            '',
+                                            xmppobject.boundjid.bare,
                                             xmppobject.boundjid.bare)
             return  False
         # cherche machine in glpi on macadress
@@ -1152,7 +1152,7 @@ def adduserdatageolocalisation(xmppobject, data, msg, sessionid, showinfobool):
                                             '',
                                             'Registration | Notify | Error | Alert',
                                             '',
-                                            '',
+                                            xmppobject.boundjid.bare,
                                             xmppobject.boundjid.bare)
             return -1, tabinformation
     except Exception:

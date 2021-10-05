@@ -7,7 +7,7 @@ Uploaders: Nicolas Lécureuil <nicolas.lecureuil@siveo.net>
 Build-Depends: debhelper (>= 9),
                dh-python,
                python-all-dev (>= 2.6.6-3~),
-	       python-setuptools, git
+	       python-setuptools, git, sudo 
 Standards-Version: 3.9.8
 Homepage: http://cyberelk.net/tim/software/pycups/
 Vcs-Git: https://anonscm.debian.org/git/python-modules/packages/python-cups.git
@@ -35,6 +35,7 @@ Description: plugins for pulse xmppmaster
 
 Package: pulse-agent-installers
 Architecture: all
+Pre-Depends: pulse-filetree-generator
 Depends: ${misc:Depends}, pulse-xmpp-agent-deps (>= 1.8), dos2unix, unzip, zip, nsis-plugins-accesscontrol, nsis-plugins-inetc, nsis-plugins-pwgen, nsis-plugins-zipdll, uuid, nsis-plugins-textreplace, pulse-kiosk-agent-deps, xz-utils, dpkg-dev, debhelper (>= 9), python-all-dev (>= 2.6.6-3~), build-essential, createrepo, crudini
 Description: Pulse 2 Xmpp agent installer
 Breaks: pulse-xmppmaster-agentplugins (<< 2.0.7)

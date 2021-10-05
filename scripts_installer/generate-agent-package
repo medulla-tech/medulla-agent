@@ -66,6 +66,8 @@ cp ${PULSE_AGENT_PATH}/${PULSE_MACHINE_PLUGINS_FILENAME} .
 cat <<EOF > xmppdeploy.json
 {
     "info": {
+        "localisation_server": "global",
+        "previous_localisation_server": "global",
         "description": "${PACKAGE_DESC}",
         "name": "${PACKAGE_NAME} v${AGENT_VERSION}",
         "software": "agentxmpp",
@@ -214,7 +216,7 @@ EOF
 
 # Generate conf.json
 cat <<EOF > conf.json
-{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux,win,mac", "entity_id": "0", "sub_packages": [], "reboot": 0, "version": "${AGENT_VERSION}",
+{"commands":{"postCommandSuccess":{"command": "", "name": ""},"installInit": {"command": "", "name": ""},"postCommandFailure": {"command": "", "name": ""},"command": {"command": "DO NOT EDIT THIS PACKAGE", "name": ""},"preCommand": {"command": "", "name": ""}}, "description": "${PACKAGE_DESC}","targetos": "linux,win,mac", "entity_id": "0", "sub_packages": [], "localisation_server": "global", "previous_localisation_server": "global", "reboot": 0, "version": "${AGENT_VERSION}",
 "inventory": {"associateinventory": "1", "licenses": "10000", "queries": {"Qversion": "${AGENT_VERSION}*", "Qvendor": "", "boolcnd": "", "Qsoftware": "pulse*agent"}}, "id": "${PACKAGE_UUID}", "name": "${PACKAGE_NAME} v${AGENT_VERSION}", "metagenerator": "manual"}
 EOF
 
@@ -232,7 +234,11 @@ if [[ ${old_uuid} != '' ]]; then
   echo "INFO: Deleting pakage ${old_uuid}... Done"
 fi
 
-# Restart package server
-echo "INFO: Restarting package server..."
-service pulse2-package-server restart
-echo "INFO: Restarting package server... Done"
+# Insert package in database
+echo "INFO: Generating package links and database records..."
+DBHOST=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbhost 2> /dev/null || echo localhost)
+DBPORT=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbport 2> /dev/null || echo 3306)
+DBPASS=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbpasswd)
+DBUSER=$(crudini --get /etc/mmc/plugins/pkgs.ini.local database dbuser 2> /dev/null || echo mmc)
+/usr/sbin/pulse2-generation_package.py -H ${DBHOST} -P ${DBPORT} -u ${DBUSER} -p ${DBPASS} -g -m -l -r > /tmp/pulse2-generation_package.log
+echo "INFO: Generating package links and database records... Done"

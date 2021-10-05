@@ -26,11 +26,11 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-NETWORKVERSION = '2.1.5'
+NETWORKVERSION = '2.1.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -38,6 +38,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
     try:
+        check_if_binary_ok()
         # Update if version is lower
         installed_version = checknetworkcheckversion()
         if StrictVersion(installed_version) < StrictVersion(NETWORKVERSION):
@@ -46,6 +47,61 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     except Exception:
         pass
 
+def check_if_service_is_running():
+    if sys.platform.startswith('win'):
+        is_ssh_started = utils.simplecommand("sc.exe query pulsenetworknotify")
+        if is_ssh_started['code'] == 0:
+            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+            if state == "STOPPED" or state == "RUNNING":
+                logger.debug("The Pulse Network Notify plugin is installed.")
+                return True
+        return False
+
+def stop_service():
+    if sys.platform.startswith('win'):
+        is_ssh_started = utils.simplecommand("sc.exe query pulsenetworknotify")
+        if is_ssh_started['code'] == 0:
+            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+            if state == "RUNNING":
+                utils.simplecommand("sc.exe stop sshdaemon")
+
+def check_if_binary_ok():
+    if sys.platform.startswith('win'):
+        regedit = False
+        binary = False
+        is_service_installed = False
+        reinstall = False
+
+        # We check if we have the Regedit entry
+        cmd_reg = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" /s | Find "DisplayVersion"'
+        result_reg = utils.simplecommand(cmd_reg)
+        if result_reg['code'] == 0:
+            regedit = True
+
+        # We check if the binary is available
+        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        servicefilename = 'netcheck-service.py'
+
+        if os.path.isfile(os.path.join(pulsedir_path, servicefilename)): 
+            binary = True
+
+        is_service_installed = check_if_service_is_running()
+
+        if (regedit is False  and is_service_installed is True) or (binary is False  and is_service_installed is True): 
+            reinstall = True
+            stop_service()
+
+        if (binary is True  and is_service_installed is False) or (regedit is True  and is_service_installed is False):
+            reinstall = True
+
+        if reinstall:
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
+                    '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            result = utils.simplecommand(cmd)
+            if result['code'] == 0:
+                logger.debug("The Pulse Network Notify module is ready to be reinstalled.")
+            else:
+                logger.debug("We failed to reinitialize the registry entry.")
 
 def checknetworkcheckversion():
     if sys.platform.startswith('win'):
