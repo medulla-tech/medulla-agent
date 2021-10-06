@@ -131,12 +131,15 @@ class confParameter:
             self.pluginliststart = Config.get('plugins', 'pluginliststart')
         self.pluginliststart = [x.strip() for x in self.pluginliststart.split(",") if x.strip() != ""]
         ################################################################
-        self.dbpoolrecycle = 5
+        self.dbpoolrecycle = 3600
         self.dbpoolsize = 60
+        self.charset = "utf8"
         if Config.has_option("main", "dbpoolrecycle"):
             self.dbpoolrecycle = Config.getint('main', 'dbpoolrecycle')
         if Config.has_option("main", "dbpoolsize"):
             self.dbpoolsize = Config.getint('main', 'dbpoolsize')
+        if Config.has_option("main", "charset"):
+            self.charset = Config.get('main', 'charset')
         #PLUGIN LIST
         # activate connection to base module
         self.plugins_list = ["xmpp", "glpi", "kiosk"]
@@ -179,13 +182,17 @@ class confParameter:
             return 20
 
     def readConfkiosk(self, confiobject):
+        self.kiosk_dbpooltimeout = 30
+        if confiobject.has_option("kioskdatabase", "kiosk_dbpooltimeout"):
+            self.kiosk_dbpooltimeout = confiobject.getint('kioskdatabase', 'kiosk_dbpooltimeout')
+
         self.kiosk_dbhost = "localhost"
         if confiobject.has_option("kioskdatabase", "kiosk_dbhost"):
             self.kiosk_dbhost = confiobject.get('kioskdatabase', 'kiosk_dbhost')
 
-        self.kiosk_dbport = "3306"
+        self.kiosk_dbport = 3306
         if confiobject.has_option("kioskdatabase", "kiosk_dbport"):
-            self.kiosk_dbport = confiobject.get('kioskdatabase', 'kiosk_dbport')
+            self.kiosk_dbport = confiobject.getint('kioskdatabase', 'kiosk_dbport')
 
         self.kiosk_dbname = "kiosk"
         if confiobject.has_option("kioskdatabase", "kiosk_dbname"):
@@ -199,17 +206,27 @@ class confParameter:
         if confiobject.has_option("kioskdatabase", "kiosk_dbpasswd"):
             self.kiosk_dbpasswd = confiobject.get('kioskdatabase', 'kiosk_dbpasswd')
 
+        self.kiosk_dbpoolrecycle = 3600
+        if confiobject.has_option("kioskdatabase", "kiosk_dbpoolrecycle"):
+            self.kiosk_dbpoolrecycle = confiobject.getint('kioskdatabase', 'kiosk_dbpoolrecycle')
+
+        self.kiosk_dbpoolsize = 60
+        if confiobject.has_option("kioskdatabase", "kiosk_dbpoolsize"):
+            self.kiosk_dbpoolsize = confiobject.getint('kioskdatabase', 'kiosk_dbpoolsize')
+
+
     def readConfmsc(self, confiobject):
         self.msc_dbpooltimeout = 30
         if confiobject.has_option("mscdatabase", "msc_dbpooltimeout"):
             self.msc_dbpooltimeout = confiobject.getint('mscdatabase', 'msc_dbpooltimeout')
+
         self.msc_dbhost = "localhost"
         if confiobject.has_option("mscdatabase", "msc_dbhost"):
             self.msc_dbhost = confiobject.get('mscdatabase', 'msc_dbhost')
 
-        self.msc_dbport = "3306"
+        self.msc_dbport = 3306
         if confiobject.has_option("mscdatabase", "msc_dbport"):
-            self.msc_dbport = confiobject.get('mscdatabase', 'msc_dbport')
+            self.msc_dbport = confiobject.getint('mscdatabase', 'msc_dbport')
 
         self.msc_dbname = "msc"
         if confiobject.has_option("mscdatabase", "msc_dbname"):
@@ -223,17 +240,26 @@ class confParameter:
         if confiobject.has_option("mscdatabase", "msc_dbpasswd"):
             self.msc_dbpasswd = confiobject.get('mscdatabase', 'msc_dbpasswd')
 
+        self.msc_dbpoolrecycle = 3600
+        if confiobject.has_option("mscdatabase", "msc_dbpoolrecycle"):
+            self.msc_dbpoolrecycle = confiobject.getint('mscdatabase', 'msc_dbpoolrecycle')
+
+        self.msc_dbpoolsize = 60
+        if confiobject.has_option("mscdatabase", "msc_dbpoolsize"):
+            self.msc_dbpoolsize = confiobject.getint('mscdatabase', 'msc_dbpoolsize')
+
     def readConfpkgs(self, confiobject):
         self.pkgs_dbpooltimeout = 30
         if confiobject.has_option("pkgsdatabase", "pkgs_dbpooltimeout"):
             self.pkgs_dbpooltimeout = confiobject.getint('pkgsdatabase', 'pkgs_dbpooltimeout')
+
         self.pkgs_dbhost = "localhost"
         if confiobject.has_option("pkgsdatabase", "pkgs_dbhost"):
             self.pkgs_dbhost = confiobject.get('pkgsdatabase', 'pkgs_dbhost')
 
-        self.pkgs_dbport = "3306"
+        self.pkgs_dbport = 3306
         if confiobject.has_option("pkgsdatabase", "pkgs_dbport"):
-            self.pkgs_dbport = confiobject.get('pkgsdatabase', 'pkgs_dbport')
+            self.pkgs_dbport = confiobject.getint('pkgsdatabase', 'pkgs_dbport')
 
         self.pkgs_dbname = "pkgs"
         if confiobject.has_option("pkgsdatabase", "pkgs_dbname"):
@@ -247,14 +273,26 @@ class confParameter:
         if confiobject.has_option("pkgsdatabase", "pkgs_dbpasswd"):
             self.pkgs_dbpasswd = confiobject.get('pkgsdatabase', 'pkgs_dbpasswd')
 
+        self.pkgs_dbpoolrecycle = 3600
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbpoolrecycle"):
+            self.pkgs_dbpoolrecycle = confiobject.getint('pkgsdatabase', 'pkgs_dbpoolrecycle')
+
+        self.pkgs_dbpoolsize = 60
+        if confiobject.has_option("pkgsdatabase", "pkgs_dbpoolsize"):
+            self.pkgs_dbpoolsize = confiobject.getint('pkgsdatabase', 'pkgs_dbpoolsize')
+
     def readConfxmpp(self, confiobject):
+        self.xmpp_dbpooltimeout = 30
+        if confiobject.has_option("xmppdatabase", "xmpp_dbpooltimeout"):
+            self.xmpp_dbpooltimeout = confiobject.getint('xmppdatabase', 'xmpp_dbpooltimeout')
+
         self.xmpp_dbhost = "localhost"
         if confiobject.has_option("xmppdatabase", "xmpp_dbhost"):
             self.xmpp_dbhost = confiobject.get('xmppdatabase', 'xmpp_dbhost')
 
-        self.xmpp_dbport = "3306"
+        self.xmpp_dbport = 3306
         if confiobject.has_option("xmppdatabase", "xmpp_dbport"):
-            self.xmpp_dbport = confiobject.get('xmppdatabase', 'xmpp_dbport')
+            self.xmpp_dbport = confiobject.getint('xmppdatabase', 'xmpp_dbport')
 
         self.xmpp_dbname = "xmppmaster"
         if confiobject.has_option("xmppdatabase", "xmpp_dbname"):
@@ -268,6 +306,14 @@ class confParameter:
         if confiobject.has_option("xmppdatabase", "xmpp_dbpasswd"):
             self.xmpp_dbpasswd = confiobject.get('xmppdatabase', 'xmpp_dbpasswd')
 
+        self.xmpp_dbpoolrecycle = 3600
+        if confiobject.has_option("xmppdatabase", "xmpp_dbpoolrecycle"):
+            self.xmpp_dbpoolrecycle = confiobject.getint('xmppdatabase', 'xmpp_dbpoolrecycle')
+
+        self.xmpp_dbpoolsize = 60
+        if confiobject.has_option("xmppdatabase", "xmpp_dbpoolsize"):
+            self.xmpp_dbpoolsize = confiobject.getint('xmppdatabase', 'xmpp_dbpoolsize')
+
     def readConfglpi(self, confiobject):
         self.inventory_url = "http://localhost:9999/"
         if confiobject.has_option("glpi", "inventory_server_url"):
@@ -275,13 +321,17 @@ class confParameter:
 
         #Configuration sql
         #configuration glpi
+        self.glpi_dbpooltimeout = 30
+        if confiobject.has_option("glpidatabase", "glpi_dbpooltimeout"):
+            self.glpi_dbpooltimeout = confiobject.getint('glpidatabase', 'glpi_dbpooltimeout')
+
         self.glpi_dbhost = "localhost"
         if confiobject.has_option("glpidatabase", "glpi_dbhost"):
             self.glpi_dbhost = confiobject.get('glpidatabase', 'glpi_dbhost')
 
-        self.glpi_dbport = "3306"
+        self.glpi_dbport = 3306
         if confiobject.has_option("glpidatabase", "glpi_dbport"):
-            self.glpi_dbport = confiobject.get('glpidatabase', 'glpi_dbport')
+            self.glpi_dbport = confiobject.getint('glpidatabase', 'glpi_dbport')
 
         self.glpi_dbname = "glpi"
         if confiobject.has_option("glpidatabase", "glpi_dbname"):
@@ -294,6 +344,15 @@ class confParameter:
         self.glpi_dbpasswd = "mmc"
         if confiobject.has_option("glpidatabase", "glpi_dbpasswd"):
             self.glpi_dbpasswd = confiobject.get('glpidatabase', 'glpi_dbpasswd')
+
+        self.glpi_dbpoolrecycle = 3600
+        if confiobject.has_option("glpidatabase", "glpi_dbpoolrecycle"):
+            self.glpi_dbpoolrecycle = confiobject.getint('glpidatabase', 'glpi_dbpoolrecycle')
+
+        self.glpi_dbpoolsize = 60
+        if confiobject.has_option("glpidatabase", "glpi_dbpoolsize"):
+            self.glpi_dbpoolsize = confiobject.getint('glpidatabase', 'glpi_dbpoolsize')
+
 
         try:
             self.activeProfiles = confiobject.get('glpi', 'active_profiles').split(' ')

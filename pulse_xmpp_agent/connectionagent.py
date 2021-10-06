@@ -281,6 +281,8 @@ class MUCBot(ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         msgbody = {}
         data = {'log': 'xmpplog',
                 'text': text,
@@ -309,7 +311,27 @@ class MUCBot(ClientXMPP):
         self.send_message(  mto = self.sub_logger,
                             mbody=json.dumps(msgbody),
                             mtype='chat')
-            
+
+    def register(self, iq):
+        """ This function is called for automatic registration"""
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
+        try:
+            resp.send(now=True)
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            if e.iq['error']['code'] == "409":
+                logging.warning("Could not register account %s : User already exists" %\
+                        resp['register']['username'])
+            else:
+                logging.error("Could not register account %s : %s" %\
+                        (resp['register']['username'], e.iq['error']['text']))
+        except IqTimeout:
+            logging.error("No response from server.")
+            self.disconnect()
+
     def adddevicesyncthing(self, keydevicesyncthing, namerelay, address = ["dynamic"]):
         resource = jid.JID(namerelay).user[2:]
         if jid.JID(namerelay).bare == "rspulse@pulse":

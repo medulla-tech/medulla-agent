@@ -101,14 +101,25 @@ class PkgsDatabase(DatabaseHelper):
         self.config = confParameter()
 
         self.session = None
+        self.logger.info("Msc parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s, pool_timeout %s" % (self.config.pkgs_dbuser,
+                                                                   self.config.pkgs_dbhost,
+                                                                   self.config.pkgs_dbport,
+                                                                   self.config.pkgs_dbname,
+                                                                   self.config.pkgs_dbpoolrecycle,
+                                                                   self.config.pkgs_dbpoolsize,
+                                                                   self.config.pkgs_dbpooltimeout))
+
         try:
-            self.engine_pkgsmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.pkgs_dbuser,
+            self.engine_pkgsmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.pkgs_dbuser,
                                                                                      self.config.pkgs_dbpasswd,
                                                                                      self.config.pkgs_dbhost,
                                                                                      self.config.pkgs_dbport,
-                                                                                     self.config.pkgs_dbname),
-                                                         pool_recycle=self.config.dbpoolrecycle,
-                                                         pool_size=self.config.dbpoolsize,
+                                                                                     self.config.pkgs_dbname,
+                                                                                     self.config.charset),
+                                                         pool_recycle=self.config.pkgs_dbpoolrecycle,
+                                                         pool_size=self.config.pkgs_dbpoolsize,
                                                          pool_timeout=self.config.pkgs_dbpooltimeout,
                                                          convert_unicode=True)
 

@@ -136,11 +136,11 @@ def read_config_plugin_agent(objectxmpp):
         file_put_contents(configfilename,
                             "# file log is : %s\n" \
                             "[rotation_file]\n" \
-                            "# number file for rotation\n" \
+                            "# Number of files kept after rotation\n" \
                             "nb_rot_file = 6\n" \
-                            "# mode compress file rotation  no or zip or gzip or bz2\n" \
+                            "# Log file compression chosen in the following list: no | zip | gzip | bz2\n" \
                             "compress = no\n" \
-                            "# if filesize in octed > trigger_size rotation is running\n" \
+                            "# Maximum file size in bytes. If file size > trigger_size, log is rotated\n" \
                             "trigger_size = 1048576\n" %  objectxmpp.config.logfile)
     Config = ConfigParser.ConfigParser()
     Config.read(configfilename)

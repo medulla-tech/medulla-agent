@@ -126,7 +126,7 @@ class Controller:
                 if type == 'f':
                     html += """<tr class="anchor" id="{}">
                 <td>
-                    <a href="#{}" onclick="show_dialog('{}', '{}', this)">{}</a>
+                    <a href="#{}" onclick="show_dialog('{}', '{}', this, {}, {})">{}</a>
                     <div class="dialog resizable" style="display:none">
                         <p></p>
                     </div>
@@ -134,7 +134,7 @@ class Controller:
                 <td>{}</td>
                 <td>{}</td>
                 <td><a href="{}/{}" download>Download</a></td>
-            </tr>""".format(element, element, name, element, element, date, size, name, element)
+            </tr>""".format(element, element, name, element, Controller.config.fv_minwidth, Controller.config.fv_maxwidth, element, date, size, name, element)
                 else:
                     html += """<tr class="anchor" id="{}">
                 <td>{}</td>
@@ -172,7 +172,7 @@ class Controller:
             <body>
 
                 <style>
-                .resizable { max-width:600px; padding: 0.5em; }
+                .resizable { min-width: %spx; max-width:%spx; padding: 0.5em; }
                 .anchor a:focus{
                     background-color:rgb(210,210,210);
                 }
@@ -186,5 +186,5 @@ class Controller:
                     %s
                 </div>
             </body>
-        </html>""" % (','.join(jstablenames), tabs, html)
+        </html>""" % (','.join(jstablenames), Controller.config.fv_minwidth, Controller.config.fv_maxwidth, tabs, html)
         return template

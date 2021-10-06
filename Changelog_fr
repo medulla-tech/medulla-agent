@@ -1,0 +1,30 @@
+pulse-xmpp-agent 2.1.7
+======================
+* [CORRECTION DE BUG]  Correction de la détection de l'adresse IP du serveur
+XMPP lorsque l'agent démarre.
+* [CORRECTION DE BUG]  Correction d'un plantage lorsqu'il y a des 'locations'
+en double
+
+pulse-xmpp-agent 2.1.6
+======================
+* [FONCTIONNALITE]     Changement de quelques DEBUG en INFO
+* [FONCTIONNALITE]     Ajout de documentation de fonctions
+* [FONCTIONNALITE]     Les convergences sont maintenant identifiées par leur
+nom + date
+* [FONCTIONNALITE]     Ajout de plus de messages d'erreur afin d'aider a
+identifier l'origine de soucis ( soucis de connexion aux bases par exemple ).
+* [CORRECTION DE BUG]  Correction de backtrace pendant le déploiement
+* [CORRECTION DE BUG]  Correction de la detection de machines en ligne/hors
+ligne
+* [CORRECTION DE BUG]  Ajout du support de versions plus anciennes de
+SQLAlchemy
+* [CORRECTION DE BUG]  Correction de l'enregistrement lorsque le uuidsetup n'est pas
+défini
+* [CORRECTION DE BUG]  Correction de l'affichage de des messages d'information
+uniquement lors que setupuuid est actif
+* [CORRECTION DE BUG]  Correction d'un backtrace lorsqu'une machine a un
+inventaire mais aucun uuid_serial_machine d'affecté
+* [CORRECTION DE BUG]  Correction du support de glpi 9.2
+* [CORRECTION DE BUG]  Correction du support de glpi 9.5
+* [CORRECTION DE BUG]  Désinstallation/réinstallation de python si l'étape pip
+echoue.
