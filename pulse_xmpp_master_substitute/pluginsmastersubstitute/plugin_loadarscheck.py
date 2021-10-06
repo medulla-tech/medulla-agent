@@ -226,10 +226,16 @@ def display_server_status(self):
     logger.info("|         EJABBERD        |S|           ARS           |S|")
     logger.info("+-------------------------+-+-------------------------+-+")
     for status_ars in self.ars_server_list_status:
-        logger.info("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
-                                              status_ars['server']['presence'],
-                                              status_ars['ars']['jid'],
-                                              status_ars['ars']['presence']))
+        if status_ars['ars']['presence'] == 0 :
+            logger.warning("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
+                                                status_ars['server']['presence'],
+                                                status_ars['ars']['jid'],
+                                                status_ars['ars']['presence']))
+        else:
+            logger.info("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
+                                                status_ars['server']['presence'],
+                                                status_ars['ars']['jid'],
+                                                status_ars['ars']['presence']))
     logger.info("+-------------------------+-+-------------------------+-+")
 
 
