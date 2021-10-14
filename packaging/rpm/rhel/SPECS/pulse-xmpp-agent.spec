@@ -6,7 +6,7 @@
 
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
-Version:	2.1.6
+Version:	2.1.7
 %if ! %use_git
 Release:        1%{?dist}
 %else
@@ -206,7 +206,7 @@ Requires:   nsis-plugins-Pwgen
 Requires:   nsis-plugins-AccessControl
 Requires:   nsis-plugins-Inetc
 Requires:   nsis-plugins-TextReplace
-
+Requires(pre): pulse-filetree-generator
 
 %description -n pulse-agent-installers
 Files to create pulse windows installer
@@ -301,6 +301,7 @@ rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machin
 rm -fr %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsmachine/plugin_*.py
 cp -fv pulse_xmpp_agent/plugins_common/plugin_* %buildroot%{python2_sitelib}/pulse_xmpp_agent/pluginsrelay
 cp -fv pulse_xmpp_agent/descriptor_scheduler_common/scheduling_*.py %buildroot%{python2_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
+mkdir -p %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/sessiondeploysubstitute
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/pulse-xmpp-agent-log.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/agentxmpp.py
 chmod +x %buildroot%{python2_sitelib}/pulse_xmpp_agent/package_watching.py
@@ -338,6 +339,7 @@ cp pulse_xmpp_master_substitute/agentversion %buildroot%{python2_sitelib}/pulse_
 cp -r pulse_xmpp_master_substitute/bin/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/lib/  %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/pluginsmastersubstitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
+cp -r pulse_xmpp_master_substitute/descriptor_scheduler_substitute/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 cp -r pulse_xmpp_master_substitute/script/ %buildroot%{python2_sitelib}/pulse_xmpp_master_substitute/
 mkdir -p %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
 cp pulse_xmpp_master_substitute/config/*.ini %buildroot%_sysconfdir/pulse-xmpp-agent-substitute/
@@ -400,7 +402,6 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/generate-pulse-agent-win.sh %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/agent-installer.nsi.in %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/pulse-agent-task.xml %buildroot%_var/lib/pulse2/clients/win
-cp scripts_installer/win/pulse-filetree-generator.exe %buildroot%_var/lib/pulse2/clients/win
 chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-pulse-agent-win.sh
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin
 cp scripts_installer/lin/generate-pulse-agent-linux.sh %buildroot%_var/lib/pulse2/clients/lin
@@ -423,17 +424,6 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
 cp -fr scripts_installer/win/artwork/* %buildroot%_var/lib/pulse2/clients/win/artwork
 chmod +x %buildroot%_var/lib/pulse2/clients/*.sh
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-package
-GIT_SSL_NO_VERIFY=true git clone https://USER:PASSWORD@github.com/pulse-project/pulse-filetree-generator.git
-mv pulse-filetree-generator pulse-filetree-generator-%{filetree_version}
-g++ -O3 -std=c++11 pulse-filetree-generator-%{filetree_version}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
-mkdir -p %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
-cp pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin
-chmod +x %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin/pulse-filetree-generator
-mkdir -p %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES
-cp pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES
-chmod +x %buildroot%_var/lib/pulse2/clients/lin/rpm/package/SOURCES/pulse-filetree-generator
-mv pulse-filetree-generator %buildroot%_var/lib/pulse2/clients/mac
-chmod +x %buildroot%_var/lib/pulse2/clients/mac/pulse-filetree-generator
 cp pulse_xmpp_agent/script/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/

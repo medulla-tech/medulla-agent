@@ -9,6 +9,8 @@ usr/lib/python2.*/*-packages/pulse_xmpp_agent/script/create-profile.ps1
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/script/remove-profile.ps1
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/agentversion
 usr/lib/python2.*/*-packages/pulse_xmpp_agent/descriptor_scheduler_relay
+usr/lib/python2.*/*-packages/pulse_xmpp_agent/descriptor_scheduler_machine
+usr/lib/python2.*/*-packages/pulse_xmpp_master_substitute/sessiondeploysubstitute
 var/log/pulse/
 usr/lib/systemd/system/pulse-xmpp-agent-log.service  
 usr/lib/systemd/system/pulse-xmpp-agent-relay.service

@@ -1,3 +1,10 @@
+pulse-xmpp-agent 2.1.7
+======================
+* [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.
+* [BUGFIX]  Fix backtrace in the substitute registration when there is more
+than on location.
+* [BUGFIX]  Fix handling some accounts creation
+
 pulse-xmpp-agent 2.1.6
 ======================
 * [FEATURE] Change some infos messages into debug

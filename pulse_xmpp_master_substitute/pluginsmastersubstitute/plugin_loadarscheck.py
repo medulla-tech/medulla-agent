@@ -41,7 +41,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "loadarscheck", "TYPE": "substitute"}
+plugin = {"VERSION": "1.3", "NAME": "loadarscheck", "TYPE": "substitute"}
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
     """
@@ -115,7 +115,7 @@ def arscheck(self):
                                  date=None,
                                  fromuser=jidaction)
                     if self.monitoring_message_on_machine_no_presence:
-                        logger.debug("The Ars %s is down" % jidaction)
+                        logger.warning("The Ars %s is down" % jidaction)
                         self.message_datas_to_monitoring_loadarscheck (jidaction, "The Ars %s is down" % jidaction,
                                                                        informationaction="ack")
                     if self.action_reconf_ars_machines:
@@ -222,15 +222,15 @@ def display_server_status(self):
     """
         Display the status of both ejabberd and ARS.
     """
-    logger.debug("+-------------------------+-+-------------------------+-+")
-    logger.debug("|         EJABBERD        |S|           ARS           |S|")
-    logger.debug("+-------------------------+-+-------------------------+-+")
+    logger.info("+-------------------------+-+-------------------------+-+")
+    logger.info("|         EJABBERD        |S|           ARS           |S|")
+    logger.info("+-------------------------+-+-------------------------+-+")
     for status_ars in self.ars_server_list_status:
-        logger.debug("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
+        logger.info("|%25s|%1s|%25s|%1s|" % (status_ars['server']['jid'],
                                               status_ars['server']['presence'],
                                               status_ars['ars']['jid'],
                                               status_ars['ars']['presence']))
-    logger.debug("+-------------------------+-+-------------------------+-+")
+    logger.info("+-------------------------+-+-------------------------+-+")
 
 
 def read_conf_loadarscheck(objectxmpp):
@@ -250,15 +250,19 @@ def read_conf_loadarscheck(objectxmpp):
 
     if not os.path.isfile(pathfileconf):
         # not config files
-        objectxmpp.check_ars_scan_interval = 120
+        objectxmpp.check_ars_scan_interval = 600
         objectxmpp.check_timeout_ping = 5
         objectxmpp.update_table = True
         objectxmpp.action_reconf_ars_machines = True
-        objectxmpp.monitoring_message_on_machine_no_presence = False
+        objectxmpp.monitoring_message_on_machine_no_presence = True
         objectxmpp.monitor_agent="master_mon@pulse"
     else:
         ars_config = ConfigParser.ConfigParser()
         ars_config.read(pathfileconf)
+
+        if os.path.exists(pathfileconf + ".local"):
+            ars_config.read(pathfileconf + ".local")
+
         if ars_config.has_option("parameters", "check_ars_scan_interval"):
             objectxmpp.check_ars_scan_interval = ars_config.getint('parameters',
                                                                    'check_ars_scan_interval')

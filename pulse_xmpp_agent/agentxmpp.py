@@ -310,14 +310,17 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
-
+        self.sub_subscribe_all = []
         if not hasattr(self.config, 'sub_subscribe'):
             self.sub_subscribe = self.agentmaster
         else:
+            if isinstance(self.config.sub_subscribe, list):
+                self.sub_subscribe_all = [jid.JID(x) for x in self.config.sub_subscribe]
             if isinstance(self.config.sub_subscribe, list) and\
                 len(self.config.sub_subscribe) > 0:
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe[0])
             else:
+                self.sub_subscribe_all = [jid.JID(self.config.sub_subscribe)]
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
         if not hasattr(self.config, 'sub_logger'):
@@ -370,7 +373,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.fichierconfsyncthing = os.path.join(self.config.syncthing_home, 'config.xml')
                 conf_ars_deploy(self.config.syncthing_port,
                                 configfile=self.fichierconfsyncthing,
-                                name="pulse")
+                                deviceName="pulse")
             else:
                 self.fichierconfsyncthing = os.path.join(os.path.expanduser('~pulseuser'),
                                                          ".config",
@@ -392,7 +395,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             hostnameiddevice = None
             if self.boundjid.domain == "pulse":
                 hostnameiddevice = "pulse"
-            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, hostname=hostnameiddevice)
+            self.deviceid = iddevice(configfile=self.fichierconfsyncthing, deviceName=hostnameiddevice)
         except Exception:
             pass
 
@@ -1490,24 +1493,45 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.update_plugin()
 
     def unsubscribe_agent(self):
-        keyroster = str(self.boundjid.bare)
-        if keyroster in self.roster:
-            for t in self.roster[keyroster]:
-                if t == self.boundjid.bare or t in [self.sub_subscribe]:
+        try:
+            keyroster = str(self.boundjid.bare)
+            if keyroster in self.roster:
+                for t in self.roster[keyroster]:
+                    if t == self.boundjid.bare or t in [self.sub_subscribe]:
+                        continue
+                    self.limit_message_presence_clean_substitute.append(t)
+                    self.send_presence ( pto = t, ptype = 'unsubscribe' )
+                    self.update_roster(t, subscription='remove')
+        except Exception:
+            logger.error("\n%s"%(traceback.format_exc()))
+
+    def unsubscribe_substitute_subscribe(self):
+        """
+        This function is used to unsubscribe the substitute subscribe
+        It sends a presence message with type "unsubscribe"
+        """
+        try:
+            keyroster = str(self.boundjid.bare)
+            for sub_subscribed in self.sub_subscribe_all:
+                if sub_subscribed == self.boundjid.bare or sub_subscribed == self.sub_subscribe:
                     continue
-                logger.info("unsubscribe %s"%self.sub_subscribe)
-                self.send_presence ( pto = t, ptype = 'unsubscribe' )
-                #self.del_roster_item(t)
-                self.update_roster(t, subscription='remove')
+                if sub_subscribed not in  self.limit_message_presence_clean_substitute:
+                    self.send_presence (pto=sub_subscribed, ptype='unsubscribe')
+                    self.update_roster(sub_subscribed, subscription='remove')
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
 
     def start(self, event):
         self.get_roster()
         self.send_presence()
-        logger.info("subscribe to %s agent"%self.sub_subscribe.user)
-        self.send_presence ( pto = self.sub_subscribe, ptype = 'subscribe' )
-        self.unsubscribe_agent()
+        logger.info("subscribe to %s agent" % self.sub_subscribe.user)
+        self.limit_message_presence_clean_substitute = []
         self.ipconnection = self.config.Server
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
+        self.unsubscribe_agent()
+        self.unsubscribe_substitute_subscribe()
 
+        self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         if  self.config.agenttype in ['relayserver']:
             try:
                 if self.config.public_ip_relayserver != "":
@@ -1515,8 +1539,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
-
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
@@ -1715,6 +1737,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
+        if touser == "":
+            touser = self.boundjid.bare
         msgbody = {}
         data = {'log': 'xmpplog',
                 'text': text,
@@ -2040,10 +2064,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
             if e.iq['error']['code'] == "409":
-                logging.info("Could not register account: User already exists")
+                logging.warning("Could not register account %s : User already exists" %\
+                        resp['register']['username'])
             else:
-                logging.error("Could not register account: %s" %\
-                        e.iq['error']['text'])
+                logging.error("Could not register account %s : %s" %\
+                        (resp['register']['username'], e.iq['error']['text']))
         except IqTimeout:
             logging.error("No response from server.")
             logger.error("\n%s"%(traceback.format_exc()))
@@ -2663,8 +2688,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
         server_conf = {
             # Root access
             'global':{
-                'server.socket_host': '0.0.0.0',
-                'server.socket_port': port,
+                'server.socket_host': config.fv_host,
+                'server.socket_port': config.fv_port,
             },
             '/': {
                 #'tools.staticdir.on': True,
@@ -2712,8 +2737,8 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon,
 
         cherrypy.server.unsubscribe()
         server1 = cherrypy._cpserver.Server()
-        server1.socket_port = port
-        server1._socket_host = '0.0.0.0'
+        server1.socket_port = config.fv_port
+        server1._socket_host = config.fv_host
 
         # ===
         # Do not remove the following lines

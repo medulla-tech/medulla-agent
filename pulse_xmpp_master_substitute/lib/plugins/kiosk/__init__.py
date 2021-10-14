@@ -105,15 +105,26 @@ class KioskDatabase(DatabaseHelper):
         self.sessionglpi = None
         self.sessionkiosk = None
         self.config = confParameter()
-        # utilisation xmppmaster
+        self.logger.info("kiosk parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s, pooltimeout %s" % (self.config.kiosk_dbuser,
+                                                                  self.config.kiosk_dbhost,
+                                                                  self.config.kiosk_dbport,
+                                                                  self.config.kiosk_dbname,
+                                                                  self.config.kiosk_dbpoolrecycle,
+                                                                  self.config.kiosk_dbpoolsize,
+                                                                  self.config.kiosk_dbpooltimeout))
         try:
-            self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.kiosk_dbuser,
+            self.engine_kiosk_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.kiosk_dbuser,
                                                                                self.config.kiosk_dbpasswd,
                                                                                self.config.kiosk_dbhost,
                                                                                self.config.kiosk_dbport,
-                                                                               self.config.kiosk_dbname),
-                                                   pool_recycle = self.config.dbpoolrecycle,
-                                                   pool_size = self.config.dbpoolsize)
+                                                                               self.config.kiosk_dbname,
+                                                                               self.config.charset),
+                                                   pool_recycle=self.config.kiosk_dbpoolrecycle,
+                                                   pool_size=self.config.kiosk_dbpoolsize,
+                                                   pool_timeout=self.config.kiosk_dbpooltimeout,
+                                                   convert_unicode=True)
             self.Sessionkiosk = sessionmaker(bind=self.engine_kiosk_base)
             self.is_activated = True
             self.logger.debug("kiosk finish activation")

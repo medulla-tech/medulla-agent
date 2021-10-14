@@ -32,7 +32,7 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatedoublerun", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 # Comma separated list of orgs which do not need double run
 P4ONLYUCANSS = ''
@@ -105,6 +105,10 @@ def enabledoublerun(xmppobject):
             nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
         rsync_dest_folder = os.path.join("C:\\", "Windows", windows_system)
 
+        # Stop Nytrio ssh daemon
+        logger.debug("Plugin Doublerun - Stopping Nytrio sshd")
+        utils.simplecommand("sc stop sshd")
+
         # Delete all Pulse rsync files
         rsync_files = ['cyggcc_s-1.dll',
                        'cygiconv-2.dll',
@@ -131,9 +135,8 @@ def enabledoublerun(xmppobject):
             logger.error("Plugin Doublerun - Failed copying Nytrio cygwin1.dll file: %s" % e)
             raise PluginError
 
-        # Restart Nytrio ssh daemon
+        # Start Nytrio ssh daemon
         logger.debug("Plugin Doublerun - Restarting Nytrio sshd")
-        utils.simplecommand("sc stop sshd")
         utils.simplecommand("sc start sshd")
 
 

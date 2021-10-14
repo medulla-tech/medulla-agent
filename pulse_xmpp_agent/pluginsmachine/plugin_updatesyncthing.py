@@ -32,11 +32,11 @@ import ConfigParser
 from lib import utils
 from xml.etree import ElementTree
 
-SYNCTHINGVERSION = '1.6.1'
+SYNCTHINGVERSION = '1.18.0'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.22", "NAME": "updatesyncthing", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -48,6 +48,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         installed_version = checksyncthingversion()
         if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
             updatesyncthing(xmppobject, installed_version)
+
+        # Configure syncthing
+        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
+        syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
+        if os.path.isfile(syncthing_configfile):
+            configuresyncthing(syncthing_configfile)
+
     except Exception:
         pass
 
@@ -92,6 +99,8 @@ def configuresyncthing(config_file):
     config.find("./options/localAnnounceEnabled").text = 'false'
     config.find("./options/globalAnnounceEnabled").text = 'false'
     config.find("./options/relaysEnabled").text = 'false'
+    config.find("./options/stunKeepaliveSeconds").text = 0
+    config.find("./options/crashReportingEnabled").text = 'false'
     tree.write(config_file)
 
 def updatesyncthing(xmppobject, installed_version):
@@ -127,9 +136,6 @@ def updatesyncthing(xmppobject, installed_version):
 
             mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
             utils.simplecommand(mklink_command)
-
-            # Configure syncthing
-            configuresyncthing(os.path.join(syncthingconfig_path, 'config.xml'))
 
             # Enable syncthing now it is installed
             agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")

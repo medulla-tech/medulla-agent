@@ -28,8 +28,9 @@ xmppmaster database handler
 # SqlAlchemy
 from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct, not_
 from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.exc import DBAPIError, NoSuchTableError
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.ext.automap import automap_base
 from datetime import date, datetime, timedelta
 import pprint
 # PULSE2 modules
@@ -140,7 +141,7 @@ class DatabaseHelper(Singleton):
             return result
         return __sessionm
 
-# faire un sigleton
+# TODO: Create a Singleton
 class XmppMasterDatabase(DatabaseHelper):
     """
         Singleton Class to query the xmppmaster database.
@@ -150,24 +151,39 @@ class XmppMasterDatabase(DatabaseHelper):
     def activate(self):
         if self.is_activated:
             return None
+        # This is used to automatically create the mapping.
+        Base = automap_base()
         self.logger = logging.getLogger()
         self.logger.debug("Xmpp activation")
         self.engine = None
-        #self.dbpoolrecycle = 60
-        #self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
-        # utilisation xmppmaster
+        self.logger.info("Xmpp parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s, pool_timeout %s" % (self.config.xmpp_dbuser,
+                                                                   self.config.xmpp_dbhost,
+                                                                   self.config.xmpp_dbport,
+                                                                   self.config.xmpp_dbname,
+                                                                   self.config.xmpp_dbpoolrecycle,
+                                                                   self.config.xmpp_dbpoolsize,
+                                                                   self.config.xmpp_dbpooltimeout))
         try:
-            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
+            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s?charset=%s' % (self.config.xmpp_dbuser,
                                                                                      self.config.xmpp_dbpasswd,
                                                                                      self.config.xmpp_dbhost,
                                                                                      self.config.xmpp_dbport,
-                                                                                     self.config.xmpp_dbname),
-                                                         pool_recycle=self.config.dbpoolrecycle,
-                                                         pool_size=self.config.dbpoolsize)
+                                                                                     self.config.xmpp_dbname,
+                                                                                     self.config.charset),
+                                                        pool_recycle=self.config.xmpp_dbpoolrecycle,
+                                                        pool_size=self.config.xmpp_dbpoolsize,
+                                                        pool_timeout=self.config.xmpp_dbpooltimeout,
+                                                        convert_unicode=True)
             self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
+            Base.prepare(self.engine_xmppmmaster_base, reflect=True)
+            self.Update_machine = Base.classes.update_machine
+            self.Ban_machines = Base.classes.ban_machines
+
             self.is_activated = True
             self.logger.debug("Xmpp activation done.")
             return True
@@ -176,6 +192,7 @@ class XmppMasterDatabase(DatabaseHelper):
             self.logger.error("Please verify your configuration")
             self.is_activated = False
             return False
+
 
     @DatabaseHelper._sessionm
     def setagentsubscription(self,
@@ -852,7 +869,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            complete_name = None,
                            name = None):
         try:
-            result_entity = session.query(Glpi_entity).filter( Glpi_entity.glpi_id == glpi_id ).one()
+            result_entity = session.query(Glpi_entity).filter( Glpi_entity.glpi_id == glpi_id ).first()
             if result_entity:
                 if complete_name is not None:
                     result_entity.complete_name = complete_name
@@ -877,7 +894,7 @@ class XmppMasterDatabase(DatabaseHelper):
                            complete_name = None,
                            name = None):
         try:
-            result_location = session.query(Glpi_location).filter( Glpi_location.glpi_id == glpi_id ).one()
+            result_location = session.query(Glpi_location).filter( Glpi_location.glpi_id == glpi_id ).first()
             if result_location:
                 if complete_name is not None:
                     result_location.complete_name = complete_name
@@ -932,7 +949,7 @@ class XmppMasterDatabase(DatabaseHelper):
         #logging.getLogger().error("get_Glpi_entity")
         try:
             result_entity = session.query(Glpi_entity).\
-                filter( Glpi_entity.glpi_id == glpi_id ).one()
+                filter( Glpi_entity.glpi_id == glpi_id ).first()
             session.commit()
             session.flush()
             if result_entity:
@@ -956,7 +973,7 @@ class XmppMasterDatabase(DatabaseHelper):
         #logging.getLogger().error("get_Glpi_location")
         try:
             result_location = session.query(Glpi_location).\
-                filter( Glpi_location.glpi_id == glpi_id ).one()
+                filter( Glpi_location.glpi_id == glpi_id ).first()
             session.commit()
             session.flush()
             if result_location:
@@ -1157,39 +1174,53 @@ class XmppMasterDatabase(DatabaseHelper):
                     self.create_Glpi_register_keys( idmachine,
                                                     regwindokey,
                                                     value=glpiinformation['data']['reg'][regwindokey][0])
-        updatedb=-1
+        return self.updateGLPI_information_machine(idmachine,
+                                                   "UUID%s" % glpiinformation['data']['uuidglpicomputer'][0],
+                                                   glpiinformation['data']['description'][0],
+                                                   glpiinformation['data']['owner_firstname'][0],
+                                                   glpiinformation['data']['owner_realname'][0],
+                                                   glpiinformation['data']['owner'][0],
+                                                   glpiinformation['data']['model'][0],
+                                                   glpiinformation['data']['manufacturer'][0],
+                                                   entity_id_xmpp,
+                                                   location_id_xmpp)
+
+    @DatabaseHelper._sessionm
+    def updateGLPI_information_machine(self,
+                                       session,
+                                       id,
+                                       uuid_inventory,
+                                       description_machine,
+                                       owner_firstname,
+                                       owner_realname,
+                                       owner,
+                                       model,
+                                       manufacturer,
+                                       entity_id_xmpp,
+                                       location_id_xmpp):
+        """
+            update table Machine with informations obtained from GLPI
+        """
+
         try:
-            sql = '''
-                UPDATE `machines`
-                SET
-                    `uuid_inventorymachine` = '%s',
-                    `glpi_description`  = '%s',
-                    `glpi_owner_firstname` = '%s',
-                    `glpi_owner_realname` = '%s',
-                    `glpi_owner` = '%s',
-                    `model` = '%s',
-                    `manufacturer` = '%s',
-                    `glpi_entity_id` = %s,
-                    `glpi_location_id` = %s
-                WHERE
-                    `id` = '%s';''' % ("UUID%s" % glpiinformation['data']['uuidglpicomputer'][0],
-                                    glpiinformation['data']['description'][0].replace('"','\\"').replace("'","\\'"),
-                                    glpiinformation['data']['owner_firstname'][0],
-                                    glpiinformation['data']['owner_realname'][0],
-                                    glpiinformation['data']['owner'][0],
-                                    glpiinformation['data']['model'][0],
-                                    glpiinformation['data']['manufacturer'][0],
-                                    entity_id_xmpp,
-                                    location_id_xmpp,
-                                    idmachine)
-            #logging.getLogger().debug("sql %s" % sql)
-            updatedb = session.execute(sql)
-            # update entity information
+            entity_id_xmpp = None if entity_id_xmpp in ["NULL", ""] else entity_id_xmpp
+            location_id_xmpp = None if location_id_xmpp in ["NULL",""] else location_id_xmpp
+            obj = { Machines.uuid_inventorymachine : uuid_inventory ,
+                              Machines.glpi_description : description_machine,
+                              Machines.glpi_owner_firstname : owner_firstname,
+                              Machines.glpi_owner_realname : owner_realname,
+                              Machines.glpi_owner : owner,
+                              Machines.model : model,
+                              Machines.manufacturer : manufacturer,
+                              Machines.glpi_entity_id :  entity_id_xmpp,
+                              Machines.glpi_location_id :location_id_xmpp }
+            session.query(Machines).filter( Machines.id == id).update( obj)
             session.commit()
             session.flush()
+            return 1
         except Exception, e:
-            logging.getLogger().error(str(e))
-        return updatedb
+            logging.getLogger().debug("updateMachines error %s->" % str(e))
+            return -1
 
     @DatabaseHelper._sessionm
     def updateName_Qa_custom_command(self,
@@ -1214,7 +1245,6 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().debug("updateName_Qa_custom_command error %s->" % str(e))
             return -1
-
 
     @DatabaseHelper._sessionm
     def updateName_Qa_custom_command(self,
@@ -1959,6 +1989,32 @@ class XmppMasterDatabase(DatabaseHelper):
             return 1
         except Exception, e:
             return -1
+
+    @DatabaseHelper._sessionm
+    def wolbroadcastadressmacadress(self, session, listmacadress):
+        """
+            We monitor the mac addresses to check.
+
+            Args:
+                session: The SQL Alchemy session
+                listmacaddress: The mac addressesses to follow
+
+            Return:
+                We return those mac addresses grouped by the broadcast address.
+        """
+        grp_wol_broadcast_adress={}
+        result = session.query(Network.broadcast,
+                               Network.mac).distinct(Network.mac).\
+                filter(
+                    and_(Network.broadcast != "",
+                         Network.broadcast.isnot(None),
+                         Network.mac.in_(listmacadress))
+                       ).all()
+        for t in result:
+            if t.broadcast not in grp_wol_broadcast_adress:
+                grp_wol_broadcast_adress[t.broadcast]=[]
+            grp_wol_broadcast_adress[t.broadcast].append(t.mac)
+        return grp_wol_broadcast_adress
 
     def convertTimestampToSQLDateTime(self, value):
         return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(value))
@@ -4793,6 +4849,10 @@ class XmppMasterDatabase(DatabaseHelper):
         return updatedb
 
     @DatabaseHelper._sessionm
+    def getPresenceuuidenabled(self, session, uuid, enabled = 0):
+        return session.query(exists().where (and_(Machines.uuid_inventorymachine == uuid,
+                                              Machines.enabled == enabled))).scalar()
+    @DatabaseHelper._sessionm
     def getPresenceuuid(self, session, uuid):
         machinespresente = session.query(Machines.uuid_inventorymachine).\
             filter(and_(Machines.uuid_inventorymachine == uuid,
@@ -4987,7 +5047,8 @@ class XmppMasterDatabase(DatabaseHelper):
                  FROM
                     xmppmaster.machines
                  WHERE
-                    agenttype = 'machine' and uuid_inventorymachine IS NOT NULL;"""
+                    enabled = '1' and
+                    agenttype = 'machine' and uuid_inventorymachine IS NOT NULL AND uuid_inventorymachine!='';"""
 
         presencelist = session.execute(sql)
         session.commit()
@@ -5041,21 +5102,24 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def getxmppmasterfilterforglpi(self, session, listqueryxmppmaster=None):
+        listqueryxmppmaster[2] = listqueryxmppmaster[2].lower()
         fl = listqueryxmppmaster[3].replace('*',"%")
-        if listqueryxmppmaster[2] == "OU user":
-            machineid = session.query(Organization_ad.id_inventory)
-            machineid = machineid.filter(Organization_ad.ouuser.like(fl))
-        elif listqueryxmppmaster[2] == "OU machine":
-            machineid = session.query(Organization_ad.id_inventory)
-            machineid = machineid.filter(Organization_ad.oumachine.like(fl))
-        elif listqueryxmppmaster[2] == "Online computer":
+        if listqueryxmppmaster[2] == "ou user":
+            machineid = session.query(Machines.uuid_inventorymachine).\
+                filter( Machines.uuid_inventorymachine.isnot(None))
+            machineid = machineid.filter(Machines.ad_ou_user.like(fl))
+        elif listqueryxmppmaster[2] == "ou machine":
+            machineid = session.query(Machines.uuid_inventorymachine).\
+                filter( Machines.uuid_inventorymachine.isnot(None))
+            machineid = machineid.filter(Machines.ad_ou_machine.like(fl))
+        elif listqueryxmppmaster[2] == "online computer":
             d = XmppMasterDatabase().getlistPresenceMachineid()
             listid = [x.replace("UUID", "") for x in d]
             return listid
         machineid = machineid.all()
         session.commit()
         session.flush()
-        ret = [str(m.id_inventory) for m in machineid]
+        ret = [str(m.uuid_inventorymachine).replace("UUID", "")  for m in machineid]
         return ret
 
 
@@ -5170,7 +5234,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
         except Exception as e:
-            logging.getLogger().error("Function : is_machine_reconf_needed, we got the error: " % str(e))
+            logging.getLogger().error("Function : is_machine_reconf_needed, we got the error: %s " % str(e))
             logging.getLogger().error("We encountered the backtrace: \n%s" % traceback.format_exc())
 
 
@@ -5279,18 +5343,87 @@ class XmppMasterDatabase(DatabaseHelper):
         return resulttypemachine
 
     @DatabaseHelper._sessionm
-    def getGuacamoleRelayServerMachineUuid(self, session, uuid, enable=1):
-        querymachine = session.query(Machines)
-        if enable is None:
-            querymachine = querymachine.filter(Machines.uuid_inventorymachine == uuid)
-        else:
-            querymachine = querymachine.filter(and_(Machines.uuid_inventorymachine == uuid,
-                                                    Machines.enabled == enable))
-        machine = querymachine.one()
-        session.commit()
-        session.flush()
+    def get_machine_with_dupplicate_uuidinventory(self, session, uuid, enable=1):
+        """
+        This function is used to retrieve computers with dupplicate uuids.
+        Args:
+            session: The SQL Alchemy session
+            uuid: The uuid we are looking for
+            enable: Used to search for enabled or disabled only machines
+
+        Returns:
+            It return machines with dupplicate UUIDs.
+            We can search for enabled/disabled or all machines.
+        """
+
         try:
-            result = {"uuid": uuid,
+            querymachine = session.query(Machines)
+            if enable == None:
+                querymachine = querymachine.filter(Machines.uuid_inventorymachine == uuid)
+            else:
+                querymachine = querymachine.filter(and_(Machines.uuid_inventorymachine == uuid,
+                                                        Machines.enabled == enable))
+            machine = querymachine.all()
+            resultdata=[]
+            if machine:
+                for t in machine:
+                    result = {"uuid": uuid,
+                              "jid": t.jid,
+                              "groupdeploy": t.groupdeploy,
+                              "urlguacamole": t.urlguacamole,
+                              "subnetxmpp": t.subnetxmpp,
+                              "hostname": t.hostname,
+                              "platform": t.platform,
+                              "macaddress": t.macaddress,
+                              "archi": t.archi,
+                              "uuid_inventorymachine": t.uuid_inventorymachine,
+                              "ip_xmpp": t.ip_xmpp,
+                              "agenttype": t.agenttype,
+                              "keysyncthing":  t.keysyncthing,
+                              "enabled": t.enabled}
+                    for i in result:
+                        if result[i] == None:
+                            result[i] = ""
+                    resultdata.append(result)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error("We failed to search the computers having %s as uuid" % uuid)
+            logging.getLogger().error("The backtrace we trapped is: \n %s" % str(e))
+
+        return resultdata
+
+    @DatabaseHelper._sessionm
+    def getGuacamoleRelayServerMachineUuid(self, session, uuid, enable=1):
+        result = {"error": "noresult",
+                  "uuid": uuid,
+                  "jid": "",
+                  "groupdeploy": "",
+                  "urlguacamole": "",
+                  "subnetxmpp": "",
+                  "hostname": "",
+                  "platform": "",
+                  "macaddress": "",
+                  "archi": "",
+                  "uuid_inventorymachine": "",
+                  "ip_xmpp": "",
+                  "agenttype": "",
+                  "keysyncthing":  "",
+                  "enabled": enable}
+        try:
+            querymachine = session.query(Machines)
+            if enable == None:
+                querymachine = querymachine.filter(Machines.uuid_inventorymachine == uuid)
+            else:
+                querymachine = querymachine.filter(and_(Machines.uuid_inventorymachine == uuid,
+                                                        Machines.enabled == enable))
+            machine = querymachine.one()
+
+            session.commit()
+            session.flush()
+
+            result = {"error": 'noerror',
+                      "uuid": uuid,
                       "jid": machine.jid,
                       "groupdeploy": machine.groupdeploy,
                       "urlguacamole": machine.urlguacamole,
@@ -5304,27 +5437,39 @@ class XmppMasterDatabase(DatabaseHelper):
                       "agenttype": machine.agenttype,
                       "keysyncthing":  machine.keysyncthing,
                       "enabled": machine.enabled
-                      }
+                     }
             for i in result:
                 if result[i] is None:
                     result[i] = ""
-        except Exception:
-            result = {"uuid": uuid,
-                      "jid": "",
-                      "groupdeploy": "",
-                      "urlguacamole": "",
-                      "subnetxmpp": "",
-                      "hostname": "",
-                      "platform": "",
-                      "macaddress": "",
-                      "archi": "",
-                      "uuid_inventorymachine": "",
-                      "ip_xmpp": "",
-                      "agenttype": "",
-                      "keysyncthing":  "",
-                      "enabled": 0
-                      }
+
+        except NoResultFound as e:
+            result['error'] = 'NoResultFound'
+            if enable is None:
+                logging.getLogger().error("We found no machines with the UUID %s" % uuid)
+            else:
+                logging.getLogger().error("We found no machines with the UUID %s, and with enabled: %s" % uuid, enable)
+
+            logging.getLogger().error("We encountered the following error:\n %s" % str(e))
+        except MultipleResultsFound as e:
+            result['error'] = 'MultipleResultsFound'
+            if enable is None:
+                logging.getLogger().error("We found multiple machines with the UUID %s" % uuid)
+            else:
+                logging.getLogger().error("We found multiple machines with the UUID %s, and with enabled: %s" % uuid, enable)
+
+            logging.getLogger().error("We encountered the following error:\n %s" % str(e))
+
+        except Exception as e:
+            result['error'] = str(e)
+            if enable is None:
+                logging.getLogger().error("We were searching for machines with the UUID %s" % uuid)
+            else:
+                logging.getLogger().error("We were searching for machines with the UUID %s, and with enabled: %s" % uuid, enable)
+
+            logging.getLogger().error("We encountered the following error:\n %s" % str(e))
+
         return result
+
 
     @DatabaseHelper._sessionm
     def getMachinedeployexistonHostname(self, session, hostname):
@@ -6880,3 +7025,192 @@ class XmppMasterDatabase(DatabaseHelper):
             resultlist.append(tmpdict)
         logging.getLogger().error(resultlist)
         return resultlist
+
+    # Update machine scheduling
+
+    def __updatemachine(self, object_update_machine):
+        """
+            This function create a dictionnary with the informations of the
+            machine that need to be updated.
+
+            Args:
+                object_update_machine: An object with the informations of the machine.
+            Returns:
+                A dicth with the informations of the machine.
+        """
+        try:
+            ret = {'id': object_update_machine.id,
+                   'jid': object_update_machine.jid,
+                   'ars': object_update_machine.ars,
+                   'status': object_update_machine.status,
+                   'descriptor': object_update_machine.descriptor,
+                   'md5': object_update_machine.md5 ,
+                   'date_creation': object_update_machine.date_creation}
+            return ret
+        except Exception as error_creating:
+            logging.getLogger().error("We failed to retrieve the informations of the machine to update")
+            logging.getLogger().error("We got the error \n : %s" % str(error_creating))
+            return None
+
+    @DatabaseHelper._sessionm
+    def update_update_machine(self,
+                              session,
+                              hostname,
+                              jid,
+                              ars="",
+                              status="ready",
+                              descriptor="",
+                              md5="",
+                              date_creation=None):
+        """
+            We create the informations of the machines in the update SQL table
+            Args:
+                session: The SQL Alchemy session
+                hostname: The hostname of the machine to update
+                jid: The jid of the machine to update
+                ars: The ARS on which the machine is connected
+                status: The status of the update (ready, updating, ... )
+                        ready: Machines that need an update. Those kind of machines
+                               won't be updated automatically.
+                        updating: Machines that will be updated automatically.
+                descriptor: All the md5sum of files that needs to be updated.
+                md5: md5 of the md5 of files ( that helps to see quickly if an update is needed )
+                date_creation: Date when it has been added on the update table.
+        """
+        try:
+            query = session.query(self.Update_machine).\
+                       filter(self.Update_machine.jid.like(jid)).one()
+
+            query.hostname = hostname
+            query.ars = ars
+            query.status = status
+            query.descriptor = descriptor
+            query.md5 = md5
+            session.commit()
+            session.flush()
+            return self.__updatemachine(query)
+        except Exception as e:
+            logging.getLogger().error("We failed to update the informations on the SQL Table")
+            logging.getLogger().error("We got the error %s " % str(e))
+            self.logger.error("We hit the backtrace \n%s" % (traceback.format_exc()))
+            return None
+
+    @DatabaseHelper._sessionm
+    def setUpdate_machine(self,
+                          session,
+                          hostname,
+                          jid,
+                          ars="",
+                          status="ready",
+                          descriptor="",
+                          md5="",
+                          date_creation=None):
+        """
+            We update the informations of the machines in the update SQL table
+            Args:
+                session: The SQL Alchemy session
+                hostname: The hostname of the machine to update
+                jid: The jid of the machine to update
+                ars: The ARS on which the machine is connected
+                status: The status of the update (ready, updating, ... )
+                        ready: Machines that need an update. Those kind of machines
+                               won't be updated automatically.
+                        updating: Machines that will be updated automatically.
+                descriptor: All the md5sum of files that needs to be updated.
+                md5: md5 of the md5 of files ( that helps to see quickly if an update is needed )
+                date_creation: Date when it has been added on the update table.
+        """
+
+        try:
+            new_Update_machine = self.Update_machine()
+            new_Update_machine.hostname = hostname
+            new_Update_machine.jid = jid
+            new_Update_machine.ars = ars
+            new_Update_machine.status = status
+            new_Update_machine.descriptor = descriptor
+            new_Update_machine.md5 = md5
+            if date_creation is not None:
+                new_Update_machine.date_creation = date_creation
+            session.add(new_Update_machine)
+            session.commit()
+            session.flush()
+            return self.__updatemachine(new_Update_machine)
+        except IntegrityError as e:
+            reason = e.message
+            if "Duplicate entry" in reason:
+                self.logger.info("%s already in table." % e.params[0])
+                return self.update_update_machine(hostname,
+                                                  jid,
+                                                  ars,
+                                                  status,
+                                                  descriptor,
+                                                  md5)
+            else:
+                self.logger.info("setUpdate_machine : %s" % str(e))
+                return None
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+            return None
+
+
+    @DatabaseHelper._sessionm
+    def getUpdate_machine(self,
+                          session,
+                          status="ready",
+                          nblimit=1000):
+        """
+            This function is used to retrieve the machines in the pending list
+            for update.
+
+            Args:
+                session: The SQL Alchemy session
+                status: The status of the machine in the database ( ready, updating, ... )
+                nblimit: Number maximum of machines allowed to be updated at once.
+        """
+
+        sql = """SELECT
+                    MIN(id) AS minid , MAX(id) AS maxid
+                FROM
+                    (SELECT id
+                        FROM
+                            update_machine
+                        WHERE
+                            status LIKE '%s'
+                        LIMIT %s) AS dt;""" % (status,
+                                               nblimit)
+        machines_jid_for_updating = []
+        borne = session.execute(sql)
+
+        result = [x for x in borne][0]
+        minid = result[0]
+        maxid = result[0]
+        if minid is not None:
+            sql=""" SELECT
+                        jid, ars
+                    FROM
+                        update_machine
+                    WHERE
+                        id >= %s and id <= %s and
+                            status LIKE '%s';""" % (minid,
+                                                    maxid,
+                                                    status)
+            resultquery = session.execute(sql)
+
+            for record_updating_machine in resultquery:
+                machines_jid_for_updating.append((record_updating_machine.jid, record_updating_machine.ars))
+
+            sql=""" delete
+
+                    FROM
+                        update_machine
+                    WHERE
+                        id >= %s and id <= %s and
+                            status LIKE '%s';"""%(minid,
+                                                  maxid,
+                                                  status)
+            resultquery = session.execute(sql)
+
+            session.commit()
+            session.flush()
+        return machines_jid_for_updating

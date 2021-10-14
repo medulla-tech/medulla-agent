@@ -192,13 +192,14 @@ class Glpi92(DatabaseHelper):
         self.sessionglpi = None
 
         #utilisation glpi base
-        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.glpi_dbuser,
+        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=utf8'%( self.config.glpi_dbuser,
                                                                 self.config.glpi_dbpasswd,
                                                                 self.config.glpi_dbhost,
                                                                 self.config.glpi_dbport,
                                                                 self.config.glpi_dbname),
                                     pool_recycle = self.config.dbpoolrecycle,
-                                    pool_size = self.config.dbpoolsize
+                                    pool_size = self.config.dbpoolsize,
+                                    convert_unicode = True
         )
 
         try:
@@ -206,16 +207,16 @@ class Glpi92(DatabaseHelper):
         except OperationalError:
             self._glpi_version = self.engine_glpi.execute('SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
 
-        if LooseVersion(self._glpi_version) >=  LooseVersion("9.1") and LooseVersion(self._glpi_version) <=  LooseVersion("9.1.7"):
+        if LooseVersion(self._glpi_version) >=  LooseVersion("9.2") and LooseVersion(self._glpi_version) <=  LooseVersion("9.2.9"):
             logging.getLogger().debug('GLPI version %s found !' % self._glpi_version)
         else:
-            logging.getLogger().debug('GLPI higher than version 9.1 was not detected')
+            logging.getLogger().debug('GLPI higher than version 9.2 was not detected')
         self.Session = sessionmaker(bind=self.engine_glpi)
         self.metadata = MetaData(self.engine_glpi)
         self.initMappers()
         self.logger.info("Glpi is in version %s" % (self.glpi_version))
         self.metadata.create_all()
-        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.1')
+        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.2')
         self.is_activated = True
         self.logger.debug("Glpi finish activation")
 
@@ -586,7 +587,6 @@ class Glpi92(DatabaseHelper):
 
     def __filter_on_filter(self, query):
         if self.config.filter_on is not None:
-            logging.getLogger().debug('function __filter_on_filter  self.config.filter_on is  %s'%self.config.filter_on)
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
                 try:
@@ -651,11 +651,16 @@ class Glpi92(DatabaseHelper):
             d = XmppMasterDatabase().getlistPresenceMachineid()
             listid = [x.replace("UUID", "") for x in d]
             ret["computerpresence"] = ["computerpresence","xmppmaster",filt["computerpresence"] , listid]
-        elif "query" in filt and filt['query'][0] == "AND":
+        elif "query" in filt and filt['query'][0] in ["AND", "OR", "NOT"]:
             for q in filt['query'][1]:
-                if len(q) >=3 and (q[2] == "Online computer" or q[2] == "OU user" or q[2] == "OU machine"):
-                    listid = XmppMasterDatabase().getxmppmasterfilterforglpi(q)
-                    ret[q[2]] = [q[1], q[2], q[3], listid]
+                #if len(q) >=3: and  q[2].lower() in ["online computer", "ou user", "ou machine"]:
+                if len(q) >=3:
+                    if  q[2].lower() in ["online computer",
+                                         'ou machine',
+                                         'ou user']:
+                        listid = XmppMasterDatabase().getxmppmasterfilterforglpi(q)
+                        q.append(listid)
+                        ret[q[2]] = [q[1], q[2], q[3], listid]
         return ret
 
     def getMachineByUuidSetup(self, uuidsetupmachine):
@@ -715,7 +720,10 @@ class Glpi92(DatabaseHelper):
 
             query_filter = None
 
-            filters = [self.machine.c.is_deleted == 0, self.machine.c.is_template == 0, self.__filter_on_filter(query), self.__filter_on_entity_filter(query, ctx)]
+            filters = [self.machine.c.is_deleted == 0,
+                       self.machine.c.is_template == 0,
+                       self.__filter_on_filter(query),
+                       self.__filter_on_entity_filter(query, ctx)]
 
             join_query, query_filter = self.filter(ctx, self.machine, filt, session.query(Machine), self.machine.c.id, filters)
 
@@ -811,15 +819,15 @@ class Glpi92(DatabaseHelper):
                 query = query.select_from(join_query).filter(query_filter)
             query = query.filter(self.machine.c.is_deleted == 0).filter(self.machine.c.is_template == 0)
             if ret:
-                if "Online computer" in ret:
-                    if ret["Online computer"][2] == "True":
-                        query = query.filter(Machine.id.in_(ret["Online computer"][3]))
-                    else:
-                        query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
-                if "OU user" in ret:
-                    query = query.filter(Machine.id.in_(ret["OU user"][3]))
-                if "OU machine" in ret:
-                    query = query.filter(Machine.id.in_(ret["OU machine"][3]))
+                #if "online computer" in ret:
+                    #if ret["online computer"][2] == "True":
+                        #query = query.filter(Machine.id.in_(ret["online computer"][3]))
+                    #else:
+                        #query = query.filter(Machine.id.notin_(ret["online computer"][3]))
+                #if "ou user" in ret:
+                    #query = query.filter(Machine.id.in_(ret["ou user"][3]))
+                #if "ou machine" in ret:
+                    #query = query.filter(Machine.id.in_(ret["ou machine"][3]))
                 if "computerpresence" in ret:
                     if ret["computerpresence"][2] == "presence":
                         query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
@@ -1067,7 +1075,7 @@ class Glpi92(DatabaseHelper):
         """
         Map a name and request parameters on a sqlalchemy request
         """
-        if len(query) == 4:
+        if len(query) >= 4:
             # in case the glpi database is in latin1, don't forget dyngroup is in utf8
             # => need to convert what comes from the dyngroup database
             query[3] = self.encode(query[3])
@@ -3810,10 +3818,10 @@ class Glpi92(DatabaseHelper):
                                 else:
                                     strre = getattr(ret, keynameresult)
                                     if isinstance(strre, basestring):
-                                        if encode != "utf8":
-                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode).encode('utf8')
+                                        if encode == "utf8":
+                                            resultrecord[keynameresult] = str(strre)
                                         else:
-                                            resultrecord[keynameresult] =  "%s"%strre.encode('utf8')
+                                            resultrecord[keynameresult] =  strre.decode(encode).encode('utf8')
                                     else:
                                         resultrecord[keynameresult] = strre
                     except AttributeError:
@@ -4072,23 +4080,24 @@ class Glpi92(DatabaseHelper):
                     result['data'][columns_name[indexcolum]].append(machine[indexcolum])
                     #
             else:
-                recordmachinedict = self._machineobjectdymresult(machine)
+                recordmachinedict = self._machineobjectdymresult(machine, encode='utf8')
                 for recordmachine in recordmachinedict:
                     result['data'][recordmachine] = [ recordmachinedict[recordmachine]]
 
             for column in list_reg_columns_name:
                 result['data']['reg'][column].append(None)
-
-        regquery = session.query(
-            self.regcontents.c.computers_id,
-            self.regcontents.c.key,
-            self.regcontents.c.value)\
-        .filter(
-            and_(
-                self.regcontents.c.key.in_(list_reg_columns_name),
-                self.regcontents.c.computers_id.in_(result['data']['uuid'])
-            )
-        ).all()
+        regquery=[]
+        if list_reg_columns_name:
+            regquery = session.query(
+                self.regcontents.c.computers_id,
+                self.regcontents.c.key,
+                self.regcontents.c.value)\
+            .filter(
+                and_(
+                    self.regcontents.c.key.in_(list_reg_columns_name),
+                    self.regcontents.c.computers_id.in_(result['data']['uuid'])
+                )
+            ).all()
         for reg in regquery:
             index = result['data']['uuid'].index(reg[0])
             result['data']['reg'][reg[1]][index] = reg[2]

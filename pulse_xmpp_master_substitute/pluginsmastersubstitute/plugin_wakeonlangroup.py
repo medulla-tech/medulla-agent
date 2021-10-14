@@ -51,34 +51,49 @@ def action(xmppobject, action, sessionid, data, message, ret):
         logger.error("plugin %s\n%s" % (plugin['NAME'], traceback.format_exc()))
 
     try:
-        if xmppobject.wakeonlangroupremotelan :
-            senddataplugin = {'action': 'wakeonlangroup',
-                              'sessionid': sessionid,
-                              'data': {'macaddress': ""}}
-            serverrelaylist = XmppMasterDatabase().random_list_ars_relay_one_only_in_cluster()
-            if 'macadress' in data:
+        if 'macadress' in data:
+            if xmppobject.wakeonlangroupremotelan :
+                senddataplugin = {'action': 'wakeonlangroup',
+                                  'sessionid': sessionid,
+                                  'data': {'macaddress': ""}}
+                serverrelaylist = XmppMasterDatabase().random_list_ars_relay_one_only_in_cluster()
                 senddataplugin['data']['macaddress'] = data['macadress']
                 for serverrelay in serverrelaylist:
                     xmppobject.send_message(mto=serverrelay['jid'],
                                             mbody=json.dumps(senddataplugin,
-                                                             encoding='latin1'),
+                                                            encoding='latin1'),
                                             mtype='chat')
                     msglog = "A WOL request has been sent from the ARS %s " \
-                             "to %s mac address" % (serverrelay['jid'],
-                                                    len(data['macadress']))
+                        "to the mac address (10 first adress) %s" % (serverrelay['jid'],
+                                                    data['macadress'][:10])
                     historymessage(xmppobject, sessionid, msglog)
                     logger.debug(msglog)
             else:
-                raise
+                if xmppobject.wakeonlantargetsubnet:
+                    # send magic to broadcast network
+                    datamac = XmppMasterDatabase().wolbroadcastadressmacadress(data['macadress'])
+                    for t in datamac:
+                        strdede =",".join(datamac[t])
+                        wol.send_magic_packet(*datamac[t],
+                                            ip_address=t,
+                                            port=xmppobject.wakeonlangroupport)
+                        msglog = "A WOL request has been sent on broacast subnet %s " \
+                                    "to the mac address %s" % ( t,
+                                                                datamac[t])
+                        historymessage(xmppobject, sessionid, msglog)
+                        logger.debug(msglog)
+                else:
+                    wol.send_magic_packet(*data['macadress'],
+                                        port=xmppobject.wakeonlangroupport)
+                    msglog = "A local lan WOL request have been sent to the" \
+                            " mac address %s and port %s" % (data['macadress'],
+                                                            xmppobject.wakeonlangroupport)
+                    historymessage(xmppobject, sessionid, msglog)
+                    logger.debug(msglog)
         else:
-            if 'macadress' in data:
-                wol.send_magic_packet(*data['macadress'],
-                                      port=xmppobject.wakeonlangroupport)
-                msglog = "A local lan WOL request have been sent to the" \
-                         " mac address %s and port %s" % (data['macadress'],
-                                                          xmppobject.wakeonlangroupport)
-                historymessage(xmppobject, sessionid, msglog)
-                logger.debug(msglog)
+            msglog = "macadress key missing for plugin wakeonlangroup"
+            historymessage(xmppobject, sessionid, msglog)
+            logger.debug(msglog)
 
     except Exception as error_exception:
         msglog = "An error occurent when loading the plugin plugin_wakeonlangroup %s" % data
@@ -118,11 +133,20 @@ def read_conf_wol(xmppobject):
     conf_filename = plugin['NAME'] + ".ini"
     pathfileconf = os.path.join( xmppobject.config.pathdirconffile, conf_filename)
     logger.debug("The configuration file is %s" % pathfileconf)
-    xmppobject.wakeonlangroupremotelan = True
+    xmppobject.wakeonlangroupremotelan = False
     xmppobject.wakeonlangroupport = 9
+    xmppobject.wakeonlantargetsubnet = False
+
     if not os.path.isfile(pathfileconf):
         logger.error("The configuration file for the plugin %s is missing.\n" \
                      "It should be located to %s)" % (plugin['NAME'], pathfileconf))
+        if not xmppobject.wakeonlangroupremotelan:
+            logger.error("The used parameters are\nremotelan %s"\
+                "\nwakeonlanport %s\ntargetsubnet %s" % (xmppobject.wakeonlangroupremotelan,
+                                                         xmppobject.wakeonlangroupport,
+                                                         xmppobject.wakeonlantargetsubnet))
+        else:
+            logger.error("The default parameters for remotelan is %s" %( xmppobject.wakeonlangroupremotelan))
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -132,6 +156,17 @@ def read_conf_wol(xmppobject):
         if Config.has_option("parameters", "remotelan"):
             xmppobject.wakeonlangroupremotelan = Config.getboolean('parameters', 'remotelan')
 
+
         if not xmppobject.wakeonlangroupremotelan:
             if Config.has_option("parameters", "wakeonlanport"):
                 xmppobject.wakeonlangroupport = Config.getint('parameters', 'wakeonlanport')
+
+            if Config.has_option("parameters", "targetsubnet"):
+                xmppobject.wakeonlantargetsubnet = Config.getboolean('parameters', 'targetsubnet')
+        if not xmppobject.wakeonlangroupremotelan:
+            logger.debug("The used parameters are\nremotelan %s"\
+                "\nwakeonlanport %s\ntargetsubnet %s" % (xmppobject.wakeonlangroupremotelan,
+                                                         xmppobject.wakeonlangroupport,
+                                                         xmppobject.wakeonlantargetsubnet))
+        else:
+            logger.info("The default parameters for remotelan is %s" % (xmppobject.wakeonlangroupremotelan))
