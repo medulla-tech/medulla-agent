@@ -910,8 +910,8 @@ class MscDatabase(DatabaseHelper):
                     AND
                 `phase`.`state` = 'ready'
                     AND
-                    '%s' BETWEEN commands.start_date AND commands.end_date limit %s;""" % (datenow,
-                                                                                           limitnbr);
+                    '%s' BETWEEN commands.start_date AND commands.end_date group by `target`.`target_name` limit %s;""" % (datenow,
+                                                                                                                           limitnbr);
         selectedMachines = session.execute(sqlselect)
         nb_machine_select_for_deploy_cycle = selectedMachines.rowcount
 
