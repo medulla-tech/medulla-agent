@@ -81,6 +81,7 @@ from multiprocessing import Queue, Process, Event
 from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
+from datetime import datetime
 
 from sleekxmpp.xmlstream import handler, matcher
 from sleekxmpp.exceptions import IqError, IqTimeout
@@ -404,6 +405,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # As long as the Relayserver Agent isn't started, the sesion queues
             # where the deploy has failed are not useful
             self.session.clearallfilesession()
+
+        if self.config.agenttype in ['machine']:
+            self.schedule('stabilized_start',
+                          120,
+                          self.stabilized_start,
+                          repeat=True)
+
         self.reversessh = None
         self.reversesshmanage = {}
         self.signalinfo = {}
@@ -600,6 +608,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         15,
                         self.initialise_syncthing,
                         repeat=False)
+
+    def stabilized_start(self):
+        """
+            It creates a file called BOOL_FILE_CONTROL_WATCH_DOG with
+            inside the pid and a date when it has been created.
+            It is used to see if the program runs correctly.
+        """
+        directory_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                  "INFOSTMP")
+        BOOL_FILE_CONTROL_WATCH_DOG = os.path.join(directory_file,
+                                                   "BOOL_FILE_CONTROL_WATCH_DOG")
+        pidprocess="process %s :(%s)" % (os.getpid(), str(datetime.now()))
+        logger.debug("creation %s [pid %s]" % (BOOL_FILE_CONTROL_WATCH_DOG,pidprocess ))
+        file_put_contents(BOOL_FILE_CONTROL_WATCH_DOG,pidprocess)
+
+        logger.debug("creation BOOL_FILE_CONTROL_WATCH_DOG in %s" % BOOL_FILE_CONTROL_WATCH_DOG)
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
