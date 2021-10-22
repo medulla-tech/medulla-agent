@@ -20,6 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+# This generate the batch file 'C:\\Program Files\\Pulse\\bin\\pulse-service-process.bat' which started the services.
+# Usage: pulse-service-process.bat python_service_name program args
+# The batch file automatically generated
+
 import socket
 
 import win32serviceutil
@@ -27,6 +31,7 @@ import win32serviceutil
 import servicemanager
 import win32event
 import win32service
+import win32evtlog
 import time
 import re
 import subprocess
@@ -35,6 +40,24 @@ import sys
 import logging
 import logging.handlers
 import urllib2
+from shutil import copyfile
+from subprocess import call
+import psutil
+
+log_file = os.path.join("c:\\", "Program Files", "Pulse", "var", "log", "service.log")
+agent_dir = os.path.join("C:\\", "Python27","Lib", "site-packages", "pulse_xmpp_agent")
+
+logger = logging.getLogger("pulseagentservice")
+
+logger.setLevel(logging.DEBUG)
+
+handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=10485760, backupCount=2)
+formatter = logging.Formatter('%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s', '%d-%m-%Y %H:%M:%S')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+pythondir = "c:\\Python27\\"
+processname = "agent-pulse-service"
 
 class SMWinservice(win32serviceutil.ServiceFramework):
     '''Base class to create winservice in Python'''
@@ -96,17 +119,27 @@ class SMWinservice(win32serviceutil.ServiceFramework):
         '''
         pass
 
-log_file = os.path.join("c:\\", "Program Files", "Pulse", "var", "log", "service.log")
-agent_dir = os.path.join("C:\\", "Python27","Lib", "site-packages", "pulse_xmpp_agent")
+def path_excec_script():
+    name_bat_file = "pulse-service-process.bat"
+    directory_launcher = os.path.dirname(os.path.realpath(__file__))
+    pythonexec = os.path.join( directory_launcher, name_bat_file)
+    return pythonexec
 
-logger = logging.getLogger("pulseagentservice")
+def creation_excec_script():
+    contentfile="""set PYTHON_HOME="%s"
+set PYTHON_NAME=%%1.exe
+copy "%%PYTHON_HOME%%python.exe" "%%PYTHON_HOME%%%%PYTHON_NAME%%"
+set args=%%*
+set args=%%args:* =%%
+"%%PYTHON_HOME%%%%PYTHON_NAME%%" %%args%% """ % pythondir
+    file_put_contents(path_excec_script(), contentfile)
 
-logger.setLevel(logging.DEBUG)
-
-handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=10485760, backupCount=2)
-formatter = logging.Formatter('%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s', '%d-%m-%Y %H:%M:%S')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+def file_put_contents(filename, data):
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+    f = open(filename, 'w')
+    f.write(data)
+    f.close()
 
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
@@ -135,28 +168,37 @@ class PulseAgentService(SMWinservice):
     isdebug = False
     listnamefilepid=["pidlauncher","pidconnection","pidagent"]
 
+    def __init__(self, args):
+        '''
+        Constructor of the winservice
+        '''
+        SMWinservice.__init__(self, args)
+
     def start(self):
         if "-debug" in sys.argv:
             self.isdebug = True
             logger.info("Service %s launched in debug mode"%self._svc_display_name_)
         else:
             logger.info("Service %s launched in normal mode"%self._svc_display_name_)
+        creation_excec_script()
         self.isrunning = True
+
+    def kill_proc_tree(self,  including_parent=True):
+        parent = psutil.Process(self.pid)
+        children = parent.children(recursive=True)
+        for child in children:
+            child.kill()
+        gone, still_alive = psutil.wait_procs(children, timeout=5)
+        if including_parent:
+            parent.kill()
+            parent.wait(5)
 
     def stop(self):
         self.isrunning = False
         logger.info("Service %s stopped" %self._svc_display_name_)
         cmd =""
-        for pidprog in self.listnamefilepid:
-            pidfile =os.path.join(agent_dir, "INFOSTMP", pidprog)
-            if os.path.isfile(pidfile):
-                pid = file_get_contents(pidfile)
-                cmd = "taskkill /PID %s /F /T"%pid
-                try:
-                    os.system(cmd)
-                    continue
-                except:
-                    pass
+        self.kill_proc_tree()
+
     def main(self):
         i = 0
         while self.isrunning:
@@ -165,9 +207,35 @@ class PulseAgentService(SMWinservice):
             filter = "pulseagent"
             if not re.search(filter, result):
                 if not self.isdebug:
-                    os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -t machine")
+
+                    args = [path_excec_script(),
+                            "agent_pulse",
+                            "%s" % os.path.join(agent_dir, "launcher.py"),
+                            "-t",
+                            "machine"]
+                    logger.debug("agent_dir: %s" % agent_dir)
+                    logger.debug("args: %s" % args)
+
+                    self.ProcessObj = subprocess.Popen(args,
+                                                       stdout=None,
+                                                       stderr=None,
+                                                       stdin=None,
+                                                       close_fds=True)
+                    time.sleep(1)
+                    self.pid = self.ProcessObj.pid
+
+                    logger.info("The pid of the process is: %s" % self.pid)
+                    self.ProcessObj.wait()
                 else:
-                    os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -c -t machine")
+                    args = [path_excec_script(),
+                            "launcher_pulse_debug",
+                            "%s"%os.path.join(agent_dir, "launcher.py"),
+                            "-c",
+                            "-t",
+                            "machine"]
+                    logger.info("args %s"%args)
+                    p = call(args)
+                    p.wait()
             else:
                 time.sleep(5)
 
