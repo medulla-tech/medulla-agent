@@ -207,23 +207,42 @@ def save_count_start():
     file_put_contents(filecount, str(countstart))
     return countstart
 
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old JID
+        Args:
+            user: User for the JID
+            domain: Domain for the JID
+            resource: Resource of the JID
+        Returns:
+            It returns `True` if we need to unregister an old JID.
+    """
+    jidinfo = {"user": user, "domain" : domain, "resource" : resource}
+    filejid = os.path.join(Setdirectorytempinfo(), 'jid')
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return  False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid['user'] != user or oldjid['domain'] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid['resource'] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
 
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     save_obj(obj, fileback_to_deploy)
 
-
 def load_back_to_deploy():
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     return load_obj(fileback_to_deploy)
-
 
 def listback_to_deploy(objectxmpp):
     if len(objectxmpp.back_to_deploy) != 0:
         print "list session pris en compte back_to_deploy"
         for u in objectxmpp.back_to_deploy:
             print u
-
 
 def testagentconf(typeconf):
     if typeconf == "relayserver":
@@ -242,7 +261,6 @@ def testagentconf(typeconf):
         return True
     return False
 
-
 def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
@@ -256,18 +274,15 @@ def createfingerprintnetwork():
         md5network = hashlib.md5(obj['result']).hexdigest()
     return md5network
 
-
 def createfingerprintconf(typeconf):
     namefileconfig = conffilename(typeconf)
     return hashlib.md5(file_get_contents(namefileconfig)).hexdigest()
-
 
 def confinfoexist():
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintconf')
     if os.path.exists(filenetworkinfo):
         return True
     return False
-
 
 def confchanged(typeconf):
     if confinfoexist():
@@ -280,14 +295,12 @@ def confchanged(typeconf):
             return False
     return True
 
-
 def refreshfingerprintconf(typeconf):
     fp = createfingerprintconf(typeconf)
     file_put_contents(os.path.join(Setdirectorytempinfo(),
                       'fingerprintconf'),
                       fp)
     return fp
-
 
 def networkchanged():
     if networkinfoexist():
@@ -299,14 +312,12 @@ def networkchanged():
     else:
         return True
 
-
 def refreshfingerprint():
     fp = createfingerprintnetwork()
     file_put_contents(os.path.join(Setdirectorytempinfo(),
                                    'fingerprintnetwork'),
                       fp)
     return fp
-
 
 def file_get_contents(filename,
                       use_include_path=0,
