@@ -225,6 +225,49 @@ def save_count_start():
     file_put_contents(filecount, str(countstart))
     return countstart
 
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfo = {"user": user, "domain" : domain, "resource": resource}
+    filejid = os.path.join(Setdirectorytempinfo(), 'jid')
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid['user'] != user or oldjid['domain'] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid['resource'] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
+
+def unregister_subscribe(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfosubscribe = {"user": user, "domain" : domain, "resource": resource}
+    filejidsubscribe = os.path.join(Setdirectorytempinfo(), 'subscribe')
+    if not os.path.exists(filejidsubscribe):
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return False, jidinfosubscribe
+    oldjidsubscribe = loadjsonfile(filejidsubscribe)
+    if oldjidsubscribe['user'] != user or oldjidsubscribe['domain'] != domain:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return True, jidinfosubscribe
+    if oldjidsubscribe['resource'] != resource:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+    return False, jidinfosubscribe
 
 def save_back_to_deploy(obj):
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
