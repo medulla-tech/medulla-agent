@@ -258,7 +258,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception as e:
                 logging.error('Cannot delete the directory %s : %s' % (self.img_agent, str(e)))
 
-        self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
+        self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True)
         self.descriptorimage = Update_Remote_Agent(self.img_agent)
         self.descriptor_master = None
         if len(self.descriptorimage.get_md5_descriptor_agent()['program_agent']) == 0:
@@ -2503,9 +2503,12 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
                     dataobj['packageserver']['public_ip'] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
+
+        md5agentversion = Update_Remote_Agent(self.pathagent, True ).get_fingerprint_agent_base()
+        dataobj['md5agentversion'] = md5agentversion
         ###################Update agent from MAster#############################
         if self.config.updating == 1:
-            dataobj['md5agent'] = Update_Remote_Agent(self.pathagent, True ).get_fingerprint_agent_base()
+            dataobj['md5agent'] = md5agentversion
         ###################End Update agent from MAster#############################
         #todo determination lastusersession to review
         lastusersession = ""
