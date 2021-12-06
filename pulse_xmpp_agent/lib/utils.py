@@ -52,6 +52,7 @@ from Crypto.Cipher import AES
 import tarfile
 from functools import wraps
 import string
+import platform
 
 logger = logging.getLogger()
 
@@ -93,6 +94,19 @@ class Env(object):
         else:
             return os.path.expanduser('~pulseuser')
 
+
+
+def os_version():
+    """
+        Retrieve the name of the real Windows version
+    """
+    os_version_name = platform.platform()
+    if sys.platform.startswith('win'):
+        pythoncom.CoInitialize()
+        c = wmi.WMI()
+        for os in c.Win32_OperatingSystem():
+            os_version_name = os.Caption
+    return os_version_name
 
 # debug decorator
 def minimum_runtime(t):
