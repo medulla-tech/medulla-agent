@@ -198,8 +198,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception as e:
                 logger.error("syncthing initialisation : %s" % str(e))
                 informationerror = traceback.format_exc()
-                logger.error("\n%s"%(informationerror))
-                logger.error("functioning of the degraded agent. impossible to use syncthing")
+                logger.error("\n%s" % informationerror)
+                logger.error("Syncthing is not functionnal. Using the degraded mode")
                 confsyncthing = {"action": "resultconfsyncthing",
                                 "sessionid" : getRandomName(6, "confsyncthing"),
                                 "ret" : 255,

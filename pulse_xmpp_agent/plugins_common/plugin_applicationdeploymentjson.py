@@ -1391,7 +1391,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # termine deploy on error
                     # We do not know folders_packages
                     logger.debug("DEPLOYMENT ABORTED: FOLDERS_PACKAGE MISSING")
-                    objectxmpp.xmpplog('<span class="log_err">Deployment error: folders_packages %s missing</span>',
+                    objectxmpp.xmpplog('<span class="log_err">Deployment error: The folders_packages is missing</span>',
                                        type='deploy',
                                        sessionname=sessionid,
                                        priority=0,

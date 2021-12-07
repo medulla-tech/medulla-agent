@@ -2365,6 +2365,10 @@ def pulseuser_useraccount_mustexist(username='pulseuser'):
     elif sys.platform.startswith('win'):
         try:
             win32net.NetUserGetInfo('', username, 0)
+            # User exists. Adding it to Admins group
+            adminsgrpsid = win32security.ConvertStringSidToSid('S-1-5-32-544')
+            adminsgroup = win32security.LookupAccountSid('', adminsgrpsid)[0]
+            simplecommand(encode_strconsole('net localgroup %s "%s" /ADD' % (adminsgroup, username)))
             msg = '%s user account already exists. Nothing to do.' % username
             return True, msg
         except Exception:
