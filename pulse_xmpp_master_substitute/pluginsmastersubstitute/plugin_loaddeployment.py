@@ -891,7 +891,6 @@ def applicationdeploymentjson(self,
         return False
     descript = managepackage.loadjsonfile(os.path.join(path, 'xmppdeploy.json'))
 
-    self.parsexmppjsonfile(os.path.join(path, 'xmppdeploy.json'))
     if descript is None:
         XmppMasterDatabase().adddeploy(idcommand,
                                        jidmachine,
@@ -1191,13 +1190,6 @@ def send_session_command(self, jid, action, data={}, datasession=None, encodebas
         logging.debug("creation session")
     return command['sessionid']
 
-def parsexmppjsonfile(self, path):
-    # puts the words False in lowercase.
-    datastr = file_get_contents(path)
-    datastr = re.sub(r"(?i) *: *false", " : false", datastr)
-    datastr = re.sub(r"(?i) *: *true", " : true", datastr)
-    file_put_contents(path, datastr)
-
 def _chunklist(self, listseq, nb=5000):
     nbinlist, rest = divmod(len(listseq), nb)
     avg = len(listseq) / float(nbinlist + 1)
@@ -1323,7 +1315,6 @@ def read_conf_loaddeployment(objectxmpp):
     objectxmpp.send_session_command = types.MethodType(send_session_command, objectxmpp)
 
     objectxmpp.totimestamp = types.MethodType(totimestamp, objectxmpp)
-    objectxmpp.parsexmppjsonfile = types.MethodType(parsexmppjsonfile, objectxmpp)
 
     # declaration function scheduledeploy in object xmpp
     objectxmpp.scheduledeploy = types.MethodType(scheduledeploy, objectxmpp)

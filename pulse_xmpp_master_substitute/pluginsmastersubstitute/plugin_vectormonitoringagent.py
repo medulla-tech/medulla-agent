@@ -180,7 +180,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("#################################################")
 
     compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-    logger.debug("compteur num_call pluging %s %s" % (action,
+    logger.debug("compteur num_call plugin %s %s" % (action,
                                                       compteurcallplugin))
 
     if compteurcallplugin == 0:

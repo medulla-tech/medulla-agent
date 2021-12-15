@@ -36,6 +36,7 @@ from lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion
 import configparser
+import netaddr
 
 # this import will be used later
 # import types
@@ -597,7 +598,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 for i in data['information']["listipinfo"]:
                     # exclude mac address from table network
                     try:
-                        broadcast = i['broadcast']
+                        broadcast = str(netaddr.IPNetwork('%s/%s' % (i['ipaddress'], i['mask'])).broadcast)
                     except Exception:
                         broadcast = ''
                     if showinfobool:

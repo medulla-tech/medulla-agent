@@ -353,7 +353,7 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
             fp.close()
 
 def file_put_contents(filename, data):
-    f = open(filename, 'w')
+    f = open(filename, 'wb')
     f.write(data)
     f.close()
 
