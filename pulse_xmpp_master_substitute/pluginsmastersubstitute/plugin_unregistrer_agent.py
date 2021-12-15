@@ -52,7 +52,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             msg = {"action": "unregistrer_agent",
                    "sessionid": sessionid,
                    "data": data,
-                   "base64": false,
+                   "base64": False,
                    "ret": 0
                   }
             if relayserver:

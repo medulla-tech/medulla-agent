@@ -3927,6 +3927,41 @@ class XmppMasterDatabase(DatabaseHelper):
 
 
     @DatabaseHelper._sessionm
+    def getRelayServerfromjiddomain(self,
+                                    session,
+                                    jiddomain):
+        relayserver = session.query(RelayServer).filter(RelayServer.jid.like("%%@%s/%%" % jiddomain))
+        relayserver = relayserver.first()
+        session.commit()
+        session.flush()
+        try:
+            result = {'id': relayserver.id,
+                      'urlguacamole': relayserver.urlguacamole,
+                      'subnet': relayserver.subnet,
+                      'nameserver': relayserver.nameserver,
+                      'ipserver': relayserver.ipserver,
+                      'ipconnection': relayserver.ipconnection,
+                      'port': relayserver.port,
+                      'portconnection': relayserver.portconnection,
+                      'mask': relayserver.mask,
+                      'jid': relayserver.jid,
+                      'longitude': relayserver.longitude,
+                      'latitude': relayserver.latitude,
+                      'enabled': relayserver.enabled,
+                      'switchonoff': relayserver.switchonoff,
+                      'mandatory': relayserver.mandatory,
+                      'classutil': relayserver.classutil,
+                      'groupdeploy': relayserver.groupdeploy,
+                      'package_server_ip': relayserver.package_server_ip,
+                      'package_server_port': relayserver.package_server_port,
+                      'moderelayserver': relayserver.moderelayserver,
+                      'keysyncthing': relayserver.keysyncthing,
+                      'syncthing_port': relayserver.syncthing_port}
+        except Exception:
+            result = {}
+        return result
+
+    @DatabaseHelper._sessionm
     def getdeploybyuserpast(self, session, login , duree, min=None, max=None, filt=None):
 
         deploylog = session.query(Deploy)
