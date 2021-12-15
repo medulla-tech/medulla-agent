@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-
+# file pluginsmastersubstitute/plugin_unregistrer_subcribe.py
 import logging
 import traceback
 import json
@@ -30,14 +30,13 @@ from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.0", "NAME": "unregistrer_agent", "TYPE" : "substitute", "FEATURE": "subscribe"}
+plugin = {"VERSION": "1.0", "NAME": "unregistrer_subcribe", "TYPE" : "substitute", "FEATURE": "subscribe"}
 
 
 """
 This plugin is called by the client When the machine agent detect a change of domain in his JID.
 
-When a client connects to a new ARS, this has for consequence a change of ejabberd domain/server.
-The old ejabberd account needs to be removed from the roster.
+il doit supprimer de son roster l'agent fourni.
 """
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -47,23 +46,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
     if "user" in data and "domain" in data and "resource" in data and \
         data['user'].strip() != "" and  data['domain'].strip() != "" and  data['resource'].strip() != "":
-        try:
-            relayservercompte = XmppMasterDatabase().getRelayServerfromjiddomain(data['domain'])
-            msg = {"action": "unregistrer_agent",
-                   "sessionid": sessionid,
-                   "data": data,
-                   "base64": False,
-                   "ret": 0
-                  }
-            if relayservercompte:
-                xmppobject.send_message(mto=relayservercompte['jid'],
-                                        mbody=json.dumps(msg),
-                                        mtype='chat')
-            else:
-                logger.error("No relay server found for the domain: %s" % data['domain'])
+        jidmachine = "%s@%s/%s"%( data['user'].strip(),
+                                        data['domain'].strip(),
+                                        data['resource'].strip())
+        xmppobject.send_presence ( pto = jidmachine, ptype = 'unsubscribe' )
 
-        except Exception, e:
-            logger.error("An error occured when trying to unregister old JID. We got the error: %s" % str(e))
-            logger.error("We hit the backtrace: \n%s" % traceback.format_exc())
     else:
         logger.error("The JID is incorrect")
