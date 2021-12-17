@@ -25,7 +25,7 @@ import logging
 import traceback
 import json
 
-from lib.plugins.xmpp import simplecommand
+from lib.utils import simplecommand
 
 logger = logging.getLogger()
 
