@@ -554,7 +554,6 @@ class XmppMasterDatabase(DatabaseHelper):
         connection = self.engine_xmppmmaster_base.raw_connection()
         results = None
         try:
-                self.logger.info("call procedure stockee mmc_restart_blocked_deployments(%s)" % nb_reload)
                 cursor = connection.cursor()
                 cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
                 results = list(cursor.fetchall())
@@ -562,7 +561,10 @@ class XmppMasterDatabase(DatabaseHelper):
                 connection.commit()
         finally:
             connection.close()
-        self.logger.info("restart %s deployements" % results[0])
+        results = "%s"%results[0]
+        if int(results) != 0:
+            self.logger.info("call procedure stockee mmc_restart_blocked_deployments(%s)" % nb_reload)
+            self.logger.info("restart %s deployements" % results)
         return results
 
     @DatabaseHelper._sessionm
