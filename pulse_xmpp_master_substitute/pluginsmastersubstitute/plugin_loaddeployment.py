@@ -80,7 +80,7 @@ def scheduledeploy(self):
     # TODO
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
-    
+
     nb_machine_select_for_deploy_cycle = 0
     datetimenow = datetime.datetime.now()
     startfunc = time.time()
@@ -218,7 +218,8 @@ def scheduledeploy(self):
                                             endcmd=deployobject['end_date'],
                                             macadress=deployobject['mac'],
                                             result="",
-                                            syncthing=0)
+                                            syncthing=0,
+                                            subdep=self.boundjid.user)
 
 
                 for logmsg in msg:
@@ -553,7 +554,8 @@ def applicationdeployjsonUuidMachineAndUuidPackage(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         msg.append("<span class='log_err'>Package identifier misssing for %s</span>" % uuidpackage)
         msg.append("Action : Check the package %s" % (uuidpackage))
         for logmsg in msg:
@@ -646,7 +648,8 @@ def applicationdeployjsonuuid(self,
                                                            endcmd=end_date,
                                                            macadress=macadress,
                                                            result="",
-                                                           syncthing=0)
+                                                           syncthing=0,
+                                                           subdep=self.boundjid.user)
                             for logmsg in msg:
                                 self.xmpplog(logmsg,
                                              type='deploy',
@@ -691,7 +694,8 @@ def applicationdeployjsonuuid(self,
                                                    endcmd=end_date,
                                                    macadress=macadress,
                                                    result="",
-                                                   syncthing=0)
+                                                   syncthing=0,
+                                                   subdep=self.boundjid.user)
                     msg.append("<span class='log_err'>Alternative ARS Down</span>")
                     msg.append("Action : check ARS cluster.")
                     for logmsg in msg:
@@ -743,7 +747,8 @@ def applicationdeployjsonuuid(self,
                                            endcmd=end_date,
                                            macadress=macadress,
                                            result="",
-                                           syncthing=0)
+                                           syncthing=0,
+                                           subdep=self.boundjid.user)
             msg.append("<span class='log_err'>ARS for deployment is missing for machine %s </span>" % uuidmachine)
             msg.append("Action : The configurator must be restarted on the machine.")
             for logmsg in msg:
@@ -784,7 +789,8 @@ def applicationdeployjsonuuid(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         msg.append("<span class='log_err'>Error creating deployment on machine[ %s ] "\
                    "[%s] package[%s]</span>" % (jidmachine, uuidmachine,name))
         if str(e) == "MultipleResultsFound":
@@ -845,7 +851,8 @@ def applicationdeploymentjson(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
                          type='deploy',
@@ -877,7 +884,8 @@ def applicationdeploymentjson(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         for logmsg in msg:
             self.xmpplog(logmsg,
                          type='deploy',
@@ -908,7 +916,8 @@ def applicationdeploymentjson(self,
                                        endcmd=end_date,
                                        macadress=macadress,
                                        result="",
-                                       syncthing=0)
+                                       syncthing=0,
+                                       subdep=self.boundjid.user)
         msg.append("<span class='log_err'>Descriptor xmppdeploy.json " \
                     "missing for %s [%s]</span>" % (name, uuidmachine))
         msg.append("Action : Find out why xmppdeploy.json file is missing.")
@@ -1068,7 +1077,8 @@ def applicationdeploymentjson(self,
                                    endcmd=end_date,
                                    macadress=macadress,
                                    result=result,
-                                   syncthing=avacedpara)
+                                   syncthing=avacedpara,
+                                   subdep=self.boundjid.user)
     if 'syncthing' not in  data['advanced'] or data['advanced']['syncthing'] == 0:
         XmppMasterDatabase().addcluster_resources(jidmachine,
                                                   jidrelay,
