@@ -546,6 +546,27 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
 
+    @DatabaseHelper._sessionm
+    def replaydeploysessionid(self, session, sessionid, force_redeploy=0,rechedule=0):
+        """ call procedure stockee remise deploy pour"""
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+                self.logger.info("call procedure stockee mmc_restart_deploy_sessionid( %s,%s,%s) "%(sessionid,
+                                                                                                force_redeploy,
+                                                                                                rechedule))
+                cursor = connection.cursor()
+                cursor.callproc("mmc_restart_deploy_sessionid", [sessionid,
+                                                                force_redeploy,
+                                                                rechedule])
+                results = list(cursor.fetchall())
+                cursor.close()
+                connection.commit()
+        finally:
+            connection.close()
+        return
+
+
     def restart_blocked_deployments(self, nb_reload=50):
         """
         Plan with blocked deployments again
