@@ -63,7 +63,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a
+                        serialnumbermachine, file_put_contents_w_a, os_version
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -2325,7 +2325,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'deployment': self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'platform': platform.platform(),
+            'platform': os_version(),
             'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
             'plugin': {},
             'pluginscheduled': {},
