@@ -87,7 +87,7 @@ def schedule_main(xmppobject):
                     elif service_name == 'openldap':
                         service = 'slapd'
                     elif service_name == 'apache':
-                        if platform.linux_distribution()[0] in ['CentOS Linux', 'centos', 'fedora', 'Red Hat Enterprise Linux Server', 'redhat']:
+                        if platform.linux_distribution()[0] in ['CentOS Linux', 'centos', 'fedora', 'Red Hat Enterprise Linux Server', 'redhat', 'Mageia']:
                             service = 'httpd'
                         elif platform.linux_distribution()[0] in ['debian']:
                             service = 'apache2'
