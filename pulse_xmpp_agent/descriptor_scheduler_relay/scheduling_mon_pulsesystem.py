@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 
 """
-This plugin checks the status of a few counters and send the information to the monitoring agent
+This plugin checks the status of a few counters and sends the information to the monitoring agent
 
 ******* Warning *************
 This plugin is for monitoring
