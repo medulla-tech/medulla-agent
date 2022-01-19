@@ -189,33 +189,70 @@ def schedule_main(xmppobject):
             # System mysql
             if xmppobject.config.mysql_enable:
                 mysql_json = {}
-                # TODO
-                # "mysql": {
-                # "uptime": seconds,
-                # "threads_connected": number,
-                # "connections_rate": percentage,
-                # "aborted_connects_rate": numberperminute,
-                # "errors_max_connections": number,
-                # "errors_internal": number,
-                # "errors_select": number,
-                # "errors_accept": number,
-                # "subquery_cache_hit": number,
-                # "table_cache_usage" : percentage
-                # }
-                # show status where `variable_name` = 'Uptime';
-                # show status where `variable_name` = 'Threads_connected';
-                # show status where `variable_name` = 'Max_used_connections';
-                # show variables where `variable_name` = 'max_connections';
-                # show status where `variable_name` = 'Aborted_connects';
-                # connections_rate = Max_used_connections / max_connections * 100
-                # show status where variable_name='Connection_errors_max_connections'
-                # show status where variable_name='Connection_errors_internal'
-                # show status where variable_name='Connection_errors_select'
-                # show status where variable_name='Connection_errors_accept'
-                # show status where `variable_name` = 'subquery_cache_hit';
-                # show variables where `variable_name` = 'table_open_cache';
-                # show status where `variable_name` = 'Open_tables';
-                # table_cache_usage = table_open_cache * 100 / Open_tables
+                cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
+                                              port=xmppobject.config.pulse_main_db_port,
+                                              user=xmppobject.config.pulse_main_db_user,
+                                              password=xmppobject.config.pulse_main_db_password,
+                                              database='xmppmaster')
+                cursor = cnx.cursor(buffered=True)
+                mysql_json['uptime'] = {}
+                query = "show status where `variable_name` = 'Uptime';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['uptime']['seconds'] = value
+                mysql_json['threads_connected'] = {}
+                query = "show status where `variable_name` = 'Threads_connected';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['threads_connected']['number'] = value
+                mysql_json['connections_rate'] = {}
+                query = "show status where `variable_name` = 'Max_used_connections';"
+                cursor.execute(query)
+                value_max_used_connections = cursor.fetchone()
+                query = "show variables where `variable_name` = 'max_connections';"
+                cursor.execute(query)
+                value_max_connections = cursor.fetchone()
+                mysql_json['connections_rate']['percentage'] = value_max_used_connections / (value_max_connections * 100)
+                mysql_json['aborted_connects_rate'] = {}
+                query = "show status where `variable_name` = 'Aborted_connects';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['aborted_connects_rate']['numberperminute'] = value
+                mysql_json['errors_max_connections'] = {}
+                query = "show status where variable_name='Connection_errors_max_connections';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['errors_max_connections']['number'] = value
+                mysql_json['errors_internal'] = {}
+                query = "show status where variable_name='Connection_errors_internal';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['errors_internal']['number'] = value
+                mysql_json['errors_select'] = {}
+                query = "show status where variable_name='Connection_errors_select';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['errors_select']['number'] = value
+                mysql_json['errors_accept'] = {}
+                query = "show status where variable_name='Connection_errors_accept';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['errors_accept']['number'] = value
+                mysql_json['subquery_cache_hit'] = {}
+                query = "show status where variable_name='subquery_cache_hit';"
+                cursor.execute(query)
+                value = cursor.fetchone()
+                mysql_json['subquery_cache_hit']['number'] = value
+                mysql_json['table_cache_usage'] = {}
+                query = "show variables where `variable_name` = 'table_open_cache';"
+                cursor.execute(query)
+                value_table_open_cache = cursor.fetchone()
+                query = "show status where `variable_name` = 'Open_tables';"
+                cursor.execute(query)
+                value_Open_tables = cursor.fetchone()
+                mysql_json['table_cache_usage']['percentage'] = (value_table_open_cache * 100) / value_Open_tables
+                cursor.close()
+                cnx.close()
                 system_json['mysql'] = mysql_json
 
             # System pulse_relay
