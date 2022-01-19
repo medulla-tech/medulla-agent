@@ -192,13 +192,14 @@ class Glpi84(DatabaseHelper):
         self._glpi_version = "0.84"
 
         #utilisation glpi base
-        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.glpi_dbuser,
+        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=utf8'%( self.config.glpi_dbuser,
             self.config.glpi_dbpasswd,
             self.config.glpi_dbhost,
             self.config.glpi_dbport,
             self.config.glpi_dbname),
             pool_recycle = self.config.dbpoolrecycle,
-            pool_size = self.config.dbpoolsize
+            pool_size = self.config.dbpoolsize,
+            convert_unicode = True
         )
         self.metadata = MetaData(self.engine_glpi)
         self.initMappers()
@@ -668,10 +669,10 @@ class Glpi84(DatabaseHelper):
                                 else:
                                     strre = getattr(ret, keynameresult)
                                     if isinstance(strre, basestring):
-                                        if encode != "utf8":
-                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode).encode('utf8')
+                                        if encode == "utf8":
+                                            resultrecord[keynameresult] = str(strre)
                                         else:
-                                            resultrecord[keynameresult] =  "%s"%strre.encode('utf8')
+                                            resultrecord[keynameresult] =  strre.decode(encode).encode('utf8')
                                     else:
                                         resultrecord[keynameresult] = strre
                     except AttributeError:
@@ -858,7 +859,7 @@ class Glpi84(DatabaseHelper):
                 for indexcolum in range(nb_columns):
                     result['data'][columns_name[indexcolum]].append(machine[indexcolum])
             else:
-                recordmachinedict = self._machineobjectdymresult(machine)
+                recordmachinedict = self._machineobjectdymresult(machine, encode='utf8')
                 for recordmachine in recordmachinedict:
                     result['data'][recordmachine] = [ recordmachinedict[recordmachine]]
 

@@ -237,6 +237,6 @@ def plugin_loadautoupdate(self, msg, data):
                                                        descriptor=data['agenttype'],
                                                        md5=data['md5agent'])
         else:
-            logger.debug("There is no update for %s " % msgmachine)
+            logger.debug("%s already has the latest version of the agent. Nothing to do." % msgmachine)
     except Exception as e:
         logger.error("\n%s" % (traceback.format_exc()))

@@ -65,7 +65,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a
+                        serialnumbermachine, file_put_contents_w_a, os_version
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -741,7 +741,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return
         if len(config) == 0:
             return
-        if len(config['pendingDevices']) > 0:
+        if 'pendingDevices' in config and len(config['pendingDevices']) > 0:
             if self.pendingdevice_accept(config):
                 self.syncthingreconfigure = True;
             config['pendingDevices']=[]
@@ -1526,9 +1526,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.send_presence()
         logger.info("subscribe to %s agent" % self.sub_subscribe.user)
         self.limit_message_presence_clean_substitute = []
+        self.ipconnection = self.config.Server
+        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
         self.unsubscribe_agent()
         self.unsubscribe_substitute_subscribe()
-        self.ipconnection = self.config.Server
 
         self.send_presence (pto=self.sub_subscribe, ptype='subscribe')
         if  self.config.agenttype in ['relayserver']:
@@ -1538,8 +1539,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     self.ipconnection = self.config.public_ip_relayserver
             except Exception:
                 pass
-
-        self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
 
         self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
         logging.log(DEBUGPULSE,"Roster agent \n%s"%self.client_roster)
@@ -1664,8 +1663,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         pass
             except Exception as e:
                 logging.error("syncthing initialisation : %s" % str(e))
-                logger.error("\n%s"%(traceback.format_exc()))
-                logging.error("functioning of the degraded agent. impossible to use syncthing")
+                logger.error("\n%s"% traceback.format_exc())
+                logger.error("Syncthing is not functionnal. Using the degraded mode")
             #self.syncthing = syncthing(configfile = fichierconfsyncthing)
         ################################### syncthing ###################################
 
@@ -2319,7 +2318,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'deployment': self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'platform': platform.platform(),
+            'platform': os_version(),
             'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
             'plugin': {},
             'pluginscheduled': {},

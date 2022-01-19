@@ -32,7 +32,7 @@ OPENSSHVERSION = '7.7'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.66", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.71", "NAME": "updateopenssh", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -45,6 +45,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         check_if_binary_ok()
         if StrictVersion(installed_version) < StrictVersion(OPENSSHVERSION):
             updateopenssh(xmppobject, installed_version)
+        else:
+            configure_ssh(xmppobject)
+        check_if_service_is_running()
     except Exception:
         pass
 
@@ -74,6 +77,14 @@ def check_if_binary_ok():
             else:
                 logger.debug("We failed to reinitialize the registry entry.")
 
+def check_if_service_is_running():
+    if sys.platform.startswith('win'):
+        is_ssh_started = utils.simplecommand("sc.exe query sshdaemon")
+        if is_ssh_started['code'] == 0:
+            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+            if state == "STOPPED":
+                logger.debug("The OpenSSH does not seems started. We start it.")
+                utils.simplecommand("sc.exe start sshdaemon")
 
 def checkopensshversion():
     if sys.platform.startswith('win'):
@@ -106,8 +117,67 @@ def updateopensshversion(version):
 
             utils.simplecommand(cmd)
 
-def updateopenssh(xmppobject, installed_version):
+def configure_ssh(xmppobject):
+    Used_ssh_port = "22"
+    programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
 
+    if hasattr(xmppobject.config, 'sshport'):
+        Used_ssh_port = xmppobject.config.sshport
+
+    restart_service = False
+
+    # Now we customize the config file
+    sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
+    sshport = "Port %s" % Used_ssh_port
+
+    if "#Port" in sshd_config_file or sshport not in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
+        restart_service = True
+
+    if "#PubkeyAuthentication" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes", "PubkeyAuthentication yes")
+        restart_service = True
+
+    if "#PasswordAuthentication" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes", "PasswordAuthentication no")
+        restart_service = True
+
+    if "#PidFile" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
+        restart_service = True
+
+    if "AuthorizedKeysFile   .ssh/authorized_keys" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
+        restart_service = True
+
+    if "#SyslogFacility" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
+        restart_service = True
+
+    if "#Match Group administrators" not in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
+        restart_service = True
+
+    if "#       AuthorizedKeysFile" not in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
+        restart_service = True
+
+    if "#GatewayPorts" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("#GatewayPorts no", "GatewayPorts yes")
+        restart_service = True
+
+    if "GatewayPorts no" in sshd_config_file:
+        sshd_config_file = sshd_config_file.replace("GatewayPorts no", "GatewayPorts yes")
+        restart_service = True
+
+    utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
+
+
+    if restart_service:
+        utils.simplecommand("sc stop sshdaemon")
+        utils.simplecommand("sc start sshdaemon")
+
+def updateopenssh(xmppobject, installed_version):
     Used_ssh_port = "22"
     if hasattr(xmppobject.config, 'sshport'):
         Used_ssh_port = xmppobject.config.sshport
@@ -182,7 +252,6 @@ def updateopenssh(xmppobject, installed_version):
 
             os.chdir(current_dir)
 
-
             sshdaemonDesc = "SSH protocol based service to provide secure encrypted communications between two untrusted hosts over an insecure network."
             command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Pulse SSH Server\" start= auto" % sshdaemon_bin_path
             utils.simplecommand(command_sshdaemon)
@@ -198,20 +267,7 @@ def updateopenssh(xmppobject, installed_version):
                 logger.debug("Failed to copy the files:  %s" % e)
                 return
 
-            # Now we customize the config file
-            sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
-            sshport = "Port %s" % Used_ssh_port
-            sshd_config_file = sshd_config_file.replace("#Port 22", sshport)
-            sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes","PubkeyAuthentication yes")
-            sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes","PasswordAuthentication no")
-            sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
-            sshd_config_file = sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
-            sshd_config_file = sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
-            sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
-            sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
-
-            utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
-
+            configure_ssh(xmppobject)
             utils.simplecommand("sc start sshdaemon")
 
             utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
@@ -219,8 +275,6 @@ def updateopenssh(xmppobject, installed_version):
             # Download error
             logger.error("%s" % txtmsg)
             return
-
-
 
         if not os.path.isdir(nytrio_sshdir_path):
             rsync_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
@@ -235,8 +289,6 @@ def updateopenssh(xmppobject, installed_version):
                 rsync_zip_file = zipfile.ZipFile(rsync_filename, 'r')
                 rsync_zip_file.extractall()
 
-
-
                 rsync_files = os.listdir(os.path.join(rsync_tempdir, "rsync"))
                 for rsync_file in rsync_files:
                     full_rsync_file_name = os.path.join(rsync_tempdir, "rsync",rsync_file)
@@ -249,9 +301,7 @@ def updateopenssh(xmppobject, installed_version):
                             return
 
             os.chdir(current_dir)
-
             os.chdir(opensshdir_path)
             utils.simplecommand("ssh-keygen -A")
-
 
         updateopensshversion(installed_version)

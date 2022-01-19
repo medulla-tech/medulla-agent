@@ -192,13 +192,14 @@ class Glpi92(DatabaseHelper):
         self.sessionglpi = None
 
         #utilisation glpi base
-        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s'%( self.config.glpi_dbuser,
+        self.engine_glpi = create_engine('mysql://%s:%s@%s:%s/%s?charset=utf8'%( self.config.glpi_dbuser,
                                                                 self.config.glpi_dbpasswd,
                                                                 self.config.glpi_dbhost,
                                                                 self.config.glpi_dbport,
                                                                 self.config.glpi_dbname),
                                     pool_recycle = self.config.dbpoolrecycle,
-                                    pool_size = self.config.dbpoolsize
+                                    pool_size = self.config.dbpoolsize,
+                                    convert_unicode = True
         )
 
         try:
@@ -586,7 +587,6 @@ class Glpi92(DatabaseHelper):
 
     def __filter_on_filter(self, query):
         if self.config.filter_on is not None:
-            logging.getLogger().debug('function __filter_on_filter  self.config.filter_on is  %s'%self.config.filter_on)
             a_filter_on = []
             for filter_key, filter_values in self.config.filter_on.items():
                 try:
@@ -3818,10 +3818,10 @@ class Glpi92(DatabaseHelper):
                                 else:
                                     strre = getattr(ret, keynameresult)
                                     if isinstance(strre, basestring):
-                                        if encode != "utf8":
-                                            resultrecord[keynameresult] =  "%s"%strre.decode(encode).encode('utf8')
+                                        if encode == "utf8":
+                                            resultrecord[keynameresult] = str(strre)
                                         else:
-                                            resultrecord[keynameresult] =  "%s"%strre.encode('utf8')
+                                            resultrecord[keynameresult] =  strre.decode(encode).encode('utf8')
                                     else:
                                         resultrecord[keynameresult] = strre
                     except AttributeError:
@@ -4080,23 +4080,24 @@ class Glpi92(DatabaseHelper):
                     result['data'][columns_name[indexcolum]].append(machine[indexcolum])
                     #
             else:
-                recordmachinedict = self._machineobjectdymresult(machine)
+                recordmachinedict = self._machineobjectdymresult(machine, encode='utf8')
                 for recordmachine in recordmachinedict:
                     result['data'][recordmachine] = [ recordmachinedict[recordmachine]]
 
             for column in list_reg_columns_name:
                 result['data']['reg'][column].append(None)
-
-        regquery = session.query(
-            self.regcontents.c.computers_id,
-            self.regcontents.c.key,
-            self.regcontents.c.value)\
-        .filter(
-            and_(
-                self.regcontents.c.key.in_(list_reg_columns_name),
-                self.regcontents.c.computers_id.in_(result['data']['uuid'])
-            )
-        ).all()
+        regquery=[]
+        if list_reg_columns_name:
+            regquery = session.query(
+                self.regcontents.c.computers_id,
+                self.regcontents.c.key,
+                self.regcontents.c.value)\
+            .filter(
+                and_(
+                    self.regcontents.c.key.in_(list_reg_columns_name),
+                    self.regcontents.c.computers_id.in_(result['data']['uuid'])
+                )
+            ).all()
         for reg in regquery:
             index = result['data']['uuid'].index(reg[0])
             result['data']['reg'][reg[1]][index] = reg[2]

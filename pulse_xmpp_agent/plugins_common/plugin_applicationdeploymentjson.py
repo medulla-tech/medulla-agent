@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.21", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.22", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -220,35 +220,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             #clean session
             objectxmpp.session.clearnoevent(sessionid)
             #clean if not session
-            utils.cleanbacktodeploy(objectxmpp)
-            return
-        # Check if the descriptor is complete
-        if 'descriptor' in data and 'advanced' not in data:
-            objectxmpp.xmpplog('<span class="log_err">Abort deployement section avanced missing in descriptor</span>',
-                               type='deploy',
-                               sessionname=sessionid,
-                               priority=-1,
-                               action="xmpplog",
-                               who=strjidagent,
-                               how="",
-                               why="",
-                               module="Deployment | Error",
-                               date=None,
-                               fromuser="AM %s" % strjidagent,
-                               touser="")
-            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
-                               type='deploy',
-                               sessionname=sessionid,
-                               priority=-1,
-                               action="xmpplog",
-                               who=strjidagent,
-                               how="",
-                               why="",
-                               module="Deployment | Terminate | Notify",
-                               date=None,
-                               fromuser="AM %s" % strjidagent,
-                               touser="")
-            objectxmpp.session.clearnoevent(sessionid)
             utils.cleanbacktodeploy(objectxmpp)
             return
 
@@ -534,6 +505,35 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     'base64': False
                     }
 
+        # Check if the descriptor is complete
+        if 'descriptor' in data and 'advanced' not in data:
+            objectxmpp.xmpplog('<span class="log_err">Abort deployement section avanced missing in descriptor</span>',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Error",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.xmpplog('DEPLOYMENT TERMINATE',
+                               type='deploy',
+                               sessionname=sessionid,
+                               priority=-1,
+                               action="xmpplog",
+                               who=strjidagent,
+                               how="",
+                               why="",
+                               module="Deployment | Terminate | Notify",
+                               date=None,
+                               fromuser="AM %s" % strjidagent,
+                               touser="")
+            objectxmpp.session.clearnoevent(sessionid)
+            utils.cleanbacktodeploy(objectxmpp)
+            return
 
         if 'stepcurrent' not in datasend['data']:
             if not cleandescriptor(data):
@@ -1391,7 +1391,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                     # termine deploy on error
                     # We do not know folders_packages
                     logger.debug("DEPLOYMENT ABORTED: FOLDERS_PACKAGE MISSING")
-                    objectxmpp.xmpplog('<span class="log_err">Deployment error: folders_packages %s missing</span>',
+                    objectxmpp.xmpplog('<span class="log_err">Deployment error: The folders_packages is missing</span>',
                                        type='deploy',
                                        sessionname=sessionid,
                                        priority=0,
@@ -2208,7 +2208,8 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
         error = False
         if sys.platform.startswith('linux'):
             path_key_priv =  os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
-            localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            #localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            localdest = " '%s'" % (managepackage.managepackage.packagedir())
         elif sys.platform.startswith('win'):
             try:
                 win32net.NetUserGetInfo('','pulseuser',0)
@@ -2223,7 +2224,8 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             execscp = '"c:\progra~1\OpenSSH\scp.exe"'
         elif sys.platform.startswith('darwin'):
             path_key_priv =  os.path.join("/", "var", "root", ".ssh", "id_rsa")
-            localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            #localdest = " '%s/%s'" % (managepackage.managepackage.packagedir(), packagename)
+            localdest = " '%s'" % (managepackage.managepackage.packagedir())
         else :
             return False
 
@@ -2235,7 +2237,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
             scp = str(os.path.join(os.environ["ProgramFiles"], "OpenSSH", "scp.exe"))
             cmd = """ "c:\progra~1\OpenSSH\scp.exe"%s -r -C -P%s "-o IdentityFile=%s" "-o UserKnownHostsFile=/dev/null" "-o StrictHostKeyChecking=no" "-o Batchmode=yes" "-o PasswordAuthentication=no" "-o ServerAliveInterval=10" "-o CheckHostIP=no" "-o LogLevel=ERROR" "-o ConnectTimeout=10" """ % (scp_limit_rate_ko, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
         if cmdmode == "rsync":
-            cmdtransfert =  " %s -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
+            cmdtransfert =  " %s -L -z --rsync-path=rsync%s"%(execrsync, rsync_limit_rate_ko)
             cmd = """%s -e "ssh -P%s -o IdentityFile=%s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o LogLevel=ERROR -o ConnectTimeout=10" -av --chmod=777 """ % (cmdtransfert, objectxmpp.config.reverseserver_ssh_port, path_key_priv)
 
         cmdexec =  cmd + remotesrc + localdest
