@@ -1,0 +1,533 @@
+# -*- coding: utf-8 -*-
+#
+# (c) 2016-2021 siveo, http://www.siveo.net
+#
+# This file is part of Pulse 2, http://www.siveo.net
+#
+# Pulse 2 is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# Pulse 2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Pulse 2; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+
+"""
+This plugin checks the status of a few counters and send the information to the monitoring agent
+
+******* Warning *************
+This plugin is for monitoring
+
+The following operations must be done to allow reporting of cpu and memory usage by systemd for pulse services
+crudini --set /etc/systemd/system.conf Manager DefaultMemoryAccounting yes
+crudini --set /etc/systemd/system.conf Manager DefaultCPUAccounting yes
+crudini --set /etc/systemd/system.conf Manager BlockIOAccounting yes
+systemctl daemon-reexec
+python3 -m pulse_debug_tools server --action=manage_pulse_services --options=dryrun=no,deps=yes,only_subs='',action=restart
+"""
+
+import json
+import logging
+import traceback
+import re
+import os
+import platform
+import ConfigParser
+logger = logging.getLogger()
+import subprocess
+import socket
+import psutil
+from xml.etree import ElementTree
+import requests
+from datetime import datetime
+from lib.utils import file_put_contents, getRandomName
+from lib.agentconffile import directoryconffile, conffilename
+import mysql.connector
+
+# WARNING: The descriptor MUST be in one line
+plugin = {"VERSION": "1.0.0", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+
+SCHEDULE = {"schedule" : "*/15 * * * *", "nb" : -1}
+
+globalstruct={}
+
+def schedule_main(xmppobject):
+    logger.info("===========scheduling_mon_pulsesystem============")
+    logger.info(plugin)
+    logger.info("=================================================\n")
+    if xmppobject.num_call_scheduling_mon_pulsesystem == 0:
+        __read_conf_scheduling_mon_pulsesystem(xmppobject)
+
+    try:
+        if xmppobject.config.agenttype in ['relayserver']:
+            #code ars
+            system_json = {}
+            # System services
+            if xmppobject.config.services_enable:
+                service_json = {}
+                # List all active services
+                active_services = []
+                cmd = 'systemctl -t service --state=active | grep running'
+                result_services = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+                for line in result_services.stdout.readlines():
+                    active_services.append(line.split('.')[0])
+                for service_name in xmppobject.config.services_list:
+                    service_json[service_name] = {}
+                    if service_name == 'syncthing':
+                        service = 'syncthing@syncthing'
+                    elif service_name == 'ssh':
+                        service = 'sshd'
+                    elif service_name == 'openldap':
+                        service = 'slapd'
+                    elif service_name == 'apache':
+                        if platform.linux_distribution()[0] in ['CentOS Linux', 'centos', 'fedora', 'Red Hat Enterprise Linux Server', 'redhat']:
+                            service = 'httpd'
+                        elif platform.linux_distribution()[0] in ['debian']:
+                            service = 'apache2'
+                    elif service_name == 'tomcat':
+                        if platform.linux_distribution()[0] in ['debian']:
+                            service = 'tomcat8'
+                        else:
+                            service = 'tomcat'
+                    else:
+                        service = service_name
+                    if service in active_services:
+                        service_json[service_name]['status'] = 1
+                        result_memory = subprocess.Popen(['systemctl', 'show', '%s' % service, '-p', 'MemoryCurrent'], stdout=subprocess.PIPE)
+                        service_json[service_name]['memory'] = int(result_memory.stdout.readline().split('=')[1])
+                        result_cpu = subprocess.Popen(['systemctl', 'show', '%s' % service, '-p', 'CPUUsageNSec'], stdout=subprocess.PIPE)
+                        service_json[service_name]['cpu'] = int(result_cpu.stdout.readline().split('=')[1]) / 1000000000
+                        if service_name in xmppobject.config.openfiles_check:
+                            result_openfiles = subprocess.Popen(['lsof', '-u', '%s' % service], stdout=subprocess.PIPE)
+                            service_json[service_name]['nbopenfiles'] = len(result_openfiles.stdout.readlines())
+                    else:
+                        service_json[service_name]['status'] = 0
+                        service_json[service_name]['memory'] = 0
+                        service_json[service_name]['cpu'] = 0
+                        if service_name in xmppobject.config.openfiles_check:
+                            service_json[service_name]['nbopenfiles'] = 0
+                system_json['services'] = service_json
+            
+            # System ports
+            if xmppobject.config.ports_enable:
+                ports_json = {}
+                # list all listening ports
+                listening_ports = []
+                for c in psutil.net_connections(kind='inet'):
+                    if c.status == 'LISTEN':
+                        host, port = c.laddr
+                        listening_ports.append(port)
+                # check if port is in list of listening ports
+                for port_name in xmppobject.config.ports_list:
+                    port_number = eval('xmppobject.config.port_%s' % port_name )
+                    if port_number in listening_ports:
+                        ports_json[port_name] = 1
+                    else:
+                        ports_json[port_name] = 0
+                system_json['ports'] = ports_json
+
+            # System resources
+            if xmppobject.config.resources_enable:
+                resources_json = {}
+                resources_json['cpu'] = psutil.cpu_percent()
+                resources_json['memory'] = dict(psutil.virtual_memory()._asdict()) # eg {'available': 228483072, 'used': 1699835904, 'cached': 251248640, 'percent': 89.1, 'free': 120410112, 'inactive': 780595200, 'active': 1043791872, 'shared': 16216064, 'total': 2101821440, 'buffers': 30326784}
+                resources_json['swap'] = dict(psutil.swap_memory()._asdict()) # eg. {'used': 325361664, 'sout': 1002373120, 'total': 2145382400, 'percent': 15.2, 'sin': 125362176, 'free': 1820020736}
+                for filesystem in xmppobject.config.resources_filesystems_list:
+                    if filesystem == 'root':
+                        resources_json['df_'] = dict(psutil.disk_usage('/')._asdict()) # eg {'used': 12178808832, 'total': 103037329408, 'percent': 12.5, 'free': 85580464128}
+                    elif filesystem == 'var':
+                        resources_json['df_var'] = dict(psutil.disk_usage('/var')._asdict())
+                    elif filesystem == 'tmp':
+                        resources_json['df_tmp'] = dict(psutil.disk_usage('/tmp')._asdict())
+                system_json['resources'] = resources_json
+
+            # System ejabberd
+            if xmppobject.config.ejabberd_enable:
+                ejabberd_json = {}
+                result_connected = subprocess.Popen(['ejabberdctl', 'stats', 'onlineusers'], stdout=subprocess.PIPE)
+                ejabberd_json['connected_users'] = int(result_connected.stdout.readline())
+                result_registered = subprocess.Popen(['ejabberdctl', 'stats', 'registeredusers'], stdout=subprocess.PIPE)
+                ejabberd_json['registered_users'] = int(result_registered.stdout.readline())
+                for jid in xmppobject.config.offline_count_list:
+                    if jid == 'rs':
+                        result = subprocess.Popen(['ejabberdctl', 'get_offline_count', 'rs%s' % xmppobject.config.xmpp_domain, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
+                    else:
+                        result = subprocess.Popen(['ejabberdctl', 'get_offline_count', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
+                    ejabberd_json['offline_count_%s' % jid] = int(result.stdout.readline())
+                for jid in xmppobject.config.roster_size_list:
+                    result = subprocess.Popen(['ejabberdctl', 'get_roster', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
+                    ejabberd_json['roster_size_%s' % jid] = len(result.stdout.readlines())
+                system_json['ejabberd'] = ejabberd_json
+
+            # System syncthing
+            if xmppobject.config.syncthing_enable:
+                syncthing_json = {}
+                with open('/var/lib/syncthing/.config/syncthing/config.xml') as xml_file:
+                    config_xml = xml_file.read()
+                root = ElementTree.fromstring(config_xml)
+                api_key = root.find("./gui/apikey").text
+                api_headers = {'X-API-Key' : api_key}
+                for share_name in xmppobject.config.shares_list:
+                    if share_name == 'local':
+                        result = subprocess.Popen(xmppobject.config.local_share_cmd, shell=True, stdout=subprocess.PIPE)
+                        share = result.stdout.readline()
+                    else:
+                        share = share_name
+                    url = 'http://localhost:8384/rest/db/status?folder=pulsemaster_%s' % share
+                    response = requests.get(url, headers=api_headers)
+                    if response.status_code == requests.codes.ok:
+                        syncthing_json[share] = response.json() # eg. {u'needSymlinks': 0, u'globalSymlinks': 0, u'needBytes': 0, u'stateChanged': u'2021-10-06T21:57:47.773217561+02:00', u'sequence': 15, u'globalDeleted': 5, u'needTotalItems': 0, u'globalTotalItems': 10, u'localDeleted': 5, u'errors': 0, u'globalBytes': 314924, u'invalid': u'', u'needDirectories': 0, u'version': 15, u'localFiles': 4, u'localTotalItems': 10, u'state': u'idle', u'needFiles': 0, u'inSyncBytes': 314924, u'localBytes': 314924, u'globalFiles': 4, u'globalDirectories': 1, u'ignorePatterns': False, u'pullErrors': 0, u'localSymlinks': 0, u'inSyncFiles': 4, u'needDeletes': 0, u'localDirectories': 1}
+                system_json['syncthing'] = syncthing_json
+
+            # System mysql
+            if xmppobject.config.mysql_enable:
+                mysql_json = {}
+                # TODO
+                # "mysql": {
+                # "uptime": seconds,
+                # "threads_connected": number,
+                # "connections_rate": percentage,
+                # "aborted_connects_rate": numberperminute,
+                # "errors_max_connections": number,
+                # "errors_internal": number,
+                # "errors_select": number,
+                # "errors_accept": number,
+                # "subquery_cache_hit": number,
+                # "table_cache_usage" : percentage
+                # }
+                # show status where `variable_name` = 'Uptime';
+                # show status where `variable_name` = 'Threads_connected';
+                # show status where `variable_name` = 'Max_used_connections';
+                # show variables where `variable_name` = 'max_connections';
+                # show status where `variable_name` = 'Aborted_connects';
+                # connections_rate = Max_used_connections / max_connections * 100
+                # show status where variable_name='Connection_errors_max_connections'
+                # show status where variable_name='Connection_errors_internal'
+                # show status where variable_name='Connection_errors_select'
+                # show status where variable_name='Connection_errors_accept'
+                # show status where `variable_name` = 'subquery_cache_hit';
+                # show variables where `variable_name` = 'table_open_cache';
+                # show status where `variable_name` = 'Open_tables';
+                # table_cache_usage = table_open_cache * 100 / Open_tables
+                system_json['mysql'] = mysql_json
+
+            # System pulse_relay
+            if xmppobject.config.pulse_relay_enable:
+                pulse_relay_json = {}
+                pulse_relay_json['deployments'] = {}
+                relayconf = ConfigParser.ConfigParser()
+                relayconf.read('/etc/pulse-xmpp-agent/relayconf.ini')
+                if os.path.exists('/etc/pulse-xmpp-agent/relayconf.ini.local'):
+                    relayconf.read('/etc/pulse-xmpp-agent/relayconf.ini.local')
+                if relayconf.has_option("global", "concurrentdeployments"):
+                    slots_configured = relayconf.getint('global','concurrentdeployments')
+                else:
+                    slots_configured = 10
+                pulse_relay_json['deployments']['slots_configured'] = slots_configured
+                fifodeploy_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'fifodeploy')
+                deployments_queued = len([name for name in os.listdir(fifodeploy_path) if os.path.isfile(os.path.join(fifodeploy_path, name))])
+                pulse_relay_json['deployments']['deployments_queued'] = deployments_queued
+                system_json['pulse_relay'] = pulse_relay_json
+
+            # System pulse
+            if xmppobject.config.pulse_main_enable:
+                pulse_main_json = {}
+                cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
+                                              port=xmppobject.config.pulse_main_db_port,
+                                              user=xmppobject.config.pulse_main_db_user,
+                                              password=xmppobject.config.pulse_main_db_password,
+                                              database='xmppmaster')
+                cursor = cnx.cursor(buffered=True)
+                pulse_main_json['deployments'] = {}
+                query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT START'"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['deployments']['current'] = count
+                # TODO
+                # query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT QUEUED'"
+                # cursor.execute(query)
+                # count = cursor.rowcount
+                # pulse_json['deployments']['queued_at_relay'] = count
+                pulse_main_json['agents'] = {}
+                query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 1"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['agents']['online'] = count
+                query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 0"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['agents']['offline'] = count
+                query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND need_reconf = 1"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['agents']['pending_reconf'] = count
+                query = "SELECT id FROM xmppmaster.update_machine"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['agents']['pending_update'] = count
+                pulse_main_json['packages'] = {}
+                query = "SELECT id FROM pkgs.packages"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['packages']['total'] = count
+                query = "SELECT id FROM pkgs.packages WHERE pkgs_share_id = 1"
+                cursor.execute(query)
+                count = cursor.rowcount
+                pulse_main_json['packages']['total_global'] = count
+                # TODO
+                # pulse_json['packages']['corrupted'] = xxxx
+                cursor.close()
+                cnx.close()
+                system_json['pulse_main'] = pulse_main_json
+
+        else:
+            #agent machine
+            pass
+
+        # Send message
+        send_monitoring_message(xmppobject, system_json)
+        
+    except Exception:
+        logger.error("\n%s"%(traceback.format_exc()))
+
+def send_monitoring_message(xmppobject, json_metriques):
+    # Get monitoring agent
+    Config = ConfigParser.ConfigParser()
+    Config.read("/etc/pulse-xmpp-agent/relayconf.ini")
+    if os.path.exists("/etc/pulse-xmpp-agent/relayconf.ini.local"):
+        Config.read("/etc/pulse-xmpp-agent/relayconf.ini.local")
+    monitoring_agent = 'master_mon@pulse'
+    if Config.has_section("substitute"):
+        if Config.has_option("substitute", "monitoring"):
+            monitoring_agent = Config.get('substitute', 'monitoring')
+
+    sessionid = getRandomName(5, "mon_pulsesystem")
+    collect_time = datetime.now().isoformat()
+    message_json = {}
+    message_json['action'] = 'terminalInformations'
+    message_json['sessionid'] = sessionid
+    message_json['base64'] = False
+    message_json['data'] = {}
+    message_json['data']['date'] = '%s' % collect_time
+    message_json['data']['device_service'] = []
+    message_json['data']['other_data'] = {}
+    message_json['ret'] = 0
+    device_service = {}
+    device_service['system'] = {}
+    device_service['system']['status'] = 'ready'
+    device_service['system']['metriques'] = json_metriques
+    message_json['data']['device_service'].append(device_service)
+
+    try:
+        logger.debug("Sending monitoring message to %s: %s" % (monitoring_agent, json.dumps(message_json, indent=4)))
+        xmppobject.send_message(mto=str(monitoring_agent.strip('\"')),
+                        mbody=json.dumps(message_json, indent=4),
+                        mtype='chat')
+    except Exception:
+        logger.error("The backtrace of this error is \n %s" % traceback.format_exc())
+
+def __read_conf_scheduling_mon_pulsesystem(xmppobject):
+    """
+        Read the plugin configuration
+    """
+    configfilename = os.path.join(directoryconffile(), "%s.ini" % plugin['NAME'])
+
+    logger.debug("Reading configuration in File %s" % configfilename)
+
+    #default parameters
+    xmppobject.config.services_enable = True
+    xmppobject.config.ports_enable = True
+    xmppobject.config.resources_enable = True
+    xmppobject.config.ejabberd_enable = True
+    xmppobject.config.syncthing_enable = True
+    xmppobject.config.mysql_enable = True
+    xmppobject.config.pulse_relay_enable = True
+    xmppobject.config.pulse_main_enable = True
+    xmppobject.config.services_list = ['ejabberd', 'syncthing', 'apache', 'tomcat', 'ssh', 'openldap', 'mysql', 'mmc-agent', 'pulse-xmpp-agent-relay', 'pulse-package-watching', 'pulse2-inventory-server', 'pulse2-package-server', 'pulse-xmpp-master-substitute-inventory', 'pulse-xmpp-master-substitute-registration', 'pulse-xmpp-master-substitute-logger', 'pulse-xmpp-master-substitute-monitoring', 'pulse-xmpp-master-substitute-assessor', 'pulse-xmpp-master-substitute-reconfigurator', 'pulse-xmpp-master-substitute-deployment', 'pulse-xmpp-master-substitute-subscription']
+    xmppobject.config.openfiles_check = ['ejabberd', 'mysql']
+    xmppobject.config.ports_list = ['ejabberd_c2s', 'ejabberd_s2s', 'syncthing', 'syncthing_web', 'syncthing_discosrv', 'apache', 'apache_ssl', 'tomcat', 'ssh', 'mysql', 'mmc_agent', 'pulse2_inventory_server', 'pulse2_package_server']
+    xmppobject.config.port_ejabberd_c2s = 5222
+    xmppobject.config.port_ejabberd_s2s = 5269
+    xmppobject.config.port_syncthing = 22000
+    xmppobject.config.port_syncthing_web = 8384
+    xmppobject.config.port_syncthing_discosrv = 8443
+    xmppobject.config.port_apache = 80
+    xmppobject.config.port_apache_ssl = 443
+    xmppobject.config.port_tomcat = 8081
+    xmppobject.config.port_ssh = 22
+    xmppobject.config.port_mysql = 3306
+    xmppobject.config.port_mmc_agent = 7080
+    xmppobject.config.port_pulse2_inventory_server = 9999
+    xmppobject.config.port_pulse2_package_server = 9990
+    xmppobject.config.resources_filesystems_list = ['root', 'var', 'tmp']
+    xmppobject.config.xmpp_domain = 'pulse'
+    xmppobject.config.offline_count_list = ['rs', 'master', 'master_reg', 'master_subs', 'master_inv', 'master_asse', 'master_depl', 'master_mon']
+    xmppobject.config.roster_size_list = ['master', 'master_subs']
+    xmppobject.config.shares_list = ['global', 'local', 'baseremoteagent', 'downloads', 'bootmenus']
+    xmppobject.config.local_share_cmd = 'hostname -s | cut -c1-6'
+    xmppobject.config.pulse_main_db_host = 'localhost'
+    xmppobject.config.pulse_main_db_port = 3306
+    xmppobject.config.pulse_main_db_user = 'mmc'
+    xmppobject.config.pulse_main_db_password = 'secret'
+    
+    if not os.path.isfile(configfilename):
+        logger.warning("plugin %s\nConfiguration file  missing\n" \
+                        "%s" % (plugin['NAME'], configfilename))
+        logger.warning("the missing configuration file is created automatically.")
+        xmpp_domain = socket.gethostname()
+        # The following configuration is for relays and not main pulse
+        file_put_contents(configfilename,
+                            "[services]\n" \
+                            "enable = 1\n" \
+                            "services_list = ejabberd, syncthing, apache, tomcat, ssh, openldap, mysql, pulse-xmpp-agent-relay, pulse-package-watching, pulse2-package-server\n" \
+                            "openfiles_check = ejabberd, mysql\n" \
+                            "\n" \
+                            "[ports]\n" \
+                            "enable = 1\n" \
+                            "ports_list = ejabberd_c2s, ejabberd_s2s, syncthing, syncthing_web, apache, tomcat, ssh, mysql\n" \
+                            "ejabberd_c2s = 5222\n" \
+                            "ejabberd_s2s = 5269\n" \
+                            "syncthing = 22000\n" \
+                            "syncthing_web = 8384\n" \
+                            "syncthing_discosrv = 8443\n" \
+                            "apache = 80\n" \
+                            "apache_ssl = 443\n" \
+                            "tomcat = 8081\n" \
+                            "ssh = 22\n" \
+                            "mysql = 3306\n" \
+                            "pulse2_package_server = 9990\n" \
+                            "\n" \
+                            "[resources]\n" \
+                            "enable = 1\n" \
+                            "filesystems = root, var, tmp\n" \
+                            "\n" \
+                            "[ejabberd]\n" \
+                            "enable = 1\n" \
+                            "xmpp_domain = %s\n" \
+                            "offline_count_list = rs\n" \
+                            "roster_size_list = \n" \
+                            "\n" \
+                            "[syncthing]\n" \
+                            "enable = 1\n" \
+                            "shares_list = global, local, baseremoteagent, downloads, bootmenus\n" \
+                            "local_share_cmd = 'hostname -s | cut -c1-6'\n" \
+                            "\n" \
+                            "[mysql]\n" \
+                            "enable = 0\n" \
+                            "\n" \
+                            "[pulse_relay]\n" \
+                            "enable = 1\n" \
+                            "\n" \
+                            "[pulse_main]\n" \
+                            "enable = 0\n" % xmpp_domain)                  
+                                
+    # Load configuration from file
+    Config = ConfigParser.ConfigParser()
+    Config.read(configfilename)
+    if os.path.exists(configfilename + ".local"):
+        Config.read(configfilename + ".local")
+
+    if Config.has_section("services"):
+        if Config.has_option("services", "enable"):
+            xmppobject.config.services_enable = Config.getboolean('services','enable')
+        if Config.has_option("services", "services_list"):
+            services_list = Config.get('services', 'services_list')
+            xmppobject.config.services_list = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', services_list) \
+                                                if x.strip() != ""]
+        if Config.has_option("services", "openfiles_check"):
+            openfiles_check = Config.get('services', 'openfiles_check')
+            xmppobject.config.openfiles_check = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', openfiles_check) \
+                                                if x.strip() != ""]
+    if Config.has_section("ports"):
+        if Config.has_option("ports", "enable"):
+            xmppobject.config.ports_enable = Config.getboolean('ports','enable')
+        if Config.has_option("ports", "ports_list"):
+            ports_list = Config.get('ports', 'ports_list')
+            xmppobject.config.ports_list = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', ports_list) \
+                                                if x.strip() != ""]
+        if Config.has_option("ports", "ejabberd_c2s"):
+            xmppobject.config.port_ejabberd_c2s = Config.getint('ports','ejabberd_c2s')
+        if Config.has_option("ports", "ejabberd_s2s"):
+            xmppobject.config.port_ejabberd_s2s = Config.getint('ports','ejabberd_s2s')
+        if Config.has_option("ports", "syncthing"):
+            xmppobject.config.port_syncthing = Config.getint('ports','syncthing')
+        if Config.has_option("ports", "syncthing_web"):
+            xmppobject.config.port_syncthing_web = Config.getint('ports','syncthing_web')
+        if Config.has_option("ports", "syncthing_discosrv"):
+            xmppobject.config.port_syncthing_discosrv = Config.getint('ports','syncthing_discosrv')
+        if Config.has_option("ports", "apache"):
+            xmppobject.config.port_apache = Config.getint('ports','apache')
+        if Config.has_option("ports", "apache_ssl"):
+            xmppobject.config.port_apache_ssl = Config.getint('ports','apache_ssl')
+        if Config.has_option("ports", "tomcat"):
+            xmppobject.config.port_tomcat = Config.getint('ports','tomcat')
+        if Config.has_option("ports", "ssh"):
+            xmppobject.config.port_ssh = Config.getint('ports','ssh')
+        if Config.has_option("ports", "mysql"):
+            xmppobject.config.port_mysql = Config.getint('ports','mysql')
+        if Config.has_option("ports", "mmc_agent"):
+            xmppobject.config.port_mmc_agent = Config.getint('ports','mmc_agent')
+        if Config.has_option("ports", "pulse2_inventory_server"):
+            xmppobject.config.port_pulse2_inventory_server = Config.getint('ports','pulse2_inventory_server')
+        if Config.has_option("ports", "pulse2_package_server"):
+            xmppobject.config.port_pulse2_package_server = Config.getint('ports','pulse2_package_server')
+    if Config.has_section("resources"):
+        if Config.has_option("resources", "enable"):
+            xmppobject.config.resources_enable = Config.getboolean('resources','enable')
+        if Config.has_option("resources", "filesystems"):
+            filesystems_list = Config.get('resources', 'filesystems')
+            xmppobject.config.resources_filesystems_list = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', filesystems_list) \
+                                                if x.strip() != ""]
+    if Config.has_section("ejabberd"):
+        if Config.has_option("ejabberd", "enable"):
+            xmppobject.config.ejabberd_enable = Config.getboolean('ejabberd','enable')
+        if Config.has_option("ejabberd", "xmpp_domain"):
+            xmppobject.config.xmpp_domain = Config.get('ejabberd', 'xmpp_domain')
+        if Config.has_option("ejabberd", "offline_count_list"):
+            offline_count_list = Config.get('ejabberd', 'offline_count_list')
+            xmppobject.config.offline_count_list = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', offline_count_list) \
+                                                if x.strip() != ""]
+        if Config.has_option("ejabberd", "roster_size_list"):
+            roster_size_list = Config.get('ejabberd', 'roster_size_list')
+            xmppobject.config.roster_size_list = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', roster_size_list) \
+                                                if x.strip() != ""]
+    if Config.has_section("syncthing"):
+        if Config.has_option("syncthing", "enable"):
+            xmppobject.config.syncthing_enable = Config.getboolean('syncthing','enable')
+        if Config.has_option("syncthing", "shares_list"):
+            shares_list = Config.get('syncthing', 'shares_list')
+            xmppobject.config.shares_list = [str(x.strip()) \
+                                            for x in re.split(r'[;,:@\(\)\[\]\|\s]\s*', shares_list) \
+                                                if x.strip() != ""]
+        if Config.has_option("syncthing", "local_share_cmd"):
+            xmppobject.config.local_share_cmd = Config.get('syncthing', 'local_share_cmd')
+    if Config.has_section("mysql"):
+        if Config.has_option("mysql", "enable"):
+            xmppobject.config.mysql_enable = Config.getboolean('mysql','enable')
+    if Config.has_section("pulse_relay"):
+        if Config.has_option("pulse_relay", "enable"):
+            xmppobject.config.pulse_relay_enable = Config.getboolean('pulse_relay','enable')
+    if Config.has_section("pulse_main"):
+        if Config.has_option("pulse_main", "enable"):
+            xmppobject.config.pulse_main_enable = Config.getboolean('pulse_main','enable')
+        if Config.has_option("pulse_main", "db_host"):
+            xmppobject.config.pulse_main_db_host = Config.get('pulse_main','db_host')
+        if Config.has_option("pulse_main", "db_port"):
+            xmppobject.config.pulse_main_db_port = Config.getint('pulse_main','db_port')
+        if Config.has_option("pulse_main", "db_user"):
+            xmppobject.config.pulse_main_db_user = Config.get('pulse_main','db_user')
+        if Config.has_option("pulse_main", "db_password"):
+            xmppobject.config.pulse_main_db_password = Config.get('pulse_main','db_password')
