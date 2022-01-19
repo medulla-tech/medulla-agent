@@ -32,9 +32,10 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatedoublerun", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 # Comma separated list of orgs which do not need double run
+# TODO: See how to handle this on a plain text file.
 P4ONLYUCANSS = ''
 
 
@@ -139,6 +140,17 @@ def enabledoublerun(xmppobject):
         logger.debug("Plugin Doublerun - Restarting Nytrio sshd")
         utils.simplecommand("sc start sshd")
 
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
+        result = utils.simplecommand(cmd)
+        if result['code'] == 0:
+            logger.debug("The Pulse Rsync is already removed")
+        else:
+            regclean = 'REG DELETE hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync /f"'
+            utils.simplecommand(regclean)
+            if result['code'] == 0:
+                logger.info("Siveo Rsync - We removed the Pulse Rsync key. Double is now enabled.")
+
+
 
 def disabledoublerun(xmppobject):
     if sys.platform.startswith('win'):
@@ -175,6 +187,21 @@ def disabledoublerun(xmppobject):
                         logger.error("Plugin Doublerun - Failed copying file %s: %s" % (full_rsync_file_name, e))
                         raise PluginError
 
+        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
+        result = utils.simplecommand(cmd)
+        if result['code'] == 0:
+            logger.debug("The Pulse Rsync is already installed")
+        else:
+            addkey = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
+                    '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % plugin['VERSION']
+            utils.simplecommand(addkey)
+
+            if result['code'] == 0:
+                logger.info("Siveo Rsync - Updating to version %s in registry successful" % plugin['VERSION'])
+
+            add_editor = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
+                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            utils.simplecommand(add_editor)
 
 class PluginError(Exception):
     """
