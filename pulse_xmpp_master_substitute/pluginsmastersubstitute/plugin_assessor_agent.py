@@ -276,8 +276,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                         result1 = XmppMasterDatabase().IdlonglatServerRelay(data['classutil'])
                         for x in result1:
                             # pour tout les relay on clacule la distance a vol oiseau.
-                            if x[1] != "" and x[2] != "" and \
-                                x[1] != "unknown" and x[2] != "unknown":
+                            if x[1] not in ["","unknown"] and x[2] not in ["","unknown"]:
                                 try:
                                     xpoint = float(x[2])
                                     ypoint = float(x[1])
