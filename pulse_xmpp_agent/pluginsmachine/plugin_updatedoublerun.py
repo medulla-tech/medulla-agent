@@ -32,30 +32,35 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 # Comma separated list of orgs which do not need double run
 # TODO: See how to handle this on a plain text file.
-P4ONLYUCANSS = ''
+P4ONLYUCANSS = '113701'
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
-    try:
-        # Update if version is lower
-        installed_version = checkdoublerunversion()
-        if StrictVersion(installed_version) < StrictVersion(plugin['VERSION']):
-            if nodoublerun():
-                disabledoublerun(xmppobject)
-            else:
-                enabledoublerun(xmppobject)
-            updatedoublerunversion(installed_version)
-    except PluginError:
-        logger.error("Plugin Doublerun - Quitting on error. Check previous logs")
-        return
 
+    # Update if version is lower
+    installed_version = checkdoublerunversion()
+    if StrictVersion(installed_version) < StrictVersion(plugin['VERSION']):
+        if nodoublerun():
+            ret = disabledoublerun(xmppobject)
+            if ret is not False:
+                updatedoublerunversion(installed_version)
+            else:
+                logger.info("Plugin Doublerun - Quitting on error. Check previous logs")
+                return
+        else:
+            ret = enabledoublerun(xmppobject)
+            if ret is not False:
+                updatedoublerunversion(installed_version)
+            else:
+                logger.info("Plugin Doublerun - Quitting on error. Check previous logs")
+                return
 
 def checkdoublerunversion():
     if sys.platform.startswith('win'):
@@ -91,9 +96,9 @@ def nodoublerun():
         hostname = platform.node().split('.', 1)[0]
         ucanss = re.findall(r'\d+', hostname)[0][0:6]
         if ucanss in list(P4ONLYUCANSS.replace(" ", "").split(",")):
-            logger.debug("Plugin Doublerun - Double run to be disabled on this machine")
+            logger.debug("Plugin Doublerun - Doublerun will be disabled")
             return True
-    logger.debug("Plugin Doublerun - Double run to be enabled on this machine")
+    logger.debug("Plugin Doublerun - Doublerun will be enabled")
     return False
 
 def enabledoublerun(xmppobject):
@@ -136,19 +141,23 @@ def enabledoublerun(xmppobject):
             logger.error("Plugin Doublerun - Failed copying Nytrio cygwin1.dll file: %s" % e)
             raise PluginError
 
+        # Enable autostart Nytrio ssh daemon
+        logger.debug("Plugin Doublerun - Enable autostart Nytrio sshd")
+        utils.simplecommand("sc config sshd start= auto")
+
         # Start Nytrio ssh daemon
         logger.debug("Plugin Doublerun - Restarting Nytrio sshd")
         utils.simplecommand("sc start sshd")
 
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
-        if result['code'] == 0:
-            logger.debug("The Pulse Rsync is already removed")
+        if result['code'] != 0:
+            logger.debug("Plugin Doublerun - The Pulse Rsync is already removed")
         else:
-            regclean = 'REG DELETE hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync /f"'
+            regclean = 'REG DELETE "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /f"'
             utils.simplecommand(regclean)
             if result['code'] == 0:
-                logger.info("Siveo Rsync - We removed the Pulse Rsync key. Double is now enabled.")
+                logger.info("Plugin Doublerun - Double is now enabled - Siveo Rsync is removed.")
 
 
 
@@ -169,7 +178,11 @@ def disabledoublerun(xmppobject):
         logger.debug("Plugin Doublerun - Download rsync from %s" % rsync_dl_url)
         rsync_result, rsync_txtmsg = utils.downloadfile(rsync_dl_url, os.path.join(rsync_tempdir, rsync_filename)).downloadurl()
 
-        if rsync_result:
+        if rsync_result is not False:
+            # Stop Nytrio ssh daemon
+            logger.debug("Plugin Doublerun - Stopping Nytrio sshd")
+            utils.simplecommand("sc stop sshd")
+
             current_dir = os.getcwd()
             os.chdir(rsync_tempdir)
             rsync_zip_file = zipfile.ZipFile(rsync_filename, 'r')
@@ -187,21 +200,27 @@ def disabledoublerun(xmppobject):
                         logger.error("Plugin Doublerun - Failed copying file %s: %s" % (full_rsync_file_name, e))
                         raise PluginError
 
-        cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
-        result = utils.simplecommand(cmd)
-        if result['code'] == 0:
-            logger.debug("The Pulse Rsync is already installed")
-        else:
-            addkey = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
-                    '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % plugin['VERSION']
-            utils.simplecommand(addkey)
-
+            cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
+            result = utils.simplecommand(cmd)
             if result['code'] == 0:
-                logger.info("Siveo Rsync - Updating to version %s in registry successful" % plugin['VERSION'])
+                logger.debug("Plugin Doublerun - The Pulse Rsync is already installed")
+            else:
+                addkey = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
+                        '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % plugin['VERSION']
+                result_addkey = utils.simplecommand(addkey)
 
-            add_editor = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
-            utils.simplecommand(add_editor)
+                if result_addkey['code'] == 0:
+                    logger.info("Plugin Doublerun - Siveo Rsync enabled")
+
+                add_editor = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" '\
+                        '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                utils.simplecommand(add_editor)
+                # Disable autostart Nytrio sshd
+                logger.debug("Plugin Doublerun - Plugin Doublerun - Disable autostart Nytrio sshd")
+                utils.simplecommand("sc config sshd start= disabled")
+        else:
+            logger.error("Plugin Doublerun - Failed to download rsync - Check ARS web server or missing rsync file")
+            return False
 
 class PluginError(Exception):
     """
