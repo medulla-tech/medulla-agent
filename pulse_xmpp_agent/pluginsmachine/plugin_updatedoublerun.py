@@ -52,14 +52,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if ret is not False:
                 updatedoublerunversion(installed_version)
             else:
-                logger.info("Plugin Doublerun - Quitting on error. Check previous logs")
+                logger.error("Plugin Doublerun - Quitting on error. Check previous logs")
                 return
         else:
             ret = enabledoublerun(xmppobject)
             if ret is not False:
                 updatedoublerunversion(installed_version)
             else:
-                logger.info("Plugin Doublerun - Quitting on error. Check previous logs")
+                logger.error("Plugin Doublerun - Quitting on error. Check previous logs")
                 return
 
 def checkdoublerunversion():
@@ -219,7 +219,7 @@ def disabledoublerun(xmppobject):
                 logger.debug("Plugin Doublerun - Plugin Doublerun - Disable autostart Nytrio sshd")
                 utils.simplecommand("sc config sshd start= disabled")
         else:
-            logger.info("Plugin Doublerun - Failed to download rsync - Check ARS web server or missing rsync file")
+            logger.error("Plugin Doublerun - Failed to download rsync - Check ARS web server or missing rsync file")
             return False
 
 class PluginError(Exception):
