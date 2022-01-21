@@ -32,11 +32,11 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updatedoublerun", "TYPE": "machine"}
+plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 # Comma separated list of orgs which do not need double run
 # TODO: See how to handle this on a plain text file.
-P4ONLYUCANSS = '113701'
+P4ONLYUCANSS = ''
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -96,7 +96,7 @@ def nodoublerun():
         hostname = platform.node().split('.', 1)[0]
         ucanss = re.findall(r'\d+', hostname)[0][0:6]
         if ucanss in list(P4ONLYUCANSS.replace(" ", "").split(",")):
-            logger.debug("Plugin Doublerun - Doublerun will be disabled")
+            logger.debug("Plugin Doublerun - Rsync will be enable")
             return True
     logger.debug("Plugin Doublerun - Doublerun will be enabled")
     return False
@@ -152,12 +152,12 @@ def enabledoublerun(xmppobject):
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
         if result['code'] != 0:
-            logger.debug("Plugin Doublerun - The Pulse Rsync is already removed")
+            logger.info("Plugin Doublerun - The Pulse Rsync is already removed")
         else:
             regclean = 'REG DELETE "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse RSync" /f"'
             utils.simplecommand(regclean)
             if result['code'] == 0:
-                logger.info("Plugin Doublerun - Double is now enabled - Siveo Rsync is removed.")
+                logger.info("Plugin Doublerun - Doublerun is now enabled - Siveo Rsync is removed.")
 
 
 
@@ -219,7 +219,7 @@ def disabledoublerun(xmppobject):
                 logger.debug("Plugin Doublerun - Plugin Doublerun - Disable autostart Nytrio sshd")
                 utils.simplecommand("sc config sshd start= disabled")
         else:
-            logger.error("Plugin Doublerun - Failed to download rsync - Check ARS web server or missing rsync file")
+            logger.info("Plugin Doublerun - Failed to download rsync - Check ARS web server or missing rsync file")
             return False
 
 class PluginError(Exception):
