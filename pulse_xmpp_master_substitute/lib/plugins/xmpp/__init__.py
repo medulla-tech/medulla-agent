@@ -428,7 +428,6 @@ class XmppMasterDatabase(DatabaseHelper):
                           "result": t[18]}
             resultlist.append(listresult)
         return resultlist
-
     @DatabaseHelper._sessionm
     def Timeouterrordeploy(self, session):
         # test les evenements states qui ne sont plus valides sur intervalle de deployement.
@@ -487,16 +486,96 @@ class XmppMasterDatabase(DatabaseHelper):
             return resultlist
 
     @DatabaseHelper._sessionm
-    def update_state_deploy(self, session, id, state):
+    def update_state_deploy(self, session, sql_id, state):
+        """
+            Reset the state of the deploiement to `state` for the
+            `sql_id` deploiements
+            Args:
+                session: The SQL Alchemy session
+                sql_id: The id of the deploiement that need to be reset
+                state: The new state of the deploiement
+        """
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `state`='%s'
-                     WHERE `id`='%s';""" % (state, id)
+                     WHERE `id`='%s';""" % (state, sql_id)
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
+
+    def replaydeploysessionid(self, sessionid, force_redeploy=0, reschedule=0):
+        """
+            Call the mmc_restart_deploy_sessionid stored procedure
+            Args:
+                session: The SQL Alchemy session
+                sessionid: The sessionid of the deploiement
+                force_redeploy: Tells if we force to redeploy ALL.
+                reschedule: Tell if we reschedule the deploiements
+        """
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+            self.logger.info("Call the mmc_restart_deploy_sessionid stored procedure for the sessionid: %s"
+                             "force_redeploy is set to %s and reschedule is set to %s" % (sessionid,
+                                                                                          force_redeploy,
+                                                                                          reschedule))
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_deploy_sessionid", [sessionid, force_redeploy, reschedule])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        return
+
+
+    def restart_blocked_deployments(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments stored procedure
+            It plans with blocked deployments again
+        """
+        self.restart_blocked_deployments_on_status_transfer_failed(nb_reload)
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_deploy_sessionid stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
+
+    def restart_blocked_deployments_on_status_transfer_failed(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments_transfer_error stored procedure
+            It plans with transfert failed blocked deployments again
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments_transfer_error", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_blocked_deployments_transfer_error stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
 
     @DatabaseHelper._sessionm
     def updatedeploytosessionid(self, session, status, sessionid):
@@ -507,7 +586,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -520,7 +599,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -538,7 +617,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             ret=[elt for elt in req]
             return ret[0][0]
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return 0
 
@@ -2168,8 +2247,7 @@ class XmppMasterDatabase(DatabaseHelper):
                   endcmd=None,
                   macadress=None,
                   result=None,
-                  syncthing=None
-                  ):
+                  syncthing=None):
         """
         parameters
         startcmd and endcmd  int(timestamp) either str(datetime)
@@ -4853,7 +4931,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return updatedb
 
     @DatabaseHelper._sessionm
-    def getPresenceuuidenabled(self, session, uuid, enabled = 0):
+    def getPresenceuuidenabled(self, session, uuid, enabled=0):
         return session.query(exists().where (and_(Machines.uuid_inventorymachine == uuid,
                                               Machines.enabled == enabled))).scalar()
     @DatabaseHelper._sessionm
