@@ -33,6 +33,7 @@ import base64
 import time
 import json
 import re
+import socket
 from sleekxmpp import jid
 import traceback
 from sleekxmpp.exceptions import IqError, IqTimeout
