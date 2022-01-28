@@ -32,13 +32,13 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}
+plugin = {"VERSION": "1.4", "NAME": "updatedoublerun", "TYPE": "machine"}
 
 RSYNC_VERSION = "3.1.2"
 
 # Comma separated list of orgs which do not need double run
 # TODO: See how to handle this on a plain text file.
-P4ONLYUCANSS = ''
+P4ONLYUCANSS = '113701, 516901, 512101'
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
