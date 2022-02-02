@@ -44,17 +44,18 @@ from lxml import etree
 import urllib.request, urllib.parse, urllib.error
 import socket
 from threading import Lock
-from utils import Program, getRandomName, simplecommand, file_put_contents, simplecommand
+from lib.utils import Program, getRandomName, simplecommand, file_put_contents, simplecommand
+from urllib.parse import urlparse
 import logging
 import traceback
 import time
 import os
 import sys
-import ConfigParser
-from urllib.parse import urlparse
+
+if sys.version_info[0] == 3:
+    from configparser import ConfigParser
 
 logger = logging.getLogger()
-
 
 def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     tree = etree.parse(configfile)
