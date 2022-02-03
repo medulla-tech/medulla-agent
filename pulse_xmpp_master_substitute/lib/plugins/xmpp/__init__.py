@@ -962,7 +962,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 logging.getLogger().debug("Glpi_entity id : %s is not exist" % glpi_id)
         except NoResultFound :
             logging.getLogger().debug("Glpi_entity id : %s is not exist" % glpi_id)
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error("Glpi_entity id : %s is not exist" % glpi_id)
             logging.getLogger().error("sql : %s" % traceback.format_exc())
         return None
@@ -1050,7 +1050,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return new_glpi_entity.get_data()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
                 logging.getLogger().error("glpi_entity error")
         else:
@@ -1089,7 +1089,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return new_glpi_location.get_data()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
                 logging.getLogger().error("create_Glpi_location error")
         else:
@@ -1134,7 +1134,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.commit()
                 session.flush()
                 return new_glpi_register_keys.get_data()
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
                 logging.getLogger().error("Glpi_register_keys error")
         else:
@@ -1222,7 +1222,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("updateMachines error %s->" % str(e))
             return -1
 
@@ -1246,7 +1246,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return 1
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().debug("updateName_Qa_custom_command error %s->" % str(e))
             return -1
 
@@ -1714,7 +1714,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     session.flush()
                 else:
                     self.checknewjid(jid)
-            except Exception, e:
+            except Exception as e:
                 logging.getLogger().error(str(e))
                 msg=str(e)
                 return -1, msg
@@ -4699,7 +4699,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return [x[0] for x in result]
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             logging.getLogger().error("\n%s" % (traceback.format_exc()))
 

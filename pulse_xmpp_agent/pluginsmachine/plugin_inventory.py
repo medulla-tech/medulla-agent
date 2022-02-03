@@ -243,7 +243,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         tree = ElementTree.parse(admininfoconf)
                         accountinfo = tree.getroot()
                         tag = accountinfo.find("./KEYVALUE").text
-                    try: 
+                    try:
                         general_options = "/debug /force /tag=\"%s\"" % tag
                     except NameError:
                         general_options = "/debug /force"
@@ -334,7 +334,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                     result['data']['reginventory'][reg_key_num]['value'] = str(key_value[0])
                                     listfinger.append(str(key_value[0]))
                                     _winreg.CloseKey(key)
-                                except Exception, e:
+                                except Exception as e:
                                     logging.log(ERRORPULSEPLUGIN,"Error getting key: %s" % str(e))
                                     result['data']['reginventory'][reg_key_num]['value'] = ""
                                     pass

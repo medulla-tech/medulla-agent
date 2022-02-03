@@ -250,7 +250,7 @@ def Algorithm_Rule_Attribution_Agent_Relay_Server(objectxmpp,
                 for geovariable in tabinformation:
                     try:
                         tabinformation[geovariable] = str(data['geolocalisation'][geovariable])
-                    except  Exception:
+                    except Exception:
                         logger.error("\n%s" % (traceback.format_exc()))
                         pass
 

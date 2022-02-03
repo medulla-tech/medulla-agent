@@ -1018,7 +1018,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         data["action"] = action
                         try:
                             del data["descriptor"]["metaparameter"]
-                        except  Exception as e:
+                        except Exception as e:
                             logger.warning(str(e))
                             traceback.print_exc(file=sys.stdout)
                         msglevelspoolig = '<span class="log_warn">Spooling the deployment in queue</span>'
