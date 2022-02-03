@@ -24,8 +24,6 @@
 This module just give access to small functions needed by both 0.7 and 0.8 backend
 """
 
-# from pulse2.utils import grepv
-import exceptions
 import logging
 import re
 
