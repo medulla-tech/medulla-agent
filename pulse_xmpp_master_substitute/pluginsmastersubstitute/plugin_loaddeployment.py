@@ -200,8 +200,8 @@ def scheduledeploy(self):
                                                                     deployobject['UUID']))
                     logging.warning("INFO\nXMPP : No machine found for %s" % (deployobject['name']))
 
-                #listobjnoexist.append(deployobject)
-                # incription dans deploiement cette machine sans agent
+                # We add a fake entry in the database for the machine w/o agent
+                deployobject['name'] = deployobject['name'].split('.')[0]
                 XmppMasterDatabase().adddeploy(deployobject['commandid'],
                                             deployobject['name'],
                                             deployobject['name'],
