@@ -47,23 +47,28 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     except Exception:
         pass
 
+
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
         is_ssh_started = utils.simplecommand("sc.exe query pulsenetworknotify")
         if is_ssh_started['code'] == 0:
-            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+            state = [x.strip() for x in is_ssh_started['result']
+                     [3].split(' ') if x != ""][3]
             if state == "STOPPED" or state == "RUNNING":
                 logger.debug("The Pulse Network Notify plugin is installed.")
                 return True
         return False
 
+
 def stop_service():
     if sys.platform.startswith('win'):
         is_ssh_started = utils.simplecommand("sc.exe query pulsenetworknotify")
         if is_ssh_started['code'] == 0:
-            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+            state = [x.strip() for x in is_ssh_started['result']
+                     [3].split(' ') if x != ""][3]
             if state == "RUNNING":
                 utils.simplecommand("sc.exe stop sshdaemon")
+
 
 def check_if_binary_ok():
     if sys.platform.startswith('win'):
@@ -79,29 +84,34 @@ def check_if_binary_ok():
             regedit = True
 
         # We check if the binary is available
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        pulsedir_path = os.path.join(
+            os.environ["ProgramFiles"], "Pulse", "bin")
         servicefilename = 'netcheck-service.py'
 
-        if os.path.isfile(os.path.join(pulsedir_path, servicefilename)): 
+        if os.path.isfile(os.path.join(pulsedir_path, servicefilename)):
             binary = True
 
         is_service_installed = check_if_service_is_running()
 
-        if (regedit is False  and is_service_installed is True) or (binary is False  and is_service_installed is True): 
+        if (regedit is False and is_service_installed is True) or (
+                binary is False and is_service_installed is True):
             reinstall = True
             stop_service()
 
-        if (binary is True  and is_service_installed is False) or (regedit is True  and is_service_installed is False):
+        if (binary is True and is_service_installed is False) or (
+                regedit is True and is_service_installed is False):
             reinstall = True
 
         if reinstall:
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
-                    '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+                '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
             result = utils.simplecommand(cmd)
             if result['code'] == 0:
-                logger.debug("The Pulse Network Notify module is ready to be reinstalled.")
+                logger.debug(
+                    "The Pulse Network Notify module is ready to be reinstalled.")
             else:
                 logger.debug("We failed to reinitialize the registry entry.")
+
 
 def checknetworkcheckversion():
     if sys.platform.startswith('win'):
@@ -115,37 +125,55 @@ def checknetworkcheckversion():
             networkcheckversion = '0.1'
     return networkcheckversion
 
+
 def updatenetworkcheckversion(version):
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NETWORKVERSION
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % NETWORKVERSION
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("we successfully updated Pulse network notify to version %s" % NETWORKVERSION)
+            logger.info(
+                "we successfully updated Pulse network notify to version %s" %
+                NETWORKVERSION)
 
         if version == "0.1":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse network notify" /f'
-	    utils.simplecommand(cmdDisplay)
+                '/v "DisplayName" /t REG_SZ  /d "Pulse network notify" /f'
+            utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse network notify" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+
 
 def updatenetworkcheck(xmppobject):
     logger.info("Updating Network Check to version %s" % NETWORKVERSION)
     if sys.platform.startswith('win'):
-        pywintypes27_file = os.path.join("c:\\", "Python27", "Lib", "site-packages", "pywin32_system32", "pywintypes27.dll")
-        win32_path = os.path.join("c:\\", "Python27", "Lib", "site-packages", "win32")
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        pywintypes27_file = os.path.join(
+            "c:\\",
+            "Python27",
+            "Lib",
+            "site-packages",
+            "pywin32_system32",
+            "pywintypes27.dll")
+        win32_path = os.path.join(
+            "c:\\",
+            "Python27",
+            "Lib",
+            "site-packages",
+            "win32")
+        pulsedir_path = os.path.join(
+            os.environ["ProgramFiles"], "Pulse", "bin")
 
         filename = 'networkevents.py'
         dl_url = 'http://%s/downloads/win/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url, os.path.join(pulsedir_path, filename)).downloadurl()
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(
+                pulsedir_path, filename)).downloadurl()
         if result:
             logger.debug("%s" % txtmsg)
         else:
@@ -157,12 +185,16 @@ def updatenetworkcheck(xmppobject):
         stop_service = utils.simplecommand(stop_command)
         # Activation of network notify windows service
         if not os.path.isfile(os.path.join(win32_path, "pywintypes27.dll")):
-            shutil.copyfile(pywintypes27_file, os.path.join(win32_path, "pywintypes27.dll"))
+            shutil.copyfile(
+                pywintypes27_file, os.path.join(
+                    win32_path, "pywintypes27.dll"))
 
         servicefilename = 'netcheck-service.py'
         service_dl_url = 'http://%s/downloads/win/%s' % (
             xmppobject.config.Server, servicefilename)
-        serviceresult, servicetxtmsg = utils.downloadfile(service_dl_url, os.path.join(pulsedir_path, servicefilename)).downloadurl()
+        serviceresult, servicetxtmsg = utils.downloadfile(
+            service_dl_url, os.path.join(
+                pulsedir_path, servicefilename)).downloadurl()
         if serviceresult:
             # Download success
             logger.info("%s" % servicetxtmsg)
@@ -170,18 +202,22 @@ def updatenetworkcheck(xmppobject):
             querycmd = "sc query pulsenetworknotify"
             querycmd_result = utils.simplecommand(querycmd)
             if querycmd_result['code'] != 0:
-                servicecmd = 'C:\Python27\python.exe "%s\%s" --startup=auto install' % (pulsedir_path, servicefilename)
+                servicecmd = 'C:\\Python27\\python.exe "%s\\%s" --startup=auto install' % (
+                    pulsedir_path, servicefilename)
                 servicecmd_result = utils.simplecommand(servicecmd)
                 if servicecmd_result['code'] == 0:
                     logger.info("%s installed successfully" % servicefilename)
                 else:
-                    logger.error("Error installing %s: %s"
-                                 % (servicefilename, servicecmd_result['result']))
+                    logger.error(
+                        "Error installing %s: %s" %
+                        (servicefilename, servicecmd_result['result']))
 
-            update_command = 'C:\Python27\python.exe "%s\%s" update' % (pulsedir_path, servicefilename)
+            update_command = 'C:\\Python27\\python.exe "%s\\%s" update' % (
+                pulsedir_path, servicefilename)
             utils.simplecommand(update_command)
 
-            restart_command = 'C:\Python27\python.exe "%s\%s" restart' % (pulsedir_path, servicefilename)
+            restart_command = 'C:\\Python27\\python.exe "%s\\%s" restart' % (
+                pulsedir_path, servicefilename)
             utils.simplecommand(restart_command)
         else:
             # Download error

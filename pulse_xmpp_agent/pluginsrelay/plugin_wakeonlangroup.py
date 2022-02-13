@@ -27,11 +27,12 @@ import traceback
 
 logger = logging.getLogger()
 
-plugin={"VERSION": "2.0", "NAME" :"wakeonlangroup","TYPE":"relayserver"}
+plugin = {"VERSION": "2.0", "NAME": "wakeonlangroup", "TYPE": "relayserver"}
 
-def action( objectxmpp, action, sessionid, data, message, dataerreur):
+
+def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s"%(plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
     if hasattr(objectxmpp.config, 'wol_port'):
         wol_port = int(objectxmpp.config.wol_port)
@@ -39,5 +40,5 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         wol_port = 9
     try:
         wol.send_magic_packet(*data['macaddress'], port=wol_port)
-    except:
-        logger.error("\n%s"%(traceback.format_exc()))
+    except BaseException:
+        logger.error("\n%s" % (traceback.format_exc()))

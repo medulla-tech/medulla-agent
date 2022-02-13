@@ -23,28 +23,30 @@
 # file pulse_xmpp_agent/lib/xmppiq.py
 #
 
-import os, sys, platform
+import os
+import sys
+import platform
 import json
 import logging
 import time
 import shlex
 from .utils import shellcommandtimeout, \
-                   file_put_contents, \
-                   file_get_contents, \
-                   file_put_contents_w_a, \
-                   decode_strconsole, \
-                   encode_strconsole, \
-                   keypub, \
-                   simplecommand, \
-                   restartsshd, \
-                   install_key_ssh_relayserver, \
-                   showlinelog, \
-                   pulseuser_useraccount_mustexist, \
-                   pulseuser_profile_mustexist, \
-                   create_idrsa_on_client, \
-                   add_key_to_authorizedkeys_on_client
+    file_put_contents, \
+    file_get_contents, \
+    file_put_contents_w_a, \
+    decode_strconsole, \
+    encode_strconsole, \
+    keypub, \
+    simplecommand, \
+    restartsshd, \
+    install_key_ssh_relayserver, \
+    showlinelog, \
+    pulseuser_useraccount_mustexist, \
+    pulseuser_profile_mustexist, \
+    create_idrsa_on_client, \
+    add_key_to_authorizedkeys_on_client
 import socket
-from  .agentconffile import  directoryconffile
+from .agentconffile import directoryconffile
 import zlib
 import re
 import base64
@@ -53,15 +55,15 @@ import subprocess
 from lib.managepackage import managepackage
 from lib.update_remote_agent import Update_Remote_Agent
 from .utils_psutil import sensors_battery,\
-                         winservices,\
-                         clone_ps_aux,\
-                         disk_usage,\
-                         sensors_fans,\
-                         mmemory,\
-                         ifconfig,\
-                         cpu_num,\
-                         netstat,\
-                         cputimes
+    winservices,\
+    clone_ps_aux,\
+    disk_usage,\
+    sensors_fans,\
+    mmemory,\
+    ifconfig,\
+    cpu_num,\
+    netstat,\
+    cputimes
 from lib.update_remote_agent import agentinfoversion
 if sys.platform.startswith('win'):
     import win32net
@@ -74,7 +76,8 @@ logger = logging.getLogger()
 
 def callXmppFunctionIq(functionname, *args, **kwargs):
     logger.debug("**call function %s %s %s" % (functionname, args, kwargs))
-    return getattr(functionsynchroxmpp,functionname)(*args, **kwargs)
+    return getattr(functionsynchroxmpp, functionname)(*args, **kwargs)
+
 
 def dispach_iq_command(xmppobject, jsonin):
     """
@@ -97,13 +100,19 @@ def dispach_iq_command(xmppobject, jsonin):
                          "reversesshqa",
                          "get_id_rsa"]
     if data['action'] in listactioncommand:
-        logging.log(DEBUGPULSE,"call function %s " % data['action'])
-        result = callXmppFunctionIq(data['action'], xmppobject=xmppobject, data=data)
-        if type(result) != str:
-            logging.getLogger().warning("function %s not return str json" % data['action'])
+        logging.log(DEBUGPULSE, "call function %s " % data['action'])
+        result = callXmppFunctionIq(
+            data['action'], xmppobject=xmppobject, data=data)
+        if not isinstance(result, str):
+            logging.getLogger().warning(
+                "function %s not return str json" %
+                data['action'])
         return result
     else:
-        logging.log(DEBUGPULSE,"function %s missing in list listactioncommand" % data['action'])
+        logging.log(
+            DEBUGPULSE,
+            "function %s missing in list listactioncommand" %
+            data['action'])
         return ""
 
 
@@ -117,6 +126,7 @@ def logdeploymsg(xmppobject, msg, sessionid):
                        module="Deployment | Cluster | Notify",
                        date=None)
 
+
 class functionsynchroxmpp:
     """
         this function must return json string
@@ -126,12 +136,10 @@ class functionsynchroxmpp:
         logger.debug("iq xmppbrowsing")
         return json.dumps(data)
 
-
     @staticmethod
     def test(xmppobject, data):
         logger.debug("iq test")
         return json.dumps(data)
-
 
     @staticmethod
     def get_id_rsa(xmppobject, data):
@@ -143,7 +151,6 @@ class functionsynchroxmpp:
         result['public_key_ars'] = file_get_contents("%s.pub" %
                                                      private_key_ars)
         return json.dumps(result)
-
 
     @staticmethod
     def reversesshqa(xmppobject, data):
@@ -157,7 +164,8 @@ class functionsynchroxmpp:
             private_key_ars = datareverse['private_key_ars'].strip(' \t\n\r')
             create_idrsa_on_client('pulseuser', private_key_ars)
         if sys.platform.startswith('linux'):
-            filekey = os.path.join(os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
+            filekey = os.path.join(
+                os.path.expanduser('~pulseuser'), ".ssh", "id_rsa")
             dd = """#!/bin/bash
             /usr/bin/ssh -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i "%s" -l reversessh %s -p %s&
             """ % (datareverse['type_reverse'],
@@ -173,7 +181,7 @@ class functionsynchroxmpp:
             args = shlex.split(reversesshsh)
             result = subprocess.Popen(args)
             logger.debug("Command reversessh %s" % dd)
-            #/usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
+            # /usr/bin/ssh -t -t -R 36591:localhost:22 -o StrictHostKeyChecking=no -i /var/lib/pulse2/.ssh/id_rsa -l reversessh 212.83.136.107 -p 22
         elif sys.platform.startswith('win'):
             ################# win reverse #################
             try:
@@ -198,16 +206,19 @@ class functionsynchroxmpp:
                                          "reversessh.bat")
             linecmd = []
             cmd = """\\"%s\\" -t -t -%s 0.0.0.0:%s:localhost:%s -o StrictHostKeyChecking=no -i \\"%s\\" -l reversessh %s -p %s""" % (sshexec,
-                                                                                                                             datareverse['type_reverse'],
-                                                                                                                             datareverse['portproxy'],
-                                                                                                                             datareverse['remoteport'],
-                                                                                                                             filekey,
-                                                                                                                             datareverse['ipARS'],
-                                                                                                                             datareverse['port_ssh_ars'])
+                                                                                                                                     datareverse['type_reverse'],
+                                                                                                                                     datareverse['portproxy'],
+                                                                                                                                     datareverse['remoteport'],
+                                                                                                                                     filekey,
+                                                                                                                                     datareverse['ipARS'],
+                                                                                                                                     datareverse['port_ssh_ars'])
             linecmd.append("""@echo off""")
-            linecmd.append("""for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """ % cmd)
+            linecmd.append(
+                """for /f "tokens=2 delims==; " %%%%a in (' wmic process call create "%s" ^| find "ProcessId" ') do set "$PID=%%%%a" """ %
+                cmd)
             linecmd.append("""echo %$PID%""")
-            linecmd.append("""echo %$PID% > C:\\"Program Files"\\Pulse\\bin\\%$PID%.pid""")
+            linecmd.append(
+                """echo %$PID% > C:\\"Program Files"\\Pulse\\bin\\%$PID%.pid""")
             cmd = '\r\n'.join(linecmd)
 
             if not os.path.exists(os.path.join(os.environ["ProgramFiles"],
@@ -216,7 +227,7 @@ class functionsynchroxmpp:
                 os.makedirs(os.path.join(os.environ["ProgramFiles"],
                                          "Pulse",
                                          "bin"))
-            file_put_contents(reversesshbat,  cmd)
+            file_put_contents(reversesshbat, cmd)
             result = subprocess.Popen(reversesshbat)
             time.sleep(2)
         elif sys.platform.startswith('darwin'):
@@ -233,7 +244,7 @@ class functionsynchroxmpp:
                    datareverse['port_ssh_ars'])
             reversesshsh = os.path.join(os.path.expanduser('~pulseuser'),
                                         "reversessh.sh")
-            file_put_contents(reversesshsh,  cmd)
+            file_put_contents(reversesshsh, cmd)
             os.chmod(reversesshsh, 0o700)
             args = shlex.split(reversesshsh)
             result = subprocess.Popen(args)
@@ -241,17 +252,15 @@ class functionsynchroxmpp:
             logger.warning("os not supported in plugin%s" % sys.platform)
         return json.dumps(data)
 
-
     @staticmethod
     def remotefilesimple(xmppobject, data):
         logger.debug("iq remotefilesimple")
         datapath = data['data']
-        if type(datapath) == str or type(datapath) == str:
+        if isinstance(datapath, str) or isinstance(datapath, str):
             datapath = str(data['data'])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
             data['data'] = filesystem
         return json.dumps(data)
-
 
     @staticmethod
     def remotefile(xmppobject, data):
@@ -272,39 +281,49 @@ class functionsynchroxmpp:
         else:
             return ""
         try:
-            result = base64.b64encode( zlib.compress(datastr, 9))
+            result = base64.b64encode(zlib.compress(datastr, 9))
         except Exception as e:
-            logging.getLogger().error("synchro xmpp function remotefile encoding: %s" % str(e))
+            logging.getLogger().error(
+                "synchro xmpp function remotefile encoding: %s" %
+                str(e))
         return result
-
 
     @staticmethod
     def remotecommandshell(xmppobject, data):
         logger.debug("iq remotecommandshell")
-        result = shellcommandtimeout(encode_strconsole(data['data']), timeout=data['timeout']).run()
-        re = [ decode_strconsole(x).strip(os.linesep)+"\n" for x in result['result'] ]
+        result = shellcommandtimeout(
+            encode_strconsole(
+                data['data']),
+            timeout=data['timeout']).run()
+        re = [
+            decode_strconsole(x).strip(
+                os.linesep) +
+            "\n" for x in result['result']]
         result['result'] = re
         return json.dumps(result)
-
 
     @staticmethod
     def keypub(xmppobject, data):
         logger.debug("iq keypub")
         # verify relayserver
         try:
-            result = {"result": {"key": keypub()}, "error": False, 'numerror': 0}
+            result = {
+                "result": {
+                    "key": keypub()},
+                "error": False,
+                'numerror': 0}
         except Exception:
             result = {"result": {"key": ""}, "error": True, 'numerror': 2}
         return json.dumps(result)
-
 
     @staticmethod
     def keyinstall(xmppobject, data):
         restartsshd()
         try:
-            msgaction=[]
+            msgaction = []
             if 'keyinstall' not in data["action"]:
-                logger.error("error format message : %s" % (json.dumps(data, indent=4)))
+                logger.error("error format message : %s" %
+                             (json.dumps(data, indent=4)))
                 data['action'] = "resultkeyinstall"
                 data['ret'] = 20
                 data['data']["msg_error"] = ["error format message"]
@@ -322,11 +341,13 @@ class functionsynchroxmpp:
 
             # Add the keys to pulseuser account
             if 'keyreverseprivatssh' in data['data']:
-                result, msglog = create_idrsa_on_client(username, data['data']['keyreverseprivatssh'])
+                result, msglog = create_idrsa_on_client(
+                    username, data['data']['keyreverseprivatssh'])
                 if result is False:
                     logger.error(msglog)
                 msgaction.append(msglog)
-            result, msglog = add_key_to_authorizedkeys_on_client(username, data['data']['key'])
+            result, msglog = add_key_to_authorizedkeys_on_client(
+                username, data['data']['key'])
             if result is False:
                 logger.error(msglog)
             msgaction.append(msglog)
@@ -360,21 +381,32 @@ class functionsynchroxmpp:
             return resltatreturn
 
     @staticmethod
-    def information( xmppobject, data ):
+    def information(xmppobject, data):
         logger.debug("iq information")
-        result = {"result": {"informationresult": {}}, "error": False, 'numerror': 0}
+        result = {
+            "result": {
+                "informationresult": {}},
+            "error": False,
+            'numerror': 0}
         for info_ask in data['data']['listinformation']:
             try:
                 if info_ask == "force_reconf":  # force reconfiguration immedialy
-                    filedata=["BOOLCONNECTOR", "action_force_reconfiguration"]
-                    for filename in  filedata:
-                        file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                 "..", filename), "w")
+                    filedata = [
+                        "BOOLCONNECTOR",
+                        "action_force_reconfiguration"]
+                    for filename in filedata:
+                        file = open(
+                            os.path.join(
+                                os.path.dirname(
+                                    os.path.realpath(__file__)),
+                                "..",
+                                filename),
+                            "w")
                         file.close()
-                        #xmppobject.networkMonitor()
+                        # xmppobject.networkMonitor()
                         xmppobject.reconfagent()
                     result['result']['informationresult'][info_ask] = "action force " \
-                                                    "reconfiguration for"%xmppobject.boundjid.bare
+                        "reconfiguration for" % xmppobject.boundjid.bare
                 if info_ask == "keypub":
                     result['result']['informationresult'][info_ask] = keypub()
                 if info_ask == "os":
@@ -382,43 +414,54 @@ class functionsynchroxmpp:
                 if info_ask == "os_version":
                     result['result']['informationresult'][info_ask] = platform.platform()
                 if info_ask == "folders_packages":
-                    result['result']['informationresult'][info_ask] = managepackage.packagedir()
+                    result['result']['informationresult'][info_ask] = managepackage.packagedir(
+                    )
                 if info_ask == "invent_xmpp":
-                    result['result']['informationresult'][info_ask] = xmppobject.seachInfoMachine()
+                    result['result']['informationresult'][info_ask] = xmppobject.seachInfoMachine(
+                    )
                 if info_ask == "battery":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(sensors_battery())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        sensors_battery())
                 if info_ask == "winservices":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(winservices())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        winservices())
                 if info_ask == "clone_ps_aux":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(clone_ps_aux())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        clone_ps_aux())
                 if info_ask == "disk_usage":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(disk_usage())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        disk_usage())
                 if info_ask == "sensors_fans":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(sensors_fans())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        sensors_fans())
                 if info_ask == "mmemory":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(mmemory())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        mmemory())
                 if info_ask == "ifconfig":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(ifconfig())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        ifconfig())
                 if info_ask == "cpu_num":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(cpu_num())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        cpu_num())
                 if info_ask == "clean_reverse_ssh":
                     if xmppobject.config.agenttype in ['relayserver']:
-                        #on clean les reverse ssh non utiliser
+                        # on clean les reverse ssh non utiliser
                         xmppobject.manage_persistence_reverse_ssh.terminate_reverse_ssh_not_using()
                 if info_ask == "add_proxy_port_reverse":
                     if xmppobject.config.agenttype in ['relayserver']:
                         if 'param' in data['data'] and 'proxyport' in data['data']['param']:
-                            xmppobject.manage_persistence_reverse_ssh.add_port(data['data']['param']['proxyport'])
+                            xmppobject.manage_persistence_reverse_ssh.add_port(
+                                data['data']['param']['proxyport'])
                 if info_ask == "get_ars_key_id_rsa":
-                    private_key_ars = os.path.join(os.path.expanduser('~reversessh'),
-                                                   '.ssh',
-                                                   "id_rsa")
-                    result['result']['informationresult'][info_ask] = file_get_contents(private_key_ars)
+                    private_key_ars = os.path.join(
+                        os.path.expanduser('~reversessh'), '.ssh', "id_rsa")
+                    result['result']['informationresult'][info_ask] = file_get_contents(
+                        private_key_ars)
                 if info_ask == "get_ars_key_id_rsa_pub":
-                    public_key_ars = os.path.join(os.path.expanduser('~reversessh'),
-                                                  '.ssh',
-                                                  "id_rsa.pub")
-                    result['result']['informationresult'][info_ask] = file_get_contents(public_key_ars)
+                    public_key_ars = os.path.join(
+                        os.path.expanduser('~reversessh'), '.ssh', "id_rsa.pub")
+                    result['result']['informationresult'][info_ask] = file_get_contents(
+                        public_key_ars)
                 if info_ask == "get_free_tcp_port":
                     tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     tcp.bind(('', 0))
@@ -426,7 +469,8 @@ class functionsynchroxmpp:
                     tcp.close()
                     result['result']['informationresult'][info_ask] = port
                 if info_ask == "netstat":
-                    result['result']['informationresult'][info_ask] = decode_strconsole(netstat())
+                    result['result']['informationresult'][info_ask] = decode_strconsole(
+                        netstat())
                 if info_ask == "profiluserpulse":
                     profilname = 'pulseuser'
                     if sys.platform.startswith('win'):
@@ -444,7 +488,9 @@ class functionsynchroxmpp:
     @staticmethod
     def listremotefileedit(xmppobject, data):
         logger.debug("iq listremotefileedit")
-        listfileedit = [ x for x in os.listdir(directoryconffile()) if x.endswith(".ini")]
+        listfileedit = [
+            x for x in os.listdir(
+                directoryconffile()) if x.endswith(".ini")]
         data['data'] = {"result": listfileedit}
         return json.dumps(data)
 
@@ -478,24 +524,28 @@ class functionsynchroxmpp:
         else:
             datastruct = json.loads(data['data'])
             if 'subaction' in datastruct:
-                result = functionsynchroxmpp.__execfunctionmonitoringparameter(datastruct,
-                                                                               xmppobject)
+                result = functionsynchroxmpp.__execfunctionmonitoringparameter(
+                    datastruct, xmppobject)
         result = base64.b64encode(zlib.compress(result, 9))
         data['result'] = result
         return json.dumps(data)
 
     @staticmethod
     def __execfunctionmonitoringparameter(data, xmppobject):
-        result=""
+        result = ""
         try:
-            if  data['subaction'] == "cputimes":
+            if data['subaction'] == "cputimes":
                 func = getattr(sys.modules[__name__], data['subaction'])
-                result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
+                result = decode_strconsole(json.dumps(
+                    func(*data['args'], **data['kwargs'])))
                 return result
             elif data['subaction'] == "litlog":
-                func = getattr(sys.modules[__name__], "showlinelog") # call showlinelog from util
+                func = getattr(
+                    sys.modules[__name__],
+                    "showlinelog")  # call showlinelog from util
                 data['kwargs']['logfile'] = xmppobject.config.logfile
-                result = decode_strconsole(json.dumps(func(*data['args'], **data['kwargs'])))
+                result = decode_strconsole(json.dumps(
+                    func(*data['args'], **data['kwargs'])))
                 return result
             else:
                 return ""
@@ -505,46 +555,74 @@ class functionsynchroxmpp:
             return ""
 
     @staticmethod
-    def remotefileeditaction( xmppobject, data ):
+    def remotefileeditaction(xmppobject, data):
         logger.debug("iq remotefileeditaction")
         if 'data' in data and 'action' in data['data']:
             if data['data']['action'] == 'loadfile':
                 if 'file' in data['data']:
-                    filename = os.path.join(directoryconffile(), data['data']['file'])
+                    filename = os.path.join(
+                        directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
                         filedata = file_get_contents(filename)
-                        data['data'] = {"result": filedata, "error": False, 'numerror': 0}
+                        data['data'] = {
+                            "result": filedata, "error": False, 'numerror': 0}
                         return json.dumps(data)
                     else:
-                        data['data'] = {"result": "error file missing", "error": True, 'numerror': 128}
+                        data['data'] = {
+                            "result": "error file missing",
+                            "error": True,
+                            'numerror': 128}
                 else:
                     data['data'] = {"result": "error name file missing"}
             elif data['data']['action'] == 'create':
                 if 'file' in data['data'] and data['data']['file'] != "" and 'content' in data['data']:
-                    filename = os.path.join(directoryconffile(), data['data']['file'])
+                    filename = os.path.join(
+                        directoryconffile(), data['data']['file'])
                     file_put_contents(filename, data['data']['content'])
-                    data['data'] = {"result": "create file %s" % filename, "error": False, 'numerror': 0}
+                    data['data'] = {
+                        "result": "create file %s" %
+                        filename, "error": False, 'numerror': 0}
                     return json.dumps(data)
                 else:
-                    data['data'] = {"result": "error create file : name file missing", "error": True, 'numerror': 129}
+                    data['data'] = {
+                        "result": "error create file : name file missing",
+                        "error": True,
+                        'numerror': 129}
             elif data['data']['action'] == 'save':
                 if 'file' in data['data'] and data['data']['file'] != "" \
                         and 'content' in data['data']:
-                    filename = os.path.join(directoryconffile(), data['data']['file'])
+                    filename = os.path.join(
+                        directoryconffile(), data['data']['file'])
                     if os.path.isfile(filename):
-                        file_put_contents(filename,  data['data']['content'])
-                        data['data'] = {"result": "save file %s" % filename, "error": False, 'numerror': 0}
+                        file_put_contents(filename, data['data']['content'])
+                        data['data'] = {
+                            "result": "save file %s" %
+                            filename, "error": False, 'numerror': 0}
                         return json.dumps(data)
                     else:
-                        data['data'] = {"result": "error save config file %s missing" % filename, "error": True, 'numerror': 130}
+                        data['data'] = {
+                            "result": "error save config file %s missing" %
+                            filename, "error": True, 'numerror': 130}
             elif data['data']['action'] == 'listconfigfile':
-                listfileedit = [ x for x in os.listdir(directoryconffile()) if (x.endswith(".ini") or x.endswith(".ini.local"))]
-                data['data'] = {"result": listfileedit, "error": False, 'numerror': 0}
+                listfileedit = [
+                    x for x in os.listdir(
+                        directoryconffile()) if (
+                        x.endswith(".ini") or x.endswith(".ini.local"))]
+                data['data'] = {
+                    "result": listfileedit,
+                    "error": False,
+                    'numerror': 0}
                 return json.dumps(data)
             else:
-                data['data'] = {"result": "error the action parameter is not correct ", "error": True, 'numerror': 131}
+                data['data'] = {
+                    "result": "error the action parameter is not correct ",
+                    "error": True,
+                    'numerror': 131}
         else:
-            data['data'] = {"result": "error action remotefileeditaction parameter incorrect", "error": True, 'numerror': 132}
+            data['data'] = {
+                "result": "error action remotefileeditaction parameter incorrect",
+                "error": True,
+                'numerror': 132}
         return json.dumps(data)
 
     @staticmethod
@@ -557,7 +635,13 @@ class functionsynchroxmpp:
             size_bytes = 0
             _files = []
             count_files = 0
-            if files and os.path.isfile(os.path.join(folder, 'conf.json')) or os.path.isfile(os.path.join(folder, 'xmppdeploy.json')):
+            if files and os.path.isfile(
+                os.path.join(
+                    folder,
+                    'conf.json')) or os.path.isfile(
+                os.path.join(
+                    folder,
+                    'xmppdeploy.json')):
                 total += 1
                 for f in files:
                     count_files += 1
@@ -577,7 +661,7 @@ class functionsynchroxmpp:
                         conf_json = json.load(conf_file)
                         if 'licenses' in conf_json:
                             licenses = conf_json['licenses']
-                except:
+                except BaseException:
                     pass
 
                 try:
@@ -594,8 +678,9 @@ class functionsynchroxmpp:
                         if 'methodtransfer' in deploy_json['info']:
                             methodtransfer = deploy_json['info']['methodetransfert']
                         if 'os' in deploy_json['metaparameter']:
-                            targetos = ", ".join(deploy_json['metaparameter']['os'])
-                except:
+                            targetos = ", ".join(
+                                deploy_json['metaparameter']['os'])
+                except BaseException:
                     pass
                 packages_list['datas'].append({'uuid': folder,
                                                'size': size_bytes,

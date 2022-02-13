@@ -36,7 +36,8 @@ DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.0", "NAME": "loadreconf", "TYPE": "substitute"}
 
-def action( objectxmpp, action, sessionid, data, msg, dataerreur):
+
+def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
@@ -56,6 +57,7 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                             args=(objectxmpp,),
                             repeat=True)
 
+
 def loadreconf(self, objectxmpp):
     """
         Runs the load fingerprint
@@ -70,46 +72,60 @@ def loadreconf(self, objectxmpp):
                 'sessionid': getRandomName(5, "loadreconf_")}
     result = []
     while(time.time() < end):
-        listmachine_timeoutreconf = [x[0] for x in objectxmpp.listconcurentreconf if x[2] <= t]
+        listmachine_timeoutreconf = [
+            x[0] for x in objectxmpp.listconcurentreconf if x[2] <= t]
         if len(listmachine_timeoutreconf) != 0:
-            logger.warning ("The following machines are currently offline and their reconfiguration will be processed later: %s" % listmachine_timeoutreconf)
-            XmppMasterDatabase().call_set_list_machine(listmachine=listmachine_timeoutreconf)
-            # on supprime les non acquites suivant timeout de plus de generate_reconf_interval seconde
-            objectxmpp.listconcurentreconf = [x for x in objectxmpp.listconcurentreconf if x[2] > t]
+            logger.warning(
+                "The following machines are currently offline and their reconfiguration will be processed later: %s" %
+                listmachine_timeoutreconf)
+            XmppMasterDatabase().call_set_list_machine(
+                listmachine=listmachine_timeoutreconf)
+            # on supprime les non acquites suivant timeout de plus de
+            # generate_reconf_interval seconde
+            objectxmpp.listconcurentreconf = [
+                x for x in objectxmpp.listconcurentreconf if x[2] > t]
         viability = time.time() + objectxmpp.timeout_reconf
 
-        list_need_reconf = [ x[0] for x in objectxmpp.listconcurentreconf]
+        list_need_reconf = [x[0] for x in objectxmpp.listconcurentreconf]
         # lists reconf terminate
         if len(list_need_reconf) > 0:
             resultacquite = XmppMasterDatabase().call_acknowledged_reconficuration(list_need_reconf)
             # liste des concurent
             if len(resultacquite) > 0:
-                logger.debug ("concurent acquite machines id %s" % resultacquite)
-            objectxmpp.listconcurentreconf = [ x for x in objectxmpp.listconcurentreconf \
-                                            if x[0] not in resultacquite]
+                logger.debug(
+                    "concurent acquite machines id %s" %
+                    resultacquite)
+            objectxmpp.listconcurentreconf = [
+                x for x in objectxmpp.listconcurentreconf if x[0] not in resultacquite]
         if len(result) == 0:
-            result = XmppMasterDatabase().call_reconfiguration_machine(limit=objectxmpp.nbconcurrentreconf)
+            result = XmppMasterDatabase().call_reconfiguration_machine(
+                limit=objectxmpp.nbconcurrentreconf)
             if len(result) == 0:
                 return
         list_updatenopresence = []
         while len(objectxmpp.listconcurentreconf) < objectxmpp.nbconcurrentreconf and \
                 len(result) > 0 and \
-                    time.time() < end:
+            time.time() < end:
             eltmachine = result.pop(0)
             eltmachine.append(viability)
             objectxmpp.listconcurentreconf.append(eltmachine)
             self.send_message(mto=eltmachine[1],
                               mbody=json.dumps(datasend),
                               mtype='chat')
-            logger.debug ("SEND RECONFIGURATION %s (%s)" % (eltmachine[1], eltmachine[0]))
+            logger.debug(
+                "SEND RECONFIGURATION %s (%s)" %
+                (eltmachine[1], eltmachine[0]))
             list_updatenopresence.append(eltmachine[0])
         if len(list_updatenopresence) != 0:
             XmppMasterDatabase().call_set_list_machine(listmachine=list_updatenopresence)
         time.sleep(.2)
 
+
 def read_conf_loadreconf(objectxmpp):
     namefichierconf = plugin['NAME'] + ".ini"
-    pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
+    pathfileconf = os.path.join(
+        objectxmpp.config.pathdirconffile,
+        namefichierconf)
     if not os.path.isfile(pathfileconf):
         logger.warning("plugin %s\nConfiguration file :"
                        "\n\t%s missing"
@@ -124,14 +140,14 @@ def read_conf_loadreconf(objectxmpp):
     else:
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
-        logger.debug("read file %s"%pathfileconf)
+        logger.debug("read file %s" % pathfileconf)
         if os.path.exists(pathfileconf + ".local"):
             Config.read(pathfileconf + ".local")
             logger.debug("read file %s.local" % pathfileconf)
         if Config.has_option("parameters",
                              "generate_reconf_interval"):
-            objectxmpp.generate_reconf_interval = Config.getint('parameters',
-                                                                'generate_reconf_interval')
+            objectxmpp.generate_reconf_interval = Config.getint(
+                'parameters', 'generate_reconf_interval')
         else:
             objectxmpp.generate_reconf_interval = 60
 
@@ -148,7 +164,10 @@ def read_conf_loadreconf(objectxmpp):
                                                       'timeout_reconf')
         else:
             objectxmpp.timeout_reconf = 500
-    objectxmpp.plugin_loadreconf = types.MethodType(plugin_loadreconf, objectxmpp)
+    objectxmpp.plugin_loadreconf = types.MethodType(
+        plugin_loadreconf, objectxmpp)
+
+
 def plugin_loadreconf(self, msg, data):
     # Manage update remote agent
     pass

@@ -20,29 +20,32 @@
 # MA 02110-1301, USA.
 
 
-#This plugin needs to call back the plugin that made the request to return the result
+# This plugin needs to call back the plugin that made the request to
+# return the result
 
 import json
 from lib import managepackage, \
-                utils
+    utils
 import logging
 import platform
 import sys
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = { "VERSION" : "2.0", "NAME" : "requestinfo", "TYPE" : "all" }
+plugin = {"VERSION": "2.0", "NAME": "requestinfo", "TYPE": "all"}
 
-def action( objectxmpp, action, sessionid, data, message, dataerreur):
-    logging.getLogger().debug("call %s from %s"%(plugin,message['from']))
+
+def action(objectxmpp, action, sessionid, data, message, dataerreur):
+    logging.getLogger().debug("call %s from %s" % (plugin, message['from']))
     result = {
-                'action': "result%s"%action,
-                'sessionid': sessionid,
-                'data': {},
-                'ret': 0,
-                'base64': False }
+        'action': "result%s" % action,
+        'sessionid': sessionid,
+        'data': {},
+        'ret': 0,
+        'base64': False}
 
-    # This plugin needs to call back the plugin that made the request to return the result
+    # This plugin needs to call back the plugin that made the request to
+    # return the result
     if 'actionasker' in data:
         result['action'] = data['actionasker']
 
@@ -53,7 +56,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
     if 'actiontype' in data:
         result['data']['actiontype'] = data['actiontype']
 
-    #reply data
+    # reply data
     if 'dataask' in data:
         for informations in data['dataask']:
             if informations == "folders_packages":
@@ -74,14 +77,14 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                     pass
     if 'sender' in data:
         for senderagent in data["sender"]:
-            objectxmpp.send_message( mto=senderagent,
-                             mbody=json.dumps(result),
-                             mtype='chat')
+            objectxmpp.send_message(mto=senderagent,
+                                    mbody=json.dumps(result),
+                                    mtype='chat')
 
-    print("message to %s"%message['from'])
-    print("result \n%s"%json.dumps(result, indent=4))
+    print("message to %s" % message['from'])
+    print("result \n%s" % json.dumps(result, indent=4))
 
-    #message
-    objectxmpp.send_message( mto=message['from'],
-                             mbody=json.dumps(result),
-                             mtype='chat')
+    # message
+    objectxmpp.send_message(mto=message['from'],
+                            mbody=json.dumps(result),
+                            mtype='chat')

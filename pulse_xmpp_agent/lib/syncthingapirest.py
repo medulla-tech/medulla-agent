@@ -41,7 +41,9 @@
 import requests
 import json
 from lxml import etree
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import socket
 from threading import Lock
 from lib.utils import Program, getRandomName, simplecommand, file_put_contents, simplecommand
@@ -57,7 +59,9 @@ if sys.version_info[0] == 3:
 
 logger = logging.getLogger()
 
-def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
+
+def read_serverannonce(
+        configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     tree = etree.parse(configfile)
     root = tree.getroot()
     pathxmldevice = ".//options/globalAnnounceServer"
@@ -72,9 +76,11 @@ def read_serverannonce(configfile="/var/lib/syncthing-depl/.config/syncthing/con
             return root, hostname
     return root, ""
 
-def conf_ars_deploy(port=23000,
-                    configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
-                    deviceName="pulse"):
+
+def conf_ars_deploy(
+        port=23000,
+        configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
+        deviceName="pulse"):
     """
     It updates the address field in the configuration file for the specified device.
 
@@ -95,17 +101,21 @@ def conf_ars_deploy(port=23000,
         listresult = root.xpath(pathxmldevice)
         if len(listresult) != 1:
             if len(listresult) == 0:
-                msg ="%s device is not present in Synthing configuration."\
-                            " Please make sure Syncthing is properly configured" % deviceName
+                msg = "%s device is not present in Synthing configuration."\
+                    " Please make sure Syncthing is properly configured" % deviceName
             else:
-                msg ="Two devices or more named '%s' are configured in Syncthing."\
+                msg = "Two devices or more named '%s' are configured in Syncthing."\
                     " Please check Syncthing config [%s] to remove the unused one" % (deviceName, configfile)
 
             logger.error("%s" % msg)
             pathxmldeviceerrormsg = ".//device[@name ='%s']" % deviceName
             listresulterrordevice = root.xpath(pathxmldeviceerrormsg)
             for devicexml in listresulterrordevice:
-                 logger.error("%s"%etree.tostring(devicexml, pretty_print=True))
+                logger.error(
+                    "%s" %
+                    etree.tostring(
+                        devicexml,
+                        pretty_print=True))
         if listresult:
             device = listresult[0].getparent()
             for t in listresult:
@@ -115,12 +125,17 @@ def conf_ars_deploy(port=23000,
             device.append(etree.XML("<address>%s</address>" % adresstcp))
             save_xml_file(root, configfile)
 
-def save_xml_file(elementxml,
-                  configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
+
+def save_xml_file(
+        elementxml,
+        configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"):
     file_put_contents(configfile,
                       etree.tostring(elementxml, pretty_print=True))
 
-def iddevice(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml", deviceName=None):
+
+def iddevice(
+        configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml",
+        deviceName=None):
     """
         This function retrieve the id of the syncthing device.
         Args:
@@ -144,7 +159,7 @@ def iddevice(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml", 
             listresult = root.xpath(pathxmldevice)
             if len(listresult) == 0:
                 msg = "The device named %s is not present in the syncthing's configuration."\
-                        " There is no id for this device." % deviceName
+                    " There is no id for this device." % deviceName
                 logger.warning("%s" % msg)
                 return ""
             deviceID = listresult[0].attrib['id']
@@ -152,14 +167,17 @@ def iddevice(configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml", 
             return deviceID
         else:
             return ""
-    except Exception as e :
+    except Exception as e:
         logger.error("%s search iddevice syncthing %s" % (str(e), configfile))
         logger.error("\n%s" % (traceback.format_exc()))
         return ""
 
+
 """
     class use for xmpp on each server syncthing in local
 """
+
+
 class syncthingapi():
     def __init__(self,
                  urlweb='http://localhost',
@@ -176,12 +194,13 @@ class syncthingapi():
         self.urlbase = "%s:%s/" % (self.urlweb, port)
         self.urlbaserest = "%srest" % (self.urlbase)
         self.device_id = None
-        self.cleansharesyncthinglist=[]
+        self.cleansharesyncthinglist = []
         self.tailleconf = self.taille_config_xml()
         self.errornb = 0
         if idapirest is None:
             self.tree = etree.parse(configfile)
-            self.idapirest = self.tree.xpath('/configuration/gui/apikey')[0].text
+            self.idapirest = self.tree.xpath(
+                '/configuration/gui/apikey')[0].text
         else:
             self.idapirest = idapirest
 
@@ -194,12 +213,13 @@ class syncthingapi():
             logger.info("Device id %s" % self.device_id)
             logger.info("config file %s" % configfile)
             logger.info("___________________________________")
-        except:
+        except BaseException:
             logger.error("Syncthing configuration")
-        # bash command xmllint --xpath "//configuration/gui/apikey/text()" /var/lib/syncthing/.config/syncthing/config.xml
+        # bash command xmllint --xpath "//configuration/gui/apikey/text()"
+        # /var/lib/syncthing/.config/syncthing/config.xml
 
     def taille_config_xml(self):
-        return os.path.getsize (self.configfile)
+        return os.path.getsize(self.configfile)
 
     def getpathconfigfile(self):
         return self.configfile
@@ -209,7 +229,7 @@ class syncthingapi():
 
     def reload_config(self, clean=True):
         time.sleep(2)
-        self.config = self.get_config() # content all config
+        self.config = self.get_config()  # content all config
         self.tailleconf = self.taille_config_xml()
         self.synchro = True
         if len(self.config) != 0:
@@ -219,18 +239,18 @@ class syncthingapi():
             self.guiinformation = self.config['gui']
             try:
                 self.ignoredFolders = self.config['ignoredFolders']
-            except:
+            except BaseException:
                 self.ignoredFolders = []
             try:
                 self.ignoredDevices = self.config['ignoredDevice']
-            except:
+            except BaseException:
                 self.ignoredDevices = []
             try:
                 self.pendingDevices = self.config['pendingDevices']
-            except:
+            except BaseException:
                 self.pendingDevices = []
 
-            self.options  = self.config['options']
+            self.options = self.config['options']
 
             hostname = socket.gethostname()
             device_id_tmp = None
@@ -239,7 +259,7 @@ class syncthingapi():
                     self.device_id = device['deviceID']
                     break
                 elif device['name'] == "pulse":
-                    device_id_tmp  = device['deviceID']
+                    device_id_tmp = device['deviceID']
             if self.device_id is None and device_id_tmp is not None:
                 self.device_id = device_id_tmp
         if clean:
@@ -250,25 +270,26 @@ class syncthingapi():
 
     def pendingdevice_accept(self):
         if 'pendingDevices' in self.config and \
-            len(self.config['pendingDevices']) != 0:
+                len(self.config['pendingDevices']) != 0:
             for pendingdevice in self.config['pendingDevices']:
-                logger.info("_ pendingdevice %s"%pendingdevice)
+                logger.info("_ pendingdevice %s" % pendingdevice)
                 # exist device?
-                if not self.is_exist_device_in_config(pendingdevice['deviceID']):
+                if not self.is_exist_device_in_config(
+                        pendingdevice['deviceID']):
                     # add device
-                    self.add_device_syncthing( pendingdevice['deviceID'],
-                                                pendingdevice['name'],
-                                                introducer = False,
-                                                autoAcceptFolders=False,
-                                                address = ["dynamic"])
+                    self.add_device_syncthing(pendingdevice['deviceID'],
+                                              pendingdevice['name'],
+                                              introducer=False,
+                                              autoAcceptFolders=False,
+                                              address=["dynamic"])
                 else:
                     pass
         self.clean_pending()
-        #validate_chang_config()
+        # validate_chang_config()
 
     def save_conf_to_file(self, filedatajson):
         with open(filedatajson, 'w') as outfile:
-            json.dump(self.config, outfile, indent = 4)
+            json.dump(self.config, outfile, indent=4)
 
     def get_config(self):
         """
@@ -285,12 +306,14 @@ class syncthingapi():
             if self.readingconf == 0:
                 self.readingconf = self.readingconf + 1
                 nbwaitting = 4
-                logger.info("try again after %s seconds of waiting."%nbwaitting)
+                logger.info(
+                    "try again after %s seconds of waiting." %
+                    nbwaitting)
                 time.sleep(3)
                 return self.get_config()
         return {}
 
-    def post_config(self, config = None):
+    def post_config(self, config=None):
         """
             Post the full contents of the configuration,
             in the same format as returned by the corresponding GET request.
@@ -300,18 +323,18 @@ class syncthingapi():
         if config is None:
             config = self.config
         try:
-            re = self.__postAPIREST__("/system/config", dictpython = config)
-        except:
-            logger.error("\n%s"%(traceback.format_exc()))
+            re = self.__postAPIREST__("/system/config", dictpython=config)
+        except BaseException:
+            logger.error("\n%s" % (traceback.format_exc()))
             return ""
         return re
 
     def post_discovery(self, deviceid, adress, port=22000):
-        params = { "device" : deviceid, "addr"  : "%s:%s"%(adress,port) }
+        params = {"device": deviceid, "addr": "%s:%s" % (adress, port)}
         re = self.__postAPIREST__("/system/discovery", paramsurl=params)
         return re
 
-    def post_debug(self, eneablelist="", disablelist =""):
+    def post_debug(self, eneablelist="", disablelist=""):
         """
             Enables or disables debugging for specified facilities. Give one or both of enable
             and disable query parameters, with comma separated facility names.
@@ -322,7 +345,7 @@ class syncthingapi():
             e.g
             objetApirest.post_debug(eneablelist = config, db, disablelist = "beacon,discovery")
         """
-        params = { "disable" : disablelist, "enable"  : eneablelist}
+        params = {"disable": disablelist, "enable": eneablelist}
         re = self.__postAPIREST__("/system/debug", paramsurl=params)
         return re
 
@@ -330,26 +353,62 @@ class syncthingapi():
         re = self.__getAPIREST__("/stats/device")
         return json.loads(re.content)
 
-    def get_events_type(self, type, limit = "5", since = "0", datasection = None):
+    def get_events_type(self, type, limit="5", since="0", datasection=None):
         def Diff(li1, li2):
             return (list(set(li1) - set(li2)))
 
         if isinstance(type, str):
             type = [type]
-        datas_event = self.get_events(limit = limit, since = since)
-        tablekey = ["folders", "gui", "devices", "options", "version", "ignoredDevices", "summary"]
-        tabeventtype =["ConfigSaved", "DeviceConnected", "DeviceDisconnected", "DeviceDiscovered", "DevicePaused", "DeviceRejected", "DeviceResumed", "DownloadProgress", "FolderCompletion", "FolderErrors", "FolderRejected", "Folder Scan Progress", "FolderSummary", "ItemFinished", "ItemStarted", "Listen Addresses Changed", "LocalChangeDetected", "LocalIndexUpdated", "Login Attempt"," RemoteChangeDetected", "Remote Download Progress", "RemoteIndexUpdated", "Starting", "StartupComplete", "StateChanged"]
+        datas_event = self.get_events(limit=limit, since=since)
+        tablekey = [
+            "folders",
+            "gui",
+            "devices",
+            "options",
+            "version",
+            "ignoredDevices",
+            "summary"]
+        tabeventtype = [
+            "ConfigSaved",
+            "DeviceConnected",
+            "DeviceDisconnected",
+            "DeviceDiscovered",
+            "DevicePaused",
+            "DeviceRejected",
+            "DeviceResumed",
+            "DownloadProgress",
+            "FolderCompletion",
+            "FolderErrors",
+            "FolderRejected",
+            "Folder Scan Progress",
+            "FolderSummary",
+            "ItemFinished",
+            "ItemStarted",
+            "Listen Addresses Changed",
+            "LocalChangeDetected",
+            "LocalIndexUpdated",
+            "Login Attempt",
+            " RemoteChangeDetected",
+            "Remote Download Progress",
+            "RemoteIndexUpdated",
+            "Starting",
+            "StartupComplete",
+            "StateChanged"]
         re = [eventdata for eventdata in datas_event if eventdata['type'] in type]
         if datasection is not None:
             if isinstance(datasection, str):
-                datasection =[datasection]
+                datasection = [datasection]
             for section in datasection:
                 if section not in tablekey:
-                    logger.warning("session  %s no exist in Event struct"%section)
+                    logger.warning(
+                        "session  %s no exist in Event struct" %
+                        section)
 
             for typename in type:
                 if typename not in tabeventtype:
-                    logger.warning("event type %s no exist; Event struct missing"%typename)
+                    logger.warning(
+                        "event type %s no exist; Event struct missing" %
+                        typename)
 
             kk = Diff(tablekey, datasection)
             for e in re:
@@ -360,9 +419,7 @@ class syncthingapi():
                         pass
         return re
 
-
-
-    def get_events(self, since = None, limit = None, eventslist = None, timeout=1):
+    def get_events(self, since=None, limit=None, eventslist=None, timeout=1):
         """
             To receive events, perform a HTTP GET of /rest/events.
 
@@ -396,12 +453,11 @@ class syncthingapi():
         re = self.__getAPIREST__("/events", paramsurl=params)
         return json.loads(re.content)
 
-    def post_error_clear(self, eneablelist="", disablelist =""):
+    def post_error_clear(self, eneablelist="", disablelist=""):
         """
             Post with empty to body to remove all recent errors.
         """
         re = self.__postAPIREST__("/system/error/clear")
-
 
     def post_error(self, error_text):
         """
@@ -411,11 +467,10 @@ class syncthingapi():
 
             curl -X POST -d 'who=world' -H "Content-Type : text/plain" http://localhost:8106/hello
         """
-        posturl = "%s%s"%(self.urlbaserest, "/system/error")
+        posturl = "%s%s" % (self.urlbaserest, "/system/error")
         header = self.headers.copy()
-        header['Content-Type']="text/plain"
-        requests.post(posturl, headers = header, data = error_text )
-
+        header['Content-Type'] = "text/plain"
+        requests.post(posturl, headers=header, data=error_text)
 
     def post_pause(self, deviceid=None):
         """
@@ -424,9 +479,9 @@ class syncthingapi():
             Takes the optional parameter device (device ID).
             When ommitted, pauses all devices. Returns status 200 and no content upon success, or status 500 and a plain text error on failure.
         """
-        if deviceid != None:
-            params = { "device" : deviceid }
-            self.__postAPIREST__("/system/pause", paramsurl = params)
+        if deviceid is not None:
+            params = {"device": deviceid}
+            self.__postAPIREST__("/system/pause", paramsurl=params)
         else:
             self.__postAPIREST__("/system/pause")
 
@@ -434,7 +489,7 @@ class syncthingapi():
         """
             Retourne un objet.{"ping": "pong"}
         """
-        return  self.__postAPIREST__("/system/ping")
+        return self.__postAPIREST__("/system/ping")
 
     def post_reset(self, deviceid=None):
         """
@@ -445,9 +500,9 @@ class syncthingapi():
 
             $ curl -X POST -H "X-API-Key: abc123" http://localhost:8384/rest/system/reset?folder=default
         """
-        if deviceid != None:
-            params = { "device" : deviceid }
-            self.__postAPIREST__("/system/rest", paramsurl = params)
+        if deviceid is not None:
+            params = {"device": deviceid}
+            self.__postAPIREST__("/system/rest", paramsurl=params)
         else:
             self.__postAPIREST__("/system/reset")
 
@@ -456,7 +511,7 @@ class syncthingapi():
             Post with empty body to immediately restart Syncthing.
         """
         re = self.__postAPIREST__("/system/restart")
-        logger.info("%s"%re)
+        logger.info("%s" % re)
         return re
 
     def post_resume(self, deviceid=None):
@@ -467,12 +522,11 @@ class syncthingapi():
             When ommitted, pauses all devices. Returns status 200 and no content
             upon success, or status 500 and a plain text error on failure.
         """
-        if deviceid != None:
-            params = { "device" : deviceid }
-            self.__postAPIREST__("/system/resume", paramsurl = params)
+        if deviceid is not None:
+            params = {"device": deviceid}
+            self.__postAPIREST__("/system/resume", paramsurl=params)
         else:
             self.__postAPIREST__("/system/resume")
-
 
     def post_shutdown(self):
         """
@@ -487,8 +541,7 @@ class syncthingapi():
         """
         self.__postAPIREST__("/system/upgrade")
 
-
-    def get_db_browse(self, folder, labeldepth = None, prefix = None):
+    def get_db_browse(self, folder, labeldepth=None, prefix=None):
         """
             Returns the directory tree of the global model. Directories are always JSON objects
             (map/dictionary), and files are always arrays of modification time and size.
@@ -501,16 +554,15 @@ class syncthingapi():
 
             $ curl -s http://localhost:8384/rest/db/browse?folder=default
         """
-        params = { "folder" : folder }
-        if labeldepth != None and isinstance(labeldepth , ( int ) ):
+        params = {"folder": folder}
+        if labeldepth is not None and isinstance(labeldepth, (int)):
             params['levels'] = labeldepth
-        if prefix != None:
+        if prefix is not None:
             params['prefix'] = prefix
-        re = self.__getAPIREST__("/db/browse", paramsurl =params)
+        re = self.__getAPIREST__("/db/browse", paramsurl=params)
         return json.loads(re.content)
 
-
-    def get_db_completion(self, folder, device ):
+    def get_db_completion(self, folder, device):
         """
             Returns the completion percentage (0 to 100)
             for a given device and folder. Takes device and folder parameters.
@@ -519,21 +571,19 @@ class syncthingapi():
                 "completion": 0
             }
         """
-        params = { "folder" : folder, "device" : device }
-        re = self.__getAPIREST__("/db/completion", paramsurl =params)
+        params = {"folder": folder, "device": device}
+        re = self.__getAPIREST__("/db/completion", paramsurl=params)
         return json.loads(re.content)
 
-
-    def get_db_file(self, folder, namefile ):
+    def get_db_file(self, folder, namefile):
         """
             Returns most data available about a given file, including version and availability. Takes folder and file parameters.
         """
-        params = { "folder" : folder, "file" : namefile }
-        re = self.__getAPIREST__("/db/file", paramsurl = params)
+        params = {"folder": folder, "file": namefile}
+        re = self.__getAPIREST__("/db/file", paramsurl=params)
         return json.loads(re.content)
 
-
-    def get_db_ignores(self, folder ):
+    def get_db_ignores(self, folder):
         """
             Takes one parameter, folder, and returns the content of
             the .stignore as the ignore field. A second field, expanded,
@@ -554,10 +604,9 @@ class syncthingapi():
                 ]
             }
         """
-        params = { "folder" : folder}
-        re = self.__getAPIREST__("/db/ignores", paramsurl = params)
+        params = {"folder": folder}
+        re = self.__getAPIREST__("/db/ignores", paramsurl=params)
         return json.loads(re.content)
-
 
     def post_db_override(self, folder,):
         """
@@ -565,11 +614,10 @@ class syncthingapi():
 
             curl -X POST http://127.0.0.1:8384/rest/db/override?folder=default
         """
-        params = { "folder" : folder}
-        self.__postAPIREST__("/db/override",  paramsurl = params )
+        params = {"folder": folder}
+        self.__postAPIREST__("/db/override", paramsurl=params)
 
-
-    def get_db_need(self, folder, page = None, perpage = None ):
+    def get_db_need(self, folder, page=None, perpage=None):
         """
             Takes one mandatory parameter, folder, and returns lists of files
             which are needed by this device in order for it to become in sync.
@@ -592,28 +640,26 @@ class syncthingapi():
             In all these calls,
                 total will be 30 to indicate the total number of available items.
         """
-        params = { "folder" : folder}
+        params = {"folder": folder}
 
-        if page != None:
+        if page is not None:
             params['page'] = page
-        if perpage != None:
+        if perpage is not None:
             params['perpage'] = perpage
 
-        re = self.__getAPIREST__("/db/need", paramsurl = params)
+        re = self.__getAPIREST__("/db/need", paramsurl=params)
         return json.loads(re.content)
-
 
     def get_db_status(self, folder):
         """
             Returns information about the current status of a folder.
             Parameters: folder, the ID of a folder.
         """
-        params = { "folder" : folder}
-        re = self.__getAPIREST__("/db/status", paramsurl = params)
+        params = {"folder": folder}
+        re = self.__getAPIREST__("/db/status", paramsurl=params)
         return json.loads(re.content)
 
-
-    def post_db_prio(self, folder, pathfile = None ):
+    def post_db_prio(self, folder, pathfile=None):
         """
             Moves the file to the top of the download queue.
             curl -X POST http://127.0.0.1:8384/rest/db/prio?folder=default&file=foo/bar
@@ -623,15 +669,14 @@ class syncthingapi():
             e.g
                 filelist = "foo,bar"
         """
-        params = { "folder" : folder}
-        if pathfile != None:
-            params['file']=pathfile
-        re = self.__postAPIREST__("/db/prio", paramsurl = params )
-        logger.info("%s"%re)
+        params = {"folder": folder}
+        if pathfile is not None:
+            params['file'] = pathfile
+        re = self.__postAPIREST__("/db/prio", paramsurl=params)
+        logger.info("%s" % re)
         return re
 
-
-    def post_db_scan(self, folder = None, sub = None, next = None):
+    def post_db_scan(self, folder=None, sub=None, next=None):
         """
             Request immediate scan.
             Takes the optional parameters folder (folder ID), sub (path relative to the folder root)
@@ -646,29 +691,31 @@ class syncthingapi():
 
             curl -X POST http://127.0.0.1:8384/rest/db/scan?folder=default&sub=foo/bar
         """
-        params = { }
-        if folder != None:
+        params = {}
+        if folder is not None:
             params['folder'] = folder
-        if sub != None:
+        if sub is not None:
             params['sub'] = sub
-        if next != None and isinstance(next , ( int ) ):
+        if next is not None and isinstance(next, (int)):
             params['next'] = next
-        re = self.__postAPIREST__("/db/scan", paramsurl = params )
-        logger.info("%s"%re)
+        re = self.__postAPIREST__("/db/scan", paramsurl=params)
+        logger.info("%s" % re)
         return re
 
-    def post_db_ignores(self, folder, python_ignores ):
+    def post_db_ignores(self, folder, python_ignores):
         """
             Expects a format similar to the output of GET call, but only
             containing the ignore field (expanded field should be omitted).
             It takes one parameter, folder, and either updates the content
             of the .stignore echoing it back as a response, or returns an error.
         """
-        params = { "folder" : folder}
-        re = self.__postAPIREST__("/db/ignores", dictpython = python_ignores, paramsurl = params )
-        logger.info("%s"%re)
+        params = {"folder": folder}
+        re = self.__postAPIREST__(
+            "/db/ignores",
+            dictpython=python_ignores,
+            paramsurl=params)
+        logger.info("%s" % re)
         return re
-
 
     def get_debug(self):
         """
@@ -723,7 +770,6 @@ class syncthingapi():
 
         return json.loads(re.content)
 
-
     def get_ping(self):
         """
             Returns a {"ping": "pong"} object.
@@ -733,7 +779,6 @@ class syncthingapi():
         """
         re = self.__getAPIREST__("/system/ping")
         return json.loads(re.content)
-
 
     def get_log(self):
         """
@@ -751,7 +796,6 @@ class syncthingapi():
 
         return json.loads(re.content)
 
-
     def get_error(self):
         """
             Returns the list of recent errors.
@@ -767,7 +811,6 @@ class syncthingapi():
         re = self.__getAPIREST__("/system/error")
 
         return json.loads(re.content)
-
 
     def get_discovery(self):
         """
@@ -794,14 +837,14 @@ class syncthingapi():
         """
             converti python dict to json string
         """
-        return json.dumps(pythondict, indent = 4)
+        return json.dumps(pythondict, indent=4)
 
     def show_rest(self, pythondict):
         """
         affiche json format
         """
         rest = self.json_string(pythondict)
-        logger.info("%s"%rest)
+        logger.info("%s" % rest)
         return rest
 
     def nb_folders(self):
@@ -814,7 +857,7 @@ class syncthingapi():
         """
             return list name folder fron config
         """
-        result=[]
+        result = []
         for folder in self.folders:
             if folder['label'] == "":
                 result.append(str(folder['id']))
@@ -826,7 +869,7 @@ class syncthingapi():
         """
             return list id folder fron config
         """
-        return [str(folder['id']) for folder in self.folders ]
+        return [str(folder['id']) for folder in self.folders]
 
     def nb_devices(self):
         """
@@ -838,166 +881,185 @@ class syncthingapi():
         """
             return list devices name fron config
         """
-        return [str(device['name']) for device in self.devices if device['name'] != ""]
+        return [str(device['name'])
+                for device in self.devices if device['name'] != ""]
 
     def get_list_devices_adress(self):
         """
             return list devices adress fron config
         """
-        return [str(device['addresses']) for device in self.devices if device['name'] != ""]
+        return [str(device['addresses'])
+                for device in self.devices if device['name'] != ""]
 
     def get_list_devices_id(self):
         """
             return list devices id fron config
         """
-        return [str(device['deviceID']) for device in self.devices if device['name'] != ""]
+        return [str(device['deviceID'])
+                for device in self.devices if device['name'] != ""]
 
     def get_id_device_local(self):
         return self.device_id
 
-    #private function
-    def __getAPIREST__(self, cmd, paramsurl = {}):
+    # private function
+    def __getAPIREST__(self, cmd, paramsurl={}):
         try:
-            geturl = "%s%s"%(self.urlbaserest, cmd)
+            geturl = "%s%s" % (self.urlbaserest, cmd)
             if len(paramsurl) != 0:
                 string_param_url = urllib.parse.urlencode(paramsurl)
-                geturl = geturl+"?"+string_param_url
-            rest = requests.get(geturl,headers=self.headers)
+                geturl = geturl + "?" + string_param_url
+            rest = requests.get(geturl, headers=self.headers)
         except Exception as e:
-            logger.error("syncthingapirest.py __getAPIREST__ verify syncthing running and ready")
+            logger.error(
+                "syncthingapirest.py __getAPIREST__ verify syncthing running and ready")
             time.sleep(1)
             self.errornb = self.errornb + 1
             if self.errornb > 4:
-                logger.error("\n%s"%(traceback.format_exc()))
+                logger.error("\n%s" % (traceback.format_exc()))
             else:
                 logger.warning("connection lost get REST")
             return {}
         self.errornb = 0
         return rest
 
-    def __postAPIREST__(self, cmd, dictpython = {}, paramsurl = {}, RestCurl=False):
+    def __postAPIREST__(
+            self,
+            cmd,
+            dictpython={},
+            paramsurl={},
+            RestCurl=False):
         def analyseresult(r):
-            #r.headers['content-type']
-            #r.encoding
+            # r.headers['content-type']
+            # r.encoding
             if r.status_code == 200:
-                return  r.text
-            elif r.status_code == 301  or  r.status_code == 302:
-                return {"error" : "redirection, respectivement permanente et temporaire"}
+                return r.text
+            elif r.status_code == 301 or r.status_code == 302:
+                return {
+                    "error": "redirection, respectivement permanente et temporaire"}
             elif r.status_code == 400:
-                return {"error" : "Bad Request", "msg" : r.text}
+                return {"error": "Bad Request", "msg": r.text}
             elif r.status_code == 401:
-                return {"error" : "utilisateur non authentifie", "msg" : r.text}
+                return {"error": "utilisateur non authentifie", "msg": r.text}
             elif r.status_code == 403:
-                return {"error" : "accès refusé "}
-            elif r.status_code == 404 :
-                return {"error" : "page non trouvée"}
-            elif r.status_code == 500  or  r.status_code == 503:
-                return {"error" : "erreur serveur %s"%r.status_code, "msg" : r.text }
-            elif r.status_code == 504 :
-                return {"error" : "le serveur n'a pas répondu"}
-            else :
-                return {"error" : "inconue code %s"%r.status_code, "msg" : r.text }
+                return {"error": "accès refusé "}
+            elif r.status_code == 404:
+                return {"error": "page non trouvée"}
+            elif r.status_code == 500 or r.status_code == 503:
+                return {
+                    "error": "erreur serveur %s" %
+                    r.status_code, "msg": r.text}
+            elif r.status_code == 504:
+                return {"error": "le serveur n'a pas répondu"}
+            else:
+                return {
+                    "error": "inconue code %s" %
+                    r.status_code, "msg": r.text}
 
         r = None
-        posturl = "%s%s"%(self.urlbaserest, cmd)
+        posturl = "%s%s" % (self.urlbaserest, cmd)
         if len(paramsurl) != 0:
             string_param_url = urllib.parse.urlencode(paramsurl)
-            posturl = posturl+"?"+string_param_url
+            posturl = posturl + "?" + string_param_url
 
         if len(dictpython) == 0:
             if RestCurl:
-                cmddate  = """command curl curl -X POST --header "X-API-Key: %s"  %s"""%(self.headers['X-API-KEY'], posturl)
-                logger.info("%s"%cmddate)
+                cmddate = """command curl curl -X POST --header "X-API-Key: %s"  %s""" % (
+                    self.headers['X-API-KEY'], posturl)
+                logger.info("%s" % cmddate)
             try:
-                r = requests.post(posturl, headers = self.headers)
-            except:
+                r = requests.post(posturl, headers=self.headers)
+            except BaseException:
                 self.errornb = self.errornb + 1
                 if self.errornb > 4:
-                    logger.error("\n%s"%(traceback.format_exc()))
+                    logger.error("\n%s" % (traceback.format_exc()))
                 else:
                     logger.warning("connection lost post REST")
                 time.sleep(5)
         else:
             if RestCurl:
-                cmddate  = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """%(self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
-                logger.info("%s"%cmddate)
+                cmddate = """curl -X POST --header "X-API-Key: %s"  %s  -d '%s' """ % (
+                    self.headers['X-API-KEY'], posturl, json.dumps(dictpython))
+                logger.info("%s" % cmddate)
             try:
-                r = requests.post(posturl,headers = self.headers, data = json.dumps(dictpython))
-            except:
+                r = requests.post(
+                    posturl,
+                    headers=self.headers,
+                    data=json.dumps(dictpython))
+            except BaseException:
                 self.errornb = self.errornb + 1
                 if self.errornb > 4:
-                    logger.error("\n%s"%(traceback.format_exc()))
+                    logger.error("\n%s" % (traceback.format_exc()))
                 else:
                     logger.warning("connection lost post REST")
-        if  r is None:
+        if r is None:
             return None
         self.errornb = 0
         result = analyseresult(r)
         if isinstance(result, str) and "error" in result:
-            logger.error("%s"%result)
+            logger.error("%s" % result)
         return result
 
-    def add_device_to_folder(self, strlabel, id_device ):
+    def add_device_to_folder(self, strlabel, id_device):
         self.mutex.acquire()
         try:
             for folder in self.folders:
                 if folder['label'] == strlabel:
-                    folder['devices'].append({  "deviceID": id_device,
-                                                "introducedBy": ""})
+                    folder['devices'].append({"deviceID": id_device,
+                                              "introducedBy": ""})
                     self.synchro = False
         finally:
             self.mutex.release()
 
     def create_template_struct_device(self,
-                                       str_name,
-                                       id_device,
-                                       introducer = False,
-                                       autoAcceptFolders=False,
-                                       address = ["dynamic"]):
+                                      str_name,
+                                      id_device,
+                                      introducer=False,
+                                      autoAcceptFolders=False,
+                                      address=["dynamic"]):
         return{
-                "pendingFolders": [],
-                "compression": "metadata",
-                "skipIntroductionRemovals": False,
-                "maxRecvKbps": 0,
-                "allowedNetworks": [],
-                "certName": "",
-                "maxRequestKiB": 0,
-                "introducer": introducer,
-                "name": str_name,
-                "paused": False,
-                "deviceID": id_device,
-                "ignoredFolders": [],
-                "maxSendKbps": 0,
-                "introducedBy": "",
-                "autoAcceptFolders": autoAcceptFolders,
-                "addresses": address}
+            "pendingFolders": [],
+            "compression": "metadata",
+            "skipIntroductionRemovals": False,
+            "maxRecvKbps": 0,
+            "allowedNetworks": [],
+            "certName": "",
+            "maxRequestKiB": 0,
+            "introducer": introducer,
+            "name": str_name,
+            "paused": False,
+            "deviceID": id_device,
+            "ignoredFolders": [],
+            "maxSendKbps": 0,
+            "introducedBy": "",
+            "autoAcceptFolders": autoAcceptFolders,
+            "addresses": address}
 
-
-    def add_device_syncthing( self,
-                            keydevicesyncthing,
-                            namerelay,
-                            introducer = False,
-                            autoAcceptFolders=False,
-                            address = ["dynamic"]):
+    def add_device_syncthing(self,
+                             keydevicesyncthing,
+                             namerelay,
+                             introducer=False,
+                             autoAcceptFolders=False,
+                             address=["dynamic"]):
         result = False
         self.mutex.acquire()
         try:
             # test si device existe
             for device in self.devices:
                 if device['deviceID'] == keydevicesyncthing:
-                    #la devise existe deja
+                    # la devise existe deja
                     result = False
-            logger.debug("add device syncthing %s"%keydevicesyncthing)
-            dsyncthing_tmp = self.create_template_struct_device(namerelay,
-                                                                str(keydevicesyncthing),
-                                                                introducer = introducer,
-                                                                autoAcceptFolders=autoAcceptFolders,
-                                                                address = address)
+            logger.debug("add device syncthing %s" % keydevicesyncthing)
+            dsyncthing_tmp = self.create_template_struct_device(
+                namerelay,
+                str(keydevicesyncthing),
+                introducer=introducer,
+                autoAcceptFolders=autoAcceptFolders,
+                address=address)
 
-            logger.debug("add device [%s]syncthing to ars %s\n%s"%(keydevicesyncthing,
-                                                                   namerelay,
-                                                                   json.dumps(dsyncthing_tmp,
-                                                                              indent = 4)))
+            logger.debug(
+                "add device [%s]syncthing to ars %s\n%s" %
+                (keydevicesyncthing, namerelay, json.dumps(
+                    dsyncthing_tmp, indent=4)))
             self.config['devices'].append(dsyncthing_tmp)
             self.synchro = False
             result = True
@@ -1026,23 +1088,23 @@ class syncthingapi():
     def add_device_in_folder_if_not_exist(self,
                                           folderid,
                                           keydevice,
-                                          introducedBy = ""):
+                                          introducedBy=""):
         result = False
         self.mutex.acquire()
         try:
             for folder in self.folders:
                 if folderid == folder['id']:
-                    #folder trouve
+                    # folder trouve
                     for device in folder['devices']:
                         if device['deviceID'] == keydevice:
-                            #device existe
+                            # device existe
                             result = False
                     new_device = {"deviceID": keydevice,
                                   "introducedBy": introducedBy}
                     if new_device not in folder['devices']:
                         folder['devices'].append(new_device)
                     self.synchro = False
-                    result =  True
+                    result = True
         finally:
             self.mutex.release()
             return result
@@ -1051,19 +1113,19 @@ class syncthingapi():
     def add_device_in_folder(self,
                              folderjson,
                              keydevice,
-                             introducedBy = ""):
+                             introducedBy=""):
         """add device sur structure folder """
         result = False
         self.mutex.acquire()
         try:
             for device in folderjson['devices']:
                 if device['deviceID'] == keydevice:
-                    #device existe
+                    # device existe
                     return False
-            new_device={"deviceID": keydevice,
-                        "introducedBy": introducedBy}
+            new_device = {"deviceID": keydevice,
+                          "introducedBy": introducedBy}
             folderjson['devices'].append(new_device)
-            result =  True
+            result = True
         finally:
             self.mutex.release()
             return result
@@ -1081,7 +1143,7 @@ class syncthingapi():
                 #self.reload_config(clean = False)
                 self.synchro = True
         except Exception as e:
-            logger.error("%s"%str(e))
+            logger.error("%s" % str(e))
         finally:
             self.mutex.release()
 
@@ -1097,7 +1159,7 @@ class syncthingapi():
             if len(z) != 7:
                 logger.error("size group key diff of 7")
                 return False
-            index+=1
+            index += 1
         return True
 
     def is_exist_device_in_config(self, keydevicesyncthing):
@@ -1109,9 +1171,9 @@ class syncthingapi():
     def create_template_struct_folder(self,
                                       str_name,
                                       path_folder,
-                                      id = None,
-                                      typefolder = "slave"):
-        if id  is None:
+                                      id=None,
+                                      typefolder="slave"):
+        if id is None:
             id = getRandomName(15, pref="auto_")
         if typefolder.lower() == "slave":
             typefolder = "receiveonly"
@@ -1161,8 +1223,6 @@ class syncthingapi():
             }
         }
 
-
-
     def del_device_from_folder(self, folderid, deviceid):
         """Dissociate the device from the folder.
         Params:
@@ -1209,7 +1269,8 @@ class syncthingapi():
     def clean_pending(self):
         self.mutex.acquire()
         try:
-            if 'pendingDevices' in self.config and len(self.config['pendingDevices']) !=0:
+            if 'pendingDevices' in self.config and len(
+                    self.config['pendingDevices']) != 0:
                 self.config['pendingDevices'] = []
                 self.synchro = False
         finally:
@@ -1218,13 +1279,14 @@ class syncthingapi():
     def clean_remoteIgnoredDevices(self):
         self.mutex.acquire()
         try:
-            if 'remoteIgnoredDevices' in self.config and len(self.config['remoteIgnoredDevices']) !=0:
+            if 'remoteIgnoredDevices' in self.config and len(
+                    self.config['remoteIgnoredDevices']) != 0:
                 self.config['remoteIgnoredDevices'] = []
                 self.synchro = False
         finally:
             self.mutex.release()
 
-    def set_pause_folder(self, folderid, paused = False):
+    def set_pause_folder(self, folderid, paused=False):
         self.mutex.acquire()
         try:
             for folder in self.config['folders']:
@@ -1247,7 +1309,7 @@ class syncthingapi():
         if kb == 0:
             logger.info("Syncthing: RECV rate limit is False")
         else:
-            logger.info("Syncthing: RECV limit rade is %d Kb"%kb)
+            logger.info("Syncthing: RECV limit rade is %d Kb" % kb)
         if config is None:
             self.mutex.acquire()
             try:
@@ -1266,7 +1328,7 @@ class syncthingapi():
         if kb == 0:
             logger.info("Syncthing: SEND  rate limit is False")
         else:
-            logger.info("Syncthing: SEND limit rate is %d Kb"%kb)
+            logger.info("Syncthing: SEND limit rate is %d Kb" % kb)
 
         if config is None:
             self.mutex.acquire()
@@ -1282,9 +1344,8 @@ class syncthingapi():
             if "options" in config:
                 config['options']['maxSendKbps'] = kb
 
-
     def get_list_device_used_in_folder(self):
-        devicelist=set()
+        devicelist = set()
         for folder in self.config['folders']:
             for device in folder['devices']:
                 devicelist.add(device["deviceID"])
@@ -1306,39 +1367,44 @@ class syncthing(syncthingapi):
         self.clean_remoteIgnoredDevices()
         self.mutex.acquire()
         try:
-            #id des partages utilisé pour les menus et les packages dans pulse.
+            # id des partages utilisé pour les menus et les packages dans
+            # pulse.
             idpermanent = ["pulsemaster_bootmenus", "pulsemaster_packages"]
 
-            listfolderid=[x['id'] for x in self.config['folders'] if x['id'] not in idpermanent]
-            if len(listfolderid) == 0 :
-                logger.debug("folder id %s not exist"%id)
+            listfolderid = [
+                x['id'] for x in self.config['folders'] if x['id'] not in idpermanent]
+            if len(listfolderid) == 0:
+                logger.debug("folder id %s not exist" % id)
                 return
 
             if id in listfolderid:
                 indexfolderid = listfolderid.index(id)
             else:
-                logger.debug("folder id %s not exist in folder list %s"%(id,listfolderid))
+                logger.debug(
+                    "folder id %s not exist in folder list %s" %
+                    (id, listfolderid))
                 return
 
-            #recuper les devices utiliser dans le folder a supprimer
-            listedevicedel = [x['deviceID'] for x in  self.config['folders'][indexfolderid]['devices']]
-            #recherche si device utiliser dans 1 autre folder.
+            # recuper les devices utiliser dans le folder a supprimer
+            listedevicedel = [x['deviceID']
+                              for x in self.config['folders'][indexfolderid]['devices']]
+            # recherche si device utiliser dans 1 autre folder.
             for indexfolder in range(len(self.config['folders'])):
                 if self.config['folders'][indexfolder]['id'] in idpermanent or \
-                    self.config['folders'][indexfolder]['id']== id :
+                        self.config['folders'][indexfolder]['id'] == id:
                     continue
-                list_device_folder_data = [x['deviceID'] for x in  \
-                    self.config['folders'][indexfolder]['devices']]
+                list_device_folder_data = [
+                    x['deviceID'] for x in self.config['folders'][indexfolder]['devices']]
                 for t in list_device_folder_data:
                     listdevicecopy = list(listedevicedel)
                     if t in listdevicecopy:
                         listedevicedel.remove(t)
-            devices = [x['deviceID'] for x in  self.config['devices']]
-            listdelindex=[]
+            devices = [x['deviceID'] for x in self.config['devices']]
+            listdelindex = []
             for indexdd in range(len(devices)):
                 if devices[indexdd] in listedevicedel:
                     listdelindex.append(indexdd)
-            listdelindex.reverse();
+            listdelindex.reverse()
             # on supprime le folder
             del self.config['folders'][indexfolderid]
             self.synchro = False
@@ -1346,8 +1412,8 @@ class syncthing(syncthingapi):
             for indexsupp in listdelindex:
                 del self.config['devices'][indexsupp]
                 self.synchro = False
-        except:
-            logger.error("\n%s"%(traceback.format_exc()))
+        except BaseException:
+            logger.error("\n%s" % (traceback.format_exc()))
         finally:
             self.mutex.release()
 
@@ -1362,7 +1428,7 @@ class syncthing(syncthingapi):
         for i in to_delete:
             del self.devices[i]
 
-    def delete_folder_pulse_deploy(self, id, reload = True):
+    def delete_folder_pulse_deploy(self, id, reload=True):
         if reload:
             self.reload_config()
         self.del_folder(id)
@@ -1382,6 +1448,7 @@ class syncthing(syncthingapi):
 
         # listdeviceutil = self.get_list_device_used_in_folder()
         # self.delete_device_is_not_list(listdeviceutil)
+
 
 class syncthingprogram(Program):
     def __init__(self,
@@ -1405,24 +1472,31 @@ class syncthingprogram(Program):
                 os.system('systemctl restart syncthing@pulseuser.service')
         elif sys.platform.startswith('win'):
             if self.home == "":
-                self.home = "%s\\pulse\\etc\\syncthing\\"%os.environ['programfiles']
+                self.home = "%s\\pulse\\etc\\syncthing\\" % os.environ['programfiles']
             if self.logfile == "":
-                self.logfile = "%s\\pulse\\var\\log\\syncthing.log"%os.environ['programfiles']
+                self.logfile = "%s\\pulse\\var\\log\\syncthing.log" % os.environ['programfiles']
 
             self.stop_syncthing()
 
-            agentconf = os.path.join(os.environ['programfiles'], "Pulse", "etc", "agentconf.ini")
+            agentconf = os.path.join(
+                os.environ['programfiles'],
+                "Pulse",
+                "etc",
+                "agentconf.ini")
             Config = ConfigParser.ConfigParser()
             Config.read(agentconf)
 
-            syncthing_bin = os.path.join(os.environ['programfiles'], "Pulse", "bin", "syncthing.exe")
+            syncthing_bin = os.path.join(
+                os.environ['programfiles'], "Pulse", "bin", "syncthing.exe")
 
             if not os.path.isfile(syncthing_bin):
-                logger.error("Syncthing is not installed, Changing configuration to not use it yet.")
+                logger.error(
+                    "Syncthing is not installed, Changing configuration to not use it yet.")
 
                 is_syncthing_activated = 1
                 if Config.has_option("syncthing", "activation"):
-                    is_syncthing_activated = Config.get('syncthing', 'activation')
+                    is_syncthing_activated = Config.get(
+                        'syncthing', 'activation')
 
                 if is_syncthing_activated:
                     Config.set('syncthing', 'activation', "0")
@@ -1435,10 +1509,10 @@ class syncthingprogram(Program):
                     delete_cmd = 'reg delete "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" /f'
                     delete_result = simplecommand(delete_cmd)
                     if delete_result['code'] == 0:
-                        logger.debug("Syncthing has been removed from the registry")
+                        logger.debug(
+                            "Syncthing has been removed from the registry")
 
-
-            cmd = [ "%s" % syncthing_bin,
+            cmd = ["%s" % syncthing_bin,
                    "-home=%s" % self.home,
                    "-logfile=%s" % self.logfile]
 
@@ -1454,7 +1528,8 @@ class syncthingprogram(Program):
                 self.logfile = "/opt/Pulse/var/log/syncthing.log"
 
             self.stop_syncthing()
-            cmd = """export STNODEFAULTFOLDER=1;nohup /opt/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &""" % (self.home, self.logfile)
+            cmd = """export STNODEFAULTFOLDER=1;nohup /opt/Pulse/bin/syncthing -home="%s" -logfile="%s" -no-browser &""" % (
+                self.home, self.logfile)
             self.startprogram(cmd, 'syncthing')
 
         time.sleep(4)
@@ -1471,7 +1546,8 @@ class syncthingprogram(Program):
             else:
                 os.system('systemctl stop syncthing@pulseuser.service')
         elif sys.platform.startswith('darwin'):
-            os.system("kill -9 `ps -A|grep Syncthing| awk -F ' ' '{print $1}'`")
+            os.system(
+                "kill -9 `ps -A|grep Syncthing| awk -F ' ' '{print $1}'`")
 
     def restart_syncthing(self):
         self.stop_syncthing()
@@ -1479,12 +1555,12 @@ class syncthingprogram(Program):
 
     def syncthing_on(self):
         if sys.platform.startswith('win'):
-            cmd='asklist | findstr "syncthing.exe"'
+            cmd = 'asklist | findstr "syncthing.exe"'
             result = simplecommand(cmd)
             if len(result['result']) > 4:
                 return True
         else:
-            cmd='ps ax |  grep syncthing | grep -v grep'
+            cmd = 'ps ax |  grep syncthing | grep -v grep'
             result = simplecommand(cmd)
             if len(result['result']) > 4:
                 return True
@@ -1492,5 +1568,7 @@ class syncthingprogram(Program):
 
     def statussyncthing(self):
         pass
+
+
 if __name__ == '__main__':
     pass

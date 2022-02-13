@@ -34,11 +34,12 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"}
 
+
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
-    compteurcallplugin = getattr(xmppobject, "num_call%s"%action)
+    compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
     if compteurcallplugin == 0:
         xmppobject.status_rules = []
         loggerliststatus = XmppMasterDatabase().get_log_status()
@@ -46,20 +47,26 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             for t in XmppMasterDatabase().get_log_status():
                 t['compile_re'] = re.compile(t['regexplog'])
                 xmppobject.status_rules.append(t)
-            logger.debug("We initialized to the rule: %s"% xmppobject.status_rules)
+            logger.debug(
+                "We initialized to the rule: %s" %
+                xmppobject.status_rules)
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         read_conf_log_agent(xmppobject)
-    try :
+    try:
         dataobj = data
-        if "type" in dataobj and dataobj['type'] == "deploy" and  'text' in dataobj:
+        if "type" in dataobj and dataobj['type'] == "deploy" and 'text' in dataobj:
             re_status = searchstatus(xmppobject, dataobj['text'])
             if re_status['status'] != "":
-                XmppMasterDatabase().updatedeploytosessionid(re_status['status'],
-                                                             dataobj['sessionid'])
-                logging.debug("We applied the status %s for the sessionid %s" % (re_status['status'], dataobj['sessionid']))
+                XmppMasterDatabase().updatedeploytosessionid(
+                    re_status['status'], dataobj['sessionid'])
+                logging.debug(
+                    "We applied the status %s for the sessionid %s" %
+                    (re_status['status'], dataobj['sessionid']))
             else:
-                logging.debug("We have not applied any status for the sessionid %s" % (dataobj['sessionid']))
+                logging.debug(
+                    "We have not applied any status for the sessionid %s" %
+                    (dataobj['sessionid']))
         if data["action"] == 'xmpplog':
             createlog(xmppobject, data)
         elif data["action"] == 'resultapplicationdeploymentjson':
@@ -67,25 +74,28 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             data['sessionid'] = sessionid
             xmpplogdeploy(xmppobject, data)
         else:
-            logger.warning("message bad formated: msg log from %s" % (msg['from']))
+            logger.warning(
+                "message bad formated: msg log from %s" %
+                (msg['from']))
             logger.warning("data msg is \n%s" % (json.dumps(data, indent=4)))
     except Exception as e:
         logging.error("structure Message from %s %s " % (msg['from'], str(e)))
         logger.error("\n%s" % (traceback.format_exc()))
+
 
 def createlog(xmppobject, dataobj):
     """
         this function creating log in base from body message xmpp
     """
     try:
-        if 'text' in dataobj :
+        if 'text' in dataobj:
             text = dataobj['text']
         else:
             return
         type = dataobj['type'] if 'type' in dataobj else ""
         sessionname = dataobj['sessionid'] if 'sessionid' in dataobj else ""
         priority = dataobj['priority'] if 'priority' in dataobj else ""
-        who = dataobj['who'] if 'who' in dataobj else  ""
+        who = dataobj['who'] if 'who' in dataobj else ""
         how = dataobj['how'] if 'how' in dataobj else ""
         why = dataobj['why'] if 'why' in dataobj else ""
         module = dataobj['module'] if 'module' in dataobj else ""
@@ -135,6 +145,7 @@ def registerlogxmpp(xmppobject,
                                     touser=touser,
                                     action=action)
 
+
 def xmpplogdeploy(xmppobject, data):
     """
         this function manage msg deploy log
@@ -143,8 +154,8 @@ def xmpplogdeploy(xmppobject, data):
         if 'text' in data and \
             'type' in data and \
                 'sessionid' in data and \
-                    'priority' in data and \
-                        'who' in data:
+            'priority' in data and \
+                'who' in data:
             registerlogxmpp(xmppobject,
                             data['text'],
                             type=data['type'],
@@ -156,30 +167,34 @@ def xmpplogdeploy(xmppobject, data):
             if data['action'] == 'resultapplicationdeploymentjson':
                 # Log dans base resultat
                 if data['ret'] == 0:
-                    XmppMasterDatabase().updatedeployresultandstate(data['sessionid'],
-                                                                    "DEPLOYMENT SUCCESS",
-                                                                    json.dumps(data,
-                                                                               indent=4,
-                                                                               sort_keys=True))
+                    XmppMasterDatabase().updatedeployresultandstate(
+                        data['sessionid'], "DEPLOYMENT SUCCESS", json.dumps(
+                            data, indent=4, sort_keys=True))
                 else:
-                    XmppMasterDatabase().updatedeployresultandstate(data['sessionid'],
-                                                                    "ABORT PACKAGE EXECUTION ERROR",
-                                                                    json.dumps(data,
-                                                                               indent=4,
-                                                                               sort_keys=True))
+                    XmppMasterDatabase().updatedeployresultandstate(
+                        data['sessionid'], "ABORT PACKAGE EXECUTION ERROR", json.dumps(
+                            data, indent=4, sort_keys=True))
     except Exception as e:
-        logging.error("obj Message deploy error  %s\nerror text : %s" % (data, str(e)))
+        logging.error(
+            "obj Message deploy error  %s\nerror text : %s" %
+            (data, str(e)))
         logger.error("\n%s" % (traceback.format_exc()))
+
 
 def read_conf_log_agent(xmppobject):
     namefichierconf = plugin['NAME'] + ".ini"
-    pathfileconf = os.path.join(xmppobject.config.pathdirconffile, namefichierconf)
+    pathfileconf = os.path.join(
+        xmppobject.config.pathdirconffile,
+        namefichierconf)
     if not os.path.isfile(pathfileconf):
         pass
 
+
 def searchstatus(xmppobject, chaine):
     for t in xmppobject.status_rules:
-        if  t['compile_re'].match(chaine):
-            logger.debug("The string \"%s\" match for [%s] and return the following status \"%s\"" % (chaine, t['regexplog'], t['status']))
-            return { "status": t['status'], "logmessage": chaine}
-    return { "status": "", "logmessage": chaine}
+        if t['compile_re'].match(chaine):
+            logger.debug(
+                "The string \"%s\" match for [%s] and return the following status \"%s\"" %
+                (chaine, t['regexplog'], t['status']))
+            return {"status": t['status'], "logmessage": chaine}
+    return {"status": "", "logmessage": chaine}

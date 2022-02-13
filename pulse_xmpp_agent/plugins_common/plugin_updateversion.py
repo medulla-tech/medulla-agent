@@ -21,7 +21,8 @@
 
 # file pulse_xmpp_agent/pluginsmachine/plugin_updateversion.py
 
-import sys, os
+import sys
+import os
 import logging
 from lib import utils
 from lib.agentconffile import directoryconffile
@@ -32,34 +33,36 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION" : "1.0", "NAME" : "updateversion", "TYPE" : "all"}
+plugin = {"VERSION": "1.0", "NAME": "updateversion", "TYPE": "all"}
 
 
-def action( objectxmpp, action, sessionid, data, message, dataerreur):
+def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s"%(plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
     if objectxmpp.config.agenttype in ['machine']:
         if sys.platform.startswith('win'):
-            #injection version clef de registre
+            # injection version clef de registre
             logger.debug("INJECTION KEY REGISTER VERSION")
             pathversion = os.path.join(objectxmpp.pathagent, "agentversion")
             if os.path.isfile(pathversion):
-                version = utils.file_get_contents(pathversion).replace("\n","").replace("\r","").strip()
+                version = utils.file_get_contents(pathversion).replace(
+                    "\n", "").replace("\r", "").strip()
                 if len(version) < 20:
                     logger.debug("Version AGENT is " + version)
                     import _winreg
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
-                                        0 ,
-                                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
-                    _winreg.SetValueEx ( key,
-                                        'DisplayVersion'  ,
-                                        0,
-                                        _winreg.REG_SZ,
-                                        version)
+                    key = _winreg.OpenKey(
+                        _winreg.HKEY_LOCAL_MACHINE,
+                        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Pulse Agent\\",
+                        0,
+                        _winreg.KEY_SET_VALUE | _winreg.KEY_WOW64_64KEY)
+                    _winreg.SetValueEx(key,
+                                       'DisplayVersion',
+                                       0,
+                                       _winreg.REG_SZ,
+                                       version)
                     _winreg.CloseKey(key)
-        elif sys.platform.startswith('linux') :
+        elif sys.platform.startswith('linux'):
             pass
         elif sys.platform.startswith('darwin'):
             pass

@@ -47,12 +47,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         try:
             # Update if version is lower
             installed_version = checksyncthingversion()
-            if StrictVersion(installed_version) < StrictVersion(SYNCTHINGVERSION):
+            if StrictVersion(installed_version) < StrictVersion(
+                    SYNCTHINGVERSION):
                 updatesyncthing(xmppobject, installed_version)
 
             # Configure syncthing
-            syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
-            syncthing_configfile = os.path.join(syncthingconfig_path, 'config.xml')
+            syncthingconfig_path = os.path.join(
+                os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
+            syncthing_configfile = os.path.join(
+                syncthingconfig_path, 'config.xml')
             if os.path.isfile(syncthing_configfile):
                 configuresyncthing(syncthing_configfile)
 
@@ -74,25 +77,29 @@ def checksyncthingversion():
             syncthingversion = '0.0'
     return syncthingversion
 
+
 def updatesyncthingversion(version):
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % SYNCTHINGVERSION
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % SYNCTHINGVERSION
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("we successfully updated Syncthing to version " % SYNCTHINGVERSION)
+            logger.info(
+                "we successfully updated Syncthing to version " %
+                SYNCTHINGVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse Syncthing" /f'
-	    utils.simplecommand(cmdDisplay)
+                '/v "DisplayName" /t REG_SZ  /d "Pulse Syncthing" /f'
+            utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Syncthing" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
             logger.info("Syncthing updated to version %s" % SYNCTHINGVERSION)
+
 
 def configuresyncthing(config_file):
     tree = ElementTree.parse(config_file)
@@ -106,6 +113,7 @@ def configuresyncthing(config_file):
     config.find("./options/crashReportingEnabled").text = 'false'
     tree.write(config_file)
 
+
 def updatesyncthing(xmppobject, installed_version):
     logger.info("Updating Syncthing to version %s" % SYNCTHINGVERSION)
     if sys.platform.startswith('win'):
@@ -113,18 +121,26 @@ def updatesyncthing(xmppobject, installed_version):
             architecture = 'amd64'
         else:
             architecture = '386'
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
-        pulseconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
-        syncthingconfig_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
+        pulsedir_path = os.path.join(
+            os.environ["ProgramFiles"], "Pulse", "bin")
+        pulseconfig_path = os.path.join(
+            os.environ["ProgramFiles"], "Pulse", "etc")
+        syncthingconfig_path = os.path.join(
+            os.environ["ProgramFiles"], "Pulse", "etc", "syncthing")
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
 
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
-        filename = 'syncthing-windows-%s-v%s.zip' % (architecture, SYNCTHINGVERSION)
-        extracted_path = 'syncthing-windows-%s-v%s' % (architecture, SYNCTHINGVERSION)
-        dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
+        filename = 'syncthing-windows-%s-v%s.zip' % (
+            architecture, SYNCTHINGVERSION)
+        extracted_path = 'syncthing-windows-%s-v%s' % (
+            architecture, SYNCTHINGVERSION)
+        dl_url = 'http://%s/downloads/win/downloads/%s' % (
+            xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(
+                install_tempdir, filename)).downloadurl()
         if result:
             # Download success
             current_dir = os.getcwd()
@@ -132,12 +148,21 @@ def updatesyncthing(xmppobject, installed_version):
             syncthing_zip_file = zipfile.ZipFile(filename, 'r')
             syncthing_zip_file.extractall()
             utils.simplecommand("taskkill.exe /F /IM syncthing.exe")
-            shutil. copyfile(os.path.join(extracted_path, "syncthing.exe"), os.path.join(pulsedir_path, "syncthing.exe"))
+            shutil. copyfile(
+                os.path.join(
+                    extracted_path, "syncthing.exe"), os.path.join(
+                    pulsedir_path, "syncthing.exe"))
             os.chdir(current_dir)
 
-            utils.simplecommand("netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
+            utils.simplecommand(
+                "netsh advfirewall firewall add rule name=\"Syncthing for Pulse\" dir=in action=allow protocol=TCP localport=22000")
 
-            mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(pulseconfig_path, "syncthing.ini"), os.path.join(syncthingconfig_path, "config.xml"))
+            mklink_command = "mklink \"%s\" \"%s\"" % (os.path.join(
+                pulseconfig_path,
+                "syncthing.ini"),
+                os.path.join(
+                syncthingconfig_path,
+                "config.xml"))
             utils.simplecommand(mklink_command)
 
             # Enable syncthing now it is installed
@@ -154,4 +179,3 @@ def updatesyncthing(xmppobject, installed_version):
         else:
             # Download error
             logger.error("%s" % txtmsg)
-

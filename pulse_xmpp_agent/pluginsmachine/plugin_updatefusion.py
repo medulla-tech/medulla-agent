@@ -78,7 +78,9 @@ def updatefusion(xmppobject):
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(
+                install_tempdir, filename)).downloadurl()
         if result:
             # Download success
             logger.info("%s" % txtmsg)

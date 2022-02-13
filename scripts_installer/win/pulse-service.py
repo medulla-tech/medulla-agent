@@ -34,7 +34,10 @@ import os
 import sys
 import logging
 import logging.handlers
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
+
 
 class SMWinservice(win32serviceutil.ServiceFramework):
     '''Base class to create winservice in Python'''
@@ -96,17 +99,33 @@ class SMWinservice(win32serviceutil.ServiceFramework):
         '''
         pass
 
-log_file = os.path.join("c:\\", "Program Files", "Pulse", "var", "log", "service.log")
-agent_dir = os.path.join("C:\\", "Python27","Lib", "site-packages", "pulse_xmpp_agent")
+
+log_file = os.path.join(
+    "c:\\",
+    "Program Files",
+    "Pulse",
+    "var",
+    "log",
+    "service.log")
+agent_dir = os.path.join(
+    "C:\\",
+    "Python27",
+    "Lib",
+    "site-packages",
+    "pulse_xmpp_agent")
 
 logger = logging.getLogger("pulseagentservice")
 
 logger.setLevel(logging.DEBUG)
 
-handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=10485760, backupCount=2)
-formatter = logging.Formatter('%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s', '%d-%m-%Y %H:%M:%S')
+handler = logging.handlers.RotatingFileHandler(
+    log_file, maxBytes=10485760, backupCount=2)
+formatter = logging.Formatter(
+    '%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s',
+    '%d-%m-%Y %H:%M:%S')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+
 
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
@@ -127,49 +146,74 @@ def file_get_contents(filename, use_include_path=0,
         finally:
             fp.close()
 
+
 class PulseAgentService(SMWinservice):
     _svc_name_ = "pulseagent"
     _svc_display_name_ = "Pulse agent"
     _svc_description_ = "Workstation management agent"
     isrunning = False
     isdebug = False
-    listnamefilepid=["pidlauncher","pidconnection","pidagent"]
+    listnamefilepid = ["pidlauncher", "pidconnection", "pidagent"]
 
     def start(self):
         if "-debug" in sys.argv:
             self.isdebug = True
-            logger.info("Service %s launched in debug mode"%self._svc_display_name_)
+            logger.info(
+                "Service %s launched in debug mode" %
+                self._svc_display_name_)
         else:
-            logger.info("Service %s launched in normal mode"%self._svc_display_name_)
+            logger.info(
+                "Service %s launched in normal mode" %
+                self._svc_display_name_)
         self.isrunning = True
 
     def stop(self):
         self.isrunning = False
-        logger.info("Service %s stopped" %self._svc_display_name_)
-        cmd =""
+        logger.info("Service %s stopped" % self._svc_display_name_)
+        cmd = ""
         for pidprog in self.listnamefilepid:
-            pidfile =os.path.join(agent_dir, "INFOSTMP", pidprog)
+            pidfile = os.path.join(agent_dir, "INFOSTMP", pidprog)
             if os.path.isfile(pidfile):
                 pid = file_get_contents(pidfile)
-                cmd = "taskkill /PID %s /F /T"%pid
+                cmd = "taskkill /PID %s /F /T" % pid
                 try:
                     os.system(cmd)
                     continue
-                except:
+                except BaseException:
                     pass
+
     def main(self):
         i = 0
         while self.isrunning:
-            batcmd ="NET START"
+            batcmd = "NET START"
             result = subprocess.check_output(batcmd, shell=True)
             filter = "pulseagent"
             if not re.search(filter, result):
                 if not self.isdebug:
-                    os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -t machine")
+                    os.system(
+                        os.path.join(
+                            "c:\\",
+                            "Python27",
+                            "python.exe") +
+                        " " +
+                        os.path.join(
+                            agent_dir,
+                            "launcher.py") +
+                        " -t machine")
                 else:
-                    os.system(os.path.join("c:\\", "Python27", "python.exe") + " " + os.path.join(agent_dir, "launcher.py") + " -c -t machine")
+                    os.system(
+                        os.path.join(
+                            "c:\\",
+                            "Python27",
+                            "python.exe") +
+                        " " +
+                        os.path.join(
+                            agent_dir,
+                            "launcher.py") +
+                        " -c -t machine")
             else:
                 time.sleep(5)
+
 
 if __name__ == '__main__':
     PulseAgentService.parse_command_line()

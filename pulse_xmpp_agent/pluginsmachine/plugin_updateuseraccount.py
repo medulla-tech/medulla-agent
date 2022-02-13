@@ -50,51 +50,58 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     jidars = xmppobject.config.agentcommand
     timeout = 15
     try:
-        iqresult = xmppobject.iqsendpulse(jidars,
-                                          {"action": "information",
-                                           "data": {"listinformation": ["get_ars_key_id_rsa",
-                                                                        "keypub"],
-                                                    "param": {}
-                                                    }
-                                           },
-                                          timeout)
+        iqresult = xmppobject.iqsendpulse(
+            jidars, {
+                "action": "information", "data": {
+                    "listinformation": [
+                        "get_ars_key_id_rsa", "keypub"], "param": {}}}, timeout)
         res = json.loads(iqresult)
         result = res['result']['informationresult']
         relayserver_pubkey = result['keypub']
         relayserver_reversessh_idrsa = result['get_ars_key_id_rsa']
         logger.debug("relayserver_pubkey: %s" % relayserver_pubkey)
-        logger.debug("relayserver_reversessh_idrsa: %s" % relayserver_reversessh_idrsa)
+        logger.debug(
+            "relayserver_reversessh_idrsa: %s" %
+            relayserver_reversessh_idrsa)
     except KeyError:
-        logger.error("Error getting relayserver pubkey and reversessh idrsa via iq from %s" % jidars)
+        logger.error(
+            "Error getting relayserver pubkey and reversessh idrsa via iq from %s" %
+            jidars)
         return
-    
+
     try:
-        iqresult = xmppobject.iqsendpulse('rspulse@pulse',
-                                          {"action": "information",
-                                           "data": {"listinformation": ["get_ars_key_id_rsa",
-                                                                        "keypub"],
-                                                    "param": {}
-                                                    }
-                                           },
-                                          timeout)
+        iqresult = xmppobject.iqsendpulse(
+            'rspulse@pulse',
+            {
+                "action": "information",
+                "data": {
+                    "listinformation": [
+                        "get_ars_key_id_rsa",
+                        "keypub"],
+                    "param": {}}},
+            timeout)
         res = json.loads(iqresult)
         result = res['result']['informationresult']
         mainserver_pubkey = result['keypub']
         logger.debug("mainserver_pubkey: %s" % mainserver_pubkey)
     except KeyError:
-        logger.error("Error getting mainserver pubkey via iq from rspulse@pulse")
+        logger.error(
+            "Error getting mainserver pubkey via iq from rspulse@pulse")
         return
 
     # Add the keys to pulseuser account
-    result, msglog = utils.create_idrsa_on_client(username, relayserver_reversessh_idrsa)
+    result, msglog = utils.create_idrsa_on_client(
+        username, relayserver_reversessh_idrsa)
     if result is False:
         logger.error(msglog)
     msg.append(msglog)
-    result, msglog = utils.add_key_to_authorizedkeys_on_client(username, relayserver_pubkey)
+    result, msglog = utils.add_key_to_authorizedkeys_on_client(
+        username, relayserver_pubkey)
     if result is False:
         logger.error(msglog)
     msg.append(msglog)
-    result, msglog = utils.add_key_to_authorizedkeys_on_client(username, mainserver_pubkey)
+    result, msglog = utils.add_key_to_authorizedkeys_on_client(
+        username, mainserver_pubkey)
     if result is False:
         logger.error(msglog)
     msg.append(msglog)

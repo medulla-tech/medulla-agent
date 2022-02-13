@@ -40,42 +40,46 @@ DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.3", "NAME": "startupdate", "TYPE": "machine"}
 
+
 def read_conf_plugin_startupdate(objectxmpp):
     objectxmpp.liststartpluginstartupdate = []
     objectxmpp.startupdateinventory = False
     objectxmpp.startupdateinventoryforced = False
-    configfilename = os.path.join(directoryconffile(),"startupdate.ini")
+    configfilename = os.path.join(directoryconffile(), "startupdate.ini")
     if os.path.isfile(configfilename):
         # lit la configuration
         Config = ConfigParser.ConfigParser()
         Config.read(configfilename)
         if Config.has_option('plugins', 'liststartplugin'):
             liststartplugin = Config.get('plugins', 'liststartplugin')
-            objectxmpp.liststartpluginstartupdate = [x for x in
-                                            re.split(r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
-                                                     liststartplugin)
-                                            if x.strip()!=""]
+            objectxmpp.liststartpluginstartupdate = [
+                x for x in re.split(
+                    r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
+                    liststartplugin) if x.strip() != ""]
         if Config.has_option('plugins', 'inventory'):
-            objectxmpp.startupdateinventory = Config.getboolean('plugins', 'inventory')
+            objectxmpp.startupdateinventory = Config.getboolean(
+                'plugins', 'inventory')
         if Config.has_option('plugins', 'inventoryforced'):
-            objectxmpp.startupdateinventoryforced = Config.getboolean('plugins', 'inventoryforced')
+            objectxmpp.startupdateinventoryforced = Config.getboolean(
+                'plugins', 'inventoryforced')
 
         if len(objectxmpp.liststartpluginstartupdate) == 1 and \
-            objectxmpp.liststartpluginstartupdate[0] == "all":
+                objectxmpp.liststartpluginstartupdate[0] == "all":
             createlistpluginupdate(objectxmpp)
         elif 'updatesettings' not in objectxmpp.liststartpluginstartupdate and \
-            os.path.isfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'plugin_updatesettings.py')):
+                os.path.isfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'plugin_updatesettings.py')):
             # Run updatesettings if not explicitly defined in liststartplugin
             objectxmpp.liststartpluginstartupdate.append("updatesettings")
     else:
         createlistpluginupdate(objectxmpp)
 
+
 def createlistpluginupdate(objectxmpp):
     plugin_path = os.path.dirname(os.path.realpath(__file__))
-    objectxmpp.liststartpluginstartupdate = [x[7:-3] for x in os.listdir(plugin_path)
-                                            if x.startswith("plugin_update") and
-                                            not x.endswith(".pyc")]
+    objectxmpp.liststartpluginstartupdate = [x[7:-3] for x in os.listdir(
+        plugin_path) if x.startswith("plugin_update") and not x.endswith(".pyc")]
     objectxmpp.liststartpluginstartupdate.remove("updateagent")
+
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -92,7 +96,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
               "ret": 0,
               "base64": False,
               "data": {}}
-    dataerreur =  update.copy()
+    dataerreur = update.copy()
     msg = {'from': objectxmpp.boundjid.bare,
            "to": objectxmpp.boundjid.bare,
            'type': 'chat'}
@@ -112,7 +116,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
     # ## appelle
     if objectxmpp.startupdateinventory:
         # call inventory from machine.
-        pam={"forced": "noforced", "sessionid": sessionid}
+        pam = {"forced": "noforced", "sessionid": sessionid}
         if objectxmpp.startupdateinventoryforced:
             pam['forced'] = "forced"
         logger.debug("call inventory %s" % pam)

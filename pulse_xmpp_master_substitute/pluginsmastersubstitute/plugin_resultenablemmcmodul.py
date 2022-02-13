@@ -28,7 +28,11 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.0", "NAME": "resultenablemmcmodul", "TYPE": "substitute"}
+plugin = {
+    "VERSION": "1.0",
+    "NAME": "resultenablemmcmodul",
+    "TYPE": "substitute"}
+
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
@@ -36,6 +40,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logger.debug("=====================================================")
     # send demande module mmc actif sur master
     xmppobject.listmodulemmc = data
+
 
 def data_struct_message(action, data={}, ret=0, base64=False, sessionid=None):
     if sessionid is None or sessionid == "" or not isinstance(sessionid, str):

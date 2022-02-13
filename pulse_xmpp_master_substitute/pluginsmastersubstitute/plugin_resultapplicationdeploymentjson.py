@@ -30,33 +30,38 @@ from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
 
 
-plugin = {"VERSION": "1.0", "NAME": "resultapplicationdeploymentjson", "TYPE": "substitute"}
+plugin = {
+    "VERSION": "1.0",
+    "NAME": "resultapplicationdeploymentjson",
+    "TYPE": "substitute"}
 
 
 def action(xmppsub, action, sessionid, data, message, ret, dataobj):
     logger.debug("=====================================================")
     logger.debug(plugin)
     logger.debug("=====================================================")
-    logger.debug(json.dumps(data,indent=4))
+    logger.debug(json.dumps(data, indent=4))
     try:
         if ret == 0:
-            logger.debug("Succes deploy on %s Package "\
-                         ": %s Session : %s" % (message['from'],
-                                                data['descriptor']['info']['name'],
-                                                sessionid))
+            logger.debug(
+                "Succes deploy on %s Package "
+                ": %s Session : %s" %
+                (message['from'], data['descriptor']['info']['name'], sessionid))
             XmppMasterDatabase().delete_resources(sessionid)
 
         else:
             msg = "Deployment error on %s [Package "\
-               ": %s / Session : %s]" % (message['from'],
-                                         data['descriptor']['info']['name'],
-                                         sessionid)
+                ": %s / Session : %s]" % (message['from'],
+                                          data['descriptor']['info']['name'],
+                                          sessionid)
             logger.error(msg)
 
-            if  'status' in data and data['status'] != "":
-                XmppMasterDatabase().updatedeploystate1(sessionid, data['status'])
+            if 'status' in data and data['status'] != "":
+                XmppMasterDatabase().updatedeploystate1(
+                    sessionid, data['status'])
             else:
-                XmppMasterDatabase().updatedeploystate1(sessionid, "ABORT PACKAGE EXECUTION ERROR")
+                XmppMasterDatabase().updatedeploystate1(
+                    sessionid, "ABORT PACKAGE EXECUTION ERROR")
             xmppsub.xmpplog(msg,
                             type='deploy',
                             sessionname=sessionid,

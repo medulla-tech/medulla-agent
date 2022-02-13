@@ -26,24 +26,27 @@ logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 
-plugin={"VERSION": "1.0", "NAME" : "installpluginscheduled", "TYPE" : "all"}
+plugin = {"VERSION": "1.0", "NAME": "installpluginscheduled", "TYPE": "all"}
 
-def action( objetxmpp, action, sessionid, data, message, dataerreur ):
+
+def action(objetxmpp, action, sessionid, data, message, dataerreur):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug("########AGENT INSTALL PLUGINS SCHEDULED#############")
     logging.getLogger().debug("###################################################")
-    logging.getLogger().debug("call %s from %s"%(plugin,message['from']))
+    logging.getLogger().debug("call %s from %s" % (plugin, message['from']))
     logging.getLogger().debug("###################################################")
     if action == 'installpluginscheduled':
-        if len(data) != 0 :
-            namefile =  os.path.join(objetxmpp.config.pathpluginsscheduled, data['pluginname'])
+        if len(data) != 0:
+            namefile = os.path.join(
+                objetxmpp.config.pathpluginsscheduled,
+                data['pluginname'])
             print(namefile)
             logging.getLogger().debug("###################################################")
             try:
                 fileplugin = open(namefile, "w")
                 fileplugin.write(str(data['datafile']))
                 fileplugin.close()
-            except :
+            except BaseException:
                 print("Error: cannor write on file")
                 return
             #msg = "install plugin scheduled %s on %s"%(data['pluginname'],message['to'].user)

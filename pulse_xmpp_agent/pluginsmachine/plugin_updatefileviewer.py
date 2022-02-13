@@ -52,7 +52,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             updatemain(xmppobject)
 
         bootstrap_installed_version = checkversion("bootstrap")
-        if StrictVersion(bootstrap_installed_version) < StrictVersion(BOOTSTRAP):
+        if StrictVersion(
+                bootstrap_installed_version) < StrictVersion(BOOTSTRAP):
             updatebootstrap(xmppobject)
 
         jquery_installed_version = checkversion("jquery")
@@ -64,11 +65,13 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             updatejqueryui(xmppobject)
 
         datatable_installed_version = checkversion("datatables")
-        if StrictVersion(datatable_installed_version) < StrictVersion(DATATABLES):
+        if StrictVersion(
+                datatable_installed_version) < StrictVersion(DATATABLES):
             updatedatatables(xmppobject)
 
     except Exception:
         pass
+
 
 def fileviewer_path():
     if sys.platform.startswith('win'):
@@ -76,34 +79,57 @@ def fileviewer_path():
                                 "site-packages", "pulse_xmpp_agent", "lib",
                                 "ressources", "fileviewer")
     elif sys.platform.startswith('linux'):
-        rpm_python_path = os.path.join("/", "usr", "lib", "python2.7", "site-packages",
-                                       "pulse_xmpp_agent")
-        pip_python_path = os.path.join("/", "usr", "local", "lib", "python2.7", "dist-packages",
-                                       "pulse_xmpp_agent")
-        deb_python_path = os.path.join("/", "usr", "lib", "python2.7", "dist-packages",
-                                       "pulse_xmpp_agent")
+        rpm_python_path = os.path.join(
+            "/",
+            "usr",
+            "lib",
+            "python2.7",
+            "site-packages",
+            "pulse_xmpp_agent")
+        pip_python_path = os.path.join(
+            "/",
+            "usr",
+            "local",
+            "lib",
+            "python2.7",
+            "dist-packages",
+            "pulse_xmpp_agent")
+        deb_python_path = os.path.join(
+            "/",
+            "usr",
+            "lib",
+            "python2.7",
+            "dist-packages",
+            "pulse_xmpp_agent")
         if os.path.isdir(pip_python_path):
-            destpath = os.path.join(pip_python_path, "lib", "ressources", "fileviewer")
+            destpath = os.path.join(
+                pip_python_path, "lib", "ressources", "fileviewer")
         elif os.path.isdir(deb_python_path):
-            destpath = os.path.join(deb_python_path, "lib", "ressources", "fileviewer")
+            destpath = os.path.join(
+                deb_python_path, "lib", "ressources", "fileviewer")
         else:
-            destpath = os.path.join(rpm_python_path, "lib", "ressources", "fileviewer")
+            destpath = os.path.join(
+                rpm_python_path, "lib", "ressources", "fileviewer")
 
     elif sys.platform.startswith('darwin'):
         print "Not implemented yet"
 
     return destpath
 
+
 def checkbootstrapversion():
     installed_path = fileviewer_path()
     bootstrap_version_file = os.path.join(installed_path, "bootstrap.version")
 
-    if not os.path.isdir(installed_path) or not os.path.isfile(bootstrap_version_file):
+    if not os.path.isdir(installed_path) or not os.path.isfile(
+            bootstrap_version_file):
         bootstrapversion = '0.1'
     else:
-        bootstrapversion = utils.file_get_contents(bootstrap_version_file).strip()
+        bootstrapversion = utils.file_get_contents(
+            bootstrap_version_file).strip()
 
     return bootstrapversion
+
 
 def get_version_file(deps_module):
     installed_path = fileviewer_path()
@@ -123,6 +149,7 @@ def get_version_file(deps_module):
 
     return version_file
 
+
 def checkversion(deps_module):
     version_file = get_version_file(deps_module)
     installed_path = fileviewer_path()
@@ -134,11 +161,13 @@ def checkversion(deps_module):
 
     return module_version
 
+
 def write_version_in_file(deps_module, version_module):
     version_file = get_version_file(deps_module)
 
     with open(version_file, "w") as filout:
         filout.write(version_module)
+
 
 def updatemain(xmppobject):
     installed_path = fileviewer_path()
@@ -153,11 +182,12 @@ def updatemain(xmppobject):
     elif sys.platform.startswith('darwin'):
         architecture = "mac"
 
-
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_css)
 
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path, 'css', filename_css)).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(
+        dl_url_css, os.path.join(
+            installed_path, 'css', filename_css)).downloadurl()
     if result_css:
         # Download success
         logger.debug("%s" % txtmsg_css)
@@ -168,7 +198,9 @@ def updatemain(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, 'js', filename_js)).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(
+        dl_url_js, os.path.join(
+            installed_path, 'js', filename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
@@ -177,6 +209,7 @@ def updatemain(xmppobject):
         logger.error("%s" % txtmsg_js)
 
     write_version_in_file("main", MAIN)
+
 
 def updatebootstrap(xmppobject):
     logger.info("Updating Bootstrap to version %s" % BOOTSTRAP)
@@ -196,7 +229,9 @@ def updatebootstrap(xmppobject):
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_css)
 
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path, 'css', filename_css)).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(
+        dl_url_css, os.path.join(
+            installed_path, 'css', filename_css)).downloadurl()
     if result_css:
         # Download success
         logger.debug("%s" % txtmsg_css)
@@ -207,7 +242,9 @@ def updatebootstrap(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, 'js', filename_js)).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(
+        dl_url_js, os.path.join(
+            installed_path, 'js', filename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
@@ -217,12 +254,13 @@ def updatebootstrap(xmppobject):
 
     write_version_in_file("bootstrap", BOOTSTRAP)
 
+
 def updatejquery(xmppobject):
     logger.info("Updating JQuery to version %s" % JQUERY)
 
     installed_path = fileviewer_path()
 
-    filename_js = 'jquery-%s.js'% JQUERY
+    filename_js = 'jquery-%s.js' % JQUERY
     postfilename_js = 'jquery.js'
 
     if sys.platform.startswith('win'):
@@ -235,7 +273,9 @@ def updatejquery(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path,'js',postfilename_js)).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(
+        dl_url_js, os.path.join(
+            installed_path, 'js', postfilename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
@@ -244,6 +284,7 @@ def updatejquery(xmppobject):
         logger.error("%s" % txtmsg_js)
 
     write_version_in_file("jquery", JQUERY)
+
 
 def updatedatatables(xmppobject):
     logger.info("Updating Datatable to version %s" % DATATABLES)
@@ -266,7 +307,9 @@ def updatedatatables(xmppobject):
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
 
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path,'js', postfilename_js)).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(
+        dl_url_js, os.path.join(
+            installed_path, 'js', postfilename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)
@@ -275,8 +318,10 @@ def updatedatatables(xmppobject):
         logger.error("%s" % txtmsg_js)
 
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
-	xmppobject.config.Server, architecture, filename_css)
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path,'css', postfilename_css)).downloadurl()
+        xmppobject.config.Server, architecture, filename_css)
+    result_css, txtmsg_css = utils.downloadfile(
+        dl_url_css, os.path.join(
+            installed_path, 'css', postfilename_css)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_css)
@@ -286,7 +331,9 @@ def updatedatatables(xmppobject):
 
     dl_url_woff = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_woff)
-    result_woff, txtmsg_woff = utils.downloadfile(dl_url_woff, os.path.join(installed_path,'fonts', filename_woff)).downloadurl()
+    result_woff, txtmsg_woff = utils.downloadfile(
+        dl_url_woff, os.path.join(
+            installed_path, 'fonts', filename_woff)).downloadurl()
     if result_woff:
         # Download success
         logger.debug("%s" % txtmsg_woff)
@@ -295,6 +342,7 @@ def updatedatatables(xmppobject):
         logger.error("%s" % txtmsg_css)
 
     write_version_in_file("datatables", DATATABLES)
+
 
 def updatejqueryui(xmppobject):
     logger.info("Updating JQuery UI to version %s" % JQUERY)
@@ -314,7 +362,9 @@ def updatejqueryui(xmppobject):
     dl_url_css = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_css)
 
-    result_css, txtmsg_css = utils.downloadfile(dl_url_css, os.path.join(installed_path,'css',filename_css)).downloadurl()
+    result_css, txtmsg_css = utils.downloadfile(
+        dl_url_css, os.path.join(
+            installed_path, 'css', filename_css)).downloadurl()
     if result_css:
         # Download success
         logger.debug("%s" % txtmsg_css)
@@ -324,7 +374,9 @@ def updatejqueryui(xmppobject):
 
     dl_url_js = 'http://%s/downloads/%s/downloads/%s' % (
         xmppobject.config.Server, architecture, filename_js)
-    result_js, txtmsg_js = utils.downloadfile(dl_url_js, os.path.join(installed_path, 'js', filename_js)).downloadurl()
+    result_js, txtmsg_js = utils.downloadfile(
+        dl_url_js, os.path.join(
+            installed_path, 'js', filename_js)).downloadurl()
     if result_js:
         # Download success
         logger.debug("%s" % txtmsg_js)

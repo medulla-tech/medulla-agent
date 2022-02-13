@@ -25,7 +25,10 @@
 
 # plugin run wake on lan on mac address
 # group mac address wakeonlan different wakeonlans
-plugin = {"VERSION": "1.1", "NAME": "resultwakeonlangroup", "TYPE": "substitute"}
+plugin = {
+    "VERSION": "1.1",
+    "NAME": "resultwakeonlangroup",
+    "TYPE": "substitute"}
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

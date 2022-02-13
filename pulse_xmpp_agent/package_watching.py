@@ -20,10 +20,10 @@
 # along with Pulse 2. If not, see <http://www.gnu.org/licenses/>.
 #
 # file : pulse_xmpp_agent/package_watching.py
-#"""
-#This module is dedicated to analyse inventories sent by a Pulse 2 Client.
-#The original inventory is sent using one line per kind of
-#"""
+# """
+# This module is dedicated to analyse inventories sent by a Pulse 2 Client.
+# The original inventory is sent using one line per kind of
+# """
 
 # API information http://seb.dbzteam.org/pyinotify/
 import socket
@@ -37,8 +37,7 @@ import logging
 import getopt
 import base64
 from __future__ import print_function
-conf ={}
-
+conf = {}
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -61,16 +60,18 @@ class configerror(Exception):
         expr -- input expression in which the error occurred
         msg  -- explanation of the error
     """
-    def __init__(self, expr = "Error Config", msg = ""):
+
+    def __init__(self, expr="Error Config", msg=""):
         self.expr = expr
         self.msg = msg
+
 
 def conf_information(conffile):
     Config = configparser.ConfigParser()
     Config.read(conffile)
     Config.read(conffile + '.local')
     configdata = {}
-    #[network_agent]\nip_ars=???\nport_ars=
+    # [network_agent]\nip_ars=???\nport_ars=
     if Config.has_option("network_agent", "ip_ars"):
         configdata['ip_ars'] = Config.get('network_agent', 'ip_ars')
     else:
@@ -85,7 +86,7 @@ def conf_information(conffile):
     else:
         raise configerror(msg='filelist parameter is missing')
 
-    if filelist =='':
+    if filelist == '':
         raise configerror(msg='filelist is empty')
 
     configdata['filelist'] = filelist.split(',')
@@ -95,7 +96,7 @@ def conf_information(conffile):
     else:
         excludelist = None
 
-    if excludelist is not None and len (excludelist) != 0:
+    if excludelist is not None and len(excludelist) != 0:
         configdata['excludelist'] = excludelist.split(',')
     else:
         configdata['excludelist'] = None
@@ -104,6 +105,7 @@ def conf_information(conffile):
 
     return configdata
 
+
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
@@ -111,10 +113,11 @@ def getRandomName(nb, pref=""):
         d = d + a[random.randint(0, 35)]
     return d
 
+
 def send_agent_data(datastrdata, conf):
-    EncodedString= base64.b64encode(datastrdata)
+    EncodedString = base64.b64encode(datastrdata)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = (conf['ip_ars'], int(conf['port_ars']) )
+    server_address = (conf['ip_ars'], int(conf['port_ars']))
     try:
         sock.connect(server_address)
         sock.sendall(EncodedString.encode('ascii'))
@@ -122,9 +125,10 @@ def send_agent_data(datastrdata, conf):
         logging.getLogger().debug("send to ARS event")
     except Exception as e:
         logging.getLogger().error(str(e))
-        #traceback.print_exc(file=sys.stdout)
+        # traceback.print_exc(file=sys.stdout)
     finally:
         sock.close()
+
 
 def pathlist(watch):
     pathlistrep = []
@@ -134,11 +138,12 @@ def pathlist(watch):
 
 
 def listdirfile(rootdir):
-    file_paths=[]
+    file_paths = []
     for folder, subs, files in os.walk(rootdir):
         dd = [os.path.join(folder, x) for x in subs]
         file_paths = file_paths + dd
     return file_paths
+
 
 class MyEventHandler(pyinotify.ProcessEvent):
     def __init__(self, config, wm, mask):
@@ -147,10 +152,10 @@ class MyEventHandler(pyinotify.ProcessEvent):
         self.mask = mask
 
     def msg_structure(self):
-        return { "action" : "notifysyncthing",
-                 #"sessionid" : getRandomName(6, "syncthing"),
-                 "data" : ""
-        }
+        return {"action": "notifysyncthing",
+                # "sessionid" : getRandomName(6, "syncthing"),
+                "data": ""
+                }
 
     def process_IN_ACCESS(self, event):
         pass
@@ -174,11 +179,14 @@ class MyEventHandler(pyinotify.ProcessEvent):
             difffile = []
             datasend = self.msg_structure()
             difffile.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "MotifyFile"  : event.pathname,
-                                "notifydir" : difffile ,
-                                "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+            datasend['data'] = {
+                "MotifyFile": event.pathname,
+                "notifydir": difffile,
+                "packageid": os.path.basename(
+                    os.path.dirname(
+                        event.pathname))}
             datasendstr = json.dumps(datasend, indent=4)
-            logging.getLogger().debug("Msg : %s"% datasendstr)
+            logging.getLogger().debug("Msg : %s" % datasendstr)
             send_agent_data(datasendstr, self.config)
             #send_agent_data("Copie de fichier :", self.config)
 
@@ -189,11 +197,14 @@ class MyEventHandler(pyinotify.ProcessEvent):
         difffile = []
         datasend = self.msg_structure()
         difffile.append(os.path.dirname(event.pathname))
-        datasend['data'] = { "difffile"  : event.pathname,
-                             "notifydir" : difffile ,
-                             "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+        datasend['data'] = {
+            "difffile": event.pathname,
+            "notifydir": difffile,
+            "packageid": os.path.basename(
+                os.path.dirname(
+                    event.pathname))}
         datasendstr = json.dumps(datasend, indent=4)
-        logging.getLogger().debug("Msg : %s"% datasendstr)
+        logging.getLogger().debug("Msg : %s" % datasendstr)
         send_agent_data(datasendstr, self.config)
 
     def process_IN_DELETE(self, event):
@@ -201,25 +212,30 @@ class MyEventHandler(pyinotify.ProcessEvent):
         datasend = self.msg_structure()
         if event.dir:
             disupp.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "suppdir" : event.pathname,
-                                 "notifydir" : disupp,
-                                 "packageid" : os.path.basename(event.pathname)}
+            datasend['data'] = {"suppdir": event.pathname,
+                                "notifydir": disupp,
+                                "packageid": os.path.basename(event.pathname)}
             datasendstr = json.dumps(datasend, indent=4)
         else:
             return
             disupp.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "suppfile" : event.pathname,
-                                 "notifydir" : disupp ,
-                                "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+            datasend['data'] = {
+                "suppfile": event.pathname,
+                "notifydir": disupp,
+                "packageid": os.path.basename(
+                    os.path.dirname(
+                        event.pathname))}
             datasendstr = json.dumps(datasend, indent=4)
-        logging.getLogger().debug("Msg : %s"% datasendstr)
+        logging.getLogger().debug("Msg : %s" % datasendstr)
         send_agent_data(datasendstr, self.config)
 
     def process_IN_CREATE(self, event):
         diadd = []
         datasend = self.msg_structure()
-        listdirectory = [ x for x in self.config['filelist'] if os.path.isdir(x)]
-        startlistdirectory = [ x for x in self.config['filelist'] if os.path.isdir(x)]
+        listdirectory = [
+            x for x in self.config['filelist'] if os.path.isdir(x)]
+        startlistdirectory = [
+            x for x in self.config['filelist'] if os.path.isdir(x)]
         for t in startlistdirectory:
             listdirectory = listdirectory + listdirfile(t)
         listdirectory = list(set(listdirectory))
@@ -229,38 +245,47 @@ class MyEventHandler(pyinotify.ProcessEvent):
                 if z not in listexistwatch:
                     self.wm.add_watch(z, self.mask, rec=True)
                     diadd.append(z)
-            datasend['data'] = { "adddir"    : diadd,
-                                 "notifydir" : diadd,
-                                 "packageid" : os.path.basename(diadd[0])}
+            datasend['data'] = {"adddir": diadd,
+                                "notifydir": diadd,
+                                "packageid": os.path.basename(diadd[0])}
             datasendstr = json.dumps(datasend, indent=4)
         else:
             return
             diadd.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "addfile"    : event.pathname,
-                                 "notifydir" : diadd,
-                                 "packageid" : os.path.basename(os.path.dirname(event.pathname))}
+            datasend['data'] = {
+                "addfile": event.pathname,
+                "notifydir": diadd,
+                "packageid": os.path.basename(
+                    os.path.dirname(
+                        event.pathname))}
             datasendstr = json.dumps(datasend, indent=4)
-        logging.getLogger().debug("Msg : %s"% datasendstr)
+        logging.getLogger().debug("Msg : %s" % datasendstr)
         send_agent_data(datasendstr, self.config)
+
 
 class watchingfilepartage:
     def __init__(self, config):
         self.config = config
         logging.getLogger().info("install inotify")
-        listdirectory = [ x for x in config['filelist'] if os.path.isdir(x)]
-        startlistdirectory = [ x for x in config['filelist'] if os.path.isdir(x)]
+        listdirectory = [x for x in config['filelist'] if os.path.isdir(x)]
+        startlistdirectory = [
+            x for x in config['filelist'] if os.path.isdir(x)]
         for t in startlistdirectory:
             listdirectory = listdirectory + listdirfile(t)
         listdirectory = list(set(listdirectory))
-        self.wm = pyinotify.WatchManager() # Watch Manager
+        self.wm = pyinotify.WatchManager()  # Watch Manager
         self.mask = pyinotify.IN_CREATE | \
-                        pyinotify.IN_MODIFY | \
-                            pyinotify.IN_DELETE |  pyinotify.IN_MOVED_TO #| pyinotify.IN_CLOSE_WRITE
+            pyinotify.IN_MODIFY | \
+            pyinotify.IN_DELETE | pyinotify.IN_MOVED_TO  # | pyinotify.IN_CLOSE_WRITE
 
         self.handler = MyEventHandler(self.config, self.wm, self.mask)
-        if config['excludelist'] != None:
+        if config['excludelist'] is not None:
             excl = pyinotify.ExcludeFilter(config['excludelist'])
-            self.wm.add_watch(listdirectory, self.mask, rec=True, exclude_filter=excl)
+            self.wm.add_watch(
+                listdirectory,
+                self.mask,
+                rec=True,
+                exclude_filter=excl)
         else:
             self.wm.add_watch(listdirectory, self.mask, rec=True)
 
@@ -271,10 +296,11 @@ class watchingfilepartage:
     def stop(self):
         self.notifier.stop()
 
+
 if __name__ == '__main__':
     logging.getLogger().info("Start package watching server")
     inifile = "/etc/pulse-xmpp-agent/package_watching.ini"
-    pidfile ="/var/run/package_watching.pid"
+    pidfile = "/var/run/package_watching.pid"
     cp = None
     try:
         opts, suivarg = getopt.getopt(sys.argv[1:], "f:dh")
@@ -288,10 +314,12 @@ if __name__ == '__main__':
             logging.getLogger().info("logger mode debug")
             daemonize = False
             logging.getLogger().setLevel(logging.DEBUG)
-            print("pid file: %d\n"%os.getpid())
-            print("kill -9 %s"%os.getpid())
+            print("pid file: %d\n" % os.getpid())
+            print("kill -9 %s" % os.getpid())
         elif option == "-h":
-            print("Configure in file '%s' \n[network_agent]\nip_ars=???\nport_ars=???"%inifile)
+            print(
+                "Configure in file '%s' \n[network_agent]\nip_ars=???\nport_ars=???" %
+                inifile)
             print("\t[-d <mode debug>]\n\t[-d] debug mode no daemonized")
             sys.exit(0)
 
@@ -320,42 +348,45 @@ if __name__ == '__main__':
             pid = os.fork()
             if pid > 0:
                 # exit from second parent, print eventual PID before
-                #print "Daemon PID %d" % pid
-                #print "kill -9 $(cat %s)"%pidfile
+                # print "Daemon PID %d" % pid
+                # print "kill -9 $(cat %s)"%pidfile
                 logging.getLogger().info("Daemon PID %d" % pid)
                 os.seteuid(0)
                 os.setegid(0)
                 #logging.getLogger().info("PID file" + str(pid) + " > " + pidfile)
                 #logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
                 #os.system("echo " + str(pid) + " > " + pidfile)
-                #print "echo " + str(pid) + " > " + pidfile
+                # print "echo " + str(pid) + " > " + pidfile
                 sys.exit(0)
         except OSError as e:
             writeStdErr("fork #2 failed: %d (%s)" % (e.errno, e.strerror))
-            print("fork #2 failed: %d (%s)" % (e.errno, e.strerror), file=sys.stderr)
+            print("fork #2 failed: %d (%s)" %
+                  (e.errno, e.strerror), file=sys.stderr)
             sys.exit(1)
     else:
         logging.getLogger().setLevel(logging.DEBUG)
 
     try:
         logging.getLogger().info("start program")
-        logging.getLogger().info("----------------------------------------------------------------")
+        logging.getLogger().info(
+            "----------------------------------------------------------------")
         logging.getLogger().info(conf)
         pidrun = os.getpid()
         os.system("echo " + str(pidrun) + " > " + pidfile)
         print("If in debug mode, you can stop the program by ussing CTRL+Z then one of")
         print("the following commands")
-        print("kill -9 $(cat %s)"%pidfile)
+        print("kill -9 $(cat %s)" % pidfile)
         print("or")
         print("killall -9 package_watching.py")
         print("or")
         print("kill %1")
         print("or")
-        print("kill -9 %s"%os.getpid())
+        print("kill -9 %s" % os.getpid())
         logging.getLogger().info("PID file : " + str(pidrun) + " in file " + pidfile)
-        logging.getLogger().info("kill -9 $(cat %s)"%pidfile)
+        logging.getLogger().info("kill -9 $(cat %s)" % pidfile)
         logging.getLogger().info("killall package_watching.py")
-        logging.getLogger().info("----------------------------------------------------------------")
+        logging.getLogger().info(
+            "----------------------------------------------------------------")
         a = watchingfilepartage(conf)
         a.run()
     except KeyboardInterrupt:

@@ -36,8 +36,8 @@ logger = logging.getLogger()
 
 class manageschedulerdeploy:
 
-    def __init__(self, namebase = "BDtimedeploy"):
-        name_basecmd     = namebase + 'cmddb'
+    def __init__(self, namebase="BDtimedeploy"):
+        name_basecmd = namebase + 'cmddb'
         name_basesession = namebase + 'sessiondb'
         self.openbool = False
         path_bd = self.bddir()
@@ -54,11 +54,13 @@ class manageschedulerdeploy:
 
     def openbase(self):
         if sys.platform.startswith('darwin'):
-            self.dbcmdscheduler     = plyvel.DB(self.name_basesession, create_if_missing=True)
-            self.dbsessionscheduler = plyvel.DB(self.name_basecmd, create_if_missing=True)
+            self.dbcmdscheduler = plyvel.DB(
+                self.name_basesession, create_if_missing=True)
+            self.dbsessionscheduler = plyvel.DB(
+                self.name_basecmd, create_if_missing=True)
         else:
-            self.dbcmdscheduler     = bsddb.btopen(self.name_basecmd , 'c')
-            self.dbsessionscheduler = bsddb.btopen(self.name_basesession , 'c')
+            self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, 'c')
+            self.dbsessionscheduler = bsddb.btopen(self.name_basesession, 'c')
 
     def closebase(self):
         self.dbcmdscheduler.close()
@@ -66,9 +68,14 @@ class manageschedulerdeploy:
 
     def bddir(self):
         if sys.platform.startswith('linux'):
-            return os.path.join(Env.user_dir(),"BDDeploy")
+            return os.path.join(Env.user_dir(), "BDDeploy")
         elif sys.platform.startswith('win'):
-            return os.path.join(os.environ["ProgramFiles"], "Pulse","var","tmp","BDDeploy")
+            return os.path.join(
+                os.environ["ProgramFiles"],
+                "Pulse",
+                "var",
+                "tmp",
+                "BDDeploy")
         elif sys.platform.startswith('darwin'):
             return os.path.join("/opt", "Pulse", "var", "tmp", "BDDeploy")
         else:
@@ -78,7 +85,8 @@ class manageschedulerdeploy:
         sessionid = str(sessionid)
         self.openbase()
         if sys.platform.startswith('darwin'):
-            self.dbsessionscheduler.put(bytearray(sessionid),bytearray(objsession))
+            self.dbsessionscheduler.put(
+                bytearray(sessionid), bytearray(objsession))
         else:
             self.dbsessionscheduler[sessionid] = objsession
             self.dbsessionscheduler.sync()
@@ -91,7 +99,7 @@ class manageschedulerdeploy:
         if sys.platform.startswith('darwin'):
             data = self.dbsessionscheduler.get(bytearray(sessionid))
             if data is None:
-                data =""
+                data = ""
         else:
             if str(sessionid) in self.dbsessionscheduler:
                 data = self.dbsessionscheduler[sessionid]

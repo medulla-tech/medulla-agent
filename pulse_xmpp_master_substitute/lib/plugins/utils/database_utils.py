@@ -36,6 +36,7 @@ def grepv(string, list):
 def encode_utf8(self, s):
     return s
 
+
 def encode_latin1(self, s):
     try:
         return s.decode('utf8')
@@ -47,14 +48,17 @@ def encode_latin1(self, s):
         # so just return the string
         return s
 
+
 def decode_utf8(self, s):
     return s
+
 
 def decode_latin1(self, s):
     try:
         return s.decode('latin-1')
     except exceptions.UnicodeEncodeError:
         return s
+
 
 class DbTOA(object):
     def to_a(self):
@@ -66,11 +70,14 @@ class DbTOA(object):
                 ret.append([i, j])
         return ret
 
+
 def fromUUID(uuid):
     return int(uuid.replace('UUID', ''))
 
+
 def toUUID(uuid):
     return "UUID%s" % (str(uuid))
+
 
 def setUUID(obj):
     if hasattr(obj, 'id'):
@@ -78,5 +85,5 @@ def setUUID(obj):
     elif hasattr(obj, 'ID'):
         setattr(obj, 'uuid', toUUID(obj.ID))
     else:
-        logging.getLogger().error("Can't get id for %s => no UUID"%(str(obj)))
+        logging.getLogger().error("Can't get id for %s => no UUID" % (str(obj)))
     return obj

@@ -31,7 +31,10 @@ from lib.plugins.xmpp import XmppMasterDatabase
 import traceback
 import logging
 
-plugin = {"VERSION": "1.0", "NAME": "machineexecutionscheduler", "TYPE": "substitute"}
+plugin = {
+    "VERSION": "1.0",
+    "NAME": "machineexecutionscheduler",
+    "TYPE": "substitute"}
 
 """
 #eg : data plugin received
@@ -74,8 +77,9 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
                                 mtype='chat')
     except Exception as e:
         print("Error in plugin %s" % str(e))
-        logger.error("\n%s"%(traceback.format_exc()))
-        advanced['actionscheduler'] = "error"  # abandonmentdeploy, run or pause
+        logger.error("\n%s" % (traceback.format_exc()))
+        # abandonmentdeploy, run or pause
+        advanced['actionscheduler'] = "error"
         datasend = {
             'action': data['fromaction'],
             'sessionid': sessionid,

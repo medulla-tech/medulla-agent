@@ -30,6 +30,7 @@ from lib.utils import simplecommand
 
 logger = logging.getLogger()
 
+
 class reverse_port_ssh:
 
     def __init__(self):
@@ -54,21 +55,21 @@ class reverse_port_ssh:
     def reverse_exist(self, number_port):
         cmd = 'netstat -an | egrep "tcp.*:%s.*LISTEN"' % number_port
         res = simplecommand(cmd)
-        if res['code'] == 0 and res['result'] :
+        if res['code'] == 0 and res['result']:
             return True
         return False
 
     def reverse_using(self, number_port):
         cmd = 'netstat -an | egrep "tcp.*:%s.*ESTABLISHED"' % number_port
         res = simplecommand(cmd)
-        if res['code'] == 0 and res['result'] :
+        if res['code'] == 0 and res['result']:
             return True
         return False
 
     def pid_reverse(self, number_port):
         cmd = 'lsof -t -i :%s -s tcp:LISTEN' % number_port
         res = simplecommand(cmd)
-        if res['code'] == 0 and res['result'] :
+        if res['code'] == 0 and res['result']:
             return int(res['result'][0].strip(" \n\r\t"))
         return 0
 
@@ -76,7 +77,7 @@ class reverse_port_ssh:
         # verify_ port user.
         cmd = 'lsof -t -i :%s' % number_port
         res = simplecommand(cmd)
-        if res['code'] == 0 and len(res['result']) < 2 :
+        if res['code'] == 0 and len(res['result']) < 2:
             # clean result
             if len(res['result']) == 1:
                 self.stop_reverse(res['result'][0].strip(" \n\r\t"))
@@ -99,7 +100,7 @@ class reverse_port_ssh:
 
     def list_port_reverse_ssh(self):
         return [x for x in os.listdir(self.directoryreverseport)
-            if os.path.isfile("%s/%s" % (self.directoryreverseport, x))]
+                if os.path.isfile("%s/%s" % (self.directoryreverseport, x))]
 
     def terminate_reverse_ssh_not_using(self):
         for numberport in self.list_port_reverse_ssh():

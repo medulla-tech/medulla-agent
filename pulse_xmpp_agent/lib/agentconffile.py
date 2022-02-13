@@ -150,11 +150,12 @@ def rotation_file(namefile, suffixe=""):
             namefile: name file rotation
 
     """
-    if suffixe != "": suffixe = "_" + suffixe
-    for x in range(5,0,-1):
-        src = "%s%s_%s"%(namefile,suffixe, x)
-        dest = "%s%s_%s"%(namefile,suffixe, x+1)
-        if  os.path.isfile(src):
+    if suffixe != "":
+        suffixe = "_" + suffixe
+    for x in range(5, 0, -1):
+        src = "%s%s_%s" % (namefile, suffixe, x)
+        dest = "%s%s_%s" % (namefile, suffixe, x + 1)
+        if os.path.isfile(src):
             shutil.copyfile(src, dest)
         if x == 1:
             shutil.copyfile(namefile, dest)

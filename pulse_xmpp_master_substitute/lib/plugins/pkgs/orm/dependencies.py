@@ -27,9 +27,11 @@ import logging
 """ Class to map pkgs.dependencies to SA
 """
 
+
 class Dependencies(object):
     """ Mapping between msc.bundle and SA
     """
+
     def getId(self):
         if self.id is not None:
             return self.id
@@ -56,7 +58,7 @@ class Dependencies(object):
             Dict of elements contained into the object.
         """
         return {
-            'id' : self.getId(),
+            'id': self.getId(),
             'uuid_package': self.getUuid_package(),
             'uuid_dependency': self.getUuid_dependency()
         }

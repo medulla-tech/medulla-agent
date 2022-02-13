@@ -18,7 +18,8 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# file pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadpluginlistversion.py
+# file
+# pulse_xmpp_master_substitute/pluginsmastersubstitute/plugin_loadpluginlistversion.py
 
 import base64
 import json
@@ -34,15 +35,20 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION" : "1.1", "NAME" : "loadpluginlistversion", "TYPE" : "substitute", "LOAD" : "START" }
+plugin = {
+    "VERSION": "1.1",
+    "NAME": "loadpluginlistversion",
+    "TYPE": "substitute",
+    "LOAD": "START"}
 
-def action( objectxmpp, action, sessionid, data, msg, dataerreur):
-    logger.debug("=====================================================")
-    logger.debug("call %s from %s"%(plugin, msg['from']))
-    logger.debug("=====================================================")
-    #lit fichiers de configuration pour le plugin si pas charge.
 
-    compteurcallplugin = getattr(objectxmpp, "num_call%s"%action)
+def action(objectxmpp, action, sessionid, data, msg, dataerreur):
+    logger.debug("=====================================================")
+    logger.debug("call %s from %s" % (plugin, msg['from']))
+    logger.debug("=====================================================")
+    # lit fichiers de configuration pour le plugin si pas charge.
+
+    compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
 
     if compteurcallplugin == 0:
         read_conf_load_plugin_list_version(objectxmpp)
@@ -50,8 +56,13 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
                             objectxmpp.reload_plugins_interval,
                             objectxmpp.loadPluginList,
                             repeat=True)
-        logger.debug("status plugin : %s"%hasattr(objectxmpp, "loadPluginList"))
+        logger.debug(
+            "status plugin : %s" %
+            hasattr(
+                objectxmpp,
+                "loadPluginList"))
         objectxmpp.loadPluginList()
+
 
 def read_conf_load_plugin_list_version(objectxmpp):
     """
@@ -61,13 +72,18 @@ def read_conf_load_plugin_list_version(objectxmpp):
     objectxmpp.config_loadpluginlistversion = True
 
     namefichierconf = plugin['NAME'] + ".ini"
-    pathfileconf = os.path.join( objectxmpp.config.pathdirconffile, namefichierconf )
+    pathfileconf = os.path.join(
+        objectxmpp.config.pathdirconffile,
+        namefichierconf)
     if not os.path.isfile(pathfileconf):
-        logger.error("plugin %s\nConfiguration file  missing\n  %s" \
-            "\neg conf:\n[parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"%(plugin['NAME'], pathfileconf))
-        logger.warning("default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/")
+        logger.error(
+            "plugin %s\nConfiguration file  missing\n  %s"
+            "\neg conf:\n[parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/" %
+            (plugin['NAME'], pathfileconf))
+        logger.warning(
+            "default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
-        objectxmpp.reload_plugins_interval=1000
+        objectxmpp.reload_plugins_interval = 1000
     else:
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
@@ -75,22 +91,29 @@ def read_conf_load_plugin_list_version(objectxmpp):
             Config.read(pathfileconf + ".local")
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
         if Config.has_option("parameters", "dirpluginlist"):
-            objectxmpp.dirpluginlist = Config.get('parameters', 'dirpluginlist')
+            objectxmpp.dirpluginlist = Config.get(
+                'parameters', 'dirpluginlist')
 
         if Config.has_option("parameters", "reload_plugins_interval"):
-            objectxmpp.reload_plugins_interval = Config.getint('parameters', 'reload_plugins_interval')
+            objectxmpp.reload_plugins_interval = Config.getint(
+                'parameters', 'reload_plugins_interval')
         else:
             objectxmpp.reload_plugins_interval = 1000
-    logger.debug("directory base plugins is %s"% objectxmpp.dirpluginlist)
-    logger.debug("reload plugins interval%s"%objectxmpp.reload_plugins_interval)
+    logger.debug("directory base plugins is %s" % objectxmpp.dirpluginlist)
+    logger.debug(
+        "reload plugins interval%s" %
+        objectxmpp.reload_plugins_interval)
     # loadPluginList function definie dynamiquement
     objectxmpp.file_deploy_plugin = []
     objectxmpp.loadPluginList = types.MethodType(loadPluginList, objectxmpp)
     ##objectxmpp.restartmachineasynchrone = types.MethodType(restartmachineasynchrone, objectxmpp)
     #objectxmpp.restartAgent = types.MethodType(restartAgent, objectxmpp)
-    objectxmpp.remoteinstallPlugin = types.MethodType(remoteinstallPlugin, objectxmpp)
+    objectxmpp.remoteinstallPlugin = types.MethodType(
+        remoteinstallPlugin, objectxmpp)
     objectxmpp.deployPlugin = types.MethodType(deployPlugin, objectxmpp)
-    objectxmpp.plugin_loadpluginlistversion = types.MethodType(plugin_loadpluginlistversion, objectxmpp)
+    objectxmpp.plugin_loadpluginlistversion = types.MethodType(
+        plugin_loadpluginlistversion, objectxmpp)
+
 
 def loadPluginList(self):
     """ charges les informations des plugins 'nom plugins et version' pour
@@ -99,7 +122,8 @@ def loadPluginList(self):
     logger.debug("Load and Verify base plugin")
     self.plugindata = {}
     self.plugintype = {}
-    for element in [x for x in os.listdir(self.dirpluginlist) if x[-3:] == ".py" and x[:7] == "plugin_"]:
+    for element in [x for x in os.listdir(
+            self.dirpluginlist) if x[-3:] == ".py" and x[:7] == "plugin_"]:
         element_name = os.path.join(self.dirpluginlist, element)
         # verify syntax error for plugin python
         # we do not deploy a plugin with syntax error.
@@ -118,8 +142,12 @@ def loadPluginList(self):
                         self.plugintype[plugin['NAME']] = "machine"
                     break
         else:
-            logger.error("As long as the ERROR SYNTAX is not fixed, the plugin [%s] is ignored." % os.path.join(
-                self.dirpluginlist, element))
+            logger.error(
+                "As long as the ERROR SYNTAX is not fixed, the plugin [%s] is ignored." %
+                os.path.join(
+                    self.dirpluginlist,
+                    element))
+
 
 def remoteinstallPlugin(self):
     """
@@ -131,15 +159,17 @@ def remoteinstallPlugin(self):
         if XmppMasterDatabase().getPresencejid(plugmachine['dest']):
             if plugmachine['type'] == 'deployPlugin':
                 logger.debug("install plugin normal %s to %s" %
-                                (plugmachine['plugin'], plugmachine['dest']))
+                             (plugmachine['plugin'], plugmachine['dest']))
                 self.deployPlugin(plugmachine['dest'], plugmachine['plugin'])
                 restart_machine.add(plugmachine['dest'])
             elif plugmachine['type'] == 'deploySchedulingPlugin':
                 # It is the updating code for the scheduling plugins.
                 pass
     for jidmachine in restart_machine:  # Itération pour chaque élément
-        # call one function by message to processing asynchronous tasks and can add a tempo on restart action.
+        # call one function by message to processing asynchronous tasks and can
+        # add a tempo on restart action.
         self.event('restartmachineasynchrone', jidmachine)
+
 
 def deployPlugin(self, jid, plugin):
     content = ''
@@ -170,11 +200,12 @@ def deployPlugin(self, jid, plugin):
                           mbody=json.dumps(fichierdata),
                           mtype='chat')
     except Exception:
-        logger.error("\n%s"%(traceback.format_exc()))
+        logger.error("\n%s" % (traceback.format_exc()))
+
 
 def plugin_loadpluginlistversion(self, msg, data):
-    #function de rappel dans boucle de message.
-    #cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
+    # function de rappel dans boucle de message.
+    # cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
     # Show plugins information logs
     restartAgent = False
     for k, v in self.plugindata.items():
@@ -192,12 +223,14 @@ def plugin_loadpluginlistversion(self, msg, data):
                 deploy = False
         if deploy:
             try:
-                logger.info("update %s version %s to version %s on Agent " % (k,
-                                                                              data['plugin'][k],
-                                                                              v))
+                logger.info(
+                    "update %s version %s to version %s on Agent " %
+                    (k, data['plugin'][k], v))
             except KeyError:
-                logger.info("install %s version %s to version on Agent " % (k,v))
+                logger.info(
+                    "install %s version %s to version on Agent " %
+                    (k, v))
             self.file_deploy_plugin.append(
                 {'dest': msg['from'], 'plugin': k, 'type': 'deployPlugin'})
-            #return True
+            # return True
     self.remoteinstallPlugin()

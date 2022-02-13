@@ -33,9 +33,15 @@ import traceback
 
 def clean_session(folder_session):
     tt = time.time()
-    SessionFiles = [os.path.join(folder_session, f) for f in listdir(folder_session) if len(f) == 25 and os.path.isfile(os.path.join(folder_session, f)) ]
+    SessionFiles = [
+        os.path.join(
+            folder_session,
+            f) for f in listdir(folder_session) if len(f) == 25 and os.path.isfile(
+            os.path.join(
+                folder_session,
+                f))]
     for File in SessionFiles:
-        creation =  os.path.getmtime(File)
+        creation = os.path.getmtime(File)
         try:
             with open(File) as json_data:
                 data_dict = json.load(json_data)
@@ -43,9 +49,10 @@ def clean_session(folder_session):
                 os.remove(File)
             else:
                 pass
-        except:
+        except BaseException:
             os.remove(File)
             errorstr = "%s" % traceback.format_exc()
+
 
 class Session(Exception):
     pass
@@ -75,7 +82,7 @@ class sessiondatainfo:
         self.eventend = eventend
         self.handlefunc = handlefunc
         self.pathfile = pathfile
-        if pathfile == None:
+        if pathfile is None:
             raise Sessionpathsauvemissing
         logging.getLogger().debug("Creation manager session")
 
@@ -104,7 +111,9 @@ class sessiondatainfo:
                 json.dump(session, f, indent=4)
             return True
         except Exception as e:
-            logging.getLogger().error("We encountered an issue while creating the session %s" % namefilesession)
+            logging.getLogger().error(
+                "We encountered an issue while creating the session %s" %
+                namefilesession)
             logging.getLogger().error("The error is %s" % str(e))
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
@@ -116,8 +125,10 @@ class sessiondatainfo:
         logging.getLogger().debug("UPDATE SESSION")
         try:
             session = loadjsonfile(namefilesession)
-        except :
-            logging.getLogger().error("update session [unable to read the list of session files] del fichier" %namefilesession)
+        except BaseException:
+            logging.getLogger().error(
+                "update session [unable to read the list of session files] del fichier" %
+                namefilesession)
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
             return False
@@ -154,9 +165,9 @@ class sessiondatainfo:
 
     def callend(self):
         logging.getLogger().debug("function signal end")
-        if self.handlefunc != None:
+        if self.handlefunc is not None:
             self.handlefunc(self.datasession)
-        if self.eventend != None:
+        if self.eventend is not None:
             self.eventend.set()
 
     def __repr__(self):
@@ -220,8 +231,10 @@ class session:
     def removefilesessionifnotsignal(self, namefilesession):
         try:
             session = loadjsonfile(namefilesession)
-        except :
-            logging.getLogger().error("reading file session error : del session file : %s" %namefilesession)
+        except BaseException:
+            logging.getLogger().error(
+                "reading file session error : del session file : %s" %
+                namefilesession)
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
             return False
@@ -239,7 +252,7 @@ class session:
             return False
 
     def loadsessions(self):
-        try :
+        try:
             listfilesession = [
                 x for x in glob.glob(
                     os.path.join(
@@ -254,7 +267,7 @@ class session:
                 try:
                     objsession = self.sessionfromsessiondata(
                         os.path.basename(filesession))
-                    if objsession == None:
+                    if objsession is None:
                         raise SessionkeyError
                     objsession.pathfile = self.dirsavesession
                     objsession.updatesessionfromfile()
@@ -295,11 +308,11 @@ class session:
             i.removesessionfile()
 
     def __aff__(self, x):
-        if x != None:
+        if x is not None:
             print(x)
 
     def __affid__(self, x):
-        if x != None:
+        if x is not None:
             print(x.sessionid)
 
     def len(self):
@@ -332,7 +345,7 @@ class session:
                 self.sessiondata[i].removesessionfile()
                 self.sessiondata.remove(self.sessiondata[i])
                 break
-        if objectxmpp != None:
+        if objectxmpp is not None:
             objectxmpp.eventmanage.clear(sessionid)
 
     def clearnoevent(self, sessionid):
@@ -350,7 +363,7 @@ class session:
 
     def sessionevent(self, sessionid):
         for i in self.sessiondata:
-            if i.sessionid == sessionid and i.eventend != None:
+            if i.sessionid == sessionid and i.eventend is not None:
                 return i
         return None
 

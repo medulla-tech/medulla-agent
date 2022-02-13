@@ -51,6 +51,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     except Exception:
         pass
 
+
 def check_if_binary_ok():
     if sys.platform.startswith('win'):
         # We check if we have the Regedit entry
@@ -67,7 +68,8 @@ def check_if_binary_ok():
         if os.path.isfile(sshdaemon_bin_path):
             logger.debug("OpenSSH is correctly installed. Nothing to do")
         else:
-            logger.error("Something went wrong, we need to reinstall the component.")
+            logger.error(
+                "Something went wrong, we need to reinstall the component.")
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
@@ -77,14 +79,18 @@ def check_if_binary_ok():
             else:
                 logger.debug("We failed to reinitialize the registry entry.")
 
+
 def check_if_service_is_running():
     if sys.platform.startswith('win'):
         is_ssh_started = utils.simplecommand("sc.exe query sshdaemon")
         if is_ssh_started['code'] == 0:
-            state = [x.strip() for x in is_ssh_started['result'][3].split(' ') if x != ""][3]
+            state = [x.strip() for x in is_ssh_started['result']
+                     [3].split(' ') if x != ""][3]
             if state == "STOPPED":
-                logger.debug("The OpenSSH does not seems started. We start it.")
+                logger.debug(
+                    "The OpenSSH does not seems started. We start it.")
                 utils.simplecommand("sc.exe start sshdaemon")
+
 
 def checkopensshversion():
     if sys.platform.startswith('win'):
@@ -98,24 +104,28 @@ def checkopensshversion():
             opensshversion = '0.0'
     return opensshversion
 
+
 def updateopensshversion(version):
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % OPENSSHVERSION
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % OPENSSHVERSION
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("we successfully changed the version of OpenSSH to version %s" % OPENSSHVERSION)
+            logger.info(
+                "we successfully changed the version of OpenSSH to version %s" %
+                OPENSSHVERSION)
 
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse OpenSSH" /f'
+                '/v "DisplayName" /t REG_SZ  /d "Pulse OpenSSH" /f'
             utils.simplecommand(cmdDisplay)
 
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse SSH" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+
 
 def configure_ssh(xmppobject):
     Used_ssh_port = "22"
@@ -127,7 +137,8 @@ def configure_ssh(xmppobject):
     restart_service = False
 
     # Now we customize the config file
-    sshd_config_file = utils.file_get_contents(os.path.join(programdata_path, "sshd_config"))
+    sshd_config_file = utils.file_get_contents(
+        os.path.join(programdata_path, "sshd_config"))
     sshport = "Port %s" % Used_ssh_port
 
     if "#Port" in sshd_config_file or sshport not in sshd_config_file:
@@ -135,47 +146,63 @@ def configure_ssh(xmppobject):
         restart_service = True
 
     if "#PubkeyAuthentication" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("#PubkeyAuthentication yes", "PubkeyAuthentication yes")
+        sshd_config_file = sshd_config_file.replace(
+            "#PubkeyAuthentication yes", "PubkeyAuthentication yes")
         restart_service = True
 
     if "#PasswordAuthentication" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("#PasswordAuthentication yes", "PasswordAuthentication no")
+        sshd_config_file = sshd_config_file.replace(
+            "#PasswordAuthentication yes", "PasswordAuthentication no")
         restart_service = True
 
     if "#PidFile" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("#PidFile /var/run/sshd.pid", "PidFile C:\Windows\Temp\sshd.pid")
+        sshd_config_file = sshd_config_file.replace(
+            "#PidFile /var/run/sshd.pid",
+            "PidFile C:\\Windows\\Temp\\sshd.pid")
         restart_service = True
 
     if "AuthorizedKeysFile   .ssh/authorized_keys" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("AuthorizedKeysFile   .ssh/authorized_keys", "AuthorizedKeysFile       $\"${USERDIR}\pulseuser\.ssh\authorized_keys$\"")
+        sshd_config_file = sshd_config_file.replace(
+            "AuthorizedKeysFile   .ssh/authorized_keys",
+            "AuthorizedKeysFile       $\"${USERDIR}\\pulseuser\\.ssh\authorized_keys$\"")
         restart_service = True
 
     if "#SyslogFacility" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("#SyslogFacility AUTH", "SyslogFacility LOCAL0")
+        sshd_config_file = sshd_config_file.replace(
+            "#SyslogFacility AUTH", "SyslogFacility LOCAL0")
         restart_service = True
 
     if "#Match Group administrators" not in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("Match Group administrators", "#Match Group administrators")
+        sshd_config_file = sshd_config_file.replace(
+            "Match Group administrators", "#Match Group administrators")
         restart_service = True
 
     if "#       AuthorizedKeysFile" not in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys", "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
+        sshd_config_file = sshd_config_file.replace(
+            "       AuthorizedKeysFile __PROGRAMDATA__/ssh/administrators_authorized_keys",
+            "#       AuthorizedKeysFile __{PROGRAMDATA}__/ssh/administrators_authorized_keys")
         restart_service = True
 
     if "#GatewayPorts" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("#GatewayPorts no", "GatewayPorts yes")
+        sshd_config_file = sshd_config_file.replace(
+            "#GatewayPorts no", "GatewayPorts yes")
         restart_service = True
 
     if "GatewayPorts no" in sshd_config_file:
-        sshd_config_file = sshd_config_file.replace("GatewayPorts no", "GatewayPorts yes")
+        sshd_config_file = sshd_config_file.replace(
+            "GatewayPorts no", "GatewayPorts yes")
         restart_service = True
 
-    utils.file_put_contents(os.path.join(programdata_path, "sshd_config"), sshd_config_file)
-
+    utils.file_put_contents(
+        os.path.join(
+            programdata_path,
+            "sshd_config"),
+        sshd_config_file)
 
     if restart_service:
         utils.simplecommand("sc stop sshdaemon")
         utils.simplecommand("sc start sshdaemon")
+
 
 def updateopenssh(xmppobject, installed_version):
     Used_ssh_port = "22"
@@ -192,11 +219,14 @@ def updateopenssh(xmppobject, installed_version):
             architecture = 'Win32'
             windows_system = 'System32'
 
-        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
+        pulsedir_path = os.path.join(
+            os.environ["ProgramFiles"], "Pulse", "bin")
         opensshdir_path = os.path.join(os.environ["ProgramFiles"], "OpenSSH")
         sshdaemon_bin_path = os.path.join(opensshdir_path, "sshd.exe")
-        mandriva_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Mandriva", "OpenSSH")
-        nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Nytrio", "OpenSSH")
+        mandriva_sshdir_path = os.path.join(
+            os.environ["ProgramFiles(x86)"], "Mandriva", "OpenSSH")
+        nytrio_sshdir_path = os.path.join(
+            os.environ["ProgramFiles(x86)"], "Nytrio", "OpenSSH")
         windows_tempdir = os.path.join("C:\\", "Windows", "Temp")
         programdata_path = os.path.join("C:\\", "ProgramData", "ssh")
         rsync_dest_folder = os.path.join("C:\\", "Windows", windows_system)
@@ -205,8 +235,11 @@ def updateopenssh(xmppobject, installed_version):
 
         filename = 'OpenSSH-%s.zip' % architecture
         extracted_path = 'OpenSSH-%s' % architecture
-        dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, filename)
-        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, filename)).downloadurl()
+        dl_url = 'http://%s/downloads/win/downloads/%s' % (
+            xmppobject.config.Server, filename)
+        result, txtmsg = utils.downloadfile(
+            dl_url, os.path.join(
+                install_tempdir, filename)).downloadurl()
 
         if result:
             # Download success
@@ -231,12 +264,13 @@ def updateopenssh(xmppobject, installed_version):
                 os.chdir(current_dir)
                 os.rmdir(uninstall_mandriva_ssh)
 
-
             if os.path.isdir(opensshdir_path):
                 try:
                     shutil.rmtree(opensshdir_path)
                 except OSError as e:
-                    logger.debug("Deletion of the directory %s failed, with the error: %s" % (opensshdir_path, e))
+                    logger.debug(
+                        "Deletion of the directory %s failed, with the error: %s" %
+                        (opensshdir_path, e))
                     return
 
             current_dir = os.getcwd()
@@ -245,7 +279,11 @@ def updateopenssh(xmppobject, installed_version):
             openssh_zip_file.extractall()
 
             try:
-                shutil.copytree(os.path.join(install_tempdir, extracted_path), opensshdir_path)
+                shutil.copytree(
+                    os.path.join(
+                        install_tempdir,
+                        extracted_path),
+                    opensshdir_path)
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
                 return
@@ -256,13 +294,17 @@ def updateopenssh(xmppobject, installed_version):
             command_sshdaemon = "sc.exe create sshdaemon binPath= \"%s\" DisplayName= \"Pulse SSH Server\" start= auto" % sshdaemon_bin_path
             utils.simplecommand(command_sshdaemon)
 
-            utils.simplecommand("sc.exe privs sshdaemon SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
+            utils.simplecommand(
+                "sc.exe privs sshdaemon SeAssignPrimaryTokenPrivilege/SeTcbPrivilege/SeBackupPrivilege/SeRestorePrivilege/SeImpersonatePrivilege")
 
             utils.simplecommand("sc start sshdaemon")
             utils.simplecommand("sc stop sshdaemon")
 
             try:
-                shutil.copyfile(os.path.join(opensshdir_path, "sshd_config_default"), os.path.join(programdata_path, "sshd_config"))
+                shutil.copyfile(
+                    os.path.join(
+                        opensshdir_path, "sshd_config_default"), os.path.join(
+                        programdata_path, "sshd_config"))
             except Exception as e:
                 logger.debug("Failed to copy the files:  %s" % e)
                 return
@@ -270,7 +312,9 @@ def updateopenssh(xmppobject, installed_version):
             configure_ssh(xmppobject)
             utils.simplecommand("sc start sshdaemon")
 
-            utils.simplecommand("netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" % Used_ssh_port)
+            utils.simplecommand(
+                "netsh advfirewall firewall add rule name=\"SSH for Pulse\" dir=in action=allow protocol=TCP localport=%s" %
+                Used_ssh_port)
         else:
             # Download error
             logger.error("%s" % txtmsg)
@@ -280,8 +324,11 @@ def updateopenssh(xmppobject, installed_version):
             rsync_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
             rsync_filename = 'rsync.zip'
             rsync_extracted_path = 'rsync'
-            rsync_dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, rsync_filename)
-            rsync_result, rsync_txtmsg = utils.downloadfile(rsync_dl_url, os.path.join(rsync_tempdir, rsync_filename)).downloadurl()
+            rsync_dl_url = 'http://%s/downloads/win/downloads/%s' % (
+                xmppobject.config.Server, rsync_filename)
+            rsync_result, rsync_txtmsg = utils.downloadfile(
+                rsync_dl_url, os.path.join(
+                    rsync_tempdir, rsync_filename)).downloadurl()
 
             if rsync_result:
                 current_dir = os.getcwd()
@@ -291,11 +338,14 @@ def updateopenssh(xmppobject, installed_version):
 
                 rsync_files = os.listdir(os.path.join(rsync_tempdir, "rsync"))
                 for rsync_file in rsync_files:
-                    full_rsync_file_name = os.path.join(rsync_tempdir, "rsync",rsync_file)
+                    full_rsync_file_name = os.path.join(
+                        rsync_tempdir, "rsync", rsync_file)
 
                     if os.path.isfile(full_rsync_file_name):
                         try:
-                            shutil.copy(full_rsync_file_name, os.path.join(rsync_dest_folder, rsync_file))
+                            shutil.copy(
+                                full_rsync_file_name, os.path.join(
+                                    rsync_dest_folder, rsync_file))
                         except Exception as e:
                             logger.debug("Failed to copy the files:  %s" % e)
                             return

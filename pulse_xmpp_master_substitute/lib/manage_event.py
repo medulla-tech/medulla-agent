@@ -162,13 +162,13 @@ class manage_event:
                         del message['data']['tosucces']
                         del message['data']['toerror']
                         codeerror = int(message['data']['codeerror'])
-                        if recipienterror != None and message['data']['codeerror'] != 0:
+                        if recipienterror is not None and message['data']['codeerror'] != 0:
                             del message['data']['codeerror']
                             self.objectxmpp.send_message(mto=recipienterror,
                                                          mbody=json.dumps(
                                                              message),
                                                          mtype='chat')
-                        elif recipientsucces != None:
+                        elif recipientsucces is not None:
                             del message['data']['codeerror']
                             self.objectxmpp.send_message(mto=recipientsucces,
                                                          mbody=json.dumps(
@@ -195,37 +195,40 @@ class manage_event:
                                             else:
                                                 log_class = "log_err"
 
-                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span class="%s"> '\
-                                                                        '[Process command] errorcode %s for'\
-                                                                        'command : %s <span>' % (event['eventMessageraw']['data']['name'],
-                                                                                                    i['step'],
-                                                                                                    log_class,
-                                                                                                    i['codereturn'],
-                                                                                                    i['command'][:20]),
-                                                                        type = 'deploy',
-                                                                        sessionname = event['eventMessageraw']['sessionid'],
-                                                                        priority = i['step'],
-                                                                        action = "xmpplog",
-                                                                        who = self.objectxmpp.boundjid.bare,
-                                                                        how = "",
-                                                                        why = "",
-                                                                        module = "Deployment | Error | Execution",
-                                                                        date = None ,
-                                                                        fromuser = event['eventMessageraw']['data']['login'],
-                                                                        touser = "")
+                                            self.objectxmpp.xmpplog('[%s]-[%s]:<span class="%s"> '
+                                                                    '[Process command] errorcode %s for'
+                                                                    'command : %s <span>' % (event['eventMessageraw']['data']['name'],
+                                                                                             i['step'],
+                                                                                             log_class,
+                                                                                             i['codereturn'],
+                                                                                             i['command'][:20]),
+                                                                    type='deploy',
+                                                                    sessionname=event['eventMessageraw']['sessionid'],
+                                                                    priority=i['step'],
+                                                                    action="xmpplog",
+                                                                    who=self.objectxmpp.boundjid.bare,
+                                                                    how="",
+                                                                    why="",
+                                                                    module="Deployment | Error | Execution",
+                                                                    date=None,
+                                                                    fromuser=event['eventMessageraw']['data']['login'],
+                                                                    touser="")
                                         else:
-                                            self.objectxmpp.xmpplog('[%s]: %s ' % (i['step'], i['action']),
-                                                                    type = 'deploy',
-                                                                    sessionname = event['eventMessageraw']['sessionid'],
-                                                                    priority = i['step'],
-                                                                    action = "xmpplog",
-                                                                    who = self.objectxmpp.boundjid.bare,
-                                                                    how = "",
-                                                                    why = "",
-                                                                    module = "Deployment | Execution",
-                                                                    date = None ,
-                                                                    fromuser = event['eventMessageraw']['data']['login'],
-                                                                    touser = "")
+                                            self.objectxmpp.xmpplog(
+                                                '[%s]: %s ' %
+                                                (i['step'],
+                                                 i['action']),
+                                                type='deploy',
+                                                sessionname=event['eventMessageraw']['sessionid'],
+                                                priority=i['step'],
+                                                action="xmpplog",
+                                                who=self.objectxmpp.boundjid.bare,
+                                                how="",
+                                                why="",
+                                                module="Deployment | Execution",
+                                                date=None,
+                                                fromuser=event['eventMessageraw']['data']['login'],
+                                                touser="")
                                         break
                         continue
 
@@ -246,9 +249,7 @@ class manage_event:
                                     'command': event['data']['result']['command'],
                                     'codeerror': event['data']['result']['codeerror'],
                                     'Dtypequery': event['data']['Dtypequery'],
-                                    'Devent': event['data']['Devent']
-                                }
-                            }
+                                    'Devent': event['data']['Devent']}}
                         else:
                             msg = {
                                 'ret': event['ret'],
@@ -266,9 +267,11 @@ class manage_event:
                     else:
                         if 'sessionid' in event:
                             event['data'] = dict(
-                                list(self.objectxmpp.session.sessionfromsessiondata(
-                                    event['sessionid']).datasession.items()) +
-                                list(event['data'].items()))
+                                list(
+                                    self.objectxmpp.session.sessionfromsessiondata(
+                                        event['sessionid']).datasession.items()) +
+                                list(
+                                    event['data'].items()))
                         self.addevent(event)
                 except TimeoutError:
                     print("TimeoutError")

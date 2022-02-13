@@ -25,9 +25,11 @@ function for monitoring
 """
 import os
 import psutil
-import datetime, time
+import datetime
+import time
 import socket
 from socket import AF_INET, SOCK_STREAM, SOCK_DGRAM
+
 
 def secs2hours(secs):
     mm, ss = divmod(secs, 60)
@@ -44,9 +46,9 @@ def sensors_battery():
         return result
     result = "charge:     %s%%" % round(batt.percent, 2)
     if batt.power_plugged:
-        va ="status:     %s" % (
+        va = "status:     %s" % (
             "charging" if batt.percent < 100 else "fully charged")
-        vb ="plugged in: yes"
+        vb = "plugged in: yes"
         return result + "\n" + va + "\n" + vb
     else:
         va = "left:       %s" % secs2hours(batt.secsleft)
@@ -60,23 +62,23 @@ def winservices():
     function winservices return string of List all Windows services installed.
     AeLookupSvc (Application Experience)
     status: stopped, start: manual, username: localSystem, pid: None
-    binpath: C:\Windows\system32\svchost.exe -k netsvcs
+    binpath: C:\\Windows\\system32\\svchost.exe -k netsvcs
 
     ALG (Application Layer Gateway Service)
-    status: stopped, start: manual, username: NT AUTHORITY\LocalService, pid: None
-    binpath: C:\Windows\System32\alg.exe
+    status: stopped, start: manual, username: NT AUTHORITY\\LocalService, pid: None
+    binpath: C:\\Windows\\System32\alg.exe
 
     APNMCP (Ask Update Service)
     status: running, start: automatic, username: LocalSystem, pid: 1108
-    binpath: "C:\Program Files (x86)\AskPartnerNetwork\Toolbar\apnmcp.exe"
+    binpath: "C:\\Program Files (x86)\\AskPartnerNetwork\\Toolbar\apnmcp.exe"
 
     AppIDSvc (Application Identity)
-    status: stopped, start: manual, username: NT Authority\LocalService, pid: None
-    binpath: C:\Windows\system32\svchost.exe -k LocalServiceAndNoImpersonation
+    status: stopped, start: manual, username: NT Authority\\LocalService, pid: None
+    binpath: C:\\Windows\\system32\\svchost.exe -k LocalServiceAndNoImpersonation
 
     Appinfo (Application Information)
     status: stopped, start: manual, username: LocalSystem, pid: None
-    binpath: C:\Windows\system32\svchost.exe -k netsvcs
+    binpath: C:\\Windows\\system32\\svchost.exe -k netsvcs
     """
     result = ""
     if os.name != 'nt':
@@ -88,9 +90,6 @@ def winservices():
             info['status'], info['start_type'], info['username'], info['pid'])
         result = result + "binpath: %s" % info['binpath']
     return result
-
-
-
 
 
 PROC_STATUSES_RAW = {
@@ -127,7 +126,7 @@ def clone_ps_aux():
         attrs.append('uids')
         attrs.append('terminal')
     result = templ % ("USER", "PID", "%CPU", "%MEM", "VSZ", "RSS", "TTY",
-                   "STAT", "START", "TIME", "COMMAND")
+                      "STAT", "START", "TIME", "COMMAND")
     for p in psutil.process_iter():
         try:
             pinfo = p.as_dict(attrs, ad_value='')
@@ -165,17 +164,17 @@ def clone_ps_aux():
             memp = pinfo['memory_percent'] and \
                 round(pinfo['memory_percent'], 1) or '?'
             status = PROC_STATUSES_RAW.get(pinfo['status'], pinfo['status'])
-            result = result  + templ % (user[:10],
-                                        pinfo['pid'],
-                                        pinfo['cpu_percent'],
-                                        memp,
-                                        vms,
-                                        rss,
-                                        pinfo.get('terminal', '') or '?',
-                                        status,
-                                        ctime,
-                                        cputime,
-                                        pinfo['name'].strip() or '?')
+            result = result + templ % (user[:10],
+                                       pinfo['pid'],
+                                       pinfo['cpu_percent'],
+                                       memp,
+                                       vms,
+                                       rss,
+                                       pinfo.get('terminal', '') or '?',
+                                       status,
+                                       ctime,
+                                       cputime,
+                                       pinfo['name'].strip() or '?')
     result = result + "\n"
     return result
 
@@ -216,7 +215,7 @@ def disk_usage():
     """
     templ = "%-17s %8s %8s %8s %5s%% %9s  %s\n"
     result = templ % ("Device", "Total", "Used", "Free", "Use ", "Type",
-                   "Mount")
+                      "Mount")
     for part in psutil.disk_partitions(all=False):
         if os.name == 'nt':
             if 'cdrom' in part.opts or part.fstype == '':
@@ -235,6 +234,7 @@ def disk_usage():
             part.mountpoint)
     return result
 
+
 def sensors_fans():
     result = ""
     if not hasattr(psutil, "sensors_fans"):
@@ -247,8 +247,9 @@ def sensors_fans():
     for name, entries in list(fans.items()):
         result = result + name + "\n"
         for entry in entries:
-            result = result + "    %-20s %s RPM\n" % (entry.label or name, entry.current)
-        result = result +"\n"
+            result = result + \
+                "    %-20s %s RPM\n" % (entry.label or name, entry.current)
+        result = result + "\n"
     return result
 
 
@@ -265,7 +266,8 @@ def mmemory():
     virt = psutil.virtual_memory()
     swap = psutil.swap_memory()
     templ = "%-7s %10s %10s %10s %10s %10s %10s\n"
-    result = result + templ % ('', 'total', 'used', 'free', 'shared', 'buffers', 'cache')
+    result = result + templ % ('', 'total', 'used',
+                               'free', 'shared', 'buffers', 'cache')
     result = result + templ % (
         'Mem:',
         int(virt.total / 1024),
@@ -282,7 +284,6 @@ def mmemory():
         '',
         '')
     return result
-
 
 
 af_map = {
@@ -359,7 +360,8 @@ def ifconfig():
                 bytes2human(io.bytes_sent), io.packets_sent, io.errout,
                 io.dropout)
         for addr in addrs:
-            result = result + "\n    %-4s" % af_map.get(addr.family, addr.family)
+            result = result + \
+                "\n    %-4s" % af_map.get(addr.family, addr.family)
             result = result + " address   : %s" % addr.address
             if addr.broadcast:
                 result = result + "\n         broadcast : %s" % addr.broadcast
@@ -370,11 +372,13 @@ def ifconfig():
         result = result + "\n"
     return result
 
-#def clean_screen():
-    #if psutil.POSIX:
-        #os.system('clear')
-    #else:
-        #os.system('cls')
+# def clean_screen():
+    # if psutil.POSIX:
+    # os.system('clear')
+    # else:
+    # os.system('cls')
+
+
 def cpu_num():
     result = ""
     if not hasattr(psutil, "cpu_count"):
@@ -383,37 +387,38 @@ def cpu_num():
     total = psutil.cpu_count()
     result = result + "%s cpu" % total
 
-    #if hasattr(psutil.Process, "cpu_num"):
-        #while True:
-            ## header
-            ##clean_screen()
-            #cpus_percent = psutil.cpu_percent(percpu=True)
-            #for i in range(total):
-                #result = result + "CPU %-6i\n" % i
-            #result = result + "\n"
-            #for percent in cpus_percent:
-                #result = result + "%-10s" % percent
-            #result = result + "\n"
+    # if hasattr(psutil.Process, "cpu_num"):
+    # while True:
+    # header
+    # clean_screen()
+    #cpus_percent = psutil.cpu_percent(percpu=True)
+    # for i in range(total):
+    #result = result + "CPU %-6i\n" % i
+    #result = result + "\n"
+    # for percent in cpus_percent:
+    #result = result + "%-10s" % percent
+    #result = result + "\n"
 
-            ## processes
-            #procs = collections.defaultdict(list)
-            #for p in psutil.process_iter(attrs=['name', 'cpu_num']):
-                #procs[p.info['cpu_num']].append(p.info['name'][:5])
+    # processes
+    #procs = collections.defaultdict(list)
+    # for p in psutil.process_iter(attrs=['name', 'cpu_num']):
+    # procs[p.info['cpu_num']].append(p.info['name'][:5])
 
-            #end_marker = [[] for x in range(total)]
-            #while True:
-                #for num in range(total):
-                    #try:
-                        #pname = procs[num].pop()
-                    #except IndexError:
-                        #pname = ""
-                    #result = result + "%-10s\n" % pname[:10]
-                #result = result + "\n"
-                #if procs.values() == end_marker:
-                    #break
+    #end_marker = [[] for x in range(total)]
+    # while True:
+    # for num in range(total):
+    # try:
+    #pname = procs[num].pop()
+    # except IndexError:
+    #pname = ""
+    #result = result + "%-10s\n" % pname[:10]
+    #result = result + "\n"
+    # if procs.values() == end_marker:
+    # break
 
-            #time.sleep(1)
+    # time.sleep(1)
     return result
+
 
 AD = "-"
 AF_INET6 = getattr(socket, 'AF_INET6', object())
@@ -423,6 +428,7 @@ proto_map = {
     (AF_INET, SOCK_DGRAM): 'udp',
     (AF_INET6, SOCK_DGRAM): 'udp6',
 }
+
 
 def netstat():
     """
@@ -464,26 +470,28 @@ def netstat():
         )
     return result
 
+
 def __dictdata(datatuple):
     result = {}
     # key du tuple
     keyattribut = list(datatuple.__dict__.keys())
     for keyc in keyattribut:
-        #attribut du tuple vers key du dict
-        result[keyc]= getattr(datatuple,keyc)
+        # attribut du tuple vers key du dict
+        result[keyc] = getattr(datatuple, keyc)
     return result
 
-def cputimes (percpu=False):
+
+def cputimes(percpu=False):
     result = {}
-    infocpu =  psutil.cpu_times(percpu=False)
+    infocpu = psutil.cpu_times(percpu=False)
     result['allcpu'] = __dictdata(infocpu)
     if percpu is False:
         # global time (all cpu)
         result['allcpu'] = __dictdata(infocpu)
     elif percpu is True:
-        infocpu =  psutil.cpu_times(percpu=percpu)
+        infocpu = psutil.cpu_times(percpu=percpu)
         nbcpu = len(infocpu)
         result['nbcpu'] = nbcpu
         for cpu_nb in range(0, nbcpu):
-            result['cpu%s'% cpu_nb] = __dictdata(infocpu[cpu_nb])
+            result['cpu%s' % cpu_nb] = __dictdata(infocpu[cpu_nb])
     return result

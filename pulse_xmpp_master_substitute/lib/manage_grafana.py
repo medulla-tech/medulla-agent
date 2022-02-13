@@ -80,7 +80,7 @@ class manage_grafana:
             self.api_config['render_url'] = 'http://%s/grafana/render/d-solo' % socket.getfqdn()
         if config.has_option('grafana_api', 'graph_url'):
             self.api_config['graph_url'] = config.get('grafana_api',
-                                                       'graph_url')
+                                                      'graph_url')
         else:
             self.api_config['graph_url'] = 'http://%s/grafana/d-solo' % socket.getfqdn()
 
@@ -119,7 +119,9 @@ class manage_grafana:
 
     def grafanaGetDashboardIdForHostname(self):
         try:
-            logger.debug("Getting dashboard id for hostname %s" % self.hostname)
+            logger.debug(
+                "Getting dashboard id for hostname %s" %
+                self.hostname)
             db_json = self.grafanaGetDashboardForHostname()
             logger.debug("dashboard id for hostname %s: %s"
                          % (self.hostname, db_json['dashboard']['id']))
@@ -336,8 +338,8 @@ class manage_grafana:
                 self.hostname,
                 self.hostname,
                 panel_id,
-                from_timestamp*1000,
-                to_timestamp*1000)
+                from_timestamp * 1000,
+                to_timestamp * 1000)
             logger.debug("Image url for panel %s for hostname %s: %s"
                          % (panel_title, self.hostname, img))
             return img
@@ -355,8 +357,8 @@ class manage_grafana:
                 self.hostname,
                 self.hostname,
                 panel_id,
-                from_timestamp*1000,
-                to_timestamp*1000)
+                from_timestamp * 1000,
+                to_timestamp * 1000)
             logger.debug("Graph url for panel %s for hostname %s: %s"
                          % (panel_title, self.hostname, graph_page))
             return graph_page

@@ -31,19 +31,24 @@ import shutil
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = { "VERSION" : "4.1", "NAME" : "installkey", "VERSIONAGENT" : "2.0.0", "TYPE" : "all" }
+plugin = {
+    "VERSION": "4.1",
+    "NAME": "installkey",
+    "VERSIONAGENT": "2.0.0",
+    "TYPE": "all"}
 
-def action( objectxmpp, action, sessionid, data, message, dataerreur):
+
+def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s"%(plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message['from']))
     logger.debug("###################################################")
-    dataerreur = {  "action" : "result" + action,
-                    "data" : { "msg" : "error plugin : " + action
-                    },
-                    'sessionid': sessionid,
-                    'ret': 255,
-                    'base64': False
-    }
+    dataerreur = {"action": "result" + action,
+                  "data": {"msg": "error plugin : " + action
+                           },
+                  'sessionid': sessionid,
+                  'ret': 255,
+                  'base64': False
+                  }
 
     if objectxmpp.config.agenttype in ['machine']:
         logger.debug("#######################################################")
@@ -51,7 +56,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         logger.debug("#######################################################")
         msg = []
         if 'key' not in data:
-            objectxmpp.send_message_agent(message['from'], dataerreur, mtype='chat')
+            objectxmpp.send_message_agent(
+                message['from'], dataerreur, mtype='chat')
             return
         # Make sure user account and profile exists
         username = 'pulseuser'
@@ -66,7 +72,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         # Add the key to pulseuser account
         relayserver_pubkey = data['key']
-        result, msglog = utils.add_key_to_authorizedkeys_on_client(username, relayserver_pubkey)
+        result, msglog = utils.add_key_to_authorizedkeys_on_client(
+            username, relayserver_pubkey)
         if result is False:
             logger.error(msglog)
         msg.append(msglog)
@@ -82,7 +89,7 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
                                sessionname=sessionid,
                                priority=-1,
                                action="xmpplog",
-                               who= objectxmpp.boundjid.bare,
+                               who=objectxmpp.boundjid.bare,
                                how="",
                                why="",
                                module=notify,
@@ -98,21 +105,28 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
         # ARM ONLY DEBIAN
         # lit la key Public
         key = ""
-        key = utils.file_get_contents(os.path.join('/', 'root', '.ssh', 'id_rsa.pub'))
+        key = utils.file_get_contents(
+            os.path.join(
+                '/',
+                'root',
+                '.ssh',
+                'id_rsa.pub'))
         if key == "":
-            dataerreur['data']['msg'] = "ARS key %s missing"%dataerreur['data']['msg']
-            objectxmpp.send_message_agent(message['from'], dataerreur, mtype = 'chat')
+            dataerreur['data']['msg'] = "ARS key %s missing" % dataerreur['data']['msg']
+            objectxmpp.send_message_agent(
+                message['from'], dataerreur, mtype='chat')
             return
         if 'jidAM' not in data:
-            dataerreur['data']['msg'] = "Machine JID %s missing"%dataerreur['data']['msg']
-            objectxmpp.send_message_agent(message['from'], dataerreur, mtype = 'chat')
+            dataerreur['data']['msg'] = "Machine JID %s missing" % dataerreur['data']['msg']
+            objectxmpp.send_message_agent(
+                message['from'], dataerreur, mtype='chat')
             return
 
-        datasend = {  "action" : action,
-                    "data" : { "key" : key },
+        datasend = {"action": action,
+                    "data": {"key": key},
                     'sessionid': sessionid,
                     'ret': 255,
                     'base64': False
-        }
+                    }
 
-        objectxmpp.send_message_agent( data['jidAM'], datasend, mtype = 'chat')
+        objectxmpp.send_message_agent(data['jidAM'], datasend, mtype='chat')

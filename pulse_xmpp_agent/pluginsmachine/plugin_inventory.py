@@ -20,8 +20,11 @@
 # MA 02110-1301, USA.
 # file : plugin_inventory.py
 
+from xml.etree import ElementTree
 from lib import utils
-import os, sys, platform
+import os
+import sys
+import platform
 import zlib
 import base64
 import traceback
@@ -34,12 +37,12 @@ logger = logging.getLogger()
 if sys.platform.startswith('win'):
     from lib import registerwindows
     import _winreg
-from xml.etree import ElementTree
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
 plugin = {"VERSION": "3.6", "NAME": "inventory", "TYPE": "machine"}
+
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -51,15 +54,17 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     if hasattr(xmppobject.config, 'via_xmpp'):
         if xmppobject.config.via_xmpp == 'False':
             if not hasattr(xmppobject.config, 'urlinventory'):
-                logger.error("urlinventory must be defined in inventory.ini if via_xmpp is False")
-                xmppobject.xmpplog("urlinventory must be defined in inventory.ini if via_xmpp is False",
-                                   type='deploy',
-                                   sessionname=sessionid,
-                                   priority=-1,
-                                   action="xmpplog",
-                                   who=strjidagent,
-                                   module="Notify | Inventory | Error",
-                                   date=None)
+                logger.error(
+                    "urlinventory must be defined in inventory.ini if via_xmpp is False")
+                xmppobject.xmpplog(
+                    "urlinventory must be defined in inventory.ini if via_xmpp is False",
+                    type='deploy',
+                    sessionname=sessionid,
+                    priority=-1,
+                    action="xmpplog",
+                    who=strjidagent,
+                    module="Notify | Inventory | Error",
+                    date=None)
                 return
     else:
         xmppobject.config.via_xmpp = 'True'
@@ -67,18 +72,19 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         if os.path.exists(xmppobject.config.json_file_extend_inventory):
             dd = extend_xmlfile(xmppobject)
             root = ET.fromstring(dd)
-            strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (ET.tostring(root, pretty_print=True))
+            strxml = """<?xml version="1.0" encoding="UTF-8" ?>\n%s""" % (
+                ET.tostring(root, pretty_print=True))
             namefilexml = xmppobject.config.json_file_extend_inventory + ".xml"
             utils.file_put_contents_w_a(namefilexml, strxml)
     try:
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
         if compteurcallplugin == 0:
             logger.debug("configure plugin %s" % action)
-    except:
+    except BaseException:
         pass
     try:
         xmppobject.sub_inventory
-    except :
+    except BaseException:
         xmppobject.sub_inventory = xmppobject.agentmaster
     resultaction = "result%s" % action
     result = {}
@@ -91,7 +97,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     dataerreur['data']['msg'] = "ERROR : %s" % action
     dataerreur['sessionid'] = sessionid
     timeoutfusion = 120
-    msg=[]
+    msg = []
     if 'forced' not in data:
         data['forced'] = "forced"
     if data['forced'] is True:
@@ -100,7 +106,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
         data['forced'] = "noforced"
 
     if sys.platform.startswith('linux'):
-        inventoryfile = os.path.join("/","tmp","inventory.txt")
+        inventoryfile = os.path.join("/", "tmp", "inventory.txt")
     elif sys.platform.startswith('darwin'):
         inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
     elif sys.platform.startswith('win'):
@@ -127,8 +133,9 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     if sys.platform.startswith('linux'):
         try:
             for nbcmd in range(1, 4):
-                logger.debug("process inventory %s timeout %s" % (nbcmd,
-                                                                  timeoutfusion))
+                logger.debug(
+                    "process inventory %s timeout %s" %
+                    (nbcmd, timeoutfusion))
                 general_options = "--backend-collect-timeout=%s" % timeoutfusion
                 location_option = "--local=\"%s\"" % inventoryfile
                 if xmppobject.config.via_xmpp == 'False':
@@ -162,17 +169,20 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msg = []
             if os.path.exists(inventoryfile):
                 try:
-                    result['data']['inventory'], boolchange = compact_xml(inventoryfile)
-                    result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
+                    result['data']['inventory'], boolchange = compact_xml(
+                        inventoryfile)
+                    result['data']['inventory'] = base64.b64encode(
+                        zlib.compress(result['data']['inventory'], 9))
                     if boolchange is False:
-                        xmppobject.xmpplog("no significant change in inventory.",
-                                           type='deploy',
-                                           sessionname=sessionid,
-                                           priority=-1,
-                                           action="xmpplog",
-                                           who=strjidagent,
-                                           module="Notify | Inventory",
-                                           date=None)
+                        xmppobject.xmpplog(
+                            "no significant change in inventory.",
+                            type='deploy',
+                            sessionname=sessionid,
+                            priority=-1,
+                            action="xmpplog",
+                            who=strjidagent,
+                            module="Notify | Inventory",
+                            date=None)
                     else:
                         xmppobject.xmpplog("inventory changed",
                                            type='deploy',
@@ -196,7 +206,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             else:
                 raise Exception('Inventory file does not exist')
         except Exception as e:
-            dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (dataerreur['data']['msg'], str(e))
+            dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (
+                dataerreur['data']['msg'], str(e))
             logger.error("\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(mto=xmppobject.sub_inventory,
@@ -285,7 +296,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    who=strjidagent,
                                    module="Notify | Inventory | Error",
                                    date=None)
-            msg=[]
+            msg = []
             if xmppobject.config.via_xmpp == 'True':
                 if os.path.exists(inventoryfile):
                     try:
@@ -296,72 +307,113 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                         if hasattr(xmppobject.config, 'max_key_index'):
                             result['data']['reginventory'] = {}
                             result['data']['reginventory']['info'] = {}
-                            result['data']['reginventory']['info']['max_key_index'] = int(xmppobject.config.max_key_index)
+                            result['data']['reginventory']['info']['max_key_index'] = int(
+                                xmppobject.config.max_key_index)
                             nb_iter = int(xmppobject.config.max_key_index) + 1
-                            # get the value of each key and create the json file
+                            # get the value of each key and create the json
+                            # file
                             for num in range(1, nb_iter):
                                 reg_key_num = 'reg_key_' + str(num)
                                 result['data']['reginventory'][reg_key_num] = {}
-                                registry_key = getattr(xmppobject.config, reg_key_num)
+                                registry_key = getattr(
+                                    xmppobject.config, reg_key_num)
                                 result['data']['reginventory'][reg_key_num]['key'] = registry_key
                                 hive = registry_key.split('\\')[0].strip('"')
-                                sub_key = registry_key.split('\\')[-1].strip('"')
-                                path = registry_key.replace(hive + '\\', '').replace('\\' + sub_key, '').strip('"')
+                                sub_key = registry_key.split(
+                                    '\\')[-1].strip('"')
+                                path = registry_key.replace(
+                                    hive + '\\',
+                                    '').replace(
+                                    '\\' + sub_key,
+                                    '').strip('"')
                                 if hive == 'HKEY_CURRENT_USER':
-                                    if hasattr(xmppobject.config, 'current_user'):
-                                        process = subprocess.Popen("wmic useraccount where name = '%s' "
-                                                                   "get sid" % xmppobject.config.current_user,
-                                                                   shell=True,
-                                                                   stdout=subprocess.PIPE,
-                                                                   stderr=subprocess.STDOUT)
+                                    if hasattr(
+                                            xmppobject.config, 'current_user'):
+                                        process = subprocess.Popen(
+                                            "wmic useraccount where name = '%s' "
+                                            "get sid" %
+                                            xmppobject.config.current_user,
+                                            shell=True,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)
                                         output = process.stdout.readlines()
                                         sid = output[1].rstrip(' \t\n\r')
                                         hive = 'HKEY_USERS'
-                                        path = sid+'\\' + path
+                                        path = sid + '\\' + path
                                     else:
-                                        logging.log(DEBUGPULSEPLUGIN, "HKEY_CURRENT_USER hive defined but current_user config parameter is not")
-                                logging.log(DEBUGPULSEPLUGIN, "hive: %s" % hive)
-                                logging.log(DEBUGPULSEPLUGIN, "path: %s" % path)
-                                logging.log(DEBUGPULSEPLUGIN, "sub_key: %s" % sub_key)
+                                        logging.log(
+                                            DEBUGPULSEPLUGIN,
+                                            "HKEY_CURRENT_USER hive defined but current_user config parameter is not")
+                                logging.log(
+                                    DEBUGPULSEPLUGIN,
+                                    "hive: %s" %
+                                    hive)
+                                logging.log(
+                                    DEBUGPULSEPLUGIN,
+                                    "path: %s" %
+                                    path)
+                                logging.log(
+                                    DEBUGPULSEPLUGIN,
+                                    "sub_key: %s" %
+                                    sub_key)
                                 reg_constants = registerwindows.constantregisterwindows()
                                 try:
-                                    key = _winreg.OpenKey(reg_constants.getkey(hive),
-                                                          path,
-                                                          0,
-                                                          _winreg.KEY_READ | other_view_flag)
-                                    key_value = _winreg.QueryValueEx(key, sub_key)
-                                    logging.log(DEBUGPULSEPLUGIN,"key_value: %s" % str(key_value[0]))
-                                    result['data']['reginventory'][reg_key_num]['value'] = str(key_value[0])
+                                    key = _winreg.OpenKey(
+                                        reg_constants.getkey(hive), path, 0, _winreg.KEY_READ | other_view_flag)
+                                    key_value = _winreg.QueryValueEx(
+                                        key, sub_key)
+                                    logging.log(
+                                        DEBUGPULSEPLUGIN,
+                                        "key_value: %s" % str(
+                                            key_value[0]))
+                                    result['data']['reginventory'][reg_key_num]['value'] = str(
+                                        key_value[0])
                                     listfinger.append(str(key_value[0]))
                                     _winreg.CloseKey(key)
                                 except Exception as e:
-                                    logging.log(ERRORPULSEPLUGIN,"Error getting key: %s" % str(e))
+                                    logging.log(
+                                        ERRORPULSEPLUGIN,
+                                        "Error getting key: %s" %
+                                        str(e))
                                     result['data']['reginventory'][reg_key_num]['value'] = ""
                                     pass
                             # generate the json and encode
-                            logging.log(DEBUGPULSEPLUGIN,"---------- Registry inventory Data ----------")
-                            logging.log(DEBUGPULSEPLUGIN,json.dumps(result['data']['reginventory'],
-                                                                    indent=4,
-                                                                    separators=(',', ': ')))
-                            logging.log(DEBUGPULSEPLUGIN,"---------- End Registry inventory Data ----------")
-                            result['data']['reginventory'] = base64.b64encode(json.dumps(result['data']['reginventory'],
-                                                                                         indent=4,
-                                                                                         separators=(',', ': ')))
+                            logging.log(
+                                DEBUGPULSEPLUGIN,
+                                "---------- Registry inventory Data ----------")
+                            logging.log(
+                                DEBUGPULSEPLUGIN,
+                                json.dumps(
+                                    result['data']['reginventory'],
+                                    indent=4,
+                                    separators=(
+                                        ',',
+                                        ': ')))
+                            logging.log(
+                                DEBUGPULSEPLUGIN,
+                                "---------- End Registry inventory Data ----------")
+                            result['data']['reginventory'] = base64.b64encode(json.dumps(
+                                result['data']['reginventory'], indent=4, separators=(',', ': ')))
                             # dans le cas ou il y a des registres, ceux ci seront pris en compte pour le fingerprint.
-                            # on est jamais certain de l'ordre d'un dict. donc on peut pas prendre directement celui-ci dans 1 finger print.
+                            # on est jamais certain de l'ordre d'un dict. donc
+                            # on peut pas prendre directement celui-ci dans 1
+                            # finger print.
                             listfinger.sort()
                             graine = ''.join(listfinger)
-                        result['data']['inventory'], boolchange = compact_xml(inventoryfile,graine=graine)
-                        result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
+                        result['data']['inventory'], boolchange = compact_xml(
+                            inventoryfile, graine=graine)
+                        result['data']['inventory'] = base64.b64encode(
+                            zlib.compress(result['data']['inventory'], 9))
                         if boolchange is False:
-                            xmppobject.xmpplog("no significant change in inventory.",
-                                               type='deploy',
-                                               sessionname=sessionid,
-                                               priority=-1,
-                                               action="xmpplog",
-                                               who=strjidagent,
-                                               module="Notify | Inventory",
-                                               date=None)
+                            xmppobject.xmpplog(
+                                "no significant change in inventory.",
+                                type='deploy',
+                                sessionname=sessionid,
+                                priority=-1,
+                                action="xmpplog",
+                                who=strjidagent,
+                                module="Notify | Inventory",
+                                date=None)
                         else:
                             xmppobject.xmpplog("inventory changed",
                                                type='deploy',
@@ -385,15 +437,18 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 else:
                     raise Exception('Inventory file does not exist')
             else:
-                logger.info("Inventory sent directly to inventory server %s" % xmppobject.config.urlinventory)
+                logger.info(
+                    "Inventory sent directly to inventory server %s" %
+                    xmppobject.config.urlinventory)
         except Exception as e:
-            dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (dataerreur['data']['msg'], str(e))
+            dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (
+                dataerreur['data']['msg'], str(e))
             logger.error("\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(mto=xmppobject.sub_inventory,
                                     mbody=json.dumps(dataerreur),
                                     mtype='chat')
-            msg.append(dataerreur['data']['msg'] )
+            msg.append(dataerreur['data']['msg'])
             for mesg in msg:
                 logger.debug(mesg)
                 xmppobject.xmpplog(mesg,
@@ -429,20 +484,23 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                                    who=strjidagent,
                                    module="Notify | Inventory | Error",
                                    date=None)
-            msg=[]
+            msg = []
             if os.path.exists(inventoryfile):
                 try:
-                    result['data']['inventory'], boolchange = compact_xml(inventoryfile)
-                    result['data']['inventory'] = base64.b64encode(zlib.compress(result['data']['inventory'], 9))
+                    result['data']['inventory'], boolchange = compact_xml(
+                        inventoryfile)
+                    result['data']['inventory'] = base64.b64encode(
+                        zlib.compress(result['data']['inventory'], 9))
                     if boolchange is False:
-                        xmppobject.xmpplog("no significant change in inventory.",
-                                           type='deploy',
-                                           sessionname=sessionid,
-                                           priority=-1,
-                                           action="xmpplog",
-                                           who=strjidagent,
-                                           module="Notify | Inventory",
-                                           date=None)
+                        xmppobject.xmpplog(
+                            "no significant change in inventory.",
+                            type='deploy',
+                            sessionname=sessionid,
+                            priority=-1,
+                            action="xmpplog",
+                            who=strjidagent,
+                            module="Notify | Inventory",
+                            date=None)
                     else:
                         xmppobject.xmpplog("inventory changed",
                                            type='deploy',
@@ -466,13 +524,14 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             else:
                 raise Exception('The inventory file does not exists')
         except Exception as e:
-            dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (dataerreur['data']['msg'], str(e))
+            dataerreur['data']['msg'] = "Plugin inventory error %s : %s" % (
+                dataerreur['data']['msg'], str(e))
             logger.error("\n%s" % (traceback.format_exc()))
             logger.error("Send error message\n%s" % dataerreur)
             xmppobject.send_message(mto=xmppobject.sub_inventory,
                                     mbody=json.dumps(dataerreur),
                                     mtype='chat')
-            msg.append(dataerreur['data']['msg'] )
+            msg.append(dataerreur['data']['msg'])
             for mesg in msg:
                 logger.debug(mesg)
                 xmppobject.xmpplog(mesg,
@@ -487,7 +546,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
     if result['base64'] is True:
         result['data'] = base64.b64encode(json.dumps(result['data']))
-    if data['forced']=='forced' or boolchange:
+    if data['forced'] == 'forced' or boolchange:
         xmppobject.send_message(mto=xmppobject.sub_inventory,
                                 mbody=json.dumps(result),
                                 mtype='chat')
@@ -510,6 +569,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                            module="Notify | Inventory",
                            date=None)
 
+
 def Setdirectorytempinfo():
     """
     This functions create a temporary directory.
@@ -517,55 +577,65 @@ def Setdirectorytempinfo():
     Returns:
     path directory INFO Temporaly
     """
-    dirtempinfo = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","lib","INFOSTMP"))
+    dirtempinfo = os.path.abspath(
+        os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            "..",
+            "lib",
+            "INFOSTMP"))
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0o007)
     return dirtempinfo
+
 
 def compact_xml(inputfile, graine=""):
     """ prepare xml a envoyer et genere 1 finger print"""
     parser = ET.XMLParser(remove_blank_text=True, remove_comments=True)
     xmlTree = ET.parse(inputfile, parser=parser)
-    strinventorysave  =  '<?xml version="1.0" encoding="UTF-8" ?>' + \
-                            ET.tostring(xmlTree, pretty_print=False)
+    strinventorysave = '<?xml version="1.0" encoding="UTF-8" ?>' + \
+        ET.tostring(xmlTree, pretty_print=False)
     utils.file_put_contents_w_a(inputfile, strinventorysave)
     # fingerprint
-    listxpath=['/REQUEST/CONTENT/ACCESSLOG',
-               '/REQUEST/CONTENT/BIOS',
-               '/REQUEST/CONTENT/OPERATINGSYSTEM',
-               '/REQUEST/CONTENT/ENVS',
-               '/REQUEST/CONTENT/PROCESSES',
-               '/REQUEST/CONTENT/DRIVES',
-               '/REQUEST/CONTENT/HARDWARE',
-               '/REQUEST/CONTENT/CONTROLLERS',
-               '/REQUEST/CONTENT/CPUS',
-               '/REQUEST/CONTENT/VERSIONPROVIDER',
-               '/REQUEST/CONTENT/INPUTS',
-               '/REQUEST/CONTENT/LOCAL_GROUPS',
-               '/REQUEST/CONTENT/LOCAL_USERS',
-               '/REQUEST/CONTENT/VERSIONCLIENT',
-               '/REQUEST/CONTENT/FIREWALL',
-               '/REQUEST/DEVICEID',
-               '/REQUEST/QUERY']
+    listxpath = ['/REQUEST/CONTENT/ACCESSLOG',
+                 '/REQUEST/CONTENT/BIOS',
+                 '/REQUEST/CONTENT/OPERATINGSYSTEM',
+                 '/REQUEST/CONTENT/ENVS',
+                 '/REQUEST/CONTENT/PROCESSES',
+                 '/REQUEST/CONTENT/DRIVES',
+                 '/REQUEST/CONTENT/HARDWARE',
+                 '/REQUEST/CONTENT/CONTROLLERS',
+                 '/REQUEST/CONTENT/CPUS',
+                 '/REQUEST/CONTENT/VERSIONPROVIDER',
+                 '/REQUEST/CONTENT/INPUTS',
+                 '/REQUEST/CONTENT/LOCAL_GROUPS',
+                 '/REQUEST/CONTENT/LOCAL_USERS',
+                 '/REQUEST/CONTENT/VERSIONCLIENT',
+                 '/REQUEST/CONTENT/FIREWALL',
+                 '/REQUEST/DEVICEID',
+                 '/REQUEST/QUERY']
     for searchtag in listxpath:
         p = xmlTree.xpath(searchtag)
         for t in p:
-            t.getparent().remove(t);
-    strinventory  =  ET.tostring(xmlTree, pretty_print=True)
+            t.getparent().remove(t)
+    strinventory = ET.tostring(xmlTree, pretty_print=True)
     # -----debug file compare------
     #namefilecompare = "%s.xml1" % inputfile
-    #if os.path.exists(namefilecompare):
-        #os.rename(namefilecompare, "%s.back" % namefilecompare)
+    # if os.path.exists(namefilecompare):
+    #os.rename(namefilecompare, "%s.back" % namefilecompare)
     #utils.file_put_contents_w_a(namefilecompare, strinventory)
     # -----end debug file compare------
-    fingerprintinventory = hashlib.md5(strinventory+graine).hexdigest()
+    fingerprintinventory = hashlib.md5(strinventory + graine).hexdigest()
     # on recupere ancienne fingerprint
     manefilefingerprintinventory = os.path.join(Setdirectorytempinfo(),
                                                 'fingerprintinventory')
     oldfingerprintinventory = ""
     if os.path.exists(manefilefingerprintinventory):
-        oldfingerprintinventory = utils.file_get_contents(manefilefingerprintinventory)
-    utils.file_put_contents_w_a(manefilefingerprintinventory, fingerprintinventory)
+        oldfingerprintinventory = utils.file_get_contents(
+            manefilefingerprintinventory)
+    utils.file_put_contents_w_a(
+        manefilefingerprintinventory,
+        fingerprintinventory)
     if fingerprintinventory == oldfingerprintinventory:
         logger.debug("no significant change in inventory.")
 
@@ -578,14 +648,17 @@ def extend_xmlfile(xmppobject):
     """
         generation xml extend from json
     """
-    datafile = utils.file_get_contents(xmppobject.config.json_file_extend_inventory)
+    datafile = utils.file_get_contents(
+        xmppobject.config.json_file_extend_inventory)
     datafile = datafile.replace("\n", "")
     dataStripped = [x.strip() for x in datafile.split(',') if x.strip() != ""]
     dataFileCleaned = ','.join(dataStripped)
     dataFileCleaned = dataFileCleaned.replace("},]", "}]")
     dataFileCleaned = dataFileCleaned.replace("    ", " ")
     dataFileCleaned = dataFileCleaned.replace("  ", " ")
-    logger.debug("The informations that will be loaded by json are: %s", dataFileCleaned)
+    logger.debug(
+        "The informations that will be loaded by json are: %s",
+        dataFileCleaned)
     data = json.loads(dataFileCleaned)
     if "action" in data:
         if data['action'] == "HwInfo":
@@ -681,9 +754,11 @@ def printer_string(terminal,
     if network is not None:
         xmlprinter = " %s\n<NETWORK>%s</NETWORK>" % (xmlprinter, network)
     if printprocessor is not None:
-        xmlprinter = "%s\n<PRINTPROCESSOR>%s</PRINTPROCESSOR>" % (xmlprinter, printprocessor)
+        xmlprinter = "%s\n<PRINTPROCESSOR>%s</PRINTPROCESSOR>" % (
+            xmlprinter, printprocessor)
     if resolution is not None:
-        xmlprinter = "%s\n<RESOLUTION>%s</RESOLUTION>" % (xmlprinter, resolution)
+        xmlprinter = "%s\n<RESOLUTION>%s</RESOLUTION>" % (
+            xmlprinter, resolution)
     if shared is not None:
         xmlprinter = "%s\n<SHARED>%s</SHARED>" % (xmlprinter, shared)
     if status is not None:

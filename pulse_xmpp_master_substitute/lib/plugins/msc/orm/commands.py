@@ -30,13 +30,13 @@ import logging
 import sqlalchemy
 import datetime
 
-## ORM mappings
+# ORM mappings
 # TODO: PORT PYTHON3
 #from pulse2.database.msc.orm.commands_on_host import CommandsOnHost, stopCommandOnHost
 #from pulse2.database.msc.orm.commands_on_host import CoHManager
 #from pulse2.database.msc.orm.target import Target
 
-## Pulse 2 stuff
+# Pulse 2 stuff
 # TODO: PORT PYTHON3
 #from pulse2.scheduler.timeaxis import LaunchTimeResolver
 
@@ -45,6 +45,7 @@ class Commands(object):
     """
     Mapping between msc.commands and SA
     """
+
     def getId(self):
         result = self.id
         return result
@@ -177,7 +178,8 @@ class Commands(object):
         if not self.deployment_intervals:  # no interval given => always perform
             result = True
         else:
-            result = LaunchTimeResolver().in_deployment_interval(self.deployment_intervals, datetime.datetime.today())
+            result = LaunchTimeResolver().in_deployment_interval(
+                self.deployment_intervals, datetime.datetime.today())
         if not result:
             logging.getLogger().debug("inDeploymentInterval(#%s): %s" %
                                       (self.id, result))
@@ -196,9 +198,10 @@ class Commands(object):
         myCommandOnHosts = session.query(CommandsOnHost)
         if target_uuids:
             myCommandOnHosts = myCommandOnHosts.join(Target)
-            myCommandOnHosts = myCommandOnHosts.filter(Target.target_uuid.in_(target_uuids))
-        myCommandOnHosts = myCommandOnHosts.filter(CommandsOnHost.fk_commands ==
-                                                   self.getId())
+            myCommandOnHosts = myCommandOnHosts.filter(
+                Target.target_uuid.in_(target_uuids))
+        myCommandOnHosts = myCommandOnHosts.filter(
+            CommandsOnHost.fk_commands == self.getId())
         session.close()
         return myCommandOnHosts.all()
 

@@ -23,6 +23,7 @@
 import sys
 import os
 
+
 def directoryconffile():
     """
         This function permits to obtain the configuration folder.
@@ -122,4 +123,3 @@ def conffilename(agenttype):
         return fileconf
     else:
         return conffilenameparameter
-

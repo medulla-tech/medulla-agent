@@ -28,6 +28,7 @@ import time
 
 logger = logging.getLogger()
 
+
 class errorresource(Exception):
     pass
 
@@ -40,8 +41,8 @@ class resource_plugin:
     eg: creation ressource this ressour calling function self.handleinventory
     if all taked resources are give back then call function
     ce parameter is argv (list argument) et pam (dict argument)
-    
-    
+
+
     self.manage_plugin.createresource( "updateresource",
                                          self. .handleinventory,
                                         typeaction="call_function",
@@ -49,16 +50,17 @@ class resource_plugin:
                                         **pam)
     ----------------------------------------------------
     In all plugin asynchrone running
-    
+
     # take resource from plugin asynchrone execution
     jeton = self.manage_plugin.take_resource("updateresource")
-    
+
     # proess plugin .......
-    
+
     # give back ressource jeton
-    self.manage_plugin.free_resource("updateresource", jeton)    
-    
+    self.manage_plugin.free_resource("updateresource", jeton)
+
     """
+
     def __init__(self, objectxmpp, schedule_time=60):
         self.resource = {}
         self.objectxmpp = objectxmpp

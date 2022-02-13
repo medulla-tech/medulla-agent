@@ -30,7 +30,9 @@ import win32service
 import os
 import logging
 import logging.handlers
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 
 # to had event log, do not remove
 # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library
@@ -52,10 +54,10 @@ import urllib.request, urllib.error, urllib.parse
 # GLOBAL DATA
 
 log_file = os.path.join(os.environ["ProgramFiles"],
-                           "Pulse",
-                           "var",
-                           "log",
-                           "service.log")
+                        "Pulse",
+                        "var",
+                        "log",
+                        "service.log")
 
 program_dir = os.path.join(os.environ["ProgramFiles"],
                            "Pulse",
@@ -65,10 +67,14 @@ logger = logging.getLogger("pulseagentservice")
 
 logger.setLevel(logging.DEBUG)
 
-handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=10485760, backupCount=2)
-formatter = logging.Formatter('%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s', '%d-%m-%Y %H:%M:%S')
+handler = logging.handlers.RotatingFileHandler(
+    log_file, maxBytes=10485760, backupCount=2)
+formatter = logging.Formatter(
+    '%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s',
+    '%d-%m-%Y %H:%M:%S')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
+
 
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
@@ -157,31 +163,39 @@ class PulseAgentService(SMWinservice):
     _svc_description_ = "Network events monitoring for Pulse Agent"
     isrunning = False
     isdebug = False
-    listnamefilepid=[".PID_NETWORKS_ENVENTS"]
+    listnamefilepid = [".PID_NETWORKS_ENVENTS"]
 
     def start(self):
-        logger.info("Service %s launched "%self._svc_display_name_)
+        logger.info("Service %s launched " % self._svc_display_name_)
         self.isrunning = True
 
     def stop(self):
         self.isrunning = False
-        logger.info("Service %s stopped" %self._svc_display_name_)
-        cmd =""
+        logger.info("Service %s stopped" % self._svc_display_name_)
+        cmd = ""
         for pidprog in self.listnamefilepid:
-            pidfile =os.path.join(program_dir, pidprog)
+            pidfile = os.path.join(program_dir, pidprog)
             if os.path.isfile(pidfile):
                 pid = file_get_contents(pidfile)
-                cmd = "taskkill /PID %s /F"%pid
+                cmd = "taskkill /PID %s /F" % pid
                 try:
                     os.system(cmd)
                     continue
-                except:
+                except BaseException:
                     pass
+
     def main(self):
         i = 0
         while self.isrunning:
-            print(("lancement de : %s"%"python.exe "+os.path.join(program_dir, "networkevents.py")))
-            os.system("python.exe \""+os.path.join(program_dir, "networkevents.py")+"\"")
+            print(("lancement de : %s" % "python.exe " +
+                  os.path.join(program_dir, "networkevents.py")))
+            os.system(
+                "python.exe \"" +
+                os.path.join(
+                    program_dir,
+                    "networkevents.py") +
+                "\"")
+
 
 if __name__ == '__main__':
     PulseAgentService.parse_command_line()

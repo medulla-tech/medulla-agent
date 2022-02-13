@@ -58,24 +58,28 @@ def checkcherrypyversion():
             cherrypyversion = '0.0'
     return cherrypyversion
 
+
 def updatecherrypyversion(version):
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse CherryPy" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % CHERRYPYVERSION
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % CHERRYPYVERSION
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("we successfully updated Pulse CherryPy to version %s" % CHERRYPYVERSION)
+            logger.info(
+                "we successfully updated Pulse CherryPy to version %s" %
+                CHERRYPYVERSION)
 
         if version == "0.0":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\Pulse CherryPy" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse CherryPy" /f'
-	    utils.simplecommand(cmdDisplay)
+            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse CherryPy" '\
+                '/v "DisplayName" /t REG_SZ  /d "Pulse CherryPy" /f'
+            utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\Pulse CherryPy" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse CherryPy" '\
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
 
             utils.simplecommand(cmd)
+
 
 def updatecherrypy(xmppobject, installed_version):
     logger.info("Updating CherryPy to version %s" % CHERRYPYVERSION)
@@ -84,30 +88,33 @@ def updatecherrypy(xmppobject, installed_version):
         windows_tempdir = os.path.join("c:\\", "Windows", "Temp")
         install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
         cherrypy_filename = 'CherryPy-%s-py2.py3-none-any.whl' % CHERRYPYVERSION
-        python_modules = [ 'Routes-2.4.1-py2.py3-none-any.whl',
-			   'repoze.lru-0.7-py3-none-any.whl',
-                           'WebOb-1.8.5-py2.py3-none-any.whl',
-                           'pypiwin32-219-cp27-none-win_amd64.whl',
-			   'six-1.10.0-py2.py3-none-any.whl']
+        python_modules = ['Routes-2.4.1-py2.py3-none-any.whl',
+                          'repoze.lru-0.7-py3-none-any.whl',
+                          'WebOb-1.8.5-py2.py3-none-any.whl',
+                          'pypiwin32-219-cp27-none-win_amd64.whl',
+                          'six-1.10.0-py2.py3-none-any.whl']
 
         for module_to_dl in python_modules:
             dl_url = 'http://%s/downloads/win/downloads/python_modules/%s' % (
                 xmppobject.config.Server, module_to_dl)
             logger.debug("Downloading %s" % dl_url)
-            result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, module_to_dl)).downloadurl()
+            result, txtmsg = utils.downloadfile(
+                dl_url, os.path.join(
+                    install_tempdir, module_to_dl)).downloadurl()
 
-	dl_url = 'http://%s/downloads/win/downloads/python_modules/%s' % (
-                xmppobject.config.Server, cherrypy_filename)
+        dl_url = 'http://%s/downloads/win/downloads/python_modules/%s' % (
+            xmppobject.config.Server, cherrypy_filename)
         logger.debug("Downloading %s" % dl_url)
-        result, txtmsg = utils.downloadfile(dl_url, os.path.join(install_tempdir, cherrypy_filename)).downloadurl()
+        result, txtmsg = utils.downloadfile(dl_url, os.path.join(
+            install_tempdir, cherrypy_filename)).downloadurl()
 
         if result:
-            cmd = "C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links=\"%s\" CherryPy-%s-py2.py3-none-any.whl" % (install_tempdir, CHERRYPYVERSION)
-	    os.chdir(install_tempdir)
+            cmd = "C:\\Python27\\Scripts\\pip install --quiet --upgrade --no-index --find-links=\"%s\" CherryPy-%s-py2.py3-none-any.whl" % (
+                install_tempdir, CHERRYPYVERSION)
+            os.chdir(install_tempdir)
             utils.simplecommand(cmd)
 
             updatecherrypyversion(installed_version)
         else:
             # Download error
             logger.error("%s" % txtmsg)
-

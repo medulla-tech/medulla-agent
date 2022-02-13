@@ -24,7 +24,7 @@
 
 """Implementation of ISesNework in Python."""
 
-from  collections  import  deque
+from collections import deque
 import logging
 import logging.handlers
 from threading import Thread
@@ -40,7 +40,7 @@ import socket
 import struct
 from ctypes import windll
 import os
-## from EventSys.h
+# from EventSys.h
 PROGID_EventSystem = "EventSystem.EventSystem"
 PROGID_EventSubscription = "EventSystem.EventSubscription"
 
@@ -66,8 +66,8 @@ SUBSCRIPTION_NETLOST = ('{45233130-b6c3-44fb-a6af-487c47cee611}',
                         'ConnectionLost')
 
 SUBSCRIPTION_REACH = ('{4c6b2afa-3235-4185-8558-57a7a922ac7b}',
-                       'pulse Network Reach',
-                       'ConnectionMade')
+                      'pulse Network Reach',
+                      'ConnectionMade')
 
 SUBSCRIPTION_REACH_NOQOC = ('{db62fa23-4c3e-47a3-aef2-b843016177cf}',
                             'pulse Network Reach No Info',
@@ -89,6 +89,7 @@ SENSGUID_PUBLISHER = "{5fee1bd6-5b9b-11d1-8dd2-00aa004abd5e}"
 
 # uuid of the implemented com interface
 IID_ISesNetwork = '{d597bab1-5b9f-11d1-8dd2-00aa004abd5e}'
+
 
 def GetIpAddrTable():
     """ Returns the interface-to-IP address mapping table.
@@ -141,28 +142,31 @@ def GetIpAddrTable():
                                         ctypes.byref(dwSize),
                                         0)
     if rc != 0:
-        raise WindowsError("GetIpAddrTable returned %d" % rc)  # skipcq: PYL-E0602
+        raise WindowsError(
+            "GetIpAddrTable returned %d" %
+            rc)  # skipcq: PYL-E0602
 
     table = []
 
     for i in range(ipTable.dwNumEntries):
-#        entry = dict(   ip_raw      = ipTable.table[i].dwAddr,
-#                        ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
-#                        mask        = ipTable.table[i].dwMask,
-#                        bcast_addr  = ipTable.table[i].dwBCastAddr,
-#                        reasm_size  = ipTable.table[i].dwReasmSize,
-#                        type        = ipTable.table[i].wType,
-#                    )
-#        entry = dict( ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
-#                      mask        = ipTable.table[i].dwMask)
+        #        entry = dict(   ip_raw      = ipTable.table[i].dwAddr,
+        #                        ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
+        #                        mask        = ipTable.table[i].dwMask,
+        #                        bcast_addr  = ipTable.table[i].dwBCastAddr,
+        #                        reasm_size  = ipTable.table[i].dwReasmSize,
+        #                        type        = ipTable.table[i].wType,
+        #                    )
+        #        entry = dict( ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
+        #                      mask        = ipTable.table[i].dwMask)
         entry = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr))
         table.append(str(entry))
     table.sort()
     return ",".join(table)
 
+
 def diff_interface(oldinterface, newinterface):
-    add_interface=[]
-    del_interface=[]
+    add_interface = []
+    del_interface = []
     commun_interface = set()
     for t in oldinterface:
         if t not in newinterface:
@@ -174,22 +178,22 @@ def diff_interface(oldinterface, newinterface):
             add_interface.append(t)
         else:
             commun_interface.add(t)
-    commun_interface = list(commun_interface)
-    commun_interface.sort()
+    commun_interface = sorted(commun_interface)
     add_interface.sort()
     del_interface.sort()
-    return {"interface": commun_interface ,
+    return {"interface": commun_interface,
             "additionalinterface": add_interface,
             "removedinterface": del_interface}
+
 
 class NetworkManager(DesignatedWrapPolicy):
     """Implement ISesNetwork to know about the network status."""
 
     _com_interfaces_ = [IID_ISesNetwork]
     # event on interface
-##    _public_methods_ = ['ConnectionMade',
-##                        'ConnectionMadeNoQOCInfo',
-##                        'ConnectionLost']
+# _public_methods_ = ['ConnectionMade',
+# 'ConnectionMadeNoQOCInfo',
+# 'ConnectionLost']
     _public_methods_ = ['ConnectionMadeNoQOCInfo']
     _reg_clsid_ = '{41B032DA-86B5-4907-A7F7-958E59333010}'
     _reg_progid_ = "WaptService.NetworkManager"
@@ -246,7 +250,9 @@ class NetworkManager(DesignatedWrapPolicy):
                 event_system.Store(PROGID_EventSubscription,
                                    event_subscription)
             except pythoncom.com_error as e:
-                service_logger.error('Error registering to event %s', current_event[1])
+                service_logger.error(
+                    'Error registering to event %s',
+                    current_event[1])
 
     def poll_messages(self):
         """Pumps all waiting messages for the current thread.
@@ -255,11 +261,14 @@ class NetworkManager(DesignatedWrapPolicy):
         return pythoncom.PumpWaitingMessages()
 
     def send_message(self, message):
-        fileHandle = win32file.CreateFile("\\\\.\\pipe\\interfacechang",
-                                          win32file.GENERIC_READ | win32file.GENERIC_WRITE,
-                                          0, None,
-                                          win32file.OPEN_EXISTING,
-                                          0, None)
+        fileHandle = win32file.CreateFile(
+            "\\\\.\\pipe\\interfacechang",
+            win32file.GENERIC_READ | win32file.GENERIC_WRITE,
+            0,
+            None,
+            win32file.OPEN_EXISTING,
+            0,
+            None)
         win32file.WriteFile(fileHandle, message)
         win32file.CloseHandle(fileHandle)
 
@@ -284,26 +293,29 @@ class NetworkManager(DesignatedWrapPolicy):
                 continue
             # service_logger.info(iplistlocal)
             if iplistlocal != iplist:
-                oldinterface = [ x.strip() for x in iplist.split(",")]
-                newinterface = [ x.strip() for x in iplistlocal.split(",")]
+                oldinterface = [x.strip() for x in iplist.split(",")]
+                newinterface = [x.strip() for x in iplistlocal.split(",")]
                 datainterface = diff_interface(oldinterface, newinterface)
                 try:
                     strchang = "Interface [%s] chang[" % (iplistlocal)
-                    if len(datainterface['additionalinterface'])> 0:
-                        strchang ="%s+%s"%(strchang,datainterface['additionalinterface'])
+                    if len(datainterface['additionalinterface']) > 0:
+                        strchang = "%s+%s" % (strchang,
+                                              datainterface['additionalinterface'])
                     if len(datainterface['removedinterface']) > 0:
-                        strchang ="%s-%s" % (strchang, datainterface['removedinterface'])
+                        strchang = "%s-%s" % (strchang,
+                                              datainterface['removedinterface'])
                     strchang = "%s]" % (strchang)
                     # if len(datainterface['removedinterface']) > 0:
                     message = json.dumps(datainterface)
                     self.send_message(message)
-                    service_logger.info("%s"%strchang)
+                    service_logger.info("%s" % strchang)
                 except Exception as e:
                     service_logger.error("%s" % str(e))
                     # pilemessage.append(message)
                     pass
                 iplist = iplistlocal
                 time.sleep(5)
+
 
 if __name__ == '__main__':
     logfile = os.path.join(os.environ["ProgramFiles"],
@@ -319,7 +331,7 @@ if __name__ == '__main__':
 
     PID_PROGRAM = os.getpid()
     with open(pidfile, mode='w') as file:
-        file.write("%s"%PID_PROGRAM)
+        file.write("%s" % PID_PROGRAM)
 
     format = '%(asctime)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.DEBUG,
@@ -328,7 +340,9 @@ if __name__ == '__main__':
                         filemode='a')
     service_logger.info("***************************")
     iplist = GetIpAddrTable()
-    service_logger.info("START NETWORKEVENT [PID %s] %s" % (PID_PROGRAM, iplist))
+    service_logger.info(
+        "START NETWORKEVENT [PID %s] %s" %
+        (PID_PROGRAM, iplist))
 
     def connected():
         print('Connected')

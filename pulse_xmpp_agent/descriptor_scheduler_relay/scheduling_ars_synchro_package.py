@@ -26,16 +26,20 @@ import logging
 import sys
 from lib.managepackage import managepackage
 
-plugin = {"VERSION" : "1.3", "NAME" : "scheduling_ars_synchro_package",  "TYPE" : "relayserver", "SCHEDULED" : True}
+plugin = {
+    "VERSION": "1.3",
+    "NAME": "scheduling_ars_synchro_package",
+    "TYPE": "relayserver",
+    "SCHEDULED": True}
 
 # nb  -1 infinie
-SCHEDULE = {"schedule" : "*/1 * * * *", "nb" : -1}
+SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
+
 
 def schedule_main(objectxmpp):
     logging.getLogger().debug("==========Plugin scheduling_ars_synchro_package==========")
     logging.getLogger().debug(plugin)
     logging.getLogger().debug("=========================================================")
-
 
     managepackage.remove_symlinks()
     managepackage.package_for_deploy_from_share()

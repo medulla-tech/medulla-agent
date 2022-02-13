@@ -33,11 +33,11 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logging.getLogger().debug(plugin)
     if 'msg' in data:
         if ret >= 50 and ret <= 80:
-            logging.getLogger().warning("msg [%s] : %s" %(message['from'],
-                                                          data['msg']))
+            logging.getLogger().warning("msg [%s] : %s" % (message['from'],
+                                                           data['msg']))
         elif ret == 0:
-            logging.getLogger().info("msg [%s] : %s" %(message['from'],
-                                                          data['msg']))
+            logging.getLogger().info("msg [%s] : %s" % (message['from'],
+                                                        data['msg']))
         else:
-            logging.getLogger().error("msg [%s] : %s" %(message['from'],
-                                                          data['msg']))
+            logging.getLogger().error("msg [%s] : %s" % (message['from'],
+                                                         data['msg']))

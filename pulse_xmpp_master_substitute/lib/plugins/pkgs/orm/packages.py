@@ -42,7 +42,7 @@ class Packages(object):
             return 0
 
     def getLabel(self):
-        if self.label != None:
+        if self.label is not None:
             return self.label
         else:
             return ""
@@ -142,6 +142,7 @@ class Packages(object):
             return self.postCommandSuccess_name
         else:
             return ""
+
     def getInstallInit_command(self):
         if self.installInit_command is not None:
             return self.installInit_command
@@ -195,7 +196,7 @@ class Packages(object):
             return self.pkgs_share_id
         else:
             return None
-        
+
     def getedition_status(self):
         if self.edition_status is not None:
             return self.edition_status
@@ -210,17 +211,17 @@ class Packages(object):
             Dict of elements contained into the object.
         """
         return {
-            'entity_id' : self.getEntity_id(),
-            'description' : self.getDescription(),
-            'sub_packages' : self.getSub_packages(),
+            'entity_id': self.getEntity_id(),
+            'description': self.getDescription(),
+            'sub_packages': self.getSub_packages(),
             'id': self.getUuid(),
             'pk_id': self.getId(),
-            'commands':{
+            'commands': {
                 'postCommandSuccess': {
                     'command': self.getPostCommandSuccess_command(),
                     'name': self.getPostCommandSuccess_name()
                 },
-                'installInit':{
+                'installInit': {
                     'command': self.getInstallInit_command(),
                     'name': self.getInstallInit_name()
                 },
@@ -254,31 +255,31 @@ class Packages(object):
             }
         }
 
-
     def toH(self):
-        return {'id': self.id,
-                "label": self.label,
-                "description": self.description,
-                "uuid": self.uuid,
-                "version": self.version,
-                "os": self.os,
-                "metagenerator": self.metagenerator,
-                "entity_id": self.entity_id,
-                "sub_packages": self.sub_packages,
-                "reboot": self.reboot,
-                "inventory_associateinventory": self.inventory_associateinventory,
-                "inventory_licenses": self.inventory_licenses,
-                "Qversion": self.Qversion,
-                "Qvendor": self.Qvendor,
-                "Qsoftware": self.Qsoftware,
-                "boolcnd": self.boolcnd,
-                "postCommandSuccess_command": self.postCommandSuccess_command,
-                "postCommandSuccess_name": self.postCommandSuccess_name,
-                "installInit_command": self.installInit_command,
-                "installInit_name": self.installInit_name,
-                "postCommandFailure_command": self.postCommandFailure_command,
-                "postCommandFailure_name": self.postCommandFailure_name,
-                "command_command": self.command_command,
-                "command_name": self.command_name,
-                "preCommand_command": self.preCommand_command,
-                "preCommand_name": self.preCommand_name}
+        return {
+            'id': self.id,
+            "label": self.label,
+            "description": self.description,
+            "uuid": self.uuid,
+            "version": self.version,
+            "os": self.os,
+            "metagenerator": self.metagenerator,
+            "entity_id": self.entity_id,
+            "sub_packages": self.sub_packages,
+            "reboot": self.reboot,
+            "inventory_associateinventory": self.inventory_associateinventory,
+            "inventory_licenses": self.inventory_licenses,
+            "Qversion": self.Qversion,
+            "Qvendor": self.Qvendor,
+            "Qsoftware": self.Qsoftware,
+            "boolcnd": self.boolcnd,
+            "postCommandSuccess_command": self.postCommandSuccess_command,
+            "postCommandSuccess_name": self.postCommandSuccess_name,
+            "installInit_command": self.installInit_command,
+            "installInit_name": self.installInit_name,
+            "postCommandFailure_command": self.postCommandFailure_command,
+            "postCommandFailure_name": self.postCommandFailure_name,
+            "command_command": self.command_command,
+            "command_name": self.command_name,
+            "preCommand_command": self.preCommand_command,
+            "preCommand_name": self.preCommand_name}

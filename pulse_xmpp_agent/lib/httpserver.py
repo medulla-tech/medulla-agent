@@ -46,7 +46,7 @@ class Controller:
         while size_bite / (refactor**count) > 1000:
             count += 1
 
-        size = "{:.2f}".format(size_bite/(refactor**count))
+        size = "{:.2f}".format(size_bite / (refactor**count))
         return "%s %s" % (size, units[count])
 
     @staticmethod
@@ -80,11 +80,8 @@ class Controller:
                     # we want the file size
                     size = os.path.getsize(abspath)
                     size = Controller.transform_size(size)
-                    final_list.append((element,
-                        datetime.fromtimestamp(timestamp).strftime(Controller.config.date_format),
-                        size,
-                        element_type,
-                        abspath))
+                    final_list.append((element, datetime.fromtimestamp(timestamp).strftime(
+                        Controller.config.date_format), size, element_type, abspath))
 
         else:
             print("{} doesn't exist".format(str_path))
@@ -106,8 +103,10 @@ class Controller:
         count = 0
         for name in Controller.config.names:
             jstablenames.append("#table-{}".format(name.replace(' ', '')))
-            list_elements = Controller.get_list_from_path(Controller.config.paths[count], Controller.config.extensions[count])
-            tabs += """<li><a href="#tabs-%s">%s</a></li>""" % (name.replace(' ', ''), name)
+            list_elements = Controller.get_list_from_path(
+                Controller.config.paths[count], Controller.config.extensions[count])
+            tabs += """<li><a href="#tabs-%s">%s</a></li>""" % (
+                name.replace(' ', ''), name)
             html += """<div id="tabs-{}">
             <h1>{} in {}</h1>
 

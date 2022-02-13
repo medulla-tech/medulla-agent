@@ -34,7 +34,8 @@ DEBUGPULSEPLUGIN = 25
 
 plugin = {"VERSION": "1.0", "NAME": "start", "TYPE": "substitute"}
 
-def action( objectxmpp, action, sessionid, data, msg, dataerreur):
+
+def action(objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
     logger.debug("call %s from %s" % (plugin, msg['from']))
     logger.debug("=====================================================")
@@ -55,11 +56,16 @@ def ask_key_master_public(self, objectxmpp):
                       mbody=json.dumps(datasend),
                       mtype='chat')
 
+
 def Setdirectorytempinfo():
     """
         create directory
     """
-    dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "INFOSTMP")
+    dirtempinfo = os.path.join(
+        os.path.dirname(
+            os.path.realpath(__file__)),
+        "..",
+        "INFOSTMP")
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0o700)
     return dirtempinfo

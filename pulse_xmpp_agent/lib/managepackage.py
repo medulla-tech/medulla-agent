@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# 
+#
 # (c) 2016-2021 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
@@ -28,9 +28,10 @@ import logging
 
 logger = logging.getLogger()
 
+
 class managepackage:
     # variable de classe
-    agenttype="relayserver"
+    agenttype = "relayserver"
 
     @staticmethod
     def packagedir():
@@ -43,7 +44,8 @@ class managepackage:
             if managepackage.agenttype == "relayserver":
                 return os.path.join("/", "var", "lib", "pulse2", "packages")
             else:
-                return os.path.join(os.path.expanduser('~pulseuser'), 'packages')
+                return os.path.join(
+                    os.path.expanduser('~pulseuser'), 'packages')
         elif sys.platform.startswith('win'):
             return os.path.join(
                 os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages")
@@ -62,13 +64,18 @@ class managepackage:
         packagelist = []
         dirpackage = os.path.join("/", "var", "lib", "pulse2", "packages")
         global_package_folder = os.path.join(dirpackage, "sharing", "global")
-        packagelist = [os.path.join(global_package_folder, f)
-                for f in os.listdir(global_package_folder) if len(f) == 36]
-        local_package_folder  = os.path.join(dirpackage, "sharing")
-        share_pathname = [os.path.join(local_package_folder, f)
-                for f in os.listdir(local_package_folder) if f != "global"]
+        packagelist = [
+            os.path.join(
+                global_package_folder,
+                f) for f in os.listdir(global_package_folder) if len(f) == 36]
+        local_package_folder = os.path.join(dirpackage, "sharing")
+        share_pathname = [
+            os.path.join(
+                local_package_folder,
+                f) for f in os.listdir(local_package_folder) if f != "global"]
         for part in share_pathname:
-            filelist = [os.path.join(part, f) for f in os.listdir(part) if len(f) == 36]
+            filelist = [os.path.join(part, f)
+                        for f in os.listdir(part) if len(f) == 36]
             packagelist += filelist
         return packagelist
 
@@ -82,10 +89,10 @@ class managepackage:
             dirpackage = managepackage.packagedir()
         else:
             sharedir = os.path.abspath(os.path.realpath(sharedir))
-        for x in  managepackage.search_list_package():
-            print x , os.path.join(dirpackage, os.path.basename(x))
+        for x in managepackage.search_list_package():
+            print x, os.path.join(dirpackage, os.path.basename(x))
             try:
-                os.symlink(x , os.path.join(dirpackage, os.path.basename(x)))
+                os.symlink(x, os.path.join(dirpackage, os.path.basename(x)))
             except OSError:
                 pass
 
@@ -98,7 +105,8 @@ class managepackage:
             dirpackage = managepackage.packagedir()
         else:
             dirpackage = os.path.abspath(os.path.realpath(dirpackage))
-        packagelist = [os.path.join(dirpackage, f) for f in os.listdir(dirpackage) if len(f) == 36]
+        packagelist = [os.path.join(dirpackage, f)
+                       for f in os.listdir(dirpackage) if len(f) == 36]
         for fi in packagelist:
             if os.path.islink(fi) and not os.path.exists(fi):
                 os.remove(fi)
@@ -110,8 +118,11 @@ class managepackage:
         Returns:
             It returns the list of the packages.
         """
-        listfolder = [ x for x in os.listdir(managepackage.packagedir()) if len(x) == 36] 
-        return [ os.path.join(managepackage.packagedir(),x) for x in listfolder]
+        listfolder = [
+            x for x in os.listdir(
+                managepackage.packagedir()) if len(x) == 36]
+        return [os.path.join(managepackage.packagedir(), x)
+                for x in listfolder]
 
     @staticmethod
     def loadjsonfile(filename):
@@ -140,9 +151,9 @@ class managepackage:
             try:
                 outputJSONFile = managepackage.loadjsonfile(
                     os.path.join(package, "xmppdeploy.json"))
-                if 'info' in outputJSONFile \
-                        and ('software' in outputJSONFile['info'] and 'version' in outputJSONFile['info']) \
-                        and (outputJSONFile['info']['software'] == packagename or outputJSONFile['info']['name'] == packagename):
+                if 'info' in outputJSONFile and (
+                        'software' in outputJSONFile['info'] and 'version' in outputJSONFile['info']) and (
+                        outputJSONFile['info']['software'] == packagename or outputJSONFile['info']['name'] == packagename):
                     return outputJSONFile
             except Exception as e:
                 logger.error("Please verify the format of the descriptor for"
@@ -164,14 +175,17 @@ class managepackage:
         for package in managepackage.listpackages():
             # print os.path.join(package,"xmppdeploy.json")
             try:
-                outputJSONFile = managepackage.loadjsonfile(os.path.join(package, "xmppdeploy.json"))
-                if 'info' in outputJSONFile \
-                        and ('software' in outputJSONFile['info'] and 'version' in outputJSONFile['info']) \
-                        and (outputJSONFile['info']['software'] == packagename or outputJSONFile['info']['name'] == packagename):
+                outputJSONFile = managepackage.loadjsonfile(
+                    os.path.join(package, "xmppdeploy.json"))
+                if 'info' in outputJSONFile and (
+                        'software' in outputJSONFile['info'] and 'version' in outputJSONFile['info']) and (
+                        outputJSONFile['info']['software'] == packagename or outputJSONFile['info']['name'] == packagename):
                     return outputJSONFile['info']['version']
             except Exception as e:
-                logger.error("Please verify the version for the package %s in the descriptor"
-                             "in the xmppdeploy.json file." % package)
+                logger.error(
+                    "Please verify the version for the package %s in the descriptor"
+                    "in the xmppdeploy.json file." %
+                    package)
                 logger.error("we are encountering the error: %s" % str(e))
         return None
 
@@ -188,13 +202,15 @@ class managepackage:
             try:
                 outputJSONFile = managepackage.loadjsonfile(
                     os.path.join(package, "xmppdeploy.json"))
-                if 'info' in outputJSONFile \
-                    and (('software' in outputJSONFile['info'] and outputJSONFile['info']['software'] == packagename)
-                         or ('name' in outputJSONFile['info'] and outputJSONFile['info']['name'] == packagename)):
+                if 'info' in outputJSONFile and (
+                    ('software' in outputJSONFile['info'] and outputJSONFile['info']['software'] == packagename) or (
+                        'name' in outputJSONFile['info'] and outputJSONFile['info']['name'] == packagename)):
                     return package
             except Exception as e:
-                logger.error("Please verify the name for the package %s in the descriptor"
-                             "in the xmppdeploy.json file." % package)
+                logger.error(
+                    "Please verify the name for the package %s in the descriptor"
+                    "in the xmppdeploy.json file." %
+                    package)
                 logger.error("we are encountering the error: %s" % str(e))
         return None
 
@@ -215,11 +231,12 @@ class managepackage:
                 if 'id' in outputJSONFile and outputJSONFile['id'] == uuidpackage:
                     return package
             except Exception as e:
-                logger.error("The conf.json for the package %s is missing" % package)
+                logger.error(
+                    "The conf.json for the package %s is missing" %
+                    package)
                 logger.error("we are encountering the error: %s" % str(e))
         logger.error("We did not find the package %s" % package)
         return None
-
 
     @staticmethod
     def getversionpackageuuid(packageuuid):
@@ -237,14 +254,14 @@ class managepackage:
                 outputJSONFile = managepackage.loadjsonfile(
                     os.path.join(package, "conf.json"))
                 if 'id' in outputJSONFile and outputJSONFile['id'] == packageuuid \
-                    and 'version' in outputJSONFile:
+                        and 'version' in outputJSONFile:
                     return outputJSONFile['version']
             except Exception as e:
                 logger.error(
                     "package %s verify format descriptor conf.json [%s]" %
                     (packageuuid, str(e)))
-        logger.error("package %s verify version" \
-                        "in descriptor conf.json [%s]" %(packageuuid))
+        logger.error("package %s verify version"
+                     "in descriptor conf.json [%s]" % (packageuuid))
         return None
 
     @staticmethod

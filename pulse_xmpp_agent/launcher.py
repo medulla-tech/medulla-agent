@@ -21,11 +21,13 @@
 # MA 02110-1301, USA.
 
 from optparse import OptionParser
-import os, sys, subprocess
+import os
+import sys
+import subprocess
 
 from lib.utils import testagentconf, networkchanged, confchanged, refreshfingerprintconf, refreshfingerprint, file_put_contents
 
-filePath=os.path.dirname(os.path.realpath(__file__))
+filePath = os.path.dirname(os.path.realpath(__file__))
 
 if __name__ == '__main__':
     file_put_contents(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -33,13 +35,18 @@ if __name__ == '__main__':
                                    "pidlauncher"), "%s" % os.getpid())
     if sys.platform.startswith('win'):
         try:
-            result = subprocess.check_output(["icacls",
-                                              os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                           "INFOSTMP",
-                                                           "pidlauncher"),
-                                              "/setowner",
-                                              "pulse",
-                                              "/t"], stderr=subprocess.STDOUT)
+            result = subprocess.check_output(
+                [
+                    "icacls",
+                    os.path.join(
+                        os.path.dirname(
+                            os.path.realpath(__file__)),
+                        "INFOSTMP",
+                        "pidlauncher"),
+                    "/setowner",
+                    "pulse",
+                    "/t"],
+                stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             pass
     optp = OptionParser()
@@ -52,21 +59,21 @@ if __name__ == '__main__':
                     help="console debug")
 
     opts, args = optp.parse_args()
-    if not opts.typemachine.lower() in ["machine",'relayserver']:
-        print ("Parameter error")
+    if not opts.typemachine.lower() in ["machine", 'relayserver']:
+        print("Parameter error")
         sys.exit(1)
     if not testagentconf(opts.typemachine):
-        print ("warning configuration  option missing \neg:   guacamole_baseurl  , connection/port/server' , global/relayserver_agent")
-        print ("reconfiguration")
+        print("warning configuration  option missing \neg:   guacamole_baseurl  , connection/port/server' , global/relayserver_agent")
+        print("reconfiguration")
 
     networkchanged = networkchanged()
     if networkchanged:
-        print ("The network changed. We need to reconfigure")
+        print("The network changed. We need to reconfigure")
         refreshfingerprint()
 
     configchanged = confchanged(opts.typemachine)
     if configchanged:
-        print ("The configuration changed. We need to reconfigure")
+        print("The configuration changed. We need to reconfigure")
         refreshfingerprintconf(opts.typemachine)
 
     testagenttype = testagentconf(opts.typemachine)
@@ -76,10 +83,12 @@ if __name__ == '__main__':
     path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
     if os.path.exists(path_reconf_nomade):
         testspeedagent = True
-        print ("The file %s exists. We will reconfigure at every start" % path_reconf_nomade)
+        print(
+            "The file %s exists. We will reconfigure at every start" %
+            path_reconf_nomade)
 
-    if  testspeedagent:
-        print ("search configuration from master")
+    if testspeedagent:
+        print("search configuration from master")
 
     pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
@@ -94,42 +103,75 @@ if __name__ == '__main__':
         if opts.typemachine.lower() in ["machine"]:
             if testspeedagent:
                 if sys.platform.startswith('win'):
-                    print(('cmd Running : %s %s -t %s' % (pythonexec, connectionagent, opts.typemachine)))
-                    os.system('%s %s -t %s' % (pythonexec, connectionagent, opts.typemachine))
+                    print(('cmd Running : %s %s -t %s' %
+                           (pythonexec, connectionagent, opts.typemachine)))
+                    os.system('%s %s -t %s' %
+                              (pythonexec, connectionagent, opts.typemachine))
                 elif sys.platform.startswith('darwin'):
-                    print(("Running", 'python2 connectionagent.py -t %s' % opts.typemachine))
-                    os.system('python2 connectionagent.py -t %s' % opts.typemachine)
+                    print(("Running", 'python2 connectionagent.py -t %s' %
+                          opts.typemachine))
+                    os.system(
+                        'python2 connectionagent.py -t %s' %
+                        opts.typemachine)
                 else:
-                    print("Running", 'python %s/connectionagent.py -t %s' % (filePath, opts.typemachine))
-                    os.system('python %s/connectionagent.py -t %s' % (filePath, opts.typemachine))
+                    print(
+                        "Running", 'python %s/connectionagent.py -t %s' %
+                        (filePath, opts.typemachine))
+                    os.system(
+                        'python %s/connectionagent.py -t %s' %
+                        (filePath, opts.typemachine))
 
         if sys.platform.startswith('win'):
-            print(('cmd Running : %s %s -t %s' % (pythonexec, agentxmpp, opts.typemachine)))
-            os.system('%s %s -t %s' % (pythonexec, agentxmpp, opts.typemachine))
+            print(('cmd Running : %s %s -t %s' %
+                   (pythonexec, agentxmpp, opts.typemachine)))
+            os.system(
+                '%s %s -t %s' %
+                (pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith('darwin'):
             print(("Running", 'python2 agentxmpp.py -t %s' % opts.typemachine))
             os.system('python2 agentxmpp.py -t %s' % opts.typemachine)
         else:
-            print("Running", 'python %s/agentxmpp.py -d -t %s' % (filePath, opts.typemachine))
-            os.system('python %s/agentxmpp.py -d -t %s' % (filePath, opts.typemachine))
+            print(
+                "Running", 'python %s/agentxmpp.py -d -t %s' %
+                (filePath, opts.typemachine))
+            os.system(
+                'python %s/agentxmpp.py -d -t %s' %
+                (filePath, opts.typemachine))
     else:
         if opts.typemachine.lower() in ["machine"]:
-            if  testspeedagent:
+            if testspeedagent:
                 if sys.platform.startswith('win'):
-                    print(('cmd Running : %s %s -c -t %s' % (pythonexec, connectionagent, opts.typemachine)))
-                    os.system('%s %s -c -t %s' % (pythonexec, connectionagent, opts.typemachine))
+                    print(('cmd Running : %s %s -c -t %s' %
+                           (pythonexec, connectionagent, opts.typemachine)))
+                    os.system('%s %s -c -t %s' %
+                              (pythonexec, connectionagent, opts.typemachine))
                 elif sys.platform.startswith('darwin'):
-                    print(("Running", 'python2 connectionagent.py -c -t %s' % opts.typemachine))
-                    os.system('python2 connectionagent.py -c -t %s' % opts.typemachine)
+                    print(
+                        ("Running", 'python2 connectionagent.py -c -t %s' % opts.typemachine))
+                    os.system(
+                        'python2 connectionagent.py -c -t %s' %
+                        opts.typemachine)
                 else:
-                    print("Running", 'python %s/connectionagent.py -c -t %s' % (filePath, opts.typemachine))
-                    os.system('python %s/connectionagent.py -c -t %s' % (filePath, opts.typemachine))
+                    print(
+                        "Running", 'python %s/connectionagent.py -c -t %s' %
+                        (filePath, opts.typemachine))
+                    os.system(
+                        'python %s/connectionagent.py -c -t %s' %
+                        (filePath, opts.typemachine))
         if sys.platform.startswith('win'):
-            print(('cmd Running : %s %s -c -t %s' % (pythonexec, agentxmpp, opts.typemachine)))
-            os.system('%s %s -c -t %s' % (pythonexec, agentxmpp, opts.typemachine))
+            print(('cmd Running : %s %s -c -t %s' %
+                   (pythonexec, agentxmpp, opts.typemachine)))
+            os.system(
+                '%s %s -c -t %s' %
+                (pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith('darwin'):
-            print(("Running", '/usr/local/bin/python2 agentxmpp.py -c -t %s' % opts.typemachine))
+            print(
+                ("Running", '/usr/local/bin/python2 agentxmpp.py -c -t %s' % opts.typemachine))
             os.system('python2 agentxmpp.py -c -t %s' % opts.typemachine)
         else:
-            print("Running", 'python %s/agentxmpp.py -c -t %s' % (filePath, opts.typemachine))
-            os.system('python %s/agentxmpp.py -c -t %s' % (filePath, opts.typemachine))
+            print(
+                "Running", 'python %s/agentxmpp.py -c -t %s' %
+                (filePath, opts.typemachine))
+            os.system(
+                'python %s/agentxmpp.py -c -t %s' %
+                (filePath, opts.typemachine))

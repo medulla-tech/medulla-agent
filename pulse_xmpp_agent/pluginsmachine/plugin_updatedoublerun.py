@@ -52,7 +52,8 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 enabledoublerun(xmppobject)
             updatedoublerunversion(installed_version)
     except PluginError:
-        logger.error("Plugin Doublerun - Quitting on error. Check previous logs")
+        logger.error(
+            "Plugin Doublerun - Quitting on error. Check previous logs")
         return
 
 
@@ -64,45 +65,56 @@ def checkdoublerunversion():
             doublerunversion = result['result'][0].strip().split()[-1]
         else:
             doublerunversion = '0.0'
-    logger.debug("Plugin Doublerun - Currently installed version: %s" % doublerunversion)
+    logger.debug(
+        "Plugin Doublerun - Currently installed version: %s" %
+        doublerunversion)
     return doublerunversion
+
 
 def updatedoublerunversion(version):
     if sys.platform.startswith('win'):
         cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Doublerun Plugin" '\
-                '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % plugin['VERSION']
+            '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % plugin['VERSION']
 
         result = utils.simplecommand(cmd)
         if result['code'] == 0:
-            logger.info("Plugin Doublerun - Updating to version %s in registry successful" % plugin['VERSION'])
+            logger.info(
+                "Plugin Doublerun - Updating to version %s in registry successful" %
+                plugin['VERSION'])
 
-        # Add more parameters to the key if we are creating it instead of updating it
+        # Add more parameters to the key if we are creating it instead of
+        # updating it
         if version == "0.0":
             cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Doublerun Plugin" '\
-                    '/v "DisplayName" /t REG_SZ  /d "Pulse Doublerun Plugin" /f'
+                '/v "DisplayName" /t REG_SZ  /d "Pulse Doublerun Plugin" /f'
             utils.simplecommand(cmdDisplay)
             cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Doublerun Plugin" '\
-                    '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+                '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
             utils.simplecommand(cmd)
+
 
 def nodoublerun():
     if sys.platform.startswith('win'):
         hostname = platform.node().split('.', 1)[0]
         ucanss = re.findall(r'\d+', hostname)[0][0:6]
         if ucanss in list(P4ONLYUCANSS.replace(" ", "").split(",")):
-            logger.debug("Plugin Doublerun - Double run to be disabled on this machine")
+            logger.debug(
+                "Plugin Doublerun - Double run to be disabled on this machine")
             return True
     logger.debug("Plugin Doublerun - Double run to be enabled on this machine")
     return False
+
 
 def enabledoublerun(xmppobject):
     if sys.platform.startswith('win'):
         if platform.architecture()[0] == '64bit':
             windows_system = 'SysWOW64'
-            nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles(x86)"], "Nytrio", "OpenSSH")
+            nytrio_sshdir_path = os.path.join(
+                os.environ["ProgramFiles(x86)"], "Nytrio", "OpenSSH")
         else:
             windows_system = 'System32'
-            nytrio_sshdir_path = os.path.join(os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
+            nytrio_sshdir_path = os.path.join(
+                os.environ["ProgramFiles"], "Nytrio", "OpenSSH")
         rsync_dest_folder = os.path.join("C:\\", "Windows", windows_system)
 
         # Stop Nytrio ssh daemon
@@ -121,18 +133,33 @@ def enabledoublerun(xmppobject):
             full_rsync_file_name = os.path.join(rsync_dest_folder, rsync_file)
             if os.path.isfile(full_rsync_file_name):
                 try:
-                    logger.debug("Plugin Doublerun - Deleting file %s" % full_rsync_file_name)
+                    logger.debug(
+                        "Plugin Doublerun - Deleting file %s" %
+                        full_rsync_file_name)
                     os.remove(full_rsync_file_name)
                 except Exception as e:
-                    logger.error("Plugin Doublerun - Failed deleting file %s: %s" % (full_rsync_file_name, e))
+                    logger.error(
+                        "Plugin Doublerun - Failed deleting file %s: %s" %
+                        (full_rsync_file_name, e))
                     raise PluginError
 
         # Copy nytrio cygwin dll to Windows system folder
         try:
-            logger.debug("Plugin Doublerun - Copying Nytrio cygwin1.dll file to %s" % rsync_dest_folder)
-            shutil.copy(os.path.join(nytrio_sshdir_path, 'bin', 'cygwin1.dll'), os.path.join(rsync_dest_folder, 'cygwin1.dll'))
+            logger.debug(
+                "Plugin Doublerun - Copying Nytrio cygwin1.dll file to %s" %
+                rsync_dest_folder)
+            shutil.copy(
+                os.path.join(
+                    nytrio_sshdir_path,
+                    'bin',
+                    'cygwin1.dll'),
+                os.path.join(
+                    rsync_dest_folder,
+                    'cygwin1.dll'))
         except Exception as e:
-            logger.error("Plugin Doublerun - Failed copying Nytrio cygwin1.dll file: %s" % e)
+            logger.error(
+                "Plugin Doublerun - Failed copying Nytrio cygwin1.dll file: %s" %
+                e)
             raise PluginError
 
         # Start Nytrio ssh daemon
@@ -153,9 +180,14 @@ def disabledoublerun(xmppobject):
         rsync_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
         rsync_filename = 'rsync.zip'
         rsync_extracted_path = 'rsync'
-        rsync_dl_url = 'http://%s/downloads/win/downloads/%s' % (xmppobject.config.Server, rsync_filename)
-        logger.debug("Plugin Doublerun - Download rsync from %s" % rsync_dl_url)
-        rsync_result, rsync_txtmsg = utils.downloadfile(rsync_dl_url, os.path.join(rsync_tempdir, rsync_filename)).downloadurl()
+        rsync_dl_url = 'http://%s/downloads/win/downloads/%s' % (
+            xmppobject.config.Server, rsync_filename)
+        logger.debug(
+            "Plugin Doublerun - Download rsync from %s" %
+            rsync_dl_url)
+        rsync_result, rsync_txtmsg = utils.downloadfile(
+            rsync_dl_url, os.path.join(
+                rsync_tempdir, rsync_filename)).downloadurl()
 
         if rsync_result:
             current_dir = os.getcwd()
@@ -165,14 +197,21 @@ def disabledoublerun(xmppobject):
 
             rsync_files = os.listdir(os.path.join(rsync_tempdir, "rsync"))
             for rsync_file in rsync_files:
-                full_rsync_file_name = os.path.join(rsync_tempdir, "rsync", rsync_file)
+                full_rsync_file_name = os.path.join(
+                    rsync_tempdir, "rsync", rsync_file)
 
                 if os.path.isfile(full_rsync_file_name):
                     try:
-                        logger.debug("Plugin Doublerun - Copying file %s to %s" % (full_rsync_file_name, rsync_dest_folder))
-                        shutil.copy(full_rsync_file_name, os.path.join(rsync_dest_folder, rsync_file))
+                        logger.debug(
+                            "Plugin Doublerun - Copying file %s to %s" %
+                            (full_rsync_file_name, rsync_dest_folder))
+                        shutil.copy(
+                            full_rsync_file_name, os.path.join(
+                                rsync_dest_folder, rsync_file))
                     except Exception as e:
-                        logger.error("Plugin Doublerun - Failed copying file %s: %s" % (full_rsync_file_name, e))
+                        logger.error(
+                            "Plugin Doublerun - Failed copying file %s: %s" %
+                            (full_rsync_file_name, e))
                         raise PluginError
 
 

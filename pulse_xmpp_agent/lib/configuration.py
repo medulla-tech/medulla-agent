@@ -46,12 +46,14 @@ import re
 
 logger = logging.getLogger()
 
+
 def uniq(input):
-  output = []
-  for x in input:
-    if x not in output:
-      output.append(x)
-  return output
+    output = []
+    for x in input:
+        if x not in output:
+            output.append(x)
+    return output
+
 
 def changeconfigurationsubtitute(conffile, confsubtitute):
     """
@@ -69,12 +71,18 @@ def changeconfigurationsubtitute(conffile, confsubtitute):
     for t in confsubtitute['conflist']:
         uniq_list = uniq(confsubtitute[t])
         Config.set('substitute', t, ",".join(uniq_list))
-        logger.info("application substitut %s for %s"%(uniq_list[0],t))
+        logger.info("application substitut %s for %s" % (uniq_list[0], t))
     logger.debug("writing parameters of the substitutes")
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
-def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole):
+
+def changeconnection(
+        conffile,
+        port,
+        ipserver,
+        jidrelayserver,
+        baseurlguacamole):
     """
         This function allow to modify default configuration.
 
@@ -90,7 +98,8 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     domain = jid.JID(jidrelayserver).domain
     if not Config.has_option("configuration_server", "confdomain"):
         logger.warning("confdomain parameter missing in configuration_server")
-        logger.warning("parameters confdomain in configuration_server initialiastion value\"pulse\"")
+        logger.warning(
+            "parameters confdomain in configuration_server initialiastion value\"pulse\"")
         Config.set(
             'configuration_server',
             'confdomain',
@@ -103,6 +112,7 @@ def changeconnection(conffile, port, ipserver, jidrelayserver, baseurlguacamole)
     with open(conffile, 'w') as configfile:
         Config.write(configfile)
 
+
 def alternativeclusterconnection(conffile, data):
     """
     This function allow to add a alternative cluster.
@@ -110,24 +120,34 @@ def alternativeclusterconnection(conffile, data):
         conffile: the configuration file in which we add the alternative cluster
         data: the informations about the cluster
     """
-    logger.debug("We write the file %s to handle alternative connections" % conffile)
+    logger.debug(
+        "We write the file %s to handle alternative connections" %
+        conffile)
     with open(conffile, 'w') as configfile:
         if len(data) != 0:
             listalternative = [str(x[2]) for x in data]
-            nb_alternativeserver =  len(listalternative)
+            nb_alternativeserver = len(listalternative)
             configfile.write("[alternativelist]" + os.linesep)
-            configfile.write("listars = %s%s"%(",".join(listalternative), os.linesep))
-            configfile.write("nbserver = %s%s"%(nb_alternativeserver, os.linesep))
-            configfile.write("nextserver = 1%s"%os.linesep)
+            configfile.write(
+                "listars = %s%s" %
+                (",".join(listalternative), os.linesep))
+            configfile.write(
+                "nbserver = %s%s" %
+                (nb_alternativeserver, os.linesep))
+            configfile.write("nextserver = 1%s" % os.linesep)
             for arsdataconection in data:
-                configfile.write("[%s]%s"%(str(arsdataconection[2]),os.linesep))
-                configfile.write("port = %s%s"%(str(arsdataconection[1]),os.linesep))
-                configfile.write("server = %s%s"%(ipfromdns(str(str(arsdataconection[0]))),os.linesep))
-                configfile.write("guacamole_baseurl = %s%s"%(str(arsdataconection[3]),
-                                                             os.linesep))
+                configfile.write("[%s]%s" %
+                                 (str(arsdataconection[2]), os.linesep))
+                configfile.write("port = %s%s" %
+                                 (str(arsdataconection[1]), os.linesep))
+                configfile.write("server = %s%s" % (
+                    ipfromdns(str(str(arsdataconection[0]))), os.linesep))
+                configfile.write("guacamole_baseurl = %s%s" %
+                                 (str(arsdataconection[3]), os.linesep))
         else:
             if os.path.isfile(conffile):
                 os.unlink(conffile)
+
 
 def nextalternativeclusterconnection(conffile):
     """
@@ -140,18 +160,18 @@ def nextalternativeclusterconnection(conffile):
         return []
     Config = ConfigParser()
     Config.read(conffile)
-    nextserver          = Config.getint('alternativelist', 'nextserver')
-    nbserver            = Config.getint('alternativelist', 'nbserver')
-    listalternative     = Config.get('alternativelist', 'listars').split(",")
-    
-    serverjid = listalternative[nextserver-1]
+    nextserver = Config.getint('alternativelist', 'nextserver')
+    nbserver = Config.getint('alternativelist', 'nbserver')
+    listalternative = Config.get('alternativelist', 'listars').split(",")
+
+    serverjid = listalternative[nextserver - 1]
     logger.info("serverjid %s" % serverjid)
-    port              = Config.get(serverjid, 'port')
-    server            = Config.get(serverjid, 'server')
+    port = Config.get(serverjid, 'port')
+    server = Config.get(serverjid, 'server')
     guacamole_baseurl = Config.get(serverjid, 'guacamole_baseurl')
     try:
         domain = str(serverjid).split("@")[1].split("/")[0]
-    except:
+    except BaseException:
         domain = str(serverjid)
     nextserver = nextserver + 1
     if nextserver > nbserver:
@@ -173,7 +193,7 @@ class SingletonDecorator:
         self.instance = None
 
     def __call__(self, *args, **kwds):
-        if self.instance == None:
+        if self.instance is None:
             self.instance = self.klass(*args, **kwds)
         return self.instance
 
@@ -235,6 +255,7 @@ def loadparameters(namefile, group, key):
         value = Config.get('group', 'key')
     return value
 
+
 class substitutelist:
     def __init__(self):
         Config = ConfigParser()
@@ -253,19 +274,23 @@ class substitutelist:
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
-            self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
+            self.sub_subscribe = [x.strip()
+                                  for x in sub_subscribelocal.split(",")]
 
         if Config.has_option('substitute', 'inventory'):
             sub_inventorylocal = Config.get('substitute', 'inventory')
-            self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
+            self.sub_inventory = [x.strip()
+                                  for x in sub_inventorylocal.split(",")]
 
         if Config.has_option('substitute', 'registration'):
             sub_registrationlocal = Config.get('substitute', 'registration')
-            self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+            self.sub_registration = [x.strip()
+                                     for x in sub_registrationlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
             sub_assessorlocal = Config.get('substitute', 'assessor')
-            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
+            self.sub_assessor = [x.strip()
+                                 for x in sub_assessorlocal.split(",")]
 
         if Config.has_option('substitute', 'logger'):
             sub_loggerlocal = Config.get('substitute', 'logger')
@@ -273,21 +298,23 @@ class substitutelist:
 
         if Config.has_option('substitute', 'monitoring'):
             sub_monitoringlocal = Config.get('substitute', 'monitoring')
-            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+            self.sub_monitoring = [x.strip()
+                                   for x in sub_monitoringlocal.split(",")]
 
     def parameterssubtitute(self):
         conflist = []
-        data={ 'subscription': self.sub_subscribe,
-               'inventory': self.sub_inventory,
-               'registration': self.sub_registration,
-               'assessor': self.sub_assessor,
-               'logger': self.sub_logger,
-               'monitoring': self.sub_monitoring}
+        data = {'subscription': self.sub_subscribe,
+                'inventory': self.sub_inventory,
+                'registration': self.sub_registration,
+                'assessor': self.sub_assessor,
+                'logger': self.sub_logger,
+                'monitoring': self.sub_monitoring}
         for t in data:
-            #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
+            # if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
         data['conflist'] = conflist
         return data
+
 
 class confParameter:
     def __init__(self, typeconf='machine'):
@@ -302,7 +329,7 @@ class confParameter:
         self.passwordconnection = Config.get('connection', 'password')
         self.nameplugindir = os.path.dirname(namefileconfig)
         self.namefileconfig = namefileconfig
-        #parameters AM and kiosk tcp server
+        # parameters AM and kiosk tcp server
         self.am_local_port = 8765
         self.kiosk_local_port = 8766
         if Config.has_option('kiosk', 'am_local_port'):
@@ -314,28 +341,33 @@ class confParameter:
         self.sub_subscribe = ["master@pulse"]
         self.sub_registration = ["master@pulse"]
         self.sub_assessor = ["master@pulse"]
-        self.sub_monitoring= ["master@pulse"]
+        self.sub_monitoring = ["master@pulse"]
         self.sub_logger = ["log@pulse", "master@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
-            self.sub_subscribe = [x.strip() for x in sub_subscribelocal.split(",")]
+            self.sub_subscribe = [x.strip()
+                                  for x in sub_subscribelocal.split(",")]
 
         if Config.has_option('substitute', 'inventory'):
             sub_inventorylocal = Config.get('substitute', 'inventory')
-            self.sub_inventory = [x.strip() for x in sub_inventorylocal.split(",")]
+            self.sub_inventory = [x.strip()
+                                  for x in sub_inventorylocal.split(",")]
 
         if Config.has_option('substitute', 'registration'):
             sub_registrationlocal = Config.get('substitute', 'registration')
-            self.sub_registration = [x.strip() for x in sub_registrationlocal.split(",")]
+            self.sub_registration = [x.strip()
+                                     for x in sub_registrationlocal.split(",")]
 
         if Config.has_option('substitute', 'monitoring'):
             sub_monitoringlocal = Config.get('substitute', 'monitoring')
-            self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+            self.sub_monitoring = [x.strip()
+                                   for x in sub_monitoringlocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
             sub_assessorlocal = Config.get('substitute', 'assessor')
-            self.sub_assessor = [x.strip() for x in sub_assessorlocal.split(",")]
+            self.sub_assessor = [x.strip()
+                                 for x in sub_assessorlocal.split(",")]
 
         if Config.has_option('substitute', 'logger'):
             sub_loggerlocal = Config.get('substitute', 'logger')
@@ -349,18 +381,23 @@ class confParameter:
         if self.agenttype == "machine":
             self.alwaysnetreconf = False
             if Config.has_option('connection', 'alwaysnetreconf'):
-                self.alwaysnetreconf = Config.getboolean('connection', 'alwaysnetreconf')
+                self.alwaysnetreconf = Config.getboolean(
+                    'connection', 'alwaysnetreconf')
 
-            filePath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                                    ".."))
-            path_reconf_nomade = os.path.join(filePath, "BOOL_FILE_ALWAYSNETRECONF")
+            filePath = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(
+                        os.path.realpath(__file__)),
+                    ".."))
+            path_reconf_nomade = os.path.join(
+                filePath, "BOOL_FILE_ALWAYSNETRECONF")
             if self.alwaysnetreconf:
                 # We create the bool file that will force the reconfiguration
                 if not os.path.exists(path_reconf_nomade):
                     fh = open(path_reconf_nomade, "w")
-                    fh.write("DO NOT REMOVE \n"\
-                        "parameter alwaysnetreconf is True\n "\
-                            "it will reconfigure the machine at every start")
+                    fh.write("DO NOT REMOVE \n"
+                             "parameter alwaysnetreconf is True\n "
+                             "it will reconfigure the machine at every start")
                     fh.close()
             else:
                 if os.path.exists(path_reconf_nomade):
@@ -374,37 +411,42 @@ class confParameter:
 
             self.syncthing_port = 23000
             if Config.has_option('syncthing-deploy', 'syncthing_port'):
-                self.syncthing_port = Config.getint('syncthing-deploy', 'syncthing_port')
+                self.syncthing_port = Config.getint(
+                    'syncthing-deploy', 'syncthing_port')
 
             self.syncthing_gui_port = 8385
             if Config.has_option('syncthing-deploy', 'syncthing_gui_port'):
-                self.syncthing_gui_port = Config.getint('syncthing-deploy', 'syncthing_gui_port')
+                self.syncthing_gui_port = Config.getint(
+                    'syncthing-deploy', 'syncthing_gui_port')
 
             if Config.has_option('syncthing-deploy', 'syncthing_share'):
-                self.syncthing_share = Config.get('syncthing-deploy', 'syncthing_share')
+                self.syncthing_share = Config.get(
+                    'syncthing-deploy', 'syncthing_share')
         else:
             self.syncthing_home = "/var/lib/pulse2/.config/syncthing"
             self.syncthing_gui_port = 8384
             if Config.has_option('syncthing', 'activation'):
-                self.syncthing_on = Config.getboolean('syncthing', 'activation')
+                self.syncthing_on = Config.getboolean(
+                    'syncthing', 'activation')
             else:
                 self.syncthing_on = True
         if Config.has_option('syncthing-deploy', 'syncthing_home'):
-            self.syncthing_home = Config.get('syncthing-deploy', 'syncthing_home')
+            self.syncthing_home = Config.get(
+                'syncthing-deploy', 'syncthing_home')
 
-        logger.debug('activation syncthing %s'%self.syncthing_on)
+        logger.debug('activation syncthing %s' % self.syncthing_on)
         # SYNCTHING #################
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
             self.moderelayserver = Config.get('type', 'moderelayserver')
-        logger.info('moderelayserver %s'%self.moderelayserver)
+        logger.info('moderelayserver %s' % self.moderelayserver)
 
         if Config.has_option("updateagent", "updating"):
             self.updating = Config.getint('updateagent', 'updating')
         else:
             self.updating = 1
-        logger.info('updating %s'%self.updating)
+        logger.info('updating %s' % self.updating)
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint('networkstatus', 'netchanging')
@@ -413,13 +455,14 @@ class confParameter:
                 self.netchanging = 0
             else:
                 self.netchanging = 1
-        logger.info('netchanging %s'%self.netchanging)
+        logger.info('netchanging %s' % self.netchanging)
 
         if Config.has_option("networkstatus", "detectiontime"):
-            self.detectiontime = Config.getint('networkstatus', 'detectiontime')
+            self.detectiontime = Config.getint(
+                'networkstatus', 'detectiontime')
         else:
             self.detectiontime = 300
-        logger.info('detection time for networkstatus%s'%self.detectiontime)
+        logger.info('detection time for networkstatus%s' % self.detectiontime)
 
         self.parametersscriptconnection = {}
 
@@ -427,22 +470,23 @@ class confParameter:
             self.concurrentdeployments = 10
             if Config.has_option("global", "concurrentdeployments"):
                 try:
-                    self.concurrentdeployments = Config.getint('global',
-                                                               'concurrentdeployments')
-                except Exception as e :
+                    self.concurrentdeployments = Config.getint(
+                        'global', 'concurrentdeployments')
+                except Exception as e:
                     logger.warning(
-                        "parameter [global]  concurrentdeployments :(%s)" %str(e))
+                        "parameter [global]  concurrentdeployments :(%s)" %
+                        str(e))
                     logger.warning(
-                        "parameter [global]  concurrentdeployments"\
-                            " : parameter set to 10")
+                        "parameter [global]  concurrentdeployments"
+                        " : parameter set to 10")
 
             if self.concurrentdeployments < 1:
                 logger.warning(
-                        "parameter [global]  concurrentdeployments "\
-                            " : parameter must be greater than or equal to 1")
+                    "parameter [global]  concurrentdeployments "
+                    " : parameter must be greater than or equal to 1")
                 logger.warning(
-                        "parameter [global]  concurrentdeployments "\
-                            ": parameter set to 10")
+                    "parameter [global]  concurrentdeployments "
+                    ": parameter set to 10")
                 self.concurrentdeployments = 10
 
             if Config.has_option("connection", "portARSscript"):
@@ -479,8 +523,8 @@ class confParameter:
             self.defaultdir = self.defaultdir[:-1]
         self.listexclude = ""
         if Config.has_option("browserfile", "listexclude"):
-        # listexclude=/usr,/etc,/var,/lib,/boot,/run,/proc,/lib64,
-        # /bin,/sbin,/dev,/lost+found,/media,/mnt,/opt,/root,/srv,/sys,/vagrant
+            # listexclude=/usr,/etc,/var,/lib,/boot,/run,/proc,/lib64,
+            # /bin,/sbin,/dev,/lost+found,/media,/mnt,/opt,/root,/srv,/sys,/vagrant
             self.listexclude = Config.get('browserfile', 'listexclude')
         self.excludelist = [x.strip() for x in self.listexclude.split(",")
                             if x.strip() != ""]
@@ -540,7 +584,7 @@ class confParameter:
                     logger.warning(
                         "parameter File plugin %s : missing" %
                         self.nameplugindir)
-                    #self.nameplugindir=""
+                    # self.nameplugindir=""
         try:
             self.agentcommand = Config.get('global', 'relayserver_agent')
         except BaseException:
@@ -552,11 +596,12 @@ class confParameter:
             else:
                 self.diragentbase = "/var/lib/pulse2/xmpp_baseremoteagent/"
 
-
-        jidsufixetempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                         "INFOSTMP",
-                                         "JIDSUFFIXE")
-        jidsufixe=''
+        jidsufixetempinfo = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            "INFOSTMP",
+            "JIDSUFFIXE")
+        jidsufixe = ''
         if os.path.exists(jidsufixetempinfo):
             jidsufixe = utils.file_get_contents(jidsufixetempinfo)[:3]
         else:
@@ -565,13 +610,13 @@ class confParameter:
         # if aucune interface. il n'y a pas de macs adress. ressource missing
         try:
             ressource = utils.name_jid()
-        except:
+        except BaseException:
             ressource = "missingmac"
             logger.warning('list mac missing')
         #########chatroom############
         #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
         #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
-        ## Deployment chatroom
+        # Deployment chatroom
         #self.passwordconnexionmuc = Config.get('chatroom', 'password')
         self.NickName = "%s.%s" % (platform.node().split('.')[0], jidsufixe)
         ########chat#############
@@ -599,7 +644,7 @@ class confParameter:
         except BaseException:
             self.compress = "no"
         self.compress = self.compress.lower()
-        if self.compress not in ["zip", "gzip", "bz2","No"]:
+        if self.compress not in ["zip", "gzip", "bz2", "No"]:
             self.compress = "no"
         defaultnamelogfile = "xmpp-agent-machine.log"
         if self.agenttype == "relayserver":
@@ -610,10 +655,10 @@ class confParameter:
             if sys.platform.startswith('win'):
                 self.logfile = os.path.join(
                     os.environ["ProgramFiles"],
-                                "Pulse",
-                                "var",
-                                "log",
-                                defaultnamelogfile)
+                    "Pulse",
+                    "var",
+                    "log",
+                    defaultnamelogfile)
             elif sys.platform.startswith('darwin'):
                 self.logfile = os.path.join(
                     "/opt",
@@ -627,10 +672,12 @@ class confParameter:
 
         if Config.has_option("configuration_server", "confserver"):
             self.confserver = Config.get('configuration_server', 'confserver')
-            listserver = [ ipfromdns(x.strip()) for x in self.confserver.split(",")
-                        if x.strip() != ""]
+            listserver = [
+                ipfromdns(
+                    x.strip()) for x in self.confserver.split(",") if x.strip() != ""]
             listserver = list(set(listserver))
-            self.confserver = listserver[random.randint(0,len(listserver)-1)]
+            self.confserver = listserver[random.randint(
+                0, len(listserver) - 1)]
         if Config.has_option("configuration_server", "confport"):
             self.confport = Config.get('configuration_server', 'confport')
         if Config.has_option("configuration_server", "confpassword"):
@@ -652,7 +699,7 @@ class confParameter:
                 self.timealternatif = [int(x) for x in
                                        re.split(r'[a-zA-Z;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\$\|\s]\s*',
                                                 timeal)
-                                       if x.strip()!=""][:2]
+                                       if x.strip() != ""][:2]
                 self.timealternatif.sort()
                 if len(self.timealternatif) < 2:
                     raise
@@ -662,16 +709,22 @@ class confParameter:
                     if self.timealternatif[1] > 30:
                         self.timealternatif[1] = 30
             except Exception:
-                self.timealternatif=[2,30]
-                logger.warning('default [Global] parameter "alternativetimedelta" is %s'%self.timealternatif)
-            logger.info('[Global] Parameter "alternativetimedelta" is %s'%self.timealternatif)
+                self.timealternatif = [2, 30]
+                logger.warning(
+                    'default [Global] parameter "alternativetimedelta" is %s' %
+                    self.timealternatif)
+            logger.info(
+                '[Global] Parameter "alternativetimedelta" is %s' %
+                self.timealternatif)
 
         try:
-            self.levellog = self._levellogdata(Config.get('global', 'log_level'))
+            self.levellog = self._levellogdata(
+                Config.get('global', 'log_level'))
         except BaseException:
             self.levellog = 20
         try:
-            self.log_level_sleekxmpp = self._levellogdata(Config.get('global', 'log_level_sleekxmpp'))
+            self.log_level_sleekxmpp = self._levellogdata(
+                Config.get('global', 'log_level_sleekxmpp'))
         except BaseException:
             self.log_level_sleekxmpp = 50
 
@@ -687,7 +740,9 @@ class confParameter:
 
         try:
             jidagentsiveo = Config.get('global', 'allow_order')
-            self.jidagentsiveo = [jid.JID(x.strip()).user for x in jidagentsiveo.split(",")]
+            self.jidagentsiveo = [
+                jid.JID(
+                    x.strip()).user for x in jidagentsiveo.split(",")]
         except BaseException:
             self.jidagentsiveo = ["agentsiveo"]
 
@@ -704,12 +759,12 @@ class confParameter:
         self.max_size_stanza_xmpp = 1048576
         if Config.has_option("quick_deploy", "max_size_stanza_xmpp"):
             self.max_size_stanza_xmpp = Config.getint("quick_deploy",
-                                                    "max_size_stanza_xmpp")
+                                                      "max_size_stanza_xmpp")
 
         self.nbconcurrentquickdeployments = 10
         if Config.has_option("quick_deploy", "concurrentdeployments"):
-            self.nbconcurrentquickdeployments = Config.getint("quick_deploy",
-                                                    "concurrentdeployments")
+            self.nbconcurrentquickdeployments = Config.getint(
+                "quick_deploy", "concurrentdeployments")
         # we make sure that the temp for the
         # inventories is greater than or equal to 1 hour.
         # if the time for the inventories is 0, it is left at 0.
@@ -718,10 +773,10 @@ class confParameter:
         if Config.has_option("inventory", "inventory_interval"):
             self.inventory_interval = Config.getint("inventory",
                                                     "inventory_interval")
-            if self.inventory_interval !=0 and self.inventory_interval < 3600:
+            if self.inventory_interval != 0 and self.inventory_interval < 3600:
                 self.inventory_interval = 36000
-        # ########################## DEBUG switch_scheduling ########################
-        #clean session if ban jid for deploy
+        # ########################## DEBUG switch_scheduling ##################
+        # clean session if ban jid for deploy
         self.sched_remove_ban = True
         self.sched_check_connection = True
         self.sched_quick_deployment_load = True
@@ -735,7 +790,7 @@ class confParameter:
         self.sched_reload_deployments = True
         self.sched_check_inventory = True
         self.sched_session_reload = True
-        self.sched_check_events  = True
+        self.sched_check_events = True
         self.sched_check_cmd_file = True
         self.sched_init_syncthing = True
         self.sched_check_syncthing_deployment = True
@@ -747,18 +802,18 @@ class confParameter:
 
         if Config.has_option("switch_scheduling",
                              "sched_check_connection"):
-            self.sched_check_connection = Config.getboolean('switch_scheduling',
-                                                            'sched_check_connection')
+            self.sched_check_connection = Config.getboolean(
+                'switch_scheduling', 'sched_check_connection')
 
         if Config.has_option("switch_scheduling",
                              "sched_quick_deployment_load"):
-            self.sched_quick_deployment_load = Config.getboolean('switch_scheduling',
-                                                                 'sched_quick_deployment_load')
+            self.sched_quick_deployment_load = Config.getboolean(
+                'switch_scheduling', 'sched_quick_deployment_load')
 
         if Config.has_option("switch_scheduling",
                              "sched_scheduled_plugins"):
-            self.sched_scheduled_plugins = Config.getboolean('switch_scheduling',
-                                                             'sched_scheduled_plugins')
+            self.sched_scheduled_plugins = Config.getboolean(
+                'switch_scheduling', 'sched_scheduled_plugins')
 
         if Config.has_option("switch_scheduling",
                              "sched_update_plugin"):
@@ -776,23 +831,23 @@ class confParameter:
 
         if Config.has_option("switch_scheduling",
                              "sched_manage_session"):
-            self.sched_manage_session = Config.getboolean('switch_scheduling',
-                                                          'sched_manage_session')
+            self.sched_manage_session = Config.getboolean(
+                'switch_scheduling', 'sched_manage_session')
 
         if Config.has_option("switch_scheduling",
                              "sched_reload_deployments"):
-            self.sched_reload_deployments = Config.getboolean('switch_scheduling',
-                                                              'sched_reload_deployments')
+            self.sched_reload_deployments = Config.getboolean(
+                'switch_scheduling', 'sched_reload_deployments')
 
         if Config.has_option("switch_scheduling",
                              "sched_check_inventory"):
-            self.sched_check_inventory = Config.getboolean('switch_scheduling',
-                                                           'sched_check_inventory')
+            self.sched_check_inventory = Config.getboolean(
+                'switch_scheduling', 'sched_check_inventory')
 
         if Config.has_option("switch_scheduling",
                              "sched_session_reload"):
-            self.sched_session_reload = Config.getboolean('switch_scheduling',
-                                                          'sched_session_reload')
+            self.sched_session_reload = Config.getboolean(
+                'switch_scheduling', 'sched_session_reload')
 
         if Config.has_option("switch_scheduling",
                              "sched_check_events"):
@@ -801,56 +856,57 @@ class confParameter:
 
         if Config.has_option("switch_scheduling",
                              "sched_check_cmd_file"):
-            self.sched_check_cmd_file = Config.getboolean('switch_scheduling',
-                                                          'sched_check_cmd_file')
+            self.sched_check_cmd_file = Config.getboolean(
+                'switch_scheduling', 'sched_check_cmd_file')
 
         if Config.has_option("switch_scheduling",
                              "sched_init_syncthing"):
-            self.sched_init_syncthing = Config.getboolean('switch_scheduling',
-                                                          'sched_init_syncthing')
+            self.sched_init_syncthing = Config.getboolean(
+                'switch_scheduling', 'sched_init_syncthing')
 
         if Config.has_option("switch_scheduling",
                              "sched_check_synthing_config"):
-            self.sched_check_synthing_config = Config.getboolean('switch_scheduling',
-                                                                 'sched_check_synthing_config')
+            self.sched_check_synthing_config = Config.getboolean(
+                'switch_scheduling', 'sched_check_synthing_config')
 
         if Config.has_option("switch_scheduling",
                              "sched_check_syncthing_deployment"):
-            self.sched_check_syncthing_deployment = Config.getboolean('switch_scheduling',
-                                                                      'sched_check_syncthing_deployment')
+            self.sched_check_syncthing_deployment = Config.getboolean(
+                'switch_scheduling', 'sched_check_syncthing_deployment')
 
         self.excludedplugins = []
         if Config.has_option("excluded_plugins",
                              "excludedplugins"):
             excludedpluginstmp = Config.get('excluded_plugins',
-                                             'excludedplugins').split(",")
+                                            'excludedplugins').split(",")
             self.excludedplugins = [x.strip() for x in excludedpluginstmp]
 
         self.excludedscheduledplugins = []
         if Config.has_option("excluded_scheduled_plugins",
                              "excludedscheduledplugins"):
-            excludedscheduledpluginstmp = Config.get('excluded_scheduled_plugins',
-                                                      'excludedscheduledplugins').split(",")
-            self.excludedscheduledplugins = [x.strip() for x in excludedscheduledpluginstmp]
-
+            excludedscheduledpluginstmp = Config.get(
+                'excluded_scheduled_plugins',
+                'excludedscheduledplugins').split(",")
+            self.excludedscheduledplugins = [
+                x.strip() for x in excludedscheduledpluginstmp]
 
         self.scheduling_plugin_action = True
         self.plugin_action = True
         if Config.has_option("call_plugin",
                              "scheduling_plugin_action"):
-            self.scheduling_plugin_action = Config.getboolean('call_plugin',
-                                                           'scheduling_plugin_action')
+            self.scheduling_plugin_action = Config.getboolean(
+                'call_plugin', 'scheduling_plugin_action')
 
         if Config.has_option("call_plugin",
                              "plugin_action"):
             self.plugin_action = Config.getboolean('call_plugin',
-                                                           'plugin_action')
-        # ########################## END DEBUG switch_scheduling ########################
+                                                   'plugin_action')
+        # ########################## END DEBUG switch_scheduling ##############
         # configuration monitoring
         if self.agenttype == "machine":
             if Config.has_option("monitoring", "monitoring_agent_config_file"):
-                self.monitoring_agent_config_file = Config.get("monitoring",
-                                                        "monitoring_agent_config_file")
+                self.monitoring_agent_config_file = Config.get(
+                    "monitoring", "monitoring_agent_config_file")
             else:
                 # Config file not found
                 self.monitoring_agent_config_file = ""
@@ -883,14 +939,16 @@ class confParameter:
         if Config.has_option('fileviewer', 'sources'):
             self.paths = Config.get('fileviewer', 'sources').split(';')
 
-        # The size_paths drive the final size of paths, names and extensions parameters
+        # The size_paths drive the final size of paths, names and extensions
+        # parameters
         size_paths = len(self.paths)
 
         if Config.has_option('fileviewer', 'names'):
             # Get names from ini file
             self.names = Config.get('fileviewer', 'names').split(';')
 
-        # If some names are missing, complete display names associated to each paths
+        # If some names are missing, complete display names associated to each
+        # paths
         count = 0
         while count < size_paths:
             try:
@@ -905,7 +963,8 @@ class confParameter:
         if Config.has_option('fileviewer', 'extensions'):
             self.extensions = Config.get('fileviewer', 'extensions').split(';')
 
-        # If some extensions group are missing, complete the list for each paths
+        # If some extensions group are missing, complete the list for each
+        # paths
         count = 0
         while count < size_paths:
             try:
@@ -917,7 +976,7 @@ class confParameter:
 
         count = 0
         while count < size_paths:
-            if type(self.extensions[count]) is list:
+            if isinstance(self.extensions[count], list):
                 self.extensions[count] = self.extensions[count]
             else:
                 self.extensions[count] = self.extensions[count].split(',')
@@ -926,12 +985,11 @@ class confParameter:
         if Config.has_option('fileviewer', 'date_format'):
             self.date_format = Config.get('fileviewer', 'date_format')
 
-
     def loadparametersplugins(self, namefile):
         Config = ConfigParser()
         Config.read(namefile)
-        if os.path.isfile(namefile+".local"):
-            Config.read(namefile+".local")
+        if os.path.isfile(namefile + ".local"):
+            Config.read(namefile + ".local")
         return Config.items("parameters")
 
         if Config.has_option('fileviewer', 'host'):
@@ -1123,8 +1181,10 @@ def setconfigfile(listdataconfiguration):
             bool: False if the is less than 2 config files and config folder does not exist
     TODO: Finish this documentation
     """
-    if len (listdataconfiguration) > 1 and directoryconffile() is not None:
-        fileofconf = os.path.join(directoryconffile(), listdataconfiguration[1])
+    if len(listdataconfiguration) > 1 and directoryconffile() is not None:
+        fileofconf = os.path.join(
+            directoryconffile(),
+            listdataconfiguration[1])
     else:
         return False
     if listdataconfiguration[0].lower() == "add":
@@ -1136,7 +1196,10 @@ def setconfigfile(listdataconfiguration):
             # test si section existe.
             if not listdataconfiguration[2] in fileconf.sections():
                 fileconf.add_section(listdataconfiguration[2])
-            fileconf.set(listdataconfiguration[2], listdataconfiguration[3], listdataconfiguration[4])
+            fileconf.set(
+                listdataconfiguration[2],
+                listdataconfiguration[3],
+                listdataconfiguration[4])
             with open(fileofconf, 'w') as configfile:
                 fileconf.write(configfile)
             return True
@@ -1147,14 +1210,18 @@ def setconfigfile(listdataconfiguration):
             return False
         fileconf = ConfigParser()
         fileconf.read(fileofconf)
-        if listdataconfiguration[2] != "" and fileconf.has_section(listdataconfiguration[2]):
+        if listdataconfiguration[2] != "" and fileconf.has_section(
+                listdataconfiguration[2]):
             if len(fileconf.options(listdataconfiguration[2])) == 0:
                 fileconf.remove_section(listdataconfiguration[2])
                 with open(fileofconf, 'w') as configfile:
                     fileconf.write(configfile)
                 return True
-            if listdataconfiguration[3] != "" and fileconf.has_option(listdataconfiguration[2], listdataconfiguration[3]):
-                fileconf.remove_option(listdataconfiguration[2], listdataconfiguration[3])
+            if listdataconfiguration[3] != "" and fileconf.has_option(
+                    listdataconfiguration[2], listdataconfiguration[3]):
+                fileconf.remove_option(
+                    listdataconfiguration[2],
+                    listdataconfiguration[3])
                 if len(fileconf.options(listdataconfiguration[2])) == 0:
                     fileconf.remove_section(listdataconfiguration[2])
                 with open(fileofconf, 'w') as configfile:

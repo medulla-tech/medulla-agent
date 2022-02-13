@@ -31,12 +31,13 @@ plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}
 # param_2 = 'del@__@agentconf.ini@__@global@__@loglevel'
 # nb_params = 2
 
-#---START-PARAMS---
+# ---START-PARAMS---
 # Add parameters here
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'
 # param_2 = 'del@__@agentconf.ini@__@global@__@loglevel'
 # nb_params = 2
-#---END-PARAMS---
+# ---END-PARAMS---
+
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
@@ -52,13 +53,15 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             msglog = "Processing parameter %s" % eval(param_num)
             msg.append(msglog)
             datasetting = eval(param_num).split("@__@")
-            if len(datasetting) > 0 and (datasetting[0].lower() == "add" or datasetting[0].lower() =="del" ):
+            if len(datasetting) > 0 and (
+                    datasetting[0].lower() == "add" or datasetting[0].lower() == "del"):
                 if not setconfigfile(datasetting):
                     msglog = "Error setting parameter %s" % eval(param_num)
                     logger.error(msglog)
                     msg.append(msglog)
                 else:
-                    msglog = "Parameter %s successfully processed" % eval(param_num)
+                    msglog = "Parameter %s successfully processed" % eval(
+                        param_num)
                     msg.append(msglog)
     except NameError:
         msglog = "Parameters not defined at start of plugin. Nothing to do"
