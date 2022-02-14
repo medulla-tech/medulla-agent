@@ -1,7 +1,7 @@
 var/lib/pulse2/clients/config/agentconf.ini
 var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 var/lib/pulse2/clients/config/inventory.ini
-var/lib/pulse2/clients/config/start.ini
+var/lib/pulse2/clients/config/start_machine.ini
 var/lib/pulse2/clients/config/startupdate.ini
 /var/lib/pulse2/clients/config/updatetightvnc.ini
 /var/lib/pulse2/clients/config/updateopenssh.ini
