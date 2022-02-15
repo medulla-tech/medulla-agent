@@ -38,6 +38,8 @@ def action( objectxmpp, action, sessionid, data, msg, dataerreur):
     logger.debug("=====================================================")
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
+    logger.debug("Looking for installed mmc modules")
+    objectxmpp.listmodulemmc = []
     # send demande module mmc actif sur master
     logger.debug("Looking for installed mmc modules")
     objectxmpp.listmodulemmc = []

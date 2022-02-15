@@ -23,7 +23,6 @@
 import logging
 from lib import utils
 import time
-
 import os
 plugin = {"VERSION": "2.1", "NAME": "enddeploy",  "TYPE": "all"}
 
