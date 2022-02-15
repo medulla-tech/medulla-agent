@@ -497,16 +497,102 @@ class XmppMasterDatabase(DatabaseHelper):
             return resultlist
 
     @DatabaseHelper._sessionm
-    def update_state_deploy(self, session, id, state):
+    def update_state_deploy(self, session, sql_id, state):
+        """
+            Reset the state of the deploiement to `state` for the
+            `sql_id` deploiements
+            Args:
+                session: The SQL Alchemy session
+                sql_id: The id of the deploiement that need to be reset
+                state: The new state of the deploiement
+        """
         try:
             sql = """UPDATE `xmppmaster`.`deploy`
                      SET `state`='%s'
-                     WHERE `id`='%s';""" % (state, id)
+                     WHERE `id`='%s';""" % (state, sql_id)
             session.execute(sql)
             session.commit()
             session.flush()
         except Exception as e:
             logging.getLogger().error(str(e))
+
+    def replaydeploysessionid(self, sessionid, force_redeploy=0, reschedule=0):
+        """
+            Call the mmc_restart_deploy_sessionid stored procedure
+            Args:
+                session: The SQL Alchemy session
+                sessionid: The sessionid of the deploiement
+                force_redeploy: Tells if we force to redeploy ALL.
+                reschedule: Tell if we reschedule the deploiements
+        """
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+            self.logger.info(
+                "Call the mmc_restart_deploy_sessionid stored procedure for the sessionid: %s"
+                "force_redeploy is set to %s and reschedule is set to %s" %
+                (sessionid, force_redeploy, reschedule))
+            cursor = connection.cursor()
+            cursor.callproc(
+                "mmc_restart_deploy_sessionid", [
+                    sessionid, force_redeploy, reschedule])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        return
+
+    def restart_blocked_deployments(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments stored procedure
+            It plans with blocked deployments again
+        """
+        self.restart_blocked_deployments_on_status_transfer_failed(nb_reload)
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+
+        if results:
+            results = "%s" % results[0]
+            self.logger.info(
+                "Calling the mmc_restart_deploy_sessionid stored procedure with %s" %
+                nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
+    def restart_blocked_deployments_on_status_transfer_failed(
+            self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments_transfer_error stored procedure
+            It plans with transfert failed blocked deployments again
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc(
+                "mmc_restart_blocked_deployments_transfer_error",
+                [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        if results:
+            results = "%s" % results[0]
+            self.logger.info(
+                "Calling the mmc_restart_blocked_deployments_transfer_error stored procedure with %s" %
+                nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
 
     @DatabaseHelper._sessionm
     def updatedeploytosessionid(self, session, status, sessionid):
@@ -2304,8 +2390,7 @@ class XmppMasterDatabase(DatabaseHelper):
                   endcmd=None,
                   macadress=None,
                   result=None,
-                  syncthing=None
-                  ):
+                  syncthing=None):
         """
         parameters
         startcmd and endcmd  int(timestamp) either str(datetime)
@@ -3235,8 +3320,12 @@ class XmppMasterDatabase(DatabaseHelper):
         """
             this function return the machines list for 1 group id and 1 command id
         """
-        machine = session.query(Deploy).filter(and_(Deploy.group_uuid == grpid,
-                                                    Deploy.command == cmdid))
+        machine = session.query(Deploy).filter(
+            and_(
+                Deploy.group_uuid == grpid,
+                Deploy.command == cmdid,
+                not_(
+                    Deploy.sessionid.like('missingagent%'))))
         machine = machine.all()
         session.commit()
         session.flush()
@@ -7703,6 +7792,50 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         except Exception as e:
             logging.getLogger().error(str(e))
             return -1
+
+    def __binding_application_check(
+            self,
+            datastring,
+            bindingstring,
+            device_type):
+        resultbinding = None
+        try:
+            logging.getLogger().debug("data for binding is %s" % datastring)
+            data = json.loads(datastring)
+        except Exception as e:
+            msg = "[binding error device rule %s] : data from message" \
+                " monitoring format json error %s" % (device_type, str(e))
+            logging.getLogger().error("%s" % msg)
+            return (msg, -1)
+
+        try:
+            logging.getLogger().debug("compile")
+            code = compile(bindingstring, '<string>', 'exec')
+            exec(code)
+        except KeyError as e:
+            msg = "[binding error device rule %s] : key %s in "\
+                "binding:\n%s\nis missing. Check your binding on data\n%s" % (
+                    device_type,
+                    str(e),
+                    bindingstring,
+                    json.dumps(data, indent=4))
+            logging.getLogger().error("%s" % msg)
+            return (msg, -1)
+        except Exception as e:
+            msg = "[binding device rule %s error %s] in binding:\n%s\\ "\
+                "on data\n%s" % (device_type,
+                                 str(e),
+                                 bindingstring,
+                                 json.dumps(data, indent=4))
+            logging.getLogger().error("%s" % msg)
+            return (msg, -1)
+        msg = "[ %s : result binding %s for binding:\n%s\\ "\
+            "on data\n%s" % (device_type,
+                             resultbinding,
+                             bindingstring,
+                             json.dumps(data, indent=4))
+        logging.getLogger().debug("%s" % msg)
+        return (msg, resultbinding)
 
     def __binding_application(self, datastring, bindingstring, device_type):
         resultbinding = None

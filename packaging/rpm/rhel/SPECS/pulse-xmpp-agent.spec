@@ -148,6 +148,7 @@ fi
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/relayconf.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/package_watching.ini
 %config(noreplace) %_sysconfdir/pulse-xmpp-agent/manage_scheduler_relay.ini
+%config(noreplace) %_sysconfdir/pulse-xmpp-agent/start_relay.ini
 %_var/log/pulse
 %dir %{python3_sitelib}/pulse_xmpp_agent/
 %{python3_sitelib}/pulse_xmpp_agent/lib/
@@ -242,7 +243,7 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/agentconf.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/manage_scheduler_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/inventory.ini
-%config(noreplace) %_var/lib/pulse2/clients/config/start.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/start_machine.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
@@ -330,6 +331,7 @@ cp pulse_xmpp_agent/config/wakeonlan.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/relayconf.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/package_watching.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 cp pulse_xmpp_agent/config/manage_scheduler_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
+cp pulse_xmpp_agent/config/start_relay.ini %buildroot%_sysconfdir/pulse-xmpp-agent
 mkdir -p %buildroot%_sysconfdir/logrotate.d/
 cp contrib/scripts/pulse-xmpp-agent-relay.logrotate %buildroot%_sysconfdir/logrotate.d/pulse-xmpp-agent-relay
 mkdir -p %buildroot%{python3_sitelib}/pulse_xmpp_master_substitute/
@@ -388,7 +390,7 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/agentconf.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/manage_scheduler_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/inventory.ini %buildroot%_var/lib/pulse2/clients/config/
-cp pulse_xmpp_agent/config/start.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/start_machine.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/

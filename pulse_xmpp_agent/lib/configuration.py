@@ -613,32 +613,42 @@ class confParameter:
         except BaseException:
             ressource = "missingmac"
             logger.warning('list mac missing')
-        #########chatroom############
-        #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
-        #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
+        # Chatroom
         # Deployment chatroom
-        #self.passwordconnexionmuc = Config.get('chatroom', 'password')
         self.NickName = "%s.%s" % (platform.node().split('.')[0], jidsufixe)
-        ########chat#############
-        # The jidagent must be the smallest value in the list of mac addresses
-        self.chatserver = Config.get('chat', 'domain')
-        # Smallest mac address
-        nameuser = self.NickName
+        # Chat
+        # The jidagent's ressource must be the smallest value in the mac address list.
+        # except for the rspulse@pulse ressource which is the main relay
+        chatserver = Config.get('chat', 'domain')
 
-        if Config.has_option("jid_01", "jidname"):
-            self.jidagent = Config.get('jid_01', 'jidname')
-            nameuser = jid.JID(self.jidagent).user
-        self.jidagent = "%s@%s/%s" % (nameuser,
+        # Smallest mac address
+        username = self.NickName
+        domain = Config.get('chat', 'domain')
+
+        self.jidagent = "%s@%s/%s" % (username,
                                       Config.get(
                                           'chat',
                                           'domain'),
                                       ressource)
+
+        if Config.has_option("jid_01", "jidname"):
+            self.jidagent = Config.get('jid_01', 'jidname')
+            username = jid.JID(self.jidagent).user
+
+        if jid.JID(self.jidagent).bare == "rspulse@pulse":
+            self.jidagent = "rspulse@pulse/mainrelay"
+        else:
+            self.jidagent = "%s@%s/%s" % (username,
+                                          domain,
+                                          ressource)
         try:
             self.nbrotfile = Config.getint('global', 'nb_rot_file')
         except BaseException:
             self.nbrotfile = 6
+
         if self.nbrotfile < 1:
             self.nbrotfile = 1
+
         try:
             self.compress = Config.get('global', 'compress')
         except BaseException:
