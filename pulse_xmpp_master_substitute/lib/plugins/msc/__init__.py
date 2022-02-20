@@ -2236,7 +2236,7 @@ class MscDatabase(DatabaseHelper):
             params['min'] = 0
         if 'max' not in params:
             params['max'] = -1
-        # if not params.has_key('finished') or params['finished'] == '':
+        # if not 'finished' in params or params['finished'] == '':
         # params['finished'] = False
         try:
             params['order_by'] = getattr(
