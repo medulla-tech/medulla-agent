@@ -35,11 +35,11 @@ class fifodeploy:
         # repertoire fifo
         self.FIFOdeploy = []  # name des file fifo
         self.SESSIONdeploy = {}  # liste des sessions deploy mis en file
-        self.dirsavedatafifo = os.path.abspath(os.path.join(
-            os.path.dirname(
-                os.path.realpath(__file__)),
-            "..",
-            "fifodeploy"))
+        self.dirsavedatafifo = os.path.abspath(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "..", "fifodeploy"
+            )
+        )
         if not os.path.exists(self.dirsavedatafifo):
             os.makedirs(self.dirsavedatafifo, mode=0o007)
         Logger.debug("Manager fifo : %s" % self.dirsavedatafifo)
@@ -65,11 +65,10 @@ class fifodeploy:
 
     def loadfifo(self):
         self.FIFOdeploy = [
-            os.path.basename(x) for x in glob.glob(
-                os.path.join(
-                    self.dirsavedatafifo,
-                    "*")) if (
-                os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
+            os.path.basename(x)
+            for x in glob.glob(os.path.join(self.dirsavedatafifo, "*"))
+            if (os.path.isfile(x) and os.path.basename(x).endswith("fifo"))
+        ]
         self.FIFOdeploy.sort()
         self._InitSessiondeploy()
         return self.SESSIONdeploy
@@ -81,11 +80,11 @@ class fifodeploy:
             Logger.debug("Verify slot for fifo")
             for fifodata in self.FIFOdeploy:
                 data = self.readfifo(fifodata)
-                if data['enddate'] < time.time():
+                if data["enddate"] < time.time():
                     Logger.debug(
-                        "fifo file of deployment slot has passed.%s" %
-                        (fifodata))
-                    sessionterminate.append(data['sessionid'])
+                        "fifo file of deployment slot has passed.%s" % (fifodata)
+                    )
+                    sessionterminate.append(data["sessionid"])
                     removefilefifo.append(fifodata)
                 else:
                     Logger.debug("fifo waitting for deploy.%s" % (fifodata))
@@ -93,46 +92,43 @@ class fifodeploy:
                 if len(sessionterminate) > 0:
                     Logger.debug(
                         "return abandons the deployment of the session "
-                        "the deployment slot has passed.%s" %
-                        (sessionterminate))
+                        "the deployment slot has passed.%s" % (sessionterminate)
+                    )
         except Exception as e:
             Logger.error("\n%s" % (traceback.format_exc()))
         return sessionterminate
 
     def cleardirfifo(self):
         self.FIFOdeploy = [
-            os.path.basename(x) for x in glob.glob(
-                os.path.join(
-                    self.dirsavedatafifo,
-                    "*")) if (
-                os.path.isfile(x) and os.path.basename(x).endswith('fifo'))]
+            os.path.basename(x)
+            for x in glob.glob(os.path.join(self.dirsavedatafifo, "*"))
+            if (os.path.isfile(x) and os.path.basename(x).endswith("fifo"))
+        ]
         for fifodata in self.FIFOdeploy:
             pathnamefile = os.path.join(self.dirsavedatafifo, fifodata)
             if os.path.isfile(pathnamefile):
                 os.remove(pathnamefile)
-                Logger.debug(
-                    "file %s in Manager fifo is cleanned" %
-                    (pathnamefile))
+                Logger.debug("file %s in Manager fifo is cleanned" % (pathnamefile))
         self.FIFOdeploy = []
 
     def getcount(self):
         return len(self.FIFOdeploy)
 
     def setfifo(self, datajson, priority=None):
-        newfilefifo = str(time.time()) + '.fifo'
+        newfilefifo = str(time.time()) + ".fifo"
         pathnamefile = os.path.join(self.dirsavedatafifo, newfilefifo)
-        with open(pathnamefile, 'w') as outfilejson:
+        with open(pathnamefile, "w") as outfilejson:
             json.dump(datajson, outfilejson, indent=4)
         if priority is not None and priority == "high":
             self.FIFOdeploy.insert(0, newfilefifo)
             Logger.debug(
-                "set fifo high file %s  fifo %s" %
-                (newfilefifo, self.FIFOdeploy))
+                "set fifo high file %s  fifo %s" % (newfilefifo, self.FIFOdeploy)
+            )
         else:
             self.FIFOdeploy.append(newfilefifo)
             Logger.debug(
-                "set fifo low file %s  fifo %s" %
-                (newfilefifo, self.FIFOdeploy))
+                "set fifo low file %s  fifo %s" % (newfilefifo, self.FIFOdeploy)
+            )
         self.SESSIONdeploy[datajson["sessionid"]] = newfilefifo
 
     def getfifo(self):
@@ -152,26 +148,24 @@ class fifodeploy:
         if not os.path.isfile(pathnamefile):
             return {}
         try:
-            fichier_json = open(pathnamefile, 'r')
+            fichier_json = open(pathnamefile, "r")
             with fichier_json as fichier:
-                data = json.load(fichier)      # load décode un fichier json
+                data = json.load(fichier)  # load décode un fichier json
             # add dans ressource ce transfert.
             # self.currentresource.add(data['sessionid'])
             os.remove(pathnamefile)
             try:
-                del self.SESSIONdeploy[data['sessionid']]
+                del self.SESSIONdeploy[data["sessionid"]]
             except Exception as e:
                 Logger.error("del session in FIFO : %s" % str(e))
             return data
         except Exception as e:
             if os.path.isfile(pathnamefile):
-                Logger.error(
-                    "del fichier fifo on error json%s" %
-                    (pathnamefile))
+                Logger.error("del fichier fifo on error json%s" % (pathnamefile))
                 os.remove(pathnamefile)
             Logger.error(
-                "look file %s in Manager fifo :\n[%s]" %
-                (pathnamefile, str(e)))
+                "look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e))
+            )
             Logger.error("\n%s" % (traceback.format_exc()))
             return {}
 
@@ -189,15 +183,13 @@ class fifodeploy:
         except KeyError:
             Logger.warning("the session %s no longer exists." % sessionid)
         except Exception as e:
-            Logger.error(
-                "del session fifo %s err : [%s]" %
-                (sessionid, str(e)))
+            Logger.error("del session fifo %s err : [%s]" % (sessionid, str(e)))
             Logger.error("\n%s" % (traceback.format_exc()))
             pass
 
     def readfifo(self, namefifo):
         """
-            return deploy descriptor data from file descriptor
+        return deploy descriptor data from file descriptor
         """
         if self.getcount() == 0:
             return {}
@@ -206,19 +198,17 @@ class fifodeploy:
             Logger.error("file %s in Manager fifo is missing" % (pathnamefile))
             return {}
         try:
-            fichier_json = open(pathnamefile, 'r')
+            fichier_json = open(pathnamefile, "r")
             with fichier_json as fichier:
-                data = json.load(fichier)      # load décode un fichier json
+                data = json.load(fichier)  # load décode un fichier json
             return data
         except Exception as e:
             Logger.error(
-                "look file %s in Manager fifo :\n[%s]" %
-                (pathnamefile, str(e)))
+                "look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e))
+            )
             # Logger.error("\n%s"%(traceback.format_exc()))
             if os.path.isfile(pathnamefile):
-                Logger.error(
-                    "del fichier fifo on error json%s" %
-                    (pathnamefile))
+                Logger.error("del fichier fifo on error json%s" % (pathnamefile))
                 os.remove(pathnamefile)
             return {}
 
@@ -229,8 +219,8 @@ class fifodeploy:
 
     def prioritydeploy(self, sessionid):
         """
-            an id session is passed in parameter.
-            This function passes the deployment of this priority session.
+        an id session is passed in parameter.
+        This function passes the deployment of this priority session.
         """
         # search dans la liste si cette id existe.
         if sessionid in self.SESSIONdeploy:

@@ -39,33 +39,20 @@ from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
 
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "bin"))
 sys.path.append(
-    os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
-        "lib"))
-sys.path.append(
-    os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
-        "bin"))
-sys.path.append(
-    os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
-        "pluginsmastersubstitute"))
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "pluginsmastersubstitute")
+)
 
 logger = logging.getLogger()
 
 
 def Setdirectorytempinfo():
     """
-        create directory
+    create directory
     """
-    dirtempinfo = os.path.join(
-        os.path.dirname(
-            os.path.realpath(__file__)),
-        "INFOSTMP")
+    dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
         os.makedirs(dirtempinfo, mode=0o700)
     return dirtempinfo
@@ -73,19 +60,17 @@ def Setdirectorytempinfo():
 
 def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
     """
-        This function create a service/Daemon that will execute a det. task
+    This function create a service/Daemon that will execute a det. task
     """
     try:
         # Store the Fork PID
         pid = os.fork()
         if pid > 0:
-            print('PID: %d' % pid)
+            print("PID: %d" % pid)
             os._exit(0)
         doTask(optsconsoledebug, optsdeamon, optfileconf)
     except OSError as error:
-        logging.error(
-            "Unable to fork. Error: %d (%s)" %
-            (error.errno, error.strerror))
+        logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logging.error("\n%s" % (traceback.format_exc()))
         os._exit(1)
 
@@ -93,87 +78,76 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
 def doTask(optsconsoledebug, optsdeamon, optfileconf):
     tg = confParameter(optfileconf)
     # all non-Windows platforms are supporting ANSI escapes so we use them
-    logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-        logging.StreamHandler.emit)
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     # format log more informations
-    format = '%(asctime)s - %(levelname)s - %(message)s'
+    format = "%(asctime)s - %(levelname)s - %(message)s"
     # more information log
     # format ='[%(name)s : %(funcName)s : %(lineno)d] - %(levelname)s - %(message)s'
     if not optsdeamon:
         if optsconsoledebug:
             logging.basicConfig(level=logging.DEBUG, format=format)
         else:
-            logging.basicConfig(level=tg.levellog,
-                                format=format,
-                                filename=tg.logfile,
-                                filemode='a')
+            logging.basicConfig(
+                level=tg.levellog, format=format, filename=tg.logfile, filemode="a"
+            )
     else:
-        logging.basicConfig(level=tg.levellog,
-                            format=format,
-                            filename=tg.logfile,
-                            filemode='a')
+        logging.basicConfig(
+            level=tg.levellog, format=format, filename=tg.logfile, filemode="a"
+        )
 
     # Setup the command line arguments.
     tg = confParameter(optfileconf)
 
-    configuration_file = "/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini.local"
+    configuration_file = (
+        "/etc/pulse-xmpp-agent-substitute/agent_master_substitute_reg.ini.local"
+    )
     # activate module.
     if "glpi" in tg.plugins_list:
         logger.info("activate GLPI")
         if not Glpi().activate():
             logger.error("We failed to connect the Glpi database.")
-            logger.error(
-                "Please verify your configuration in %s" %
-                configuration_file)
+            logger.error("Please verify your configuration in %s" % configuration_file)
             return
 
     if "xmpp" in tg.plugins_list:
         logger.info("activate XMPP")
         if not XmppMasterDatabase().activate():
             logger.error("We failed to connect the Xmpp database.")
-            logger.error(
-                "Please verify your configuration in %s" %
-                optfileconf)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     if "kiosk" in tg.plugins_list:
         logger.info("activate KIOSK")
         if not KioskDatabase().activate():
             logger.error("We failed to connect the Kiok database.")
-            logger.error(
-                "Please verify your configuration in %s" %
-                optfileconf)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     if "msc" in tg.plugins_list:
         logger.info("activate MSC")
         if not MscDatabase().activate():
             logger.error("We failed to connect the Msc database.")
-            logger.error(
-                "Please verify your configuration in %s" %
-                optfileconf)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     if "pkgs" in tg.plugins_list:
         logger.info("activate PKGS")
         if not PkgsDatabase().activate():
             logger.error("We failed to connect the Pkgs database.")
-            logger.error(
-                "Please verify your configuration in %s" %
-                optfileconf)
+            logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
     xmpp = MUCBot()
-    xmpp.register_plugin('xep_0030')  # Service Discovery
-    xmpp.register_plugin('xep_0045')  # Multi-User Chat
-    xmpp.register_plugin('xep_0004')  # Data Forms
-    xmpp.register_plugin('xep_0050')  # Adhoc Commands
-    xmpp.register_plugin('xep_0199', {'keepalive': True,
-                                      'frequency': 600,
-                                      'interval': 600,
-                                      'timeout': 500})
-    xmpp.register_plugin('xep_0077')  # In-band Registration
-    xmpp['xep_0077'].force_registration = True
+    xmpp.register_plugin("xep_0030")  # Service Discovery
+    xmpp.register_plugin("xep_0045")  # Multi-User Chat
+    xmpp.register_plugin("xep_0004")  # Data Forms
+    xmpp.register_plugin("xep_0050")  # Adhoc Commands
+    xmpp.register_plugin(
+        "xep_0199",
+        {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
+    )
+    xmpp.register_plugin("xep_0077")  # In-band Registration
+    xmpp["xep_0077"].force_registration = True
 
     while True:
         tg = confParameter(optfileconf)
@@ -188,40 +162,52 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
             break
 
 
-if __name__ == '__main__':
-    if sys.platform.startswith('linux') and os.getuid() != 0:
+if __name__ == "__main__":
+    if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
         sys.exit(0)
     # controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
-    filekeypublic = os.path.join(
-        Setdirectorytempinfo(),
-        "master-public-RSA.key")
-    fileallkey = os.path.join(
-        Setdirectorytempinfo(),
-        "master-all-RSA.key")
+    filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
+    fileallkey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileallkey)):
         print("key missing")
-        print(("install key of master in \n\t%s\n\t%s\n\n" %
-              (filekeypublic, fileallkey)))
-        print("find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key ")
+        print(
+            ("install key of master in \n\t%s\n\t%s\n\n" % (filekeypublic, fileallkey))
+        )
+        print(
+            "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key "
+        )
         sys.exit(0)
-    namefileconfigdefault = os.path.join('/',
-                                         'etc',
-                                         'pulse-xmpp-agent_substitute',
-                                         'agent_master_substitute.ini')
+    namefileconfigdefault = os.path.join(
+        "/", "etc", "pulse-xmpp-agent_substitute", "agent_master_substitute.ini"
+    )
     optp = OptionParser()
-    optp.add_option("-d", "--deamon", action="store_true",
-                    dest="deamon", default=False,
-                    help="deamonize process")
+    optp.add_option(
+        "-d",
+        "--deamon",
+        action="store_true",
+        dest="deamon",
+        default=False,
+        help="deamonize process",
+    )
 
-    optp.add_option("-c", "--consoledebug", action="store_true",
-                    dest="consoledebug", default=False,
-                    help="console debug")
+    optp.add_option(
+        "-c",
+        "--consoledebug",
+        action="store_true",
+        dest="consoledebug",
+        default=False,
+        help="console debug",
+    )
 
-    optp.add_option("-f", "--configfile",
-                    dest="namefileconfig", default=namefileconfigdefault,
-                    help="configuration file")
+    optp.add_option(
+        "-f",
+        "--configfile",
+        dest="namefileconfig",
+        default=namefileconfigdefault,
+        help="configuration file",
+    )
 
     opts, args = optp.parse_args()
     if not opts.deamon:

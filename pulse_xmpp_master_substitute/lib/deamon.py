@@ -33,8 +33,9 @@ class Daemon(object):
     Usage: subclass the Daemon class and override the run() method
     """
 
-    def __init__(self, pidfile, stdin='/dev/null',
-                 stdout='/dev/null', stderr='/dev/null'):
+    def __init__(
+        self, pidfile, stdin="/dev/null", stdout="/dev/null", stderr="/dev/null"
+    ):
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -59,9 +60,9 @@ class Daemon(object):
         sys.stdout.flush()
         sys.stderr.flush()
 
-        self.attach_stream('stdin', mode='r')
-        self.attach_stream('stdout', mode='a+')
-        self.attach_stream('stderr', mode='a+')
+        self.attach_stream("stdin", mode="r")
+        self.attach_stream("stdout", mode="a+")
+        self.attach_stream("stderr", mode="a+")
 
         # write pidfile
         self.create_pidfile()
@@ -93,7 +94,7 @@ class Daemon(object):
     def create_pidfile(self):
         atexit.register(self.delpid)
         pid = str(os.getpid())
-        open(self.pidfile, 'w+').write("%s\n" % pid)
+        open(self.pidfile, "w+").write("%s\n" % pid)
 
     def delpid(self):
         """
@@ -122,7 +123,7 @@ class Daemon(object):
         Returns the PID from pidfile
         """
         try:
-            pf = open(self.pidfile, 'r')
+            pf = open(self.pidfile, "r")
             pid = int(pf.read().strip())
             pf.close()
         except (IOError, TypeError):

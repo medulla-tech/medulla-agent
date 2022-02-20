@@ -24,9 +24,7 @@
 import os
 import sys
 import logging
-from .utils import file_get_content, \
-    simplecommand, \
-    decode_strconsole
+from .utils import file_get_content, simplecommand, decode_strconsole
 import math
 import traceback
 
@@ -35,15 +33,15 @@ logger = logging.getLogger()
 
 class xmppbrowsing:
     """
-        Cette class repond au demande faite par mmc sur le file systeme
+    Cette class repond au demande faite par mmc sur le file systeme
     """
 
     def __init__(self, defaultdir=None, rootfilesystem=None, objectxmpp=None):
         """
-            :param type: Uses this parameter to give a path abs
-            :type defaultdir: string
-            :type rootfilesystem :string
-            :return: Function init has no return
+        :param type: Uses this parameter to give a path abs
+        :type defaultdir: string
+        :type rootfilesystem :string
+        :return: Function init has no return
         """
         self.objectxmpp = objectxmpp
         self.defaultdir = None
@@ -56,24 +54,26 @@ class xmppbrowsing:
             self.excludelist = objectxmpp.config.excludelist
         # determination programme et fichier generé pour la hierarchi des
         # dossiers
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             self.jsonfile = os.path.join("/", "tmp", "treejson.json")
-            self.programmetreejson = os.path.join("/",
-                                                  "usr",
-                                                  "sbin",
-                                                  "pulse-filetree-generator")
-        elif sys.platform.startswith('win'):
-            self.jsonfile = os.path.join(os.environ["ProgramFiles"],
-                                         "Pulse",
-                                         "tmp",
-                                         "treejson.json")
             self.programmetreejson = os.path.join(
-                os.environ["ProgramFiles"], "Pulse", "bin", "pulse-filetree-generator.exe")
-        elif sys.platform.startswith('darwin'):
+                "/", "usr", "sbin", "pulse-filetree-generator"
+            )
+        elif sys.platform.startswith("win"):
             self.jsonfile = os.path.join(
-                "/opt", "Pulse", "tmp", "treejson.json")
+                os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
+            )
             self.programmetreejson = os.path.join(
-                "/opt", "Pulse", "bin", "pulse-filetree-generator")
+                os.environ["ProgramFiles"],
+                "Pulse",
+                "bin",
+                "pulse-filetree-generator.exe",
+            )
+        elif sys.platform.startswith("darwin"):
+            self.jsonfile = os.path.join("/opt", "Pulse", "tmp", "treejson.json")
+            self.programmetreejson = os.path.join(
+                "/opt", "Pulse", "bin", "pulse-filetree-generator"
+            )
 
         if defaultdir is not None:
             self.defaultdir = defaultdir
@@ -82,13 +82,12 @@ class xmppbrowsing:
 
     def strjsontree(self):
         try:
-            if sys.platform.startswith('win'):
+            if sys.platform.startswith("win"):
                 cont = file_get_content(
                     os.path.join(
-                        os.environ["ProgramFiles"],
-                        "Pulse",
-                        "tmp",
-                        "treejson.json"))
+                        os.environ["ProgramFiles"], "Pulse", "tmp", "treejson.json"
+                    )
+                )
                 l = decode_strconsole(cont)
                 return l
             else:
@@ -100,26 +99,29 @@ class xmppbrowsing:
 
     def createjsontree(self):
         logging.getLogger().debug("Creation hierarchi file")
-        if sys.platform.startswith('win'):
-            cmd = '%s %s %s' % (self.programmetreejson,
-                                self.rootfilesystem,
-                                self.jsonfile)
+        if sys.platform.startswith("win"):
+            cmd = "%s %s %s" % (
+                self.programmetreejson,
+                self.rootfilesystem,
+                self.jsonfile,
+            )
         else:
-            cmd = '%s -r \'%s\' -o "%s"' % (self.programmetreejson,
-                                            self.rootfilesystem,
-                                            self.jsonfile)
+            cmd = "%s -r '%s' -o \"%s\"" % (
+                self.programmetreejson,
+                self.rootfilesystem,
+                self.jsonfile,
+            )
         msg = "Generation tree.json command : [%s] " % cmd
         logging.getLogger().debug("%s : " % cmd)
         obj = simplecommand(cmd)
-        if obj['code'] != 0:
-            logger.error(obj['result'])
+        if obj["code"] != 0:
+            logger.error(obj["result"])
             if self.objectxmpp is not None:
                 self.objectxmpp.xmpplog(
-                    "Error generating tree for machine %s [command :%s]" %
-                    (self.objectxmpp.boundjid.bare,
-                     cmd),
-                    type='noset',
-                    sessionname='',
+                    "Error generating tree for machine %s [command :%s]"
+                    % (self.objectxmpp.boundjid.bare, cmd),
+                    type="noset",
+                    sessionname="",
                     priority=0,
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
@@ -127,15 +129,15 @@ class xmppbrowsing:
                     why="",
                     module="Error| Notify | browsing",
                     fromuser="",
-                    touser="")
+                    touser="",
+                )
             return
         if self.objectxmpp is not None:
             self.objectxmpp.xmpplog(
-                "Generating tree for machine %s [command :%s]" %
-                (self.objectxmpp.boundjid.bare,
-                 cmd),
-                type='noset',
-                sessionname='',
+                "Generating tree for machine %s [command :%s]"
+                % (self.objectxmpp.boundjid.bare, cmd),
+                type="noset",
+                sessionname="",
                 priority=0,
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
@@ -143,7 +145,8 @@ class xmppbrowsing:
                 why="",
                 module="Error| Notify | browsing",
                 fromuser="",
-                touser="")
+                touser="",
+            )
         logger.debug(msg)
 
     def _convert_size(self, size_bytes):
@@ -158,27 +161,29 @@ class xmppbrowsing:
     def _listdirfile(self, path):
         filesinfolder = []
         foldersinfloder = []
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith("win"):
             path = path.replace("/", "\\")
             path = path.replace("\\\\", "\\")
-            path = path.replace("\"", "")
+            path = path.replace('"', "")
         for x in os.listdir(path):
             name = os.path.join(path, x)
             if os.path.isfile(name):
-                filesinfolder.append(
-                    (x, self._convert_size(
-                        os.path.getsize(name))))
+                filesinfolder.append((x, self._convert_size(os.path.getsize(name))))
             else:
                 foldersinfloder.append(x)
         return foldersinfloder, filesinfolder
 
     def listfileindir(self, path_abs_current=None):
         # path_abs_current
-        logging.getLogger().debug("---------------------------------------------------------")
         logging.getLogger().debug(
-            "search files and folders list for %s : " %
-            path_abs_current)
-        logging.getLogger().debug("---------------------------------------------------------")
+            "---------------------------------------------------------"
+        )
+        logging.getLogger().debug(
+            "search files and folders list for %s : " % path_abs_current
+        )
+        logging.getLogger().debug(
+            "---------------------------------------------------------"
+        )
         boolhierarchy = False
         if path_abs_current is None or path_abs_current == "":
             self.initialisation = 0
@@ -186,7 +191,7 @@ class xmppbrowsing:
             boolhierarchy = True
             pathabs = self.rootfilesystem
             path_abs_current = self.rootfilesystem
-        elif path_abs_current.startswith('@'):
+        elif path_abs_current.startswith("@"):
             boolhierarchy = True
             self.createjsontree()
             self.initialisation += 1
@@ -198,13 +203,14 @@ class xmppbrowsing:
             path_abs_current = "/".join(dd)
             self.hierarchystring = ""
             self.initialisation = 0
-            if path_abs_current.startswith('/'):
+            if path_abs_current.startswith("/"):
                 path_abs_current = path_abs_current[1:]
             pathabs = os.path.join(self.rootfilesystem, path_abs_current)
             pathabs = pathabs.replace("C:", "c:")
         try:
             list_files_current_dirs, list_files_current_files = self._listdirfile(
-                pathabs)
+                pathabs
+            )
         except Exception as e:
             list_files_current_dirs = []
             list_files_current_files = []
@@ -218,7 +224,7 @@ class xmppbrowsing:
             "list_files_current": list_files_current_files,
             "parentdir": os.path.abspath(os.path.join(pathabs, os.pardir)),
             "rootfilesystem": self.rootfilesystem,
-            "defaultdir": self.defaultdir
+            "defaultdir": self.defaultdir,
         }
         if boolhierarchy:
             self.dirinfos["strjsonhierarchy"] = self.strjsontree()

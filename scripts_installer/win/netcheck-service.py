@@ -53,42 +53,38 @@ import urllib.parse
 
 # GLOBAL DATA
 
-log_file = os.path.join(os.environ["ProgramFiles"],
-                        "Pulse",
-                        "var",
-                        "log",
-                        "service.log")
+log_file = os.path.join(
+    os.environ["ProgramFiles"], "Pulse", "var", "log", "service.log"
+)
 
-program_dir = os.path.join(os.environ["ProgramFiles"],
-                           "Pulse",
-                           "bin")
+program_dir = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
 logger = logging.getLogger("pulseagentservice")
 
 logger.setLevel(logging.DEBUG)
 
 handler = logging.handlers.RotatingFileHandler(
-    log_file, maxBytes=10485760, backupCount=2)
+    log_file, maxBytes=10485760, backupCount=2
+)
 formatter = logging.Formatter(
-    '%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s',
-    '%d-%m-%Y %H:%M:%S')
+    "%(asctime)s - %(module)-10s - %(levelname)-8s %(message)s", "%d-%m-%Y %H:%M:%S"
+)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def file_get_contents(filename, use_include_path=0,
-                      context=None, offset=-1, maxlen=-1):
-    if (filename.find('://') > 0):
+def file_get_contents(filename, use_include_path=0, context=None, offset=-1, maxlen=-1):
+    if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
-        if (offset > 0):
+        if offset > 0:
             ret = ret[offset:]
-        if (maxlen > 0):
+        if maxlen > 0:
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, 'rb')
+        fp = open(filename, "rb")
         try:
-            if (offset > 0):
+            if offset > 0:
                 fp.seek(offset)
             ret = fp.read(maxlen)
             return ret
@@ -97,63 +93,65 @@ def file_get_contents(filename, use_include_path=0,
 
 
 class SMWinservice(win32serviceutil.ServiceFramework):
-    '''Base class to create winservice in Python'''
+    """Base class to create winservice in Python"""
 
-    _svc_name_ = 'pythonService'
-    _svc_display_name_ = 'pythonservice'
-    _svc_description_ = 'Python Service Description'
+    _svc_name_ = "pythonService"
+    _svc_display_name_ = "pythonservice"
+    _svc_description_ = "Python Service Description"
 
     @classmethod
     def parse_command_line(cls):
-        '''
+        """
         ClassMethod to parse the command line
-        '''
+        """
         win32serviceutil.HandleCommandLine(cls)
 
     def __init__(self, args):
-        '''
+        """
         Constructor of the winservice
-        '''
+        """
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
         socket.setdefaulttimeout(60)
 
     def SvcStop(self):
-        '''
+        """
         Called when the service is asked to stop
-        '''
+        """
         self.stop()
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         win32event.SetEvent(self.hWaitStop)
 
     def SvcDoRun(self):
-        '''
+        """
         Called when the service is asked to start
-        '''
+        """
         self.start()
-        servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,
-                              servicemanager.PYS_SERVICE_STARTED,
-                              (self._svc_name_, ''))
+        servicemanager.LogMsg(
+            servicemanager.EVENTLOG_INFORMATION_TYPE,
+            servicemanager.PYS_SERVICE_STARTED,
+            (self._svc_name_, ""),
+        )
         self.main()
 
     def start(self):
-        '''
+        """
         Override to add logic before the start
         eg. running condition
-        '''
+        """
         pass
 
     def stop(self):
-        '''
+        """
         Override to add logic before the stop
         eg. invalidating running condition
-        '''
+        """
         pass
 
     def main(self):
-        '''
+        """
         Main class to be ovverridden to add logic
-        '''
+        """
         pass
 
 
@@ -187,15 +185,16 @@ class PulseAgentService(SMWinservice):
     def main(self):
         i = 0
         while self.isrunning:
-            print(("lancement de : %s" % "python.exe " +
-                  os.path.join(program_dir, "networkevents.py")))
+            print(
+                (
+                    "lancement de : %s" % "python.exe "
+                    + os.path.join(program_dir, "networkevents.py")
+                )
+            )
             os.system(
-                "python.exe \"" +
-                os.path.join(
-                    program_dir,
-                    "networkevents.py") +
-                "\"")
+                'python.exe "' + os.path.join(program_dir, "networkevents.py") + '"'
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     PulseAgentService.parse_command_line()

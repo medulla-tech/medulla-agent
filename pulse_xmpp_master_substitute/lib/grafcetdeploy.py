@@ -27,7 +27,15 @@ import os
 import platform
 import os.path
 import json
-from .utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64
+from .utils import (
+    getMacAdressList,
+    getIPAdressList,
+    MacAdressToIp,
+    shellcommandtimeout,
+    shutdown_command,
+    reboot_command,
+    isBase64,
+)
 from .configuration import setconfigfile
 import traceback
 import logging
@@ -40,191 +48,213 @@ import base64
 import time
 from .agentconffile import pulseTempDir
 
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     from lib.registerwindows import constantregisterwindows
 
 logger = logging.getLogger()
 
 
 class grafcet:
-
     def __init__(self, objectxmpp, datasend):
         # verify exist directory packagedir
         if not os.path.isdir(managepackage.packagedir()):
             os.makedirs(managepackage.packagedir())
         self.datasend = datasend
         self.parameterdynamic = {}
-        self.descriptorsection = {'action_section_install': -1}
+        self.descriptorsection = {"action_section_install": -1}
         self.objectxmpp = objectxmpp
-        self.data = datasend['data']
-        if 'advanced' in self.data and "paramdeploy" in self.data['advanced'] and isinstance(
-                self.data['advanced']['paramdeploy'], dict):
+        self.data = datasend["data"]
+        if (
+            "advanced" in self.data
+            and "paramdeploy" in self.data["advanced"]
+            and isinstance(self.data["advanced"]["paramdeploy"], dict)
+        ):
             # there are  dynamic parameters.
-            for k, v in list(self.data['advanced']['paramdeploy'].items()):
+            for k, v in list(self.data["advanced"]["paramdeploy"].items()):
                 self.parameterdynamic[k] = v
 
-        self.sessionid = datasend['sessionid']
-        self.sequence = self.data['descriptor']['sequence']
+        self.sessionid = datasend["sessionid"]
+        self.sequence = self.data["descriptor"]["sequence"]
 
-        if 'stepcurrent' not in self.data:
+        if "stepcurrent" not in self.data:
             return
         try:
             # search section in sequence
             self.find_step_type()
             # attribute step curent in function section
-            if int(self.data['stepcurrent']) == 0:
+            if int(self.data["stepcurrent"]) == 0:
                 mesg_install = ""
                 if "section" not in self.parameterdynamic:
-                    self.parameterdynamic['section'] = "install"
+                    self.parameterdynamic["section"] = "install"
                 if "section" in self.parameterdynamic:
-                    strsection = str(self.parameterdynamic['section']).lower()
+                    strsection = str(self.parameterdynamic["section"]).lower()
                     if strsection == "install":
                         # attribute section "install" if exists
                         mesg_install = "Starting Install section"
-                        if self.descriptorsection['action_section_install'] != -1:
+                        if self.descriptorsection["action_section_install"] != -1:
                             # stage status marked as complete
                             self.__action_completed__(
-                                self.sequence[self.descriptorsection['action_section_install']])
-                            self.data['stepcurrent'] = self.descriptorsection['action_section_install'] + 1
+                                self.sequence[
+                                    self.descriptorsection["action_section_install"]
+                                ]
+                            )
+                            self.data["stepcurrent"] = (
+                                self.descriptorsection["action_section_install"] + 1
+                            )
                     elif strsection == "update":
                         # attribute section "update" if exists
                         mesg_install = "Starting Update section"
                         if "action_section_update" in self.descriptorsection:
                             self.__action_completed__(
-                                self.sequence[self.descriptorsection['action_section_update']])
-                            self.data['stepcurrent'] = self.descriptorsection['action_section_update'] + 1
+                                self.sequence[
+                                    self.descriptorsection["action_section_update"]
+                                ]
+                            )
+                            self.data["stepcurrent"] = (
+                                self.descriptorsection["action_section_update"] + 1
+                            )
                     elif strsection == "uninstall":
                         # attribute section "uninstall" if exists
                         mesg_install = "Starting Uninstall section"
                         if "action_section_uninstall" in self.descriptorsection:
                             self.__action_completed__(
-                                self.sequence[self.descriptorsection['action_section_uninstall']])
-                            self.data['stepcurrent'] = self.descriptorsection['action_section_uninstall'] + 1
+                                self.sequence[
+                                    self.descriptorsection["action_section_uninstall"]
+                                ]
+                            )
+                            self.data["stepcurrent"] = (
+                                self.descriptorsection["action_section_uninstall"] + 1
+                            )
                     self.objectxmpp.xmpplog(
-                        '[%s]-[%s]: %s' %
-                        (self.data['name'],
-                         self.data['stepcurrent'],
-                            mesg_install),
-                        type='deploy',
+                        "[%s]-[%s]: %s"
+                        % (self.data["name"], self.data["stepcurrent"], mesg_install),
+                        type="deploy",
                         sessionname=self.sessionid,
-                        priority=self.data['stepcurrent'],
+                        priority=self.data["stepcurrent"],
                         action="xmpplog",
                         who=self.objectxmpp.boundjid.bare,
                         how="",
-                        why=self.data['name'],
+                        why=self.data["name"],
                         module="Deployment | Execution",
                         date=None,
-                        fromuser=self.data['login'],
-                        touser="")
-            self.workingstep = self.sequence[self.data['stepcurrent']]
+                        fromuser=self.data["login"],
+                        touser="",
+                    )
+            self.workingstep = self.sequence[self.data["stepcurrent"]]
             self.__execstep__()  # call action workingstep
         except BaseException as e:
             logger.error("END DEPLOY ON ERROR INITIALISATION")
-            self.datasend['ret'] = 255
+            self.datasend["ret"] = 255
 
-            logger.debug("object datasend \n%s " %
-                         json.dumps(self.datasend,
-                                    indent=4,
-                                    sort_keys=True))
+            logger.debug(
+                "object datasend \n%s "
+                % json.dumps(self.datasend, indent=4, sort_keys=True)
+            )
 
-            if 'jidmaster' in self.datasend['data']:
+            if "jidmaster" in self.datasend["data"]:
                 # retourne resultat error to master for end session on master.
                 self.objectxmpp.send_message(
-                    mto=self.datasend['data']['jidmaster'], mbody=json.dumps(
-                        self.datasend), mtype='chat')
+                    mto=self.datasend["data"]["jidmaster"],
+                    mbody=json.dumps(self.datasend),
+                    mtype="chat",
+                )
             self.objectxmpp.session.clearnoevent(self.sessionid)
 
             self.objectxmpp.xmpplog(
                 '<span class="log_err">Error initializing grafcet</span>',
-                type='deploy',
+                type="deploy",
                 sessionname=self.sessionid,
                 priority=-1,
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
                 fromuser="",
-                touser="")
+                touser="",
+            )
             self.objectxmpp.xmpplog(
-                '<span class="log_err">' + str(e) + '</span>',
-                type='deploy',
+                '<span class="log_err">' + str(e) + "</span>",
+                type="deploy",
                 sessionname=self.sessionid,
                 priority=-1,
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
                 fromuser="",
-                touser="")
+                touser="",
+            )
             self.terminate(-1, True, "end error initialisation deploy")
 
     def find_step_type(self):
         for stepseq in self.sequence:
-            if 'action' in stepseq:
-                if stepseq['action'] == "action_section_install":
-                    self.descriptorsection['action_section_install'] = stepseq['step']
-                elif stepseq['action'] == "action_section_uninstall":
-                    self.descriptorsection['action_section_uninstall'] = stepseq['step']
-                elif stepseq['action'] == "action_section_update":
-                    self.descriptorsection['action_section_update'] = stepseq['step']
-                elif stepseq['action'] == "action_section_launch":
-                    self.descriptorsection['action_section_launch'] = stepseq['step']
-                elif stepseq['action'] == "actionsuccescompletedend":
-                    self.descriptorsection['actionsuccescompletedend'] = stepseq['step']
+            if "action" in stepseq:
+                if stepseq["action"] == "action_section_install":
+                    self.descriptorsection["action_section_install"] = stepseq["step"]
+                elif stepseq["action"] == "action_section_uninstall":
+                    self.descriptorsection["action_section_uninstall"] = stepseq["step"]
+                elif stepseq["action"] == "action_section_update":
+                    self.descriptorsection["action_section_update"] = stepseq["step"]
+                elif stepseq["action"] == "action_section_launch":
+                    self.descriptorsection["action_section_launch"] = stepseq["step"]
+                elif stepseq["action"] == "actionsuccescompletedend":
+                    self.descriptorsection["actionsuccescompletedend"] = stepseq["step"]
 
     def __execstep__(self):
         # call function self.workingstep['action']
         # execute step current
-        method = getattr(self, self.workingstep['action'])
+        method = getattr(self, self.workingstep["action"])
         method()
 
     def __Next_Step__(self):
         # next Step for xmpp message
-        if 'stepcurrent' not in self.data:
+        if "stepcurrent" not in self.data:
             return
-        self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+        self.data["stepcurrent"] = self.data["stepcurrent"] + 1
         self.sendnextstep()
 
     def sendnextstep(self):  # self.objectxmpp.boundjid.bare
-        self.objectxmpp.send_message(mto=self.objectxmpp.boundjid.bare,
-                                     mbody=json.dumps(self.datasend),
-                                     mtype='chat')
+        self.objectxmpp.send_message(
+            mto=self.objectxmpp.boundjid.bare,
+            mbody=json.dumps(self.datasend),
+            mtype="chat",
+        )
 
     def __Etape_Next_in__(self):
-        if 'stepcurrent' not in self.data:
+        if "stepcurrent" not in self.data:
             return
-        self.data['stepcurrent'] = self.data['stepcurrent'] + 1
-        self.workingstep = self.sequence[self.data['stepcurrent']]
+        self.data["stepcurrent"] = self.data["stepcurrent"] + 1
+        self.workingstep = self.sequence[self.data["stepcurrent"]]
         self.__execstep__()
 
     def __set_backtoworksession__(self):
         # tag les signaux "restart" and "reload" dans le descripteur de session
-        self.datasend['data']['restart'] = True
-        self.datasend['data']['sessionreload'] = True
+        self.datasend["data"]["restart"] = True
+        self.datasend["data"]["sessionreload"] = True
 
     def __unset_backtoworksession(self):
         # Removes the "restart" and "reload" signals in the session descriptor
         # next running if session existe then session clearing
-        self.datasend['data']['sessionreload'] = False
-        self.datasend['data']['restart'] = False
+        self.datasend["data"]["sessionreload"] = False
+        self.datasend["data"]["restart"] = False
 
     def __next_current_step__(self):
         # pointer to the next step
-        self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+        self.data["stepcurrent"] = self.data["stepcurrent"] + 1
 
     def __action_completed__(self, datajson):
         """
         update compteur step used
         """
         try:
-            if 'completed' in datajson:
-                datajson['completed'] = datajson['completed'] + 1
+            if "completed" in datajson:
+                datajson["completed"] = datajson["completed"] + 1
             else:
-                datajson['completed'] = 1
+                datajson["completed"] = 1
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
@@ -241,72 +271,67 @@ class grafcet:
             for nameparameter in listname:
                 if nameparameter in self.parameterdynamic:
                     cmd = cmd.replace(
-                        '@@@DYNAMIC_PARAM@@@%s@@@' % nameparameter,
-                        self.parameterdynamic[nameparameter])
-        if 'oldresult' in self.datasend['data']:
+                        "@@@DYNAMIC_PARAM@@@%s@@@" % nameparameter,
+                        self.parameterdynamic[nameparameter],
+                    )
+        if "oldresult" in self.datasend["data"]:
+            cmd = cmd.replace("@@@PREC_RESULT@@@", self.datasend["data"]["oldresult"])
+        if "oldreturncode" in self.datasend["data"]:
             cmd = cmd.replace(
-                '@@@PREC_RESULT@@@',
-                self.datasend['data']['oldresult'])
-        if 'oldreturncode' in self.datasend['data']:
-            cmd = cmd.replace(
-                '@@@PREC_RETURNCODE@@@',
-                self.datasend['data']['oldreturncode'])
-        cmd = cmd.replace(
-            '@@@JID_MASTER@@@',
-            self.datasend['data']['jidmaster'])
-        cmd = cmd.replace(
-            '@@@JID_RELAYSERVER@@@',
-            self.datasend['data']['jidrelay'])
-        cmd = cmd.replace(
-            '@@@JID_MACHINE@@@',
-            self.datasend['data']['jidmachine'])
+                "@@@PREC_RETURNCODE@@@", self.datasend["data"]["oldreturncode"]
+            )
+        cmd = cmd.replace("@@@JID_MASTER@@@", self.datasend["data"]["jidmaster"])
+        cmd = cmd.replace("@@@JID_RELAYSERVER@@@", self.datasend["data"]["jidrelay"])
+        cmd = cmd.replace("@@@JID_MACHINE@@@", self.datasend["data"]["jidmachine"])
+
+        cmd = cmd.replace("@@@IP_MACHINE@@@", self.datasend["data"]["ipmachine"])
+        cmd = cmd.replace("@@@IP_RELAYSERVER@@@", self.datasend["data"]["iprelay"])
+        cmd = cmd.replace("@@@IP_MASTER@@@", self.datasend["data"]["ipmaster"])
+
+        cmd = cmd.replace("@@@PACKAGE_NAME@@@", self.datasend["data"]["name"])
+        cmd = cmd.replace("@@@SESSION_ID@@@", self.datasend["sessionid"])
+
+        cmd = cmd.replace("@@@HOSTNAME@@@", platform.node().split(".")[0])
 
         cmd = cmd.replace(
-            '@@@IP_MACHINE@@@',
-            self.datasend['data']['ipmachine'])
-        cmd = cmd.replace(
-            '@@@IP_RELAYSERVER@@@',
-            self.datasend['data']['iprelay'])
-        cmd = cmd.replace('@@@IP_MASTER@@@', self.datasend['data']['ipmaster'])
+            "@@@PYTHON_IMPLEMENTATION@@@", platform.python_implementation()
+        )
 
-        cmd = cmd.replace('@@@PACKAGE_NAME@@@', self.datasend['data']['name'])
-        cmd = cmd.replace('@@@SESSION_ID@@@', self.datasend['sessionid'])
+        cmd = cmd.replace("@@@ARCHI_MACHINE@@@", platform.machine())
+        cmd = cmd.replace("@@@OS_FAMILY@@@", platform.system())
 
-        cmd = cmd.replace('@@@HOSTNAME@@@', platform.node().split('.')[0])
+        cmd = cmd.replace("@@@OS_COMPLET_NAME@@@", platform.platform())
 
         cmd = cmd.replace(
-            '@@@PYTHON_IMPLEMENTATION@@@',
-            platform.python_implementation())
-
-        cmd = cmd.replace('@@@ARCHI_MACHINE@@@', platform.machine())
-        cmd = cmd.replace('@@@OS_FAMILY@@@', platform.system())
-
-        cmd = cmd.replace('@@@OS_COMPLET_NAME@@@', platform.platform())
+            "@@@UUID_PACKAGE@@@",
+            os.path.basename(self.datasend["data"]["pathpackageonmachine"]),
+        )
 
         cmd = cmd.replace(
-            '@@@UUID_PACKAGE@@@', os.path.basename(
-                self.datasend['data']['pathpackageonmachine']))
+            "@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@",
+            self.datasend["data"]["pathpackageonmachine"],
+        )
 
-        cmd = cmd.replace(
-            '@@@PACKAGE_DIRECTORY_ABS_MACHINE@@@',
-            self.datasend['data']['pathpackageonmachine'])
-
-        cmd = cmd.replace(
-            '@@@LIST_INTERFACE_NET@@@', " ".join(
-                netifaces.interfaces()))
+        cmd = cmd.replace("@@@LIST_INTERFACE_NET@@@", " ".join(netifaces.interfaces()))
 
         # Replace windows registry value in template (only for windows)
         # @@@VRW@@@HKEY@@K@@Subkey@@K@@value@@@VRW@@@
         for t in re.findall("@@@VRW@@@.*?@@@VRW@@@", cmd):
-            if not sys.platform.startswith('win'):
+            if not sys.platform.startswith("win"):
                 cmd = cmd.replace(t, "")
                 logging.warning(
-                    "bad descriptor : Registry update only works on Windows")
+                    "bad descriptor : Registry update only works on Windows"
+                )
             else:
                 import winreg
+
                 keywindows = t.replace("@@@VRW@@@", "").split("@@K@@")
-                key = winreg.OpenKey(constantregisterwindows.getkey(
-                    keywindows[0]), keywindows[1], 0, winreg.KEY_READ)
+                key = winreg.OpenKey(
+                    constantregisterwindows.getkey(keywindows[0]),
+                    keywindows[1],
+                    0,
+                    winreg.KEY_READ,
+                )
                 (valeur, typevaleur) = winreg.QueryValueEx(key, keywindows[1])
                 winreg.CloseKey(key)
                 cmd = cmd.replace(t, str(valeur))
@@ -314,36 +339,41 @@ class grafcet:
         # Replace windows registry value type in template (only for windows)
         # @@@TRW@@@HKEY@@K@@Subkey@@K@@value@@@TRW@@@
         for t in re.findall("@@@TRW@@@.*?@@@TRW@@@", cmd):
-            if not sys.platform.startswith('win'):
+            if not sys.platform.startswith("win"):
                 cmd = cmd.replace(t, " ")
                 logging.warning(
-                    "bad descriptor : Registry update only works on Windows")
+                    "bad descriptor : Registry update only works on Windows"
+                )
             else:
                 import winreg
+
                 keywindows = t.replace("@@@TRW@@@", "").split("@@K@@")
-                key = winreg.OpenKey(constantregisterwindows.getkey(
-                    keywindows[0]), keywindows[1], 0, winreg.KEY_READ)
+                key = winreg.OpenKey(
+                    constantregisterwindows.getkey(keywindows[0]),
+                    keywindows[1],
+                    0,
+                    winreg.KEY_READ,
+                )
                 (valeur, typevaleur) = winreg.QueryValueEx(key, keywindows[1])
                 winreg.CloseKey(key)
                 cmd = cmd.replace(t, typevaleur)
 
-        cmd = cmd.replace('@@@LIST_INTERFACE_NET_NO_LOOP@@@', " ".join(
-            [x for x in netifaces.interfaces() if x != 'lo']))
+        cmd = cmd.replace(
+            "@@@LIST_INTERFACE_NET_NO_LOOP@@@",
+            " ".join([x for x in netifaces.interfaces() if x != "lo"]),
+        )
+
+        cmd = cmd.replace("@@@LIST_MAC_ADRESS@@@", " ".join(getMacAdressList()))
+
+        cmd = cmd.replace("@@@LIST_IP_ADRESS@@@", " ".join(getIPAdressList()))
+
+        cmd = cmd.replace("@@@IP_MACHINE_XMPP@@@", self.data["ipmachine"])
 
         cmd = cmd.replace(
-            '@@@LIST_MAC_ADRESS@@@', " ".join(
-                getMacAdressList()))
+            "@@@MAC_ADRESS_MACHINE_XMPP@@@", MacAdressToIp(self.data["ipmachine"])
+        )
 
-        cmd = cmd.replace('@@@LIST_IP_ADRESS@@@', " ".join(getIPAdressList()))
-
-        cmd = cmd.replace('@@@IP_MACHINE_XMPP@@@', self.data['ipmachine'])
-
-        cmd = cmd.replace(
-            '@@@MAC_ADRESS_MACHINE_XMPP@@@',
-            MacAdressToIp(
-                self.data['ipmachine']))
-
-        cmd = cmd.replace('@@@TMP_DIR@@@', pulseTempDir())
+        cmd = cmd.replace("@@@TMP_DIR@@@", pulseTempDir())
         # recherche variable environnement
         for t in re.findall("@_@.*?@_@", cmd):
             z = t.replace("@_@", "")
@@ -359,21 +389,22 @@ class grafcet:
         valstep = 0
         if isinstance(val, int):
             for step_in_sequence in self.sequence:
-                if int(step_in_sequence['step']) == val:
-                    self.data['stepcurrent'] = val
-                    self.workingstep = self.sequence[self.data['stepcurrent']]
+                if int(step_in_sequence["step"]) == val:
+                    self.data["stepcurrent"] = val
+                    self.workingstep = self.sequence[self.data["stepcurrent"]]
                     return 0
                 valstep = valstep + 1
             logger.error("inconsistency in descriptor")
             self.terminate(
                 -1,
                 False,
-                "end error inconsistency in descriptor verify the step number [step %s not exist]" % val)
+                "end error inconsistency in descriptor verify the step number [step %s not exist]"
+                % val,
+            )
             self.objectxmpp.xmpplog(
-                "[%s] : Descriptor error: Verify the step number [step %s not exist]" %
-                (val,
-                 self.data['name']),
-                type='deploy',
+                "[%s] : Descriptor error: Verify the step number [step %s not exist]"
+                % (val, self.data["name"]),
+                type="deploy",
                 sessionname=self.sessionid,
                 priority=val,
                 action="xmpplog",
@@ -382,70 +413,69 @@ class grafcet:
                 why="",
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
             return 5
         elif isinstance(val, str):
-            if val == 'next':
-                self.data['stepcurrent'] = self.data['stepcurrent'] + 1
-                self.workingstep = self.sequence[self.data['stepcurrent']]
+            if val == "next":
+                self.data["stepcurrent"] = self.data["stepcurrent"] + 1
+                self.workingstep = self.sequence[self.data["stepcurrent"]]
                 return 0
-            elif val == 'end':
+            elif val == "end":
                 for step_in_sequence in self.sequence:
-                    if self.sequence['action'] == 'actiondeploymentcomplete':
-                        self.data['stepcurrent'] = int(
-                            step_in_sequence['step'])
-                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                    if self.sequence["action"] == "actiondeploymentcomplete":
+                        self.data["stepcurrent"] = int(step_in_sequence["step"])
+                        self.workingstep = self.sequence[self.data["stepcurrent"]]
                         return 0
                     valstep = valstep + 1
                     logger.error("inconsistency in descriptor")
                 return 5
-            elif val == 'error':
+            elif val == "error":
                 for step_in_sequence in self.sequence:
-                    if self.sequence['action'] == 'actionerrordeployment':
-                        self.data['stepcurrent'] = int(
-                            step_in_sequence['step'])
-                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                    if self.sequence["action"] == "actionerrordeployment":
+                        self.data["stepcurrent"] = int(step_in_sequence["step"])
+                        self.workingstep = self.sequence[self.data["stepcurrent"]]
                         return 0
                     valstep = valstep + 1
                     logger.error("inconsistency in descriptor")
                 return 5
             else:
                 for step_in_sequence in self.sequence:
-                    if step_in_sequence['actionlabel'] == val:
-                        self.data['stepcurrent'] = int(
-                            step_in_sequence['step'])
-                        logger.debug("goto step %s" % self.data['stepcurrent'])
-                        self.workingstep = self.sequence[self.data['stepcurrent']]
+                    if step_in_sequence["actionlabel"] == val:
+                        self.data["stepcurrent"] = int(step_in_sequence["step"])
+                        logger.debug("goto step %s" % self.data["stepcurrent"])
+                        self.workingstep = self.sequence[self.data["stepcurrent"]]
                         return 0
                 valstep = valstep + 1
                 logger.error("inconsistency in descriptor")
                 return 5
         else:
             logger.error("label error")
-            self.data['stepcurrent'] = self.data['stepcurrent'] + 1
+            self.data["stepcurrent"] = self.data["stepcurrent"] + 1
             return 5
 
     def terminate(self, ret, clear=True, msgstate=""):
         """
-            use for terminate deploy
-            send msg to log sequence
-            Clean client disk packages (ie clear)
+        use for terminate deploy
+        send msg to log sequence
+        Clean client disk packages (ie clear)
         """
-        login = self.data['login']
+        login = self.data["login"]
         restarmachine = False
         shutdownmachine = False
-        if 'advanced' in self.datasend['data'] \
-            and 'shutdownrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['shutdownrequired'] is True:
+        if (
+            "advanced" in self.datasend["data"]
+            and "shutdownrequired" in self.datasend["data"]["advanced"]
+            and self.datasend["data"]["advanced"]["shutdownrequired"] is True
+        ):
             shutdownmachine = True
             self.objectxmpp.xmpplog(
-                "Shutdown required for machine after deployment on %s" %
-                (self.datasend['data']['name']),
-                type='deploy',
+                "Shutdown required for machine after deployment on %s"
+                % (self.datasend["data"]["name"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=-
-                2,
+                priority=-2,
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
@@ -453,19 +483,22 @@ class grafcet:
                 module="Deployment|Terminate|Execution|Restart|Notify",
                 date=None,
                 fromuser="",
-                touser="")
+                touser="",
+            )
 
-        if not shutdownmachine and 'advanced' in self.datasend['data'] \
-            and 'rebootrequired' in self.datasend['data']['advanced'] \
-                and self.datasend['data']['advanced']['rebootrequired'] is True:
+        if (
+            not shutdownmachine
+            and "advanced" in self.datasend["data"]
+            and "rebootrequired" in self.datasend["data"]["advanced"]
+            and self.datasend["data"]["advanced"]["rebootrequired"] is True
+        ):
             restarmachine = True
             self.objectxmpp.xmpplog(
-                "Reboot required for machine after deploy on %s" %
-                (self.datasend['data']['name']),
-                type='deploy',
+                "Reboot required for machine after deploy on %s"
+                % (self.datasend["data"]["name"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=-
-                2,
+                priority=-2,
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
@@ -473,90 +506,94 @@ class grafcet:
                 module="Deployment|Terminate|Execution|Restart|Notify",
                 date=None,
                 fromuser="",
-                touser="")
+                touser="",
+            )
         try:
             self.__action_completed__(self.workingstep)
             self.objectxmpp.session.clearnoevent(self.sessionid)
             logger.debug(
-                "terminate install package %s" %
-                self.datasend['data']['descriptor']['info']['name'])
-            self.datasend['action'] = "result" + self.datasend['action']
-            if "quitonerror" not in self.datasend['data']['descriptor']['info']:
+                "terminate install package %s"
+                % self.datasend["data"]["descriptor"]["info"]["name"]
+            )
+            self.datasend["action"] = "result" + self.datasend["action"]
+            if "quitonerror" not in self.datasend["data"]["descriptor"]["info"]:
                 quiterror = True
             else:
-                quiterror = self.datasend['data']['descriptor']['info']['quitonerror']
+                quiterror = self.datasend["data"]["descriptor"]["info"]["quitonerror"]
             try:
-                del self.datasend['data']['result']
+                del self.datasend["data"]["result"]
             except BaseException:
                 pass
             try:
-                del self.datasend['data']['methodetransfert']
-                del self.datasend['data']['path']
+                del self.datasend["data"]["methodetransfert"]
+                del self.datasend["data"]["path"]
             except BaseException:
                 pass
             try:
-                del self.datasend['data']['restart']
+                del self.datasend["data"]["restart"]
             except KeyError:
                 pass
             try:
-                del self.datasend['data']['sessionreload']
+                del self.datasend["data"]["sessionreload"]
             except KeyError:
                 pass
-            del self.datasend['data']['stepcurrent']
-            del self.datasend['data']['Devent']
-            del self.datasend['data']['Dtypequery']
+            del self.datasend["data"]["stepcurrent"]
+            del self.datasend["data"]["Devent"]
+            del self.datasend["data"]["Dtypequery"]
             try:
-                self.datasend['data']['environ'] = str(os.environ)
+                self.datasend["data"]["environ"] = str(os.environ)
             except BaseException:
                 pass
-            self.datasend['ret'] = ret
+            self.datasend["ret"] = ret
             os.chdir(managepackage.packagedir())
             if clear:
-                if sys.platform.startswith('win'):
-                    os.system("rmdir /s /q \"%s\"" %
-                              self.datasend['data']['pathpackageonmachine'])
+                if sys.platform.startswith("win"):
+                    os.system(
+                        'rmdir /s /q "%s"'
+                        % self.datasend["data"]["pathpackageonmachine"]
+                    )
                 else:
-                    os.system("rm -Rf %s" %
-                              self.datasend['data']['pathpackageonmachine'])
-            #os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
+                    os.system(
+                        "rm -Rf %s" % self.datasend["data"]["pathpackageonmachine"]
+                    )
+            # os.system("rm -Rf %s"%self.datasend['data']['pathpackageonmachine'])
             datas = {}
             datas = self.datasend
             if msgstate != "":
-                self.datasend['data']['msgstate'] = msgstate
-            self.datasend['data']['uname'] = [x for x in platform.uname()]
-            self.objectxmpp.send_message(mto='log@pulse',
-                                         mbody=json.dumps(self.datasend),
-                                         mtype='chat')
+                self.datasend["data"]["msgstate"] = msgstate
+            self.datasend["data"]["uname"] = [x for x in platform.uname()]
+            self.objectxmpp.send_message(
+                mto="log@pulse", mbody=json.dumps(self.datasend), mtype="chat"
+            )
             try:
-                del datas['data']['descriptor']['sequence']
+                del datas["data"]["descriptor"]["sequence"]
             except BaseException:
                 pass
             try:
-                del datas['data']['environ']
-                del datas['data']['packagefile']
-                del datas['data']['transfert']
+                del datas["data"]["environ"]
+                del datas["data"]["packagefile"]
+                del datas["data"]["transfert"]
             except BaseException:
                 pass
             self.objectxmpp.send_message(
-                mto=self.datasend['data']['jidmaster'],
+                mto=self.datasend["data"]["jidmaster"],
                 mbody=json.dumps(datas),
-                mtype='chat')
+                mtype="chat",
+            )
             datapackage = self.datasend
-            mach = self.datasend['data']['jidmachine']
-            datapackage['data'] = {}
-            if(msgstate != ""):
-                datapackage['msgstate'] = {
-                    "msg": msgstate, "quitonerror": quiterror}
-            datapackage['action'] = 'applicationdeploymentjson'
-            self.objectxmpp.send_message(mto=mach,
-                                         mbody=json.dumps(
-                                             datapackage, encoding="utf-8"),
-                                         mtype='chat')
+            mach = self.datasend["data"]["jidmachine"]
+            datapackage["data"] = {}
+            if msgstate != "":
+                datapackage["msgstate"] = {"msg": msgstate, "quitonerror": quiterror}
+            datapackage["action"] = "applicationdeploymentjson"
+            self.objectxmpp.send_message(
+                mto=mach, mbody=json.dumps(datapackage, encoding="utf-8"), mtype="chat"
+            )
 
             if shutdownmachine or restarmachine:
                 self.objectxmpp.xmpplog(
-                    'DEPLOYMENT TERMINATE',
-                    type='deploy',
+                    "DEPLOYMENT TERMINATE",
+                    type="deploy",
                     sessionname=self.sessionid,
                     priority=-2,
                     action="xmpplog",
@@ -566,7 +603,8 @@ class grafcet:
                     module="Deployment | Error | Terminate | Notify",
                     date=None,
                     fromuser=login,
-                    touser="")
+                    touser="",
+                )
             if shutdownmachine:
                 shutdown_command()
 
@@ -576,35 +614,36 @@ class grafcet:
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.datasend['ret'] = 255
-            self.datas['ret'] = 255
-            self.objectxmpp.send_message(mto='log@pulse',
-                                         mbody=json.dumps(self.datasend),
-                                         mtype='chat')
+            self.datasend["ret"] = 255
+            self.datas["ret"] = 255
             self.objectxmpp.send_message(
-                mto=self.datasend['data']['jidmaster'],
+                mto="log@pulse", mbody=json.dumps(self.datasend), mtype="chat"
+            )
+            self.objectxmpp.send_message(
+                mto=self.datasend["data"]["jidmaster"],
                 mbody=json.dumps(datas),
-                mtype='chat')
+                mtype="chat",
+            )
 
     def steplog(self):
         """
-            inscrit log
+        inscrit log
         """
         logger.debug(
-            "deploy %s on machine %s [%s] STEP %s\n %s " %
-            (self.data['descriptor']['info']['name'],
-             self.objectxmpp.boundjid.bare,
-             self.sessionid,
-             self.workingstep['step'],
-             json.dumps(
-                self.workingstep,
-                indent=4,
-                sort_keys=True)))
+            "deploy %s on machine %s [%s] STEP %s\n %s "
+            % (
+                self.data["descriptor"]["info"]["name"],
+                self.objectxmpp.boundjid.bare,
+                self.sessionid,
+                self.workingstep["step"],
+                json.dumps(self.workingstep, indent=4, sort_keys=True),
+            )
+        )
 
     def __terminateifcompleted__(self, workingstep):
         """test if step taged completed"""
-        if 'completed' in self.workingstep:
-            if self.workingstep['completed'] >= 1:
+        if "completed" in self.workingstep:
+            if self.workingstep["completed"] >= 1:
                 return True
         return False
 
@@ -612,20 +651,20 @@ class grafcet:
         for t in workingstepinfo:
             if t == "@resultcommand":
                 workingstepinfo[t] = os.linesep.join(listresult)
-            elif t.endswith('lastlines'):
+            elif t.endswith("lastlines"):
                 nb = t.split("@")
                 nb1 = -int(nb[0])
                 logger.debug(
-                    "=======lastlines============%s=============================" %
-                    nb1)
+                    "=======lastlines============%s=============================" % nb1
+                )
                 tab = listresult[nb1:]
                 workingstepinfo[t] = os.linesep.join(tab)
-            elif t.endswith('firstlines'):
+            elif t.endswith("firstlines"):
                 nb = t.split("@")
                 nb1 = int(nb[0])
                 logger.debug(
-                    "=======firstlines============%s=============================" %
-                    nb1)
+                    "=======firstlines============%s=============================" % nb1
+                )
                 tab = listresult[:nb1]
                 workingstepinfo[t] = os.linesep.join(tab)
 
@@ -670,86 +709,85 @@ class grafcet:
                     self.__execstep__()
                     return True
         # if 'goto' in self.workingstep :
-        if returncode != 0 and 'error' in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep['error'])
+        if returncode != 0 and "error" in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep["error"])
             self.__execstep__()
             return True
-        elif re['codereturn'] == 0 and 'succes' in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep['succes'])
+        elif re["codereturn"] == 0 and "succes" in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep["succes"])
             self.__execstep__()
             return True
         else:
             return False
 
     def __Go_to_by_jump__(self, result):
-        if 'goto' in self.workingstep:
-            self.__search_Next_step_int__(self.workingstep['goto'])
+        if "goto" in self.workingstep:
+            self.__search_Next_step_int__(self.workingstep["goto"])
             self.__execstep__()
             return True
-        elif 'gotoyes' in self.workingstep and result == "yes":
+        elif "gotoyes" in self.workingstep and result == "yes":
             # goto Faire directement reboot
-            self.__search_Next_step_int__(self.workingstep['gotoyes'])
+            self.__search_Next_step_int__(self.workingstep["gotoyes"])
             self.__execstep__()
             return True
-        elif 'gotono' in self.workingstep and result == "no":
+        elif "gotono" in self.workingstep and result == "no":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotono'])
+            self.__search_Next_step_int__(self.workingstep["gotono"])
             self.__execstep__()
             return True
-        elif 'gotoopen' in self.workingstep and result == "open":
+        elif "gotoopen" in self.workingstep and result == "open":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoopen'])
+            self.__search_Next_step_int__(self.workingstep["gotoopen"])
             self.__execstep__()
             return True
-        elif 'gotosave' in self.workingstep and result == "save":
+        elif "gotosave" in self.workingstep and result == "save":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotosave'])
+            self.__search_Next_step_int__(self.workingstep["gotosave"])
             self.__execstep__()
             return True
-        elif 'gotocancel' in self.workingstep and result == "cancel":
+        elif "gotocancel" in self.workingstep and result == "cancel":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotocancel'])
+            self.__search_Next_step_int__(self.workingstep["gotocancel"])
             self.__execstep__()
             return True
-        elif 'gotoclose' in self.workingstep and result == "close":
+        elif "gotoclose" in self.workingstep and result == "close":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoclose'])
+            self.__search_Next_step_int__(self.workingstep["gotoclose"])
             self.__execstep__()
             return True
-        elif 'gotodiscard' in self.workingstep and result == "discard":
+        elif "gotodiscard" in self.workingstep and result == "discard":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotodiscard'])
+            self.__search_Next_step_int__(self.workingstep["gotodiscard"])
             self.__execstep__()
             return True
-        elif 'gotoapply' in self.workingstep and result == "apply":
+        elif "gotoapply" in self.workingstep and result == "apply":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoapply'])
+            self.__search_Next_step_int__(self.workingstep["gotoapply"])
             self.__execstep__()
             return True
-        elif 'gotoreset' in self.workingstep and result == "reset":
+        elif "gotoreset" in self.workingstep and result == "reset":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoreset'])
+            self.__search_Next_step_int__(self.workingstep["gotoreset"])
             self.__execstep__()
             return True
-        elif 'gotorestoreDefaults' in self.workingstep and result == "restoreDefaults":
+        elif "gotorestoreDefaults" in self.workingstep and result == "restoreDefaults":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(
-                self.workingstep['gotorestoreDefaults'])
+            self.__search_Next_step_int__(self.workingstep["gotorestoreDefaults"])
             self.__execstep__()
             return True
-        elif 'gotoabort' in self.workingstep and result == "abort":
+        elif "gotoabort" in self.workingstep and result == "abort":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoabort'])
+            self.__search_Next_step_int__(self.workingstep["gotoabort"])
             self.__execstep__()
             return True
-        elif 'gotoretry' in self.workingstep and result == "retry":
+        elif "gotoretry" in self.workingstep and result == "retry":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoretry'])
+            self.__search_Next_step_int__(self.workingstep["gotoretry"])
             self.__execstep__()
             return True
-        elif 'gotoignore' in self.workingstep and result == "ignore":
+        elif "gotoignore" in self.workingstep and result == "ignore":
             # goto attendre pour Faire reboot
-            self.__search_Next_step_int__(self.workingstep['gotoignore'])
+            self.__search_Next_step_int__(self.workingstep["gotoignore"])
             self.__execstep__()
             return True
         else:
@@ -776,24 +814,26 @@ class grafcet:
             self.__Etape_Next_in__()
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_pwd_package step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in action_pwd_package step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error action_pwd_package : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 str(e)),
-                type='deploy',
+                "[%s] - [%s]: Error action_pwd_package : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Error",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_section_install(self):
         """
@@ -806,49 +846,51 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
+                strsection = str(self.parameterdynamic["section"]).upper()
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: End of section %s' %
-                    (self.data['name'],
-                     self.workingstep['step'],
-                     strsection),
-                    type='deploy',
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             # goto succes
             self.__search_Next_step_int__(
-                self.descriptorsection['actionsuccescompletedend'])
+                self.descriptorsection["actionsuccescompletedend"]
+            )
             self.__execstep__()
             return
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
-                -1, False, "end error in action_section_install step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in action_section_install step %s"
+                % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error action_section_install : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 str(e)),
-                type='deploy',
+                "[%s] - [%s]: Error action_section_install : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Error",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_section_uninstall(self):
         """
@@ -861,49 +903,51 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
+                strsection = str(self.parameterdynamic["section"]).upper()
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: End of section %s' %
-                    (self.data['name'],
-                     self.workingstep['step'],
-                     strsection),
-                    type='deploy',
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             # goto succes
             self.__search_Next_step_int__(
-                self.descriptorsection['actionsuccescompletedend'])
+                self.descriptorsection["actionsuccescompletedend"]
+            )
             self.__execstep__()
             return
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
-                -1, False, "end error in action_section_uninstall step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in action_section_uninstall step %s"
+                % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error action_section_uninstall : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 str(e)),
-                type='deploy',
+                "[%s] - [%s]: Error action_section_uninstall : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Error",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_section_update(self):
         """
@@ -916,49 +960,50 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
+                strsection = str(self.parameterdynamic["section"]).upper()
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: End of section %s' %
-                    (self.data['name'],
-                     self.workingstep['step'],
-                     strsection),
-                    type='deploy',
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             # goto succes
             self.__search_Next_step_int__(
-                self.descriptorsection['actionsuccescompletedend'])
+                self.descriptorsection["actionsuccescompletedend"]
+            )
             self.__execstep__()
             return
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
-                -1, False, "end error in action_section_update step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in action_section_update step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error action_section_update : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 str(e)),
-                type='deploy',
+                "[%s] - [%s]: Error action_section_update : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Error",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_section_launch(self):
         """
@@ -971,49 +1016,50 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             if "section" in self.parameterdynamic:
-                strsection = str(self.parameterdynamic['section']).upper()
+                strsection = str(self.parameterdynamic["section"]).upper()
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: End of section %s' %
-                    (self.data['name'],
-                     self.workingstep['step'],
-                     strsection),
-                    type='deploy',
+                    "[%s]-[%s]: End of section %s"
+                    % (self.data["name"], self.workingstep["step"], strsection),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             # goto succes
             self.__search_Next_step_int__(
-                self.descriptorsection['actionsuccescompletedend'])
+                self.descriptorsection["actionsuccescompletedend"]
+            )
             self.__execstep__()
             return
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
-                -1, False, "end error in action_section_launch step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in action_section_launch step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error action_section_launch : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 str(e)),
-                type='deploy',
+                "[%s] - [%s]: Error action_section_launch : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Error",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_comment(self):
         """
@@ -1027,50 +1073,56 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            if 'comment' in self.workingstep:
-                self.workingstep['comment'] = self.replaceTEMPLATE(
-                    self.workingstep['comment'])
+            if "comment" in self.workingstep:
+                self.workingstep["comment"] = self.replaceTEMPLATE(
+                    self.workingstep["comment"]
+                )
             else:
-                self.workingstep['comment'] = "no comment user"
+                self.workingstep["comment"] = "no comment user"
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: User comment : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 self.workingstep['comment']),
-                type='deploy',
+                "[%s]-[%s]: User comment : %s"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["comment"],
+                ),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_comment step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in action_comment step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error action_comment : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 str(e)),
-                type='deploy',
+                "[%s] - [%s]: Error action_comment : %s"
+                % (self.data["name"], self.workingstep["step"], str(e)),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Error",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_set_environ(self):
         """
@@ -1084,52 +1136,52 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            if 'environ' in self.workingstep:
-                if isinstance(self.workingstep['environ'], dict):
-                    for z in self.workingstep['environ']:
+            if "environ" in self.workingstep:
+                if isinstance(self.workingstep["environ"], dict):
+                    for z in self.workingstep["environ"]:
                         a = self.replaceTEMPLATE(z)
-                        b = self.replaceTEMPLATE(
-                            self.workingstep['environ'][a])
+                        b = self.replaceTEMPLATE(self.workingstep["environ"][a])
                         os.environ[a] = b
                         self.objectxmpp.xmpplog(
-                            '[%s]-[%s] : Set environment parameter %s = %s' %
-                            (self.data['name'],
-                             self.workingstep['step'],
-                                a,
-                                b),
-                            type='deploy',
+                            "[%s]-[%s] : Set environment parameter %s = %s"
+                            % (self.data["name"], self.workingstep["step"], a, b),
+                            type="deploy",
                             sessionname=self.sessionid,
-                            priority=self.workingstep['step'],
+                            priority=self.workingstep["step"],
                             action="xmpplog",
                             who=self.objectxmpp.boundjid.bare,
                             how="",
-                            why=self.data['name'],
+                            why=self.data["name"],
                             module="Deployment | Error | Execution",
                             date=None,
-                            fromuser=self.data['login'],
-                            touser="")
+                            fromuser=self.data["login"],
+                            touser="",
+                        )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_set_environ step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in action_set_environ step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error action_set_environ ' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error action_set_environ "
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_set_config_file(self):
         """
@@ -1143,72 +1195,82 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            if 'set' in self.workingstep:
-                if isinstance(self.workingstep['set'], str):
-                    self.workingstep['set'] = str(self.workingstep['set'])
-                    if self.workingstep['set'] != "":
-                        dataconfiguration = self.workingstep['set'].split(
-                            "@__@")
+            if "set" in self.workingstep:
+                if isinstance(self.workingstep["set"], str):
+                    self.workingstep["set"] = str(self.workingstep["set"])
+                    if self.workingstep["set"] != "":
+                        dataconfiguration = self.workingstep["set"].split("@__@")
                         if len(dataconfiguration) > 0 and (
-                                dataconfiguration[0].lower() == "add" or dataconfiguration[0].lower() == "del"):
+                            dataconfiguration[0].lower() == "add"
+                            or dataconfiguration[0].lower() == "del"
+                        ):
                             # traitement configuration.
                             if not setconfigfile(dataconfiguration):
                                 self.objectxmpp.xmpplog(
-                                    '[%s]-[%s] : Error setting configuration option %s' %
-                                    (self.data['name'],
-                                     self.workingstep['step'],
-                                        self.workingstep['set']),
-                                    type='deploy',
+                                    "[%s]-[%s] : Error setting configuration option %s"
+                                    % (
+                                        self.data["name"],
+                                        self.workingstep["step"],
+                                        self.workingstep["set"],
+                                    ),
+                                    type="deploy",
                                     sessionname=self.sessionid,
-                                    priority=self.workingstep['step'],
+                                    priority=self.workingstep["step"],
                                     action="xmpplog",
                                     who=self.objectxmpp.boundjid.bare,
                                     how="",
-                                    why=self.data['name'],
+                                    why=self.data["name"],
                                     module="Deployment | Error | Configuration",
                                     date=None,
-                                    fromuser=self.data['login'],
-                                    touser="")
+                                    fromuser=self.data["login"],
+                                    touser="",
+                                )
                             else:
                                 self.objectxmpp.xmpplog(
-                                    '[%s]-[%s] : Set configuration option %s' %
-                                    (self.data['name'],
-                                     self.workingstep['step'],
-                                        self.workingstep['set']),
-                                    type='deploy',
+                                    "[%s]-[%s] : Set configuration option %s"
+                                    % (
+                                        self.data["name"],
+                                        self.workingstep["step"],
+                                        self.workingstep["set"],
+                                    ),
+                                    type="deploy",
                                     sessionname=self.sessionid,
-                                    priority=self.workingstep['step'],
+                                    priority=self.workingstep["step"],
                                     action="xmpplog",
                                     who=self.objectxmpp.boundjid.bare,
                                     how="",
-                                    why=self.data['name'],
+                                    why=self.data["name"],
                                     module="Deployment | Notify | Configuration",
                                     date=None,
-                                    fromuser=self.data['login'],
-                                    touser="")
+                                    fromuser=self.data["login"],
+                                    touser="",
+                                )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
-                -1, False, "end error in action_set_config_file step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in action_set_config_file step %s"
+                % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error action_set_config_file ' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error action_set_config_file "
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_no_operation(self):
         """
@@ -1227,23 +1289,26 @@ class grafcet:
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in action_no_operation step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in action_no_operation step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error action_no_operation' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error action_no_operation"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_unzip_file(self):
         """
@@ -1271,79 +1336,85 @@ class grafcet:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            self.workingstep['filename'] = self.replaceTEMPLATE(
-                self.workingstep['filename'])
-            self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
-                os.chdir(self.datasend['data']['pathpackageonmachine'])
-                self.workingstep['pwd'] = os.getcwd()
+            self.workingstep["filename"] = self.replaceTEMPLATE(
+                self.workingstep["filename"]
+            )
+            self.workingstep["pwd"] = ""
+            if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
+                os.chdir(self.datasend["data"]["pathpackageonmachine"])
+                self.workingstep["pwd"] = os.getcwd()
 
             self.__alternatefolder()
-            zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
-            if 'pathdirectorytounzip' not in self.workingstep:
-                self.workingstep['pathdirectorytounzip'] = self.replaceTEMPLATE(
-                    '.')
-                zip_ref.extractall(
-                    self.datasend['data']['pathpackageonmachine'])
+            zip_ref = zipfile.ZipFile(self.workingstep["filename"], "r")
+            if "pathdirectorytounzip" not in self.workingstep:
+                self.workingstep["pathdirectorytounzip"] = self.replaceTEMPLATE(".")
+                zip_ref.extractall(self.datasend["data"]["pathpackageonmachine"])
             else:
-                self.workingstep['pathdirectorytounzip'] = self.replaceTEMPLATE(
-                    self.workingstep['pathdirectorytounzip'])
-                zip_ref.extractall(self.workingstep['pathdirectorytounzip'])
+                self.workingstep["pathdirectorytounzip"] = self.replaceTEMPLATE(
+                    self.workingstep["pathdirectorytounzip"]
+                )
+                zip_ref.extractall(self.workingstep["pathdirectorytounzip"])
             listname = zip_ref.namelist()
             self.__resultinfo__(self.workingstep, listname)
             zip_ref.close()
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Extracting %s to directory %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 self.workingstep['filename'],
-                 self.workingstep['pathdirectorytounzip']),
-                type='deploy',
+                "[%s]-[%s]: Extracting %s to directory %s"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["filename"],
+                    self.workingstep["pathdirectorytounzip"],
+                ),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
-            if 'goto' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['goto'])
+                fromuser=self.data["login"],
+                touser="",
+            )
+            if "goto" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["goto"])
                 self.__execstep__()
                 return
 
-            if 'succes' in self.workingstep:
+            if "succes" in self.workingstep:
                 # goto succes
-                self.__search_Next_step_int__(self.workingstep['succes'])
+                self.__search_Next_step_int__(self.workingstep["succes"])
                 self.__execstep__()
             else:
                 self.__Etape_Next_in__()
                 self.steplog()
         except Exception as e:
-            self.workingstep['@resultcommand'] = traceback.format_exc()
+            self.workingstep["@resultcommand"] = traceback.format_exc()
             logger.error(str(e))
             # logger.error("\n%s"%(traceback.format_exc()))
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error extracting %s to directory %s : %s' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 self.workingstep['filename'],
-                 self.workingstep['pathdirectorytounzip']),
-                type='deploy',
+                "[%s]-[%s]: Error extracting %s to directory %s : %s"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["filename"],
+                    self.workingstep["pathdirectorytounzip"],
+                ),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
-            if 'error' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['error'])
+                fromuser=self.data["login"],
+                touser="",
+            )
+            if "error" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["error"])
                 self.__execstep__()
             else:
                 self.__Etape_Next_in__()
@@ -1367,83 +1438,95 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            if (isBase64(self.workingstep['command'])):
-                self.workingstep['command'] = base64.b64decode(
-                    self.workingstep['command'])
-            self.workingstep['command'] = self.replaceTEMPLATE(
-                self.workingstep['command'])
+            if isBase64(self.workingstep["command"]):
+                self.workingstep["command"] = base64.b64decode(
+                    self.workingstep["command"]
+                )
+            self.workingstep["command"] = self.replaceTEMPLATE(
+                self.workingstep["command"]
+            )
             if "timeout" not in self.workingstep:
-                self.workingstep['timeout'] = 900
+                self.workingstep["timeout"] = 900
                 logger.warn("timeout missing : default value 900s")
             # working Step recup from process et session
-            self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
-                os.chdir(self.datasend['data']['pathpackageonmachine'])
-                self.workingstep['pwd'] = os.getcwd()
+            self.workingstep["pwd"] = ""
+            if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
+                os.chdir(self.datasend["data"]["pathpackageonmachine"])
+                self.workingstep["pwd"] = os.getcwd()
                 self.objectxmpp.xmpplog(
-                    '[%s]:Current directory : %s' %
-                    (self.data['name'],
-                     self.datasend['data']['pathpackageonmachine']),
-                    type='deploy',
+                    "[%s]:Current directory : %s"
+                    % (
+                        self.data["name"],
+                        self.datasend["data"]["pathpackageonmachine"],
+                    ),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution | Warning",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             else:
                 self.objectxmpp.xmpplog(
-                    '[%s]: Current directory %s [%s: folder missing]' %
-                    (self.data['name'],
-                     os.getcwd(),
-                        self.datasend['data']['pathpackageonmachine']),
-                    type='deploy',
+                    "[%s]: Current directory %s [%s: folder missing]"
+                    % (
+                        self.data["name"],
+                        os.getcwd(),
+                        self.datasend["data"]["pathpackageonmachine"],
+                    ),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution | Warning",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             self.__alternatefolder()
             self.objectxmpp.process_on_end_send_message_xmpp.add_processcommand(
-                self.workingstep['command'],
+                self.workingstep["command"],
                 self.datasend,
                 self.objectxmpp.boundjid.bare,
                 self.objectxmpp.boundjid.bare,
-                self.workingstep['timeout'],
-                self.workingstep['step'])
+                self.workingstep["timeout"],
+                self.workingstep["step"],
+            )
         except Exception as e:
             self.steplog()
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionprocessscript step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in actionprocessscript step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error actionprocessscript : %s' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error actionprocessscript : %s"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def action_command_natif_shell(self):
-        """ information
+        """information
         "@resultcommand or nb@lastlines or nb@firstlines": "",
         "action": "action_command_natif_shell",
         "codereturn": "",
@@ -1456,67 +1539,74 @@ class grafcet:
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            self.workingstep['command'] = self.replaceTEMPLATE(
-                self.workingstep['command'])
+            self.workingstep["command"] = self.replaceTEMPLATE(
+                self.workingstep["command"]
+            )
 
             # TODO: si action deja faite return
             if "timeout" not in self.workingstep:
-                self.workingstep['timeout'] = 15
+                self.workingstep["timeout"] = 15
                 logger.warn("timeout missing : default value 15s")
             re = shellcommandtimeout(
-                self.workingstep['command'],
-                self.workingstep['timeout']).run()
+                self.workingstep["command"], self.workingstep["timeout"]
+            ).run()
             self.__action_completed__(self.workingstep)
-            self.workingstep['codereturn'] = re['codereturn']
-            result = [x.strip('\n') for x in re['result'] if x != '']
+            self.workingstep["codereturn"] = re["codereturn"]
+            result = [x.strip("\n") for x in re["result"] if x != ""]
             self.__resultinfo__(self.workingstep, result)
             self.objectxmpp.xmpplog(
-                '[%s] - [%s]: Error code %s for command : %s ' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 self.workingstep['codereturn'],
-                 self.workingstep['command']),
-                type='deploy',
+                "[%s] - [%s]: Error code %s for command : %s "
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["codereturn"],
+                    self.workingstep["command"],
+                ),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
             self.steplog()
-            if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
+            if self.__Go_to_by_jump_succes_and_error__(re["codereturn"]):
                 return
             self.__Etape_Next_in__()
             return
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            if re['codereturn'] != 0 and 'error' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['succes'])
+            if re["codereturn"] != 0 and "error" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["succes"])
                 self.__execstep__()
                 return
             self.terminate(
-                -1, False, "end error in action_command_natif_shell step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in action_command_natif_shell step %s"
+                % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error action_command_natif_shell : %s' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error action_command_natif_shell : %s"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def actionprocessscriptfile(self):
         """
@@ -1547,131 +1637,131 @@ class grafcet:
         shebang = None
         commandtype = ""
 
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith("win"):
             # exec for power shell " powershell -executionpolicy bypass -File
             # <ton_script_ps1>"
             extensionscriptfile = {
-                "python": {
-                    "suffix": 'py',
-                    "bang": "#!/usr/bin/python"
-                },
-                "visualbasicscript": {
-                    "suffix": "vbs",
-                    "bang": ""
-                },
-                "Batch": {
-                    "suffix": "bat",
-                    "bang": ""
-                },
+                "python": {"suffix": "py", "bang": "#!/usr/bin/python"},
+                "visualbasicscript": {"suffix": "vbs", "bang": ""},
+                "Batch": {"suffix": "bat", "bang": ""},
                 "powershell": {
                     "suffix": "ps1",
                     "bang": "",
-                    "commandtype": "powershell -executionpolicy bypass -File"
-                }
+                    "commandtype": "powershell -executionpolicy bypass -File",
+                },
             }
-        elif sys.platform.startswith('linux'):
+        elif sys.platform.startswith("linux"):
             extensionscriptfile = {
                 "python": {
-                    "suffix": 'py',
+                    "suffix": "py",
                     "bang": "#!/usr/bin/python",
-                    "commandtype": "python"
+                    "commandtype": "python",
                 },
                 "Batch": {
                     "suffix": "sh",
                     "bang": "#!/bin/bash",
-                    "commandtype": "/bin/bash"
+                    "commandtype": "/bin/bash",
                 },
                 "unixKornshell": {
                     "suffix": "ksh",
                     "bang": "#!/bin/ksh",
-                    "commandtype": "/bin/ksh"
+                    "commandtype": "/bin/ksh",
                 },
                 "unixCshell": {
                     "suffix": "csh",
                     "bang": "#!/bin/csh",
-                    "commandtype": "/bin/csh "
-                }
+                    "commandtype": "/bin/csh ",
+                },
             }
-        elif sys.platform.startswith('darwin'):
+        elif sys.platform.startswith("darwin"):
             extensionscriptfile = {
                 "python": {
-                    "suffix": 'py',
+                    "suffix": "py",
                     "bang": "#!/usr/bin/python",
-                    "commandtype": "python "
+                    "commandtype": "python ",
                 },
                 "Batch": {
                     "suffix": "sh",
                     "bang": "#!/bin/bash",
-                            "commandtype": "/bin/bash "
+                    "commandtype": "/bin/bash ",
                 },
                 "unixKornshell": {
                     "suffix": "ksh",
                     "bang": "#!/bin/ksh",
-                            "commandtype": "/bin/ksh "
+                    "commandtype": "/bin/ksh ",
                 },
                 "unixCshell": {
                     "suffix": "csh",
                     "bang": "#!/bin/csh",
-                            "commandtype": "/bin/csh "
-                }
+                    "commandtype": "/bin/csh ",
+                },
             }
 
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
-            if (isBase64(self.workingstep['script'])):
-                self.workingstep['script'] = base64.b64decode(
-                    self.workingstep['script'])
-            self.workingstep['script'] = self.replaceTEMPLATE(
-                self.workingstep['script'])
+            if isBase64(self.workingstep["script"]):
+                self.workingstep["script"] = base64.b64decode(
+                    self.workingstep["script"]
+                )
+            self.workingstep["script"] = self.replaceTEMPLATE(
+                self.workingstep["script"]
+            )
             if "timeout" not in self.workingstep:
-                self.workingstep['timeout'] = 900
+                self.workingstep["timeout"] = 900
                 logger.warn("timeout missing : default value 900s")
-            self.workingstep['pwd'] = ""
-            if os.path.isdir(self.datasend['data']['pathpackageonmachine']):
-                os.chdir(self.datasend['data']['pathpackageonmachine'])
-                self.workingstep['pwd'] = os.getcwd()
+            self.workingstep["pwd"] = ""
+            if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
+                os.chdir(self.datasend["data"]["pathpackageonmachine"])
+                self.workingstep["pwd"] = os.getcwd()
             self.__alternatefolder()
-            if self.workingstep['typescript'] in extensionscriptfile:
-                suffix = extensionscriptfile[self.workingstep['typescript']]['suffix']
-                shebang = extensionscriptfile[self.workingstep['typescript']]['bang']
-                if 'commandtype' in extensionscriptfile[self.workingstep['typescript']]:
-                    commandtype = extensionscriptfile[self.workingstep['typescript']]['commandtype']
+            if self.workingstep["typescript"] in extensionscriptfile:
+                suffix = extensionscriptfile[self.workingstep["typescript"]]["suffix"]
+                shebang = extensionscriptfile[self.workingstep["typescript"]]["bang"]
+                if "commandtype" in extensionscriptfile[self.workingstep["typescript"]]:
+                    commandtype = extensionscriptfile[self.workingstep["typescript"]][
+                        "commandtype"
+                    ]
 
-            if 'suffix' in self.workingstep and self.workingstep['suffix'] != "":
+            if "suffix" in self.workingstep and self.workingstep["suffix"] != "":
                 # search sufix and extension for typescript.
-                suffix = self.workingstep['suffix']
+                suffix = self.workingstep["suffix"]
 
-            if "bang" in self.workingstep and self.workingstep['bang'] != "":
+            if "bang" in self.workingstep and self.workingstep["bang"] != "":
                 # search sufix and extension for typescript.
-                shebang = self.workingstep['bang']
+                shebang = self.workingstep["bang"]
 
             if suffix is not None:
-                self.workingstep['suffix'] = suffix
+                self.workingstep["suffix"] = suffix
             else:
-                self.workingstep['suffix'] = ""
+                self.workingstep["suffix"] = ""
 
             if shebang is not None:
-                self.workingstep['bang'] = shebang
-                if shebang != "" and not self.workingstep['script'].startswith(
-                        self.workingstep['bang']):
-                    self.workingstep['script'] = self.workingstep['bang'] + \
-                        os.linesep + self.workingstep['script']
+                self.workingstep["bang"] = shebang
+                if shebang != "" and not self.workingstep["script"].startswith(
+                    self.workingstep["bang"]
+                ):
+                    self.workingstep["script"] = (
+                        self.workingstep["bang"]
+                        + os.linesep
+                        + self.workingstep["script"]
+                    )
             else:
-                self.workingstep['bang'] = ""
+                self.workingstep["bang"] = ""
 
-            self.workingstep['script'] = self.replaceTEMPLATE(
-                self.workingstep['script'])
+            self.workingstep["script"] = self.replaceTEMPLATE(
+                self.workingstep["script"]
+            )
 
-            fd, temp_path = mkstemp(suffix='.' + suffix)
+            fd, temp_path = mkstemp(suffix="." + suffix)
             # TODO:  See how we deal with \
-            st = self.workingstep['script']
+            st = self.workingstep["script"]
             if (suffix == "bat") or (suffix == "ps1"):
                 os.write(fd, st)
             else:
                 os.write(fd, st.replace("\\", "\\\\"))
             os.close(fd)
-            self.workingstep['script'] = "script in temp file : %s" % temp_path
+            self.workingstep["script"] = "script in temp file : %s" % temp_path
             # create command
             if commandtype is not None:
                 command = commandtype + temp_path
@@ -1683,30 +1773,34 @@ class grafcet:
                     self.datasend,
                     self.objectxmpp.boundjid.bare,
                     self.objectxmpp.boundjid.bare,
-                    self.workingstep['timeout'],
-                    self.workingstep['step'])
+                    self.workingstep["timeout"],
+                    self.workingstep["step"],
+                )
         except Exception as e:
             self.steplog()
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
             self.terminate(
-                -1, False, "end error in actionprocessscriptfile step %s" %
-                self.workingstep['step'])
+                -1,
+                False,
+                "end error in actionprocessscriptfile step %s"
+                % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error actionprocessscriptfile : %s' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error actionprocessscriptfile : %s"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def actionsuccescompletedend(self):
         """
@@ -1723,42 +1817,42 @@ class grafcet:
         if inventory is not defini then inventory = True
         """
         inventory = True
-        if 'inventory' in self.workingstep:
-            if isinstance(self.workingstep['inventory'], bool):
-                inventory = self.workingstep['inventory']
+        if "inventory" in self.workingstep:
+            if isinstance(self.workingstep["inventory"], bool):
+                inventory = self.workingstep["inventory"]
             else:
-                self.workingstep['inventory'] = str(
-                    self.workingstep['inventory'])
-                if self.workingstep['inventory'] == "False":
+                self.workingstep["inventory"] = str(self.workingstep["inventory"])
+                if self.workingstep["inventory"] == "False":
                     inventory = False
         inventoryfile = ""
         if inventory:
             # genere inventaire et envoi inventaire
             # call plugin inventory pour master.
-            if sys.platform.startswith('linux'):
+            if sys.platform.startswith("linux"):
                 inventoryfile = os.path.join("/", "tmp", "inventory.txt")
-            elif sys.platform.startswith('win'):
+            elif sys.platform.startswith("win"):
                 inventoryfile = os.path.join(
-                    os.environ["ProgramFiles"], 'Pulse', 'tmp', 'inventory.txt')
-            elif sys.platform.startswith('darwin'):
-                inventoryfile = os.path.join(
-                    "/opt", "Pulse", "tmp", "inventory.txt")
+                    os.environ["ProgramFiles"], "Pulse", "tmp", "inventory.txt"
+                )
+            elif sys.platform.startswith("darwin"):
+                inventoryfile = os.path.join("/opt", "Pulse", "tmp", "inventory.txt")
             if inventoryfile != "" and os.path.isfile(inventoryfile):
                 os.remove(inventoryfile)
             # call plugin inventory pour master.
             self.objectxmpp.xmpplog(
-                'Starting inventory',
-                type='deploy',
+                "Starting inventory",
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Execution | Inventory",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
             try:
                 self.objectxmpp.handleinventory()
             except Exception as e:
@@ -1774,60 +1868,60 @@ class grafcet:
                 time.sleep(5)
             if doinventory:
                 self.objectxmpp.xmpplog(
-                    'Sending new inventory from %s : (generated in %s s)' %
-                    (self.objectxmpp.boundjid.bare,
-                     timeinventory),
-                    type='deploy',
+                    "Sending new inventory from %s : (generated in %s s)"
+                    % (self.objectxmpp.boundjid.bare, timeinventory),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution | Inventory",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             else:
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>' %
-                    (self.data['name'],
-                     self.workingstep['step']),
-                    type='deploy',
+                    '[%s]-[%s] :<span class="log_err"> Deployment aborted: inventory execution error <span>'
+                    % (self.data["name"], self.workingstep["step"]),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution | Inventory | Error",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
 
         clear = True
-        if 'clear' in self.workingstep:
-            if isinstance(self.workingstep['clear'], bool):
-                clear = self.workingstep['clear']
+        if "clear" in self.workingstep:
+            if isinstance(self.workingstep["clear"], bool):
+                clear = self.workingstep["clear"]
             else:
-                self.workingstep['clear'] = str(self.workingstep['clear'])
-                if self.workingstep['clear'] == "False":
+                self.workingstep["clear"] = str(self.workingstep["clear"])
+                if self.workingstep["clear"] == "False":
                     clear = False
         self.objectxmpp.xmpplog(
-            '[%s]-[%s] :<span class="log_ok">Deployment successful<span>' %
-            (self.data['name'],
-             self.workingstep['step']),
-            type='deploy',
+            '[%s]-[%s] :<span class="log_ok">Deployment successful<span>'
+            % (self.data["name"], self.workingstep["step"]),
+            type="deploy",
             sessionname=self.sessionid,
-            priority=self.workingstep['step'],
+            priority=self.workingstep["step"],
             action="xmpplog",
             who=self.objectxmpp.boundjid.bare,
             how="",
-            why=self.data['name'],
+            why=self.data["name"],
             module="Deployment | Error | Execution",
             date=None,
-            fromuser=self.data['login'],
-            touser="")
+            fromuser=self.data["login"],
+            touser="",
+        )
         if self.__terminateifcompleted__(self.workingstep):
             return
         self.terminate(0, clear, "end success")
@@ -1845,24 +1939,23 @@ class grafcet:
         if clear is not defini then clear = True
         """
         clear = True
-        if 'clear' in self.workingstep and isinstance(
-                self.workingstep['clear'], bool):
-            clear = self.workingstep['clear']
+        if "clear" in self.workingstep and isinstance(self.workingstep["clear"], bool):
+            clear = self.workingstep["clear"]
         self.objectxmpp.xmpplog(
-            '[%s]-[%s] :<span class="log_err"> Deployment aborted <span>' %
-            (self.data['name'],
-             self.workingstep['step']),
-            type='deploy',
+            '[%s]-[%s] :<span class="log_err"> Deployment aborted <span>'
+            % (self.data["name"], self.workingstep["step"]),
+            type="deploy",
             sessionname=self.sessionid,
-            priority=self.workingstep['step'],
+            priority=self.workingstep["step"],
             action="xmpplog",
             who=self.objectxmpp.boundjid.bare,
             how="",
-            why=self.data['name'],
+            why=self.data["name"],
             module="Deployment | Error | Execution | Notify",
             date=None,
-            fromuser=self.data['login'],
-            touser="")
+            fromuser=self.data["login"],
+            touser="",
+        )
 
         if self.__terminateifcompleted__(self.workingstep):
             return
@@ -1903,155 +1996,177 @@ class grafcet:
 
         """
         # composition command
-        if 'title' not in self.workingstep:
-            self.workingstep['title'] = "Confirmation"
-        if 'icon' not in self.workingstep:
-            self.workingstep['icon'] = "information"
-        if 'query' not in self.workingstep:
-            self.workingstep['query'] = "Yes or No"
-        if 'boutontype' not in self.workingstep:
-            self.workingstep['boutontype'] = ['yes', 'no']
+        if "title" not in self.workingstep:
+            self.workingstep["title"] = "Confirmation"
+        if "icon" not in self.workingstep:
+            self.workingstep["icon"] = "information"
+        if "query" not in self.workingstep:
+            self.workingstep["query"] = "Yes or No"
+        if "boutontype" not in self.workingstep:
+            self.workingstep["boutontype"] = ["yes", "no"]
 
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             logging.debug("machine linux")
             try:
-                os.environ['DISPLAY']
-                logging.debug(
-                    "linux avec serveur X  %s" %
-                    os.environ['DISPLAY'])
+                os.environ["DISPLAY"]
+                logging.debug("linux avec serveur X  %s" % os.environ["DISPLAY"])
                 logging.debug("############################################")
                 logging.debug("linux avec serveur X")
                 linux_executable_dlg_confirm = "dlg_comfirm_pulse"
-                command = linux_executable_dlg_confirm + \
-                    " -T " + self.workingstep['title'] + \
-                    " -I " + self.workingstep['icon'] + \
-                    " -Q " + self.workingstep['query'] + \
-                    " -B " + \
-                    ",".join(self.workingstep['boutontype'])
+                command = (
+                    linux_executable_dlg_confirm
+                    + " -T "
+                    + self.workingstep["title"]
+                    + " -I "
+                    + self.workingstep["icon"]
+                    + " -Q "
+                    + self.workingstep["query"]
+                    + " -B "
+                    + ",".join(self.workingstep["boutontype"])
+                )
                 logging.debug(
-                    "################LINUX  command ############################ %s" %
-                    command)
+                    "################LINUX  command ############################ %s"
+                    % command
+                )
             except KeyError:
                 logging.debug("linux pas de serveur X")
                 os.system(
-                    "echo \"" +
-                    self.workingstep['title'] +
-                    "\n" +
-                    self.workingstep['query'] +
-                    "\n\" | wall")
+                    'echo "'
+                    + self.workingstep["title"]
+                    + "\n"
+                    + self.workingstep["query"]
+                    + '\n" | wall'
+                )
 
                 self.__Etape_Next_in__()
                 return
 
-        elif sys.platform.startswith('win'):
+        elif sys.platform.startswith("win"):
             logging.debug("command on windows")
             win_executable_dlg_confirm = "dlg_comfirm_pulse"
-            command = win_executable_dlg_confirm + \
-                " -T " + self.workingstep['title'] + \
-                " -I " + self.workingstep['icon'] + \
-                " -Q " + self.workingstep['query'] + \
-                " -B " + \
-                ",".join(self.workingstep['boutontype'])
-        elif sys.platform.startswith('darwin'):
+            command = (
+                win_executable_dlg_confirm
+                + " -T "
+                + self.workingstep["title"]
+                + " -I "
+                + self.workingstep["icon"]
+                + " -Q "
+                + self.workingstep["query"]
+                + " -B "
+                + ",".join(self.workingstep["boutontype"])
+            )
+        elif sys.platform.startswith("darwin"):
             logging.debug("command on windows")
             Macos_executable_dlg_confirm = "dlg_comfirm_pulse"
-            command = Macos_executable_dlg_confirm + \
-                " -T " + self.workingstep['title'] + \
-                " -I " + self.workingstep['icon'] + \
-                " -Q " + self.workingstep['query'] + \
-                " -B " + \
-                ",".join(self.workingstep['boutontype'])
+            command = (
+                Macos_executable_dlg_confirm
+                + " -T "
+                + self.workingstep["title"]
+                + " -I "
+                + self.workingstep["icon"]
+                + " -Q "
+                + self.workingstep["query"]
+                + " -B "
+                + ",".join(self.workingstep["boutontype"])
+            )
         # todo si action deja faite return
 
         # appelle boite de dialog
 
         re = shellcommandtimeout(command, 60).run()
         self.steplog()
-        result = [x.strip('\n') for x in re['result'] if x != '']
+        result = [x.strip("\n") for x in re["result"] if x != ""]
         logger.debug("result action actionconfirm:")
-        self.objectxmpp.xmpplog('[%s]-[%s]: Dialog : Reponse %s' % (self.data['name'],
-                                                                    self.workingstep['step'],
-                                                                    result[-1]),
-                                type='deploy',
-                                sessionname=self.sessionid,
-                                priority=self.workingstep['step'],
-                                action="xmpplog",
-                                who=self.objectxmpp.boundjid.bare,
-                                how="",
-                                why=self.data['name'],
-                                module="Deployment | Error | Execution",
-                                date=None,
-                                fromuser=self.data['login'],
-                                touser="")
+        self.objectxmpp.xmpplog(
+            "[%s]-[%s]: Dialog : Reponse %s"
+            % (self.data["name"], self.workingstep["step"], result[-1]),
+            type="deploy",
+            sessionname=self.sessionid,
+            priority=self.workingstep["step"],
+            action="xmpplog",
+            who=self.objectxmpp.boundjid.bare,
+            how="",
+            why=self.data["name"],
+            module="Deployment | Error | Execution",
+            date=None,
+            fromuser=self.data["login"],
+            touser="",
+        )
         if self.__Go_to_by_jump__(result[0]):
             return
-        if self.__Go_to_by_jump_succes_and_error__(re['codereturn']):
+        if self.__Go_to_by_jump_succes_and_error__(re["codereturn"]):
             return
         self.__Etape_Next_in__()
         return
 
     def actionwaitandgoto(self):
         """
-            descriptor type
-            {
-                        "step" : 8,
-                        "action": "actionwaitandgoto",
-                        "waiting" : 60,
-                        "goto" : 7
-            }
+        descriptor type
+        {
+                    "step" : 8,
+                    "action": "actionwaitandgoto",
+                    "waiting" : 60,
+                    "goto" : 7
+        }
         """
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             # todo si action deja faite return
             if "waiting" not in self.workingstep:
-                self.workingstep['waiting'] = '10'
+                self.workingstep["waiting"] = "10"
                 logger.warn("waiting missing : default value 180s")
-            timewaiting = int(self.workingstep['waiting']) + 180
-            logger.warn("timeout  waiting : %s" % self.workingstep['waiting'])
+            timewaiting = int(self.workingstep["waiting"]) + 180
+            logger.warn("timeout  waiting : %s" % self.workingstep["waiting"])
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Waiting %s s before resuming deployment' %
-                (self.data['name'],
-                 self.workingstep['step'],
-                 self.workingstep['waiting']),
-                type='deploy',
+                "[%s]-[%s]: Waiting %s s before resuming deployment"
+                % (
+                    self.data["name"],
+                    self.workingstep["step"],
+                    self.workingstep["waiting"],
+                ),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
-            time.sleep(int(self.workingstep['waiting']))
-            if 'goto' in self.workingstep:
-                self.__search_Next_step_int__(self.workingstep['goto'])
+            time.sleep(int(self.workingstep["waiting"]))
+            if "goto" in self.workingstep:
+                self.__search_Next_step_int__(self.workingstep["goto"])
                 self.__execstep__()
                 return True
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionwaitandgoto step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in actionwaitandgoto step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error in descriptor for action waitandgoto ' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error in descriptor for action waitandgoto "
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def actionrestart(self):
         """
@@ -2073,229 +2188,248 @@ class grafcet:
             self.__set_backtoworksession__()
 
             if not (
-                    'targetrestart' in self.workingstep and self.workingstep['targetrestart'] == "AM"):
-                self.workingstep['targetrestart'] = "MA"
+                "targetrestart" in self.workingstep
+                and self.workingstep["targetrestart"] == "AM"
+            ):
+                self.workingstep["targetrestart"] = "MA"
 
             # rewrite session
-            objsession = self.objectxmpp.session.sessionfromsessiondata(
-                self.sessionid)
+            objsession = self.objectxmpp.session.sessionfromsessiondata(self.sessionid)
             objsession.setdatasession(self.datasend)
             # Restart machine based on OS
             self.steplog()
 
-            if self.workingstep['targetrestart'] == "AM":
+            if self.workingstep["targetrestart"] == "AM":
                 # restart Agent Machine
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: Restart machine agent' %
-                    (self.data['name'],
-                     self.workingstep['step']),
-                    type='deploy',
+                    "[%s]-[%s]: Restart machine agent"
+                    % (self.data["name"], self.workingstep["step"]),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Error | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
                 self.objectxmpp.restartBot()
             else:
                 # Restart Machine
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: Restart machine' %
-                    (self.data['name'],
-                     self.workingstep['step']),
-                    type='deploy',
+                    "[%s]-[%s]: Restart machine"
+                    % (self.data["name"], self.workingstep["step"]),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Error | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
                 logging.debug("actionrestartmachine  RESTART MACHINE")
-                if sys.platform.startswith('linux'):
-                    logging.debug(
-                        "actionrestartmachine  shutdown machine linux")
+                if sys.platform.startswith("linux"):
+                    logging.debug("actionrestartmachine  shutdown machine linux")
                     os.system("shutdown -r now")
-                elif sys.platform.startswith('win'):
-                    logging.debug(
-                        "actionrestartmachine  shutdown machine windows")
+                elif sys.platform.startswith("win"):
+                    logging.debug("actionrestartmachine  shutdown machine windows")
                     os.system("shutdown /r")
-                elif sys.platform.startswith('darwin'):
-                    logging.debug(
-                        "actionrestartmachine  shutdown machine MacOS")
+                elif sys.platform.startswith("darwin"):
+                    logging.debug("actionrestartmachine  shutdown machine MacOS")
                     os.system("shutdown -r now")
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in actionrestart %s step %s" %
-                           (self.workingstep['targetrestart'], self.workingstep['step']))
+            self.terminate(
+                -1,
+                False,
+                "end error in actionrestart %s step %s"
+                % (self.workingstep["targetrestart"], self.workingstep["step"]),
+            )
             self.objectxmpp.xmpplog(
-                '[%s]: Error actionrestart : %s' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]: Error actionrestart : %s"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     def actioncleaning(self):
         # logtopulse(self,text,type='noset',sessionname = '',priority = 0, who = '')
-        self.objectxmpp.xmpplog('[%s] Cleaning package' % (self.data['name']),
-                                type='deploy',
-                                sessionname=self.sessionid,
-                                priority=self.workingstep['step'],
-                                action="xmpplog",
-                                who=self.objectxmpp.boundjid.bare,
-                                how="",
-                                why=self.data['name'],
-                                module="Deployment | Error | Execution",
-                                date=None,
-                                fromuser=self.data['login'],
-                                touser="")
+        self.objectxmpp.xmpplog(
+            "[%s] Cleaning package" % (self.data["name"]),
+            type="deploy",
+            sessionname=self.sessionid,
+            priority=self.workingstep["step"],
+            action="xmpplog",
+            who=self.objectxmpp.boundjid.bare,
+            how="",
+            why=self.data["name"],
+            module="Deployment | Error | Execution",
+            date=None,
+            fromuser=self.data["login"],
+            touser="",
+        )
         try:
             if self.__terminateifcompleted__(self.workingstep):
                 return
             self.__action_completed__(self.workingstep)
-            if managepackage.packagedir(
-            ) in self.datasend['data']['pathpackageonmachine']:
+            if (
+                managepackage.packagedir()
+                in self.datasend["data"]["pathpackageonmachine"]
+            ):
                 os.chdir(managepackage.packagedir())
-                if sys.platform.startswith('win'):
-                    os.system("rmdir /s /q \"%s\"" %
-                              self.datasend['data']['pathpackageonmachine'])
+                if sys.platform.startswith("win"):
+                    os.system(
+                        'rmdir /s /q "%s"'
+                        % self.datasend["data"]["pathpackageonmachine"]
+                    )
                 else:
-                    os.system("rm -Rf %s" %
-                              self.datasend['data']['pathpackageonmachine'])
+                    os.system(
+                        "rm -Rf %s" % self.datasend["data"]["pathpackageonmachine"]
+                    )
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: Deleting package file from machine' %
-                    (self.data['name'],
-                     self.workingstep['step']),
-                    type='deploy',
+                    "[%s]-[%s]: Deleting package file from machine"
+                    % (self.data["name"], self.workingstep["step"]),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Error | Execution",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             self.steplog()
             self.__Etape_Next_in__()
         except Exception as e:
             logger.error(str(e))
             logger.error("\n%s" % (traceback.format_exc()))
-            self.terminate(-1, False, "end error in actioncleaning step %s" %
-                           self.workingstep['step'])
+            self.terminate(
+                -1,
+                False,
+                "end error in actioncleaning step %s" % self.workingstep["step"],
+            )
             self.objectxmpp.xmpplog(
-                '[%s]-[%s]: Error actioncleaning : %s' %
-                (self.data['name'],
-                 self.workingstep['step']),
-                type='deploy',
+                "[%s]-[%s]: Error actioncleaning : %s"
+                % (self.data["name"], self.workingstep["step"]),
+                type="deploy",
                 sessionname=self.sessionid,
-                priority=self.workingstep['step'],
+                priority=self.workingstep["step"],
                 action="xmpplog",
                 who=self.objectxmpp.boundjid.bare,
                 how="",
-                why=self.data['name'],
+                why=self.data["name"],
                 module="Deployment | Error | Execution",
                 date=None,
-                fromuser=self.data['login'],
-                touser="")
+                fromuser=self.data["login"],
+                touser="",
+            )
 
     # WIP
     def getpackagemanager(self):
         """
-            This function helps to find the update manager
-            depending on the linux distribution.
+        This function helps to find the update manager
+        depending on the linux distribution.
         """
         if os.path.isfile("/etc/mageia-release"):
-            return 'urpmi --auto'
+            return "urpmi --auto"
         if os.path.isfile("/etc/redhat-release"):
-            return 'yum'
+            return "yum"
         elif os.path.isfile("/etc/arch-release"):
-            return 'pacman'
+            return "pacman"
         elif os.path.isfile("/etc/gentoo-release"):
-            return 'emerge'
+            return "emerge"
         elif os.path.isfile("/etc/SuSE-release"):
-            return 'zypp'
+            return "zypp"
         elif os.path.isfile("/etc/debian_version"):
-            return 'apt-get -q -y install '
+            return "apt-get -q -y install "
         else:
             return ""
 
     def __alternatefolder(self):
-        if 'packageuuid' in self.workingstep:
-            self.workingstep['packageuuid'] = self.replaceTEMPLATE(
-                self.workingstep['packageuuid'])
-            directoryworking = os.path.join(managepackage.packagedir(),
-                                            self.workingstep['packageuuid'])
+        if "packageuuid" in self.workingstep:
+            self.workingstep["packageuuid"] = self.replaceTEMPLATE(
+                self.workingstep["packageuuid"]
+            )
+            directoryworking = os.path.join(
+                managepackage.packagedir(), self.workingstep["packageuuid"]
+            )
             if os.path.isdir(directoryworking):
                 os.chdir(directoryworking)
-                self.workingstep['pwd'] = os.getcwd()
+                self.workingstep["pwd"] = os.getcwd()
                 self.objectxmpp.xmpplog(
                     '[%s]-[%s]: Using " \
-                                        "package folder %s' %
-                    (self.data['name'],
-                     self.workingstep['step'],
-                     self.workingstep['packageuuid']),
-                    type='deploy',
+                                        "package folder %s'
+                    % (
+                        self.data["name"],
+                        self.workingstep["step"],
+                        self.workingstep["packageuuid"],
+                    ),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution | Warning",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
+                    fromuser=self.data["login"],
+                    touser="",
+                )
             else:
                 self.objectxmpp.xmpplog(
-                    '[%s]-[%s]: Warning : Requested package '
-                    'directory missing!!!:  %s' %
-                    (self.data['name'],
-                     self.workingstep['step'],
-                     self.workingstep['packageuuid']),
-                    type='deploy',
+                    "[%s]-[%s]: Warning : Requested package "
+                    "directory missing!!!:  %s"
+                    % (
+                        self.data["name"],
+                        self.workingstep["step"],
+                        self.workingstep["packageuuid"],
+                    ),
+                    type="deploy",
                     sessionname=self.sessionid,
-                    priority=self.workingstep['step'],
+                    priority=self.workingstep["step"],
                     action="xmpplog",
                     who=self.objectxmpp.boundjid.bare,
                     how="",
-                    why=self.data['name'],
+                    why=self.data["name"],
                     module="Deployment | Execution | Warning",
                     date=None,
-                    fromuser=self.data['login'],
-                    touser="")
-        self.workingstep['pwd'] = os.getcwd()
+                    fromuser=self.data["login"],
+                    touser="",
+                )
+        self.workingstep["pwd"] = os.getcwd()
         self.objectxmpp.xmpplog(
-            '[%s]-[%s]: Current directory %s' %
-            (self.data['name'],
-             self.workingstep['step'],
-             self.workingstep['pwd']),
-            type='deploy',
+            "[%s]-[%s]: Current directory %s"
+            % (self.data["name"], self.workingstep["step"], self.workingstep["pwd"]),
+            type="deploy",
             sessionname=self.sessionid,
-            priority=self.workingstep['step'],
+            priority=self.workingstep["step"],
             action="xmpplog",
             who=self.objectxmpp.boundjid.bare,
             how="",
-            why=self.data['name'],
+            why=self.data["name"],
             module="Deployment | Execution",
             date=None,
-            fromuser=self.data['login'],
-            touser="")
+            fromuser=self.data["login"],
+            touser="",
+        )

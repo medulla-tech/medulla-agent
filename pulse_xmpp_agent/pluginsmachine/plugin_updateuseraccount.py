@@ -33,27 +33,34 @@ plugin = {"VERSION": "1.7", "NAME": "updateuseraccount", "TYPE": "machine"}
 def get_ars_key(xmppobject, remotejidars, timeout=15):
     try:
         iqresult = xmppobject.iqsendpulse(
-            remotejidars, {
-                "action": "information", "data": {
-                    "listinformation": [
-                        "get_ars_key_id_rsa", "keypub"], "param": {}}}, timeout)
+            remotejidars,
+            {
+                "action": "information",
+                "data": {
+                    "listinformation": ["get_ars_key_id_rsa", "keypub"],
+                    "param": {},
+                },
+            },
+            timeout,
+        )
         res = json.loads(iqresult)
         return res
     except KeyError:
         logger.error(
-            "Error getting relayserver pubkey and reversessh idrsa via iq from %s" %
-            remotejidars)
+            "Error getting relayserver pubkey and reversessh idrsa via iq from %s"
+            % remotejidars
+        )
         return None
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
     msg = []
     try:
         # Make sure user account and profile exists
-        username = 'pulseuser'
+        username = "pulseuser"
         result, msglog = utils.pulseuser_useraccount_mustexist(username)
         if result is False:
             logger.error(msglog)
@@ -65,32 +72,31 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
         # Get necessary keys from relay server
         jidars = xmppobject.config.agentcommand
-        jidarsmain = 'rspulse@pulse/mainrelay'
+        jidarsmain = "rspulse@pulse/mainrelay"
         res = get_ars_key(xmppobject, jidars)
         if res is None:
             return
         try:
-            result = res['result']['informationresult']
+            result = res["result"]["informationresult"]
         except KeyError:
+            logger.error("IQ Error: Please verify that the ARS %s is online." % jidars)
             logger.error(
-                "IQ Error: Please verify that the ARS %s is online." %
-                jidars)
-            logger.error(
-                "IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command")
+                "IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command"
+            )
 
             logger.error(
-                "The Key of the ARS %s is not installed on the machine %s" % (
-                    jidars, xmppobject.boundjid.bare))
+                "The Key of the ARS %s is not installed on the machine %s"
+                % (jidars, xmppobject.boundjid.bare)
+            )
             return
 
-        relayserver_pubkey = result['keypub']
-        relayserver_reversessh_idrsa = result['get_ars_key_id_rsa']
+        relayserver_pubkey = result["keypub"]
+        relayserver_reversessh_idrsa = result["get_ars_key_id_rsa"]
+        logger.debug("The public Key of the relayserver is %s" % relayserver_pubkey)
         logger.debug(
-            "The public Key of the relayserver is %s" %
-            relayserver_pubkey)
-        logger.debug(
-            "The idrsa key of the reversessh use on relayserver is %s" %
-            relayserver_reversessh_idrsa)
+            "The idrsa key of the reversessh use on relayserver is %s"
+            % relayserver_reversessh_idrsa
+        )
 
         if jidarsmain == jidars:
             mainserver_pubkey = relayserver_pubkey
@@ -100,37 +106,40 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             if res is None:
                 return
             try:
-                result = res['result']['informationresult']
+                result = res["result"]["informationresult"]
             except KeyError:
                 logger.error(
-                    "IQ Error: Please verify that the ARS %s is online." %
-                    jidars)
+                    "IQ Error: Please verify that the ARS %s is online." % jidars
+                )
                 logger.error(
-                    "IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command")
+                    "IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command"
+                )
 
                 logger.error(
-                    "The Key of the ARS %s is not installed on the machine %s" %
-                    (jidars, xmppobject.boundjid.bare))
+                    "The Key of the ARS %s is not installed on the machine %s"
+                    % (jidars, xmppobject.boundjid.bare)
+                )
                 return
 
-            mainserver_pubkey = result['keypub']
-            logger.debug(
-                "The public Key of the relayserver is %s" %
-                relayserver_pubkey)
+            mainserver_pubkey = result["keypub"]
+            logger.debug("The public Key of the relayserver is %s" % relayserver_pubkey)
             # Add the keys to pulseuser account
             result, msglog = utils.create_idrsa_on_client(
-                username, relayserver_reversessh_idrsa)
+                username, relayserver_reversessh_idrsa
+            )
 
         if result is False:
             logger.error(msglog)
         msg.append(msglog)
         result, msglog = utils.add_key_to_authorizedkeys_on_client(
-            username, relayserver_pubkey)
+            username, relayserver_pubkey
+        )
         if result is False:
             logger.error(msglog)
         msg.append(msglog)
         result, msglog = utils.add_key_to_authorizedkeys_on_client(
-            username, mainserver_pubkey)
+            username, mainserver_pubkey
+        )
         if result is False:
             logger.error(msglog)
         msg.append(msglog)

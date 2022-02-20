@@ -23,7 +23,6 @@ import logging
 
 
 class Package_pending_exclusions(object):
-
     def getId(self):
         if self.id is not None:
             return self.id
@@ -43,7 +42,4 @@ class Package_pending_exclusions(object):
         Returns:
             Dict of elements contained into the object.
         """
-        return {
-            'id': self.getId(),
-            'getRelayserver_jid': self.getRelayserver_jid()
-        }
+        return {"id": self.getId(), "getRelayserver_jid": self.getRelayserver_jid()}

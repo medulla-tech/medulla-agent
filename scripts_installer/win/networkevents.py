@@ -40,6 +40,7 @@ import socket
 import struct
 from ctypes import windll
 import os
+
 # from EventSys.h
 PROGID_EventSystem = "EventSystem.EventSystem"
 PROGID_EventSubscription = "EventSystem.EventSubscription"
@@ -53,66 +54,80 @@ iplist = ""
 WM_QUIT = 0x12
 service_logger = logging.getLogger()
 
-SUBSCRIPTION_NETALIVE = ('{cd1dcbd6-a14d-4823-a0d2-8473afde360f}',
-                         'pulse Network Alive',
-                         'ConnectionMade')
+SUBSCRIPTION_NETALIVE = (
+    "{cd1dcbd6-a14d-4823-a0d2-8473afde360f}",
+    "pulse Network Alive",
+    "ConnectionMade",
+)
 
-SUBSCRIPTION_NETALIVE_NOQOC = ('{a82f0e80-1305-400c-ba56-375ae04264a1}',
-                               'pulse Net Alive No Info',
-                               'ConnectionMadeNoQOCInfo')
+SUBSCRIPTION_NETALIVE_NOQOC = (
+    "{a82f0e80-1305-400c-ba56-375ae04264a1}",
+    "pulse Net Alive No Info",
+    "ConnectionMadeNoQOCInfo",
+)
 
-SUBSCRIPTION_NETLOST = ('{45233130-b6c3-44fb-a6af-487c47cee611}',
-                        'pulse Network Lost',
-                        'ConnectionLost')
+SUBSCRIPTION_NETLOST = (
+    "{45233130-b6c3-44fb-a6af-487c47cee611}",
+    "pulse Network Lost",
+    "ConnectionLost",
+)
 
-SUBSCRIPTION_REACH = ('{4c6b2afa-3235-4185-8558-57a7a922ac7b}',
-                      'pulse Network Reach',
-                      'ConnectionMade')
+SUBSCRIPTION_REACH = (
+    "{4c6b2afa-3235-4185-8558-57a7a922ac7b}",
+    "pulse Network Reach",
+    "ConnectionMade",
+)
 
-SUBSCRIPTION_REACH_NOQOC = ('{db62fa23-4c3e-47a3-aef2-b843016177cf}',
-                            'pulse Network Reach No Info',
-                            'ConnectionMadeNoQOCInfo')
+SUBSCRIPTION_REACH_NOQOC = (
+    "{db62fa23-4c3e-47a3-aef2-b843016177cf}",
+    "pulse Network Reach No Info",
+    "ConnectionMadeNoQOCInfo",
+)
 
-SUBSCRIPTION_REACH_NOQOC2 = ('{d4d8097a-60c6-440d-a6da-918b619ae4b7}',
-                             'pulse Network Reach No Info 2',
-                             'ConnectionMadeNoQOCInfo')
+SUBSCRIPTION_REACH_NOQOC2 = (
+    "{d4d8097a-60c6-440d-a6da-918b619ae4b7}",
+    "pulse Network Reach No Info 2",
+    "ConnectionMadeNoQOCInfo",
+)
 
-SUBSCRIPTIONS = [SUBSCRIPTION_NETALIVE,
-                 SUBSCRIPTION_NETALIVE_NOQOC,
-                 SUBSCRIPTION_NETLOST,
-                 SUBSCRIPTION_REACH,
-                 SUBSCRIPTION_REACH_NOQOC,
-                 SUBSCRIPTION_REACH_NOQOC2]
+SUBSCRIPTIONS = [
+    SUBSCRIPTION_NETALIVE,
+    SUBSCRIPTION_NETALIVE_NOQOC,
+    SUBSCRIPTION_NETLOST,
+    SUBSCRIPTION_REACH,
+    SUBSCRIPTION_REACH_NOQOC,
+    SUBSCRIPTION_REACH_NOQOC2,
+]
 
-SENSGUID_EVENTCLASS_NETWORK = '{d5978620-5b9f-11d1-8dd2-00aa004abd5e}'
+SENSGUID_EVENTCLASS_NETWORK = "{d5978620-5b9f-11d1-8dd2-00aa004abd5e}"
 SENSGUID_PUBLISHER = "{5fee1bd6-5b9b-11d1-8dd2-00aa004abd5e}"
 
 # uuid of the implemented com interface
-IID_ISesNetwork = '{d597bab1-5b9f-11d1-8dd2-00aa004abd5e}'
+IID_ISesNetwork = "{d597bab1-5b9f-11d1-8dd2-00aa004abd5e}"
 
 
 def GetIpAddrTable():
-    """ Returns the interface-to-IP address mapping table.
+    """Returns the interface-to-IP address mapping table.
 
-        It can be used, for example, to find out the IP addresses
-        assigned to all network interfaces on this computer.
+    It can be used, for example, to find out the IP addresses
+    assigned to all network interfaces on this computer.
 
-        The value returned is a list of dictionaries, each with
-        the following entries:
-            ip_raw:     IP address, in raw format (long integer)
-            ip_str:     IP address, represented as a dot-separated
-                        quartet string (e.g. "123.0.100.78")
-            mask:       Subnet mask
-            bcast_addr: Broadcast address
-            reasm_size: Maximum reassembly size
-            type:       Address type or state
+    The value returned is a list of dictionaries, each with
+    the following entries:
+        ip_raw:     IP address, in raw format (long integer)
+        ip_str:     IP address, represented as a dot-separated
+                    quartet string (e.g. "123.0.100.78")
+        mask:       Subnet mask
+        bcast_addr: Broadcast address
+        reasm_size: Maximum reassembly size
+        type:       Address type or state
 
-        Raises WindowsError if there's some a accessing the
-        system DLL.
+    Raises WindowsError if there's some a accessing the
+    system DLL.
 
-        Note: The is basically a wrapper around GetIpAddrTable()
-        from the Platform SDK. Read the documentation of that
-        function for more information.
+    Note: The is basically a wrapper around GetIpAddrTable()
+    from the Platform SDK. Read the documentation of that
+    function for more information.
     """
     DWORD = ctypes.c_ulong
     USHORT = ctypes.c_ushort
@@ -125,26 +140,23 @@ def GetIpAddrTable():
     windll.iphlpapi.GetIpAddrTable(NULL, ctypes.byref(dwSize), 0)
 
     class MIB_IPADDRROW(ctypes.Structure):
-        _fields_ = [('dwAddr', DWORD),
-                    ('dwIndex', DWORD),
-                    ('dwMask', DWORD),
-                    ('dwBCastAddr', DWORD),
-                    ('dwReasmSize', DWORD),
-                    ('unused1', USHORT),
-                    ('wType', USHORT)]
+        _fields_ = [
+            ("dwAddr", DWORD),
+            ("dwIndex", DWORD),
+            ("dwMask", DWORD),
+            ("dwBCastAddr", DWORD),
+            ("dwReasmSize", DWORD),
+            ("unused1", USHORT),
+            ("wType", USHORT),
+        ]
 
     class MIB_IPADDRTABLE(ctypes.Structure):
-        _fields_ = [('dwNumEntries', DWORD),
-                    ('table', MIB_IPADDRROW * dwSize.value)]
+        _fields_ = [("dwNumEntries", DWORD), ("table", MIB_IPADDRROW * dwSize.value)]
 
     ipTable = MIB_IPADDRTABLE()
-    rc = windll.iphlpapi.GetIpAddrTable(ctypes.byref(ipTable),
-                                        ctypes.byref(dwSize),
-                                        0)
+    rc = windll.iphlpapi.GetIpAddrTable(ctypes.byref(ipTable), ctypes.byref(dwSize), 0)
     if rc != 0:
-        raise WindowsError(
-            "GetIpAddrTable returned %d" %
-            rc)  # skipcq: PYL-E0602
+        raise WindowsError("GetIpAddrTable returned %d" % rc)  # skipcq: PYL-E0602
 
     table = []
 
@@ -158,7 +170,7 @@ def GetIpAddrTable():
         #                    )
         #        entry = dict( ip_str      = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr)),
         #                      mask        = ipTable.table[i].dwMask)
-        entry = socket.inet_ntoa(struct.pack('L', ipTable.table[i].dwAddr))
+        entry = socket.inet_ntoa(struct.pack("L", ipTable.table[i].dwAddr))
         table.append(str(entry))
     table.sort()
     return ",".join(table)
@@ -181,9 +193,11 @@ def diff_interface(oldinterface, newinterface):
     commun_interface = sorted(commun_interface)
     add_interface.sort()
     del_interface.sort()
-    return {"interface": commun_interface,
-            "additionalinterface": add_interface,
-            "removedinterface": del_interface}
+    return {
+        "interface": commun_interface,
+        "additionalinterface": add_interface,
+        "removedinterface": del_interface,
+    }
 
 
 class NetworkManager(DesignatedWrapPolicy):
@@ -191,11 +205,11 @@ class NetworkManager(DesignatedWrapPolicy):
 
     _com_interfaces_ = [IID_ISesNetwork]
     # event on interface
-# _public_methods_ = ['ConnectionMade',
-# 'ConnectionMadeNoQOCInfo',
-# 'ConnectionLost']
-    _public_methods_ = ['ConnectionMadeNoQOCInfo']
-    _reg_clsid_ = '{41B032DA-86B5-4907-A7F7-958E59333010}'
+    # _public_methods_ = ['ConnectionMade',
+    # 'ConnectionMadeNoQOCInfo',
+    # 'ConnectionLost']
+    _public_methods_ = ["ConnectionMadeNoQOCInfo"]
+    _reg_clsid_ = "{41B032DA-86B5-4907-A7F7-958E59333010}"
     _reg_progid_ = "WaptService.NetworkManager"
 
     def __init__(self, connected_cb, disconnected_cb):
@@ -205,23 +219,23 @@ class NetworkManager(DesignatedWrapPolicy):
 
         self.main_thread_id = win32api.GetCurrentThreadId()
 
-#    def on_timer(self):
-#        thread_id = win32api.GetCurrentThreadId()
-#        win32api.PostThreadMessage(self.main_thread_id, WM_QUIT, 0, 0);
+    #    def on_timer(self):
+    #        thread_id = win32api.GetCurrentThreadId()
+    #        win32api.PostThreadMessage(self.main_thread_id, WM_QUIT, 0, 0);
 
     def ConnectionMade(self, *args):
         """Tell that the connection is up again."""
-        service_logger.info('Connection was made.')
+        service_logger.info("Connection was made.")
         self.connected_cb()
 
     def ConnectionMadeNoQOCInfo(self, *args):
         """Tell that the connection is up again."""
-        service_logger.info('Connection was made no info.')
+        service_logger.info("Connection was made no info.")
         self.connected_cb()
 
     def ConnectionLost(self, *args):
         """Tell the connection was lost."""
-        service_logger.info('Connection was lost.')
+        service_logger.info("Connection was lost.")
         self.disconnected_cb()
 
     def register(self):
@@ -247,16 +261,13 @@ class NetworkManager(DesignatedWrapPolicy):
             event_subscription.PerUser = True
             # store the event
             try:
-                event_system.Store(PROGID_EventSubscription,
-                                   event_subscription)
+                event_system.Store(PROGID_EventSubscription, event_subscription)
             except pythoncom.com_error as e:
-                service_logger.error(
-                    'Error registering to event %s',
-                    current_event[1])
+                service_logger.error("Error registering to event %s", current_event[1])
 
     def poll_messages(self):
         """Pumps all waiting messages for the current thread.
-            Returns 1 if a WM_QUIT message was received, else 0
+        Returns 1 if a WM_QUIT message was received, else 0
         """
         return pythoncom.PumpWaitingMessages()
 
@@ -268,7 +279,8 @@ class NetworkManager(DesignatedWrapPolicy):
             None,
             win32file.OPEN_EXISTING,
             0,
-            None)
+            None,
+        )
         win32file.WriteFile(fileHandle, message)
         win32file.CloseHandle(fileHandle)
 
@@ -298,12 +310,16 @@ class NetworkManager(DesignatedWrapPolicy):
                 datainterface = diff_interface(oldinterface, newinterface)
                 try:
                     strchang = "Interface [%s] chang[" % (iplistlocal)
-                    if len(datainterface['additionalinterface']) > 0:
-                        strchang = "%s+%s" % (strchang,
-                                              datainterface['additionalinterface'])
-                    if len(datainterface['removedinterface']) > 0:
-                        strchang = "%s-%s" % (strchang,
-                                              datainterface['removedinterface'])
+                    if len(datainterface["additionalinterface"]) > 0:
+                        strchang = "%s+%s" % (
+                            strchang,
+                            datainterface["additionalinterface"],
+                        )
+                    if len(datainterface["removedinterface"]) > 0:
+                        strchang = "%s-%s" % (
+                            strchang,
+                            datainterface["removedinterface"],
+                        )
                     strchang = "%s]" % (strchang)
                     # if len(datainterface['removedinterface']) > 0:
                     message = json.dumps(datainterface)
@@ -317,38 +333,31 @@ class NetworkManager(DesignatedWrapPolicy):
                 time.sleep(5)
 
 
-if __name__ == '__main__':
-    logfile = os.path.join(os.environ["ProgramFiles"],
-                           "Pulse",
-                           "var",
-                           "log",
-                           "networkevents.log")
+if __name__ == "__main__":
+    logfile = os.path.join(
+        os.environ["ProgramFiles"], "Pulse", "var", "log", "networkevents.log"
+    )
 
-    program_dir = os.path.join(os.environ["ProgramFiles"],
-                               "Pulse",
-                               "bin")
+    program_dir = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
     pidfile = os.path.join(program_dir, ".PID_NETWORKS_ENVENTS")
 
     PID_PROGRAM = os.getpid()
-    with open(pidfile, mode='w') as file:
+    with open(pidfile, mode="w") as file:
         file.write("%s" % PID_PROGRAM)
 
-    format = '%(asctime)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.DEBUG,
-                        format=format,
-                        filename=logfile,
-                        filemode='a')
+    format = "%(asctime)s - %(levelname)s - %(message)s"
+    logging.basicConfig(
+        level=logging.DEBUG, format=format, filename=logfile, filemode="a"
+    )
     service_logger.info("***************************")
     iplist = GetIpAddrTable()
-    service_logger.info(
-        "START NETWORKEVENT [PID %s] %s" %
-        (PID_PROGRAM, iplist))
+    service_logger.info("START NETWORKEVENT [PID %s] %s" % (PID_PROGRAM, iplist))
 
     def connected():
-        print('Connected')
+        print("Connected")
 
     def disconnected():
-        print('Disconnected')
+        print("Disconnected")
 
     manager = NetworkManager(connected, disconnected)
     process = Thread(target=manager.run)

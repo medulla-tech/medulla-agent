@@ -77,10 +77,10 @@ class Syncthingsync(object):
             Dict of elements contained into the object.
         """
         return {
-            'id': self.getId(),
-            'date': self.getDate(),
-            'uuidpackage': self.getUuidpackage(),
-            'typesynchro': self.getTypesynchro(),
-            'relayserver_jid': self.getRelayserver_jid(),
-            'watching': self.getWatching()
+            "id": self.getId(),
+            "date": self.getDate(),
+            "uuidpackage": self.getUuidpackage(),
+            "typesynchro": self.getTypesynchro(),
+            "relayserver_jid": self.getRelayserver_jid(),
+            "watching": self.getWatching(),
         }

@@ -30,16 +30,21 @@ plugin = {
     "VERSION": "1.3",
     "NAME": "scheduling_ars_synchro_package",
     "TYPE": "relayserver",
-    "SCHEDULED": True}
+    "SCHEDULED": True,
+}
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 
 
 def schedule_main(objectxmpp):
-    logging.getLogger().debug("==========Plugin scheduling_ars_synchro_package==========")
+    logging.getLogger().debug(
+        "==========Plugin scheduling_ars_synchro_package=========="
+    )
     logging.getLogger().debug(plugin)
-    logging.getLogger().debug("=========================================================")
+    logging.getLogger().debug(
+        "========================================================="
+    )
 
     managepackage.remove_symlinks()
     managepackage.package_for_deploy_from_share()

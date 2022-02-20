@@ -28,7 +28,8 @@ plugin = {
     "VERSION": "2.0",
     "NAME": "scheduling_inv",
     "TYPE": "machine",
-    "SCHEDULED": True}
+    "SCHEDULED": True,
+}
 SCHEDULE = {"schedule": "$[0,59] $[8,17] * * *", "nb": -1}  # nb  -1 infinie
 
 
@@ -38,27 +39,27 @@ def schedule_main(objectxmpp):
     logging.getLogger().debug("###################################################")
     logging.getLogger().debug("call %s ", plugin)
     logging.getLogger().debug("###################################################")
-    msg = {'from': "master@pulse/MASTER",
-           'to': objectxmpp.boundjid.bare
-           }
+    msg = {"from": "master@pulse/MASTER", "to": objectxmpp.boundjid.bare}
     sessionid = utils.getRandomName(6, "inventory")
     dataerreur = {}
-    dataerreur['action'] = "resultinventory"
-    dataerreur['data'] = {}
-    dataerreur['data']['msg'] = "ERROR : inventory"
-    dataerreur['sessionid'] = sessionid
-    dataerreur['ret'] = 255
-    dataerreur['base64'] = False
-    utils.call_plugin("inventory",
-                      objectxmpp,
-                      "inventory",
-                      sessionid,
-                      {"forced": "noforced"},
-                      msg,
-                      dataerreur)
+    dataerreur["action"] = "resultinventory"
+    dataerreur["data"] = {}
+    dataerreur["data"]["msg"] = "ERROR : inventory"
+    dataerreur["sessionid"] = sessionid
+    dataerreur["ret"] = 255
+    dataerreur["base64"] = False
+    utils.call_plugin(
+        "inventory",
+        objectxmpp,
+        "inventory",
+        sessionid,
+        {"forced": "noforced"},
+        msg,
+        dataerreur,
+    )
     objectxmpp.xmpplog(
         "Sent Inventory from agent %s" % (objectxmpp.boundjid.bare),
-        type='noset',
+        type="noset",
         sessionname=sessionid,
         priority=0,
         action="xmpplog",
@@ -67,4 +68,5 @@ def schedule_main(objectxmpp):
         why="",
         module="Inventory | Inventory reception | Planned",
         fromuser="",
-        touser="")
+        touser="",
+    )

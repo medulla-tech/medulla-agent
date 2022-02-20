@@ -31,8 +31,7 @@ import logging
 
 
 class Extensions(object):
-    """ Mapping between pkgs.extensions and SA
-    """
+    """Mapping between pkgs.extensions and SA"""
 
     def getId(self):
         if self.id is not None:
@@ -102,28 +101,30 @@ class Extensions(object):
 
     def to_array(self):
         return {
-            'id': self.getId(),
-            'rule_order': self.getRule_order(),
-            'rule_name': self.getRule_name(),
-            'name': self.getName(),
-            'extension': self.getExtension(),
-            'magic_command': self.getMagic_command(),
-            'bang': self.getBang(),
-            'file': self.getFile(),
-            'strings': self.getStrings(),
-            'proposition': self.getProposition(),
-            'description': self.getDescription()
+            "id": self.getId(),
+            "rule_order": self.getRule_order(),
+            "rule_name": self.getRule_name(),
+            "name": self.getName(),
+            "extension": self.getExtension(),
+            "magic_command": self.getMagic_command(),
+            "bang": self.getBang(),
+            "file": self.getFile(),
+            "strings": self.getStrings(),
+            "proposition": self.getProposition(),
+            "description": self.getDescription(),
         }
 
     def toH(self):
-        return {'id': self.id,
-                'rule_order': self.rule_order,
-                'rule_name': self.rule_name,
-                'name': name,
-                'extension': extension,
-                'magic_command': self.magic_command,
-                'bang': self.bang,
-                'file': self.file,
-                'strings': self.strings,
-                'proposition': self.proposition,
-                'description': description}
+        return {
+            "id": self.id,
+            "rule_order": self.rule_order,
+            "rule_name": self.rule_name,
+            "name": name,
+            "extension": extension,
+            "magic_command": self.magic_command,
+            "bang": self.bang,
+            "file": self.file,
+            "strings": self.strings,
+            "proposition": self.proposition,
+            "description": description,
+        }

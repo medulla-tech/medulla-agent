@@ -24,32 +24,24 @@ import sys
 import os
 import shutil
 import logging
+
 logger = logging.getLogger()
 
 
 def directoryconffile():
     """
-        This function provide the path to the configuration files of pulse-xmpp-agent.
+    This function provide the path to the configuration files of pulse-xmpp-agent.
 
-        Return:
-            it returns the path to the configuration files if it exists
-            it returns None if the path does not exist
+    Return:
+        it returns the path to the configuration files if it exists
+        it returns None if the path does not exist
     """
-    if sys.platform.startswith('linux'):
-        fileconf = os.path.join(
-            "/",
-            "etc",
-            "pulse-xmpp-agent")
-    elif sys.platform.startswith('win'):
-        fileconf = os.path.join(
-            os.environ["ProgramFiles"],
-            "Pulse",
-            "etc")
-    elif sys.platform.startswith('darwin'):
-        fileconf = os.path.join(
-            "/opt",
-            "Pulse",
-            "etc")
+    if sys.platform.startswith("linux"):
+        fileconf = os.path.join("/", "etc", "pulse-xmpp-agent")
+    elif sys.platform.startswith("win"):
+        fileconf = os.path.join(os.environ["ProgramFiles"], "Pulse", "etc")
+    elif sys.platform.startswith("darwin"):
+        fileconf = os.path.join("/opt", "Pulse", "etc")
     if os.path.isdir(fileconf):
         return fileconf
     else:
@@ -63,33 +55,25 @@ def pulseTempDir():
     Returns:
         It returns the path of pulse temporary folder
     """
-    if sys.platform.startswith('linux'):
-        tempdir = os.path.join(
-            "/",
-            "tmp")
-    elif sys.platform.startswith('win'):
-        tempdir = os.path.join(
-            os.environ["ProgramFiles"],
-            "Pulse",
-            "tmp")
-    elif sys.platform.startswith('darwin'):
-        tempdir = os.path.join(
-            "/opt",
-            "Pulse",
-            "tmp")
+    if sys.platform.startswith("linux"):
+        tempdir = os.path.join("/", "tmp")
+    elif sys.platform.startswith("win"):
+        tempdir = os.path.join(os.environ["ProgramFiles"], "Pulse", "tmp")
+    elif sys.platform.startswith("darwin"):
+        tempdir = os.path.join("/opt", "Pulse", "tmp")
 
     return tempdir
 
 
 def conffilename(agenttype):
     """
-        This function define where the configuration file is located.
+    This function define where the configuration file is located.
 
-        Args:
-            agenttype: type of the agent, relay or machine or cluster for RelayServer
+    Args:
+        agenttype: type of the agent, relay or machine or cluster for RelayServer
 
-        Returns:
-            Return the config file path
+    Returns:
+        Return the config file path
 
     """
     if agenttype in ["machine"]:
@@ -115,13 +99,13 @@ def conffilename(agenttype):
 
 def conffilenametmp(agenttype):
     """
-        This function define where the configuration file tmp is located.
+    This function define where the configuration file tmp is located.
 
-        Args:
-            agenttype: type of the agent, relay or machine or cluster for RelayServer
+    Args:
+        agenttype: type of the agent, relay or machine or cluster for RelayServer
 
-        Returns:
-            Return the config file path
+    Returns:
+        Return the config file path
 
     """
     if agenttype in ["machine"]:

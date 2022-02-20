@@ -29,8 +29,7 @@ import logging
 
 
 class Dependencies(object):
-    """ Mapping between msc.bundle and SA
-    """
+    """Mapping between msc.bundle and SA"""
 
     def getId(self):
         if self.id is not None:
@@ -58,12 +57,14 @@ class Dependencies(object):
             Dict of elements contained into the object.
         """
         return {
-            'id': self.getId(),
-            'uuid_package': self.getUuid_package(),
-            'uuid_dependency': self.getUuid_dependency()
+            "id": self.getId(),
+            "uuid_package": self.getUuid_package(),
+            "uuid_dependency": self.getUuid_dependency(),
         }
 
     def toH(self):
-        return {'id': self.id,
-                'uuid_package': self.uuid_package,
-                'uuid_dependency': self.uuid_dependency}
+        return {
+            "id": self.id,
+            "uuid_package": self.uuid_package,
+            "uuid_dependency": self.uuid_dependency,
+        }

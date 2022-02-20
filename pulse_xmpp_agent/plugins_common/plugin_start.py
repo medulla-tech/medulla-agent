@@ -36,9 +36,9 @@ plugin = {"VERSION": "2.1", "NAME": "start", "TYPE": "all"}
 
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
-    if objectxmpp.config.agenttype in ['machine']:
+    if objectxmpp.config.agenttype in ["machine"]:
         configfilename = os.path.join(directoryconffile(), "start_machine.ini")
-    elif objectxmpp.config.agenttype in ['relay']:
+    elif objectxmpp.config.agenttype in ["relay"]:
         configfilename = os.path.join(directoryconffile(), "start_relay.ini")
     objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
@@ -47,20 +47,25 @@ def read_conf_plugin_start(objectxmpp):
         Config.read(configfilename)
         if os.path.isfile(configfilename + ".local"):
             Config.read(configfilename + ".local")
-        if Config.has_option('plugins', 'time_differed_start'):
+        if Config.has_option("plugins", "time_differed_start"):
             objectxmpp.time_differed_start = Config.getint(
-                'plugins', 'time_differed_start')
-        if Config.has_option('plugins', 'liststartplugin'):
-            liststartplugin = Config.get('plugins', 'liststartplugin')
+                "plugins", "time_differed_start"
+            )
+        if Config.has_option("plugins", "liststartplugin"):
+            liststartplugin = Config.get("plugins", "liststartplugin")
             objectxmpp.liststartplugin = [
-                x for x in re.split(
-                    r'[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*',
-                    liststartplugin) if x.strip() != ""]
+                x
+                for x in re.split(
+                    r"[;,\[\(\]\)\{\}\:\=\+\*\\\?\/\#\+\.\&\-\@\$\|\s]\s*",
+                    liststartplugin,
+                )
+                if x.strip() != ""
+            ]
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
 
     compteurcallplugin = getattr(objectxmpp, "num_call%s" % action)
@@ -70,14 +75,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         read_conf_plugin_start(objectxmpp)
         objectxmpp.paramsdict = []
 
-    startupdateskel = {"action": "",
-                       "sessionid": utils.getRandomName(6, "startplugin"),
-                       "ret": 0,
-                       "base64": False,
-                       "data": {}}
-    msg = {'from': objectxmpp.boundjid.bare,
-           "to": objectxmpp.boundjid.bare,
-           'type': 'chat'}
+    startupdateskel = {
+        "action": "",
+        "sessionid": utils.getRandomName(6, "startplugin"),
+        "ret": 0,
+        "base64": False,
+        "data": {},
+    }
+    msg = {
+        "from": objectxmpp.boundjid.bare,
+        "to": objectxmpp.boundjid.bare,
+        "type": "chat",
+    }
 
     for pluginstart in objectxmpp.liststartplugin:
         dataerreur = startupdateskel.copy()
@@ -86,12 +95,11 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         dataerreur["action"] = "result" + startupdate["action"]
         dataerreur["data"] = {"msg": "error plugin: " + startupdate["action"]}
         dataerreur["ret"] = 255
-        logger.info("Call of %s by plugin_start differed by %s s" %
-                    (pluginstart, objectxmpp.time_differed_start))
-        params = {"descriptor": startupdate,
-                  "errordescriptor": dataerreur,
-                  "msg": msg}
+        logger.info(
+            "Call of %s by plugin_start differed by %s s"
+            % (pluginstart, objectxmpp.time_differed_start)
+        )
+        params = {"descriptor": startupdate, "errordescriptor": dataerreur, "msg": msg}
         objectxmpp.paramsdict.append(params)
 
-    objectxmpp.call_plugin_differed(
-        time_differed=objectxmpp.time_differed_start)
+    objectxmpp.call_plugin_differed(time_differed=objectxmpp.time_differed_start)

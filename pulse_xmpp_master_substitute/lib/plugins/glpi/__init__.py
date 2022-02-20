@@ -38,10 +38,33 @@ import hashlib
 import time
 from xmlrpc.client import ProtocolError
 import functools
-from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, \
-    Integer, Date, ForeignKey, asc, or_, not_, desc, func, distinct
-from sqlalchemy.orm import create_session, mapper, relationship, sessionmaker, Query, scoped_session
+from sqlalchemy import (
+    and_,
+    create_engine,
+    MetaData,
+    Table,
+    Column,
+    String,
+    Integer,
+    Date,
+    ForeignKey,
+    asc,
+    or_,
+    not_,
+    desc,
+    func,
+    distinct,
+)
+from sqlalchemy.orm import (
+    create_session,
+    mapper,
+    relationship,
+    sessionmaker,
+    Query,
+    scoped_session,
+)
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -54,13 +77,22 @@ from sqlalchemy.exc import OperationalError, NoSuchTableError
 
 # TODO rename location into entity (and locations in location)
 
-#from mmc.plugins.glpi.config import GlpiConfig
-#from mmc.plugins.glpi.utilities import complete_ctx
-#from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.utils.database_utils import decode_latin1, encode_latin1, decode_utf8, encode_utf8, fromUUID, toUUID, setUUID
+# from mmc.plugins.glpi.config import GlpiConfig
+# from mmc.plugins.glpi.utilities import complete_ctx
+# from lib.plugins.kiosk import KioskDatabase
+from lib.plugins.utils.database_utils import (
+    decode_latin1,
+    encode_latin1,
+    decode_utf8,
+    encode_utf8,
+    fromUUID,
+    toUUID,
+    setUUID,
+)
 
 from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
-#from mmc.plugins.dyngroup.config import DGConfig
+
+# from mmc.plugins.dyngroup.config import DGConfig
 from distutils.version import LooseVersion, StrictVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -78,6 +110,7 @@ class Glpi(object):
     Singleton Class to query the glpi database in version > 0.80.
 
     """
+
     is_activated = False
 
     def activate(self):  # jid, password, room, nick):
@@ -96,33 +129,49 @@ class Glpi(object):
         self.logger.info(
             "Glpi parameters connections is "
             " user = %s,host = %s, port = %s, schema = %s,"
-            " poolrecycle = %s, poolsize = %s, pool_timeout %s" %
-            (self.config.glpi_dbuser,
-             self.config.glpi_dbhost,
-             self.config.glpi_dbport,
-             self.config.glpi_dbname,
-             self.config.xmpp_dbpoolrecycle,
-             self.config.xmpp_dbpoolsize,
-             self.config.xmpp_dbpooltimeout))
+            " poolrecycle = %s, poolsize = %s, pool_timeout %s"
+            % (
+                self.config.glpi_dbuser,
+                self.config.glpi_dbhost,
+                self.config.glpi_dbport,
+                self.config.glpi_dbname,
+                self.config.xmpp_dbpoolrecycle,
+                self.config.xmpp_dbpoolsize,
+                self.config.xmpp_dbpooltimeout,
+            )
+        )
         try:
             self.engine_glpi = create_engine(
-                'mysql://%s:%s@%s:%s/%s?charset=%s' %
-                (self.config.glpi_dbuser,
-                 self.config.glpi_dbpasswd,
-                 self.config.glpi_dbhost,
-                 self.config.glpi_dbport,
-                 self.config.glpi_dbname,
-                 self.config.charset),
+                "mysql://%s:%s@%s:%s/%s?charset=%s"
+                % (
+                    self.config.glpi_dbuser,
+                    self.config.glpi_dbpasswd,
+                    self.config.glpi_dbhost,
+                    self.config.glpi_dbport,
+                    self.config.glpi_dbname,
+                    self.config.charset,
+                ),
                 pool_recycle=self.config.glpi_dbpoolrecycle,
                 pool_size=self.config.glpi_dbpoolsize,
                 pool_timeout=self.config.glpi_dbpooltimeout,
-                convert_unicode=True)
+                convert_unicode=True,
+            )
             try:
-                self._glpi_version = self.engine_glpi.execute(
-                    'SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
+                self._glpi_version = (
+                    self.engine_glpi.execute("SELECT version FROM glpi_configs")
+                    .fetchone()
+                    .values()[0]
+                    .replace(" ", "")
+                )
             except OperationalError:
-                self._glpi_version = self.engine_glpi.execute(
-                    'SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
+                self._glpi_version = (
+                    self.engine_glpi.execute(
+                        'SELECT value FROM glpi_configs WHERE name = "version"'
+                    )
+                    .fetchone()
+                    .values()[0]
+                    .replace(" ", "")
+                )
 
             self.Session = sessionmaker(bind=self.engine_glpi)
             self.metadata = MetaData(self.engine_glpi)
@@ -173,17 +222,12 @@ class Glpi(object):
         return glpi.getMachineByMacAddress(ctx, filter)
 
     def getLastMachineInventoryPart(
-            self,
-            uuid,
-            part,
-            minbound=0,
-            maxbound=-1,
-            filt=None,
-            options=None,
-            count=False):
+        self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False
+    ):
         global glpi
         return glpi.getLastMachineInventoryPart(
-            uuid, part, minbound, maxbound, filt, options, count)
+            uuid, part, minbound, maxbound, filt, options, count
+        )
 
     def getRegistryCollect(self, fullkey):
         global glpi
@@ -191,8 +235,7 @@ class Glpi(object):
 
     def addRegistryCollectContent(self, computers_id, registry_id, key, value):
         global glpi
-        return glpi.addRegistryCollectContent(
-            computers_id, registry_id, key, value)
+        return glpi.addRegistryCollectContent(computers_id, registry_id, key, value)
 
     def getComputersOS(self, ids):
         global glpi

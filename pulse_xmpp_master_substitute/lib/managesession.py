@@ -34,18 +34,16 @@ import traceback
 def clean_session(folder_session):
     tt = time.time()
     fichiers = [
-        os.path.join(
-            folder_session,
-            f) for f in listdir(folder_session) if len(f) == 25 and os.path.isfile(
-            os.path.join(
-                folder_session,
-                f))]
+        os.path.join(folder_session, f)
+        for f in listdir(folder_session)
+        if len(f) == 25 and os.path.isfile(os.path.join(folder_session, f))
+    ]
     for fic in fichiers:
         creation = os.path.getmtime(fic)
         try:
             with open(fic) as json_data:
                 data_dict = json.load(json_data)
-            if (data_dict['timevalid'] + creation) < tt:
+            if (data_dict["timevalid"] + creation) < tt:
                 # delete file
                 # print "delete %s"%fic
                 os.remove(fic)
@@ -74,9 +72,15 @@ class SessionkeyError(Session, KeyError):
 
 
 class sessiondatainfo:
-
-    def __init__(self, sessionid, datasession=None, timevalid=10,
-                 eventend=None, handlefunc=None, pathfile=None):
+    def __init__(
+        self,
+        sessionid,
+        datasession=None,
+        timevalid=10,
+        eventend=None,
+        handlefunc=None,
+        pathfile=None,
+    ):
         if datasession is None:
             datasession = {}
         self.sessionid = sessionid
@@ -91,31 +95,35 @@ class sessiondatainfo:
 
     def jsonsession(self):
         session = {
-            'sessionid': self.sessionid,
-            'timevalid': self.timevalid,
-            'datasession': self.datasession}
+            "sessionid": self.sessionid,
+            "timevalid": self.timevalid,
+            "datasession": self.datasession,
+        }
         return json.dumps(session)
 
     def sauvesession(self):
         """
-            Create file with the sessionid in the name.
-            It saves the file in the python pulse_xmpp_master_substitute folder.
-            Return:
-                It returns True if the file is well created.
-                False, otherwise
+        Create file with the sessionid in the name.
+        It saves the file in the python pulse_xmpp_master_substitute folder.
+        Return:
+            It returns True if the file is well created.
+            False, otherwise
         """
         namefilesession = os.path.join(self.pathfile, self.sessionid)
-        session = {'sessionid': self.sessionid,
-                   'timevalid': self.timevalid,
-                   'datasession': self.datasession}
+        session = {
+            "sessionid": self.sessionid,
+            "timevalid": self.timevalid,
+            "datasession": self.datasession,
+        }
         try:
-            with open(namefilesession, 'w') as f:
+            with open(namefilesession, "w") as f:
                 json.dump(session, f, indent=4)
             return True
         except Exception as e:
             logging.getLogger().error(
-                "We encountered an issue while creating the session %s" %
-                namefilesession)
+                "We encountered an issue while creating the session %s"
+                % namefilesession
+            )
             logging.getLogger().error("The error is %s" % str(e))
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
@@ -129,13 +137,14 @@ class sessiondatainfo:
             session = loadjsonfile(namefilesession)
         except Exception:
             logging.getLogger().error(
-                "update session [unable to read the list of session files] del fichier" %
-                namefilesession)
+                "update session [unable to read the list of session files] del fichier"
+                % namefilesession
+            )
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
             return False
-        self.datasession = session['datasession']
-        self.timevalid = session['timevalid']
+        self.datasession = session["datasession"]
+        self.timevalid = session["timevalid"]
         return True
 
     def removesessionfile(self):
@@ -174,7 +183,11 @@ class sessiondatainfo:
 
     def __repr__(self):
         return "<session %s, validate %s, data %s, eventend %s> " % (
-            self.sessionid, self.timevalid, self.datasession, self.eventend)
+            self.sessionid,
+            self.timevalid,
+            self.datasession,
+            self.eventend,
+        )
 
 
 class session:
@@ -184,21 +197,18 @@ class session:
         if typemachine is None:
             typemachine = "sessions"
         self.dirsavesession = os.path.join(
-            os.path.dirname(
-                os.path.realpath(__file__)),
-            "..",
-            str(typemachine))
+            os.path.dirname(os.path.realpath(__file__)), "..", str(typemachine)
+        )
         if not os.path.exists(self.dirsavesession):
             os.makedirs(self.dirsavesession, mode=0o007)
         logging.getLogger().debug("Manager Session : %s" % self.dirsavesession)
 
     def clearallfilesession(self):
         listfilesession = [
-            x for x in glob.glob(
-                os.path.join(
-                    self.dirsavesession,
-                    "*")) if (
-                os.path.isfile(x) and os.path.basename(x).startswith('command'))]
+            x
+            for x in glob.glob(os.path.join(self.dirsavesession, "*"))
+            if (os.path.isfile(x) and os.path.basename(x).startswith("command"))
+        ]
         for filesession in listfilesession:
             os.remove(filesession)
         self.sessiondata = []
@@ -211,16 +221,12 @@ class session:
             return sessiondatainfo
 
     def createsessiondatainfo(
-            self, sessionid, datasession={}, timevalid=10, eventend=None):
-        logging.getLogger().debug(
-            "Creation d'une Session : %s" %
-            self.dirsavesession)
+        self, sessionid, datasession={}, timevalid=10, eventend=None
+    ):
+        logging.getLogger().debug("Creation d'une Session : %s" % self.dirsavesession)
         obj = sessiondatainfo(
-            sessionid,
-            datasession,
-            timevalid,
-            eventend,
-            pathfile=self.dirsavesession)
+            sessionid, datasession, timevalid, eventend, pathfile=self.dirsavesession
+        )
         self.sessiondata.append(obj)
         if len(datasession) != 0:
             obj.sauvesession()
@@ -231,32 +237,35 @@ class session:
             session = loadjsonfile(namefilesession)
         except Exception:
             logging.getLogger().error(
-                "reading file session error : del session file : %s" %
-                namefilesession)
+                "reading file session error : del session file : %s" % namefilesession
+            )
             if os.path.isfile(namefilesession):
                 os.remove(namefilesession)
             return False
-        if 'datasession' in session and 'data' in session['datasession'] and 'sessionreload' in session[
-                'datasession']['data'] and session['datasession']['data']['sessionreload'] is True:
+        if (
+            "datasession" in session
+            and "data" in session["datasession"]
+            and "sessionreload" in session["datasession"]["data"]
+            and session["datasession"]["data"]["sessionreload"] is True
+        ):
             logging.getLogger().debug(
-                "Reload Session %s :  signaled reloadable" %
-                self.dirsavesession)
+                "Reload Session %s :  signaled reloadable" % self.dirsavesession
+            )
             return True
         else:
             logging.getLogger().debug(
-                "Remove Session %s :  No signaled reloadable" %
-                self.dirsavesession)
+                "Remove Session %s :  No signaled reloadable" % self.dirsavesession
+            )
             os.remove(namefilesession)
             return False
 
     def loadsessions(self):
         try:
             listfilesession = [
-                x for x in glob.glob(
-                    os.path.join(
-                        self.dirsavesession,
-                        "*")) if (
-                    os.path.isfile(x) and os.path.basename(x).startswith('command'))]
+                x
+                for x in glob.glob(os.path.join(self.dirsavesession, "*"))
+                if (os.path.isfile(x) and os.path.basename(x).startswith("command"))
+            ]
         except Session as e:
             logging.getLogger().error("unable to read the list of session files")
             return False
@@ -264,7 +273,8 @@ class session:
             if self.removefilesessionifnotsignal(filesession):
                 try:
                     objsession = self.sessionfromsessiondata(
-                        os.path.basename(filesession))
+                        os.path.basename(filesession)
+                    )
                     if objsession is None:
                         raise SessionkeyError
                     objsession.pathfile = self.dirsavesession
@@ -272,7 +282,8 @@ class session:
                     logging.getLogger().debug("load session %s" % objsession)
                 except SessionkeyError:
                     objsession = self.createsessiondatainfo(
-                        os.path.basename(filesession))
+                        os.path.basename(filesession)
+                    )
                     objsession.updatesessionfromfile()
                     logging.getLogger().debug("creation sesssion %s" % objsession)
             else:

@@ -33,7 +33,8 @@ logger = logging.getLogger()
 plugin = {
     "VERSION": "1.0",
     "NAME": "resultapplicationdeploymentjson",
-    "TYPE": "substitute"}
+    "TYPE": "substitute",
+}
 
 
 def action(xmppsub, action, sessionid, data, message, ret, dataobj):
@@ -45,35 +46,39 @@ def action(xmppsub, action, sessionid, data, message, ret, dataobj):
         if ret == 0:
             logger.debug(
                 "Succes deploy on %s Package "
-                ": %s Session : %s" %
-                (message['from'], data['descriptor']['info']['name'], sessionid))
+                ": %s Session : %s"
+                % (message["from"], data["descriptor"]["info"]["name"], sessionid)
+            )
             XmppMasterDatabase().delete_resources(sessionid)
 
         else:
-            msg = "Deployment error on %s [Package "\
-                ": %s / Session : %s]" % (message['from'],
-                                          data['descriptor']['info']['name'],
-                                          sessionid)
+            msg = "Deployment error on %s [Package " ": %s / Session : %s]" % (
+                message["from"],
+                data["descriptor"]["info"]["name"],
+                sessionid,
+            )
             logger.error(msg)
 
-            if 'status' in data and data['status'] != "":
-                XmppMasterDatabase().updatedeploystate1(
-                    sessionid, data['status'])
+            if "status" in data and data["status"] != "":
+                XmppMasterDatabase().updatedeploystate1(sessionid, data["status"])
             else:
                 XmppMasterDatabase().updatedeploystate1(
-                    sessionid, "ABORT PACKAGE EXECUTION ERROR")
-            xmppsub.xmpplog(msg,
-                            type='deploy',
-                            sessionname=sessionid,
-                            priority=-1,
-                            action="xmpplog",
-                            who="",
-                            how="",
-                            why=xmppsub.boundjid.bare,
-                            module="Deployment | Start | Creation",
-                            date=None,
-                            fromuser="",
-                            touser="")
+                    sessionid, "ABORT PACKAGE EXECUTION ERROR"
+                )
+            xmppsub.xmpplog(
+                msg,
+                type="deploy",
+                sessionname=sessionid,
+                priority=-1,
+                action="xmpplog",
+                who="",
+                how="",
+                why=xmppsub.boundjid.bare,
+                module="Deployment | Start | Creation",
+                date=None,
+                fromuser="",
+                touser="",
+            )
         xmppsub.sessiondeploysubstitute.clearnoevent(sessionid)
     except Exception:
         logger.error("%s" % (traceback.format_exc()))

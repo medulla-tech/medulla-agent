@@ -29,7 +29,7 @@ import logging
 from lib.utils import Env
 import traceback
 
-if sys.platform.startswith('darwin'):
+if sys.platform.startswith("darwin"):
     import plyvel
 else:
     import bsddb
@@ -38,51 +38,49 @@ logger = logging.getLogger()
 
 
 class manageskioskdb:
-
     def __init__(self, namebase="kiosk"):
-        name_launch_cmd_db = namebase + 'launch_cmd_db'
+        name_launch_cmd_db = namebase + "launch_cmd_db"
         self.openbool = False
         path_bd = self.bddir()
         if path_bd is not None:
             if not os.path.exists(path_bd):
                 os.makedirs(path_bd, mode=0o700)
             self.name_launch_cmd_db = os.path.join(path_bd, name_launch_cmd_db)
-            if sys.platform.startswith('darwin'):
+            if sys.platform.startswith("darwin"):
                 if not os.path.isdir(self.name_launch_cmd_db):
                     os.makedirs(self.name_launch_cmd_db, mode=0o700)
 
     def openbase(self):
-        if sys.platform.startswith('darwin'):
+        if sys.platform.startswith("darwin"):
             try:
                 self.dblaunchcmd = plyvel.DB(
-                    self.name_launch_cmd_db, create_if_missing=True)
+                    self.name_launch_cmd_db, create_if_missing=True
+                )
             except Exception:
                 logger.error("open pyvel db %s" % self.name_launch_cmd_db)
                 os.remove(self.name_launch_cmd_db)
                 self.dblaunchcmd = plyvel.DB(
-                    self.name_launch_cmd_db, create_if_missing=True)
+                    self.name_launch_cmd_db, create_if_missing=True
+                )
         else:
             try:
-                self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db, 'c')
+                self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db, "c")
             except Exception:
                 logger.error("open bsddb db %s" % self.name_launch_cmd_db)
                 os.remove(self.name_launch_cmd_db)
-                self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db, 'c')
+                self.dblaunchcmd = bsddb.btopen(self.name_launch_cmd_db, "c")
 
     def closebase(self):
         self.dblaunchcmd.close()
 
     def bddir(self):
-        if sys.platform.startswith('linux'):
+        if sys.platform.startswith("linux"):
             return os.path.join(Env.user_dir(), "BDKiosk")
-        elif sys.platform.startswith('win'):
+        elif sys.platform.startswith("win"):
             return os.path.join(
-                os.environ["ProgramFiles"],
-                "Pulse",
-                "var",
-                "tmp",
-                "BDKiosk")
-        elif sys.platform.startswith('darwin'):
+                os.environ["ProgramFiles"], "Pulse", "var", "tmp", "BDKiosk"
+            )
+        elif sys.platform.startswith("darwin"):
             return os.path.join("/opt", "Pulse", "BDKiosk")
         else:
             return None
@@ -91,10 +89,8 @@ class manageskioskdb:
         idpackage = str(idpackage)
         try:
             self.openbase()
-            if sys.platform.startswith('darwin'):
-                self.dblaunchcmd.put(
-                    bytearray(idpackage),
-                    bytearray(str_cmd_launch))
+            if sys.platform.startswith("darwin"):
+                self.dblaunchcmd.put(bytearray(idpackage), bytearray(str_cmd_launch))
             else:
                 self.dblaunchcmd[idpackage] = str_cmd_launch
                 self.dblaunchcmd.sync()
@@ -109,7 +105,7 @@ class manageskioskdb:
         data = ""
         try:
             self.openbase()
-            if sys.platform.startswith('darwin'):
+            if sys.platform.startswith("darwin"):
                 data = self.dblaunchcmd.get(bytearray(idpackage))
                 if data is None:
                     data = ""
@@ -127,7 +123,7 @@ class manageskioskdb:
         idpackage = str(idpackage)
         self.openbase()
         try:
-            if sys.platform.startswith('darwin'):
+            if sys.platform.startswith("darwin"):
                 data = self.dblaunchcmd.delete(bytearray(idpackage))
             else:
                 if idpackage in self.dblaunchcmd:
@@ -143,7 +139,7 @@ class manageskioskdb:
         self.openbase()
         try:
             result = {}
-            if sys.platform.startswith('darwin'):
+            if sys.platform.startswith("darwin"):
                 for k, v in self.dblaunchcmd:
                     result[str(k)] = str(v)
             else:
@@ -160,7 +156,7 @@ class manageskioskdb:
         self.openbase()
         result = {}
         try:
-            if sys.platform.startswith('darwin'):
+            if sys.platform.startswith("darwin"):
                 for k, v in self.dblaunchcmd:
                     if str(k) == "str_json_name_id_package":
                         continue
@@ -176,6 +172,7 @@ class manageskioskdb:
         finally:
             self.closebase()
         return result
+
     ##########################################################################
     # key "str_json_name_id_package" json string reserved to doing match
     # between name  and idpackage
@@ -203,16 +200,14 @@ class manageskioskdb:
     def set_ref_package_for_name(self, name, id_package):
         str_name_id_package = self.get_obj_ref()
         str_name_id_package[str(name)] = str(id_package)
-        self.set_cmd_launch(
-            "str_json_name_id_package",
-            json.dumps(str_name_id_package))
+        self.set_cmd_launch("str_json_name_id_package", json.dumps(str_name_id_package))
 
     def del_ref_name_for_package(self, name):
         str_name_id_package = self.get_obj_ref()
         try:
             del str_name_id_package[str(name)]
             self.set_cmd_launch(
-                "str_json_name_id_package",
-                json.dumps(str_name_id_package))
+                "str_json_name_id_package", json.dumps(str_name_id_package)
+            )
         except KeyError:
             pass

@@ -26,19 +26,17 @@ from distutils.version import StrictVersion
 import logging
 import shutil
 from lib import utils
-FILETREEVERSION = '0.1'
+
+FILETREEVERSION = "0.1"
 
 logger = logging.getLogger()
 
-plugin = {
-    "VERSION": "0.2",
-    "NAME": "updatefiletreegenerator",
-    "TYPE": "machine"}
+plugin = {"VERSION": "0.2", "NAME": "updatefiletreegenerator", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
     try:
         # Update if version is lower
@@ -50,63 +48,69 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
 
 
 def checkfiletreegeneratorversion():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         cmd = 'reg query "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Filetree Generator" /s | Find "DisplayVersion"'
         result = utils.simplecommand(cmd)
-        if result['code'] == 0:
-            filetreegeneratorversion = result['result'][0].strip().split()[-1]
+        if result["code"] == 0:
+            filetreegeneratorversion = result["result"][0].strip().split()[-1]
         else:
             # The filetree generator is not installed. We will force installation by returning
             # version 0.0
-            filetreegeneratorversion = '0.0'
+            filetreegeneratorversion = "0.0"
     return filetreegeneratorversion
 
 
 def updatefiletreegeneratorversion(version):
-    if sys.platform.startswith('win'):
-        cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Filetree Generator" '\
+    if sys.platform.startswith("win"):
+        cmd = (
+            'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\Pulse Filetree Generator" '
             '/v "DisplayVersion" /t REG_SZ  /d "%s" /f' % FILETREEVERSION
+        )
 
         result = utils.simplecommand(cmd)
-        if result['code'] == 0:
+        if result["code"] == 0:
             logger.info(
-                "we successfully updated Pulse Filetree Generator to version %s" %
-                FILETREEVERSION)
+                "we successfully updated Pulse Filetree Generator to version %s"
+                % FILETREEVERSION
+            )
 
         if version == "0.0":
-            cmdDisplay = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse Filetree Generator" '\
+            cmdDisplay = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse Filetree Generator" '
                 '/v "DisplayName" /t REG_SZ  /d "Pulse Filetree Generator" /f'
+            )
             utils.simplecommand(cmdDisplay)
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse Filetree Generator" '\
+            cmd = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\\\Pulse Filetree Generator" '
                 '/v "Publisher" /t REG_SZ  /d "SIVEO" /f'
+            )
 
             utils.simplecommand(cmd)
 
 
 def updatefiletreegenerator(xmppobject, installed_version):
     logger.info(
-        "Updating Filetree Generator from version %s to version %s" %
-        (installed_version, FILETREEVERSION))
-    if sys.platform.startswith('win'):
-        pulsedir_path = os.path.join(
-            os.environ["ProgramFiles"], "Pulse", "bin")
+        "Updating Filetree Generator from version %s to version %s"
+        % (installed_version, FILETREEVERSION)
+    )
+    if sys.platform.startswith("win"):
+        pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
-        filename = 'pulse-filetree-generator.exe'
-        dl_url = 'http://%s/downloads/win/%s' % (
-            xmppobject.config.Server, filename)
+        filename = "pulse-filetree-generator.exe"
+        dl_url = "http://%s/downloads/win/%s" % (xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(
-            dl_url, os.path.join(
-                pulsedir_path, filename)).downloadurl()
+            dl_url, os.path.join(pulsedir_path, filename)
+        ).downloadurl()
         if result:
             # Download success
             try:
                 updatefiletreegeneratorversion(installed_version)
             except IOError as errorcopy:
                 logger.error(
-                    "Error while copying the file with the error: %s" %
-                    errorcopy)
+                    "Error while copying the file with the error: %s" % errorcopy
+                )
         else:
             # Download error
             logger.error("%s" % txtmsg)

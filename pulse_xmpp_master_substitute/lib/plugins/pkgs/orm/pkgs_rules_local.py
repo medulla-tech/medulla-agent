@@ -32,8 +32,8 @@ import logging
 
 
 class Pkgs_rules_local(object):
-    """ Mapping between pkgs.pkgs_rules_local and SA
-        colunm table: 'id,pkgs_rules_algos_id,order,suject,pkgs_shares_id'
+    """Mapping between pkgs.pkgs_rules_local and SA
+    colunm table: 'id,pkgs_rules_algos_id,order,suject,pkgs_shares_id'
     """
 
     def getId(self):
@@ -46,7 +46,7 @@ class Pkgs_rules_local(object):
         if self.pkgs_rules_algos_id is not None:
             return self.pkgs_rules_algos_id
         else:
-            return-1
+            return -1
 
     def getShares_id(self):
         if self.pkgs_shares_id is not None:
@@ -68,16 +68,18 @@ class Pkgs_rules_local(object):
 
     def to_array(self):
         return {
-            'id': self.getId(),
-            'pkgs_rules_algos_id': self.getRules_algos_id(),
-            'pkgs_shares_id': self.getShares_id(),
-            'order': self.getOrder(),
-            'suject': self.getSuject()}
+            "id": self.getId(),
+            "pkgs_rules_algos_id": self.getRules_algos_id(),
+            "pkgs_shares_id": self.getShares_id(),
+            "order": self.getOrder(),
+            "suject": self.getSuject(),
+        }
 
     def toH(self):
         return {
-            'id': self.id,
-            'pkgs_rules_algos_id': self.pkgs_rules_algos_id,
-            'pkgs_shares_id': self.pkgs_shares_id,
-            'order': self.order,
-            'suject': self.suject}
+            "id": self.id,
+            "pkgs_rules_algos_id": self.pkgs_rules_algos_id,
+            "pkgs_shares_id": self.pkgs_shares_id,
+            "order": self.order,
+            "suject": self.suject,
+        }

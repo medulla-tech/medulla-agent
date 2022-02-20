@@ -19,8 +19,16 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from sqlalchemy import Column, String, Integer, Boolean, \
-    ForeignKey, DateTime, Text, Enum
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Boolean,
+    ForeignKey,
+    DateTime,
+    Text,
+    Enum,
+)
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -43,14 +51,14 @@ class DBObj(object):
                 else:
                     del d[k]
         # Delete Sqlachemy instance state
-        if '_sa_instance_state' in d:
-            del d['_sa_instance_state']
+        if "_sa_instance_state" in d:
+            del d["_sa_instance_state"]
         return d
 
     def fromDict(self, d, relations=False):
         # TODO: Test if d is dict
-        if '_sa_instance_state' in d:
-            del d['_sa_instance_state']
+        if "_sa_instance_state" in d:
+            del d["_sa_instance_state"]
         # Actually we don't support relations
         for key, value in d.iteritems():
             if key and type(value) not in [type({}), type([])]:
@@ -67,7 +75,7 @@ class XmppMasterDBObj(DBObj):
 
 class Qa_custom_command(Base):
     # ====== Table name =========================
-    __tablename__ = 'qa_custom_command'
+    __tablename__ = "qa_custom_command"
     # ====== Fields =============================
     namecmd = Column(String(45), primary_key=True)
     user = Column(String(45), primary_key=True)
@@ -78,7 +86,7 @@ class Qa_custom_command(Base):
 
 class Logs(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'logs'
+    __tablename__ = "logs"
     # ====== Fields =============================
     # ====== Fields =============================
     # Here we define columns for the table machines.
@@ -101,7 +109,7 @@ class Logs(Base, XmppMasterDBObj):
 
 class UserLog(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'userlog'
+    __tablename__ = "userlog"
     # ====== Fields =============================
     # Here we define columns for the table machines.
     # Notice that each column is also a normal Python instance attribute.
@@ -113,7 +121,7 @@ class UserLog(Base, XmppMasterDBObj):
 
 class Syncthingsync(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'syncthingsync'
+    __tablename__ = "syncthingsync"
     # ====== Fields =============================
     # Here we define columns for the table syncthingsync.
     # Notice that each column is also a normal Python instance attribute.
@@ -124,12 +132,13 @@ class Syncthingsync(Base, XmppMasterDBObj):
     watching = Column(String(3), nullable=False, default="yes")
     date = Column(DateTime, default=datetime.datetime.utcnow)
 
+
 # DEPLOY PAR SYNCTHING
 
 
 class Syncthing_deploy_group(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'syncthing_deploy_group'
+    __tablename__ = "syncthing_deploy_group"
     # ====== Fields =============================
     # Here we define columns for the table syncthing_deploy_group.
     # Notice that each column is also a normal Python instance attribute.
@@ -146,7 +155,7 @@ class Syncthing_deploy_group(Base, XmppMasterDBObj):
 
 class Syncthing_ars_cluster(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'syncthing_ars_cluster'
+    __tablename__ = "syncthing_ars_cluster"
     # ====== Fields =============================
     # Here we define columns for the table syncthing_ars_cluster.
     # Notice that each column is also a normal Python instance attribute.
@@ -160,16 +169,13 @@ class Syncthing_ars_cluster(Base, XmppMasterDBObj):
     type_partage = Column(String(45))
     # ====== ForeignKey =============================
     # machines_id = Column(Integer, nullable=False)
-    fk_deploy = Column(
-        Integer,
-        ForeignKey('syncthing_deploy_group.id'),
-        nullable=False)
+    fk_deploy = Column(Integer, ForeignKey("syncthing_deploy_group.id"), nullable=False)
     syncthing_deploy_group = relationship(Syncthing_deploy_group)
 
 
 class Syncthing_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'syncthing_machine'
+    __tablename__ = "syncthing_machine"
     # ====== Fields =============================
     # Here we define columns for the table syncthing_machine.
     # Notice that each column is also a normal Python instance attribute.
@@ -195,15 +201,14 @@ class Syncthing_machine(Base, XmppMasterDBObj):
     comment = Column(String(255))
     progress = Column(Integer, nullable=False, default=0)
     fk_arscluster = Column(
-        Integer,
-        ForeignKey('syncthing_ars_cluster.id'),
-        nullable=False)
+        Integer, ForeignKey("syncthing_ars_cluster.id"), nullable=False
+    )
     syncthing_ars_cluster = relationship(Syncthing_ars_cluster)
 
 
 class Glpi_entity(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'glpi_entity'
+    __tablename__ = "glpi_entity"
     # ====== Fields =============================
     # Here we define columns for the table machines.
     # Notice that each column is also a normal Python instance attribute.
@@ -214,19 +219,23 @@ class Glpi_entity(Base, XmppMasterDBObj):
 
     def __repr__(self):
         return "<entity('%s','%s', '%s')>" % (
-            self.name, self.complete_name, self.glpi_id)
+            self.name,
+            self.complete_name,
+            self.glpi_id,
+        )
 
     def get_data(self):
-        return{'id': self.id,
-               'complete_name': self.complete_name,
-               'name': self.name,
-               'glpi_id': self.glpi_id
-               }
+        return {
+            "id": self.id,
+            "complete_name": self.complete_name,
+            "name": self.name,
+            "glpi_id": self.glpi_id,
+        }
 
 
 class Glpi_location(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'glpi_location'
+    __tablename__ = "glpi_location"
     # ====== Fields =============================
     # Here we define columns for the table machines.
     # Notice that each column is also a normal Python instance attribute.
@@ -237,19 +246,23 @@ class Glpi_location(Base, XmppMasterDBObj):
 
     def __repr__(self):
         return "<location('%s','%s', '%s')>" % (
-            self.name, self.complete_name, self.glpi_id)
+            self.name,
+            self.complete_name,
+            self.glpi_id,
+        )
 
     def get_data(self):
-        return{'id': self.id,
-               'complete_name': self.complete_name,
-               'name': self.name,
-               'glpi_id': self.glpi_id
-               }
+        return {
+            "id": self.id,
+            "complete_name": self.complete_name,
+            "name": self.name,
+            "glpi_id": self.glpi_id,
+        }
 
 
 class Machines(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'machines'
+    __tablename__ = "machines"
     # ====== Fields =============================
     # Here we define columns for the table machines.
     # Notice that each column is also a normal Python instance attribute.
@@ -273,7 +286,7 @@ class Machines(Base, XmppMasterDBObj):
     picklekeypublic = Column(String(550))
     ad_ou_machine = Column(Text)
     ad_ou_user = Column(Text)
-    kiosk_presence = Column(Enum('False', 'True'))
+    kiosk_presence = Column(Enum("False", "True"))
     lastuser = Column(String(45))
     keysyncthing = Column(String(70), default="")
     glpi_description = Column(String(90), default="")
@@ -284,15 +297,15 @@ class Machines(Base, XmppMasterDBObj):
     manufacturer = Column(String(45), default="")
     # ====== ForeignKey =============================
     # machines_id = Column(Integer, nullable=False)
-    glpi_entity_id = Column(Integer, ForeignKey('glpi_entity.id'))
+    glpi_entity_id = Column(Integer, ForeignKey("glpi_entity.id"))
     glpi_entity = relationship(Glpi_entity)
-    glpi_location_id = Column(Integer, ForeignKey('glpi_location.id'))
+    glpi_location_id = Column(Integer, ForeignKey("glpi_location.id"))
     glpi_location = relationship(Glpi_location)
 
 
 class Glpi_Register_Keys(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'glpi_register_keys'
+    __tablename__ = "glpi_register_keys"
     # ====== Fields =============================
     # Here we define columns for the table machines.
     # Notice that each column is also a normal Python instance attribute.
@@ -301,25 +314,30 @@ class Glpi_Register_Keys(Base, XmppMasterDBObj):
     value = Column(String(90), nullable=False)
     comment = Column(String(90))
     # ====== ForeignKey =============================
-    machines_id = Column(Integer, ForeignKey('machines.id'))
+    machines_id = Column(Integer, ForeignKey("machines.id"))
     machines = relationship(Machines)
 
     def __repr__(self):
         return "<register_keys('%s','%s', '%s', '%s')>" % (
-            self.name, self.value, self.comment, self.machines_id)
+            self.name,
+            self.value,
+            self.comment,
+            self.machines_id,
+        )
 
     def get_data(self):
-        return{'id': self.id,
-               'name': self.name,
-               'value': self.value,
-               'comment': self.comment,
-               'machines_id': self.machines_id
-               }
+        return {
+            "id": self.id,
+            "name": self.name,
+            "value": self.value,
+            "comment": self.comment,
+            "machines_id": self.machines_id,
+        }
 
 
 class Network(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'network'
+    __tablename__ = "network"
     # ====== Fields =============================
     # Here we define columns for the table network.
     # Notice that each column is also a normal Python instance attribute.
@@ -331,13 +349,13 @@ class Network(Base, XmppMasterDBObj):
     mac = Column(String(45), nullable=False)
     # ====== ForeignKey =============================
     # machines_id = Column(Integer, nullable=False)
-    machines_id = Column(Integer, ForeignKey('machines.id'))
+    machines_id = Column(Integer, ForeignKey("machines.id"))
     machines = relationship(Machines)
 
 
 class RelayServer(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'relayserver'
+    __tablename__ = "relayserver"
     # ====== Fields =============================
     # Here we define columns for the table network.
     # Notice that each column is also a normal Python instance attribute.
@@ -366,7 +384,7 @@ class RelayServer(Base, XmppMasterDBObj):
 
 class Regles(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'rules'
+    __tablename__ = "rules"
     # ====== Fields =============================
     # Here we define columns for the table network.
     # Notice that each column is also a normal Python instance attribute.
@@ -377,7 +395,7 @@ class Regles(Base, XmppMasterDBObj):
 
 class Users(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'users'
+    __tablename__ = "users"
     # ====== Fields =============================
     # Here we define columns for the table network.
     # Notice that each column is also a normal Python instance attribute.
@@ -397,19 +415,19 @@ class Users(Base, XmppMasterDBObj):
 
 class Has_machinesusers(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'has_machinesusers'
+    __tablename__ = "has_machinesusers"
     # ====== ForeignKey =============================
-    machines_id = Column(Integer, ForeignKey('machines.id'))
-    users_id = Column(Integer, ForeignKey('users.id'))
+    machines_id = Column(Integer, ForeignKey("machines.id"))
+    users_id = Column(Integer, ForeignKey("users.id"))
     machines = relationship(Machines)
     users = relationship(Users)
 
 
 class Has_relayserverrules(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'has_relayserverrules'
+    __tablename__ = "has_relayserverrules"
     # ====== ForeignKey =============================
-    rules_id = Column(Integer, ForeignKey('rules.id'))
+    rules_id = Column(Integer, ForeignKey("rules.id"))
     relayserver_id = Column(Integer)
     subject = Column(String(45))
     order = Column(String(45))
@@ -418,20 +436,20 @@ class Has_relayserverrules(Base, XmppMasterDBObj):
 
 class Has_guacamole(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'has_guacamole'
+    __tablename__ = "has_guacamole"
     # ====== Fields =============================
     # Here we define columns for the table has_guacamole.
     # Notice that each column is also a normal Python instance attribute.
     idguacamole = Column(Integer)
     protocol = Column(String(10))
     # ====== ForeignKey =============================
-    machine_id = Column(Integer, ForeignKey('machines.id'))
+    machine_id = Column(Integer, ForeignKey("machines.id"))
     machines = relationship(Machines)
 
 
 class Has_cluster_ars(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'has_cluster_ars'
+    __tablename__ = "has_cluster_ars"
     # ====== ForeignKey =============================
     id_ars = Column(Integer)
     id_cluster = Column(Integer)
@@ -439,7 +457,7 @@ class Has_cluster_ars(Base, XmppMasterDBObj):
 
 class Cluster_ars(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'cluster_ars'
+    __tablename__ = "cluster_ars"
     # ====== ForeignKey =============================
     name = Column(String(40))
     description = Column(String(255))
@@ -447,7 +465,7 @@ class Cluster_ars(Base, XmppMasterDBObj):
 
 class Version(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'version'
+    __tablename__ = "version"
     # ====== Fields =============================
     # Here we define columns for the table version.
     # Notice that each column is also a normal Python instance attribute.
@@ -456,7 +474,7 @@ class Version(Base, XmppMasterDBObj):
 
 class Deploy(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'deploy'
+    __tablename__ = "deploy"
     # ====== Fields =============================
     # Here we define columns for the table deploy.
     # Notice that each column is also a normal Python instance attribute.
@@ -484,7 +502,7 @@ class Deploy(Base, XmppMasterDBObj):
 
 class Cluster_resources(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'cluster_resources'
+    __tablename__ = "cluster_resources"
     # ====== Fields =============================
     hostname = Column(String(255))
     jidmachine = Column(String(255), nullable=False)
@@ -497,7 +515,7 @@ class Cluster_resources(Base, XmppMasterDBObj):
 
 class Command_qa(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'command_qa'
+    __tablename__ = "command_qa"
     # ====== Fields =============================
     # Here we define columns for the table Command_qa.
     # Notice that each column is also a normal Python instance attribute.
@@ -514,7 +532,7 @@ class Command_qa(Base, XmppMasterDBObj):
 
 class Command_action(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'command_action'
+    __tablename__ = "command_action"
     # ====== Fields =============================
     # Here we define columns for the table Command_qa.
     # Notice that each column is also a normal Python instance attribute.
@@ -530,7 +548,7 @@ class Command_action(Base, XmppMasterDBObj):
 
 class ParametersDeploy(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'parameters_deploy'
+    __tablename__ = "parameters_deploy"
     # ====== Fields =============================
     command = Column(Integer)
     dictionary_data = Column(Text)
@@ -542,7 +560,7 @@ class ParametersDeploy(Base, XmppMasterDBObj):
 
 class Has_login_command(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'has_login_command'
+    __tablename__ = "has_login_command"
     # ====== Fields =============================
     # Here we define columns for the table deploy.
     # Notice that each column is also a normal Python instance attribute.
@@ -564,7 +582,7 @@ class Has_login_command(Base, XmppMasterDBObj):
 
 class Organization(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'organization'
+    __tablename__ = "organization"
     # ====== Fields =============================
     # Here we define columns for the table organization.
     # Notice that each column is also a normal Python instance attribute.
@@ -574,7 +592,7 @@ class Organization(Base, XmppMasterDBObj):
 
 class Packages_list(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'packageslist'
+    __tablename__ = "packageslist"
     # ====== Fields =============================
     # Here we define columns for the table packageslist.
     # Notice that each column is also a normal Python instance attribute.
@@ -585,7 +603,7 @@ class Packages_list(Base, XmppMasterDBObj):
 
 class Organization_ad(Base):
     # ====== Table name =========================
-    __tablename__ = 'organization_ad'
+    __tablename__ = "organization_ad"
     # ====== Fields =============================
     # Here we define columns for the table organization_AD.
     # Notice that each column is also a normal Python instance attribute.
@@ -599,7 +617,7 @@ class Organization_ad(Base):
 
 class Substituteconf(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'substituteconf'
+    __tablename__ = "substituteconf"
     # ====== Fields =============================
     # Here we define columns for the table substituteconf.
     # Notice that each column is also a normal Python instance attribute.
@@ -607,26 +625,23 @@ class Substituteconf(Base, XmppMasterDBObj):
     type = Column(String(45), nullable=False)
     jidsubtitute = Column(String(255), nullable=False)
     countsub = Column(Integer, nullable=False, default=0)
-    relayserver_id = Column(
-        Integer,
-        ForeignKey('relayserver.id'),
-        nullable=False)
+    relayserver_id = Column(Integer, ForeignKey("relayserver.id"), nullable=False)
     relayserver = relationship(RelayServer)
 
 
 class Agentsubscription(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'agent_subscription'
+    __tablename__ = "agent_subscription"
     # ====== Fields =============================
     # Here we define columns for the table agent_subscription.
     # Notice that each column is also a normal Python instance attribute.
-    #id = Column(Integer, primary_key=True)
+    # id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
 
 
 class Subscription(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'subscription'
+    __tablename__ = "subscription"
     # ====== Fields =============================
     # Here we define columns for the table subscription.
     # Notice that each column is also a normal Python instance attribute.
@@ -634,15 +649,14 @@ class Subscription(Base, XmppMasterDBObj):
     macadress = Column(String(15), nullable=False)
     # ====== ForeignKey =============================
     idagentsubscription = Column(
-        Integer,
-        ForeignKey('agent_subscription.id'),
-        nullable=False)
+        Integer, ForeignKey("agent_subscription.id"), nullable=False
+    )
     agent_subscription = relationship(Agentsubscription)
 
 
 class Def_remote_deploy_status(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'def_remote_deploy_status'
+    __tablename__ = "def_remote_deploy_status"
     # ====== Fields =============================
     # Here we define columns for the table def_remote_deploy_status.
     # Notice that each column is also a normal Python instance attribute.
@@ -653,7 +667,7 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
 
 class Uptime_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'uptime_machine'
+    __tablename__ = "uptime_machine"
     # ====== Fields =============================
     # Here we define columns for the table uptime_machine.
     # Notice that each column is also a normal Python instance attribute.
@@ -667,31 +681,33 @@ class Uptime_machine(Base, XmppMasterDBObj):
 
 class MyTypeenum(enum.Enum):
     """
-        This class defines the device type domain
+    This class defines the device type domain
     """
-    thermalprinter = 'thermalprinter'
-    nfcReader = 'nfcReader'
-    opticalReader = 'opticalReader'
-    cpu = 'cpu'
-    memory = 'memory'
-    storage = 'storage'
-    network = 'network'
+
+    thermalprinter = "thermalprinter"
+    nfcReader = "nfcReader"
+    opticalReader = "opticalReader"
+    cpu = "cpu"
+    memory = "memory"
+    storage = "storage"
+    network = "network"
 
 
 class Mystatusenum(enum.Enum):
     """
-        This class defines the status domain
+    This class defines the status domain
     """
-    ready = 'ready'
-    busy = 'busy'
-    warning = 'warning'
-    error = 'error'
-    disable = 'disable'
+
+    ready = "ready"
+    busy = "busy"
+    warning = "warning"
+    error = "error"
+    disable = "disable"
 
 
 class Mon_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'mon_machine'
+    __tablename__ = "mon_machine"
     # ====== Fields =============================
     # Here we define columns for the table mon_machine.
     # Notice that each column is also a normal Python instance attribute.
@@ -704,7 +720,7 @@ class Mon_machine(Base, XmppMasterDBObj):
 
 class Mon_devices(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'mon_devices'
+    __tablename__ = "mon_devices"
     # ====== Fields =============================
     # Here we define columns for the table mon_devices.
     # Notice that each column is also a normal Python instance attribute.
@@ -720,7 +736,7 @@ class Mon_devices(Base, XmppMasterDBObj):
 
 class Mon_device_service(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'mon_device_service'
+    __tablename__ = "mon_device_service"
     # ====== Fields =============================
     # Here we define columns for the table mon_device_service.
     # Notice that each column is also a normal Python instance attribute.
@@ -734,14 +750,13 @@ class Mon_device_service(Base, XmppMasterDBObj):
 
 class Mon_rules(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'mon_rules'
+    __tablename__ = "mon_rules"
     # ====== Fields =============================
     # Here we define columns for the table mon_device_service.
     # Notice that each column is also a normal Python instance attribute.
     # id = Column(Integer, primary_key=True)
     hostname = Column(String(255), default=None)
-    device_type = Column(String(255), nullable=False,
-                         default="opticalReader")
+    device_type = Column(String(255), nullable=False, default="opticalReader")
     binding = Column(Text)
     succes_binding_cmd = Column(Text, default=None)
     no_success_binding_cmd = Column(Text, default=None)
@@ -753,7 +768,7 @@ class Mon_rules(Base, XmppMasterDBObj):
 
 class Mon_event(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'mon_event'
+    __tablename__ = "mon_event"
     # ====== Fields =============================
     # Here we define columns for the table mon_device_service.
     # Notice that each column is also a normal Python instance attribute.
@@ -771,7 +786,7 @@ class Mon_event(Base, XmppMasterDBObj):
 
 class Mon_panels_template(Base, XmppMasterDBObj):
     # ====== Table name =========================
-    __tablename__ = 'mon_panels_template'
+    __tablename__ = "mon_panels_template"
     # ====== Fields =============================
     # Here we define columns for the table mon_panels_template.
     # Notice that each column is also a normal Python instance attribute.

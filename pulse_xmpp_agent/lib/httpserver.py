@@ -29,6 +29,7 @@ import cherrypy
 
 class Controller:
     """Controller for the cherrypy http server"""
+
     config = None
 
     @staticmethod
@@ -73,15 +74,24 @@ class Controller:
             # Then we need to filter the raw_list
             for element in raw_list:
                 abspath = os.path.join(str_path, element)
-                if element.lower().endswith(tuple(list_ext)) or '*' in list_ext:
+                if element.lower().endswith(tuple(list_ext)) or "*" in list_ext:
                     # we want the creation date
                     timestamp = os.path.getmtime(abspath)
-                    element_type = 'd' if os.path.isdir(abspath) else 'f'
+                    element_type = "d" if os.path.isdir(abspath) else "f"
                     # we want the file size
                     size = os.path.getsize(abspath)
                     size = Controller.transform_size(size)
-                    final_list.append((element, datetime.fromtimestamp(timestamp).strftime(
-                        Controller.config.date_format), size, element_type, abspath))
+                    final_list.append(
+                        (
+                            element,
+                            datetime.fromtimestamp(timestamp).strftime(
+                                Controller.config.date_format
+                            ),
+                            size,
+                            element_type,
+                            abspath,
+                        )
+                    )
 
         else:
             print("{} doesn't exist".format(str_path))
@@ -102,11 +112,14 @@ class Controller:
 
         count = 0
         for name in Controller.config.names:
-            jstablenames.append("#table-{}".format(name.replace(' ', '')))
+            jstablenames.append("#table-{}".format(name.replace(" ", "")))
             list_elements = Controller.get_list_from_path(
-                Controller.config.paths[count], Controller.config.extensions[count])
+                Controller.config.paths[count], Controller.config.extensions[count]
+            )
             tabs += """<li><a href="#tabs-%s">%s</a></li>""" % (
-                name.replace(' ', ''), name)
+                name.replace(" ", ""),
+                name,
+            )
             html += """<div id="tabs-{}">
             <h1>{} in {}</h1>
 
@@ -119,10 +132,15 @@ class Controller:
                         <th>Download</th>
                     </tr>
                 </thead>
-                <tbody>""".format(name.replace(' ', ''), name, Controller.config.paths[count], name.replace(' ', ''))
+                <tbody>""".format(
+                name.replace(" ", ""),
+                name,
+                Controller.config.paths[count],
+                name.replace(" ", ""),
+            )
 
             for element, date, size, type, path in list_elements:
-                if type == 'f':
+                if type == "f":
                     html += """<tr class="anchor" id="{}">
                 <td>
                     <a href="#{}" onclick="show_dialog('{}', '{}', this, {}, {})">{}</a>
@@ -133,17 +151,31 @@ class Controller:
                 <td>{}</td>
                 <td>{}</td>
                 <td><a href="{}/{}" download>Download</a></td>
-            </tr>""".format(element, element, name, element, Controller.config.fv_minwidth, Controller.config.fv_maxwidth, element, date, size, name, element)
+            </tr>""".format(
+                        element,
+                        element,
+                        name,
+                        element,
+                        Controller.config.fv_minwidth,
+                        Controller.config.fv_maxwidth,
+                        element,
+                        date,
+                        size,
+                        name,
+                        element,
+                    )
                 else:
                     html += """<tr class="anchor" id="{}">
                 <td>{}</td>
                 <td></td>
                 <td></td>
                 <td></td>
-            </tr>""".format(element, element)
-            html += '</tbody></table></div>'
+            </tr>""".format(
+                        element, element
+                    )
+            html += "</tbody></table></div>"
             count += 1
-        tabs += '</ul>'
+        tabs += "</ul>"
 
         template = """<!doctype html>
         <html lang="en">
@@ -185,5 +217,11 @@ class Controller:
                     %s
                 </div>
             </body>
-        </html>""" % (','.join(jstablenames), Controller.config.fv_minwidth, Controller.config.fv_maxwidth, tabs, html)
+        </html>""" % (
+            ",".join(jstablenames),
+            Controller.config.fv_minwidth,
+            Controller.config.fv_maxwidth,
+            tabs,
+            html,
+        )
         return template

@@ -31,7 +31,8 @@ plugin = {
     "VERSION": "1.1",
     "NAME": "resultcleanconfaccount",
     "TYPE": "substitute",
-    "FEATURE": "assessor"}
+    "FEATURE": "assessor",
+}
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
@@ -39,15 +40,15 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
     logging.getLogger().debug(plugin)
     logging.getLogger().debug("=====================================================")
     try:
-        recipient = str(msg['from'].user)
-        if data['useraccount'].startswith("conf"):
-            logger.debug('Clear MUC conf account')
+        recipient = str(msg["from"].user)
+        if data["useraccount"].startswith("conf"):
+            logger.debug("Clear MUC conf account")
             cmd = "ejabberdctl unregister %s pulse" % recipient
             unregister_command = simplecommandstr(cmd)
-            logger.debug(unregister_command['result'])
+            logger.debug(unregister_command["result"])
             logger.info(
-                "The ejabberd account %s has been removed for the machine: %s" %
-                (recipient, str(
-                    msg['from'].resource)))
+                "The ejabberd account %s has been removed for the machine: %s"
+                % (recipient, str(msg["from"].resource))
+            )
     except Exception:
         pass

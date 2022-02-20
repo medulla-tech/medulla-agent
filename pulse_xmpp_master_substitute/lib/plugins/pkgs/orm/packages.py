@@ -32,8 +32,7 @@ import sqlalchemy.orm
 
 
 class Packages(object):
-    """ Mapping between msc.commands_on_host and SA
-    """
+    """Mapping between msc.commands_on_host and SA"""
 
     def getId(self):
         if self.id is not None:
@@ -211,19 +210,19 @@ class Packages(object):
             Dict of elements contained into the object.
         """
         return {
-            'entity_id': self.getEntity_id(),
-            'description': self.getDescription(),
-            'sub_packages': self.getSub_packages(),
-            'id': self.getUuid(),
-            'pk_id': self.getId(),
-            'commands': {
-                'postCommandSuccess': {
-                    'command': self.getPostCommandSuccess_command(),
-                    'name': self.getPostCommandSuccess_name()
+            "entity_id": self.getEntity_id(),
+            "description": self.getDescription(),
+            "sub_packages": self.getSub_packages(),
+            "id": self.getUuid(),
+            "pk_id": self.getId(),
+            "commands": {
+                "postCommandSuccess": {
+                    "command": self.getPostCommandSuccess_command(),
+                    "name": self.getPostCommandSuccess_name(),
                 },
-                'installInit': {
-                    'command': self.getInstallInit_command(),
-                    'name': self.getInstallInit_name()
+                "installInit": {
+                    "command": self.getInstallInit_command(),
+                    "name": self.getInstallInit_name(),
                 },
                 "postCommandFailure": {
                     "command": self.getPostCommandFailure_command(),
@@ -235,29 +234,29 @@ class Packages(object):
                 },
                 "preCommand": {
                     "command": self.getPreCommand_command(),
-                    "name": self.getPreCommand_name()
-                }
+                    "name": self.getPreCommand_name(),
+                },
             },
-            'name': self.getLabel(),
-            'targetos': self.getOs(),
-            'reboot': self.getReboot(),
-            'version': self.getVersion(),
-            'inventory': {
-                'associateinventory': self.getInventory_associateinventory(),
-                'licenses': self.getInventory_licenses(),
+            "name": self.getLabel(),
+            "targetos": self.getOs(),
+            "reboot": self.getReboot(),
+            "version": self.getVersion(),
+            "inventory": {
+                "associateinventory": self.getInventory_associateinventory(),
+                "licenses": self.getInventory_licenses(),
                 "queries": {
                     "Qversion": self.getQversion(),
                     "Qvendor": self.getQvendor(),
                     "boolcnd": self.getBoolcnd(),
-                    "Qsoftware": self.getQsoftware()
+                    "Qsoftware": self.getQsoftware(),
                 },
-                "metagenerator": self.getMetaGenerator()
-            }
+                "metagenerator": self.getMetaGenerator(),
+            },
         }
 
     def toH(self):
         return {
-            'id': self.id,
+            "id": self.id,
             "label": self.label,
             "description": self.description,
             "uuid": self.uuid,
@@ -282,4 +281,5 @@ class Packages(object):
             "command_command": self.command_command,
             "command_name": self.command_name,
             "preCommand_command": self.preCommand_command,
-            "preCommand_name": self.preCommand_name}
+            "preCommand_name": self.preCommand_name,
+        }

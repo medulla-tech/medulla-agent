@@ -43,67 +43,80 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug(json.dumps(data, indent=4))
     logger.debug("#################################################")
     if "subaction" in data:
-        if data['subaction'] == "update_me":
+        if data["subaction"] == "update_me":
             # load version agent agentversion
-            version = file_get_contents(
-                os.path.join(
-                    xmppobject.diragentbase,
-                    "agentversion")).replace(
-                "\n",
-                "").replace(
-                "\r",
-                "").strip()
-            if 'descriptoragent' in data:
-                if 'program_agent' in data['descriptoragent'] and len(
-                        data['descriptoragent']['program_agent']) != 0:
+            version = (
+                file_get_contents(os.path.join(xmppobject.diragentbase, "agentversion"))
+                .replace("\n", "")
+                .replace("\r", "")
+                .strip()
+            )
+            if "descriptoragent" in data:
+                if (
+                    "program_agent" in data["descriptoragent"]
+                    and len(data["descriptoragent"]["program_agent"]) != 0
+                ):
                     logger.debug(
-                        "Update program script in remote agent [%s]" %
-                        message['from'])
-                    for script_program_file in data['descriptoragent']['program_agent']:
+                        "Update program script in remote agent [%s]" % message["from"]
+                    )
+                    for script_program_file in data["descriptoragent"]["program_agent"]:
                         logger.debug(
-                            "\t- Update program script [%s]" %
-                            (script_program_file))
+                            "\t- Update program script [%s]" % (script_program_file)
+                        )
                         sleep(2)
                         load_and_send_remote_agent_file(
-                            xmppobject, message['from'], script_program_file, "program_agent", version)
-                if 'lib_agent' in data['descriptoragent'] and len(
-                        data['descriptoragent']['lib_agent']) != 0:
+                            xmppobject,
+                            message["from"],
+                            script_program_file,
+                            "program_agent",
+                            version,
+                        )
+                if (
+                    "lib_agent" in data["descriptoragent"]
+                    and len(data["descriptoragent"]["lib_agent"]) != 0
+                ):
                     logger.debug(
-                        "Update lib script in remote agent [%s]" %
-                        message['from'])
-                    for script_lib_file in data['descriptoragent']['lib_agent']:
-                        logger.debug(
-                            "\t- Update lib script [%s]" %
-                            (script_lib_file))
+                        "Update lib script in remote agent [%s]" % message["from"]
+                    )
+                    for script_lib_file in data["descriptoragent"]["lib_agent"]:
+                        logger.debug("\t- Update lib script [%s]" % (script_lib_file))
                         sleep(2)
                         load_and_send_remote_agent_file(
-                            xmppobject, message['from'], script_lib_file, "lib_agent", version)
-                if 'script_agent' in data['descriptoragent'] and len(
-                        data['descriptoragent']['script_agent']) != 0:
-                    logger.debug(
-                        "Update script in remote agent [%s]" %
-                        message['from'])
-                    for script_script_file in data['descriptoragent']['script_agent']:
-                        logger.debug(
-                            "\t- Update script [%s]" %
-                            (script_script_file))
+                            xmppobject,
+                            message["from"],
+                            script_lib_file,
+                            "lib_agent",
+                            version,
+                        )
+                if (
+                    "script_agent" in data["descriptoragent"]
+                    and len(data["descriptoragent"]["script_agent"]) != 0
+                ):
+                    logger.debug("Update script in remote agent [%s]" % message["from"])
+                    for script_script_file in data["descriptoragent"]["script_agent"]:
+                        logger.debug("\t- Update script [%s]" % (script_script_file))
                         sleep(2)
                         load_and_send_remote_agent_file(
-                            xmppobject, message['from'], script_script_file, "script_agent", version)
+                            xmppobject,
+                            message["from"],
+                            script_script_file,
+                            "script_agent",
+                            version,
+                        )
 
 
 def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
     msg_script_file_to_remote_agent = {
-        "action": "updateagent", "sessionid": getRandomName(
-            3, "update_script_agent"), "data": {
-            "version": version}}
+        "action": "updateagent",
+        "sessionid": getRandomName(3, "update_script_agent"),
+        "data": {"version": version},
+    }
     if type == "program_agent":
         namescriptfile = os.path.join(xmppobject.diragentbase, filename)
     elif type == "lib_agent":
         namescriptfile = os.path.join(xmppobject.diragentbase, "lib", filename)
     elif type == "script_agent":
-        namescriptfile = os.path.join(
-            xmppobject.diragentbase, "script", filename)
+        namescriptfile = os.path.join(xmppobject.diragentbase, "script", filename)
     else:
         logger.error("Incorrect script type for adding to update remote agent")
         return
@@ -124,14 +137,15 @@ def load_and_send_remote_agent_file(xmppobject, jid, filename, type, version):
         logger.error("\n%s" % (traceback.format_exc()))
         return
 
-    msg_script_file_to_remote_agent['data'] = {}
-    msg_script_file_to_remote_agent['data']['subaction'] = 'install_%s' % type
-    msg_script_file_to_remote_agent['data']['content'] = content
-    msg_script_file_to_remote_agent['data']['namescript'] = filename
+    msg_script_file_to_remote_agent["data"] = {}
+    msg_script_file_to_remote_agent["data"]["subaction"] = "install_%s" % type
+    msg_script_file_to_remote_agent["data"]["content"] = content
+    msg_script_file_to_remote_agent["data"]["namescript"] = filename
     # only seul content of data is base 64
-    msg_script_file_to_remote_agent['base64'] = False
+    msg_script_file_to_remote_agent["base64"] = False
     try:
-        xmppobject.send_message(mto=jid, mbody=json.dumps(
-            msg_script_file_to_remote_agent), mtype='chat')
+        xmppobject.send_message(
+            mto=jid, mbody=json.dumps(msg_script_file_to_remote_agent), mtype="chat"
+        )
     except BaseException:
         logger.error("\n%s" % (traceback.format_exc()))

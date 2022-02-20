@@ -24,7 +24,8 @@
 import sys
 import os
 import os.path
-#import traceback
+
+# import traceback
 import logging
 import time
 from datetime import datetime
@@ -63,32 +64,32 @@ class manage_scheduler:
         self.objectxmpp = objectxmpp
 
         # Addition path to sys
-        if self.objectxmpp.config.agenttype in ['relayserver']:
+        if self.objectxmpp.config.agenttype in ["relayserver"]:
             descriptor_scheduler = os.path.join(
-                os.path.dirname(
-                    os.path.realpath(__file__)),
+                os.path.dirname(os.path.realpath(__file__)),
                 "..",
-                "descriptor_scheduler_relay")
-        elif self.objectxmpp.config.agenttype in ['machine']:
+                "descriptor_scheduler_relay",
+            )
+        elif self.objectxmpp.config.agenttype in ["machine"]:
             descriptor_scheduler = os.path.join(
-                os.path.dirname(
-                    os.path.realpath(__file__)),
+                os.path.dirname(os.path.realpath(__file__)),
                 "..",
-                "descriptor_scheduler_machine")
-        elif self.objectxmpp.config.agenttype in ['substitute']:
+                "descriptor_scheduler_machine",
+            )
+        elif self.objectxmpp.config.agenttype in ["substitute"]:
             descriptor_scheduler = os.path.join(
-                os.path.dirname(
-                    os.path.realpath(__file__)),
+                os.path.dirname(os.path.realpath(__file__)),
                 "..",
-                "descriptor_scheduler_substitute")
+                "descriptor_scheduler_substitute",
+            )
         self.directoryschedule = os.path.abspath(descriptor_scheduler)
         sys.path.append(self.directoryschedule)
 
         # We create the folder if it does not exist
         if not os.path.exists(self.directoryschedule):
             logging.getLogger().debug(
-                "create directory scheduler %s" %
-                self.directoryschedule)
+                "create directory scheduler %s" % self.directoryschedule
+            )
             os.makedirs(self.directoryschedule, 0o700)
         namefile = os.path.join(self.directoryschedule, "__init__.py")
         if not os.path.exists(namefile):
@@ -102,29 +103,34 @@ class manage_scheduler:
             name = x[11:-3]
             try:
                 datascheduler = self.litschedule(name)
-                datascheduler['nameplugin'] = name
-                datascheduler['schedule'] = self.replacecrontabdescriptor(
-                    datascheduler['schedule'])
+                datascheduler["nameplugin"] = name
+                datascheduler["schedule"] = self.replacecrontabdescriptor(
+                    datascheduler["schedule"]
+                )
                 for i in objcrontabconf:
-                    if i['nameplugin'] == name:
-                        i['schedule'] = self.replacecrontabdescriptor(
-                            i['schedule'])
+                    if i["nameplugin"] == name:
+                        i["schedule"] = self.replacecrontabdescriptor(i["schedule"])
                         datascheduler = i
-                        if 'persistence' in datascheduler and datascheduler['persistence']:
+                        if (
+                            "persistence" in datascheduler
+                            and datascheduler["persistence"]
+                        ):
                             # recupere crontab si existe.
                             namefilecrontabpresistence = os.path.join(
-                                self.directoryschedule, "%s.crontab" % i['nameplugin'])
+                                self.directoryschedule, "%s.crontab" % i["nameplugin"]
+                            )
                             if not os.path.exists(namefilecrontabpresistence):
                                 fichier = open(namefilecrontabpresistence, "w")
-                                fichier.write(i['schedule'])
+                                fichier.write(i["schedule"])
                                 fichier.close()
                             else:
                                 fichier = open(namefilecrontabpresistence, "r")
-                                datascheduler['schedule'] = fichier.read()
+                                datascheduler["schedule"] = fichier.read()
                                 fichier.close()
                 logging.getLogger().debug(
-                    "load format crontab : %s for plugin scheduled %s" %
-                    (datascheduler['schedule'], datascheduler['nameplugin']))
+                    "load format crontab : %s for plugin scheduled %s"
+                    % (datascheduler["schedule"], datascheduler["nameplugin"])
+                )
                 self.add_event(name, datascheduler)
             except Exception as e:
                 logging.getLogger().error(str(e))
@@ -140,36 +146,36 @@ class manage_scheduler:
             for (x, y) in mergeinfolist:
                 replacedata = {}
                 # print descrip[int(x+2):int(y-1)]
-                l = descrip[int(x + 2):int(y - 1)].split(',')
+                l = descrip[int(x + 2) : int(y - 1)].split(",")
                 if len(l) == 2 and int(l[0]) < int(l[1]):
                     searchvalue = randint(int(l[0]), int(l[1]))
                     replacedata = {
-                        'descriptor': descrip[int(x):int(y)],
-                        'value': searchvalue}
+                        "descriptor": descrip[int(x) : int(y)],
+                        "value": searchvalue,
+                    }
                     rep.append(replacedata)
                 else:
-                    return ''
+                    return ""
         for t in rep:
-            descrip = descrip.replace(t['descriptor'], str(t['value']), 1)
+            descrip = descrip.replace(t["descriptor"], str(t["value"]), 1)
         return descrip
 
     def add_event(self, name, datascheduler):
-        tabcron = datascheduler['schedule']
+        tabcron = datascheduler["schedule"]
         cron = croniter.croniter(tabcron, self.now)
         nextd = cron.get_next(datetime)
-        if 'nb' in datascheduler:
-            nbcount = datascheduler['nb']
+        if "nb" in datascheduler:
+            nbcount = datascheduler["nb"]
         else:
             nbcount = -1
         obj = {
             "name": name,
-            "exectime": time.mktime(
-                nextd.timetuple()),
+            "exectime": time.mktime(nextd.timetuple()),
             "tabcron": tabcron,
-            "timestart": str(
-                self.now),
+            "timestart": str(self.now),
             "nbcount": nbcount,
-            "count": 0}
+            "count": 0,
+        }
         self.taches.append(obj)
 
     def process_on_event(self):
@@ -180,8 +186,7 @@ class manage_scheduler:
             if (secondeunix - t["exectime"]) > 0:
                 # replace exectime
                 t["count"] = t["count"] + 1
-                if "nbcount" in t and t["nbcount"] != - \
-                        1 and t["count"] > t["nbcount"]:
+                if "nbcount" in t and t["nbcount"] != -1 and t["count"] > t["nbcount"]:
                     deleted.append(t)
                     logging.getLogger().debug("terminate plugin %s" % t)
                     continue

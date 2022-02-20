@@ -45,9 +45,7 @@ class Point:
 
 class Localisation:
     def __init__(self):
-        self.gi = GeoIP.open(
-            "/usr/share/GeoIP/GeoIPCity.dat",
-            GeoIP.GEOIP_STANDARD)
+        self.gi = GeoIP.open("/usr/share/GeoIP/GeoIPCity.dat", GeoIP.GEOIP_STANDARD)
 
     def geodataip(self, ip):
         return self.gi.record_by_addr(ip)
@@ -59,12 +57,10 @@ class Localisation:
         point1 = Point(lat1, long1)
         gir2 = self.gi.record_by_addr(ip2)
         if gir2 is not None:
-            point2 = Point(gir2['latitude'], gir2['longitude'])
-            if str(
-                point1.lat) == str(
-                point2.lat) and str(
-                point1.lon) == str(
-                    point2.lon):
+            point2 = Point(gir2["latitude"], gir2["longitude"])
+            if str(point1.lat) == str(point2.lat) and str(point1.lon) == str(
+                point2.lon
+            ):
                 self.distance = 0
             else:
                 self.distance = self.distHaversine(point1, point2)
@@ -76,8 +72,8 @@ class Localisation:
         gir1 = self.gi.record_by_addr(ip1)
         gir2 = self.gi.record_by_addr(ip2)
         if gir1 is not None and gir2 is not None:
-            self.point1 = Point(gir1['latitude'], gir1['longitude'])
-            self.point2 = Point(gir2['latitude'], gir2['longitude'])
+            self.point1 = Point(gir1["latitude"], gir1["longitude"])
+            self.point2 = Point(gir2["latitude"], gir2["longitude"])
             self.distance = self.distHaversine(self.point1, self.point2)
         else:
             self.distance = None
@@ -95,17 +91,23 @@ class Localisation:
         """
         dLat = p2.lat - p1.lat
         dLong = p2.lon - p1.lon
-        a = sin(dLat / 2) * sin(dLat / 2) + cos(p1.lat) * \
-            cos(p2.lat) * sin(dLong / 2) * sin(dLong / 2)
+        a = sin(dLat / 2) * sin(dLat / 2) + cos(p1.lat) * cos(p2.lat) * sin(
+            dLong / 2
+        ) * sin(dLong / 2)
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
         d = rt * c
         return d
 
     def distCosineLaw(self, p1, p2):
         """
-            Calculate the distance (in km) between 2 points specified by their
-            latitude/longitude using trigonometric functions
+        Calculate the distance (in km) between 2 points specified by their
+        latitude/longitude using trigonometric functions
         """
-        d = acos(sin(p1.lat) * sin(p2.lat) + cos(p1.lat)
-                 * cos(p2.lat) * cos(p2.lon - p1.lon)) * rt
+        d = (
+            acos(
+                sin(p1.lat) * sin(p2.lat)
+                + cos(p1.lat) * cos(p2.lat) * cos(p2.lon - p1.lon)
+            )
+            * rt
+        )
         return d

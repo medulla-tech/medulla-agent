@@ -39,7 +39,7 @@ import imp
 logger = logging.getLogger()
 if sys.version_info < (3, 0):
     imp.reload(sys)
-    sys.setdefaultencoding('utf8')
+    sys.setdefaultencoding("utf8")
 else:
     raw_input = input
 maxthread = 0
@@ -9886,26 +9886,21 @@ globaltest = """
 """
 
 
-def file_get_contents(
-        filename,
-        use_include_path=0,
-        context=None,
-        offset=-1,
-        maxlen=-1):
+def file_get_contents(filename, use_include_path=0, context=None, offset=-1, maxlen=-1):
     """
-        load content file or simple url
+    load content file or simple url
     """
-    if (filename.find('://') > 0):
+    if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
-        if (offset > 0):
+        if offset > 0:
             ret = ret[offset:]
-        if (maxlen > 0):
+        if maxlen > 0:
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, 'r')
+        fp = open(filename, "r")
         try:
-            if (offset > 0):
+            if offset > 0:
                 fp.seek(offset)
             ret = fp.read(maxlen)
             return ret
@@ -9914,7 +9909,7 @@ def file_get_contents(
 
 
 def file_get_binarycontents(filename, offset=-1, maxlen=-1):
-    fp = open(filename, 'rb')
+    fp = open(filename, "rb")
     try:
         if offset > 0:
             fp.seek(offset)
@@ -9935,7 +9930,7 @@ def file_put_contents(filename, data):
     """
     write content "data" to file "filename"
     """
-    f = open(filename, 'w')
+    f = open(filename, "w")
     f.write(data)
     f.close()
 
@@ -9943,18 +9938,19 @@ def file_put_contents(filename, data):
 def add_coloring_to_emit_windows(fn):
     # add methods we need to the class
     # def _out_handle(self):
-    #import ctypes
+    # import ctypes
     # return ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
-    #out_handle = property(_out_handle)
+    # out_handle = property(_out_handle)
 
     def _set_color(self, code):
         import ctypes
+
         # Constants from the Windows API
         self.STD_OUTPUT_HANDLE = -11
         hdl = ctypes.windll.kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
         ctypes.windll.kernel32.SetConsoleTextAttribute(hdl, code)
 
-    setattr(logging.StreamHandler, '_set_color', _set_color)
+    setattr(logging.StreamHandler, "_set_color", _set_color)
 
     def new(*args):
         FOREGROUND_BLUE = 0x0001  # text color contains blue.
@@ -9989,15 +9985,20 @@ def add_coloring_to_emit_windows(fn):
         BACKGROUND_INTENSITY = 0x0080  # background color is intensified.
 
         levelno = args[1].levelno
-        if(levelno >= 50):
-            color = BACKGROUND_YELLOW | FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
-        elif(levelno >= 40):
+        if levelno >= 50:
+            color = (
+                BACKGROUND_YELLOW
+                | FOREGROUND_RED
+                | FOREGROUND_INTENSITY
+                | BACKGROUND_INTENSITY
+            )
+        elif levelno >= 40:
             color = FOREGROUND_RED | FOREGROUND_INTENSITY
-        elif(levelno >= 30):
+        elif levelno >= 30:
             color = FOREGROUND_YELLOW | FOREGROUND_INTENSITY
-        elif(levelno >= 20):
+        elif levelno >= 20:
             color = FOREGROUND_GREEN
-        elif(levelno >= 10):
+        elif levelno >= 10:
             color = FOREGROUND_MAGENTA
         else:
             color = FOREGROUND_WHITE
@@ -10007,6 +10008,7 @@ def add_coloring_to_emit_windows(fn):
         args[0]._set_color(FOREGROUND_WHITE)
         # print "after"
         return ret
+
     return new
 
 
@@ -10014,21 +10016,22 @@ def add_coloring_to_emit_ansi(fn):
     # add methods we need to the class
     def new(*args):
         levelno = args[1].levelno
-        if(levelno >= 50):
-            color = '\x1b[31m'  # red
-        elif(levelno >= 40):
-            color = '\x1b[31m'  # red
-        elif(levelno >= 30):
-            color = '\x1b[33m'  # yellow
-        elif(levelno >= 20):
-            color = '\x1b[32m'  # green
-        elif(levelno >= 10):
-            color = '\x1b[35m'  # pink
+        if levelno >= 50:
+            color = "\x1b[31m"  # red
+        elif levelno >= 40:
+            color = "\x1b[31m"  # red
+        elif levelno >= 30:
+            color = "\x1b[33m"  # yellow
+        elif levelno >= 20:
+            color = "\x1b[32m"  # green
+        elif levelno >= 10:
+            color = "\x1b[35m"  # pink
         else:
-            color = '\x1b[0m'  # normal
-        args[1].msg = color + str(args[1].msg) + '\x1b[0m'  # normal
+            color = "\x1b[0m"  # normal
+        args[1].msg = color + str(args[1].msg) + "\x1b[0m"  # normal
         # print "after"
         return fn(*args)
+
     return new
 
 
@@ -10040,7 +10043,7 @@ class StreamToLogger(object):
     def __init__(self, logger, debug=logging.INFO):
         self.logger = logger
         self.debug = debug
-        self.linebuf = ''
+        self.linebuf = ""
 
     def write(self, buf):
         for line in buf.rstrip().splitlines():
@@ -10080,34 +10083,34 @@ class configuration:
 
     def charge_conf(self, Config):
         # if  Config.has_option("connection", "password"):
-        #self.Password=Config.get('connection', 'password')
+        # self.Password=Config.get('connection', 'password')
 
         # if  Config.has_option("connection", "port"):
-        #self.Port = Config.get('connection', 'port')
+        # self.Port = Config.get('connection', 'port')
 
         # if  Config.has_option("connection", "server"):
-        #self.Server=Config.get('connection', 'server')
+        # self.Server=Config.get('connection', 'server')
 
         # if  Config.has_option("connection", "agentname"):
-        #self.Agentname=Config.get('connection', 'agentname')
+        # self.Agentname=Config.get('connection', 'agentname')
 
         # if  Config.has_option("connection", "domain"):
-        #self.Domain=Config.get('connection', 'domain')
+        # self.Domain=Config.get('connection', 'domain')
 
         if Config.has_option("global", "log_level"):
-            self.log_level = Config.get('global', 'log_level')
+            self.log_level = Config.get("global", "log_level")
 
         if Config.has_option("inventory", "url"):
-            self.Url = Config.get('inventory', 'url')
+            self.Url = Config.get("inventory", "url")
 
         if Config.has_option("inventory", "nbthreadmax"):
-            self.nbthreadmax = Config.get('inventory', 'nbthreadmax')
+            self.nbthreadmax = Config.get("inventory", "nbthreadmax")
         else:
             self.nbthreadmax = None
 
-        #self.Jid = "%s@%s"%(self.Agentname, self.Domain,)
+        # self.Jid = "%s@%s"%(self.Agentname, self.Domain,)
 
-# global
+        # global
         if self.log_level == "INFO":
             self.debug = logging.INFO
         elif self.log_level == "DEBUG":
@@ -10135,18 +10138,18 @@ class configuration:
         ip_addresses = list()
         interfaces = netifaces.interfaces()
         for i in interfaces:
-            if i == 'lo':
+            if i == "lo":
                 continue
             iface = netifaces.ifaddresses(i).get(netifaces.AF_INET)
             if iface:
                 for j in iface:
-                    addr = j['addr']
-                    if addr != '127.0.0.1':
+                    addr = j["addr"]
+                    if addr != "127.0.0.1":
                         ip_addresses.append(addr)
         return ip_addresses
 
     # def __str__(self):
-        # return str(self.re)
+    # return str(self.re)
 
     def jsonobj(self):
         return json.dumps(self.re)
@@ -10185,12 +10188,11 @@ class action(Thread):
         global nbthread
         try:
             print(self.url)
-            request = urllib.request.Request(
-                self.url, self.content, self.HEADER)
+            request = urllib.request.Request(self.url, self.content, self.HEADER)
             response = urllib.request.urlopen(request)
         except Exception as exc:
             logger.warning("Unable to send inventory to GLPI")
-            logger.warning('Response was: %s' % str(exc))
+            logger.warning("Response was: %s" % str(exc))
         nbthread -= 1
 
 
@@ -10220,21 +10222,20 @@ class actiontest(Thread):
             response = urllib.request.urlopen(request)
         except Exception as exc:
             logger.warning("Unable to send inventory to GLPI")
-            logger.warning('Response was: %s' % str(exc))
+            logger.warning("Response was: %s" % str(exc))
         end = time.time()
         nbthread -= 1
         print(
-            "Thread %d nbrmax %s inventory %s start %s end %s duration %s" %
-            (d, maxthread, self.number, g, end, end - g))
+            "Thread %d nbrmax %s inventory %s start %s end %s duration %s"
+            % (d, maxthread, self.number, g, end, end - g)
+        )
 
 
 class inventoryinject:
     def __init__(self, conf):
         self.conf = conf
         if conf.testmode:
-            logger.warning(
-                "time interval is %s" %
-                self.conf.nbmessagebyseconde)
+            logger.warning("time interval is %s" % self.conf.nbmessagebyseconde)
         self.dirinventory = os.path.join(
             "/",
             "usr",
@@ -10245,13 +10246,15 @@ class inventoryinject:
             "plugins",
             "xmppmaster",
             "master",
-            "RecvInventory")
+            "RecvInventory",
+        )
         self.stop = False
         self.listfilename = []
-        self.HEADER = {"Pragma": "no-cache",
-                       "User-Agent": "Proxy:FusionInventory/Pulse2/GLPI",
-                       "Content-Type": "application/x-compress",
-                       }
+        self.HEADER = {
+            "Pragma": "no-cache",
+            "User-Agent": "Proxy:FusionInventory/Pulse2/GLPI",
+            "Content-Type": "application/x-compress",
+        }
         if self.conf.Url is not None:
             self.url = self.conf.Url
         else:
@@ -10266,9 +10269,10 @@ class inventoryinject:
     # lecture des fichiers namefichier inventory.
     def load_file_name(self):
         # print "Load"
-        #self.listpriotity = [x for x in os.listdir(self.dirinventory) if x[-4:] == ".inv"]
-        self.listfilename = [x for x in os.listdir(
-            self.dirinventory) if x[-4:] == ".xml"]
+        # self.listpriotity = [x for x in os.listdir(self.dirinventory) if x[-4:] == ".inv"]
+        self.listfilename = [
+            x for x in os.listdir(self.dirinventory) if x[-4:] == ".xml"
+        ]
         # for element in self.listfilename:
         # print element
         return self.listfilename
@@ -10320,41 +10324,40 @@ class inventoryinject:
 
 def createDaemon(opts, conf):
     """
-        This function create a service/Daemon that will execute a det. task
+    This function create a service/Daemon that will execute a det. task
     """
     try:
         pid = os.fork()
         if pid > 0:
-            print('PID: %d' % pid)
+            print("PID: %d" % pid)
             os._exit(0)
         doTask(opts, conf)
     except OSError as error:
-        logging.error(
-            "Unable to fork. Error: %d (%s)" %
-            (error.errno, error.strerror))
+        logging.error("Unable to fork. Error: %d (%s)" % (error.errno, error.strerror))
         logger.error("\n%s" % (traceback.format_exc()))
         os._exit(1)
 
 
 def doTask(opts, conf):
-    logging.StreamHandler.emit = add_coloring_to_emit_ansi(
-        logging.StreamHandler.emit)
-    #logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
+    # logging.basicConfig(level = logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     if opts.consoledebug:
-        logging.basicConfig(level=logging.DEBUG,
-                            format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(
+            level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+        )
     else:
-        stdout_logger = logging.getLogger('STDOUT')
+        stdout_logger = logging.getLogger("STDOUT")
         sl = StreamToLogger(stdout_logger, logging.INFO)
         sys.stdout = sl
-        stderr_logger = logging.getLogger('STDERR')
+        stderr_logger = logging.getLogger("STDERR")
         sl = StreamToLogger(stderr_logger, logging.INFO)
         sys.stderr = sl
         logging.basicConfig(
             level=logging.INFO,
-            format='[%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+            format="[%(name)s.%(funcName)s:%(lineno)d] %(message)s",
             filename="/var/log/pulse/xmpp-agent-log.log",
-            filemode='a')
+            filemode="a",
+        )
     # start programme
     if conf.testmode:
         startprog = time.time()
@@ -10373,52 +10376,76 @@ def doTask(opts, conf):
         print("interval is %s" % prog.conf.nbmessagebyseconde)
 
 
-if __name__ == '__main__':
-    if not sys.platform.startswith('linux'):
+if __name__ == "__main__":
+    if not sys.platform.startswith("linux"):
         print("Agent log on systeme linux only")
     if os.getuid() != 0:
         print("Agent must be running as root")
         sys.exit(0)
 
     optp = OptionParser()
-    optp.add_option("-d",
-                    "--deamon",
-                    action="store_true",
-                    dest="deamon",
-                    default=False,
-                    help="deamonize process")
+    optp.add_option(
+        "-d",
+        "--deamon",
+        action="store_true",
+        dest="deamon",
+        default=False,
+        help="deamonize process",
+    )
 
-    optp.add_option("-c",
-                    "--consoledebug",
-                    action="store_true",
-                    dest="consoledebug",
-                    default=False,
-                    help="console debug")
+    optp.add_option(
+        "-c",
+        "--consoledebug",
+        action="store_true",
+        dest="consoledebug",
+        default=False,
+        help="console debug",
+    )
 
-    optp.add_option("-n", "--numberbyseconde",
-                    dest="numberbyseconde", default=None,
-                    help="nombre d inventaire par seconde")
+    optp.add_option(
+        "-n",
+        "--numberbyseconde",
+        dest="numberbyseconde",
+        default=None,
+        help="nombre d inventaire par seconde",
+    )
 
-    optp.add_option("-s", "--intertime",
-                    dest="intertime", default=None,
-                    help="time between 2 inventory")
+    optp.add_option(
+        "-s",
+        "--intertime",
+        dest="intertime",
+        default=None,
+        help="time between 2 inventory",
+    )
 
-    optp.add_option("-t", "--testmode",
-                    action="store_true",
-                    dest="testmode", default=False,
-                    help="send inventory of test")
+    optp.add_option(
+        "-t",
+        "--testmode",
+        action="store_true",
+        dest="testmode",
+        default=False,
+        help="send inventory of test",
+    )
 
-    optp.add_option("-m", "--numbercycles",
-                    dest="numbercycles", default=None,
-                    help="number total inventory inject")
+    optp.add_option(
+        "-m",
+        "--numbercycles",
+        dest="numbercycles",
+        default=None,
+        help="number total inventory inject",
+    )
 
-    optp.add_option("-f", "--fichierconf",
-                    dest="fichierconf", default="100",
-                    help="fichierconf")
+    optp.add_option(
+        "-f", "--fichierconf", dest="fichierconf", default="100", help="fichierconf"
+    )
 
-    optp.add_option("-T", "--nbthreadmax",
-                    dest="nbthreadmax", default=None,
-                    help="nomber thread maximun")
+    optp.add_option(
+        "-T",
+        "--nbthreadmax",
+        dest="nbthreadmax",
+        default=None,
+        help="nomber thread maximun",
+    )
 
     # optp.add_option("-p", "--password",
     # dest="password", default=None,
@@ -10436,9 +10463,9 @@ if __name__ == '__main__':
     # dest="jid" default=None,
     # help="Jid agent connection xmpp")
 
-    optp.add_option("-U", "--url",
-                    dest="url", default=None,
-                    help="url connection inventory server")
+    optp.add_option(
+        "-U", "--url", dest="url", default=None, help="url connection inventory server"
+    )
 
     opts, args = optp.parse_args()
 
@@ -10451,16 +10478,16 @@ if __name__ == '__main__':
         conf.Url = opts.url
 
     # if opts.jid != None:
-        #conf.Jid = opts.jid
+    # conf.Jid = opts.jid
 
     # if opts.password != None:
-        #conf.Password = str(opts.password)
+    # conf.Password = str(opts.password)
 
     # if opts.port != None:
-        #conf.Port = int(opts.port)
+    # conf.Port = int(opts.port)
 
     # if opts.server != None:
-        #conf.Server = str(opts.server)
+    # conf.Server = str(opts.server)
 
     if opts.numberbyseconde is not None:
         conf.Nbmessage = float(opts.numberbyseconde)

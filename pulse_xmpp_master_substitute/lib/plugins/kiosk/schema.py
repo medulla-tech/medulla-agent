@@ -19,8 +19,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from sqlalchemy import Column, String, Integer, \
-    DateTime, Text, Enum
+from sqlalchemy import Column, String, Integer, DateTime, Text, Enum
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -40,14 +39,14 @@ class DBObj(object):
                 else:
                     del d[k]
         # Delete Sqlachemy instance state
-        if '_sa_instance_state' in d:
-            del d['_sa_instance_state']
+        if "_sa_instance_state" in d:
+            del d["_sa_instance_state"]
         return d
 
     def fromDict(self, d, relations=False):
         # TODO: Test if d is dict
-        if '_sa_instance_state' in d:
-            del d['_sa_instance_state']
+        if "_sa_instance_state" in d:
+            del d["_sa_instance_state"]
         # Actually we don't support relations
         for key, value in d.items():
             if key and type(value) not in [type({}), type([])]:
@@ -64,7 +63,7 @@ class KioskDBObj(DBObj):
 
 class Profiles(Base, KioskDBObj):
     # ====== Table name =========================
-    __tablename__ = 'profiles'
+    __tablename__ = "profiles"
     # ====== Fields =============================
     # Here we define columns for the table version.
     # Notice that each column is also a normal Python instance attribute.
@@ -75,7 +74,7 @@ class Profiles(Base, KioskDBObj):
 
 class Packages(Base, KioskDBObj):
     # ====== Table name =========================
-    __tablename__ = 'package'
+    __tablename__ = "package"
     # ====== Fields =============================
     # Here we define columns for the table version.
     # Notice that each column is also a normal Python instance attribute.
@@ -90,16 +89,16 @@ class Packages(Base, KioskDBObj):
 
 class Profile_has_package(Base, KioskDBObj):
     # ====== Table name =========================
-    __tablename__ = 'package_has_profil'
+    __tablename__ = "package_has_profil"
     # ====== Fields =============================
     package_id = Column(Integer, nullable=False)
     profil_id = Column(Integer, nullable=False)
-    package_status = Column(Enum('allowed', 'restricted'))
+    package_status = Column(Enum("allowed", "restricted"))
 
 
 class Profile_has_ou(Base, KioskDBObj):
     # ====== Table name =========================
-    __tablename__ = 'profile_has_ous'
+    __tablename__ = "profile_has_ous"
     # ====== Fields =============================
     profile_id = Column(Integer, nullable=False)
     ou = Column(Text)

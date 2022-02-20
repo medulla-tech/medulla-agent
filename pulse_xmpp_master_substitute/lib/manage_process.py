@@ -29,6 +29,7 @@ import traceback
 import logging
 import subprocess
 from threading import Timer
+
 logger = logging.getLogger()
 
 
@@ -42,39 +43,38 @@ def processcommand(command, queue_out_session, messagestr, timeout):
         sys.exit(0)
     try:
         # structure message for msgout
-        msgoutsucces = {
-            'eventMessageraw': message
-        }
+        msgoutsucces = {"eventMessageraw": message}
         logging.debug("================================================")
         logging.debug(" execution command in process")
         logging.debug("command : \n%s" % command)
         logging.debug("================================================")
         cmd = cmdx(command, timeout)
         cmddecode = decode_strconsole(cmd.stdout)
-        msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
-        msgoutsucces['eventMessageraw']['data']['result'] = cmddecode
+        msgoutsucces["eventMessageraw"]["data"]["codeerror"] = cmd.code_error
+        msgoutsucces["eventMessageraw"]["data"]["result"] = cmddecode
         logging.debug("code error  %s" % cmd.code_error)
-        logging.debug(
-            "msg succes to manager evenement: mode 'eventMessageraw'")
+        logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
         queue_out_session.put(msgoutsucces)
-        #logging.debug("code error  %s"% cmd.code_error)
-        #logging.debug("result  %s"% cmd.stdout)
+        # logging.debug("code error  %s"% cmd.code_error)
+        # logging.debug("result  %s"% cmd.stdout)
         logging.debug("================================================")
 
     except TimeoutError:
         logging.error(
-            "TimeoutError process  %s sessionid : %s" %
-            (command, message['sessionid']))
+            "TimeoutError process  %s sessionid : %s" % (command, message["sessionid"])
+        )
     except KeyboardInterrupt:
         logging.warn(
-            "KeyboardInterrupt process  %s sessionid : %s" %
-            (command, message['sessionid']))
+            "KeyboardInterrupt process  %s sessionid : %s"
+            % (command, message["sessionid"])
+        )
         sys.exit(0)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
         logging.error(
-            "error execution process %s sessionid : %s" %
-            (command, message['sessionid']))
+            "error execution process %s sessionid : %s"
+            % (command, message["sessionid"])
+        )
         sys.exit(0)
 
 
@@ -91,130 +91,129 @@ def processstepcommand(command, queue_out_session, messagestr, timeout, step):
         workingstep = {}
         # logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'],
         # indent=4, sort_keys=True))
-        sequence = message['data']['descriptor']['sequence']
+        sequence = message["data"]["descriptor"]["sequence"]
         for i in sequence:
-            if i['step'] == step:
+            if i["step"] == step:
                 workingstep = i
                 break
         ###
         if len(workingstep) != 0:
             # structure message for msgout
-            logging.getLogger().debug("1================================================")
+            logging.getLogger().debug(
+                "1================================================"
+            )
             logging.getLogger().debug(" execution command in process")
             logging.getLogger().debug("command : \n%s" % command)
-            logging.getLogger().debug("================================================")
+            logging.getLogger().debug(
+                "================================================"
+            )
             cmd = cmdx(command, timeout)
-            workingstep['codereturn'] = cmd.code_error
-            message['data']['oldreturncode'] = str(cmd.code_error)
-            workingstep['completed'] = 1
+            workingstep["codereturn"] = cmd.code_error
+            message["data"]["oldreturncode"] = str(cmd.code_error)
+            workingstep["completed"] = 1
             cmddecode = decode_strconsole(cmd.stdout)
-            result = cmddecode.split('\n')
-            result = [x.strip() for x in result if x != '']
+            result = cmddecode.split("\n")
+            result = [x.strip() for x in result if x != ""]
             try:
-                message['data']['oldresult'] = decode_strconsole(
-                    str(result[-1]))
+                message["data"]["oldresult"] = decode_strconsole(str(result[-1]))
             except Exception:
-                message['data']['oldresult'] = ""
+                message["data"]["oldresult"] = ""
             for t in workingstep:
                 if t == "@resultcommand":
                     workingstep[t] = os.linesep.join(result)
-                elif t.endswith('lastlines'):
+                elif t.endswith("lastlines"):
                     nb = t.split("@")
                     nb1 = -int(nb[0])
-                    logging.getLogger().debug("=======lastlines============%s========" % nb1)
+                    logging.getLogger().debug(
+                        "=======lastlines============%s========" % nb1
+                    )
                     workingstep[t] = os.linesep.join(result)
-                elif t.endswith('firstlines'):
+                elif t.endswith("firstlines"):
                     nb = t.split("@")
                     nb1 = int(nb[0])
-                    logging.getLogger().debug("=======firstlines============%s=======" % nb1)
+                    logging.getLogger().debug(
+                        "=======firstlines============%s=======" % nb1
+                    )
                     workingstep[t] = os.linesep.join(result)
-            if 'goto' in workingstep:
-                message['data']['stepcurrent'] = workingstep['goto']
-            elif 'success' in workingstep and workingstep['codereturn'] == 0:
-                message['data']['stepcurrent'] = workingstep['success']
-            elif 'error' in workingstep and workingstep['codereturn'] != 0:
-                message['data']['stepcurrent'] = workingstep['error']
+            if "goto" in workingstep:
+                message["data"]["stepcurrent"] = workingstep["goto"]
+            elif "success" in workingstep and workingstep["codereturn"] == 0:
+                message["data"]["stepcurrent"] = workingstep["success"]
+            elif "error" in workingstep and workingstep["codereturn"] != 0:
+                message["data"]["stepcurrent"] = workingstep["error"]
             else:
-                message['data']['stepcurrent'] = message['data']['stepcurrent'] + 1
+                message["data"]["stepcurrent"] = message["data"]["stepcurrent"] + 1
 
-            logging.getLogger().debug(
-                "Next Step : %s" %
-                message['data']['stepcurrent'])
-            msgoutsucces = {
-                'eventMessageraw': message
-            }
+            logging.getLogger().debug("Next Step : %s" % message["data"]["stepcurrent"])
+            msgoutsucces = {"eventMessageraw": message}
 
-            msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+            msgoutsucces["eventMessageraw"]["data"]["codeerror"] = cmd.code_error
             queue_out_session.put(msgoutsucces)
         else:
-            logging.getLogger().debug("######MESSAGE error#############\n%s" %
-                                      json.dumps(message, indent=4, sort_keys=True))
+            logging.getLogger().debug(
+                "######MESSAGE error#############\n%s"
+                % json.dumps(message, indent=4, sort_keys=True)
+            )
 
     except TimeoutError:
         logging.getLogger().error(
-            "TimeoutError process  %s sessionid : %s" %
-            (command, message['sessionid']))
+            "TimeoutError process  %s sessionid : %s" % (command, message["sessionid"])
+        )
     except KeyboardInterrupt:
         logging.getLogger().warn(
-            "KeyboardInterrupt process  %s sessionid : %s" %
-            (command, message['sessionid']))
+            "KeyboardInterrupt process  %s sessionid : %s"
+            % (command, message["sessionid"])
+        )
         sys.exit(0)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
         logging.getLogger().error(
-            "error execution process %s sessionid : %s" %
-            (command, message['sessionid']))
+            "error execution process %s sessionid : %s"
+            % (command, message["sessionid"])
+        )
         sys.exit(0)
 
 
 class process_on_end_send_message_xmpp:
-
     def __init__(self, queue_out_session):
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.info('manage process start')
+        logging.info("manage process start")
 
     def add_processcommand(
-            self,
-            command,
-            message,
-            tosucces=None,
-            toerror=None,
-            timeout=50,
-            step=None):
-        message['data']['tosucces'] = tosucces
-        message['data']['toerror'] = toerror
+        self, command, message, tosucces=None, toerror=None, timeout=50, step=None
+    ):
+        message["data"]["tosucces"] = tosucces
+        message["data"]["toerror"] = toerror
         messagestr = json.dumps(message)
 
         if not (step is None or isinstance(step, int)):
-            logging.error('Error Descriptor Step in not Integer')
+            logging.error("Error Descriptor Step in not Integer")
             return False
         if tosucces is None and toerror is None:
             logging.error("any agent to process result from queue")
             return False
 
-        message['data']['tosucces'] = tosucces
-        message['data']['toerror'] = toerror
+        message["data"]["tosucces"] = tosucces
+        message["data"]["toerror"] = toerror
 
         if step is None:
-            createprocesscommand = Process(target=processcommand, args=(
-                command, self.queue_out_session, messagestr, timeout))
+            createprocesscommand = Process(
+                target=processcommand,
+                args=(command, self.queue_out_session, messagestr, timeout),
+            )
             createprocesscommand.start()
             return True
 
         else:
-            createprocessstepcommand = Process(target=processstepcommand, args=(
-                command, self.queue_out_session, messagestr, timeout, step))
+            createprocessstepcommand = Process(
+                target=processstepcommand,
+                args=(command, self.queue_out_session, messagestr, timeout, step),
+            )
             createprocessstepcommand.start()
             return True
 
-    def processstepcommand(
-            self,
-            command,
-            queue_out_session,
-            messagestr,
-            timeout,
-            step):
+    def processstepcommand(self, command, queue_out_session, messagestr, timeout, step):
         logging.getLogger().error("########processstepcommand")
         try:
             message = json.loads(messagestr)
@@ -227,9 +226,9 @@ class process_on_end_send_message_xmpp:
             workingstep = {}
             # logging.debug("######MESSAGE#############\n%s"%json.dumps(message['data'],
             # indent=4, sort_keys=True))
-            sequence = message['data']['descriptor']['sequence']
+            sequence = message["data"]["descriptor"]["sequence"]
             for i in sequence:
-                if i['step'] == step:
+                if i["step"] == step:
                     workingstep = i
                     break
 
@@ -238,70 +237,81 @@ class process_on_end_send_message_xmpp:
                 # logging.debug("######MESSAGE#############\n%s"%json.dumps(message, indent=4, sort_keys=True))
                 # logging.debug("dddd###################\n#######################\n#######################\n#################")
                 # structure message for msgout
-                logging.getLogger().debug("2================================================")
+                logging.getLogger().debug(
+                    "2================================================"
+                )
                 logging.getLogger().debug(" execution command in process")
                 logging.getLogger().debug("command : \n%s" % command)
-                logging.getLogger().debug("================================================")
+                logging.getLogger().debug(
+                    "================================================"
+                )
                 cmd = cmdx(command, timeout)
-                workingstep['codereturn'] = cmd.code_error
-                workingstep['completed'] = 1
+                workingstep["codereturn"] = cmd.code_error
+                workingstep["completed"] = 1
 
                 cmddecode = decode_strconsole(cmd.stdout)
-                result = cmddecode.split('\n')
-                result = [x.strip() for x in result if x != '']
+                result = cmddecode.split("\n")
+                result = [x.strip() for x in result if x != ""]
 
                 # print result
                 for t in workingstep:
                     if t == "@resultcommand":
                         workingstep[t] = os.linesep.join(result)
-                    elif t.endswith('lastlines'):
+                    elif t.endswith("lastlines"):
                         nb = t.split("@")
                         nb1 = -int(nb[0])
-                        logging.getLogger().debug("=======lastlines============%s========" % nb1)
+                        logging.getLogger().debug(
+                            "=======lastlines============%s========" % nb1
+                        )
                         tab = result[nb1:]
                         workingstep[t] = os.linesep.join(tab)
-                    elif t.endswith('firstlines'):
+                    elif t.endswith("firstlines"):
                         nb = t.split("@")
                         nb1 = int(nb[0])
-                        logging.getLogger().debug("=======firstlines============%s=======" % nb1)
+                        logging.getLogger().debug(
+                            "=======firstlines============%s=======" % nb1
+                        )
                         tab = result[:nb1]
                         workingstep[t] = os.linesep.join(tab)
-                if 'goto' in workingstep:
-                    message['data']['stepcurrent'] = workingstep['goto']
-                elif 'succes' in workingstep and workingstep['codereturn'] == 0:
-                    message['data']['stepcurrent'] = workingstep['succes']
-                elif 'error' in workingstep and workingstep['codereturn'] != 0:
-                    message['data']['stepcurrent'] = workingstep['error']
+                if "goto" in workingstep:
+                    message["data"]["stepcurrent"] = workingstep["goto"]
+                elif "succes" in workingstep and workingstep["codereturn"] == 0:
+                    message["data"]["stepcurrent"] = workingstep["succes"]
+                elif "error" in workingstep and workingstep["codereturn"] != 0:
+                    message["data"]["stepcurrent"] = workingstep["error"]
                 else:
-                    message['data']['stepcurrent'] = message['data']['stepcurrent'] + 1
+                    message["data"]["stepcurrent"] = message["data"]["stepcurrent"] + 1
 
                 logging.getLogger().debug(
-                    "Next Step : %s" %
-                    message['data']['stepcurrent'])
-                msgoutsucces = {
-                    'eventMessageraw': message
-                }
+                    "Next Step : %s" % message["data"]["stepcurrent"]
+                )
+                msgoutsucces = {"eventMessageraw": message}
 
-                msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+                msgoutsucces["eventMessageraw"]["data"]["codeerror"] = cmd.code_error
                 queue_out_session.put(msgoutsucces)
             else:
-                logging.getLogger().debug("######MESSAGE error#############\n%s" %
-                                          json.dumps(message, indent=4, sort_keys=True))
+                logging.getLogger().debug(
+                    "######MESSAGE error#############\n%s"
+                    % json.dumps(message, indent=4, sort_keys=True)
+                )
 
         except TimeoutError:
             logging.getLogger().error(
-                "TimeoutError process  %s sessionid : %s" %
-                (command, message['sessionid']))
+                "TimeoutError process  %s sessionid : %s"
+                % (command, message["sessionid"])
+            )
         except KeyboardInterrupt:
             logging.getLogger().warn(
-                "KeyboardInterrupt process  %s sessionid : %s" %
-                (command, message['sessionid']))
+                "KeyboardInterrupt process  %s sessionid : %s"
+                % (command, message["sessionid"])
+            )
             sys.exit(0)
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
             logging.getLogger().error(
-                "error execution process %s sessionid : %s" %
-                (command, message['sessionid']))
+                "error execution process %s sessionid : %s"
+                % (command, message["sessionid"])
+            )
             sys.exit(0)
 
     def terminateprocess(self, p):
@@ -317,58 +327,58 @@ class process_on_end_send_message_xmpp:
             sys.exit(0)
         try:
             # structure message for msgout
-            msgoutsucces = {
-                'eventMessageraw': message
-            }
+            msgoutsucces = {"eventMessageraw": message}
             logging.debug("3================================================")
             logging.debug(" execution command in process")
             logging.debug("command : \n%s" % command)
             logging.debug("================================================")
             cmd = cmdx(command, timeout)
-            msgoutsucces['eventMessageraw']['data']['codeerror'] = cmd.code_error
+            msgoutsucces["eventMessageraw"]["data"]["codeerror"] = cmd.code_error
             cmddecode = decode_strconsole(cmd.stdout)
-            msgoutsucces['eventMessageraw']['data']['result'] = cmddecode
+            msgoutsucces["eventMessageraw"]["data"]["result"] = cmddecode
             logging.debug("code error  %s" % cmd.code_error)
-            logging.debug(
-                "msg succes to manager evenement: mode 'eventMessageraw'")
+            logging.debug("msg succes to manager evenement: mode 'eventMessageraw'")
             queue_out_session.put(msgoutsucces)
-            #logging.debug("code error  %s"% cmd.code_error)
-            #logging.debug("result  %s"% cmd.stdout)
+            # logging.debug("code error  %s"% cmd.code_error)
+            # logging.debug("result  %s"% cmd.stdout)
             logging.debug("================================================")
 
         except TimeoutError:
             logging.error(
-                "TimeoutError process  %s sessionid : %s" %
-                (command, message['sessionid']))
+                "TimeoutError process  %s sessionid : %s"
+                % (command, message["sessionid"])
+            )
         except KeyboardInterrupt:
             logging.warn(
-                "KeyboardInterrupt process  %s sessionid : %s" %
-                (command, message['sessionid']))
+                "KeyboardInterrupt process  %s sessionid : %s"
+                % (command, message["sessionid"])
+            )
             sys.exit(0)
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
             logging.error(
-                "error execution process %s sessionid : %s" %
-                (command, message['sessionid']))
+                "error execution process %s sessionid : %s"
+                % (command, message["sessionid"])
+            )
             sys.exit(0)
 
 
 class mannageprocess:
-
     def __init__(self, queue_out_session):
         self.processtable = []
         self.queue_out_session = queue_out_session
-        logging.info('manage process start')
+        logging.info("manage process start")
 
     def add_processcommand(
-            self,
-            command,
-            sessionid,
-            eventstart=False,
-            eventfinish=False,
-            eventerror=False,
-            timeout=50,
-            keysdescriptor=[]):
+        self,
+        command,
+        sessionid,
+        eventstart=False,
+        eventfinish=False,
+        eventerror=False,
+        timeout=50,
+        keysdescriptor=[],
+    ):
         createprocesscommand = Process(
             target=self.processcommand,
             args=(
@@ -379,36 +389,40 @@ class mannageprocess:
                 eventfinish,
                 eventerror,
                 timeout,
-                keysdescriptor))
+                keysdescriptor,
+            ),
+        )
         self.processtable.append(createprocesscommand)
         createprocesscommand.start()
 
     def processcommand(
-            self,
-            command,
-            queue_out_session,
-            sessionid,
-            eventstart,
-            eventfinish,
-            eventerror,
-            timeout,
-            keysdescriptor):
+        self,
+        command,
+        queue_out_session,
+        sessionid,
+        eventstart,
+        eventfinish,
+        eventerror,
+        timeout,
+        keysdescriptor,
+    ):
         # il y a 2 types de messages event ceux de la boucle interne et ceux
         # envoyé en TEVENT
         try:
             # structure message for msgout
             msgout = {
-                'event': "",
-                'sessionid': sessionid,
-                'result': {
-                    'codeerror': 0,
-                    'resultcommand': '',
-                    'command': decode_strconsole(command)},
+                "event": "",
+                "sessionid": sessionid,
+                "result": {
+                    "codeerror": 0,
+                    "resultcommand": "",
+                    "command": decode_strconsole(command),
+                },
             }
             if eventstart is not False:
                 # ecrit dans queue_out_session l'evenement eventstart
-                if '_eventype' in eventstart and '_eventype' == 'TEVENT':
-                    msgout['event'] = eventstart
+                if "_eventype" in eventstart and "_eventype" == "TEVENT":
+                    msgout["event"] = eventstart
                     queue_out_session.put(msgout)
                 else:
                     queue_out_session.put(eventstart)
@@ -420,10 +434,9 @@ class mannageprocess:
                 ev = eventerror
             else:
                 ev = False
-            logging.debug(
-                "444 ================================================")
+            logging.debug("444 ================================================")
             logging.debug(" execution command in process")
-            #logging.debug("command : \n%s"%command)
+            # logging.debug("command : \n%s"%command)
             logging.debug("================================================")
             # print "444================================================"
             # print " execution command in process"
@@ -433,12 +446,12 @@ class mannageprocess:
             # print "================================================"
 
             if ev is not False:
-                if '_eventype' in ev and '_eventype' == 'TEVENT':
+                if "_eventype" in ev and "_eventype" == "TEVENT":
                     # ecrit dans queue_out_session le TEVENT
-                    msgout['event'] = ev
-                    #msgout['result']['resultcommand'] = cmd['result']
-                    msgout['result']['resultcommand'] = cmddecode
-                    msgout['result']['codeerror'] = cmd.code_error
+                    msgout["event"] = ev
+                    # msgout['result']['resultcommand'] = cmd['result']
+                    msgout["result"]["resultcommand"] = cmddecode
+                    msgout["result"]["codeerror"] = cmd.code_error
                     queue_out_session.put(msgout)
                 else:
 
@@ -446,40 +459,38 @@ class mannageprocess:
                     # "10@lastlines": "",
                     # "@resultcommand":""
 
-                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
-                    ev['data']['result'] = {
-                        'codeerror': cmd.code_error, 'command': command}
+                    # ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
+                    ev["data"]["result"] = {
+                        "codeerror": cmd.code_error,
+                        "command": command,
+                    }
                     for t in keysdescriptor:
-                        if t == 'codeerror' or t == 'command':
+                        if t == "codeerror" or t == "command":
                             pass
-                        elif t == '@resultcommand':
-                            ev['data']['result']['@resultcommand'] = cmd.stdout
-                        elif t.endswith('lastlines'):
+                        elif t == "@resultcommand":
+                            ev["data"]["result"]["@resultcommand"] = cmd.stdout
+                        elif t.endswith("lastlines"):
                             nb = t.split("@")
                             nb1 = -int(nb[0])
-                            tab = [
-                                x for x in cmd.stdout.split(
-                                    os.linesep) if x != '']
+                            tab = [x for x in cmd.stdout.split(os.linesep) if x != ""]
                             tab = tab[nb1:]
-                            ev['data']['result'][t] = os.linesep.join(tab)
-                        elif t.endswith('firstlines'):
+                            ev["data"]["result"][t] = os.linesep.join(tab)
+                        elif t.endswith("firstlines"):
                             nb = t.split("@")
                             nb1 = int(nb[0])
-                            tab = [
-                                x for x in cmd.stdout.split(
-                                    os.linesep) if x != '']
+                            tab = [x for x in cmd.stdout.split(os.linesep) if x != ""]
                             tab = tab[:nb1]
-                            ev['data']['result'][t] = os.linesep.join(tab)
+                            ev["data"]["result"][t] = os.linesep.join(tab)
                     queue_out_session.put(ev)
 
-            #cmd = simplecommandstr(command)
+            # cmd = simplecommandstr(command)
 
             # if cmd['code'] == 0 and eventfinish != False:
-                #ev = eventfinish
+            # ev = eventfinish
             # elif cmd['code'] != 0 and eventfinish != False:
-                #ev = eventerror
+            # ev = eventerror
             # else:
-                #ev = False
+            # ev = False
 
             # print "================================================"
             # print " execution command in process"
@@ -489,30 +500,30 @@ class mannageprocess:
             # print "================================================"
 
             # if ev != False:
-                # if '_eventype' in ev and '_eventype' == 'TEVENT':
-                    # ecrit dans queue_out_session le TEVENT
-                    #msgout['event'] = ev
-                    #msgout['result']['resultcommand'] = cmd['result']
-                    #msgout['result']['codeerror'] = cmd['code']
-                    # queue_out_session.put(msgout)
-                # else:
-                    #ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
-                    # queue_out_session.put(ev)
+            # if '_eventype' in ev and '_eventype' == 'TEVENT':
+            # ecrit dans queue_out_session le TEVENT
+            # msgout['event'] = ev
+            # msgout['result']['resultcommand'] = cmd['result']
+            # msgout['result']['codeerror'] = cmd['code']
+            # queue_out_session.put(msgout)
+            # else:
+            # ev['data']['result'] = {'codeerror': cmd['code'],'resultcommand': cmd['result'],'command': command  }
+            # queue_out_session.put(ev)
 
         except TimeoutError:
             logging.error(
-                "TimeoutError process  %s sessionid : %s" %
-                (command, sessionid))
+                "TimeoutError process  %s sessionid : %s" % (command, sessionid)
+            )
         except KeyboardInterrupt:
             logging.warn(
-                "KeyboardInterrupt process  %s sessionid : %s" %
-                (command, sessionid))
+                "KeyboardInterrupt process  %s sessionid : %s" % (command, sessionid)
+            )
             sys.exit(0)
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
             logging.error(
-                "error execution process %s sessionid : %s" %
-                (command, sessionid))
+                "error execution process %s sessionid : %s" % (command, sessionid)
+            )
             sys.exit(0)
 
 
@@ -524,7 +535,8 @@ class cmdx(object):
             self.timeout = int(timeout)
         except ValueError:
             logging.warning(
-                "A problem occured while defining default timeout. Defaulting to 800s")
+                "A problem occured while defining default timeout. Defaulting to 800s"
+            )
             self.timeout = 800
 
         self.timeoutbool = False
@@ -537,25 +549,25 @@ class cmdx(object):
 
     def run(self):
         self.proc = subprocess.Popen(
-            self.cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-        #kill_proc = lambda p: p.kill()
+            self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        # kill_proc = lambda p: p.kill()
         timer = Timer(self.timeout, self.kill_proc, [self.proc])
         try:
             timer.start()
             stdout, stderr = self.proc.communicate()
         finally:
             timer.cancel()
-        #self.stderr = stderr
+        # self.stderr = stderr
         self.stdout = decode_strconsole(stdout)
 
         self.code_error = self.proc.returncode
         if self.timeoutbool:
             self.stdout = "error : timeout %s" % self.timeout
-            #self.code_error = 150
-#ff = cmdx ("echo 'Process started';echo; echo; sleep 2; echo 'Process finished';ls;",3)
+            # self.code_error = 150
+
+
+# ff = cmdx ("echo 'Process started';echo; echo; sleep 2; echo 'Process finished';ls;",3)
 
 # print "stdout",ff.stdout
 

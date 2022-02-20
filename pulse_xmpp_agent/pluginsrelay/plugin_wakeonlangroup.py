@@ -32,13 +32,13 @@ plugin = {"VERSION": "2.0", "NAME": "wakeonlangroup", "TYPE": "relayserver"}
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
-    logger.debug("call %s from %s" % (plugin, message['from']))
+    logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
-    if hasattr(objectxmpp.config, 'wol_port'):
+    if hasattr(objectxmpp.config, "wol_port"):
         wol_port = int(objectxmpp.config.wol_port)
     else:
         wol_port = 9
     try:
-        wol.send_magic_packet(*data['macaddress'], port=wol_port)
+        wol.send_magic_packet(*data["macaddress"], port=wol_port)
     except BaseException:
         logger.error("\n%s" % (traceback.format_exc()))

@@ -32,9 +32,33 @@ import datetime
 import calendar
 import hashlib
 import functools
-from sqlalchemy import and_, create_engine, MetaData, Table, Column, String, Integer, Date, ForeignKey, asc, or_, not_, desc, func, distinct
-from sqlalchemy.orm import create_session, mapper, relationship, sessionmaker, Query, scoped_session
+from sqlalchemy import (
+    and_,
+    create_engine,
+    MetaData,
+    Table,
+    Column,
+    String,
+    Integer,
+    Date,
+    ForeignKey,
+    asc,
+    or_,
+    not_,
+    desc,
+    func,
+    distinct,
+)
+from sqlalchemy.orm import (
+    create_session,
+    mapper,
+    relationship,
+    sessionmaker,
+    Query,
+    scoped_session,
+)
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+
 try:
     from sqlalchemy.orm.util import _entity_descriptor
 except ImportError:
@@ -56,9 +80,8 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 
 class Singleton(object):
-
     def __new__(type, *args):
-        if '_the_instance' not in type.__dict__:
+        if "_the_instance" not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -78,6 +101,7 @@ class DatabaseHelper(Singleton):
                 self.sessionxmpp.close()
                 self.sessionxmpp = None
             return result
+
         return __session
 
     # Session decorator to create and close session automatically
@@ -90,6 +114,7 @@ class DatabaseHelper(Singleton):
             result = func(self, sessionmultithread, *args, **kw)
             sessionmultithread.remove()
             return result
+
         return __sessionm
 
     # listinfo decorator to handle offsets, limits and output serialization
@@ -104,28 +129,28 @@ class DatabaseHelper(Singleton):
             # Testing if result is a Query statement
             if not isinstance(query, Query):
                 logging.getLogger().error(
-                    '@_listinfo methods must return a Query object, got %s',
-                    query.__class__.__name__)
-                return {'count': 0, 'data': [], 'listinfo': 1}
+                    "@_listinfo methods must return a Query object, got %s",
+                    query.__class__.__name__,
+                )
+                return {"count": 0, "data": [], "listinfo": 1}
 
             # Applying filters on primary entity
             # Exact filters
-            if 'filters' in params and params['filters']:
+            if "filters" in params and params["filters"]:
                 clauses = [
-                    _entity_descriptor(
-                        query._mapper_zero(),
-                        key) == value for key,
-                    value in params['filters'].iteritems()]
+                    _entity_descriptor(query._mapper_zero(), key) == value
+                    for key, value in params["filters"].iteritems()
+                ]
                 if clauses:
                     query = query.filter(*clauses)
             # Like filters
-            if 'like_filters' in params and params['like_filters']:
+            if "like_filters" in params and params["like_filters"]:
                 clauses = [
-                    _entity_descriptor(
-                        query._mapper_zero(),
-                        key).like(
-                        '%' + value + '%') for key,
-                    value in params['like_filters'].iteritems()]
+                    _entity_descriptor(query._mapper_zero(), key).like(
+                        "%" + value + "%"
+                    )
+                    for key, value in params["like_filters"].iteritems()
+                ]
                 if clauses:
                     query = query.filter(*clauses)
 
@@ -136,9 +161,10 @@ class DatabaseHelper(Singleton):
             count = sum([c[0] for c in count.all()])
 
             # Applying limit and offset
-            if 'max' in params and 'min' in params:
-                query = query.limit(
-                    int(params['max']) - int(params['min'])).offset(int(params['min']))
+            if "max" in params and "min" in params:
+                query = query.limit(int(params["max"]) - int(params["min"])).offset(
+                    int(params["min"])
+                )
 
             columns = query.column_descriptions
 
@@ -156,25 +182,26 @@ class DatabaseHelper(Singleton):
                         if isinstance(item, DBObj):
                             line_.update(item.toDict())
                         else:
-                            if item.__class__.__name__ == 'Decimal':
+                            if item.__class__.__name__ == "Decimal":
                                 item = int(item)
                             line_.update(
-                                {columns[i]['name'].encode('ascii', 'ignore'): item})
+                                {columns[i]["name"].encode("ascii", "ignore"): item}
+                            )
                     data.append(line_)
                 else:
-                    if line.__class__.__name__ == 'Decimal':
+                    if line.__class__.__name__ == "Decimal":
                         line = int(line)
-                    elif hasattr(line, '_sa_instance_state'):
+                    elif hasattr(line, "_sa_instance_state"):
                         # SA object, try to do a dict conversion
                         line = line.__dict__
-                        del line['_sa_instance_state']
+                        del line["_sa_instance_state"]
                     # Base types
                     data.append(line)
 
             # Ensure that session will be closed
             query.session.close()
 
-            return {'count': count, 'data': data, 'listinfo': 1}
+            return {"count": count, "data": data, "listinfo": 1}
 
         return __listinfo
 
@@ -184,6 +211,7 @@ class Glpi95(DatabaseHelper):
     Singleton Class to query the glpi database in version > 9.5 and < 9.6
 
     """
+
     is_activated = False
 
     def activate(self):
@@ -200,37 +228,48 @@ class Glpi95(DatabaseHelper):
         self.sessionglpi = None
 
         self.engine_glpi = create_engine(
-            'mysql://%s:%s@%s:%s/%s?charset=utf8' %
-            (self.config.glpi_dbuser,
-             self.config.glpi_dbpasswd,
-             self.config.glpi_dbhost,
-             self.config.glpi_dbport,
-             self.config.glpi_dbname),
+            "mysql://%s:%s@%s:%s/%s?charset=utf8"
+            % (
+                self.config.glpi_dbuser,
+                self.config.glpi_dbpasswd,
+                self.config.glpi_dbhost,
+                self.config.glpi_dbport,
+                self.config.glpi_dbname,
+            ),
             pool_recycle=self.config.dbpoolrecycle,
             pool_size=self.config.dbpoolsize,
-            convert_unicode=True)
+            convert_unicode=True,
+        )
 
         try:
-            self._glpi_version = self.engine_glpi.execute(
-                'SELECT version FROM glpi_configs').fetchone().values()[0].replace(' ', '')
+            self._glpi_version = (
+                self.engine_glpi.execute("SELECT version FROM glpi_configs")
+                .fetchone()
+                .values()[0]
+                .replace(" ", "")
+            )
         except OperationalError:
-            self._glpi_version = self.engine_glpi.execute(
-                'SELECT value FROM glpi_configs WHERE name = "version"').fetchone().values()[0].replace(' ', '')
+            self._glpi_version = (
+                self.engine_glpi.execute(
+                    'SELECT value FROM glpi_configs WHERE name = "version"'
+                )
+                .fetchone()
+                .values()[0]
+                .replace(" ", "")
+            )
 
-        if LooseVersion(
-                self._glpi_version) >= LooseVersion("9.5") and LooseVersion(
-                self._glpi_version) <= LooseVersion("9.5.2"):
-            logging.getLogger().debug(
-                'GLPI version %s found !' %
-                self._glpi_version)
+        if LooseVersion(self._glpi_version) >= LooseVersion("9.5") and LooseVersion(
+            self._glpi_version
+        ) <= LooseVersion("9.5.2"):
+            logging.getLogger().debug("GLPI version %s found !" % self._glpi_version)
         else:
-            logging.getLogger().debug('GLPI higher than version 9.5 was not detected')
+            logging.getLogger().debug("GLPI higher than version 9.5 was not detected")
         self.Session = sessionmaker(bind=self.engine_glpi)
         self.metadata = MetaData(self.engine_glpi)
         self.initMappers()
         self.logger.info("Glpi is in version %s" % (self.glpi_version))
         self.metadata.create_all()
-        logging.getLogger().debug('Trying to detect if GLPI version is higher than 9.5')
+        logging.getLogger().debug("Trying to detect if GLPI version is higher than 9.5")
         self.is_activated = True
         self.logger.debug("Glpi finish activation")
 
@@ -242,7 +281,7 @@ class Glpi95(DatabaseHelper):
         return False
 
     def getTableName(self, name):
-        return ''.join(map(lambda x: x.capitalize(), name.split('_')))
+        return "".join(map(lambda x: x.capitalize(), name.split("_")))
 
     def initMappers(self):
         """
@@ -254,14 +293,15 @@ class Glpi95(DatabaseHelper):
         # simply declare some tables (that dont need and FK relations, or
         # anything special to declare)
         for i in (
-            'glpi_operatingsystemversions',
-            'glpi_computertypes',
-            'glpi_operatingsystems',
-            'glpi_operatingsystemservicepacks',
-            'glpi_operatingsystemarchitectures',
-            'glpi_domains',
-            'glpi_computermodels',
-                'glpi_networks'):
+            "glpi_operatingsystemversions",
+            "glpi_computertypes",
+            "glpi_operatingsystems",
+            "glpi_operatingsystemservicepacks",
+            "glpi_operatingsystemarchitectures",
+            "glpi_domains",
+            "glpi_computermodels",
+            "glpi_networks",
+        ):
             setattr(self, i, Table(i, self.metadata, autoload=True))
             j = self.getTableName(i)
             exec("class %s(DbTOA): pass" % j)
@@ -276,25 +316,19 @@ class Glpi95(DatabaseHelper):
         # pcis, powersupplies, soundcards
 
         self.devices = (
-            'devicecases',
-            'devicecontrols',
-            'devicedrives',
-            'devicegraphiccards',
-            'deviceharddrives',
-            'devicemotherboards',
-            'devicenetworkcards',
-            'devicepcis',
-            'devicepowersupplies',
-            'devicesoundcards')
+            "devicecases",
+            "devicecontrols",
+            "devicedrives",
+            "devicegraphiccards",
+            "deviceharddrives",
+            "devicemotherboards",
+            "devicenetworkcards",
+            "devicepcis",
+            "devicepowersupplies",
+            "devicesoundcards",
+        )
         for i in self.devices:
-            setattr(
-                self,
-                i,
-                Table(
-                    "glpi_%s" %
-                    i,
-                    self.metadata,
-                    autoload=True))
+            setattr(self, i, Table("glpi_%s" % i, self.metadata, autoload=True))
             j = self.getTableName(i)
             exec("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, i))
@@ -302,24 +336,15 @@ class Glpi95(DatabaseHelper):
 
             setattr(
                 self,
-                "computers_%s" %
-                i,
+                "computers_%s" % i,
                 Table(
-                    "glpi_items_%s" %
-                    i,
+                    "glpi_items_%s" % i,
                     self.metadata,
-                    Column(
-                        'items_id',
-                        Integer,
-                        ForeignKey('glpi_computers_pulse.id')),
-                    Column(
-                        '%s_id' %
-                        i,
-                        Integer,
-                        ForeignKey(
-                            'glpi_%s.id' %
-                            i)),
-                    autoload=True))
+                    Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                    Column("%s_id" % i, Integer, ForeignKey("glpi_%s.id" % i)),
+                    autoload=True,
+                ),
+            )
             j = self.getTableName("computers_%s" % i)
             exec("class %s(DbTOA): pass" % j)
             mapper(eval(j), getattr(self, "computers_%s" % i))
@@ -333,16 +358,10 @@ class Glpi95(DatabaseHelper):
         self.rules = Table("glpi_rules", self.metadata, autoload=True)
         mapper(Rule, self.rules)
 
-        self.rule_criterias = Table(
-            "glpi_rulecriterias",
-            self.metadata,
-            autoload=True)
+        self.rule_criterias = Table("glpi_rulecriterias", self.metadata, autoload=True)
         mapper(RuleCriterion, self.rule_criterias)
 
-        self.rule_actions = Table(
-            "glpi_ruleactions",
-            self.metadata,
-            autoload=True)
+        self.rule_actions = Table("glpi_ruleactions", self.metadata, autoload=True)
         mapper(RuleAction, self.rule_actions)
 
         # location
@@ -353,32 +372,24 @@ class Glpi95(DatabaseHelper):
         self.logs = Table(
             "glpi_logs",
             self.metadata,
-            Column(
-                'items_id',
-                Integer,
-                ForeignKey('glpi_computers_pulse.id')),
-            autoload=True)
+            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            autoload=True,
+        )
         mapper(Logs, self.logs)
 
         # processor
-        self.processor = Table(
-            "glpi_deviceprocessors",
-            self.metadata,
-            autoload=True)
+        self.processor = Table("glpi_deviceprocessors", self.metadata, autoload=True)
         mapper(Processor, self.processor)
 
         self.computerProcessor = Table(
             "glpi_items_deviceprocessors",
             self.metadata,
+            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
             Column(
-                'items_id',
-                Integer,
-                ForeignKey('glpi_computers_pulse.id')),
-            Column(
-                'deviceprocessors_id',
-                Integer,
-                ForeignKey('glpi_deviceprocessors.id')),
-            autoload=True)
+                "deviceprocessors_id", Integer, ForeignKey("glpi_deviceprocessors.id")
+            ),
+            autoload=True,
+        )
         mapper(ComputerProcessor, self.computerProcessor)
 
         # memory
@@ -386,97 +397,91 @@ class Glpi95(DatabaseHelper):
             "glpi_devicememories",
             self.metadata,
             Column(
-                'devicememorytypes_id',
-                Integer,
-                ForeignKey('glpi_devicememorytypes.id')),
-            autoload=True)
+                "devicememorytypes_id", Integer, ForeignKey("glpi_devicememorytypes.id")
+            ),
+            autoload=True,
+        )
         mapper(Memory, self.memory)
 
-        self.memoryType = Table(
-            "glpi_devicememorytypes",
-            self.metadata,
-            autoload=True)
+        self.memoryType = Table("glpi_devicememorytypes", self.metadata, autoload=True)
         mapper(MemoryType, self.memoryType)
 
         self.computerMemory = Table(
             "glpi_items_devicememories",
             self.metadata,
-            Column(
-                'items_id',
-                Integer,
-                ForeignKey('glpi_computers_pulse.id')),
-            Column(
-                'devicememories_id',
-                Integer,
-                ForeignKey('glpi_devicememories.id')),
-            autoload=True)
+            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("devicememories_id", Integer, ForeignKey("glpi_devicememories.id")),
+            autoload=True,
+        )
         mapper(ComputerMemory, self.computerMemory)
 
         # interfaces types
-        self.interfaceType = Table(
-            "glpi_interfacetypes",
-            self.metadata,
-            autoload=True)
+        self.interfaceType = Table("glpi_interfacetypes", self.metadata, autoload=True)
 
         # os
         self.os = Table("glpi_operatingsystems", self.metadata, autoload=True)
         mapper(OS, self.os)
 
         self.os_sp = Table(
-            "glpi_operatingsystemservicepacks",
-            self.metadata,
-            autoload=True)
+            "glpi_operatingsystemservicepacks", self.metadata, autoload=True
+        )
         mapper(OsSp, self.os_sp)
 
         self.os_arch = Table(
-            "glpi_operatingsystemarchitectures",
-            self.metadata,
-            autoload=True)
+            "glpi_operatingsystemarchitectures", self.metadata, autoload=True
+        )
         mapper(OsArch, self.os_arch)
 
         # domain
-        self.domain = Table('glpi_domains', self.metadata, autoload=True)
+        self.domain = Table("glpi_domains", self.metadata, autoload=True)
         mapper(Domain, self.domain)
 
         # glpi_infocoms
         self.infocoms = Table(
-            'glpi_infocoms', self.metadata, Column(
-                'suppliers_id', Integer, ForeignKey('glpi_suppliers.id')), Column(
-                'items_id', Integer, ForeignKey('glpi_computers_pulse.id')), autoload=True)
+            "glpi_infocoms",
+            self.metadata,
+            Column("suppliers_id", Integer, ForeignKey("glpi_suppliers.id")),
+            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            autoload=True,
+        )
         mapper(Infocoms, self.infocoms)
 
         # glpi_suppliers
-        self.suppliers = Table('glpi_suppliers', self.metadata, autoload=True)
+        self.suppliers = Table("glpi_suppliers", self.metadata, autoload=True)
         mapper(Suppliers, self.suppliers)
 
         # glpi_filesystems
-        self.diskfs = Table('glpi_filesystems', self.metadata, autoload=True)
+        self.diskfs = Table("glpi_filesystems", self.metadata, autoload=True)
         mapper(DiskFs, self.diskfs)
 
         # glpi_operatingsystemversions
         self.os_version = Table(
-            'glpi_operatingsystemversions',
-            self.metadata,
-            autoload=True)
+            "glpi_operatingsystemversions", self.metadata, autoload=True
+        )
         mapper(OsVersion, self.os_version)
 
         # Fusion Inventory tables
 
         self.fusionantivirus = None
         try:
-            self.logger.debug('Try to load fusion antivirus table...')
+            self.logger.debug("Try to load fusion antivirus table...")
             self.fusionantivirus = Table(
-                'glpi_computerantiviruses', self.metadata, Column(
-                    'computers_id', Integer, ForeignKey('glpi_computers_pulse.id')), Column(
-                    'manufacturers_id', Integer, ForeignKey('glpi_manufacturers.id')), autoload=True)
+                "glpi_computerantiviruses",
+                self.metadata,
+                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                Column(
+                    "manufacturers_id", Integer, ForeignKey("glpi_manufacturers.id")
+                ),
+                autoload=True,
+            )
             mapper(FusionAntivirus, self.fusionantivirus)
-            self.logger.debug('... Success !!')
+            self.logger.debug("... Success !!")
         except BaseException:
-            self.logger.warn('Load of fusion antivirus table failed')
+            self.logger.warn("Load of fusion antivirus table failed")
             self.logger.warn(
-                'This means you can not know antivirus statuses of your machines.')
-            self.logger.warn(
-                'This feature comes with Fusioninventory GLPI plugin')
+                "This means you can not know antivirus statuses of your machines."
+            )
+            self.logger.warn("This feature comes with Fusioninventory GLPI plugin")
 
         # glpi_plugin_fusioninventory_locks
         self.fusionlocks = None
@@ -484,32 +489,31 @@ class Glpi95(DatabaseHelper):
         self.fusionagents = None
 
         if self.fusionantivirus is not None:
-            self.logger.debug('Load glpi_plugin_fusioninventory_locks')
+            self.logger.debug("Load glpi_plugin_fusioninventory_locks")
             self.fusionlocks = Table(
-                'glpi_plugin_fusioninventory_locks',
+                "glpi_plugin_fusioninventory_locks",
                 self.metadata,
-                Column(
-                    'items_id',
-                    Integer,
-                    ForeignKey('glpi_computers_pulse.id')),
-                autoload=True)
+                Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                autoload=True,
+            )
             mapper(FusionLocks, self.fusionlocks)
-            self.logger.debug('Load glpi_plugin_fusioninventory_agents')
+            self.logger.debug("Load glpi_plugin_fusioninventory_agents")
             self.fusionagents = Table(
-                'glpi_plugin_fusioninventory_agents',
+                "glpi_plugin_fusioninventory_agents",
                 self.metadata,
-                Column(
-                    'computers_id',
-                    Integer,
-                    ForeignKey('glpi_computers_pulse.id')),
-                autoload=True)
+                Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+                autoload=True,
+            )
             mapper(FusionAgents, self.fusionagents)
 
         # glpi_items_disks
         self.disk = Table(
-            'glpi_items_disks', self.metadata, Column(
-                'items_id', Integer, ForeignKey('glpi_computers_pulse.id')), Column(
-                'filesystems_id', Integer, ForeignKey('glpi_filesystems.id')), autoload=True)
+            "glpi_items_disks",
+            self.metadata,
+            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            Column("filesystems_id", Integer, ForeignKey("glpi_filesystems.id")),
+            autoload=True,
+        )
         mapper(Disk, self.disk)
 
         # GLPI 0.90 Network tables
@@ -519,187 +523,226 @@ class Glpi95(DatabaseHelper):
         # TODO Are these table needed (inherit of previous glpi database*py
         # files) ?
         self.networkinterfaces = Table(
-            "glpi_networkinterfaces",
-            self.metadata,
-            autoload=True)
+            "glpi_networkinterfaces", self.metadata, autoload=True
+        )
         mapper(NetworkInterfaces, self.networkinterfaces)
 
         self.net = Table("glpi_networks", self.metadata, autoload=True)
         mapper(Net, self.net)
 
         # New network tables
-        self.ipnetworks = Table(
-            "glpi_ipnetworks",
-            self.metadata,
-            autoload=True)
+        self.ipnetworks = Table("glpi_ipnetworks", self.metadata, autoload=True)
         mapper(IPNetworks, self.ipnetworks)
 
         self.ipaddresses_ipnetworks = Table(
-            "glpi_ipaddresses_ipnetworks", self.metadata, Column(
-                'ipaddresses_id', Integer, ForeignKey('glpi_ipaddresses.id')), Column(
-                'ipnetworks_id', Integer, ForeignKey('glpi_networks.id')), autoload=True)
+            "glpi_ipaddresses_ipnetworks",
+            self.metadata,
+            Column("ipaddresses_id", Integer, ForeignKey("glpi_ipaddresses.id")),
+            Column("ipnetworks_id", Integer, ForeignKey("glpi_networks.id")),
+            autoload=True,
+        )
         mapper(IPAddresses_IPNetworks, self.ipaddresses_ipnetworks)
 
-        self.ipaddresses = Table(
-            "glpi_ipaddresses",
-            self.metadata,
-            autoload=True)
+        self.ipaddresses = Table("glpi_ipaddresses", self.metadata, autoload=True)
         mapper(
             IPAddresses,
             self.ipaddresses,
             properties={
-                'ipnetworks': relationship(
+                "ipnetworks": relationship(
                     IPNetworks,
                     secondary=self.ipaddresses_ipnetworks,
-                    primaryjoin=self.ipaddresses.c.id == self.ipaddresses_ipnetworks.c.ipaddresses_id,
-                    secondaryjoin=self.ipnetworks.c.id == self.ipaddresses_ipnetworks.c.ipnetworks_id,
+                    primaryjoin=self.ipaddresses.c.id
+                    == self.ipaddresses_ipnetworks.c.ipaddresses_id,
+                    secondaryjoin=self.ipnetworks.c.id
+                    == self.ipaddresses_ipnetworks.c.ipnetworks_id,
                     foreign_keys=[
                         self.ipaddresses_ipnetworks.c.ipaddresses_id,
                         self.ipaddresses_ipnetworks.c.ipnetworks_id,
-                    ])})
+                    ],
+                )
+            },
+        )
 
-        self.networknames = Table(
-            "glpi_networknames",
-            self.metadata,
-            autoload=True)
-        mapper(NetworkNames, self.networknames, properties={
-            # ipaddresses is a one2many relation from NetworkNames to IPAddresses
-            # so uselist must be set to True
-            'ipaddresses': relationship(IPAddresses, primaryjoin=and_(
-                IPAddresses.items_id == self.networknames.c.id,
-                IPAddresses.itemtype == 'NetworkName'
-            ), uselist=True, foreign_keys=[self.networknames.c.id]),
-        })
+        self.networknames = Table("glpi_networknames", self.metadata, autoload=True)
+        mapper(
+            NetworkNames,
+            self.networknames,
+            properties={
+                # ipaddresses is a one2many relation from NetworkNames to IPAddresses
+                # so uselist must be set to True
+                "ipaddresses": relationship(
+                    IPAddresses,
+                    primaryjoin=and_(
+                        IPAddresses.items_id == self.networknames.c.id,
+                        IPAddresses.itemtype == "NetworkName",
+                    ),
+                    uselist=True,
+                    foreign_keys=[self.networknames.c.id],
+                ),
+            },
+        )
 
-        self.networkports = Table(
-            "glpi_networkports",
-            self.metadata,
-            autoload=True)
-        mapper(NetworkPorts, self.networkports, properties={
-            'networknames': relationship(NetworkNames, primaryjoin=and_(
-                NetworkNames.items_id == self.networkports.c.id,
-                NetworkNames.itemtype == 'NetworkPort'
-            ), foreign_keys=[self.networkports.c.id]),
-        })
+        self.networkports = Table("glpi_networkports", self.metadata, autoload=True)
+        mapper(
+            NetworkPorts,
+            self.networkports,
+            properties={
+                "networknames": relationship(
+                    NetworkNames,
+                    primaryjoin=and_(
+                        NetworkNames.items_id == self.networkports.c.id,
+                        NetworkNames.itemtype == "NetworkPort",
+                    ),
+                    foreign_keys=[self.networkports.c.id],
+                ),
+            },
+        )
 
         # machine (we need the foreign key, so we need to declare the table by hand ...
         #          as we don't need all columns, we don't declare them all)
-        self.machine = Table("glpi_computers_pulse", self.metadata,
-                             Column('id', Integer, primary_key=True),
-                             Column('entities_id', Integer, ForeignKey('glpi_entities.id')),
-                             Column('operatingsystems_id', Integer, ForeignKey('glpi_operatingsystems.id')),
-                             Column('operatingsystemversions_id', Integer, ForeignKey('glpi_operatingsystemversions.id')),
-                             Column('operatingsystemservicepacks_id', Integer, ForeignKey('glpi_operatingsystemservicepacks.id')),
-                             Column('operatingsystemarchitectures_id', Integer, ForeignKey('glpi_operatingsystemarchitectures.id')),
-                             Column('locations_id', Integer, ForeignKey('glpi_locations.id')),
-                             Column('domains_id', Integer, ForeignKey('glpi_domains.id')),
-                             Column('networks_id', Integer, ForeignKey('glpi_networks.id')),
-                             Column('computermodels_id', Integer, ForeignKey('glpi_computermodels.id')),
-                             Column('computertypes_id', Integer, ForeignKey('glpi_computertypes.id')),
-                             Column('groups_id', Integer, ForeignKey('glpi_groups.id')),
-                             Column('users_id', Integer, ForeignKey('glpi_users.id')),
-                             Column('manufacturers_id', Integer, ForeignKey('glpi_manufacturers.id')),
-                             Column('name', String(255), nullable=False),
-                             Column('serial', String(255), nullable=False),
-                             Column('license_number', String(255), nullable=True),
-                             Column('licenseid', String(255), nullable=True),
-                             Column('is_deleted', Integer, nullable=False),
-                             Column('is_template', Integer, nullable=False),
-                             Column('states_id', Integer, ForeignKey('glpi_states.id'), nullable=False),
-                             Column('comment', String(255), nullable=False),
-                             Column('date_mod', Date, nullable=False),
-                             autoload=True)
-        mapper(Machine, self.machine, properties={
-            # networkports is a one2many relation from Machine to NetworkPorts
-            # so uselist must be set to True
-            'networkports': relationship(NetworkPorts, primaryjoin=and_(
-                NetworkPorts.items_id == self.machine.c.id,
-                NetworkPorts.itemtype == 'Computer'
-            ), uselist=True, foreign_keys=[self.machine.c.id]),
-            'domains': relationship(Domain),
-        })
+        self.machine = Table(
+            "glpi_computers_pulse",
+            self.metadata,
+            Column("id", Integer, primary_key=True),
+            Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
+            Column(
+                "operatingsystems_id", Integer, ForeignKey("glpi_operatingsystems.id")
+            ),
+            Column(
+                "operatingsystemversions_id",
+                Integer,
+                ForeignKey("glpi_operatingsystemversions.id"),
+            ),
+            Column(
+                "operatingsystemservicepacks_id",
+                Integer,
+                ForeignKey("glpi_operatingsystemservicepacks.id"),
+            ),
+            Column(
+                "operatingsystemarchitectures_id",
+                Integer,
+                ForeignKey("glpi_operatingsystemarchitectures.id"),
+            ),
+            Column("locations_id", Integer, ForeignKey("glpi_locations.id")),
+            Column("domains_id", Integer, ForeignKey("glpi_domains.id")),
+            Column("networks_id", Integer, ForeignKey("glpi_networks.id")),
+            Column("computermodels_id", Integer, ForeignKey("glpi_computermodels.id")),
+            Column("computertypes_id", Integer, ForeignKey("glpi_computertypes.id")),
+            Column("groups_id", Integer, ForeignKey("glpi_groups.id")),
+            Column("users_id", Integer, ForeignKey("glpi_users.id")),
+            Column("manufacturers_id", Integer, ForeignKey("glpi_manufacturers.id")),
+            Column("name", String(255), nullable=False),
+            Column("serial", String(255), nullable=False),
+            Column("license_number", String(255), nullable=True),
+            Column("licenseid", String(255), nullable=True),
+            Column("is_deleted", Integer, nullable=False),
+            Column("is_template", Integer, nullable=False),
+            Column("states_id", Integer, ForeignKey("glpi_states.id"), nullable=False),
+            Column("comment", String(255), nullable=False),
+            Column("date_mod", Date, nullable=False),
+            autoload=True,
+        )
+        mapper(
+            Machine,
+            self.machine,
+            properties={
+                # networkports is a one2many relation from Machine to NetworkPorts
+                # so uselist must be set to True
+                "networkports": relationship(
+                    NetworkPorts,
+                    primaryjoin=and_(
+                        NetworkPorts.items_id == self.machine.c.id,
+                        NetworkPorts.itemtype == "Computer",
+                    ),
+                    uselist=True,
+                    foreign_keys=[self.machine.c.id],
+                ),
+                "domains": relationship(Domain),
+            },
+        )
 
         # states
         self.state = Table("glpi_states", self.metadata, autoload=True)
         mapper(State, self.state)
         # profile
-        self.profile = Table("glpi_profiles", self.metadata,
-                             Column('id', Integer, primary_key=True),
-                             Column('name', String(255), nullable=False))
+        self.profile = Table(
+            "glpi_profiles",
+            self.metadata,
+            Column("id", Integer, primary_key=True),
+            Column("name", String(255), nullable=False),
+        )
         mapper(Profile, self.profile)
 
         # user
         self.user = Table(
-            "glpi_users", self.metadata, Column(
-                'id', Integer, primary_key=True), Column(
-                'locations_id', Integer, ForeignKey('glpi_locations.id')), Column(
-                'name', String(255), nullable=False), Column(
-                    'password', String(40), nullable=False), Column(
-                        'firstname', String(255), nullable=False), Column(
-                            'realname', String(255), nullable=False), Column(
-                                'auths_id', Integer, nullable=False), Column(
-                                    'is_deleted', Integer, nullable=False), Column(
-                                        'is_active', Integer, nullable=False))
+            "glpi_users",
+            self.metadata,
+            Column("id", Integer, primary_key=True),
+            Column("locations_id", Integer, ForeignKey("glpi_locations.id")),
+            Column("name", String(255), nullable=False),
+            Column("password", String(40), nullable=False),
+            Column("firstname", String(255), nullable=False),
+            Column("realname", String(255), nullable=False),
+            Column("auths_id", Integer, nullable=False),
+            Column("is_deleted", Integer, nullable=False),
+            Column("is_active", Integer, nullable=False),
+        )
         mapper(User, self.user)
 
         # userprofile
         self.userprofile = Table(
-            "glpi_profiles_users", self.metadata, Column(
-                'id', Integer, primary_key=True), Column(
-                'users_id', Integer, ForeignKey('glpi_users.id')), Column(
-                'profiles_id', Integer, ForeignKey('glpi_profiles.id')), Column(
-                    'entities_id', Integer, ForeignKey('glpi_entities.id')), Column(
-                        'is_dynamic', Integer), Column(
-                            'is_recursive', Integer))
+            "glpi_profiles_users",
+            self.metadata,
+            Column("id", Integer, primary_key=True),
+            Column("users_id", Integer, ForeignKey("glpi_users.id")),
+            Column("profiles_id", Integer, ForeignKey("glpi_profiles.id")),
+            Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
+            Column("is_dynamic", Integer),
+            Column("is_recursive", Integer),
+        )
         mapper(UserProfile, self.userprofile)
 
         # glpi_manufacturers
-        self.manufacturers = Table(
-            "glpi_manufacturers",
-            self.metadata,
-            autoload=True)
+        self.manufacturers = Table("glpi_manufacturers", self.metadata, autoload=True)
         mapper(Manufacturers, self.manufacturers)
 
         # software
         self.software = Table(
             "glpi_softwares",
             self.metadata,
-            Column(
-                'manufacturers_id',
-                Integer,
-                ForeignKey('glpi_manufacturers.id')),
-            autoload=True)
+            Column("manufacturers_id", Integer, ForeignKey("glpi_manufacturers.id")),
+            autoload=True,
+        )
         mapper(Software, self.software)
 
         # glpi_inst_software
         self.inst_software = Table(
             "glpi_items_softwareversions",
             self.metadata,
+            Column("items_id", Integer, ForeignKey("glpi_computers_pulse.id")),
             Column(
-                'items_id',
-                Integer,
-                ForeignKey('glpi_computers_pulse.id')),
-            Column(
-                'softwareversions_id',
-                Integer,
-                ForeignKey('glpi_softwareversions.id')),
-            autoload=True)
+                "softwareversions_id", Integer, ForeignKey("glpi_softwareversions.id")
+            ),
+            autoload=True,
+        )
         mapper(InstSoftware, self.inst_software)
 
         # glpi_licenses
         self.licenses = Table(
             "glpi_softwarelicenses",
             self.metadata,
-            Column(
-                'softwares_id',
-                Integer,
-                ForeignKey('glpi_softwares.id')),
-            autoload=True)
+            Column("softwares_id", Integer, ForeignKey("glpi_softwares.id")),
+            autoload=True,
+        )
         mapper(Licenses, self.licenses)
 
         # glpi_softwareversions
-        self.softwareversions = Table("glpi_softwareversions", self.metadata, Column(
-            'softwares_id', Integer, ForeignKey('glpi_softwares.id')), autoload=True)
+        self.softwareversions = Table(
+            "glpi_softwareversions",
+            self.metadata,
+            Column("softwares_id", Integer, ForeignKey("glpi_softwares.id")),
+            autoload=True,
+        )
         mapper(SoftwareVersion, self.softwareversions)
 
         # model
@@ -714,11 +757,9 @@ class Glpi95(DatabaseHelper):
         self.collects = Table(
             "glpi_plugin_fusioninventory_collects",
             self.metadata,
-            Column(
-                'entities_id',
-                Integer,
-                ForeignKey('glpi_entities.id')),
-            autoload=True)
+            Column("entities_id", Integer, ForeignKey("glpi_entities.id")),
+            autoload=True,
+        )
         mapper(Collects, self.collects)
 
         # registries
@@ -726,25 +767,26 @@ class Glpi95(DatabaseHelper):
             "glpi_plugin_fusioninventory_collects_registries",
             self.metadata,
             Column(
-                'plugin_fusioninventory_collects_id',
+                "plugin_fusioninventory_collects_id",
                 Integer,
-                ForeignKey('glpi_plugin_fusioninventory_collects.id')),
-            autoload=True)
+                ForeignKey("glpi_plugin_fusioninventory_collects.id"),
+            ),
+            autoload=True,
+        )
         mapper(Registries, self.registries)
 
         # registries contents
         self.regcontents = Table(
             "glpi_plugin_fusioninventory_collects_registries_contents",
             self.metadata,
+            Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
             Column(
-                'computers_id',
+                "plugin_fusioninventory_collects_registries_id",
                 Integer,
-                ForeignKey('glpi_computers_pulse.id')),
-            Column(
-                'plugin_fusioninventory_collects_registries_id',
-                Integer,
-                ForeignKey('glpi_plugin_fusioninventory_collects_registries.id')),
-            autoload=True)
+                ForeignKey("glpi_plugin_fusioninventory_collects_registries.id"),
+            ),
+            autoload=True,
+        )
         mapper(RegContents, self.regcontents)
 
     # internal query generators
@@ -769,38 +811,37 @@ class Glpi95(DatabaseHelper):
                         continue
                 except Exception:
                     pass
-                if filter_key == 'state':
+                if filter_key == "state":
                     self.logger.debug(
-                        'will filter %s in (%s)' %
-                        (filter_key, str(filter_values)))
-                    a_filter_on.append(
-                        self.machine.c.states_id.in_(filter_values))
-                if filter_key == 'type':
+                        "will filter %s in (%s)" % (filter_key, str(filter_values))
+                    )
+                    a_filter_on.append(self.machine.c.states_id.in_(filter_values))
+                if filter_key == "type":
                     self.logger.debug(
-                        'will filter %s in (%s)' %
-                        (filter_key, str(filter_values)))
+                        "will filter %s in (%s)" % (filter_key, str(filter_values))
+                    )
                     a_filter_on.append(
-                        self.machine.c.computertypes_id.in_(filter_values))
-                if filter_key == 'entity':
+                        self.machine.c.computertypes_id.in_(filter_values)
+                    )
+                if filter_key == "entity":
                     self.logger.debug(
-                        'will filter %s in (%s)' %
-                        (filter_key, str(filter_values)))
-                    a_filter_on.append(
-                        self.machine.c.entities_id.in_(filter_values))
-                if filter_key == 'autoupdatesystems_id':
+                        "will filter %s in (%s)" % (filter_key, str(filter_values))
+                    )
+                    a_filter_on.append(self.machine.c.entities_id.in_(filter_values))
+                if filter_key == "autoupdatesystems_id":
                     self.logger.debug(
-                        'will filter %s in (%s)' %
-                        (filter_key, str(filter_values)))
+                        "will filter %s in (%s)" % (filter_key, str(filter_values))
+                    )
                     a_filter_on.append(
-                        self.machine.c.autoupdatesystems_id.in_(filter_values))
+                        self.machine.c.autoupdatesystems_id.in_(filter_values)
+                    )
                 if filter_key not in (
-                    'state',
-                    'type',
-                    'entity',
-                        'autoupdatesystems_id'):
-                    self.logger.warn(
-                        'dont know how to filter on %s' %
-                        (filter_key))
+                    "state",
+                    "type",
+                    "entity",
+                    "autoupdatesystems_id",
+                ):
+                    self.logger.warn("dont know how to filter on %s" % (filter_key))
             if len(a_filter_on) == 0:
                 return None
             elif len(a_filter_on) == 1:
@@ -818,8 +859,8 @@ class Glpi95(DatabaseHelper):
 
     def mini_computers_count(self):
         """Count all the GLPI machines
-            Returns:
-                int count of machines
+        Returns:
+            int count of machines
         """
 
         sql = """select count(id) as count_machines from glpi_computers;"""
@@ -837,22 +878,22 @@ class Glpi95(DatabaseHelper):
                 "computerpresence",
                 "xmppmaster",
                 filt["computerpresence"],
-                listid]
-        elif "query" in filt and filt['query'][0] == "AND":
-            for q in filt['query'][1]:
+                listid,
+            ]
+        elif "query" in filt and filt["query"][0] == "AND":
+            for q in filt["query"][1]:
                 if len(q) >= 3 and (
-                        q[2] == "Online computer" or q[2] == "OU user" or q[2] == "OU machine"):
+                    q[2] == "Online computer"
+                    or q[2] == "OU user"
+                    or q[2] == "OU machine"
+                ):
                     listid = XmppMasterDatabase().getxmppmasterfilterforglpi(q)
                     ret[q[2]] = [q[1], q[2], q[3], listid]
         return ret
 
     def __getRestrictedComputersListQuery(
-            self,
-            ctx,
-            filt=None,
-            session=create_session(),
-            displayList=False,
-            count=False):
+        self, ctx, filt=None, session=create_session(), displayList=False, count=False
+    ):
         """
         Get the sqlalchemy query to get a list of computers with some filters
         If displayList is True, we are displaying computers list
@@ -860,10 +901,9 @@ class Glpi95(DatabaseHelper):
         if session is None:
             session = create_session()
 
-        query = (
-            count and session.query(
-                func.count(
-                    Machine.id))) or session.query(Machine)
+        query = (count and session.query(func.count(Machine.id))) or session.query(
+            Machine
+        )
         # manage criterion  for xmppmaster
         ret = self.__xmppmasterfilter(filt)
 
@@ -872,53 +912,61 @@ class Glpi95(DatabaseHelper):
             join_query = self.machine
 
             if displayList and not count:
-                if 'os' in self.config.summary:
+                if "os" in self.config.summary:
                     query = query.add_column(self.os.c.name)
-                if 'type' in self.config.summary:
+                if "type" in self.config.summary:
                     query = query.add_column(self.glpi_computertypes.c.name)
-                if 'inventorynumber' in self.config.summary:
+                if "inventorynumber" in self.config.summary:
                     query = query.add_column(self.machine.c.otherserial)
-                if 'state' in self.config.summary:
+                if "state" in self.config.summary:
                     query = query.add_column(self.state.c.name)
-                if 'entity' in self.config.summary:
+                if "entity" in self.config.summary:
                     query = query.add_column(self.entities.c.name)
-                if 'location' in self.config.summary:
+                if "location" in self.config.summary:
                     query = query.add_column(self.locations.c.name)
-                if 'model' in self.config.summary:
+                if "model" in self.config.summary:
                     query = query.add_column(self.glpi_computermodels.c.name)
-                if 'manufacturer' in self.config.summary:
+                if "manufacturer" in self.config.summary:
                     query = query.add_column(self.manufacturers.c.name)
-                if 'owner_firstname' in self.config.summary:
+                if "owner_firstname" in self.config.summary:
                     query = query.add_column(self.user.c.firstname)
-                if 'owner_realname' in self.config.summary:
+                if "owner_realname" in self.config.summary:
                     query = query.add_column(self.user.c.realname)
-                if 'owner' in self.config.summary:
+                if "owner" in self.config.summary:
                     query = query.add_column(self.user.c.name)
 
             query_filter = None
 
-            filters = [self.machine.c.is_deleted == 0,
-                       self.machine.c.is_template == 0,
-                       self.__filter_on_filter(query),
-                       self.__filter_on_entity_filter(query, ctx)]
+            filters = [
+                self.machine.c.is_deleted == 0,
+                self.machine.c.is_template == 0,
+                self.__filter_on_filter(query),
+                self.__filter_on_entity_filter(query, ctx),
+            ]
 
             join_query, query_filter = self.filter(
-                ctx, self.machine, filt, session.query(Machine), self.machine.c.id, filters)
+                ctx,
+                self.machine,
+                filt,
+                session.query(Machine),
+                self.machine.c.id,
+                filters,
+            )
 
             # filtering on locations
-            if 'location' in filt:
-                location = filt['location']
-                if location == '' or location == u'' or not self.displayLocalisationBar:
+            if "location" in filt:
+                location = filt["location"]
+                if location == "" or location == "" or not self.displayLocalisationBar:
                     location = None
             else:
                 location = None
 
             # Imaging group
-            if 'imaging_entities' in filt:
-                location = filt['imaging_entities']
+            if "imaging_entities" in filt:
+                location = filt["imaging_entities"]
 
-            if 'ctxlocation' in filt:
-                ctxlocation = filt['ctxlocation']
+            if "ctxlocation" in filt:
+                ctxlocation = filt["ctxlocation"]
                 if not self.displayLocalisationBar:
                     ctxlocation = None
             else:
@@ -934,49 +982,55 @@ class Glpi95(DatabaseHelper):
                 if location is not None:
                     # Imaging group case
                     if isinstance(location, list):
-                        locationids = [int(x.replace('UUID', ''))
-                                       for x in location]
+                        locationids = [int(x.replace("UUID", "")) for x in location]
                         for locationid in locationids:
                             if locationid not in locsid:
                                 self.logger.warn(
-                                    "User '%s' is trying to get the content of an unauthorized entity : '%s'" %
-                                    (ctx.userid, 'UUID' + location))
+                                    "User '%s' is trying to get the content of an unauthorized entity : '%s'"
+                                    % (ctx.userid, "UUID" + location)
+                                )
                                 session.close()
                                 return None
                         query_filter = self.__addQueryFilter(
-                            query_filter, (self.machine.c.entities_id.in_(locationids)))
+                            query_filter, (self.machine.c.entities_id.in_(locationids))
+                        )
                     else:
-                        locationid = int(location.replace('UUID', ''))
+                        locationid = int(location.replace("UUID", ""))
                         if locationid in locsid:
                             query_filter = self.__addQueryFilter(
-                                query_filter, (self.machine.c.entities_id == locationid))
+                                query_filter, (self.machine.c.entities_id == locationid)
+                            )
                         else:
                             self.logger.warn(
-                                "User '%s' is trying to get the content of an unauthorized entity : '%s'" %
-                                (ctx.userid, location))
+                                "User '%s' is trying to get the content of an unauthorized entity : '%s'"
+                                % (ctx.userid, location)
+                            )
                             session.close()
                             return None
 
             if displayList:
-                r = re.compile('reg_key_.*')
+                r = re.compile("reg_key_.*")
                 regs = filter(r.search, self.config.summary)
-                if 'os' in self.config.summary:
+                if "os" in self.config.summary:
                     join_query = join_query.outerjoin(self.os)
-                if 'type' in self.config.summary:
+                if "type" in self.config.summary:
                     join_query = join_query.outerjoin(self.glpi_computertypes)
-                if 'state' in self.config.summary:
+                if "state" in self.config.summary:
                     join_query = join_query.outerjoin(self.state)
-                if 'location' in self.config.summary:
+                if "location" in self.config.summary:
                     join_query = join_query.outerjoin(self.locations)
-                if 'model' in self.config.summary:
+                if "model" in self.config.summary:
                     join_query = join_query.outerjoin(self.glpi_computermodels)
-                if 'manufacturer' in self.config.summary:
+                if "manufacturer" in self.config.summary:
                     join_query = join_query.outerjoin(self.manufacturers)
-                if 'owner' in self.config.summary or \
-                   'owner_firstname' in self.config.summary or \
-                   'owner_realname' in self.config.summary:
+                if (
+                    "owner" in self.config.summary
+                    or "owner_firstname" in self.config.summary
+                    or "owner_realname" in self.config.summary
+                ):
                     join_query = join_query.outerjoin(
-                        self.user, self.machine.c.users_id == self.user.c.id)
+                        self.user, self.machine.c.users_id == self.user.c.id
+                    )
                 try:
                     if regs[0]:
                         join_query = join_query.outerjoin(self.regcontents)
@@ -985,7 +1039,7 @@ class Glpi95(DatabaseHelper):
 
             if self.fusionagents is not None:
                 join_query = join_query.outerjoin(self.fusionagents)
-            if 'antivirus' in filt:  # Used for Antivirus dashboard
+            if "antivirus" in filt:  # Used for Antivirus dashboard
                 join_query = join_query.outerjoin(self.fusionantivirus)
                 join_query = join_query.outerjoin(self.os)
 
@@ -993,106 +1047,114 @@ class Glpi95(DatabaseHelper):
                 query = query.select_from(join_query)
             else:
                 query = query.select_from(join_query).filter(query_filter)
-            query = query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0)
+            query = query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
             if ret:
                 # if "Online computer" in ret:
                 # if ret["Online computer"][2] == "True":
-                #query = query.filter(Machine.id.in_(ret["Online computer"][3]))
+                # query = query.filter(Machine.id.in_(ret["Online computer"][3]))
                 # else:
-                #query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
+                # query = query.filter(Machine.id.notin_(ret["Online computer"][3]))
                 # if "OU user" in ret:
-                #query = query.filter(Machine.id.in_(ret["OU user"][3]))
+                # query = query.filter(Machine.id.in_(ret["OU user"][3]))
                 # if "OU machine" in ret:
-                #query = query.filter(Machine.id.in_(ret["OU machine"][3]))
+                # query = query.filter(Machine.id.in_(ret["OU machine"][3]))
                 if "computerpresence" in ret:
                     if ret["computerpresence"][2] == "presence":
-                        query = query.filter(
-                            Machine.id.in_(
-                                ret["computerpresence"][3]))
+                        query = query.filter(Machine.id.in_(ret["computerpresence"][3]))
                     else:
                         query = query.filter(
-                            Machine.id.notin_(
-                                ret["computerpresence"][3]))
+                            Machine.id.notin_(ret["computerpresence"][3])
+                        )
             query = self.__filter_on(query)
             query = self.__filter_on_entity(query, ctx)
 
-            if filt.get('hostname'):
+            if filt.get("hostname"):
                 if displayList:
                     clauses = []
                     # UUID filtering
-                    if filt['hostname'].lower().startswith(
-                            'uuid') and len(filt['hostname']) > 3:
+                    if (
+                        filt["hostname"].lower().startswith("uuid")
+                        and len(filt["hostname"]) > 3
+                    ):
                         try:
                             clauses.append(
-                                self.machine.c.id == fromUUID(
-                                    filt['hostname']))
+                                self.machine.c.id == fromUUID(filt["hostname"])
+                            )
                         except BaseException:
                             pass
-                    if 'cn' in self.config.summary:
+                    if "cn" in self.config.summary:
                         clauses.append(
-                            self.machine.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'os' in self.config.summary:
+                            self.machine.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    if "os" in self.config.summary:
                         clauses.append(
-                            self.os.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'description' in self.config.summary:
+                            self.os.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    if "description" in self.config.summary:
                         clauses.append(
-                            self.machine.c.comment.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'type' in self.config.summary:
+                            self.machine.c.comment.like("%" + filt["hostname"] + "%")
+                        )
+                    if "type" in self.config.summary:
                         clauses.append(
                             self.glpi_computertypes.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'owner' in self.config.summary:
+                                "%" + filt["hostname"] + "%"
+                            )
+                        )
+                    if "owner" in self.config.summary:
                         clauses.append(
-                            self.user.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'owner_firstname' in self.config.summary:
+                            self.user.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    if "owner_firstname" in self.config.summary:
                         clauses.append(
-                            self.user.c.firstname.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'owner_realname' in self.config.summary:
+                            self.user.c.firstname.like("%" + filt["hostname"] + "%")
+                        )
+                    if "owner_realname" in self.config.summary:
                         clauses.append(
-                            self.user.c.realname.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'user' in self.config.summary:
+                            self.user.c.realname.like("%" + filt["hostname"] + "%")
+                        )
+                    if "user" in self.config.summary:
                         clauses.append(
-                            self.machine.c.contact.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'state' in self.config.summary:
+                            self.machine.c.contact.like("%" + filt["hostname"] + "%")
+                        )
+                    if "state" in self.config.summary:
                         clauses.append(
-                            self.state.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'inventorynumber' in self.config.summary:
+                            self.state.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    if "inventorynumber" in self.config.summary:
                         clauses.append(
                             self.machine.c.otherserial.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'entity' in self.config.summary:
+                                "%" + filt["hostname"] + "%"
+                            )
+                        )
+                    if "entity" in self.config.summary:
                         clauses.append(
-                            self.entities.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'location' in self.config.summary:
+                            self.entities.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    if "location" in self.config.summary:
                         clauses.append(
-                            self.locations.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'model' in self.config.summary:
+                            self.locations.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    if "model" in self.config.summary:
                         clauses.append(
                             self.glpi_computermodels.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    if 'manufacturer' in self.config.summary:
+                                "%" + filt["hostname"] + "%"
+                            )
+                        )
+                    if "manufacturer" in self.config.summary:
                         clauses.append(
-                            self.manufacturers.c.name.like(
-                                '%' + filt['hostname'] + '%'))
-                    r = re.compile('reg_key_.*')
+                            self.manufacturers.c.name.like("%" + filt["hostname"] + "%")
+                        )
+                    r = re.compile("reg_key_.*")
                     regs = filter(r.search, self.config.summary)
                     try:
                         if regs[0]:
                             clauses.append(
                                 self.regcontents.c.value.like(
-                                    '%' + filt['hostname'] + '%'))
+                                    "%" + filt["hostname"] + "%"
+                                )
+                            )
                     except IndexError:
                         pass
                     # Filtering on computer list page
@@ -1101,98 +1163,114 @@ class Glpi95(DatabaseHelper):
                 else:
                     # filtering on machines (name or uuid)
                     query = query.filter(
-                        self.machine.c.name.like(
-                            '%' + filt['hostname'] + '%'))
-            if 'name' in filt:
+                        self.machine.c.name.like("%" + filt["hostname"] + "%")
+                    )
+            if "name" in filt:
+                query = query.filter(self.machine.c.name.like("%" + filt["name"] + "%"))
+
+            if "filter" in filt:  # Used with search field of static group creation
                 query = query.filter(
-                    self.machine.c.name.like(
-                        '%' + filt['name'] + '%'))
+                    self.machine.c.name.like("%" + filt["filter"] + "%")
+                )
 
-            if 'filter' in filt:  # Used with search field of static group creation
-                query = query.filter(
-                    self.machine.c.name.like(
-                        '%' + filt['filter'] + '%'))
+            if "uuid" in filt:
+                query = self.filterOnUUID(query, filt["uuid"])
 
-            if 'uuid' in filt:
-                query = self.filterOnUUID(query, filt['uuid'])
+            if (
+                "uuids" in filt
+                and isinstance(filt["uuids"], list)
+                and len(filt["uuids"]) > 0
+            ):
+                query = self.filterOnUUID(query, filt["uuids"])
 
-            if 'uuids' in filt and isinstance(
-                    filt['uuids'], list) and len(
-                    filt['uuids']) > 0:
-                query = self.filterOnUUID(query, filt['uuids'])
-
-            if 'gid' in filt:
-                gid = filt['gid']
+            if "gid" in filt:
+                gid = filt["gid"]
                 machines = []
                 if ComputerGroupManager().isrequest_group(ctx, gid):
                     machines = map(
-                        lambda m: fromUUID(m), ComputerGroupManager().requestresult_group(
-                            ctx, gid, 0, -1, ''))
+                        lambda m: fromUUID(m),
+                        ComputerGroupManager().requestresult_group(ctx, gid, 0, -1, ""),
+                    )
                 else:
                     machines = map(
-                        lambda m: fromUUID(m), ComputerGroupManager().result_group(
-                            ctx, gid, 0, -1, ''))
+                        lambda m: fromUUID(m),
+                        ComputerGroupManager().result_group(ctx, gid, 0, -1, ""),
+                    )
                 query = query.filter(self.machine.c.id.in_(machines))
 
-            if 'request' in filt:
-                request = filt['request']
-                if request != 'EMPTY':
+            if "request" in filt:
+                request = filt["request"]
+                if request != "EMPTY":
                     bool = None
-                    if 'equ_bool' in filt:
-                        bool = filt['equ_bool']
+                    if "equ_bool" in filt:
+                        bool = filt["equ_bool"]
                     machines = map(
-                        lambda m: fromUUID(m), ComputerGroupManager().request(
-                            ctx, request, bool, 0, -1, ''))
+                        lambda m: fromUUID(m),
+                        ComputerGroupManager().request(ctx, request, bool, 0, -1, ""),
+                    )
                     query = query.filter(self.machine.c.id.in_(machines))
 
-            if 'date' in filt:
-                state = filt['date']['states']
-                date_mod = filt['date']['date_mod']
-                value = filt['date']['value']
+            if "date" in filt:
+                state = filt["date"]["states"]
+                date_mod = filt["date"]["date_mod"]
+                value = filt["date"]["value"]
 
-                if 'green' in value:
-                    query = query.filter(date_mod > state['orange'])
-                if 'orange' in value:
+                if "green" in value:
+                    query = query.filter(date_mod > state["orange"])
+                if "orange" in value:
                     query = query.filter(
-                        and_(
-                            date_mod < state['orange'],
-                            date_mod > state['red']))
-                if 'red' in value:
-                    query = query.filter(date_mod < state['red'])
+                        and_(date_mod < state["orange"], date_mod > state["red"])
+                    )
+                if "red" in value:
+                    query = query.filter(date_mod < state["red"])
 
-            if 'antivirus' in filt:
-                if filt['antivirus'] == 'green':
+            if "antivirus" in filt:
+                if filt["antivirus"] == "green":
                     query = query.filter(
                         and_(
                             FusionAntivirus.is_active == 1,
                             FusionAntivirus.is_uptodate == 1,
-                            OS.name.ilike('%windows%'),
+                            OS.name.ilike("%windows%"),
                             not_(
-                                FusionAntivirus.name.in_(
-                                    self.config.av_false_positive)),
-                        ))
-                elif filt['antivirus'] == 'orange':
+                                FusionAntivirus.name.in_(self.config.av_false_positive)
+                            ),
+                        )
+                    )
+                elif filt["antivirus"] == "orange":
                     query = query.filter(
                         and_(
-                            OS.name.ilike('%windows%'),
+                            OS.name.ilike("%windows%"),
                             not_(
                                 and_(
                                     FusionAntivirus.is_active == 1,
                                     FusionAntivirus.is_uptodate == 1,
                                 ),
                             ),
-                            not_(FusionAntivirus.name.in_(self.config.av_false_positive)),
+                            not_(
+                                FusionAntivirus.name.in_(self.config.av_false_positive)
+                            ),
                         )
                     )
-                elif filt['antivirus'] == 'red':
+                elif filt["antivirus"] == "red":
                     query = query.filter(
                         and_(
-                            OS.name.ilike('%windows%'), or_(
-                                FusionAntivirus.is_active is None, FusionAntivirus.is_uptodate is None, and_(
+                            OS.name.ilike("%windows%"),
+                            or_(
+                                FusionAntivirus.is_active is None,
+                                FusionAntivirus.is_uptodate is None,
+                                and_(
                                     FusionAntivirus.name.in_(
-                                        self.config.av_false_positive), not_(
+                                        self.config.av_false_positive
+                                    ),
+                                    not_(
                                         FusionAntivirus.computers_id.in_(
-                                            self.getMachineIdsNotInAntivirusRed(ctx), )), ), ), ))
+                                            self.getMachineIdsNotInAntivirusRed(ctx),
+                                        )
+                                    ),
+                                ),
+                            ),
+                        )
+                    )
 
         if count:
             query = query.scalar()
@@ -1200,17 +1278,17 @@ class Glpi95(DatabaseHelper):
 
     def __getId(self, obj):
         if isinstance(obj, dict):
-            return obj['uuid']
+            return obj["uuid"]
         if not isinstance(obj, str) and not isinstance(obj, unicode):
             return obj.id
         return obj
 
     def __getName(self, obj):
         if isinstance(obj, dict):
-            return obj['name']
+            return obj["name"]
         if not isinstance(obj, str) and not isinstance(obj, unicode):
             return obj.name
-        if isinstance(obj, str) and re.match('UUID', obj):
+        if isinstance(obj, str) and re.match("UUID", obj):
             l = self.getLocation(obj)
             if l:
                 return l.name
@@ -1218,7 +1296,8 @@ class Glpi95(DatabaseHelper):
 
     def __addQueryFilter(self, query_filter, eq):
         if str(query_filter) == str(
-                None):  # don't remove the str, sqlalchemy.sql._BinaryExpression == None return True!
+            None
+        ):  # don't remove the str, sqlalchemy.sql._BinaryExpression == None return True!
             query_filter = eq
         else:
             query_filter = and_(query_filter, eq)
@@ -1231,8 +1310,9 @@ class Glpi95(DatabaseHelper):
         if not invert:
             return Machine.id.in_(map(lambda x: fromUUID(x), computers))
         else:
-            return Machine.id.not_(ColumnOperators.in_(
-                map(lambda x: fromUUID(x), computers)))
+            return Machine.id.not_(
+                ColumnOperators.in_(map(lambda x: fromUUID(x), computers))
+            )
 
     def mappingTable(self, ctx, query):
         """
@@ -1240,68 +1320,68 @@ class Glpi95(DatabaseHelper):
         """
         base = []
         base.append(self.entities)
-        if query[2] == 'OS':
+        if query[2] == "OS":
             return base + [self.os]
-        elif query[2] == 'Entity':
+        elif query[2] == "Entity":
             return base
-        elif query[2] == 'SOFTWARE':
+        elif query[2] == "SOFTWARE":
             return base + [self.inst_software, self.licenses, self.software]
-        elif query[2] == 'Computer name':
+        elif query[2] == "Computer name":
             return base
-        elif query[2] == 'Last Logged User':
+        elif query[2] == "Last Logged User":
             return base
-        elif query[2] == 'Owner of the machine':
+        elif query[2] == "Owner of the machine":
             return base + [self.user]
-        elif query[2] == 'Contact':
+        elif query[2] == "Contact":
             return base
-        elif query[2] == 'Contact number':
+        elif query[2] == "Contact number":
             return base
-        elif query[2] == 'Description':
+        elif query[2] == "Description":
             return base
-        elif query[2] == 'System model':
+        elif query[2] == "System model":
             return base + [self.model]
-        elif query[2] == 'System manufacturer':
+        elif query[2] == "System manufacturer":
             return base + [self.manufacturers]
-        elif query[2] == 'State':
+        elif query[2] == "State":
             return base + [self.state]
-        elif query[2] == 'System type':
+        elif query[2] == "System type":
             return base + [self.glpi_computertypes]
-        elif query[2] == 'Inventory number':
+        elif query[2] == "Inventory number":
             return base
-        elif query[2] == 'Location':
+        elif query[2] == "Location":
             return base + [self.locations]
-        elif query[2] == 'Operating system':
+        elif query[2] == "Operating system":
             return base + [self.os]
-        elif query[2] == 'Service Pack':
+        elif query[2] == "Service Pack":
             return base + [self.os_sp]
-        elif query[2] == 'Architecture':
+        elif query[2] == "Architecture":
             return base + [self.os_arch]
-        elif query[2] == 'Group':
+        elif query[2] == "Group":
             return base + [self.group]
-        elif query[2] == 'Network':
+        elif query[2] == "Network":
             return base + [self.net]
-        elif query[2] == 'Installed software':
-            return base + [self.inst_software,
-                           self.softwareversions, self.software]
-        elif query[2] == 'Installed software (specific version)':
-            return base + [self.inst_software,
-                           self.softwareversions, self.software]
+        elif query[2] == "Installed software":
+            return base + [self.inst_software, self.softwareversions, self.software]
+        elif query[2] == "Installed software (specific version)":
+            return base + [self.inst_software, self.softwareversions, self.software]
         # hidden internal dyngroup
-        elif query[2] == 'Installed software (specific vendor and version)':
-            return base + [self.inst_software,
-                           self.softwareversions,
-                           self.software,
-                           self.manufacturers]
-        elif query[2] == 'User location':
+        elif query[2] == "Installed software (specific vendor and version)":
+            return base + [
+                self.inst_software,
+                self.softwareversions,
+                self.software,
+                self.manufacturers,
+            ]
+        elif query[2] == "User location":
             return base + [self.user, self.locations]
-        elif query[2] == 'Register key':
+        elif query[2] == "Register key":
             return base + [self.regcontents]  # self.collects, self.registries,
-        elif query[2] == 'Register key value':
+        elif query[2] == "Register key value":
             # self.collects, self.registries,
             return base + [self.regcontents, self.registries]
-        elif query[2] == 'OS Version':
+        elif query[2] == "OS Version":
             return base + [self.os_version]
-        elif query[2] == 'Architecture':
+        elif query[2] == "Architecture":
             return base + [self.os_arch]
         return []
 
@@ -1313,36 +1393,38 @@ class Glpi95(DatabaseHelper):
             # in case the glpi database is in latin1, don't forget dyngroup is in utf8
             # => need to convert what comes from the dyngroup database
             query[3] = self.encode(query[3])
-            r1 = re.compile('\\*')
+            r1 = re.compile("\\*")
             like = False
             if isinstance(query[3], list):
                 q3 = []
                 for q in query[3]:
                     if r1.search(q):
                         like = True
-                        q = r1.sub('%', q)
+                        q = r1.sub("%", q)
                     q3.append(q)
                 query[3] = q3
             else:
                 if r1.search(query[3]):
                     like = True
-                    query[3] = r1.sub('%', query[3])
+                    query[3] = r1.sub("%", query[3])
 
             parts = self.__getPartsFromQuery(ctx, query)
             ret = []
 
             for part in parts:
                 partA, partB = part
-                partBcanBeNone = partB == '%'
+                partBcanBeNone = partB == "%"
                 if invert:
                     if like:
                         if partBcanBeNone:
-                            ret.append(not_(
-                                or_(
-                                    partA.like(self.encode(partB)),
-                                    partA is None,
+                            ret.append(
+                                not_(
+                                    or_(
+                                        partA.like(self.encode(partB)),
+                                        partA is None,
+                                    )
                                 )
-                            ))
+                            )
                         else:
                             ret.append(not_(partA.like(self.encode(partB))))
                     else:
@@ -1381,19 +1463,18 @@ class Glpi95(DatabaseHelper):
                                 ret.append(partA.like(self.encode(partB)))
                         except Exception as e:
                             # print str(e)
-                            self.logger.error(
-                                "\n%s" % (traceback.format_exc()))
+                            self.logger.error("\n%s" % (traceback.format_exc()))
                             ret.append(partA.like(self.encode(partB)))
-            if ctx.userid != 'root':
+            if ctx.userid != "root":
                 ret.append(self.__filter_on_entity_filter(None, ctx))
             return and_(*ret)
         else:
             return self.__treatQueryLevel(query)
 
     def __getPartsFromQuery(self, ctx, query):
-        if query[2] in ['OS', 'Operating system']:
+        if query[2] in ["OS", "Operating system"]:
             return [[self.os.c.name, query[3]]]
-        elif query[2] == 'Entity':
+        elif query[2] == "Entity":
             locid = None
             for loc in ctx.locations:
                 if self.__getName(loc) == query[3]:
@@ -1402,69 +1483,76 @@ class Glpi95(DatabaseHelper):
                 return [[self.machine.c.entities_id, locid]]
             else:
                 return [[self.entities.c.name, query[3]]]
-        elif query[2] == 'SOFTWARE':
+        elif query[2] == "SOFTWARE":
             return [[self.software.c.name, query[3]]]
-        elif query[2] == 'Computer name':
+        elif query[2] == "Computer name":
             return [[self.machine.c.name, query[3]]]
-        elif query[2] == 'User location':
+        elif query[2] == "User location":
             return [[self.locations.c.completename, query[3]]]
-        elif query[2] == 'Contact':
+        elif query[2] == "Contact":
             return [[self.machine.c.contact, query[3]]]
-        elif query[2] == 'Last Logged User':
+        elif query[2] == "Last Logged User":
             return [[self.machine.c.contact, query[3]]]
-        elif query[2] == 'Owner of the machine':
+        elif query[2] == "Owner of the machine":
             return [[self.user.c.name, query[3]]]
-        elif query[2] == 'Contact number':
+        elif query[2] == "Contact number":
             return [[self.machine.c.contact_num, query[3]]]
-        elif query[2] == 'Description':
+        elif query[2] == "Description":
             return [[self.machine.c.comment, query[3]]]
-        elif query[2] == 'System model':
+        elif query[2] == "System model":
             return [[self.model.c.name, query[3]]]
-        elif query[2] == 'System manufacturer':
+        elif query[2] == "System manufacturer":
             return [[self.manufacturers.c.name, query[3]]]
-        elif query[2] == 'State':
+        elif query[2] == "State":
             return [[self.state.c.name, query[3]]]
-        elif query[2] == 'System type':
+        elif query[2] == "System type":
             return [[self.glpi_computertypes.c.name, query[3]]]
-        elif query[2] == 'Inventory number':
+        elif query[2] == "Inventory number":
             return [[self.machine.c.otherserial, query[3]]]
-        elif query[2] == 'Location':
+        elif query[2] == "Location":
             return [[self.locations.c.completename, query[3]]]
-        elif query[2] == 'Service Pack':
+        elif query[2] == "Service Pack":
             return [[self.os_sp.c.name, query[3]]]
-        elif query[2] == 'Architecture':
+        elif query[2] == "Architecture":
             return [[self.os_arch.c.name, query[3]]]
-        elif query[2] == 'Group':  # TODO double join on Entity
+        elif query[2] == "Group":  # TODO double join on Entity
             return [[self.group.c.name, query[3]]]
-        elif query[2] == 'Network':
+        elif query[2] == "Network":
             return [[self.net.c.name, query[3]]]
-        elif query[2] == 'Installed software':  # TODO double join on Entity
+        elif query[2] == "Installed software":  # TODO double join on Entity
             return [[self.software.c.name, query[3]]]
         # TODO double join on Entity
-        elif query[2] == 'Installed software (specific version)':
-            return [[self.software.c.name, query[3][0]], [
-                self.softwareversions.c.name, query[3][1]]]
+        elif query[2] == "Installed software (specific version)":
+            return [
+                [self.software.c.name, query[3][0]],
+                [self.softwareversions.c.name, query[3][1]],
+            ]
         # hidden internal dyngroup
-        elif query[2] == 'Installed software (specific vendor and version)':
-            return [[self.manufacturers.c.name, query[3][0]], [
-                self.software.c.name, query[3][1]], [self.softwareversions.c.name, query[3][2]]]
-        elif query[2] == 'Register key':
+        elif query[2] == "Installed software (specific vendor and version)":
+            return [
+                [self.manufacturers.c.name, query[3][0]],
+                [self.software.c.name, query[3][1]],
+                [self.softwareversions.c.name, query[3][2]],
+            ]
+        elif query[2] == "Register key":
             return [[self.registries.c.name, query[3]]]
-        elif query[2] == 'Register key value':
-            return [[self.registries.c.name, query[3][0]],
-                    [self.regcontents.c.value, query[3][1]]]
-        elif query[2] == 'OS Version':
+        elif query[2] == "Register key value":
+            return [
+                [self.registries.c.name, query[3][0]],
+                [self.regcontents.c.value, query[3][1]],
+            ]
+        elif query[2] == "OS Version":
             return [[self.os_version.c.name, query[3]]]
-        elif query[2] == 'Architecture':
+        elif query[2] == "Architecture":
             return [[self.os_arch.c.name, query[3]]]
         return []
 
     def __getTable(self, table):
-        if table == 'OS':
+        if table == "OS":
             return self.os.c.name
-        elif table == 'Entity':
+        elif table == "Entity":
             return self.entities.c.name
-        elif table == 'SOFTWARE':
+        elif table == "SOFTWARE":
             return self.software.c.name
         raise Exception("dont know table for %s" % (table))
 
@@ -1473,26 +1561,20 @@ class Glpi95(DatabaseHelper):
         """
         Get the first computers that match filters parameters
         """
-        ret = self.getRestrictedComputersList(ctx,
-                                              0,
-                                              10,
-                                              filt,
-                                              displayList=False,
-                                              empty_macs=empty_macs)
+        ret = self.getRestrictedComputersList(
+            ctx, 0, 10, filt, displayList=False, empty_macs=empty_macs
+        )
         if len(ret) != 1:
-            for i in ['location', 'ctxlocation']:
+            for i in ["location", "ctxlocation"]:
                 try:
                     filt.pop(i)
                 except BaseException:
                     pass
-            ret = self.getRestrictedComputersList(ctx,
-                                                  0,
-                                                  10,
-                                                  filt,
-                                                  displayList=False,
-                                                  empty_macs=empty_macs)
+            ret = self.getRestrictedComputersList(
+                ctx, 0, 10, filt, displayList=False, empty_macs=empty_macs
+            )
             if len(ret) > 0:
-                raise Exception("NOPERM##%s" % (ret[0][1]['fullname']))
+                raise Exception("NOPERM##%s" % (ret[0][1]["fullname"]))
             return False
         return ret.values()[0]
 
@@ -1503,35 +1585,44 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         now = datetime.datetime.now()
         states = {
-            'orange': now - datetime.timedelta(orange),
-            'red': now - datetime.timedelta(red),
+            "orange": now - datetime.timedelta(orange),
+            "red": now - datetime.timedelta(red),
         }
 
         date_mod = self.machine.c.date_mod
         if self.fusionagents is not None:
             date_mod = FusionAgents.last_contact
 
-        for value in ['green', 'orange', 'red']:
+        for value in ["green", "orange", "red"]:
             # This loop instanciate self.filt_green,
             # self.filt_orange and self.filt_red
-            setattr(self, 'filt_%s' % value, filt.copy())
+            setattr(self, "filt_%s" % value, filt.copy())
 
-            newFilter = getattr(self, 'filt_%s' % value)
+            newFilter = getattr(self, "filt_%s" % value)
             values = {
-                'states': states,
-                'date_mod': date_mod,
-                'value': value,
+                "states": states,
+                "date_mod": date_mod,
+                "value": value,
             }
-            newFilter['date'] = values
+            newFilter["date"] = values
 
         ret = {
             "green": int(
                 self.__getRestrictedComputersListQuery(
-                    ctx, self.filt_green, session, count=True)), "orange": int(
+                    ctx, self.filt_green, session, count=True
+                )
+            ),
+            "orange": int(
                 self.__getRestrictedComputersListQuery(
-                    ctx, self.filt_orange, session, count=True)), "red": int(
-                        self.__getRestrictedComputersListQuery(
-                            ctx, self.filt_red, session, count=True)), }
+                    ctx, self.filt_orange, session, count=True
+                )
+            ),
+            "red": int(
+                self.__getRestrictedComputersListQuery(
+                    ctx, self.filt_red, session, count=True
+                )
+            ),
+        }
         session.close()
         return ret
 
@@ -1547,12 +1638,13 @@ class Glpi95(DatabaseHelper):
         # Pagination PHP Widget must know total machine result
         # So, set displayList to True to count on glpi_computers_pulse
         # and all needed joined tables
-        if 'hostname' in filt:
-            if len(filt['hostname']) > 0:
+        if "hostname" in filt:
+            if len(filt["hostname"]) > 0:
                 displayList = True
 
         ret = self.__getRestrictedComputersListQuery(
-            ctx, filt, session, displayList, count=True)
+            ctx, filt, session, displayList, count=True
+        )
         if ret is None:
             return 0
         session.close()
@@ -1566,24 +1658,31 @@ class Glpi95(DatabaseHelper):
 
         eg. dict filt param {'fk_entity': 1, 'imaging_server': 'UUID1', 'get': ['cn', 'objectUUID']}
         """
-        if filt and 'imaging_server' in filt and filt['imaging_server'] != "" and \
-            'get' in filt and len(filt['get']) == 2 and filt['get'][0] == 'cn' and filt['get'][1] == 'objectUUID' and\
-                'fk_entity' in filt and filt['fk_entity'] != -1:
+        if (
+            filt
+            and "imaging_server" in filt
+            and filt["imaging_server"] != ""
+            and "get" in filt
+            and len(filt["get"]) == 2
+            and filt["get"][0] == "cn"
+            and filt["get"][1] == "objectUUID"
+            and "fk_entity" in filt
+            and filt["fk_entity"] != -1
+        ):
 
-            entitylist = self.getEntitiesParentsAsList([filt['fk_entity']])
+            entitylist = self.getEntitiesParentsAsList([filt["fk_entity"]])
             session = create_session()
-            entitylist.append(filt['fk_entity'])
-            q = session.query(
-                Machine.id,
-                Machine.name,
-                Machine.entities_id,
-                Machine.locations_id). add_column(
-                self.entities.c.name.label('Entity_name')). select_from(
-                self.machine.join(
-                    self.entities)). filter(
-                    self.machine.c.entities_id.in_(entitylist)). filter(
-                        self.machine.c.is_deleted == 0). filter(
-                            self.machine.c.is_template == 0)
+            entitylist.append(filt["fk_entity"])
+            q = (
+                session.query(
+                    Machine.id, Machine.name, Machine.entities_id, Machine.locations_id
+                )
+                .add_column(self.entities.c.name.label("Entity_name"))
+                .select_from(self.machine.join(self.entities))
+                .filter(self.machine.c.entities_id.in_(entitylist))
+                .filter(self.machine.c.is_deleted == 0)
+                .filter(self.machine.c.is_template == 0)
+            )
             ret = q.all()
             listentitymachine = {}
             for line in ret:
@@ -1592,16 +1691,18 @@ class Glpi95(DatabaseHelper):
             session.close()
             return listentitymachine
 
-    def getRestrictedComputersList(self,
-                                   ctx,
-                                   min=0,
-                                   max=-1,
-                                   filt=None,
-                                   advanced=True,
-                                   justId=False,
-                                   toH=False,
-                                   displayList=None,
-                                   empty_macs=False):
+    def getRestrictedComputersList(
+        self,
+        ctx,
+        min=0,
+        max=-1,
+        filt=None,
+        advanced=True,
+        justId=False,
+        toH=False,
+        displayList=None,
+        empty_macs=False,
+    ):
         """
         Get the computer list that match filters parameters between min and max
 
@@ -1616,13 +1717,14 @@ class Glpi95(DatabaseHelper):
         # If we are displaying Computers list main page, set displayList to
         # True
         if displayList is None:
-            if justId or toH or 'uuid' in filt:  # if 'uuid' in filt: used where adding a command to a group
+            if (
+                justId or toH or "uuid" in filt
+            ):  # if 'uuid' in filt: used where adding a command to a group
                 displayList = False
             else:
                 displayList = True
 
-        query = self.__getRestrictedComputersListQuery(
-            ctx, filt, session, displayList)
+        query = self.__getRestrictedComputersListQuery(ctx, filt, session, displayList)
         if query is None:
             return {}
 
@@ -1642,16 +1744,14 @@ class Glpi95(DatabaseHelper):
         elif toH:
             ret = map(lambda m: m.toH(), query.all())
         else:
-            if filt is not None and 'get' in filt:
-                ret = self.__formatMachines(query.all(),
-                                            advanced,
-                                            filt['get'],
-                                            empty_macs=empty_macs)
+            if filt is not None and "get" in filt:
+                ret = self.__formatMachines(
+                    query.all(), advanced, filt["get"], empty_macs=empty_macs
+                )
             else:
-                ret = self.__formatMachines(query.all(),
-                                            advanced,
-                                            None,
-                                            empty_macs=empty_macs)
+                ret = self.__formatMachines(
+                    query.all(), advanced, None, empty_macs=empty_macs
+                )
         session.close()
         return ret
 
@@ -1667,8 +1767,10 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         query = session.query(Machine.id, Machine.name).all()
         session.close()
-        return [{"uuid": toUUID(str(machine.id)),
-                 "hostname": machine.name} for machine in query]
+        return [
+            {"uuid": toUUID(str(machine.id)), "hostname": machine.name}
+            for machine in query
+        ]
 
     def getTotalComputerCount(self):
         session = create_session()
@@ -1704,12 +1806,11 @@ class Glpi95(DatabaseHelper):
         """
         session = create_session()
         ret = session.query(Machine).filter(
-            self.machine.c.id == int(
-                str(uuid).replace(
-                    "UUID", "")))
-        ret = ret.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+            self.machine.c.id == int(str(uuid).replace("UUID", ""))
+        )
+        ret = ret.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         ret = self.__filter_on(ret).first()
         session.close()
         return ret
@@ -1719,13 +1820,11 @@ class Glpi95(DatabaseHelper):
         Modify the given query to filter on the machine UUID
         """
         if isinstance(uuid, list):
-            return query.filter(self.machine.c.id.in_(
-                [int(str(a).replace("UUID", "")) for a in uuid]))
-        else:
             return query.filter(
-                self.machine.c.id == int(
-                    str(uuid).replace(
-                        "UUID", "")))
+                self.machine.c.id.in_([int(str(a).replace("UUID", "")) for a in uuid])
+            )
+        else:
+            return query.filter(self.machine.c.id == int(str(uuid).replace("UUID", "")))
 
     # Machine output format (for ldap compatibility)
     def __getAttr(self, machine, get):
@@ -1733,9 +1832,9 @@ class Glpi95(DatabaseHelper):
         for field in get:
             if hasattr(machine, field):
                 ma[field] = getattr(machine, field)
-            if field == 'uuid' or field == 'objectUUID':
+            if field == "uuid" or field == "objectUUID":
                 ma[field] = toUUID(str(machine.id))
-            if field == 'cn':
+            if field == "cn":
                 ma[field] = machine.name
         return ma
 
@@ -1759,65 +1858,64 @@ class Glpi95(DatabaseHelper):
                 # List of fields defined around line 439
                 # m, os, type, inventorynumber, state, entity, location, model, manufacturer, owner = m
                 l = list(m)
-                if 'owner' in self.config.summary:
+                if "owner" in self.config.summary:
                     owner_login = l.pop()
-                if 'owner_firstname' in self.config.summary:
+                if "owner_firstname" in self.config.summary:
                     owner_firstname = l.pop()
-                if 'owner_realname' in self.config.summary:
+                if "owner_realname" in self.config.summary:
                     owner_realname = l.pop()
-                if 'manufacturer' in self.config.summary:
+                if "manufacturer" in self.config.summary:
                     manufacturer = l.pop()
-                if 'model' in self.config.summary:
+                if "model" in self.config.summary:
                     model = l.pop()
-                if 'location' in self.config.summary:
+                if "location" in self.config.summary:
                     location = l.pop()
-                if 'entity' in self.config.summary:
+                if "entity" in self.config.summary:
                     entity = l.pop()
-                if 'state' in self.config.summary:
+                if "state" in self.config.summary:
                     state = l.pop()
-                if 'inventorynumber' in self.config.summary:
+                if "inventorynumber" in self.config.summary:
                     inventorynumber = l.pop()
-                if 'type' in self.config.summary:
+                if "type" in self.config.summary:
                     type = l.pop()
-                if 'os' in self.config.summary:
+                if "os" in self.config.summary:
                     oslocal = l.pop()
 
                 m = l.pop()
-            owner_login, owner_firstname, owner_realname = self.getMachineOwner(
-                m)
+            owner_login, owner_firstname, owner_realname = self.getMachineOwner(m)
             datas = {
-                'cn': m.name not in ['', None] and [m.name] or ['(%s)' % m.id],
-                'displayName': [m.comment],
-                'objectUUID': [m.getUUID()],
-                'user': [m.contact],
-                'owner': [owner_login],
-                'owner_realname': [owner_realname],
-                'owner_firstname': [owner_firstname],
+                "cn": m.name not in ["", None] and [m.name] or ["(%s)" % m.id],
+                "displayName": [m.comment],
+                "objectUUID": [m.getUUID()],
+                "user": [m.contact],
+                "owner": [owner_login],
+                "owner_realname": [owner_realname],
+                "owner_firstname": [owner_firstname],
             }
 
             if displayList:
-                if 'manufacturer' in self.config.summary:
-                    datas['manufacturer'] = manufacturer
-                if 'model' in self.config.summary:
-                    datas['model'] = model
-                if 'location' in self.config.summary:
-                    datas['location'] = location
-                if 'entity' in self.config.summary:
-                    datas['entity'] = entity
-                if 'state' in self.config.summary:
-                    datas['state'] = state
-                if 'inventorynumber' in self.config.summary:
-                    datas['inventorynumber'] = inventorynumber
-                if 'type' in self.config.summary:
-                    datas['type'] = type
-                if 'os' in self.config.summary:
-                    datas['os'] = oslocal
-                if 'owner' in self.config.summary:
-                    datas['owner'] = owner_login
-                if 'owner_firstname' in self.config.summary:
-                    datas['owner_firstname'] = owner_firstname
-                if 'owner_realname' in self.config.summary:
-                    datas['owner_realname'] = owner_realname
+                if "manufacturer" in self.config.summary:
+                    datas["manufacturer"] = manufacturer
+                if "model" in self.config.summary:
+                    datas["model"] = model
+                if "location" in self.config.summary:
+                    datas["location"] = location
+                if "entity" in self.config.summary:
+                    datas["entity"] = entity
+                if "state" in self.config.summary:
+                    datas["state"] = state
+                if "inventorynumber" in self.config.summary:
+                    datas["inventorynumber"] = inventorynumber
+                if "type" in self.config.summary:
+                    datas["type"] = type
+                if "os" in self.config.summary:
+                    datas["os"] = oslocal
+                if "owner" in self.config.summary:
+                    datas["owner"] = owner_login
+                if "owner_firstname" in self.config.summary:
+                    datas["owner_firstname"] = owner_firstname
+                if "owner_realname" in self.config.summary:
+                    datas["owner_realname"] = owner_realname
 
             ret[m.getUUID()] = [None, datas]
 
@@ -1833,26 +1931,27 @@ class Glpi95(DatabaseHelper):
             nets = self.getMachinesNetwork(uuids)
             for uuid in ret:
                 try:
-                    (ret[uuid][1]['macAddress'],
-                     ret[uuid][1]['ipHostNumber'],
-                     ret[uuid][1]['subnetMask'],
-                     ret[uuid][1]['domain'],
-                     ret[uuid][1]['networkUuids']) = self.orderIpAdresses(uuid,
-                                                                          names[uuid],
-                                                                          nets[uuid],
-                                                                          empty_macs=empty_macs)
-                    if ret[uuid][1]['domain'] != '' and len(
-                            ret[uuid][1]['domain']) > 0:
-                        ret[uuid][1]['fullname'] = ret[uuid][1]['cn'][0] + \
-                            '.' + ret[uuid][1]['domain'][0]
+                    (
+                        ret[uuid][1]["macAddress"],
+                        ret[uuid][1]["ipHostNumber"],
+                        ret[uuid][1]["subnetMask"],
+                        ret[uuid][1]["domain"],
+                        ret[uuid][1]["networkUuids"],
+                    ) = self.orderIpAdresses(
+                        uuid, names[uuid], nets[uuid], empty_macs=empty_macs
+                    )
+                    if ret[uuid][1]["domain"] != "" and len(ret[uuid][1]["domain"]) > 0:
+                        ret[uuid][1]["fullname"] = (
+                            ret[uuid][1]["cn"][0] + "." + ret[uuid][1]["domain"][0]
+                        )
                     else:
-                        ret[uuid][1]['fullname'] = ret[uuid][1]['cn'][0]
+                        ret[uuid][1]["fullname"] = ret[uuid][1]["cn"][0]
                 except KeyError:
-                    ret[uuid][1]['macAddress'] = []
-                    ret[uuid][1]['ipHostNumber'] = []
-                    ret[uuid][1]['subnetMask'] = []
-                    ret[uuid][1]['domain'] = ''
-                    ret[uuid][1]['fullname'] = ret[uuid][1]['cn'][0]
+                    ret[uuid][1]["macAddress"] = []
+                    ret[uuid][1]["ipHostNumber"] = []
+                    ret[uuid][1]["subnetMask"] = []
+                    ret[uuid][1]["domain"] = ""
+                    ret[uuid][1]["fullname"] = ret[uuid][1]["cn"][0]
         return ret
 
     def __formatMachine(self, machine, advanced, get=None):
@@ -1866,23 +1965,23 @@ class Glpi95(DatabaseHelper):
             return self.__getAttr(machine, get)
 
         ret = {
-            'cn': [machine.name],
-            'displayName': [machine.comment],
-            'objectUUID': [uuid]
+            "cn": [machine.name],
+            "displayName": [machine.comment],
+            "objectUUID": [uuid],
         }
         if advanced:
-            (ret['macAddress'],
-             ret['ipHostNumber'],
-                ret['subnetMask'],
+            (
+                ret["macAddress"],
+                ret["ipHostNumber"],
+                ret["subnetMask"],
                 domain,
-                ret['networkUuids']) = self.orderIpAdresses(uuid,
-                                                            machine.name,
-                                                            self.getMachineNetwork(uuid))
+                ret["networkUuids"],
+            ) = self.orderIpAdresses(uuid, machine.name, self.getMachineNetwork(uuid))
             if domain is None:
-                domain = ''
-            elif domain != '':
-                domain = '.' + domain
-            ret['fullname'] = machine.name + domain
+                domain = ""
+            elif domain != "":
+                domain = "." + domain
+            ret["fullname"] = machine.name + domain
         return [None, ret]
 
     # Entities, profiles and user rigths management
@@ -1918,11 +2017,12 @@ class Glpi95(DatabaseHelper):
         @return: Return the first user GLPI profile as a string, or None
         """
         session = create_session()
-        qprofile = session.query(Profile).select_from(
-            self.profile.join(
-                self.userprofile).join(
-                self.user)).filter(
-            self.user.c.name == user).first()
+        qprofile = (
+            session.query(Profile)
+            .select_from(self.profile.join(self.userprofile).join(self.user))
+            .filter(self.user.c.name == user)
+            .first()
+        )
         if qprofile is None:
             ret = None
         else:
@@ -1935,11 +2035,11 @@ class Glpi95(DatabaseHelper):
         @return: Return all user GLPI profiles as a list of string, or None
         """
         session = create_session()
-        profiles = session.query(Profile).select_from(
-            self.profile.join(
-                self.userprofile).join(
-                self.user)).filter(
-            self.user.c.name == user)
+        profiles = (
+            session.query(Profile)
+            .select_from(self.profile.join(self.userprofile).join(self.user))
+            .filter(self.user.c.name == user)
+        )
         if profiles:
             ret = []
             for profile in profiles:
@@ -1972,11 +2072,12 @@ class Glpi95(DatabaseHelper):
         TODO : check it is still used!
         """
         session = create_session()
-        qentities = session.query(Entities).select_from(
-            self.entities.join(
-                self.userprofile).join(
-                self.user)).filter(
-            self.user.c.name == user).first()
+        qentities = (
+            session.query(Entities)
+            .select_from(self.entities.join(self.userprofile).join(self.user))
+            .filter(self.user.c.name == user)
+            .first()
+        )
         if qentities is None:
             ret = None
         else:
@@ -1992,35 +2093,38 @@ class Glpi95(DatabaseHelper):
         @rtype: list
         """
         ret = []
-        if user == 'root':
+        if user == "root":
             ret = self.__get_all_locations()
         else:
             # check if user is linked to the root entity
             # (which is not declared explicitly in glpi...
             # we have to emulate it...)
             session = create_session()
-            entids = session.query(UserProfile).select_from(
-                self.userprofile.join(
-                    self.user).join(
-                    self.profile)).filter(
-                self.user.c.name == user).filter(
-                    self.profile.c.name.in_(
-                        self.config.activeProfiles)).all()
+            entids = (
+                session.query(UserProfile)
+                .select_from(self.userprofile.join(self.user).join(self.profile))
+                .filter(self.user.c.name == user)
+                .filter(self.profile.c.name.in_(self.config.activeProfiles))
+                .all()
+            )
             for entid in entids:
                 if entid.entities_id == 0 and entid.is_recursive == 1:
                     session.close()
                     return self.__get_all_locations()
 
             # the normal case...
-            plocs = session.query(Entities).add_column(
-                self.userprofile.c.is_recursive).select_from(
-                self.entities.join(
-                    self.userprofile).join(
-                    self.user).join(
-                    self.profile)).filter(
-                        self.user.c.name == user).filter(
-                            self.profile.c.name.in_(
-                                self.config.activeProfiles)).all()
+            plocs = (
+                session.query(Entities)
+                .add_column(self.userprofile.c.is_recursive)
+                .select_from(
+                    self.entities.join(self.userprofile)
+                    .join(self.user)
+                    .join(self.profile)
+                )
+                .filter(self.user.c.name == user)
+                .filter(self.profile.c.name.in_(self.config.activeProfiles))
+                .all()
+            )
             for ploc in plocs:
                 if ploc[1]:
                     # The user profile link to the entities is recursive, and so
@@ -2039,8 +2143,12 @@ class Glpi95(DatabaseHelper):
     def __get_all_locations(self):
         ret = []
         session = create_session()
-        q = session.query(Entities).group_by(self.entities.c.completename).order_by(
-            asc(self.entities.c.completename)).all()
+        q = (
+            session.query(Entities)
+            .group_by(self.entities.c.completename)
+            .order_by(asc(self.entities.c.completename))
+            .all()
+        )
         session.close()
         for entities in q:
             ret.append(entities)
@@ -2051,8 +2159,11 @@ class Glpi95(DatabaseHelper):
         Recursive function used by getUserLocations to get entities tree if needed
         """
         session = create_session()
-        children = session.query(Entities).filter(
-            self.entities.c.entities_id == child.id).all()
+        children = (
+            session.query(Entities)
+            .filter(self.entities.c.entities_id == child.id)
+            .all()
+        )
         ret = [child]
         for c in children:
             for res in self.__add_children(c):
@@ -2065,9 +2176,11 @@ class Glpi95(DatabaseHelper):
         Get a Location by it's uuid
         """
         session = create_session()
-        ret = session.query(Entities).filter(
-            self.entities.c.id == uuid.replace(
-                'UUID', '')).first()
+        ret = (
+            session.query(Entities)
+            .filter(self.entities.c.id == uuid.replace("UUID", ""))
+            .first()
+        )
         session.close()
         return ret
 
@@ -2088,27 +2201,27 @@ class Glpi95(DatabaseHelper):
 
     def getMachinesLocations(self, machine_uuids):
         session = create_session()
-        q = session.query(
-            Entities.id,
-            Entities.name,
-            Entities.completename,
-            Entities.comment,
-            Entities.level).add_column(
-            self.machine.c.id).select_from(
-            self.entities.join(
-                self.machine)).filter(
-                    self.machine.c.id.in_(
-                        map(
-                            fromUUID,
-                            machine_uuids))).all()
+        q = (
+            session.query(
+                Entities.id,
+                Entities.name,
+                Entities.completename,
+                Entities.comment,
+                Entities.level,
+            )
+            .add_column(self.machine.c.id)
+            .select_from(self.entities.join(self.machine))
+            .filter(self.machine.c.id.in_(map(fromUUID, machine_uuids)))
+            .all()
+        )
         ret = {}
         for idp, namep, namepc, commentp, levelp, machineid in q:
             val = {}
-            val['uuid'] = toUUID(idp)
-            val['name'] = namep
-            val['completename'] = namepc
-            val['comments'] = commentp
-            val['level'] = levelp
+            val["uuid"] = toUUID(idp)
+            val["name"] = namep
+            val["completename"] = namepc
+            val["comments"] = commentp
+            val["level"] = levelp
             ret[toUUID(machineid)] = val
         session.close()
         return ret
@@ -2126,12 +2239,14 @@ class Glpi95(DatabaseHelper):
             for location in locations:
                 inloc.append(location.name)
             session = create_session()
-            q = session.query(User).select_from(
-                self.user.join(
-                    self.userprofile).join(
-                    self.entities)).filter(
-                self.entities.c.name.in_(inloc)).filter(
-                    self.user.c.name != userid).distinct().all()
+            q = (
+                session.query(User)
+                .select_from(self.user.join(self.userprofile).join(self.entities))
+                .filter(self.entities.c.name.in_(inloc))
+                .filter(self.user.c.name != userid)
+                .distinct()
+                .all()
+            )
             session.close()
             # Only returns the user names
             ret = map(lambda u: u.name, q)
@@ -2144,30 +2259,34 @@ class Glpi95(DatabaseHelper):
         Get all computers in that location
         """
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(
-                self.entities)).filter(
-            self.entities.c.name == location)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = (
+            session.query(Machine)
+            .select_from(self.machine.join(self.entities))
+            .filter(self.entities.c.name == location)
+        )
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         ret = []
-        for machine in query.group_by(
-                self.machine.c.name).order_by(asc(self.machine.c.name)):
+        for machine in query.group_by(self.machine.c.name).order_by(
+            asc(self.machine.c.name)
+        ):
             ret[machine.name] = self.__formatMachine(machine)
         session.close()
         return ret
 
     def getLocationsFromPathString(self, location_path):
-        """
-        """
+        """ """
         session = create_session()
         ens = []
         for loc_path in location_path:
             loc_path = " > ".join(loc_path)
-            q = session.query(Entities).filter(
-                self.entities.c.completename == loc_path).all()
+            q = (
+                session.query(Entities)
+                .filter(self.entities.c.completename == loc_path)
+                .all()
+            )
             if len(q) != 1:
                 ens.append(False)
             else:
@@ -2179,19 +2298,17 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         path = []
         en_id = fromUUID(loc_uuid)
-        en = session.query(Entities).filter(
-            self.entities.c.id == en_id).first()
+        en = session.query(Entities).filter(self.entities.c.id == en_id).first()
         parent_id = en.entities_id
         if parent_id == -1:  # parent_id is -1 for root entity
             parent_id = 0
 
         while parent_id != 0:
             en_id = parent_id
-            en = session.query(Entities).filter(
-                self.entities.c.id == parent_id).first()
+            en = session.query(Entities).filter(self.entities.c.id == parent_id).first()
             path.append(toUUID(en.id))
             parent_id = en.entities_id
-        path.append('UUID0')
+        path.append("UUID0")
         return path
 
     def getMachineRegistryKey(self, machine, regkey):
@@ -2211,14 +2328,18 @@ class Glpi95(DatabaseHelper):
         ret = None
         session = create_session()
 
-        query = session.query(RegContents).add_column(self.registries.c.name) \
-            .add_column(self.regcontents.c.key) \
-            .add_column(self.regcontents.c.value) \
-            .select_from(self.machine.outerjoin(self.regcontents)
-                         .outerjoin(self.registries))
+        query = (
+            session.query(RegContents)
+            .add_column(self.registries.c.name)
+            .add_column(self.regcontents.c.key)
+            .add_column(self.regcontents.c.value)
+            .select_from(
+                self.machine.outerjoin(self.regcontents).outerjoin(self.registries)
+            )
+        )
         query = query.filter(
-            self.machine.c.id == machine.id,
-            self.regcontents.c.key == regkey)
+            self.machine.c.id == machine.id, self.regcontents.c.key == regkey
+        )
 
         if query.first() is not None:
             ret = query.first().name, query.first().value
@@ -2255,10 +2376,9 @@ class Glpi95(DatabaseHelper):
         all_computers = Set(map(lambda m: toUUID(str(m.id)), all_computers))
         if len(all_computers) != machines_uuid_size:
             self.logger.info(
-                "some machines have been deleted since that list was generated (%s)" %
-                (str(
-                    Set(a_machine_uuid) -
-                    all_computers)))
+                "some machines have been deleted since that list was generated (%s)"
+                % (str(Set(a_machine_uuid) - all_computers))
+            )
             machines_uuid_size = len(all_computers)
         size = 1
         if isinstance(ret, list):
@@ -2270,8 +2390,9 @@ class Glpi95(DatabaseHelper):
         elif (not all) and len(ret) > 0:
             return True
         ret = Set(map(lambda m: toUUID(str(m.id)), ret))
-        self.logger.info("dont have permissions on %s" %
-                         (str(Set(a_machine_uuid) - ret)))
+        self.logger.info(
+            "dont have permissions on %s" % (str(Set(a_machine_uuid) - ret))
+        )
         return False
 
     def doesUserHaveAccessToMachine(self, ctx, machine_uuid):
@@ -2288,41 +2409,44 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         # there is glpi_entreprise missing
         query = self.filterOnUUID(
-            session.query(Machine) .add_column(
-                self.glpi_operatingsystems.c.name) .add_column(
-                self.glpi_operatingsystemservicepacks.c.name) .add_column(
-                self.glpi_operatingsystemversions.c.name) .add_column(
-                    self.glpi_domains.c.name) .add_column(
-                        self.locations.c.name) .add_column(
-                            self.glpi_computermodels.c.name) .add_column(
-                                self.glpi_computertypes.c.name) .add_column(
-                                    self.glpi_networks.c.name) .add_column(
-                                        self.entities.c.completename) .add_column(
-                                            self.glpi_operatingsystemarchitectures.c.name) .select_from(
-                                                self.machine.outerjoin(
-                                                    self.glpi_operatingsystems).outerjoin(
-                                                        self.glpi_operatingsystemservicepacks).outerjoin(
-                                                            self.glpi_operatingsystemversions).outerjoin(
-                                                                self.glpi_operatingsystemarchitectures) .outerjoin(
-                                                                    self.glpi_computertypes).outerjoin(
-                                                                        self.glpi_domains).outerjoin(
-                                                                            self.locations).outerjoin(
-                                                                                self.glpi_computermodels).outerjoin(
-                                                                                    self.glpi_networks) .join(
-                                                                                        self.entities)),
-            uuid).all()
+            session.query(Machine)
+            .add_column(self.glpi_operatingsystems.c.name)
+            .add_column(self.glpi_operatingsystemservicepacks.c.name)
+            .add_column(self.glpi_operatingsystemversions.c.name)
+            .add_column(self.glpi_domains.c.name)
+            .add_column(self.locations.c.name)
+            .add_column(self.glpi_computermodels.c.name)
+            .add_column(self.glpi_computertypes.c.name)
+            .add_column(self.glpi_networks.c.name)
+            .add_column(self.entities.c.completename)
+            .add_column(self.glpi_operatingsystemarchitectures.c.name)
+            .select_from(
+                self.machine.outerjoin(self.glpi_operatingsystems)
+                .outerjoin(self.glpi_operatingsystemservicepacks)
+                .outerjoin(self.glpi_operatingsystemversions)
+                .outerjoin(self.glpi_operatingsystemarchitectures)
+                .outerjoin(self.glpi_computertypes)
+                .outerjoin(self.glpi_domains)
+                .outerjoin(self.locations)
+                .outerjoin(self.glpi_computermodels)
+                .outerjoin(self.glpi_networks)
+                .join(self.entities)
+            ),
+            uuid,
+        ).all()
         ret = []
         ind = {
-            'os': 1,
-            'os_sp': 2,
-            'os_version': 3,
-            'type': 7,
-            'domain': 4,
-            'location': 5,
-            'model': 6,
-            'network': 8,
-            'entity': 9,
-            'os_arch': 10}  # 'entreprise':9
+            "os": 1,
+            "os_sp": 2,
+            "os_version": 3,
+            "type": 7,
+            "domain": 4,
+            "location": 5,
+            "model": 6,
+            "network": 8,
+            "entity": 9,
+            "os_arch": 10,
+        }  # 'entreprise':9
         for m in query:
             ma1 = m[0].to_a()
             ma2 = []
@@ -2365,29 +2489,34 @@ class Glpi95(DatabaseHelper):
             return datetime.date(year, month, day)
 
         if infocoms is not None and infocoms.warranty_date is not None:
-            endDate = add_months(
-                infocoms.warranty_date,
-                infocoms.warranty_duration)
+            endDate = add_months(infocoms.warranty_date, infocoms.warranty_duration)
             if datetime.datetime.now().date() > endDate:
-                return '<span style="color:red;font-weight: bold;">%s</span>' % endDate.strftime(
-                    '%Y-%m-%d')
+                return (
+                    '<span style="color:red;font-weight: bold;">%s</span>'
+                    % endDate.strftime("%Y-%m-%d")
+                )
             else:
-                return endDate.strftime('%Y-%m-%d')
+                return endDate.strftime("%Y-%m-%d")
 
-        return ''
+        return ""
 
     def getManufacturerWarranty(self, manufacturer, serial):
-        for manufacturer_key, manufacturer_infos in self.config.manufacturerWarranty.items():
-            if manufacturer in manufacturer_infos['names']:
+        for (
+            manufacturer_key,
+            manufacturer_infos,
+        ) in self.config.manufacturerWarranty.items():
+            if manufacturer in manufacturer_infos["names"]:
                 manufacturer_info = manufacturer_infos.copy()
-                manufacturer_info['url'] = manufacturer_info['url'].replace(
-                    '@@SERIAL@@', serial)
-                manufacturer_info['params'] = manufacturer_info['params'].replace(
-                    '@@SERIAL@@', serial)
+                manufacturer_info["url"] = manufacturer_info["url"].replace(
+                    "@@SERIAL@@", serial
+                )
+                manufacturer_info["params"] = manufacturer_info["params"].replace(
+                    "@@SERIAL@@", serial
+                )
                 return manufacturer_info
         return False
 
-    def getSearchOptionId(self, filter, lang='en_US'):
+    def getSearchOptionId(self, filter, lang="en_US"):
         """
         return a list of ids corresponding to filter
         @param filter: a value to search
@@ -2402,7 +2531,7 @@ class Glpi95(DatabaseHelper):
 
         return ids
 
-    def getLinkedActionKey(self, filter, lang='en_US'):
+    def getLinkedActionKey(self, filter, lang="en_US"):
         """
         return a list of ids corresponding to filter
         """
@@ -2417,7 +2546,8 @@ class Glpi95(DatabaseHelper):
     def countLastMachineInventoryPart(self, uuid, part, filt=None, options={}):
         # Mutable dict options used as default argument to a method or function
         return self.getLastMachineInventoryPart(
-            uuid, part, filt=filt, options=options, count=True)
+            uuid, part, filt=filt, options=options, count=True
+        )
 
     @property
     def _network_types(self):
@@ -2425,12 +2555,12 @@ class Glpi95(DatabaseHelper):
         Dict with GLPI available Network types
         """
         return {
-            'NetworkPortLocal': 'Local',
-            'NetworkPortEthernet': 'Ethernet',
-            'NetworkPortWifi': 'Wifi',
-            'NetworkPortDialup': 'Dialup',
-            'NetworkPortAggregate': 'Aggregate',
-            'NetworkPortAlias': 'Alias',
+            "NetworkPortLocal": "Local",
+            "NetworkPortEthernet": "Ethernet",
+            "NetworkPortWifi": "Wifi",
+            "NetworkPortDialup": "Dialup",
+            "NetworkPortAggregate": "Aggregate",
+            "NetworkPortAlias": "Alias",
         }
 
     def _get_network_type(self, instantiation_type):
@@ -2443,15 +2573,8 @@ class Glpi95(DatabaseHelper):
         return instantiation_type
 
     def getLastMachineNetworkPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         query = self.filterOnUUID(session.query(Machine), uuid)
 
@@ -2467,80 +2590,89 @@ class Glpi95(DatabaseHelper):
                     netmasks = []
                     if networkport.networknames is not None:
                         ipaddresses = list(
-                            set([ip.name for ip in networkport.networknames.ipaddresses if ip.name != '']))
+                            set(
+                                [
+                                    ip.name
+                                    for ip in networkport.networknames.ipaddresses
+                                    if ip.name != ""
+                                ]
+                            )
+                        )
                         gateways = []
                         netmasks = []
                         for ip in networkport.networknames.ipaddresses:
                             gateways += [
-                                ipnetwork.gateway for ipnetwork in ip.ipnetworks if ipnetwork.gateway not in [
-                                    '', '0.0.0.0']]
+                                ipnetwork.gateway
+                                for ipnetwork in ip.ipnetworks
+                                if ipnetwork.gateway not in ["", "0.0.0.0"]
+                            ]
                             netmasks += [
-                                ipnetwork.netmask for ipnetwork in ip.ipnetworks if ipnetwork.netmask not in [
-                                    '', '0.0.0.0']]
+                                ipnetwork.netmask
+                                for ipnetwork in ip.ipnetworks
+                                if ipnetwork.netmask not in ["", "0.0.0.0"]
+                            ]
                         gateways = list(set(gateways))
                         netmasks = list(set(netmasks))
                     l = [
-                        ['Name', networkport.name],
-                        ['Network Type', self._get_network_type(networkport.instantiation_type)],
-                        ['MAC Address', networkport.mac],
-                        ['IP', ' / '.join(ipaddresses)],
-                        ['Netmask', ' / '.join(netmasks)],
-                        ['Gateway', ' / '.join(gateways)],
+                        ["Name", networkport.name],
+                        [
+                            "Network Type",
+                            self._get_network_type(networkport.instantiation_type),
+                        ],
+                        ["MAC Address", networkport.mac],
+                        ["IP", " / ".join(ipaddresses)],
+                        ["Netmask", " / ".join(netmasks)],
+                        ["Gateway", " / ".join(gateways)],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineStoragePart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         query = self.filterOnUUID(
-            session.query(Disk).add_column(self.diskfs.c.name).select_from(
-                self.machine.outerjoin(self.disk).outerjoin(self.diskfs)
-            ), uuid)
+            session.query(Disk)
+            .add_column(self.diskfs.c.name)
+            .select_from(self.machine.outerjoin(self.disk).outerjoin(self.diskfs)),
+            uuid,
+        )
         if count:
             ret = query.count()
         else:
             ret = []
             for disk, diskfs in query:
-                if diskfs not in ['rootfs', 'tmpfs', 'devtmpfs']:
+                if diskfs not in ["rootfs", "tmpfs", "devtmpfs"]:
                     if disk is not None:
                         l = [
-                            ['Name', disk.name],
-                            ['Device', disk.device],
-                            ['Mount Point', disk.mountpoint],
-                            ['Filesystem', diskfs],
-                            ['Size', disk.totalsize and str(disk.totalsize) + ' MB' or ''],
-                            ['Free Size', disk.freesize and str(disk.freesize) + ' MB' or ''],
+                            ["Name", disk.name],
+                            ["Device", disk.device],
+                            ["Mount Point", disk.mountpoint],
+                            ["Filesystem", diskfs],
+                            [
+                                "Size",
+                                disk.totalsize and str(disk.totalsize) + " MB" or "",
+                            ],
+                            [
+                                "Free Size",
+                                disk.freesize and str(disk.freesize) + " MB" or "",
+                            ],
                         ]
                         ret.append(l)
         return ret
 
     def getLastMachineAdministrativePart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         query = self.filterOnUUID(
-            session.query(Infocoms).add_column(
-                self.suppliers.c.name).select_from(
-                self.machine.outerjoin(
-                    self.infocoms).outerjoin(
-                    self.suppliers)),
-            uuid)
+            session.query(Infocoms)
+            .add_column(self.suppliers.c.name)
+            .select_from(
+                self.machine.outerjoin(self.infocoms).outerjoin(self.suppliers)
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -2549,40 +2681,38 @@ class Glpi95(DatabaseHelper):
             for infocoms, supplierName in query:
                 if infocoms is not None:
                     endDate = self.getWarrantyEndDate(infocoms)
-                    dateOfPurchase = ''
+                    dateOfPurchase = ""
                     if infocoms.buy_date is not None:
-                        dateOfPurchase = infocoms.buy_date.strftime('%Y-%m-%d')
+                        dateOfPurchase = infocoms.buy_date.strftime("%Y-%m-%d")
 
                     l = [
-                        ['Supplier', supplierName],
-                        ['Invoice Number', infocoms.bill],
-                        ['Date Of Purchase', dateOfPurchase],
-                        ['Warranty End Date', endDate],
+                        ["Supplier", supplierName],
+                        ["Invoice Number", infocoms.bill],
+                        ["Date Of Purchase", dateOfPurchase],
+                        ["Warranty End Date", endDate],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineAntivirusPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
-        if self.fusionantivirus is None:  # glpi_plugin_fusinvinventory_antivirus doesn't exists
+        if (
+            self.fusionantivirus is None
+        ):  # glpi_plugin_fusinvinventory_antivirus doesn't exists
             return []
 
         query = self.filterOnUUID(
-            session.query(FusionAntivirus).add_column(
-                self.manufacturers.c.name).select_from(
-                self.machine.outerjoin(
-                    self.fusionantivirus).outerjoin(
-                    self.manufacturers)),
-            uuid)
+            session.query(FusionAntivirus)
+            .add_column(self.manufacturers.c.name)
+            .select_from(
+                self.machine.outerjoin(self.fusionantivirus).outerjoin(
+                    self.manufacturers
+                )
+            ),
+            uuid,
+        )
 
         def __getAntivirusName(manufacturerName, antivirusName):
             """
@@ -2591,10 +2721,13 @@ class Glpi95(DatabaseHelper):
                 if antivirus name is a false positive, display it in bracket
             """
             if antivirusName in self.config.av_false_positive:
-                antivirusName += '@@FALSE_POSITIVE@@'
+                antivirusName += "@@FALSE_POSITIVE@@"
 
-            return manufacturerName and ' '.join(
-                [manufacturerName, antivirusName]) or antivirusName
+            return (
+                manufacturerName
+                and " ".join([manufacturerName, antivirusName])
+                or antivirusName
+            )
 
         if count:
             ret = query.count()
@@ -2603,33 +2736,29 @@ class Glpi95(DatabaseHelper):
             for antivirus, manufacturerName in query:
                 if antivirus:
                     l = [
-                        ['Name', __getAntivirusName(manufacturerName, antivirus.name)],
-                        ['Enabled', antivirus.is_active == 1 and 'Yes' or 'No'],
-                        ['Up-to-date', antivirus.is_uptodate == 1 and 'Yes' or 'No'],
+                        ["Name", __getAntivirusName(manufacturerName, antivirus.name)],
+                        ["Enabled", antivirus.is_active == 1 and "Yes" or "No"],
+                        ["Up-to-date", antivirus.is_uptodate == 1 and "Yes" or "No"],
                     ]
                     if antivirus.antivirus_version:
-                        l.insert(1, ['Version', antivirus.antivirus_version])
+                        l.insert(1, ["Version", antivirus.antivirus_version])
                     ret.append(l)
         return ret
 
     def getLastMachineRegistryPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         query = self.filterOnUUID(
-            session.query(RegContents).add_column(self.registries.c.name)
+            session.query(RegContents)
+            .add_column(self.registries.c.name)
             .add_column(self.regcontents.c.key)
             .add_column(self.regcontents.c.value)
-            .select_from(self.machine.outerjoin(self.regcontents)
-                         .outerjoin(self.registries)
-                         ), int(str(uuid).replace("UUID", "")))
+            .select_from(
+                self.machine.outerjoin(self.regcontents).outerjoin(self.registries)
+            ),
+            int(str(uuid).replace("UUID", "")),
+        )
 
         if count:
             ret = query.count()
@@ -2638,50 +2767,49 @@ class Glpi95(DatabaseHelper):
             for row in query:
                 if row.key is not None:
                     l = [
-                        ['Registry key', row.name],
-                        ['Value', row.value],
+                        ["Registry key", row.name],
+                        ["Value", row.value],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineSoftwaresPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         hide_win_updates = False
-        if 'hide_win_updates' in options:
-            hide_win_updates = options['hide_win_updates']
+        if "hide_win_updates" in options:
+            hide_win_updates = options["hide_win_updates"]
 
         query = self.filterOnUUID(
-            session.query(Software).add_column(self.manufacturers.c.name)
-            .add_column(self.softwareversions.c.name).select_from(
+            session.query(Software)
+            .add_column(self.manufacturers.c.name)
+            .add_column(self.softwareversions.c.name)
+            .select_from(
                 self.machine.outerjoin(self.inst_software)
                 .outerjoin(self.softwareversions)
                 .outerjoin(self.software)
                 .outerjoin(self.manufacturers)
-            ), uuid)
+            ),
+            uuid,
+        )
         query = query.order_by(self.software.c.name)
 
         if filt:
             clauses = []
-            clauses.append(self.manufacturers.c.name.like('%' + filt + '%'))
-            clauses.append(self.softwareversions.c.name.like('%' + filt + '%'))
-            clauses.append(self.software.c.name.like('%' + filt + '%'))
+            clauses.append(self.manufacturers.c.name.like("%" + filt + "%"))
+            clauses.append(self.softwareversions.c.name.like("%" + filt + "%"))
+            clauses.append(self.software.c.name.like("%" + filt + "%"))
             query = query.filter(or_(*clauses))
 
         if hide_win_updates:
             query = query.filter(
                 not_(
                     and_(
-                        self.manufacturers.c.name.contains('microsoft'),
-                        self.software.c.name.op('regexp')('KB[0-9]+(-v[0-9]+)?(v[0-9]+)?')
+                        self.manufacturers.c.name.contains("microsoft"),
+                        self.software.c.name.op("regexp")(
+                            "KB[0-9]+(-v[0-9]+)?(v[0-9]+)?"
+                        ),
                     )
                 )
             )
@@ -2699,9 +2827,9 @@ class Glpi95(DatabaseHelper):
             for software, manufacturer, version in query:
                 if software is not None:
                     l = [
-                        ['Vendor', manufacturer],
-                        ['Name', software.name],
-                        ['Version', version],
+                        ["Vendor", manufacturer],
+                        ["Name", software.name],
+                        ["Version", version],
                     ]
                     ret.append(l)
         return ret
@@ -2723,9 +2851,9 @@ class Glpi95(DatabaseHelper):
         # if __tablename__ exists for these classes
 
         values = {
-            'computer_name': (Machine, 'name'),
-            'description': (Machine, 'comment'),
-            'inventory_number': (Machine, 'otherserial'),
+            "computer_name": (Machine, "name"),
+            "description": (Machine, "comment"),
+            "inventory_number": (Machine, "otherserial"),
         }
 
         return values[name]
@@ -2745,37 +2873,36 @@ class Glpi95(DatabaseHelper):
         """
 
         self.logger.debug("Update an editable field")
-        self.logger.debug(
-            "%s: Set %s as new value for %s" %
-            (uuid, value, name))
+        self.logger.debug("%s: Set %s as new value for %s" % (uuid, value, name))
         try:
             session = create_session()
 
             # Get SQL field who will be updated
             table, field = self.__getTableAndFieldFromName(name)
-            session.query(table).filter_by(
-                id=fromUUID(uuid)).update({field: value})
+            session.query(table).filter_by(id=fromUUID(uuid)).update({field: value})
 
             # Set updated field as a locked field so it won't be updated
             # at next inventory
             query = session.query(FusionLocks).filter(
-                self.fusionlocks.c.items_id == fromUUID(uuid))
+                self.fusionlocks.c.items_id == fromUUID(uuid)
+            )
             flocks = query.first()
             if flocks is not None:
                 # Update glpi_plugin_fusioninventory_locks tablefields table
                 flocksFields = eval(flocks.tablefields)
                 if field not in flocksFields:
                     flocksFields.append(field)
-                    query.update(
-                        {'tablefields': str(flocksFields).replace("'", '"')})
+                    query.update({"tablefields": str(flocksFields).replace("'", '"')})
             else:
                 # Create new glpi_plugin_fusioninventory_locks entry
                 session.execute(
-                    self.fusionlocks.insert().values({
-                        'tablename': table.__tablename__,
-                        'items_id': fromUUID(uuid),
-                        'tablefields': str([field]).replace("'", '"'),
-                    })
+                    self.fusionlocks.insert().values(
+                        {
+                            "tablename": table.__tablename__,
+                            "items_id": fromUUID(uuid),
+                            "tablefields": str([field]).replace("'", '"'),
+                        }
+                    )
                 )
 
             session.close()
@@ -2785,18 +2912,12 @@ class Glpi95(DatabaseHelper):
             return False
 
     def getLastMachineSummaryPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         query = self.filterOnUUID(
-            session.query(Machine).add_entity(Infocoms)
+            session.query(Machine)
+            .add_entity(Infocoms)
             .add_column(self.entities.c.name)
             .add_column(self.locations.c.name)
             .add_column(self.os.c.name)
@@ -2822,14 +2943,31 @@ class Glpi95(DatabaseHelper):
                 .outerjoin(self.state)
                 .outerjoin(self.fusionagents)
                 .outerjoin(self.glpi_domains)
-            ), uuid)
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
         else:
             ret = []
-            for machine, infocoms, entity, location, oslocal, manufacturer, type, model, servicepack, version, architecture, domain, state, last_contact in query:
-                endDate = ''
+            for (
+                machine,
+                infocoms,
+                entity,
+                location,
+                oslocal,
+                manufacturer,
+                type,
+                model,
+                servicepack,
+                version,
+                architecture,
+                domain,
+                state,
+                last_contact,
+            ) in query:
+                endDate = ""
                 if infocoms is not None:
                     endDate = self.getWarrantyEndDate(infocoms)
 
@@ -2840,7 +2978,7 @@ class Glpi95(DatabaseHelper):
                     modelType.append(type)
 
                 if len(modelType) == 0:
-                    modelType = ''
+                    modelType = ""
                 elif len(modelType) == 1:
                     modelType = modelType[0]
                 elif len(modelType) == 2:
@@ -2849,34 +2987,45 @@ class Glpi95(DatabaseHelper):
                 manufacturerWarranty = False
                 if machine.serial is not None and len(machine.serial) > 0:
                     manufacturerWarranty = self.getManufacturerWarranty(
-                        manufacturer, machine.serial)
+                        manufacturer, machine.serial
+                    )
 
                 if manufacturerWarranty:
-                    if manufacturerWarranty['type'] == 'get':
-                        url = manufacturerWarranty['url'] + \
-                            '?' + manufacturerWarranty['params']
-                        serialNumber = '%s / <a href="%s" target="_blank">@@WARRANTY_LINK_TEXT@@</a>' % (
-                            machine.serial, url)
+                    if manufacturerWarranty["type"] == "get":
+                        url = (
+                            manufacturerWarranty["url"]
+                            + "?"
+                            + manufacturerWarranty["params"]
+                        )
+                        serialNumber = (
+                            '%s / <a href="%s" target="_blank">@@WARRANTY_LINK_TEXT@@</a>'
+                            % (machine.serial, url)
+                        )
                     else:
-                        url = manufacturerWarranty['url']
-                        serialNumber = '%s / <form action="%s" method="post" target="_blank" id="warrantyCheck" style="display: inline">' % (
-                            machine.serial, url)
-                        for param in manufacturerWarranty['params'].split('&'):
-                            name, value = param.split('=')
-                            serialNumber += '<input type="hidden" name="%s" value="%s" />' % (
-                                name, value)
+                        url = manufacturerWarranty["url"]
+                        serialNumber = (
+                            '%s / <form action="%s" method="post" target="_blank" id="warrantyCheck" style="display: inline">'
+                            % (machine.serial, url)
+                        )
+                        for param in manufacturerWarranty["params"].split("&"):
+                            name, value = param.split("=")
+                            serialNumber += (
+                                '<input type="hidden" name="%s" value="%s" />'
+                                % (name, value)
+                            )
                         serialNumber += '<a href="#" onclick="jQuery(\'#warrantyCheck\').submit(); return false;">@@WARRANTY_LINK_TEXT@@</a></form>'
                 else:
                     serialNumber = machine.serial
 
-                entityValue = ''
+                entityValue = ""
                 if entity:
                     entityValue += entity
                 if location:
-                    entityValue += ' (%s)' % location
+                    entityValue += " (%s)" % location
 
                 owner_login, owner_firstname, owner_realname = self.getMachineOwner(
-                    machine)
+                    machine
+                )
 
                 # Last inventory date
                 date_mod = machine.date_mod
@@ -2885,49 +3034,46 @@ class Glpi95(DatabaseHelper):
                     date_mod = last_contact
 
                 l = [
-                    ['Computer Name', ['computer_name', 'text', machine.name]],
-                    ['Description', ['description', 'text', machine.comment]],
-                    ['Entity (Location)', '%s' % entityValue],
-                    ['Domain', domain],
-                    ['Last Logged User', machine.contact],
-                    ['Owner', owner_login],
-                    ['Owner Firstname', owner_firstname],
-                    ['Owner Realname', owner_realname],
-                    ['OS', oslocal],
-                    ['Service Pack', servicepack],
-                    ['Version', version],
-                    ['Architecture', architecture],
-                    ['Windows Key', machine.license_number],
-                    ['Model / Type', modelType],
-                    ['Manufacturer', manufacturer],
-                    ['Serial Number', serialNumber],
-                    ['Inventory Number', ['inventory_number', 'text', machine.otherserial]],
-                    ['State', state],
-                    ['Warranty End Date', endDate],
-                    ['Last Inventory Date', date_mod.strftime("%Y-%m-%d %H:%M:%S")],
+                    ["Computer Name", ["computer_name", "text", machine.name]],
+                    ["Description", ["description", "text", machine.comment]],
+                    ["Entity (Location)", "%s" % entityValue],
+                    ["Domain", domain],
+                    ["Last Logged User", machine.contact],
+                    ["Owner", owner_login],
+                    ["Owner Firstname", owner_firstname],
+                    ["Owner Realname", owner_realname],
+                    ["OS", oslocal],
+                    ["Service Pack", servicepack],
+                    ["Version", version],
+                    ["Architecture", architecture],
+                    ["Windows Key", machine.license_number],
+                    ["Model / Type", modelType],
+                    ["Manufacturer", manufacturer],
+                    ["Serial Number", serialNumber],
+                    [
+                        "Inventory Number",
+                        ["inventory_number", "text", machine.otherserial],
+                    ],
+                    ["State", state],
+                    ["Warranty End Date", endDate],
+                    ["Last Inventory Date", date_mod.strftime("%Y-%m-%d %H:%M:%S")],
                 ]
                 ret.append(l)
         return ret
 
     def getLastMachineProcessorsPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(ComputerProcessor).add_column(
-                self.processor.c.designation) .select_from(
-                self.machine.outerjoin(
-                    self.computerProcessor) .outerjoin(
-                    self.processor)),
-            uuid)
+            session.query(ComputerProcessor)
+            .add_column(self.processor.c.designation)
+            .select_from(
+                self.machine.outerjoin(self.computerProcessor).outerjoin(self.processor)
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -2936,33 +3082,34 @@ class Glpi95(DatabaseHelper):
             for processor, designation in query:
                 if processor is not None:
                     l = [
-                        ['Name', designation],
-                        ['Frequency', processor.frequency and str(processor.frequency) + ' MHz' or ''],
+                        ["Name", designation],
+                        [
+                            "Frequency",
+                            processor.frequency
+                            and str(processor.frequency) + " MHz"
+                            or "",
+                        ],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineMemoryPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
             session.query(ComputerMemory)
             .add_column(self.memoryType.c.name)
             .add_column(self.memory.c.frequence)
-            .add_column(self.memory.c.designation).select_from(
+            .add_column(self.memory.c.designation)
+            .select_from(
                 self.machine.outerjoin(self.computerMemory)
                 .outerjoin(self.memory)
                 .outerjoin(self.memoryType)
-            ), uuid)
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -2971,33 +3118,29 @@ class Glpi95(DatabaseHelper):
             for memory, type, frequence, designation in query:
                 if memory is not None:
                     l = [
-                        ['Name', designation],
-                        ['Type', type],
-                        ['Frequency', frequence],
-                        ['Size', memory.size and str(memory.size) + ' MB' or ''],
+                        ["Name", designation],
+                        ["Type", type],
+                        ["Frequency", frequence],
+                        ["Size", memory.size and str(memory.size) + " MB" or ""],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineHarddrivesPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(self.klass['computers_deviceharddrives'])
+            session.query(self.klass["computers_deviceharddrives"])
             .add_column(self.deviceharddrives.c.designation)
             .select_from(
-                self.machine.outerjoin(self.computers_deviceharddrives)
-                .outerjoin(self.deviceharddrives)
-            ), uuid)
+                self.machine.outerjoin(self.computers_deviceharddrives).outerjoin(
+                    self.deviceharddrives
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3006,31 +3149,27 @@ class Glpi95(DatabaseHelper):
             for hd, designation in query:
                 if hd is not None:
                     l = [
-                        ['Name', designation],
-                        ['Size', hd.capacity and str(hd.capacity) + ' MB' or ''],
+                        ["Name", designation],
+                        ["Size", hd.capacity and str(hd.capacity) + " MB" or ""],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineNetworkCardsPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(self.klass['computers_devicenetworkcards'])
-            .add_entity(self.klass['devicenetworkcards'])
+            session.query(self.klass["computers_devicenetworkcards"])
+            .add_entity(self.klass["devicenetworkcards"])
             .select_from(
-                self.machine.outerjoin(self.computers_devicenetworkcards)
-                .outerjoin(self.devicenetworkcards)
-            ), uuid)
+                self.machine.outerjoin(self.computers_devicenetworkcards).outerjoin(
+                    self.devicenetworkcards
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3039,30 +3178,26 @@ class Glpi95(DatabaseHelper):
             for mac, network in query:
                 if network is not None:
                     l = [
-                        ['Name', network.designation],
-                        ['Bandwidth', network.bandwidth],
-                        ['MAC Address', mac.mac],
+                        ["Name", network.designation],
+                        ["Bandwidth", network.bandwidth],
+                        ["MAC Address", mac.mac],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineDrivesPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(self.klass['devicedrives']).select_from(
-                self.machine.outerjoin(self.computers_devicedrives)
-                .outerjoin(self.devicedrives)
-            ), uuid)
+            session.query(self.klass["devicedrives"]).select_from(
+                self.machine.outerjoin(self.computers_devicedrives).outerjoin(
+                    self.devicedrives
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3071,34 +3206,31 @@ class Glpi95(DatabaseHelper):
             for drive in query:
                 if drive is not None:
                     l = [
-                        ['Name', drive.designation],
-                        ['Writer', drive.is_writer and 'Yes' or 'No'],
+                        ["Name", drive.designation],
+                        ["Writer", drive.is_writer and "Yes" or "No"],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineGraphicCardsPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(
-                self.klass['devicegraphiccards']).add_column(
-                self.interfaceType.c.name) .select_from(
-                self.machine.outerjoin(
-                    self.computers_devicegraphiccards) .outerjoin(
-                        self.devicegraphiccards) .outerjoin(
-                            self.interfaceType,
-                            self.interfaceType.c.id == self.devicegraphiccards.c.interfacetypes_id)),
-            uuid)
+            session.query(self.klass["devicegraphiccards"])
+            .add_column(self.interfaceType.c.name)
+            .select_from(
+                self.machine.outerjoin(self.computers_devicegraphiccards)
+                .outerjoin(self.devicegraphiccards)
+                .outerjoin(
+                    self.interfaceType,
+                    self.interfaceType.c.id
+                    == self.devicegraphiccards.c.interfacetypes_id,
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3106,28 +3238,32 @@ class Glpi95(DatabaseHelper):
             ret = []
             for card, interfaceType in query:
                 if card is not None:
-                    l = [['Name', card.designation], ['Memory', card.memory_default and str(
-                        card.memory_default) + ' MB' or ''], ['Type', interfaceType], ]
+                    l = [
+                        ["Name", card.designation],
+                        [
+                            "Memory",
+                            card.memory_default
+                            and str(card.memory_default) + " MB"
+                            or "",
+                        ],
+                        ["Type", interfaceType],
+                    ]
                     ret.append(l)
         return ret
 
     def getLastMachineSoundCardsPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(self.klass['devicesoundcards']).select_from(
-                self.machine.outerjoin(self.computers_devicesoundcards)
-                .outerjoin(self.devicesoundcards)
-            ), uuid)
+            session.query(self.klass["devicesoundcards"]).select_from(
+                self.machine.outerjoin(self.computers_devicesoundcards).outerjoin(
+                    self.devicesoundcards
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3136,29 +3272,26 @@ class Glpi95(DatabaseHelper):
             for sound in query:
                 if sound is not None:
                     l = [
-                        ['Name', sound.designation],
+                        ["Name", sound.designation],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineControllersPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         query = self.filterOnUUID(
-            session.query(self.klass['computers_devicecontrols'])
-            .add_entity(self.klass['devicecontrols']).select_from(
-                self.machine.outerjoin(self.computers_devicecontrols)
-                .outerjoin(self.devicecontrols)
-            ), uuid)
+            session.query(self.klass["computers_devicecontrols"])
+            .add_entity(self.klass["devicecontrols"])
+            .select_from(
+                self.machine.outerjoin(self.computers_devicecontrols).outerjoin(
+                    self.devicecontrols
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3167,28 +3300,24 @@ class Glpi95(DatabaseHelper):
             for computerControls, deviceControls in query:
                 if computerControls is not None:
                     l = [
-                        ['Name', deviceControls.designation],
+                        ["Name", deviceControls.designation],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineOthersPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options=None,
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options=None, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         options = options or {}
         query = self.filterOnUUID(
-            session.query(self.klass['devicepcis']).select_from(
-                self.machine.outerjoin(self.computers_devicepcis)
-                .outerjoin(self.devicepcis)
-            ), uuid)
+            session.query(self.klass["devicepcis"]).select_from(
+                self.machine.outerjoin(self.computers_devicepcis).outerjoin(
+                    self.devicepcis
+                )
+            ),
+            uuid,
+        )
 
         if count:
             ret = query.count()
@@ -3197,63 +3326,50 @@ class Glpi95(DatabaseHelper):
             for pci in query:
                 if pci is not None:
                     l = [
-                        ['Name', pci.designation],
-                        ['Comment', pci.comment],
+                        ["Name", pci.designation],
+                        ["Comment", pci.comment],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineHistoryPart(
-            self,
-            session,
-            uuid,
-            part,
-            min=0,
-            max=-1,
-            filt=None,
-            options={},
-            count=False):
+        self, session, uuid, part, min=0, max=-1, filt=None, options={}, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         # options = options or {}
         # Set options
-        history_delta = 'All'
-        if 'history_delta' in options:
-            history_delta = options['history_delta']
+        history_delta = "All"
+        if "history_delta" in options:
+            history_delta = options["history_delta"]
 
         query = session.query(Logs)
-        query = query.filter(and_(
-            self.logs.c.items_id == int(uuid.replace('UUID', '')),
-            self.logs.c.itemtype == "Computer"
-        ))
+        query = query.filter(
+            and_(
+                self.logs.c.items_id == int(uuid.replace("UUID", "")),
+                self.logs.c.itemtype == "Computer",
+            )
+        )
 
         now = datetime.datetime.now()
-        if history_delta == 'today':
-            query = query.filter(
-                self.logs.c.date_mod > now -
-                datetime.timedelta(1))
-        elif history_delta == 'week':
-            query = query.filter(
-                self.logs.c.date_mod > now -
-                datetime.timedelta(7))
-        if history_delta == 'month':
-            query = query.filter(
-                self.logs.c.date_mod > now -
-                datetime.timedelta(30))
+        if history_delta == "today":
+            query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(1))
+        elif history_delta == "week":
+            query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(7))
+        if history_delta == "month":
+            query = query.filter(self.logs.c.date_mod > now - datetime.timedelta(30))
 
         if filt:
             clauses = []
-            clauses.append(self.logs.c.date_mod.like('%' + filt + '%'))
-            clauses.append(self.logs.c.user_name.like('%' + filt + '%'))
-            clauses.append(self.logs.c.old_value.like('%' + filt + '%'))
-            clauses.append(self.logs.c.new_value.like('%' + filt + '%'))
+            clauses.append(self.logs.c.date_mod.like("%" + filt + "%"))
+            clauses.append(self.logs.c.user_name.like("%" + filt + "%"))
+            clauses.append(self.logs.c.old_value.like("%" + filt + "%"))
+            clauses.append(self.logs.c.new_value.like("%" + filt + "%"))
             clauses.append(
-                self.logs.c.id_search_option.in_(
-                    self.getSearchOptionId(filt)))
-            clauses.append(
-                self.logs.c.itemtype_link.in_(
-                    self.getLinkedActionKey(filt)))
+                self.logs.c.id_search_option.in_(self.getSearchOptionId(filt))
+            )
+            clauses.append(self.logs.c.itemtype_link.in_(self.getLinkedActionKey(filt)))
             # Treat Software case
-            if filt.lower() in 'software':
+            if filt.lower() in "software":
                 clauses.append(self.logs.c.linked_action.in_([4, 5]))
             query = query.filter(or_(*clauses))
 
@@ -3271,148 +3387,135 @@ class Glpi95(DatabaseHelper):
             ret = []
             for log in query:
                 if log is not None:
-                    update = ''
-                    if log.old_value == '' and log.new_value != '':
-                        update = '%s' % log.new_value
-                    elif log.old_value != '' and log.new_value == '':
-                        update = '%s' % log.old_value
+                    update = ""
+                    if log.old_value == "" and log.new_value != "":
+                        update = "%s" % log.new_value
+                    elif log.old_value != "" and log.new_value == "":
+                        update = "%s" % log.old_value
                     else:
-                        update = '%s --> %s' % (log.old_value, log.new_value)
+                        update = "%s --> %s" % (log.old_value, log.new_value)
 
-                    update = '%s%s' % (self.getLinkedActionValues(log)[
-                                       'update'], update)
+                    update = "%s%s" % (
+                        self.getLinkedActionValues(log)["update"],
+                        update,
+                    )
 
                     l = [
-                        ['Date', log.date_mod.strftime('%Y-%m-%d %H:%m')],
-                        ['User', log.user_name],
-                        ['Category', self.getLinkedActionValues(log)['field']],
-                        ['Action', update],
+                        ["Date", log.date_mod.strftime("%Y-%m-%d %H:%m")],
+                        ["User", log.user_name],
+                        ["Category", self.getLinkedActionValues(log)["field"]],
+                        ["Action", update],
                     ]
                     ret.append(l)
         return ret
 
     def getLastMachineInventoryPart(
-            self,
-            uuid,
-            part,
-            minbound=0,
-            maxbound=-1,
-            filt=None,
-            options=None,
-            count=False):
+        self, uuid, part, minbound=0, maxbound=-1, filt=None, options=None, count=False
+    ):
         # Mutable dict options used as default argument to a method or function
         options = options or {}
         session = create_session()
 
         ret = None
-        if hasattr(self, 'getLastMachine%sPart' % part):
-            ret = getattr(
-                self,
-                'getLastMachine%sPart' %
-                part)(
-                session,
-                uuid,
-                part,
-                minbound,
-                maxbound,
-                filt,
-                options,
-                count)
+        if hasattr(self, "getLastMachine%sPart" % part):
+            ret = getattr(self, "getLastMachine%sPart" % part)(
+                session, uuid, part, minbound, maxbound, filt, options, count
+            )
 
         session.close()
         return ret
 
     def getSearchOptionValue(self, log):
         try:
-            return self.searchOptions['en_US'][str(log.id_search_option)]
+            return self.searchOptions["en_US"][str(log.id_search_option)]
         except BaseException:
             if log.id_search_option != 0:
                 logging.getLogger().warn(
-                    'I can\'t get a search option for id %s' %
-                    log.id_search_option)
-            return ''
+                    "I can't get a search option for id %s" % log.id_search_option
+                )
+            return ""
 
     def getLinkedActionValues(self, log):
         d = {
             0: {
-                'update': '',
-                'field': self.getSearchOptionValue(log),
+                "update": "",
+                "field": self.getSearchOptionValue(log),
             },
             1: {
-                'update': 'Add a component: ',
-                'field': self.getLinkedActionField(log.itemtype_link),
+                "update": "Add a component: ",
+                "field": self.getLinkedActionField(log.itemtype_link),
             },
             2: {
-                'update': 'Update a component: ',
-                'field': self.getLinkedActionField(log.itemtype_link),
+                "update": "Update a component: ",
+                "field": self.getLinkedActionField(log.itemtype_link),
             },
             3: {
-                'update': 'Deletion of a component: ',
-                'field': self.getLinkedActionField(log.itemtype_link),
+                "update": "Deletion of a component: ",
+                "field": self.getLinkedActionField(log.itemtype_link),
             },
             4: {
-                'update': 'Install software: ',
-                'field': 'Software',
+                "update": "Install software: ",
+                "field": "Software",
             },
             5: {
-                'update': 'Uninstall software: ',
-                'field': 'Software',
+                "update": "Uninstall software: ",
+                "field": "Software",
             },
             6: {
-                'update': 'Disconnect device: ',
-                'field': log.itemtype_link,
+                "update": "Disconnect device: ",
+                "field": log.itemtype_link,
             },
             7: {
-                'update': 'Connect device: ',
-                'field': log.itemtype_link,
+                "update": "Connect device: ",
+                "field": log.itemtype_link,
             },
             8: {
-                'update': 'OCS Import: ',
-                'field': '',
+                "update": "OCS Import: ",
+                "field": "",
             },
             9: {
-                'update': 'OCS Delete: ',
-                'field': '',
+                "update": "OCS Delete: ",
+                "field": "",
             },
             10: {
-                'update': 'OCS ID Changed: ',
-                'field': '',
+                "update": "OCS ID Changed: ",
+                "field": "",
             },
             11: {
-                'update': 'OCS Link: ',
-                'field': '',
+                "update": "OCS Link: ",
+                "field": "",
             },
             12: {
-                'update': 'Other (often from plugin): ',
-                'field': '',
+                "update": "Other (often from plugin): ",
+                "field": "",
             },
             13: {
-                'update': 'Delete item (put in trash): ',
-                'field': '',
+                "update": "Delete item (put in trash): ",
+                "field": "",
             },
             14: {
-                'update': 'Restore item from trash: ',
-                'field': '',
+                "update": "Restore item from trash: ",
+                "field": "",
             },
             15: {
-                'update': 'Add relation: ',
-                'field': log.itemtype_link,
+                "update": "Add relation: ",
+                "field": log.itemtype_link,
             },
             16: {
-                'update': 'Delete relation: ',
-                'field': log.itemtype_link,
+                "update": "Delete relation: ",
+                "field": log.itemtype_link,
             },
             17: {
-                'update': 'Add an item: ',
-                'field': self.getLinkedActionField(log.itemtype_link),
+                "update": "Add an item: ",
+                "field": self.getLinkedActionField(log.itemtype_link),
             },
             18: {
-                'update': 'Update an item: ',
-                'field': self.getLinkedActionField(log.itemtype_link),
+                "update": "Update an item: ",
+                "field": self.getLinkedActionField(log.itemtype_link),
             },
             19: {
-                'update': 'Deletion of an item: ',
-                'field': self.getLinkedActionField(log.itemtype_link),
+                "update": "Deletion of an item: ",
+                "field": self.getLinkedActionField(log.itemtype_link),
             },
         }
 
@@ -3420,22 +3523,22 @@ class Glpi95(DatabaseHelper):
             return d[log.linked_action]
         else:
             return {
-                'update': '',
-                'field': '',
+                "update": "",
+                "field": "",
             }
 
     def getLinkedActions(self):
         return {
-            'DeviceDrive': 'Drive',
-            'DeviceGraphicCard': 'Graphic Card',
-            'DeviceHardDrive': 'Hard Drive',
-            'DeviceMemory': 'Memory',
-            'DeviceNetworkCard': 'Network Card',
-            'DevicePci': 'Other Component',
-            'DeviceProcessor': 'Processor',
-            'DeviceSoundCard': 'Sound Card',
-            'ComputerDisk': 'Volume',
-            'NetworkPort': 'Network Port',
+            "DeviceDrive": "Drive",
+            "DeviceGraphicCard": "Graphic Card",
+            "DeviceHardDrive": "Hard Drive",
+            "DeviceMemory": "Memory",
+            "DeviceNetworkCard": "Network Card",
+            "DevicePci": "Other Component",
+            "DeviceProcessor": "Processor",
+            "DeviceSoundCard": "Sound Card",
+            "ComputerDisk": "Volume",
+            "NetworkPort": "Network Port",
         }
 
     def getLinkedActionField(self, itemtype):
@@ -3486,30 +3589,36 @@ class Glpi95(DatabaseHelper):
         # (PXE network boot inventory)"
         unknown_os_ids = [0]
         unknown_os_pxe_id = self.getUnknownPXEOSId(
-            "Unknown operating system (PXE network boot inventory)")
+            "Unknown operating system (PXE network boot inventory)"
+        )
         if unknown_os_pxe_id:
             unknown_os_ids.append(unknown_os_pxe_id)
 
-        query = self.filterOnUUID(session.query(Machine).filter(
-            not_(self.machine.c.operatingsystems_id.in_(unknown_os_ids))), uuid)
+        query = self.filterOnUUID(
+            session.query(Machine).filter(
+                not_(self.machine.c.operatingsystems_id.in_(unknown_os_ids))
+            ),
+            uuid,
+        )
         session.close()
 
         return query.first() and True or False
 
     # Functions used by querymanager
-    def getAllOs(self, ctx, filt=''):
+    def getAllOs(self, ctx, filt=""):
         """
         @return: all os defined in the GLPI database
         """
         session = create_session()
         query = session.query(OS).select_from(self.os.join(self.machine))
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.os.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.os.c.name.like("%" + filt + "%"))
         ret = query.all()
         session.close()
         return ret
@@ -3520,13 +3629,14 @@ class Glpi95(DatabaseHelper):
         """
         # TODO use the ctx...
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(
-                self.os)).filter(
-            self.os.c.name == osname)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = (
+            session.query(Machine)
+            .select_from(self.machine.join(self.os))
+            .filter(self.os.c.name == osname)
+        )
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         ret = query.all()
@@ -3542,38 +3652,42 @@ class Glpi95(DatabaseHelper):
             osnames = [osnames]
 
         if int(count) == 1:
-            query = session.query(
-                func.count(
-                    Machine.id)).select_from(
-                self.machine.outerjoin(
-                    self.os))
+            query = session.query(func.count(Machine.id)).select_from(
+                self.machine.outerjoin(self.os)
+            )
         else:
-            query = session.query(Machine).select_from(
-                self.machine.outerjoin(self.os))
+            query = session.query(Machine).select_from(self.machine.outerjoin(self.os))
 
-        query = query.filter(
-            Machine.is_deleted == 0).filter(
-            Machine.is_template == 0)
+        query = query.filter(Machine.is_deleted == 0).filter(Machine.is_template == 0)
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
 
         if osnames == ["other"]:
-            query = query.filter(or_(and_(not_(OS.name.like('%Windows%')), not_(OS.name.like(
-                '%Mageia%')), not_(OS.name.like('%macOS%')), ), Machine.operatingsystems_id == 0, ))
+            query = query.filter(
+                or_(
+                    and_(
+                        not_(OS.name.like("%Windows%")),
+                        not_(OS.name.like("%Mageia%")),
+                        not_(OS.name.like("%macOS%")),
+                    ),
+                    Machine.operatingsystems_id == 0,
+                )
+            )
         elif osnames == ["otherw"]:
             query = query.filter(
                 and_(
-                    not_(
-                        OS.name.like('%Windows%10%')), not_(
-                        OS.name.like('%Windows%8%')), not_(
-                        OS.name.like('%Windows%7%')), not_(
-                        OS.name.like('%Windows%Vista%')), not_(
-                            OS.name.like('%Windows%XP%')), OS.name.like('%Windows%')))
+                    not_(OS.name.like("%Windows%10%")),
+                    not_(OS.name.like("%Windows%8%")),
+                    not_(OS.name.like("%Windows%7%")),
+                    not_(OS.name.like("%Windows%Vista%")),
+                    not_(OS.name.like("%Windows%XP%")),
+                    OS.name.like("%Windows%"),
+                )
+            )
         # if osnames == ['%'], we want all machines, including machines without
         # OS (used for reporting, per example...)
-        elif osnames != ['%']:
-            os_filter = [OS.name.like('%' + osname + '%')
-                         for osname in osnames]
+        elif osnames != ["%"]:
+            os_filter = [OS.name.like("%" + osname + "%") for osname in osnames]
             query = query.filter(or_(*os_filter))
 
         if int(count) == 1:
@@ -3587,13 +3701,14 @@ class Glpi95(DatabaseHelper):
         """
         # TODO use the ctx...
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(
-                self.entities)).filter(
-            self.entities.c.name == enname)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = (
+            session.query(Machine)
+            .select_from(self.machine.join(self.entities))
+            .filter(self.entities.c.name == enname)
+        )
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         ret = query.all()
@@ -3612,7 +3727,7 @@ class Glpi95(DatabaseHelper):
     def getEntitiesParentsAsDict(self, lids):
         session = create_session()
         if not isinstance(lids, list) and not isinstance(lids, tuple):
-            lids = (lids)
+            lids = lids
         query = session.query(Entities).all()
         locs = {}
         for l in query:
@@ -3623,6 +3738,7 @@ class Glpi95(DatabaseHelper):
                 return locs[i]
             else:
                 return None
+
         ret = {}
         for i in lids:
             t = []
@@ -3634,16 +3750,13 @@ class Glpi95(DatabaseHelper):
         return ret
 
     @DatabaseHelper._sessionm
-    def getMachineBySoftware(self,
-                             session,
-                             ctx,
-                             name,
-                             vendor=None,
-                             version=None,
-                             count=0):
+    def getMachineBySoftware(
+        self, session, ctx, name, vendor=None, version=None, count=0
+    ):
         """
         @return: all machines that have this software
         """
+
         def all_elem_are_none(params):
             for param in params:
                 if param is not None:
@@ -3671,11 +3784,12 @@ class Glpi95(DatabaseHelper):
         else:
             query = session.query(distinct(self.machine.c.id))
 
-        query = query.select_from(self.machine
-                                  .join(self.inst_software)
-                                  .join(self.softwareversions)
-                                  .join(self.software)
-                                  .outerjoin(self.manufacturers))
+        query = query.select_from(
+            self.machine.join(self.inst_software)
+            .join(self.softwareversions)
+            .join(self.software)
+            .outerjoin(self.manufacturers)
+        )
         query = query.filter(Machine.is_deleted == 0)
         query = query.filter(Machine.is_template == 0)
         query = self.__filter_on(query)
@@ -3699,13 +3813,9 @@ class Glpi95(DatabaseHelper):
         return ret
 
     @DatabaseHelper._sessionm
-    def getAllSoftwaresImproved(self,
-                                session,
-                                ctx,
-                                name,
-                                vendor=None,
-                                version=None,
-                                count=0):
+    def getAllSoftwaresImproved(
+        self, session, ctx, name, vendor=None, version=None, count=0
+    ):
         """
         if count == 1
         This method is used for reporting and license count
@@ -3722,6 +3832,7 @@ class Glpi95(DatabaseHelper):
         return: all machines that have this software and the entity
 
         """
+
         def all_elem_are_none(params):
             for param in params:
                 if param is not None:
@@ -3750,21 +3861,24 @@ class Glpi95(DatabaseHelper):
             query = session.query(self.software.c.name)
         else:
             query = session.query(
-                self.machine.c.id.label('computers_id'),
-                self.machine.c.name.label('computers_name'),
-                self.machine.c.entities_id.label('entity_id'))
+                self.machine.c.id.label("computers_id"),
+                self.machine.c.name.label("computers_name"),
+                self.machine.c.entities_id.label("entity_id"),
+            )
 
         if int(count) >= 3:
-            query = query.select_from(self.machine
-                                      .join(self.inst_software)
-                                      .join(self.softwareversions)
-                                      .join(self.software)
-                                      .outerjoin(self.manufacturers))
+            query = query.select_from(
+                self.machine.join(self.inst_software)
+                .join(self.softwareversions)
+                .join(self.software)
+                .outerjoin(self.manufacturers)
+            )
         else:
-            query = query.select_from(self.software
-                                      .join(self.softwareversions)
-                                      .join(self.inst_software)
-                                      .outerjoin(self.manufacturers))
+            query = query.select_from(
+                self.software.join(self.softwareversions)
+                .join(self.inst_software)
+                .outerjoin(self.manufacturers)
+            )
 
         name_filter = [Software.name.like(n) for n in name]
         query = query.filter(or_(*name_filter))
@@ -3777,20 +3891,19 @@ class Glpi95(DatabaseHelper):
             vendor_filter = [Manufacturers.name.like(v) for v in vendor]
             query = query.filter(or_(*vendor_filter))
 
-        if hasattr(ctx, 'locationsid'):
+        if hasattr(ctx, "locationsid"):
             query = query.filter(Software.entities_id.in_(ctx.locationsid))
         if int(count) >= 3:
             query = query.filter(Machine.is_deleted == 0)
             query = query.filter(Machine.is_template == 0)
 
         if int(count) == 1:
-            return {'count': int(query.scalar())}
+            return {"count": int(query.scalar())}
         elif int(count) == 2:
             return query.all()
         else:
             ret = query.all()
-            return [{'computer': a[0], 'name': a[1], 'entityid': a[2]}
-                    for a in ret]
+            return [{"computer": a[0], "name": a[1], "entityid": a[2]} for a in ret]
 
     def getMachineBySoftwareAndVersion(self, ctx, swname, count=0):
         # FIXME: the way the web interface process dynamic group sub-query
@@ -3803,20 +3916,20 @@ class Glpi95(DatabaseHelper):
             version = swname[1]
         return self.getMachineBySoftware(ctx, name, version, count=count)
 
-    def getAllHostnames(self, ctx, filt=''):
+    def getAllHostnames(self, ctx, filt=""):
         """
         Returns:
             all hostnames defined in the GLPI database
         """
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.machine.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.machine.c.name.like("%" + filt + "%"))
         ret = query.all()
         session.close()
         return ret
@@ -3829,9 +3942,9 @@ class Glpi95(DatabaseHelper):
         # TODO use the ctx...
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.machine.c.name == hostname)
@@ -3839,20 +3952,20 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllContacts(self, ctx, filt=''):
+    def getAllContacts(self, ctx, filt=""):
         """
         Returns:
             all hostnames defined in the GLPI database
         """
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.machine.c.contact.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.machine.c.contact.like("%" + filt + "%"))
         ret = query.group_by(self.machine.c.contact).all()
         session.close()
         return ret
@@ -3865,9 +3978,9 @@ class Glpi95(DatabaseHelper):
         # TODO use the ctx...
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.machine.c.contact == contact)
@@ -3875,22 +3988,20 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllContactNums(self, ctx, filt=''):
+    def getAllContactNums(self, ctx, filt=""):
         """
         Returns:
             all hostnames defined in the GLPI database
         """
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(
-                self.machine.c.contact_num.like(
-                    '%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.machine.c.contact_num.like("%" + filt + "%"))
         ret = query.group_by(self.machine.c.contact_num).all()
         session.close()
         return ret
@@ -3903,9 +4014,9 @@ class Glpi95(DatabaseHelper):
         # TODO use the ctx...
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.machine.c.contact_num == contact_num)
@@ -3913,20 +4024,20 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllComments(self, ctx, filt=''):
+    def getAllComments(self, ctx, filt=""):
         """
         Returns:
             all hostnames defined in the GLPI database
         """
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.machine.c.comment.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.machine.c.comment.like("%" + filt + "%"))
         ret = query.group_by(self.machine.c.comment).all()
         session.close()
         return ret
@@ -3939,9 +4050,9 @@ class Glpi95(DatabaseHelper):
         # TODO use the ctx...
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.machine.c.comment == comment)
@@ -3949,7 +4060,7 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllModels(self, ctx, filt=''):
+    def getAllModels(self, ctx, filt=""):
         """
         Returns:
             all machine models defined in the GLPI database
@@ -3957,70 +4068,71 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         query = session.query(Model).select_from(self.model.join(self.machine))
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.model.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.model.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.model.c.name).all()
         session.close()
         return ret
 
-    def getAllManufacturers(self, ctx, filt=''):
+    def getAllManufacturers(self, ctx, filt=""):
         """
         Returs:
             all machine manufacturers defined in the GLPI database
         """
         session = create_session()
         query = session.query(Manufacturers).select_from(
-            self.manufacturers.join(self.machine))
+            self.manufacturers.join(self.machine)
+        )
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(
-                self.manufacturers.c.name.like(
-                    '%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.manufacturers.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.manufacturers.c.name).all()
         session.close()
         return ret
 
     @DatabaseHelper._sessionm
-    def getAllSoftwareVendors(self, session, ctx, filt='', limit=20):
+    def getAllSoftwareVendors(self, session, ctx, filt="", limit=20):
         """
         Returns:
             all software vendors defined in the GPLI database
         """
-        query = session.query(Manufacturers).select_from(self.manufacturers
-                                                         .join(self.software))
+        query = session.query(Manufacturers).select_from(
+            self.manufacturers.join(self.software)
+        )
         query = query.filter(Software.is_deleted == 0)
         query = query.filter(Software.is_template == 0)
-        if filt != '':
-            query = query.filter(Manufacturers.name.like('%' + filt + '%'))
+        if filt != "":
+            query = query.filter(Manufacturers.name.like("%" + filt + "%"))
         query = query.group_by(Manufacturers.name)
         ret = query.order_by(asc(Manufacturers.name)).limit(limit)
         return ret
 
     @DatabaseHelper._sessionm
-    def getAllSoftwareVersions(self, session, ctx, software=None, filt=''):
+    def getAllSoftwareVersions(self, session, ctx, software=None, filt=""):
         """
         Returns:
             all software versions defined in the GPLI database
         """
         query = session.query(SoftwareVersion)
-        query = query.select_from(self.softwareversions
-                                  .join(self.software))
+        query = query.select_from(self.softwareversions.join(self.software))
         if software is not None:
             query = query.filter(Software.name.like(software))
-        if filt != '':
-            query = query.filter(SoftwareVersion.name.like('%' + filt + '%'))
+        if filt != "":
+            query = query.filter(SoftwareVersion.name.like("%" + filt + "%"))
         ret = query.group_by(SoftwareVersion.name).all()
         return ret
 
-    def getAllStates(self, ctx, filt=''):
+    def getAllStates(self, ctx, filt=""):
         """
         Returns:
             all machine models defined in the GLPI database
@@ -4028,40 +4140,39 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         query = session.query(State).select_from(self.state.join(self.machine))
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.state.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.state.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.state.c.name).all()
         session.close()
         return ret
 
-    def getAllTypes(self, ctx, filt=''):
+    def getAllTypes(self, ctx, filt=""):
         """
         Returns:
             all machine types defined in the GLPI database
         """
         session = create_session()
-        query = session.query(
-            self.klass['glpi_computertypes']).select_from(
-            self.glpi_computertypes.join(
-                self.machine))
+        query = session.query(self.klass["glpi_computertypes"]).select_from(
+            self.glpi_computertypes.join(self.machine)
+        )
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(
-                self.glpi_computertypes.c.name.like(
-                    '%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.glpi_computertypes.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.glpi_computertypes.c.name).all()
         session.close()
         return ret
 
-    def getAllInventoryNumbers(self, ctx, filt=''):
+    def getAllInventoryNumbers(self, ctx, filt=""):
         """
         Returns:
             all machine inventory numbers defined in the GLPI database
@@ -4075,11 +4186,10 @@ class Glpi95(DatabaseHelper):
             all machines that have this model
         """
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(self.model))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = session.query(Machine).select_from(self.machine.join(self.model))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.model.c.name == filt)
@@ -4087,39 +4197,39 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllOwnerMachine(self, ctx, filt=''):
+    def getAllOwnerMachine(self, ctx, filt=""):
         """
         Returns:
             all owner defined in the GLPI database
         """
         session = create_session()
-        query = session.query(User).select_from(
-            self.manufacturers.join(self.machine))
+        query = session.query(User).select_from(self.manufacturers.join(self.machine))
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.user.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.user.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.user.c.name).all()
         session.close()
         return ret
 
-    def getAllLoggedUser(self, ctx, filt=''):
+    def getAllLoggedUser(self, ctx, filt=""):
         """
         Returns:
             all LoggedUser defined in the GLPI database
         """
         session = create_session()
         query = session.query(Machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.machine.c.contact.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.machine.c.contact.like("%" + filt + "%"))
         ret = query.group_by(self.machine.c.contact).all()
         session.close()
         return ret
@@ -4134,22 +4244,20 @@ class Glpi95(DatabaseHelper):
             types = [types]
 
         if int(count) == 1:
-            query = session.query(
-                func.count(
-                    Machine.id)).select_from(
-                self.machine.join(
-                    self.glpi_computertypes))
+            query = session.query(func.count(Machine.id)).select_from(
+                self.machine.join(self.glpi_computertypes)
+            )
         else:
             query = session.query(Machine).select_from(
-                self.machine.join(self.glpi_computertypes))
-        query = query.filter(
-            Machine.is_deleted == 0).filter(
-            Machine.is_template == 0)
+                self.machine.join(self.glpi_computertypes)
+            )
+        query = query.filter(Machine.is_deleted == 0).filter(Machine.is_template == 0)
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
 
         type_filter = [
-            self.klass['glpi_computertypes'].name.like(type) for type in types]
+            self.klass["glpi_computertypes"].name.like(type) for type in types
+        ]
         query = query.filter(or_(*type_filter))
 
         if int(count) == 1:
@@ -4165,9 +4273,9 @@ class Glpi95(DatabaseHelper):
         """
         session = create_session()
         query = session.query(Machine).select_from(self.machine)
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.machine.c.otherserial == filt)
@@ -4176,13 +4284,14 @@ class Glpi95(DatabaseHelper):
         return ret
 
     def getMachineByManufacturer(self, ctx, filt):
-        """ @return: all machines that have this manufacturer """
+        """@return: all machines that have this manufacturer"""
         session = create_session()
         query = session.query(Manufacturers).select_from(
-            self.machine.join(self.manufacturers))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+            self.machine.join(self.manufacturers)
+        )
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.manufacturers.c.name == filt)
@@ -4191,22 +4300,20 @@ class Glpi95(DatabaseHelper):
         return ret
 
     def getMachineByState(self, ctx, filt, count=0):
-        """ @return: all machines that have this state """
+        """@return: all machines that have this state"""
         session = create_session()
         if int(count) == 1:
-            query = session.query(
-                func.count(Machine)).select_from(
-                self.machine.join(
-                    self.state))
+            query = session.query(func.count(Machine)).select_from(
+                self.machine.join(self.state)
+            )
         else:
-            query = session.query(Machine).select_from(
-                self.machine.join(self.state))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+            query = session.query(Machine).select_from(self.machine.join(self.state))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
-        if '%' in filt:
+        if "%" in filt:
             query = query.filter(self.state.c.name.like(filt))
         else:
             query = query.filter(self.state.c.name == filt)
@@ -4217,7 +4324,7 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllRegistryKey(self, ctx, filt=''):
+    def getAllRegistryKey(self, ctx, filt=""):
         """
         Returns the registry keys name.
         @return: list Register key name
@@ -4226,20 +4333,19 @@ class Glpi95(DatabaseHelper):
         session = create_session()
         query = session.query(Registries.name)
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.registries.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.registries.c.name.like("%" + filt + "%"))
         ret = query.all()
         session.close()
         return ret
 
     def getMachineByLocation(self, ctx, filt):
-        """ @return: all machines that have this contact number """
+        """@return: all machines that have this contact number"""
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(self.locations))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = session.query(Machine).select_from(self.machine.join(self.locations))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.locations.c.completename == filt)
@@ -4247,29 +4353,29 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllOsSps(self, ctx, filt=''):
-        """ @return: all hostnames defined in the GLPI database """
+    def getAllOsSps(self, ctx, filt=""):
+        """@return: all hostnames defined in the GLPI database"""
         session = create_session()
         query = session.query(OsSp).select_from(self.os_sp.join(self.machine))
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.os_sp.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.os_sp.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.os_sp.c.name).all()
         session.close()
         return ret
 
     def getMachineByOsSp(self, ctx, filt):
-        """ @return: all machines that have this contact number """
+        """@return: all machines that have this contact number"""
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(self.os_sp))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = session.query(Machine).select_from(self.machine.join(self.os_sp))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.os_sp.c.name == filt)
@@ -4278,13 +4384,12 @@ class Glpi95(DatabaseHelper):
         return ret
 
     def getMachineByGroup(self, ctx, filt):
-        """ @return: all machines that have this contact number """
+        """@return: all machines that have this contact number"""
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(self.group))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = session.query(Machine).select_from(self.machine.join(self.group))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.group.c.entities_id.in_(ctx.locationsid))
@@ -4293,28 +4398,29 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def getAllNetworks(self, ctx, filt=''):
-        """ @return: all hostnames defined in the GLPI database """
+    def getAllNetworks(self, ctx, filt=""):
+        """@return: all hostnames defined in the GLPI database"""
         session = create_session()
         query = session.query(Net).select_from(self.net.join(self.machine))
         query = self.__filter_on(
-            query.filter(
-                self.machine.c.is_deleted == 0).filter(
-                self.machine.c.is_template == 0))
+            query.filter(self.machine.c.is_deleted == 0).filter(
+                self.machine.c.is_template == 0
+            )
+        )
         query = self.__filter_on_entity(query, ctx)
-        if filter != '':
-            query = query.filter(self.net.c.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(self.net.c.name.like("%" + filt + "%"))
         ret = query.group_by(self.net.c.name).all()
         session.close()
         return ret
 
     def getMachineByNetwork(self, ctx, filt):
-        """ @return: all machines that have this contact number """
+        """@return: all machines that have this contact number"""
         session = create_session()
         query = session.query(Machine).select_from(self.machine.join(self.net))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.net.c.name == filt)
@@ -4322,9 +4428,9 @@ class Glpi95(DatabaseHelper):
         session.close()
         return ret
 
-    def _machineobjectdymresult(self, ret, encode='iso-8859-1'):
+    def _machineobjectdymresult(self, ret, encode="iso-8859-1"):
         """
-            this function return dict result sqlalchimy
+        this function return dict result sqlalchimy
         """
         resultrecord = {}
         try:
@@ -4337,95 +4443,95 @@ class Glpi95(DatabaseHelper):
                             typestr = str(type(getattr(ret, keynameresult)))
                             if "class" in typestr:
                                 try:
-                                    if 'decimal.Decimal' in typestr:
+                                    if "decimal.Decimal" in typestr:
                                         resultrecord[keynameresult] = float(
-                                            getattr(ret, keynameresult))
+                                            getattr(ret, keynameresult)
+                                        )
                                     else:
                                         resultrecord[keynameresult] = str(
-                                            getattr(ret, keynameresult))
+                                            getattr(ret, keynameresult)
+                                        )
                                 except BaseException:
                                     self.logger.warning(
-                                        "type class %s no used for key %s" %
-                                        (typestr, keynameresult))
+                                        "type class %s no used for key %s"
+                                        % (typestr, keynameresult)
+                                    )
                                     resultrecord[keynameresult] = ""
                             else:
                                 if isinstance(
-                                        getattr(
-                                            ret,
-                                            keynameresult),
-                                        datetime.datetime):
+                                    getattr(ret, keynameresult), datetime.datetime
+                                ):
                                     resultrecord[keynameresult] = getattr(
-                                        ret, keynameresult).strftime("%m/%d/%Y %H:%M:%S")
+                                        ret, keynameresult
+                                    ).strftime("%m/%d/%Y %H:%M:%S")
                                 else:
                                     strre = getattr(ret, keynameresult)
                                     if isinstance(strre, basestring):
                                         if encode == "utf8":
-                                            resultrecord[keynameresult] = str(
-                                                strre)
+                                            resultrecord[keynameresult] = str(strre)
                                         else:
                                             resultrecord[keynameresult] = strre.decode(
-                                                encode).encode('utf8')
+                                                encode
+                                            ).encode("utf8")
                                     else:
                                         resultrecord[keynameresult] = strre
                     except AttributeError:
                         resultrecord[keynameresult] = ""
         except Exception as e:
             self.logger.error("We encountered the error %s" % str(e))
-            self.logger.error(
-                "\n with the backtrace \n%s" %
-                (traceback.format_exc()))
+            self.logger.error("\n with the backtrace \n%s" % (traceback.format_exc()))
         return resultrecord
 
     def _machineobject(self, ret):
-        """ result view glpi_computers_pulse """
+        """result view glpi_computers_pulse"""
         if ret:
             try:
                 return {
-                    'id': ret.id,
-                    'entities_id': ret.entities_id,
-                    'name': ret.name,
-                    'serial': ret.serial,
-                    'otherserial': ret.otherserial,
-                    'contact': ret.contact,
-                    'contact_num': ret.contact_num,
-                    'users_id_tech': ret.users_id_tech,
-                    'groups_id_tech': ret.groups_id_tech,
-                    'comment': ret.comment,
-                    'date_mod': ret.date_mod,
-                    'autoupdatesystems_id': ret.autoupdatesystems_id,
-                    'locations_id': ret.locations_id,
-                    'domains_id': ret.domains_id,
-                    'networks_id': ret.networks_id,
-                    'computermodels_id': ret.computermodels_id,
-                    'computertypes_id': ret.computertypes_id,
-                    'is_template': ret.is_template,
-                    'template_name': ret.template_name,
-                    'manufacturers_id': ret.manufacturers_id,
-                    'is_deleted': ret.is_deleted,
-                    'is_dynamic': ret.is_dynamic,
-                    'users_id': ret.users_id,
-                    'groups_id': ret.groups_id,
-                    'states_id': ret.states_id,
-                    'ticket_tco': ret.ticket_tco,
-                    'uuid': ret.uuid,
-                    'date_creation': ret.date_creation,
-                    'is_recursive': ret.is_recursive,
-                    'operatingsystems_id': ret.operatingsystems_id,
-                    'operatingsystemversions_id': ret.operatingsystemversions_id,
-                    'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id,
-                    'operatingsystemarchitectures_id': ret.operatingsystemarchitectures_id,
-                    'license_number': ret.license_number,
-                    'license_id': ret.licenseid,
-                    'operatingsystemkernelversions_id': ret.operatingsystemkernelversions_id}
+                    "id": ret.id,
+                    "entities_id": ret.entities_id,
+                    "name": ret.name,
+                    "serial": ret.serial,
+                    "otherserial": ret.otherserial,
+                    "contact": ret.contact,
+                    "contact_num": ret.contact_num,
+                    "users_id_tech": ret.users_id_tech,
+                    "groups_id_tech": ret.groups_id_tech,
+                    "comment": ret.comment,
+                    "date_mod": ret.date_mod,
+                    "autoupdatesystems_id": ret.autoupdatesystems_id,
+                    "locations_id": ret.locations_id,
+                    "domains_id": ret.domains_id,
+                    "networks_id": ret.networks_id,
+                    "computermodels_id": ret.computermodels_id,
+                    "computertypes_id": ret.computertypes_id,
+                    "is_template": ret.is_template,
+                    "template_name": ret.template_name,
+                    "manufacturers_id": ret.manufacturers_id,
+                    "is_deleted": ret.is_deleted,
+                    "is_dynamic": ret.is_dynamic,
+                    "users_id": ret.users_id,
+                    "groups_id": ret.groups_id,
+                    "states_id": ret.states_id,
+                    "ticket_tco": ret.ticket_tco,
+                    "uuid": ret.uuid,
+                    "date_creation": ret.date_creation,
+                    "is_recursive": ret.is_recursive,
+                    "operatingsystems_id": ret.operatingsystems_id,
+                    "operatingsystemversions_id": ret.operatingsystemversions_id,
+                    "operatingsystemservicepacks_id": ret.operatingsystemservicepacks_id,
+                    "operatingsystemarchitectures_id": ret.operatingsystemarchitectures_id,
+                    "license_number": ret.license_number,
+                    "license_id": ret.licenseid,
+                    "operatingsystemkernelversions_id": ret.operatingsystemkernelversions_id,
+                }
             except Exception:
                 self.logger.error("\n%s" % (traceback.format_exc()))
         return {}
 
     def getMachineBySerial(self, serial):
-        """ @return: all computers that have this mac address """
+        """@return: all computers that have this mac address"""
         session = create_session()
-        ret = session.query(Machine).filter(
-            Machine.serial.like(serial)).first()
+        ret = session.query(Machine).filter(Machine.serial.like(serial)).first()
         session.close()
         return self._machineobject(ret)
 
@@ -4434,144 +4540,153 @@ class Glpi95(DatabaseHelper):
         # start and end are used to set the limit parameter in the query
         start = int(start)
         end = int(end)
-        list_reg_columns_name = [regkey.split("|")[0].split("\\")[-1]
-                                 for regkey in self.config.arraykeys]
-        uuidsetup = ctx['uuidsetup'] if "uuidsetup" in ctx else ""
-        idmachine = ctx['idmachine'].replace(
-            "UUID", "") if "idmachine" in ctx else ""
+        list_reg_columns_name = [
+            regkey.split("|")[0].split("\\")[-1] for regkey in self.config.arraykeys
+        ]
+        uuidsetup = ctx["uuidsetup"] if "uuidsetup" in ctx else ""
+        idmachine = ctx["idmachine"].replace("UUID", "") if "idmachine" in ctx else ""
         # "location" filter is corresponding to the entity selection in the interface
-        location = ctx['location'].replace(
-            "UUID", "") if "location" in ctx else ""
+        location = ctx["location"].replace("UUID", "") if "location" in ctx else ""
         # "filter" filter is corresponding to the string the user wants to find
-        criterion = ctx['filter'] if "filter" in ctx else ""
-        field = ctx['field'] if "field" in ctx else ""
-        contains = ctx['contains'] if "contains" in ctx else ""
+        criterion = ctx["filter"] if "filter" in ctx else ""
+        field = ctx["field"] if "field" in ctx else ""
+        contains = ctx["contains"] if "contains" in ctx else ""
         if idmachine == "" and uuidsetup == "":
             # Get the list of online computers
             online_machines = []
             online_machines = XmppMasterDatabase().getlistPresenceMachineid()
             if online_machines is not None:
-                online_machines = [int(id.replace("UUID", ""))
-                                   for id in online_machines if id != ""]
-        query = session.query(
-            Machine.id.label('uuid')).distinct(
-            Machine.id) .join(
-            self.glpi_computertypes,
-            Machine.computertypes_id == self.glpi_computertypes.c.id) .outerjoin(
-                self.user,
-                Machine.users_id == self.user.c.id) .join(
-                    Entities,
-                    Entities.id == Machine.entities_id) .outerjoin(
-                        self.locations,
-                        Machine.locations_id == self.locations.c.id) .outerjoin(
-                            self.manufacturers,
-                            Machine.manufacturers_id == self.manufacturers.c.id) .join(
-                                self.glpi_computermodels,
-                                Machine.computermodels_id == self.glpi_computermodels.c.id) .outerjoin(
-                                    self.regcontents,
-            Machine.id == self.regcontents.c.computers_id)
+                online_machines = [
+                    int(id.replace("UUID", "")) for id in online_machines if id != ""
+                ]
+        query = (
+            session.query(Machine.id.label("uuid"))
+            .distinct(Machine.id)
+            .join(
+                self.glpi_computertypes,
+                Machine.computertypes_id == self.glpi_computertypes.c.id,
+            )
+            .outerjoin(self.user, Machine.users_id == self.user.c.id)
+            .join(Entities, Entities.id == Machine.entities_id)
+            .outerjoin(self.locations, Machine.locations_id == self.locations.c.id)
+            .outerjoin(
+                self.manufacturers, Machine.manufacturers_id == self.manufacturers.c.id
+            )
+            .join(
+                self.glpi_computermodels,
+                Machine.computermodels_id == self.glpi_computermodels.c.id,
+            )
+            .outerjoin(self.regcontents, Machine.id == self.regcontents.c.computers_id)
+        )
         if field != "":
-            query = query.join(Computersitems,
-                               Machine.id == Computersitems.computers_id)
+            query = query.join(
+                Computersitems, Machine.id == Computersitems.computers_id
+            )
             if field != "type":
                 query = query.join(
                     Peripherals,
                     and_(
                         Computersitems.items_id == Peripherals.id,
-                        Computersitems.itemtype == "Peripheral")) .join(
+                        Computersitems.itemtype == "Peripheral",
+                    ),
+                ).join(
                     Peripheralsmanufacturers,
-                    Peripherals.manufacturers_id == Peripheralsmanufacturers.id)
+                    Peripherals.manufacturers_id == Peripheralsmanufacturers.id,
+                )
         # if 'cn' in self.config.summary or idmachine != "":
         query = query.add_column(Machine.name.label("cn"))
         if uuidsetup != "" or idmachine != "":
             query = query.add_column(Machine.uuid.label("uuid_setup"))
         # if idmachine est definie ou setupuuid alors recuperation de tout les
         # champs.
-        if 'os' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "os" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(self.os.c.name.label("os")).join(self.os)
 
-        if 'description' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "description" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(Machine.comment.label("description"))
 
-        if 'type' in self.config.summary or idmachine != "" or uuidsetup != "":
-            query = query.add_column(
-                self.glpi_computertypes.c.name.label("type"))
+        if "type" in self.config.summary or idmachine != "" or uuidsetup != "":
+            query = query.add_column(self.glpi_computertypes.c.name.label("type"))
 
-        if 'owner_firstname' in self.config.summary or idmachine != "" or uuidsetup != "":
-            query = query.add_column(
-                self.user.c.firstname.label("owner_firstname"))
+        if (
+            "owner_firstname" in self.config.summary
+            or idmachine != ""
+            or uuidsetup != ""
+        ):
+            query = query.add_column(self.user.c.firstname.label("owner_firstname"))
 
-        if 'owner_realname' in self.config.summary or idmachine != "" or uuidsetup != "":
-            query = query.add_column(
-                self.user.c.realname.label("owner_realname"))
+        if (
+            "owner_realname" in self.config.summary
+            or idmachine != ""
+            or uuidsetup != ""
+        ):
+            query = query.add_column(self.user.c.realname.label("owner_realname"))
 
-        if 'owner' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "owner" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(self.user.c.name.label("owner"))
 
-        if 'user' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "user" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(Machine.contact.label("user"))
 
-        if 'entity' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "entity" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(Entities.name.label("entity"))
-            query = query.add_column(
-                Entities.completename.label("complete_entity"))
+            query = query.add_column(Entities.completename.label("complete_entity"))
             query = query.add_column(Entities.id.label("entity_glpi_id"))
 
-        if 'location' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "location" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(self.locations.c.name.label("location"))
             query = query.add_column(
-                self.locations.c.completename.label("complete_location"))
-            query = query.add_column(
-                self.locations.c.id.label("location_glpi_id"))
+                self.locations.c.completename.label("complete_location")
+            )
+            query = query.add_column(self.locations.c.id.label("location_glpi_id"))
 
-        if 'model' in self.config.summary or idmachine != "" or uuidsetup != "":
+        if "model" in self.config.summary or idmachine != "" or uuidsetup != "":
             query = query.add_column(self.model.c.name.label("model"))
 
-        if 'manufacturer' in self.config.summary or idmachine != "" or uuidsetup != "":
-            query = query.add_column(
-                self.manufacturers.c.name.label("manufacturer"))
+        if "manufacturer" in self.config.summary or idmachine != "" or uuidsetup != "":
+            query = query.add_column(self.manufacturers.c.name.label("manufacturer"))
         if idmachine != "" or uuidsetup != "":
-            listcolumaddforinfo = ['id',
-                                   'entities_id',
-                                   'name',
-                                   'serial',
-                                   'otherserial',
-                                   'contact',
-                                   'contact_num',
-                                   'users_id_tech',
-                                   'groups_id_tech',
-                                   'comment',
-                                   'date_mod',
-                                   'autoupdatesystems_id',
-                                   'locations_id',
-                                   'domains_id',
-                                   'networks_id',
-                                   'computermodels_id',
-                                   'computertypes_id',
-                                   'is_template',
-                                   'template_name',
-                                   'is_deleted',
-                                   'is_dynamic',
-                                   'users_id',
-                                   'groups_id',
-                                   'states_id',
-                                   'ticket_tco',
-                                   'date_creation',
-                                   'is_recursive',
-                                   'operatingsystems_id',
-                                   'operatingsystemversions_id',
-                                   'operatingsystemservicepacks_id',
-                                   'operatingsystemarchitectures_id',
-                                   'license_number',
-                                   'license_id',
-                                   'operatingsystemkernelversions_id']
+            listcolumaddforinfo = [
+                "id",
+                "entities_id",
+                "name",
+                "serial",
+                "otherserial",
+                "contact",
+                "contact_num",
+                "users_id_tech",
+                "groups_id_tech",
+                "comment",
+                "date_mod",
+                "autoupdatesystems_id",
+                "locations_id",
+                "domains_id",
+                "networks_id",
+                "computermodels_id",
+                "computertypes_id",
+                "is_template",
+                "template_name",
+                "is_deleted",
+                "is_dynamic",
+                "users_id",
+                "groups_id",
+                "states_id",
+                "ticket_tco",
+                "date_creation",
+                "is_recursive",
+                "operatingsystems_id",
+                "operatingsystemversions_id",
+                "operatingsystemservicepacks_id",
+                "operatingsystemarchitectures_id",
+                "license_number",
+                "license_id",
+                "operatingsystemkernelversions_id",
+            ]
             for addcolunm in listcolumaddforinfo:
-                query = query.add_column(
-                    getattr(Machine, addcolunm).label(addcolunm))
+                query = query.add_column(getattr(Machine, addcolunm).label(addcolunm))
 
         # Don't select deleted or template machines
-        query = query.filter(Machine.is_deleted == 0)\
-            .filter(Machine.is_template == 0)
+        query = query.filter(Machine.is_deleted == 0).filter(Machine.is_template == 0)
 
         # Select machines from the specified entity
         if location != "":
@@ -4580,29 +4695,29 @@ class Glpi95(DatabaseHelper):
         # Add all the like clauses to find machines containing the criterion
         if criterion != "" and idmachine == "" and uuidsetup == "":
             if field == "":
-                query = query.filter(or_(
-                    Machine.name.contains(criterion),
-                    Machine.comment.contains(criterion),
-                    self.os.c.name.contains(criterion),
-                    self.glpi_computertypes.c.name.contains(criterion),
-                    Machine.contact.contains(criterion),
-                    Entities.name.contains(criterion),
-                    self.user.c.firstname.contains(criterion),
-                    self.user.c.realname.contains(criterion),
-                    self.user.c.name.contains(criterion),
-                    self.locations.c.name.contains(criterion),
-                    self.manufacturers.c.name.contains(criterion),
-                    self.model.c.name.contains(criterion),
-                    self.regcontents.c.value.contains(criterion)
-                ))
+                query = query.filter(
+                    or_(
+                        Machine.name.contains(criterion),
+                        Machine.comment.contains(criterion),
+                        self.os.c.name.contains(criterion),
+                        self.glpi_computertypes.c.name.contains(criterion),
+                        Machine.contact.contains(criterion),
+                        Entities.name.contains(criterion),
+                        self.user.c.firstname.contains(criterion),
+                        self.user.c.realname.contains(criterion),
+                        self.user.c.name.contains(criterion),
+                        self.locations.c.name.contains(criterion),
+                        self.manufacturers.c.name.contains(criterion),
+                        self.model.c.name.contains(criterion),
+                        self.regcontents.c.value.contains(criterion),
+                    )
+                )
             else:
                 if field == "peripherals":
                     if contains == "notcontains":
-                        query = query.filter(
-                            not_(Peripherals.name.contains(criterion)))
+                        query = query.filter(not_(Peripherals.name.contains(criterion)))
                     else:
-                        query = query.filter(
-                            Peripherals.name.contains(criterion))
+                        query = query.filter(Peripherals.name.contains(criterion))
                 else:
                     pass
         if idmachine == "" and uuidsetup == "":
@@ -4621,100 +4736,99 @@ class Glpi95(DatabaseHelper):
             # Then continue with others criterions and filters
             query = query.offset(start).limit(end)
 
-        columns_name = [column['name'] for column in query.column_descriptions]
+        columns_name = [column["name"] for column in query.column_descriptions]
         machines = query.all()
 
         # initialisation structure result
-        result = {"count": count, "data": {index: []
-                                           for index in columns_name}}
+        result = {"count": count, "data": {index: [] for index in columns_name}}
         if idmachine == "" and uuidsetup == "":
-            result['data']['presence'] = []
+            result["data"]["presence"] = []
 
         nb_columns = len(columns_name)
         if idmachine != "" or uuidsetup != "":
-            result['data']['columns_name'] = columns_name
-            result['data']['columns_name_reg'] = list_reg_columns_name
+            result["data"]["columns_name"] = columns_name
+            result["data"]["columns_name_reg"] = list_reg_columns_name
 
         # initialiser 1 tableau pour chaque registerkey windows demande in
         # configuration
         regs = {reg_column: [] for reg_column in list_reg_columns_name}
-        result['data']['reg'] = regs
+        result["data"]["reg"] = regs
 
         for machine in machines:
             if idmachine == "" and uuidsetup == "":
-                result['data']['presence'].append(
-                    1 if machine[0] in online_machines else 0)
+                result["data"]["presence"].append(
+                    1 if machine[0] in online_machines else 0
+                )
                 for indexcolum in range(nb_columns):
-                    result['data'][columns_name[indexcolum]].append(
-                        machine[indexcolum])
+                    result["data"][columns_name[indexcolum]].append(machine[indexcolum])
 
             else:
-                recordmachinedict = self._machineobjectdymresult(
-                    machine, encode='utf8')
+                recordmachinedict = self._machineobjectdymresult(machine, encode="utf8")
                 for recordmachine in recordmachinedict:
-                    result['data'][recordmachine] = [
-                        recordmachinedict[recordmachine]]
+                    result["data"][recordmachine] = [recordmachinedict[recordmachine]]
 
             for column in list_reg_columns_name:
-                result['data']['reg'][column].append(None)
+                result["data"]["reg"][column].append(None)
         regquery = []
         if list_reg_columns_name:
-            regquery = session.query(
-                self.regcontents.c.computers_id,
-                self.regcontents.c.key,
-                self.regcontents.c.value)\
-                .filter(
-                and_(
-                    self.regcontents.c.key.in_(list_reg_columns_name),
-                    self.regcontents.c.computers_id.in_(result['data']['uuid'])
+            regquery = (
+                session.query(
+                    self.regcontents.c.computers_id,
+                    self.regcontents.c.key,
+                    self.regcontents.c.value,
                 )
-            ).all()
+                .filter(
+                    and_(
+                        self.regcontents.c.key.in_(list_reg_columns_name),
+                        self.regcontents.c.computers_id.in_(result["data"]["uuid"]),
+                    )
+                )
+                .all()
+            )
         for reg in regquery:
-            index = result['data']['uuid'].index(reg[0])
-            result['data']['reg'][reg[1]][index] = reg[2]
+            index = result["data"]["uuid"].index(reg[0])
+            result["data"]["reg"][reg[1]][index] = reg[2]
 
-        result['count'] = count
+        result["count"] = count
 
         uuids = []
-        for id in result['data']['uuid']:
-            uuids.append('UUID%s' % id)
+        for id in result["data"]["uuid"]:
+            uuids.append("UUID%s" % id)
         if idmachine == "" and uuidsetup == "":
-            result['xmppdata'] = []
-            result['xmppdata'] = XmppMasterDatabase().getmachinesbyuuids(uuids)
+            result["xmppdata"] = []
+            result["xmppdata"] = XmppMasterDatabase().getmachinesbyuuids(uuids)
         if idmachine != "" or uuidsetup != "":
-            result['data']['uuidglpicomputer'] = result['data'].pop('uuid')
+            result["data"]["uuidglpicomputer"] = result["data"].pop("uuid")
         return result
 
     def getMachineByUuidSetup(self, uuidsetupmachine):
-        """ @return: all computers that have this uuid setup machine """
+        """@return: all computers that have this uuid setup machine"""
         session = create_session()
-        ret = session.query(Machine).filter(
-            Machine.uuid.like(uuidsetupmachine)).first()
+        ret = session.query(Machine).filter(Machine.uuid.like(uuidsetupmachine)).first()
         session.close()
         return self._machineobject(ret)
 
     def getMachineInformationByUuidSetup(self, uuidsetupmachine):
-        """ @return: all computers that have this uuid setup machine """
-        return self.get_machines_list(0, 0, {'uuidsetup': uuidsetupmachine})
+        """@return: all computers that have this uuid setup machine"""
+        return self.get_machines_list(0, 0, {"uuidsetup": uuidsetupmachine})
 
     def getMachineInformationByUuidMachine(self, glpi_uuid):
-        """ @return: all computers that have this uuid  machine """
-        return self.get_machines_list(0, 0, {'idmachine': glpi_uuid})
+        """@return: all computers that have this uuid  machine"""
+        return self.get_machines_list(0, 0, {"idmachine": glpi_uuid})
 
     def getMachineByMacAddress(self, ctx, filt):
-        """ @return: all computers that have this mac address """
+        """@return: all computers that have this mac address"""
         session = create_session()
         query = session.query(Machine).join(
             NetworkPorts,
             and_(
-                Machine.id == NetworkPorts.items_id,
-                NetworkPorts.itemtype == 'Computer'))
-        query = query.filter(
-            Machine.is_deleted == 0).filter(
-            Machine.is_template == 0)
+                Machine.id == NetworkPorts.items_id, NetworkPorts.itemtype == "Computer"
+            ),
+        )
+        query = query.filter(Machine.is_deleted == 0).filter(Machine.is_template == 0)
         query = query.filter(NetworkPorts.mac == filt)
         query = self.__filter_on(query)
-        if ctx != 'imaging_module':
+        if ctx != "imaging_module":
             query = self.__filter_on_entity(query, ctx)
         ret = query.all()
         session.close()
@@ -4740,33 +4854,32 @@ class Glpi95(DatabaseHelper):
         query = session.query(Machine).join(
             NetworkPorts,
             and_(
-                Machine.id == NetworkPorts.items_id,
-                NetworkPorts.itemtype == 'Computer'))
-        query = query.filter(
-            Machine.is_deleted == 0).filter(
-            Machine.is_template == 0)
+                Machine.id == NetworkPorts.items_id, NetworkPorts.itemtype == "Computer"
+            ),
+        )
+        query = query.filter(Machine.is_deleted == 0).filter(Machine.is_template == 0)
         query = query.filter(NetworkPorts.mac.in_(macs))
         query = query.filter(self.machine.c.name == hostname)
         query = self.__filter_on(query)
-        if ctx != 'imaging_module':
+        if ctx != "imaging_module":
             query = self.__filter_on_entity(query, ctx)
         try:
             ret = query.one()
         except (MultipleResultsFound, NoResultFound) as e:
             self.logger.warn(
-                'I can\'t get any UUID for machine %s and macs %s: %s' %
-                (hostname, macs, e))
+                "I can't get any UUID for machine %s and macs %s: %s"
+                % (hostname, macs, e)
+            )
             return None
         return toUUID(ret.id)
 
     def getMachineByOsVersion(self, ctx, filt):
-        """ @return: all machines that have this os version """
+        """@return: all machines that have this os version"""
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(self.os_version))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = session.query(Machine).select_from(self.machine.join(self.os_version))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.os_version.c.name == filt)
@@ -4775,13 +4888,12 @@ class Glpi95(DatabaseHelper):
         return ret
 
     def getMachineByArchitecure(self, ctx, filt):
-        """ @return: all machines that have this architecture """
+        """@return: all machines that have this architecture"""
         session = create_session()
-        query = session.query(Machine).select_from(
-            self.machine.join(self.os_arch))
-        query = query.filter(
-            self.machine.c.is_deleted == 0).filter(
-            self.machine.c.is_template == 0)
+        query = session.query(Machine).select_from(self.machine.join(self.os_arch))
+        query = query.filter(self.machine.c.is_deleted == 0).filter(
+            self.machine.c.is_template == 0
+        )
         query = self.__filter_on(query)
         query = self.__filter_on_entity(query, ctx)
         query = query.filter(self.os_arch.c.name == filt)
@@ -4792,25 +4904,29 @@ class Glpi95(DatabaseHelper):
         if isinstance(uuids, str):
             uuids = [uuids]
         session = create_session()
-        query = session.query(Machine) \
-            .add_column(self.os.c.name) \
+        query = (
+            session.query(Machine)
+            .add_column(self.os.c.name)
             .select_from(self.machine.join(self.os))
-        query = query.filter(self.machine.c.id.in_(
-            [fromUUID(uuid) for uuid in uuids]))
+        )
+        query = query.filter(self.machine.c.id.in_([fromUUID(uuid) for uuid in uuids]))
         session.close()
         res = []
         for machine, OSName in query:
-            res.append({
-                'uuid': toUUID(machine.id),
-                'OSName': OSName,
-            })
+            res.append(
+                {
+                    "uuid": toUUID(machine.id),
+                    "OSName": OSName,
+                }
+            )
         return res
 
     def getComputersCountByOS(self, osname):
         session = create_session()
-        query = session.query(func.count(Machine.id)) \
-            .select_from(self.machine.join(self.os))
-        query = query.filter(self.os.c.name.like('%' + osname + '%'))
+        query = session.query(func.count(Machine.id)).select_from(
+            self.machine.join(self.os)
+        )
+        query = query.filter(self.os.c.name.like("%" + osname + "%"))
         count = query.scalar()
         session.close()
         return count
@@ -4824,7 +4940,7 @@ class Glpi95(DatabaseHelper):
         @return: machine UUID
         @rtype: str
         """
-        ret = self.getMachineByMacAddress('imaging_module', mac)
+        ret = self.getMachineByMacAddress("imaging_module", mac)
         if isinstance(ret, list):
             if len(ret) != 0:
                 return str(toUUID(ret[0].id))
@@ -4850,6 +4966,7 @@ class Glpi95(DatabaseHelper):
             etc.,
             }
         """
+
         def getComputerNetwork(machine, domain):
             result = []
             for networkport in machine.networkports:
@@ -4859,18 +4976,18 @@ class Glpi95(DatabaseHelper):
                         # create the same number of interfaces
                         for ipaddress in networkport.networknames.ipaddresses:
                             d = {
-                                'uuid': toUUID(networkport.id),
-                                'domain': domain,
-                                'ifmac': networkport.mac,
-                                'name': networkport.name,
-                                'netmask': '',
-                                'subnet': '',
-                                'gateway': '',
-                                'ifaddr': '',
+                                "uuid": toUUID(networkport.id),
+                                "domain": domain,
+                                "ifmac": networkport.mac,
+                                "name": networkport.name,
+                                "netmask": "",
+                                "subnet": "",
+                                "gateway": "",
+                                "ifaddr": "",
                             }
 
                             # IP Address
-                            d['ifaddr'] = ipaddress.name
+                            d["ifaddr"] = ipaddress.name
 
                             # Init old iface dict
                             z = {}
@@ -4879,9 +4996,9 @@ class Glpi95(DatabaseHelper):
                                 oz = z
 
                                 z = d.copy()
-                                z['netmask'] = ipnetwork.netmask
-                                z['gateway'] = ipnetwork.gateway
-                                z['subnet'] = ipnetwork.address
+                                z["netmask"] = ipnetwork.netmask
+                                z["gateway"] = ipnetwork.gateway
+                                z["subnet"] = ipnetwork.address
 
                                 # Add this (network/ip/interface) to result
                                 # and if its not duplicated
@@ -4896,7 +5013,7 @@ class Glpi95(DatabaseHelper):
         ret = {}
         for machine in query:
             uuid = toUUID(machine.id)
-            domain = ''
+            domain = ""
             if machine.domains is not None:
                 domain = machine.domains.name
             ret[uuid] = getComputerNetwork(machine, domain)
@@ -4938,57 +5055,52 @@ class Glpi95(DatabaseHelper):
         failure = [True, True]
         for iface in netiface:
             if not empty_macs:
-                if not ('ifmac' in iface or iface['ifmac']):
+                if not ("ifmac" in iface or iface["ifmac"]):
                     continue
-            if 'ifaddr' in iface and iface['ifaddr']:
-                if iface['gateway'] is None:
-                    ret_ifmac.append(iface['ifmac'])
-                    ret_ifaddr.append(iface['ifaddr'])
-                    ret_netmask.append(iface['netmask'])
-                    ret_networkUuids.append(iface['uuid'])
-                    if 'domain' in iface:
-                        ret_domain.append(iface['domain'])
+            if "ifaddr" in iface and iface["ifaddr"]:
+                if iface["gateway"] is None:
+                    ret_ifmac.append(iface["ifmac"])
+                    ret_ifaddr.append(iface["ifaddr"])
+                    ret_netmask.append(iface["netmask"])
+                    ret_networkUuids.append(iface["uuid"])
+                    if "domain" in iface:
+                        ret_domain.append(iface["domain"])
                     else:
-                        ret_domain.append('')
+                        ret_domain.append("")
                 else:
                     if same_network(
-                            iface['ifaddr'],
-                            iface['gateway'],
-                            iface['netmask']):
+                        iface["ifaddr"], iface["gateway"], iface["netmask"]
+                    ):
                         idx_good += 1
-                        ret_ifmac.insert(0, iface['ifmac'])
-                        ret_ifaddr.insert(0, iface['ifaddr'])
-                        ret_netmask.insert(0, iface['netmask'])
-                        ret_networkUuids.insert(0, iface['uuid'])
-                        if 'domain' in iface:
-                            ret_domain.insert(0, iface['domain'])
+                        ret_ifmac.insert(0, iface["ifmac"])
+                        ret_ifaddr.insert(0, iface["ifaddr"])
+                        ret_netmask.insert(0, iface["netmask"])
+                        ret_networkUuids.insert(0, iface["uuid"])
+                        if "domain" in iface:
+                            ret_domain.insert(0, iface["domain"])
                         else:
-                            ret_domain.insert(0, '')
+                            ret_domain.insert(0, "")
                         failure[0] = False
                     else:
-                        ret_ifmac.insert(idx_good, iface['ifmac'])
-                        ret_ifaddr.insert(idx_good, iface['ifaddr'])
-                        ret_netmask.insert(idx_good, iface['netmask'])
-                        ret_networkUuids.insert(idx_good, iface['uuid'])
-                        if 'domain' in iface:
-                            ret_domain.insert(idx_good, iface['domain'])
+                        ret_ifmac.insert(idx_good, iface["ifmac"])
+                        ret_ifaddr.insert(idx_good, iface["ifaddr"])
+                        ret_netmask.insert(idx_good, iface["netmask"])
+                        ret_networkUuids.insert(idx_good, iface["uuid"])
+                        if "domain" in iface:
+                            ret_domain.insert(idx_good, iface["domain"])
                         else:
-                            ret_domain.insert(idx_good, '')
+                            ret_domain.insert(idx_good, "")
                         failure[1] = False
 
-        return (
-            ret_ifmac,
-            ret_ifaddr,
-            ret_netmask,
-            ret_domain,
-            ret_networkUuids)
+        return (ret_ifmac, ret_ifaddr, ret_netmask, ret_domain, ret_networkUuids)
 
     def dict2obj(d):
         """
         Get a dictionnary and return an object
         """
         from collections import namedtuple
-        o = namedtuple('dict2obj', ' '.join(d.keys()))
+
+        o = namedtuple("dict2obj", " ".join(d.keys()))
         return o(**d)
 
     def getMachineIp(self, uuid):
@@ -5033,14 +5145,13 @@ class Glpi95(DatabaseHelper):
         """
         session = create_session()
         machine = self.filterOnUUID(session.query(Machine), uuid).first()
-        domain = ''
+        domain = ""
         if machine.domains is not None:
             domain = machine.domains.name
         return domain
 
     def isComputerNameAvailable(self, ctx, locationUUID, name):
-        raise Exception(
-            "need to be implemented when we would be able to add computers")
+        raise Exception("need to be implemented when we would be able to add computers")
 
     @DatabaseHelper._sessionm
     def addUser(self, session, username, password, entity_rights=None):
@@ -5051,12 +5162,12 @@ class Glpi95(DatabaseHelper):
             user = User()
             user.name = username
         user.password = hashlib.sha1(password).hexdigest()
-        user.firstname = ''
-        user.realname = ''
+        user.firstname = ""
+        user.realname = ""
         user.auths_id = 0
         user.is_deleted = 0
         user.is_active = 1
-        user.locations_id = ''
+        user.locations_id = ""
         session.add(user)
         session.commit()
         session.flush()
@@ -5089,8 +5200,14 @@ class Glpi95(DatabaseHelper):
         entity.name = entity_name
         entity.comment = comment
         # Get parent entity object
-        parent_entity = session.query(Entities).filter_by(id=parent_id,).one()
-        completename = parent_entity.completename + ' > ' + entity_name
+        parent_entity = (
+            session.query(Entities)
+            .filter_by(
+                id=parent_id,
+            )
+            .one()
+        )
+        completename = parent_entity.completename + " > " + entity_name
         entity.completename = completename
         entity.level = parent_entity.level + 1
         session.add(entity)
@@ -5112,14 +5229,12 @@ class Glpi95(DatabaseHelper):
     @DatabaseHelper._sessionm
     def updateEntityCompleteName(self, session, entity):
         # Get parent entity object
-        parent_entity = session.query(Entities).filter_by(
-            id=entity.entities_id).one()
-        completename = parent_entity.completename + ' > ' + entity.name
+        parent_entity = session.query(Entities).filter_by(id=entity.entities_id).one()
+        completename = parent_entity.completename + " > " + entity.name
         entity.completename = completename
         entity.level = parent_entity.level + 1
         # Update all children complete names
-        children = session.query(Entities).filter_by(
-            entities_id=entity.id).all()
+        children = session.query(Entities).filter_by(entities_id=entity.id).all()
         for item in children:
             self.updateEntityCompleteName(item)
         return entity
@@ -5142,13 +5257,18 @@ class Glpi95(DatabaseHelper):
 
         location.comment = comment
         location.level = parent_id
-        location.building = ''
-        location.room = ''
+        location.building = ""
+        location.room = ""
 
         # Get parent location object
-        parent_location = session.query(
-            Locations).filter_by(id=parent_id,).one()
-        completename = parent_location.completename + ' > ' + name
+        parent_location = (
+            session.query(Locations)
+            .filter_by(
+                id=parent_id,
+            )
+            .one()
+        )
+        completename = parent_location.completename + " > " + name
         location.completename = completename
 
         session.add(location)
@@ -5173,14 +5293,14 @@ class Glpi95(DatabaseHelper):
     @DatabaseHelper._sessionm
     def updateLocationCompleteName(self, session, location):
         # Get parent location object
-        parent_location = session.query(Locations).filter_by(
-            id=location.locations_id).one()
-        completename = parent_location.completename + ' > ' + location.name
+        parent_location = (
+            session.query(Locations).filter_by(id=location.locations_id).one()
+        )
+        completename = parent_location.completename + " > " + location.name
         location.completename = completename
 
         # Update all children complete names
-        children = session.query(Locations).filter_by(
-            locations_id=location.id).all()
+        children = session.query(Locations).filter_by(locations_id=location.id).all()
 
         for item in children:
             self.updateLocationCompleteName(item)
@@ -5196,11 +5316,12 @@ class Glpi95(DatabaseHelper):
     @DatabaseHelper._sessionm
     def getAllEntityRules(self, session, params):
         # TODO: Filter this by user context entities
-        return session.query(
-            self.rules).filter_by(
-            sub_type='PluginFusioninventoryInventoryRuleEntity') .filter(
-            self.rules.c.name != 'Root') .order_by(
-                self.rules.c.ranking)
+        return (
+            session.query(self.rules)
+            .filter_by(sub_type="PluginFusioninventoryInventoryRuleEntity")
+            .filter(self.rules.c.name != "Root")
+            .order_by(self.rules.c.ranking)
+        )
 
     @DatabaseHelper._sessionm
     def addEntityRule(self, session, rule_data):
@@ -5208,20 +5329,21 @@ class Glpi95(DatabaseHelper):
         # root entity (this means that rule is appliable on root entity and all
         # subentities)
         rule.entities_id = 0
-        rule.sub_type = 'PluginFusioninventoryInventoryRuleEntity'
+        rule.sub_type = "PluginFusioninventoryInventoryRuleEntity"
         # Get the last ranking for this class +1
-        rank = session.query(
-            func.max(
-                self.rules.c.ranking)) .filter(
-            self.rules.c.sub_type == 'PluginFusioninventoryInventoryRuleEntity') .filter(
-                self.rules.c.name != 'Root') .scalar()
+        rank = (
+            session.query(func.max(self.rules.c.ranking))
+            .filter(self.rules.c.sub_type == "PluginFusioninventoryInventoryRuleEntity")
+            .filter(self.rules.c.name != "Root")
+            .scalar()
+        )
         if rank is None:
             rank = 0
         rule.ranking = rank + 1
-        rule.name = rule_data['name']
-        rule.description = rule_data['description']
-        rule.match = rule_data['aggregator']
-        if rule_data['active'] == 'on':
+        rule.name = rule_data["name"]
+        rule.description = rule_data["description"]
+        rule.match = rule_data["aggregator"]
+        if rule_data["active"] == "on":
             rule.is_active = 1
         else:
             rule.is_active = 0
@@ -5232,21 +5354,18 @@ class Glpi95(DatabaseHelper):
 
         # Make sure "Root" entity rule ranking is very high
         session.query(Rule).filter_by(
-            sub_type='PluginFusioninventoryInventoryRuleEntity',
-            name='Root').update(
-            {
-                'ranking': rule.ranking + 1},
-            synchronize_session=False)
+            sub_type="PluginFusioninventoryInventoryRuleEntity", name="Root"
+        ).update({"ranking": rule.ranking + 1}, synchronize_session=False)
 
         # Adding rule criteria
 
-        for i in xrange(len(rule_data['criteria'])):
+        for i in xrange(len(rule_data["criteria"])):
 
             cr = RuleCriterion()
             cr.rules_id = rule.id
-            cr.criteria = rule_data['criteria'][i]
-            cr.condition = rule_data['operators'][i]
-            cr.pattern = rule_data['patterns'][i]
+            cr.criteria = rule_data["criteria"][i]
+            cr.condition = rule_data["operators"][i]
+            cr.pattern = rule_data["patterns"][i]
             session.add(cr)
             session.commit()
             session.flush()
@@ -5254,21 +5373,21 @@ class Glpi95(DatabaseHelper):
         # Adding rule actions
 
         # If a target entity is specified, add it
-        if rule_data['target_entity'] != '-1':
+        if rule_data["target_entity"] != "-1":
             action = RuleAction()
             action.rules_id = rule.id
-            action.action_type = 'assign'
-            action.field = 'entities_id'
-            action.value = rule_data['target_entity']
+            action.action_type = "assign"
+            action.field = "entities_id"
+            action.value = rule_data["target_entity"]
             session.add(action)
 
         # If a target location is specified, add it
-        if rule_data['target_location'] != '-1':
+        if rule_data["target_location"] != "-1":
             action = RuleAction()
             action.rules_id = rule.id
-            action.action_type = 'assign'
-            action.field = 'locations_id'
-            action.value = rule_data['target_location']
+            action.action_type = "assign"
+            action.field = "locations_id"
+            action.value = rule_data["target_location"]
             session.add(action)
 
         session.commit()
@@ -5281,10 +5400,14 @@ class Glpi95(DatabaseHelper):
 
         rule = session.query(Rule).filter_by(id=id).one()
         # get previous rule
-        previous = session.query(Rule).filter(Rule.ranking < rule.ranking)\
-            .filter(Rule.name != 'Root')\
-            .filter(Rule.sub_type == 'PluginFusioninventoryInventoryRuleEntity')\
-            .order_by(Rule.ranking.desc()).first()
+        previous = (
+            session.query(Rule)
+            .filter(Rule.ranking < rule.ranking)
+            .filter(Rule.name != "Root")
+            .filter(Rule.sub_type == "PluginFusioninventoryInventoryRuleEntity")
+            .order_by(Rule.ranking.desc())
+            .first()
+        )
         if previous:
             previous_ranking = previous.ranking
             rule_ranking = rule.ranking
@@ -5301,10 +5424,14 @@ class Glpi95(DatabaseHelper):
 
         rule = session.query(Rule).filter_by(id=id).one()
         # get next rule
-        next_ = session.query(Rule).filter(Rule.ranking > rule.ranking)\
-            .filter(Rule.name != 'Root')\
-            .filter(Rule.sub_type == 'PluginFusioninventoryInventoryRuleEntity')\
-            .order_by(Rule.ranking.asc()).first()
+        next_ = (
+            session.query(Rule)
+            .filter(Rule.ranking > rule.ranking)
+            .filter(Rule.name != "Root")
+            .filter(Rule.sub_type == "PluginFusioninventoryInventoryRuleEntity")
+            .order_by(Rule.ranking.asc())
+            .first()
+        )
         if next_:
             next_ranking = next_.ranking
             rule_ranking = rule.ranking
@@ -5324,10 +5451,10 @@ class Glpi95(DatabaseHelper):
         session.query(RuleCriterion).filter_by(rules_id=id).delete()
         session.query(RuleAction).filter_by(rules_id=id).delete()
 
-        rule.name = rule_data['name']
-        rule.description = rule_data['description']
-        rule.match = rule_data['aggregator']
-        if rule_data['active'] == 'on':
+        rule.name = rule_data["name"]
+        rule.description = rule_data["description"]
+        rule.match = rule_data["aggregator"]
+        if rule_data["active"] == "on":
             rule.is_active = 1
         else:
             rule.is_active = 0
@@ -5337,13 +5464,13 @@ class Glpi95(DatabaseHelper):
 
         # Adding rule criteria
 
-        for i in xrange(len(rule_data['criteria'])):
+        for i in xrange(len(rule_data["criteria"])):
 
             cr = RuleCriterion()
             cr.rules_id = rule.id
-            cr.criteria = rule_data['criteria'][i]
-            cr.condition = rule_data['operators'][i]
-            cr.pattern = rule_data['patterns'][i]
+            cr.criteria = rule_data["criteria"][i]
+            cr.condition = rule_data["operators"][i]
+            cr.pattern = rule_data["patterns"][i]
             session.add(cr)
             session.commit()
             session.flush()
@@ -5351,21 +5478,21 @@ class Glpi95(DatabaseHelper):
         # Adding rule actions
 
         # If a target entity is specified, add it
-        if rule_data['target_entity'] != '-1':
+        if rule_data["target_entity"] != "-1":
             action = RuleAction()
             action.rules_id = rule.id
-            action.action_type = 'assign'
-            action.field = 'entities_id'
-            action.value = rule_data['target_entity']
+            action.action_type = "assign"
+            action.field = "entities_id"
+            action.value = rule_data["target_entity"]
             session.add(action)
 
         # If a target location is specified, add it
-        if rule_data['target_location'] != '-1':
+        if rule_data["target_location"] != "-1":
             action = RuleAction()
             action.rules_id = rule.id
-            action.action_type = 'assign'
-            action.field = 'locations_id'
-            action.value = rule_data['target_location']
+            action.action_type = "assign"
+            action.field = "locations_id"
+            action.value = rule_data["target_location"]
             session.add(action)
 
         session.commit()
@@ -5380,29 +5507,29 @@ class Glpi95(DatabaseHelper):
         actions = session.query(RuleAction).filter_by(rules_id=id).all()
 
         result = {}
-        result['active'] = rule.is_active
-        result['name'] = rule.name
-        result['description'] = rule.description
-        result['aggregator'] = rule.match
+        result["active"] = rule.is_active
+        result["name"] = rule.name
+        result["description"] = rule.description
+        result["aggregator"] = rule.match
 
-        result['criteria'] = []
-        result['operators'] = []
-        result['patterns'] = []
+        result["criteria"] = []
+        result["operators"] = []
+        result["patterns"] = []
 
         for cr in criteria:
-            result['criteria'].append(cr.criteria)
-            result['operators'].append(cr.condition)
-            result['patterns'].append(cr.pattern)
+            result["criteria"].append(cr.criteria)
+            result["operators"].append(cr.condition)
+            result["patterns"].append(cr.pattern)
 
         # By default, don't assign entity nor location
-        result['target_entity'] = -1
-        result['target_location'] = -1
+        result["target_entity"] = -1
+        result["target_location"] = -1
 
         for action in actions:
-            if action.field == 'entities_id' and action.action_type == 'assign':
-                result['target_entity'] = action.value
-            if action.field == 'locations_id' and action.action_type == 'assign':
-                result['target_entity'] = action.value
+            if action.field == "entities_id" and action.action_type == "assign":
+                result["target_entity"] = action.value
+            if action.field == "locations_id" and action.action_type == "assign":
+                result["target_entity"] = action.value
 
         return result
 
@@ -5429,10 +5556,14 @@ class Glpi95(DatabaseHelper):
             return []
         entities = []
         for profile in session.query(UserProfile).filter_by(users_id=user_id):
-            entities += [{'entity_id': profile.entities_id,
-                          'profile': profile.profiles_id,
-                          'is_recursive': profile.is_recursive,
-                          'is_dynamic': profile.is_dynamic}]
+            entities += [
+                {
+                    "entity_id": profile.entities_id,
+                    "profile": profile.profiles_id,
+                    "is_recursive": profile.is_recursive,
+                    "is_dynamic": profile.is_dynamic,
+                }
+            ]
         return entities
 
     @DatabaseHelper._sessionm
@@ -5445,10 +5576,10 @@ class Glpi95(DatabaseHelper):
         for attr in profiles:
             p = UserProfile()
             p.users_id = user_id
-            p.profiles_id = attr['profile']
-            p.entities_id = attr['entity_id']
-            p.is_recursive = attr['is_recursive']
-            p.is_dynamic = attr['is_dynamic']
+            p.profiles_id = attr["profile"]
+            p.entities_id = attr["entity_id"]
+            p.is_recursive = attr["is_recursive"]
+            p.is_dynamic = attr["is_dynamic"]
             session.add(p)
             session.commit()
 
@@ -5468,14 +5599,18 @@ class Glpi95(DatabaseHelper):
         """
 
         # Split into hive / path / key
-        hive = full_key.split('\\')[0]
-        key = full_key.split('\\')[-1]
-        path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
-        path = '/' + path + '/'
+        hive = full_key.split("\\")[0]
+        key = full_key.split("\\")[-1]
+        path = full_key.replace(hive + "\\", "").replace("\\" + key, "")
+        path = "/" + path + "/"
         # Get registry_id
         try:
-            registry_id = session.query(Registries).filter_by(
-                hive=hive, path=path, key=key).first().id
+            registry_id = (
+                session.query(Registries)
+                .filter_by(hive=hive, path=path, key=key)
+                .first()
+                .id
+            )
             if registry_id:
                 return registry_id
         except BaseException:
@@ -5497,17 +5632,21 @@ class Glpi95(DatabaseHelper):
         """
 
         # Split into hive / path / key
-        hive = full_key.split('\\')[0]
-        key = full_key.split('\\')[-1]
-        path = full_key.replace(hive + '\\', '').replace('\\' + key, '')
-        path = '/' + path + '/'
+        hive = full_key.split("\\")[0]
+        key = full_key.split("\\")[-1]
+        path = full_key.replace(hive + "\\", "").replace("\\" + key, "")
+        path = "/" + path + "/"
         # Insert in database
         registry = Registries()
         registry.name = key_name
         # Get collects_id
         try:
-            collects_id = session.query(Collects).filter_by(
-                name='PulseRegistryCollects').first().id
+            collects_id = (
+                session.query(Collects)
+                .filter_by(name="PulseRegistryCollects")
+                .first()
+                .id
+            )
         except BaseException:
             return False
         registry.plugin_fusioninventory_collects_id = collects_id
@@ -5519,34 +5658,28 @@ class Glpi95(DatabaseHelper):
         session.flush()
         return True
 
-    def getAllOsVersions(self, ctx, filt=''):
-        """ @return: all os versions defined in the GLPI database """
+    def getAllOsVersions(self, ctx, filt=""):
+        """@return: all os versions defined in the GLPI database"""
         session = create_session()
         query = session.query(OsVersion)
-        if filter != '':
-            query = query.filter(OsVersion.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(OsVersion.name.like("%" + filt + "%"))
         ret = query.all()
         session.close()
         return ret
 
-    def getAllArchitectures(self, ctx, filt=''):
-        """ @return: all hostnames defined in the GLPI database """
+    def getAllArchitectures(self, ctx, filt=""):
+        """@return: all hostnames defined in the GLPI database"""
         session = create_session()
         query = session.query(OsArch)
-        if filter != '':
-            query = query.filter(OsArch.name.like('%' + filt + '%'))
+        if filter != "":
+            query = query.filter(OsArch.name.like("%" + filt + "%"))
         ret = query.all()
         session.close()
         return ret
 
     @DatabaseHelper._sessionm
-    def addRegistryCollectContent(
-            self,
-            session,
-            computers_id,
-            registry_id,
-            key,
-            value):
+    def addRegistryCollectContent(self, session, computers_id, registry_id, key, value):
         """
         Add registry collect content
 
@@ -5568,14 +5701,21 @@ class Glpi95(DatabaseHelper):
 
         # Check if already present
         try:
-            contents_id = session.query(RegContents).filter_by(
-                computers_id=computers_id,
-                plugin_fusioninventory_collects_registries_id=registry_id,
-                key=key).first().id
+            contents_id = (
+                session.query(RegContents)
+                .filter_by(
+                    computers_id=computers_id,
+                    plugin_fusioninventory_collects_registries_id=registry_id,
+                    key=key,
+                )
+                .first()
+                .id
+            )
             if contents_id:
                 # Update database
-                session.query(RegContents).filter_by(
-                    id=contents_id).update({'value': str(value)})
+                session.query(RegContents).filter_by(id=contents_id).update(
+                    {"value": str(value)}
+                )
                 session.commit()
                 session.flush()
                 return True
@@ -5583,8 +5723,7 @@ class Glpi95(DatabaseHelper):
             # Insert in database
             regcontents = RegContents()
             regcontents.computers_id = int(computers_id)
-            regcontents.plugin_fusioninventory_collects_registries_id = int(
-                registry_id)
+            regcontents.plugin_fusioninventory_collects_registries_id = int(registry_id)
             regcontents.key = str(key)
             regcontents.value = str(value)
             session.add(regcontents)
@@ -5628,7 +5767,7 @@ left JOIN
 ON
   operatingsystemversions_id = glpi_operatingsystemversions.id;"""
         res = self.engine_glpi.execute(sql)
-        result = [{'os': os, 'version': version} for os, version in res]
+        result = [{"os": os, "version": version} for os, version in res]
 
         def _add_element(element, list):
             """Private function which merge the element to the specified list.
@@ -5640,9 +5779,11 @@ ON
             """
             # If an item is found, they are merged
             for machine in list:
-                if element['os'] == machine['os'] and element['version'] == machine['version']:
-                    machine['count'] = int(
-                        machine['count']) + int(element['count'])
+                if (
+                    element["os"] == machine["os"]
+                    and element["version"] == machine["version"]
+                ):
+                    machine["count"] = int(machine["count"]) + int(element["count"])
                     return list
 
             # If no machine is matching with the element, the element is added
@@ -5651,26 +5792,26 @@ ON
 
         final_list = []
         for machine in result:
-            machine['count'] = 1
-            if machine['os'].startswith('Android'):
+            machine["count"] = 1
+            if machine["os"].startswith("Android"):
                 pass
-            elif machine['os'].startswith('Debian'):
-                machine['os'] = 'Debian'
-                machine['version'] = machine['version'].split(" ")
-                machine['version'] = machine['version'][0]
-            elif machine['os'].startswith('Microsoft'):
-                machine['os'] = machine['os'].split(' ')[1:3]
-                machine['os'] = ' '.join(machine['os'])
-            elif machine['os'].startswith('Ubuntu'):
-                machine['os'] = 'Ubuntu'
+            elif machine["os"].startswith("Debian"):
+                machine["os"] = "Debian"
+                machine["version"] = machine["version"].split(" ")
+                machine["version"] = machine["version"][0]
+            elif machine["os"].startswith("Microsoft"):
+                machine["os"] = machine["os"].split(" ")[1:3]
+                machine["os"] = " ".join(machine["os"])
+            elif machine["os"].startswith("Ubuntu"):
+                machine["os"] = "Ubuntu"
                 # We want just the XX.yy version number
-                machine['version'] = machine['version'].split(" ")[0]
-                machine['version'] = machine['version'].split(".")
-                if len(machine['version']) >= 2:
-                    machine['version'] = machine['version'][0:2]
-                machine['version'] = '.'.join(machine['version'])
-            elif machine['os'].startswith('Mageia'):
-                machine['os'] = machine['os'].split(" ")[0]
+                machine["version"] = machine["version"].split(" ")[0]
+                machine["version"] = machine["version"].split(".")
+                if len(machine["version"]) >= 2:
+                    machine["version"] = machine["version"][0:2]
+                machine["version"] = ".".join(machine["version"])
+            elif machine["os"].startswith("Mageia"):
+                machine["os"] = machine["os"].split(" ")[0]
             else:
                 pass
 
@@ -5678,7 +5819,7 @@ ON
         return final_list
 
     @DatabaseHelper._sessionm
-    def get_machines_with_os_and_version(self, session, oslocal, version=''):
+    def get_machines_with_os_and_version(self, session, oslocal, version=""):
         """This function returns a list of id of selected OS for dashboard
         Params:
             oslocal: string which contains the searched OS
@@ -5687,10 +5828,10 @@ ON
             list of all the machines with specified OS and specified version
         """
 
-        criterion = ''
+        criterion = ""
 
         if version == "":
-            criterion = 'glpi.glpi_operatingsystemversions.name IS NULL'
+            criterion = "glpi.glpi_operatingsystemversions.name IS NULL"
         else:
             criterion = 'glpi.glpi_operatingsystemversions.name like "%%%s%%"' % version
 
@@ -5711,59 +5852,62 @@ WHERE
   glpi.glpi_operatingsystems.name LIKE "%%%s%%"
 AND
   %s
-;""" % (oslocal, criterion)
+;""" % (
+            oslocal,
+            criterion,
+        )
 
         res = session.execute(sql)
-        result = [{'id': a, 'hostname': b} for a, b in res]
+        result = [{"id": a, "hostname": b} for a, b in res]
         return result
 
 
 # Class for SQLalchemy mapping
 class Machine(object):
-    __tablename__ = 'glpi_computers_pulse'
+    __tablename__ = "glpi_computers_pulse"
 
     def getUUID(self):
         return toUUID(self.id)
 
     def toH(self):
-        return {'hostname': self.name, 'uuid': toUUID(self.id)}
+        return {"hostname": self.name, "uuid": toUUID(self.id)}
 
     def to_a(self):
         owner_login, owner_firstname, owner_realname = Glpi95().getMachineOwner(self)
         return [
-            ['name', self.name],
-            ['comments', self.comment],
-            ['serial', self.serial],
-            ['otherserial', self.otherserial],
-            ['contact', self.contact],
-            ['contact_num', self.contact_num],
-            ['owner', owner_login],
-            ['owner_firstname', owner_firstname],
-            ['owner_realname', owner_realname],
-            ['os', self.operatingsystems_id],
-            ['os_version', self.operatingsystemversions_id],
-            ['os_sp', self.operatingsystemservicepacks_id],
-            ['os_arch', self.operatingsystemarchitectures_id],
-            ['license_number', self.license_number],
-            ['licenseid', self.licenseid],
-            ['location', self.locations_id],
-            ['domain', self.domains_id],
-            ['network', self.networks_id],
-            ['model', self.computermodels_id],
-            ['type', self.computertypes_id],
-            ['entity', self.entities_id],
-            ['uuid', Glpi95().getMachineUUID(self)]
+            ["name", self.name],
+            ["comments", self.comment],
+            ["serial", self.serial],
+            ["otherserial", self.otherserial],
+            ["contact", self.contact],
+            ["contact_num", self.contact_num],
+            ["owner", owner_login],
+            ["owner_firstname", owner_firstname],
+            ["owner_realname", owner_realname],
+            ["os", self.operatingsystems_id],
+            ["os_version", self.operatingsystemversions_id],
+            ["os_sp", self.operatingsystemservicepacks_id],
+            ["os_arch", self.operatingsystemarchitectures_id],
+            ["license_number", self.license_number],
+            ["licenseid", self.licenseid],
+            ["location", self.locations_id],
+            ["domain", self.domains_id],
+            ["network", self.networks_id],
+            ["model", self.computermodels_id],
+            ["type", self.computertypes_id],
+            ["entity", self.entities_id],
+            ["uuid", Glpi95().getMachineUUID(self)],
         ]
 
 
 class Entities(object):
     def toH(self):
         return {
-            'uuid': toUUID(self.id),
-            'name': self.name,
-            'completename': self.completename,
-            'comments': self.comment,
-            'level': self.level
+            "uuid": toUUID(self.id),
+            "name": self.name,
+            "completename": self.completename,
+            "comments": self.comment,
+            "level": self.level,
         }
 
 
@@ -5784,7 +5928,7 @@ class FusionLocks(object):
 
 
 class FusionAgents(object):
-    to_be_exported = ['last_contact']
+    to_be_exported = ["last_contact"]
 
 
 class Disk(object):
@@ -5838,13 +5982,13 @@ class UserProfile(object):
 class NetworkPorts(object):
     def toH(self):
         return {
-            'uuid': toUUID(self.id),
-            'name': self.name,
-            'ifaddr': self.ip,
-            'ifmac': self.mac,
-            'netmask': noNone(self.netmask),
-            'gateway': self.gateway,
-            'subnet': self.subnet
+            "uuid": toUUID(self.id),
+            "name": self.name,
+            "ifaddr": self.ip,
+            "ifmac": self.mac,
+            "netmask": noNone(self.netmask),
+            "gateway": self.gateway,
+            "subnet": self.subnet,
         }
 
 
@@ -5952,7 +6096,7 @@ class OsVersion(DbTOA):
     pass
 
 
-def noNone(var, res=''):
+def noNone(var, res=""):
     """
     Some times, we don't want to see any None affected to a variable
     This function checks if variable is None. If True, return empty string by default
@@ -6047,9 +6191,9 @@ def unique(s):
 
 def same_network(ip1, ip2, netmask):
     try:
-        ip1 = map(lambda x: int(x), ip1.split('.'))
-        ip2 = map(lambda x: int(x), ip2.split('.'))
-        netmask = map(lambda x: int(x), netmask.split('.'))
+        ip1 = map(lambda x: int(x), ip1.split("."))
+        ip2 = map(lambda x: int(x), ip2.split("."))
+        netmask = map(lambda x: int(x), netmask.split("."))
         for i in range(4):
             if ip1[i].__and__(netmask[i]) != ip2[i].__and__(netmask[i]):
                 return False
@@ -6060,7 +6204,7 @@ def same_network(ip1, ip2, netmask):
 
 class ComputerGroupManager(Singleton):
     components = {}
-    main = 'dyngroup'
+    main = "dyngroup"
 
     def __init__(self):
         Singleton.__init__(self)
@@ -6072,8 +6216,8 @@ class ComputerGroupManager(Singleton):
 
     def register(self, name, klass):
         self.logger.debug(
-            "Registering computer group manager %s / %s" %
-            (name, str(klass)))
+            "Registering computer group manager %s / %s" % (name, str(klass))
+        )
         self.components[name] = klass
 
     def validate(self):
@@ -6117,7 +6261,7 @@ class ComputerGroupManager(Singleton):
         klass = self.components[self.main]
         return klass().request(ctx, query, bool, min, max, filter)
 
-    def result_group_by_name(self, ctx, name, min=0, max=-1, filter=''):
+    def result_group_by_name(self, ctx, name, min=0, max=-1, filter=""):
         klass = self.components[self.main]
         return klass().result_group_by_name(ctx, name, min, max, filter)
 
@@ -6136,14 +6280,14 @@ class DBObj(object):
                 else:
                     del d[k]
         # Delete Sqlachemy instance state
-        if '_sa_instance_state' in d:
-            del d['_sa_instance_state']
+        if "_sa_instance_state" in d:
+            del d["_sa_instance_state"]
         return d
 
     def fromDict(self, d, relations=False):
         # TODO: Test if d is dict
-        if '_sa_instance_state' in d:
-            del d['_sa_instance_state']
+        if "_sa_instance_state" in d:
+            del d["_sa_instance_state"]
         # Actually we don't support relations
         for key, value in d.iteritems():
             if key and type(value) not in [type({}), type([])]:
