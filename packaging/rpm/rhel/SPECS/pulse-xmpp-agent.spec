@@ -248,6 +248,7 @@ fi
 %config(noreplace) %_var/lib/pulse2/clients/config/startupdate.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updateopenssh.ini
 %config(noreplace) %_var/lib/pulse2/clients/config/updatetightvnc.ini
+%config(noreplace) %_var/lib/pulse2/clients/config/updatebackupclient.ini
 %attr(0755,syncthing,syncthing)  %_var/lib/pulse2/xmpp_baseremoteagent/
 
 #--------------------------------------------------------------------
@@ -397,6 +398,7 @@ cp pulse_xmpp_agent/config/start_machine.ini %buildroot%_var/lib/pulse2/clients/
 cp pulse_xmpp_agent/config/startupdate.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/config/
 cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
+cp pulse_xmpp_agent/config/updatebackupclient.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/HEADER.html %buildroot%_var/lib/pulse2/clients

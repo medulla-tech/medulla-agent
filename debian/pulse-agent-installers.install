@@ -5,6 +5,7 @@ var/lib/pulse2/clients/config/start_machine.ini
 var/lib/pulse2/clients/config/startupdate.ini
 /var/lib/pulse2/clients/config/updatetightvnc.ini
 /var/lib/pulse2/clients/config/updateopenssh.ini
+/var/lib/pulse2/clients/config/updatebackupclient.ini
 var/lib/pulse2/clients/generate-agent-package
 var/lib/pulse2/clients/generate-pulse-agent.sh
 var/lib/pulse2/clients/lin/deb/pulse-agent-linux

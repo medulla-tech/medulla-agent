@@ -138,6 +138,7 @@ override_dh_auto_install:
 	cp pulse_xmpp_agent/config/startupdate.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/updateopenssh.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp pulse_xmpp_agent/config/updatetightvnc.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
+	cp pulse_xmpp_agent/config/updatebackupclient.ini $(CURDIR)/debian/tmp/var/lib/pulse2/clients/config/
 	cp scripts_installer/generate-pulse-agent.sh $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/generate-agent-package $(CURDIR)/debian/tmp/var/lib/pulse2/clients
 	cp scripts_installer/HEADER.html $(CURDIR)/debian/tmp/var/lib/pulse2/clients
