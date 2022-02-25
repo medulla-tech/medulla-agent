@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# (c) 2016-2021 siveo, http://www.siveo.net
+# (c) 2016-2022 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -46,17 +46,28 @@ import socket
 import psutil
 from xml.etree import ElementTree
 import requests
-from datetime import datetime
-from lib.utils import file_put_contents, getRandomName
-from lib.agentconffile import directoryconffile, conffilename
+from datetime import date, datetime, timedelta
+from pulse_xmpp_agent.lib.utils import file_put_contents, getRandomName, file_get_contents
+from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.0.0", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.12", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
-SCHEDULE = {"schedule" : "*/15 * * * *", "nb" : -1}
+SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
 globalstruct={}
+
+class DateTimeEncoder(json.JSONEncoder):
+    """
+        Custom encoder for use by json for dates management
+    """
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            encoded_object = obj.isoformat()
+        else:
+            encoded_object =json.JSONEncoder.default(self, obj)
+        return encoded_object
 
 def schedule_main(xmppobject):
     logger.info("===========scheduling_mon_pulsesystem============")
@@ -65,10 +76,14 @@ def schedule_main(xmppobject):
     if xmppobject.num_call_scheduling_mon_pulsesystem == 0:
         __read_conf_scheduling_mon_pulsesystem(xmppobject)
 
+    # infostmpdir to save alert in INFOSTMP
+    infostmpdir = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","INFOSTMP"))
+
     try:
         if xmppobject.config.agenttype in ['relayserver']:
             #code ars
             system_json = {}
+            system_json['general_status'] = 'info'
             # System services
             if xmppobject.config.services_enable:
                 service_json = {}
@@ -98,6 +113,7 @@ def schedule_main(xmppobject):
                             service = 'tomcat'
                     else:
                         service = service_name
+                    filename = os.path.join(infostmpdir, "mon_service_%s_alert.json" % service_name)
                     if service in active_services:
                         service_json[service_name]['status'] = 1
                         result_memory = subprocess.Popen(['systemctl', 'show', '%s' % service, '-p', 'MemoryCurrent'], stdout=subprocess.PIPE)
@@ -107,12 +123,29 @@ def schedule_main(xmppobject):
                         if service_name in xmppobject.config.openfiles_check:
                             result_openfiles = subprocess.Popen(['lsof', '-u', '%s' % service], stdout=subprocess.PIPE)
                             service_json[service_name]['nbopenfiles'] = len(result_openfiles.stdout.readlines())
+                        # Remove previous status file if present as error is gone
+                        if os.path.isfile(filename):
+                            os.remove(filename)
                     else:
                         service_json[service_name]['status'] = 0
                         service_json[service_name]['memory'] = 0
                         service_json[service_name]['cpu'] = 0
                         if service_name in xmppobject.config.openfiles_check:
                             service_json[service_name]['nbopenfiles'] = 0
+                        metriques_json = {}
+                        metriques_json['general_status'] = 'error'
+                        metriques_json['services'] = {}
+                        metriques_json['services'][service_name] = {}
+                        metriques_json['services'][service_name]['status'] = 0
+                        alert_json = {}
+                        alert_json['system'] = {}
+                        alert_json['system']['status'] = 'error'
+                        alert_json['system']['subject'] = 'Alert: %s service down' % service_name
+                        alert_json['system']['metriques'] = metriques_json
+                        alert_json['system']['param0'] = service_name
+                        if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
+                            send_monitoring_message(xmppobject, 'terminalInformations', alert_json)
+                            file_put_contents(filename, json.dumps(metriques_json))
                 system_json['services'] = service_json
             
             # System ports
@@ -127,10 +160,27 @@ def schedule_main(xmppobject):
                 # check if port is in list of listening ports
                 for port_name in xmppobject.config.ports_list:
                     port_number = eval('xmppobject.config.port_%s' % port_name )
+                    filename = os.path.join(infostmpdir, "mon_ports_%s_alert.json" % port_name)
                     if port_number in listening_ports:
                         ports_json[port_name] = 1
+                        # Remove previous status file if present as error is gone
+                        if os.path.isfile(filename):
+                            os.remove(filename)
                     else:
                         ports_json[port_name] = 0
+                        metriques_json = {}
+                        metriques_json['general_status'] = 'error'
+                        metriques_json['ports'] = {}
+                        metriques_json['ports'][port_name] = 0
+                        alert_json = {}
+                        alert_json['system'] = {}
+                        alert_json['system']['status'] = 'error'
+                        alert_json['system']['subject'] = 'Alert: %s port down' % port_name
+                        alert_json['system']['metriques'] = metriques_json
+                        alert_json['system']['param0'] = port_name
+                        if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
+                            send_monitoring_message(xmppobject, 'terminalAlert', alert_json)
+                            file_put_contents(filename, json.dumps(metriques_json))
                 system_json['ports'] = ports_json
 
             # System resources
@@ -151,110 +201,120 @@ def schedule_main(xmppobject):
             # System ejabberd
             if xmppobject.config.ejabberd_enable:
                 ejabberd_json = {}
-                result_connected = subprocess.Popen(['ejabberdctl', 'stats', 'onlineusers'], stdout=subprocess.PIPE)
-                ejabberd_json['connected_users'] = int(result_connected.stdout.readline())
-                result_registered = subprocess.Popen(['ejabberdctl', 'stats', 'registeredusers'], stdout=subprocess.PIPE)
-                ejabberd_json['registered_users'] = int(result_registered.stdout.readline())
-                for jid in xmppobject.config.offline_count_list:
-                    if jid == 'rs':
-                        result = subprocess.Popen(['ejabberdctl', 'get_offline_count', 'rs%s' % xmppobject.config.xmpp_domain, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
-                    else:
-                        result = subprocess.Popen(['ejabberdctl', 'get_offline_count', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
-                    ejabberd_json['offline_count_%s' % jid] = int(result.stdout.readline())
-                for jid in xmppobject.config.roster_size_list:
-                    result = subprocess.Popen(['ejabberdctl', 'get_roster', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
-                    ejabberd_json['roster_size_%s' % jid] = len(result.stdout.readlines())
+                try:
+                    result_connected = subprocess.Popen(['ejabberdctl', 'stats', 'onlineusers'], stdout=subprocess.PIPE)
+                    ejabberd_json['connected_users'] = int(result_connected.stdout.readline())
+                    result_registered = subprocess.Popen(['ejabberdctl', 'stats', 'registeredusers'], stdout=subprocess.PIPE)
+                    ejabberd_json['registered_users'] = int(result_registered.stdout.readline())
+                    for jid in xmppobject.config.offline_count_list:
+                        if jid == 'rs':
+                            result = subprocess.Popen(['ejabberdctl', 'get_offline_count', 'rs%s' % xmppobject.config.xmpp_domain, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
+                        else:
+                            result = subprocess.Popen(['ejabberdctl', 'get_offline_count', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
+                        ejabberd_json['offline_count_%s' % jid] = int(result.stdout.readline())
+                    for jid in xmppobject.config.roster_size_list:
+                        result = subprocess.Popen(['ejabberdctl', 'get_roster', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
+                        ejabberd_json['roster_size_%s' % jid] = len(result.stdout.readlines())
+                except Exception as e:
+                    # Probably a ejabberdctl error. In any case return an empty json
+                    pass
                 system_json['ejabberd'] = ejabberd_json
 
             # System syncthing
             if xmppobject.config.syncthing_enable:
                 syncthing_json = {}
-                with open('/var/lib/syncthing/.config/syncthing/config.xml') as xml_file:
-                    config_xml = xml_file.read()
-                root = ElementTree.fromstring(config_xml)
-                api_key = root.find("./gui/apikey").text
-                api_headers = {'X-API-Key' : api_key}
-                for share_name in xmppobject.config.shares_list:
-                    if share_name == 'local':
-                        result = subprocess.Popen(xmppobject.config.local_share_cmd, shell=True, stdout=subprocess.PIPE)
-                        share = result.stdout.readline()
-                    else:
-                        share = share_name
-                    url = 'http://localhost:8384/rest/db/status?folder=pulsemaster_%s' % share
-                    response = requests.get(url, headers=api_headers)
-                    if response.status_code == requests.codes.ok:
-                        syncthing_json[share] = response.json() # eg. {u'needSymlinks': 0, u'globalSymlinks': 0, u'needBytes': 0, u'stateChanged': u'2021-10-06T21:57:47.773217561+02:00', u'sequence': 15, u'globalDeleted': 5, u'needTotalItems': 0, u'globalTotalItems': 10, u'localDeleted': 5, u'errors': 0, u'globalBytes': 314924, u'invalid': u'', u'needDirectories': 0, u'version': 15, u'localFiles': 4, u'localTotalItems': 10, u'state': u'idle', u'needFiles': 0, u'inSyncBytes': 314924, u'localBytes': 314924, u'globalFiles': 4, u'globalDirectories': 1, u'ignorePatterns': False, u'pullErrors': 0, u'localSymlinks': 0, u'inSyncFiles': 4, u'needDeletes': 0, u'localDirectories': 1}
+                try:
+                    with open('/var/lib/syncthing/.config/syncthing/config.xml') as xml_file:
+                        config_xml = xml_file.read()
+                    root = ElementTree.fromstring(config_xml)
+                    api_key = root.find("./gui/apikey").text
+                    api_headers = {'X-API-Key' : api_key}
+                    for share_name in xmppobject.config.shares_list:
+                        if share_name == 'local':
+                            result = subprocess.Popen(xmppobject.config.local_share_cmd, shell=True, stdout=subprocess.PIPE)
+                            share = result.stdout.readline()
+                        else:
+                            share = share_name
+                        url = 'http://localhost:8384/rest/db/status?folder=pulsemaster_%s' % share
+                        response = requests.get(url, headers=api_headers)
+                        if response.status_code == requests.codes.ok:
+                            syncthing_json[share] = response.json() # eg. {u'needSymlinks': 0, u'globalSymlinks': 0, u'needBytes': 0, u'stateChanged': u'2021-10-06T21:57:47.773217561+02:00', u'sequence': 15, u'globalDeleted': 5, u'needTotalItems': 0, u'globalTotalItems': 10, u'localDeleted': 5, u'errors': 0, u'globalBytes': 314924, u'invalid': u'', u'needDirectories': 0, u'version': 15, u'localFiles': 4, u'localTotalItems': 10, u'state': u'idle', u'needFiles': 0, u'inSyncBytes': 314924, u'localBytes': 314924, u'globalFiles': 4, u'globalDirectories': 1, u'ignorePatterns': False, u'pullErrors': 0, u'localSymlinks': 0, u'inSyncFiles': 4, u'needDeletes': 0, u'localDirectories': 1}
+                except Exception as e:
+                    # Probably a connection error. In any case return an empty json
+                    pass
                 system_json['syncthing'] = syncthing_json
 
             # System mysql
             if xmppobject.config.mysql_enable:
                 mysql_json = {}
-                cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
-                                              port=xmppobject.config.pulse_main_db_port,
-                                              user=xmppobject.config.pulse_main_db_user,
-                                              password=xmppobject.config.pulse_main_db_password,
-                                              database='xmppmaster')
-                cursor = cnx.cursor(buffered=True)
-                mysql_json['uptime'] = {}
-                query = "show status where `variable_name` = 'Uptime';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['uptime']['seconds'] = value[1]
-                mysql_json['threads_connected'] = {}
-                query = "show status where `variable_name` = 'Threads_connected';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['threads_connected']['number'] = value[1]
-                mysql_json['connections_rate'] = {}
-                query = "show status where `variable_name` = 'Max_used_connections';"
-                cursor.execute(query)
-                value_max_used_connections = cursor.fetchone()
-                query = "show variables where `variable_name` = 'max_connections';"
-                cursor.execute(query)
-                value_max_connections = cursor.fetchone()
-                percentage = float(value_max_used_connections[1]) / float(value_max_connections[1])
-                mysql_json['connections_rate']['percentage'] = percentage * 100
-                mysql_json['aborted_connects_rate'] = {}
-                query = "show status where `variable_name` = 'Aborted_connects';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['aborted_connects_rate']['numberperminute'] = value[1]
-                mysql_json['errors_max_connections'] = {}
-                query = "show status where variable_name='Connection_errors_max_connections';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['errors_max_connections']['number'] = value[1]
-                mysql_json['errors_internal'] = {}
-                query = "show status where variable_name='Connection_errors_internal';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['errors_internal']['number'] = value[1]
-                mysql_json['errors_select'] = {}
-                query = "show status where variable_name='Connection_errors_select';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['errors_select']['number'] = value[1]
-                mysql_json['errors_accept'] = {}
-                query = "show status where variable_name='Connection_errors_accept';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['errors_accept']['number'] = value[1]
-                mysql_json['subquery_cache_hit'] = {}
-                query = "show status where variable_name='subquery_cache_hit';"
-                cursor.execute(query)
-                value = cursor.fetchone()
-                mysql_json['subquery_cache_hit']['number'] = value[1]
-                mysql_json['table_cache_usage'] = {}
-                query = "show variables where `variable_name` = 'table_open_cache';"
-                cursor.execute(query)
-                value_table_open_cache = cursor.fetchone()
-                query = "show status where `variable_name` = 'Open_tables';"
-                cursor.execute(query)
-                value_Open_tables = cursor.fetchone()
-                percentage = float(value_Open_tables[1]) / float(value_table_open_cache[1])
-                mysql_json['table_cache_usage']['percentage'] = percentage * 100
-                cursor.close()
-                cnx.close()
+                try:
+                    cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
+                                                port=xmppobject.config.pulse_main_db_port,
+                                                user=xmppobject.config.pulse_main_db_user,
+                                                password=xmppobject.config.pulse_main_db_password,
+                                                database='xmppmaster')
+                    cursor = cnx.cursor(buffered=True)
+                    mysql_json['uptime'] = {}
+                    query = "show status where `variable_name` = 'Uptime';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['uptime']['seconds'] = value
+                    mysql_json['threads_connected'] = {}
+                    query = "show status where `variable_name` = 'Threads_connected';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['threads_connected']['number'] = value
+                    mysql_json['connections_rate'] = {}
+                    query = "show status where `variable_name` = 'Max_used_connections';"
+                    cursor.execute(query)
+                    value_max_used_connections = cursor.fetchone()
+                    query = "show variables where `variable_name` = 'max_connections';"
+                    cursor.execute(query)
+                    value_max_connections = cursor.fetchone()
+                    mysql_json['connections_rate']['percentage'] = value_max_used_connections / (value_max_connections * 100)
+                    mysql_json['aborted_connects_rate'] = {}
+                    query = "show status where `variable_name` = 'Aborted_connects';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['aborted_connects_rate']['numberperminute'] = value
+                    mysql_json['errors_max_connections'] = {}
+                    query = "show status where variable_name='Connection_errors_max_connections';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['errors_max_connections']['number'] = value
+                    mysql_json['errors_internal'] = {}
+                    query = "show status where variable_name='Connection_errors_internal';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['errors_internal']['number'] = value
+                    mysql_json['errors_select'] = {}
+                    query = "show status where variable_name='Connection_errors_select';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['errors_select']['number'] = value
+                    mysql_json['errors_accept'] = {}
+                    query = "show status where variable_name='Connection_errors_accept';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['errors_accept']['number'] = value
+                    mysql_json['subquery_cache_hit'] = {}
+                    query = "show status where variable_name='subquery_cache_hit';"
+                    cursor.execute(query)
+                    value = cursor.fetchone()
+                    mysql_json['subquery_cache_hit']['number'] = value
+                    mysql_json['table_cache_usage'] = {}
+                    query = "show variables where `variable_name` = 'table_open_cache';"
+                    cursor.execute(query)
+                    value_table_open_cache = cursor.fetchone()
+                    query = "show status where `variable_name` = 'Open_tables';"
+                    cursor.execute(query)
+                    value_Open_tables = cursor.fetchone()
+                    mysql_json['table_cache_usage']['percentage'] = (value_table_open_cache * 100) / value_Open_tables
+                    cursor.close()
+                    cnx.close()
+                except Exception as e:
+                    # Probably a connection error. In any case return an empty json
+                    pass
                 system_json['mysql'] = mysql_json
 
             # System pulse_relay
@@ -278,52 +338,56 @@ def schedule_main(xmppobject):
             # System pulse
             if xmppobject.config.pulse_main_enable:
                 pulse_main_json = {}
-                cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
-                                              port=xmppobject.config.pulse_main_db_port,
-                                              user=xmppobject.config.pulse_main_db_user,
-                                              password=xmppobject.config.pulse_main_db_password,
-                                              database='xmppmaster')
-                cursor = cnx.cursor(buffered=True)
-                pulse_main_json['deployments'] = {}
-                query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT START'"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['deployments']['current'] = count
-                # TODO
-                # query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT QUEUED'"
-                # cursor.execute(query)
-                # count = cursor.rowcount
-                # pulse_json['deployments']['queued_at_relay'] = count
-                pulse_main_json['agents'] = {}
-                query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 1"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['agents']['online'] = count
-                query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 0"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['agents']['offline'] = count
-                query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND need_reconf = 1"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['agents']['pending_reconf'] = count
-                query = "SELECT id FROM xmppmaster.update_machine"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['agents']['pending_update'] = count
-                pulse_main_json['packages'] = {}
-                query = "SELECT id FROM pkgs.packages"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['packages']['total'] = count
-                query = "SELECT id FROM pkgs.packages WHERE pkgs_share_id = 1"
-                cursor.execute(query)
-                count = cursor.rowcount
-                pulse_main_json['packages']['total_global'] = count
-                # TODO
-                # pulse_json['packages']['corrupted'] = xxxx
-                cursor.close()
-                cnx.close()
+                try:
+                    cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
+                                                port=xmppobject.config.pulse_main_db_port,
+                                                user=xmppobject.config.pulse_main_db_user,
+                                                password=xmppobject.config.pulse_main_db_password,
+                                                database='xmppmaster')
+                    cursor = cnx.cursor(buffered=True)
+                    pulse_main_json['deployments'] = {}
+                    query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT START'"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['deployments']['current'] = count
+                    # TODO
+                    # query = "SELECT id FROM xmppmaster.deploy WHERE state = 'DEPLOYMENT QUEUED'"
+                    # cursor.execute(query)
+                    # count = cursor.rowcount
+                    # pulse_json['deployments']['queued_at_relay'] = count
+                    pulse_main_json['agents'] = {}
+                    query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 1"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['agents']['online'] = count
+                    query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND enabled = 0"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['agents']['offline'] = count
+                    query = "SELECT id FROM xmppmaster.machines WHERE agenttype = 'machine' AND need_reconf = 1"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['agents']['pending_reconf'] = count
+                    query = "SELECT id FROM xmppmaster.update_machine"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['agents']['pending_update'] = count
+                    pulse_main_json['packages'] = {}
+                    query = "SELECT id FROM pkgs.packages"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['packages']['total'] = count
+                    query = "SELECT id FROM pkgs.packages WHERE pkgs_share_id = 1"
+                    cursor.execute(query)
+                    count = cursor.rowcount
+                    pulse_main_json['packages']['total_global'] = count
+                    # TODO
+                    # pulse_json['packages']['corrupted'] = xxxx
+                    cursor.close()
+                    cnx.close()
+                except Exception as e:
+                    # Probably a connection error. In any case return an empty json
+                    pass
                 system_json['pulse_main'] = pulse_main_json
 
         else:
@@ -331,12 +395,19 @@ def schedule_main(xmppobject):
             pass
 
         # Send message
-        send_monitoring_message(xmppobject, system_json)
+        informations_json = {}
+        informations_json['system'] = {}
+        informations_json['system']['status'] = 'ready'
+        informations_json['system']['metriques'] = system_json
+        send_monitoring_message(xmppobject, 'terminalInformations', informations_json)
         
     except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
-def send_monitoring_message(xmppobject, json_metriques):
+def send_monitoring_message(xmppobject, data_type, json):
+    """
+        data_type can be terminalInformations or terminalAlert
+    """
     # Get monitoring agent
     Config = ConfigParser.ConfigParser()
     Config.read("/etc/pulse-xmpp-agent/relayconf.ini")
@@ -348,26 +419,23 @@ def send_monitoring_message(xmppobject, json_metriques):
             monitoring_agent = Config.get('substitute', 'monitoring')
 
     sessionid = getRandomName(5, "mon_pulsesystem")
-    collect_time = datetime.now().isoformat()
     message_json = {}
-    message_json['action'] = 'terminalInformations'
+    message_json['action'] = 'vectormonitoringagent'
     message_json['sessionid'] = sessionid
     message_json['base64'] = False
     message_json['data'] = {}
-    message_json['data']['date'] = '%s' % collect_time
+    message_json['data']['subaction'] = data_type
+    message_json['data']['date'] = '%s' % datetime.now()
     message_json['data']['device_service'] = []
+    message_json['data']['device_service'].append(json)
     message_json['data']['other_data'] = {}
     message_json['ret'] = 0
-    device_service = {}
-    device_service['system'] = {}
-    device_service['system']['status'] = 'ready'
-    device_service['system']['metriques'] = json_metriques
-    message_json['data']['device_service'].append(device_service)
 
     try:
-        logger.debug("Sending monitoring message to %s: %s" % (monitoring_agent, json.dumps(message_json, indent=4)))
+        json_msg = json.dumps(message_json, indent=4 , cls=DateTimeEncoder)
+        logger.debug("Sending monitoring message to %s: %s" % (monitoring_agent, json_msg))
         xmppobject.send_message(mto=str(monitoring_agent.strip('\"')),
-                        mbody=json.dumps(message_json, indent=4),
+                        mbody=json_msg,
                         mtype='chat')
     except Exception:
         logger.error("The backtrace of this error is \n %s" % traceback.format_exc())
