@@ -28,7 +28,7 @@ import zipfile
 import platform
 import tempfile
 import shutil
-import ConfigParser
+import configparser
 from lib import utils
 from xml.etree import ElementTree
 
@@ -170,7 +170,7 @@ def updatesyncthing(xmppobject, installed_version):
 
             # Enable syncthing now it is installed
             agentconf_file = os.path.join(pulseconfig_path, "agentconf.ini")
-            Config = ConfigParser.ConfigParser()
+            Config = configparser.ConfigParser()
             Config.read(agentconf_file)
             if not Config.has_option("syncthing", "activation"):
                 Config.add_section("syncthing")

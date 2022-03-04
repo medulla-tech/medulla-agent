@@ -13,7 +13,7 @@ from lib.utils import getRandomName, simplecommand, file_put_contents, file_get_
 
 import hashlib
 import os
-import ConfigParser
+import configparser
 import re
 import MySQLdb
 import traceback
@@ -278,7 +278,7 @@ def __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata):
     else:
         # on charge la configuration file
         # xmppobject.pathfileconfscheduling_ars_synchronization
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(xmppobject.pathfileconfscheduling_ars_synchronization)
         if os.path.exists(
             xmppobject.pathfileconfscheduling_ars_synchronization + ".local"

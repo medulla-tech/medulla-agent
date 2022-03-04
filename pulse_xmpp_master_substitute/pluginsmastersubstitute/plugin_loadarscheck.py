@@ -30,7 +30,7 @@ import os
 import logging
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.utils import name_random
-import ConfigParser
+import configparser
 import types
 import time
 import random
@@ -304,7 +304,7 @@ def read_conf_loadarscheck(objectxmpp):
         objectxmpp.monitoring_message_on_machine_no_presence = True
         objectxmpp.monitor_agent = "master_mon@pulse"
     else:
-        ars_config = ConfigParser.ConfigParser()
+        ars_config = configparser.ConfigParser()
         ars_config.read(pathfileconf)
 
         if os.path.exists(pathfileconf + ".local"):

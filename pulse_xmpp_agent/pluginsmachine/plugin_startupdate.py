@@ -32,7 +32,7 @@ import logging
 import os
 import time
 from lib.agentconffile import directoryconffile
-import ConfigParser
+import configparser
 import re
 
 logger = logging.getLogger()
@@ -48,7 +48,7 @@ def read_conf_plugin_startupdate(objectxmpp):
     configfilename = os.path.join(directoryconffile(), "startupdate.ini")
     if os.path.isfile(configfilename):
         # lit la configuration
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(configfilename)
         if Config.has_option("plugins", "liststartplugin"):
             liststartplugin = Config.get("plugins", "liststartplugin")

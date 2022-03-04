@@ -29,7 +29,7 @@ if sys.version_info[0] == 3:
     from configparser import ConfigParser
     from slixmpp import jid
 else:
-    from ConfigParser import ConfigParser
+    from configparser import ConfigParser
     from sleekxmpp import jid
 import netifaces
 import json

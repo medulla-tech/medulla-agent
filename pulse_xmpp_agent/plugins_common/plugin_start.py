@@ -25,7 +25,7 @@ import os
 import logging
 from lib import utils
 from lib.agentconffile import directoryconffile
-import ConfigParser
+import configparser
 import re
 
 logger = logging.getLogger()
@@ -43,7 +43,7 @@ def read_conf_plugin_start(objectxmpp):
     objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
         # lit la configuration
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(configfilename)
         if os.path.isfile(configfilename + ".local"):
             Config.read(configfilename + ".local")

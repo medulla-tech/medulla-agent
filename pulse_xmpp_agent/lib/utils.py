@@ -30,7 +30,7 @@ if sys.version_info[0] == 3:
     from configparser import ConfigParser
     import binascii
 else:
-    from ConfigParser import ConfigParser
+    from configparser import ConfigParser
     import urllib2
     import urllib
 
