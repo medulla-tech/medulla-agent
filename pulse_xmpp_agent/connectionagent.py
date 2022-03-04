@@ -128,12 +128,12 @@ class MUCBot(ClientXMPP):
         )
         shutil.copyfile(namefileconfiguration, namefileconfigurationtmp)
 
-        # update level log for sleekxmpp
-        handler_sleekxmpp = logging.getLogger("sleekxmpp")
+        # update level log for slixmpp
+        handler_slixmpp = logging.getLogger("slixmpp")
         logging.log(
-            DEBUGPULSE, "Sleekxmpp log level is %s" % self.config.log_level_sleekxmpp
+            DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
         )
-        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+        handler_slixmpp.setLevel(self.config.log_level_slixmpp )
 
         if not hasattr(self.config, "geoservers"):
             self.geoservers = "ifconfig.co, if.siveo.net"

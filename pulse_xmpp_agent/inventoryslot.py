@@ -8609,7 +8609,7 @@ globaltest = """
       <ARCH>all</ARCH>
       <FILESIZE>1491</FILESIZE>
       <FROM>deb</FROM>
-      <NAME>python-sleekxmpp</NAME>
+      <NAME>python-slixmpp</NAME>
       <PUBLISHER>Debian</PUBLISHER>
       <SYSTEM_CATEGORY>python</SYSTEM_CATEGORY>
       <VERSION>1.3.1-6</VERSION>

@@ -26,7 +26,7 @@ import json
 from multiprocessing import TimeoutError
 import threading
 from .utils import getRandomName, call_plugin
-from sleekxmpp import jid
+from slixmpp import jid
 import logging
 
 logger = logging.getLogger()

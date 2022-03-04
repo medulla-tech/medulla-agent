@@ -209,7 +209,7 @@ class QueueManager(SyncManager):
     pass
 
 
-class MUCBot(sleekxmpp.ClientXMPP):
+class MUCBot(slixmpp.ClientXMPP):
     def __init__(
         self, conf, queue_recv_tcp_to_xmpp, queueout, eventkilltcp, eventkillpipe
     ):
@@ -233,7 +233,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if not os.path.isdir(self.dirsyncthing):
             os.makedirs(self.dirsyncthing, 0o755)
         logger.info("start machine1  %s Type %s" % (conf.jidagent, conf.agenttype))
-        sleekxmpp.ClientXMPP.__init__(
+        slixmpp.ClientXMPP.__init__(
             self, jid.JID(conf.jidagent), conf.passwordconnection
         )
         laps_time_update_plugin = 3600
@@ -246,12 +246,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.back_to_deploy = {}
         self.config = conf
 
-        # update level log for sleekxmpp
-        handler_sleekxmpp = logging.getLogger("sleekxmpp")
+        # update level log for slixmpp
+        handler_slixmpp = logging.getLogger("slixmpp")
         logging.log(
-            DEBUGPULSE, "Sleekxmpp log level is %s" % self.config.log_level_sleekxmpp
+            DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
         )
-        handler_sleekxmpp.setLevel(self.config.log_level_sleekxmpp)
+        handler_slixmpp.setLevel(self.config.log_level_slixmpp )
 
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.

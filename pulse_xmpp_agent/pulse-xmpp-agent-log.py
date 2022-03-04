@@ -23,10 +23,10 @@ import sys
 import os
 import logging
 import configparser
-import sleekxmpp
+import slixmpp
 import netifaces
 import random
-from sleekxmpp.exceptions import IqError, IqTimeout
+from slixmpp.exceptions import IqError, IqTimeout
 import json
 import hashlib
 import datetime
@@ -252,9 +252,9 @@ else:
     raw_input = input
 
 
-class MUCBot(sleekxmpp.ClientXMPP):
+class MUCBot(slixmpp.ClientXMPP):
     def __init__(self, conf):  # jid, password, room, nick):
-        sleekxmpp.ClientXMPP.__init__(self, conf.Jid, conf.Password)
+        slixmpp.ClientXMPP.__init__(self, conf.Jid, conf.Password)
         self.engine = None
         self.config = conf
         self.add_event_handler("register", self.register, threaded=True)
