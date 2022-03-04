@@ -24,7 +24,7 @@
 
 import os
 import logging
-import ConfigParser
+import configParser
 import json
 import requests
 import socket
@@ -58,7 +58,7 @@ class manage_grafana:
         """
         Reads the configuration from ini and ini.local files
         """
-        config = ConfigParser.ConfigParser()
+        config = configParser.ConfigParser()
         config.readfp(open(self.configfile))
         if os.path.isfile(self.configfile + ".local"):
             config.readfp(open(self.configfile + ".local", "r"))

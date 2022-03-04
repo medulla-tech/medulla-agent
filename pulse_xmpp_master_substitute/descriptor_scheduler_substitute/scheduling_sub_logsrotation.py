@@ -30,7 +30,7 @@ import datetime
 import zipfile
 import bz2
 import gzip
-import ConfigParser
+import configparser
 from lib.utils import file_put_contents
 import traceback
 
@@ -222,7 +222,7 @@ def read_config_plugin_agent(objectxmpp):
             "# Maximum file size in bytes. If file size > trigger_size, log is rotated\n"
             "trigger_size = 5242880\n" % objectxmpp.config.logfile,
         )
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(objectxmpp.pathfileconf)
     try:
         objectxmpp.nbrotfile = Config.getint("rotation_file", "nb_rot_file")
