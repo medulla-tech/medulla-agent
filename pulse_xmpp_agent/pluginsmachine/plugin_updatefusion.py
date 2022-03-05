@@ -33,7 +33,7 @@ FUSIONVERSION = "2.5.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatefusion", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatefusion", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -42,6 +42,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("###################################################")
     try:
         # Update if version is lower
+        check_if_binary_ok()
         installed_version = checkfusionversion()
         if StrictVersion(installed_version) < StrictVersion(FUSIONVERSION):
             updatefusion(xmppobject)
@@ -61,6 +62,24 @@ def checkfusionversion():
             fusionversion = "0.1"
     return fusionversion
 
+def check_if_binary_ok():
+    if sys.platform.startswith('win'):
+        # We check if the fusion inventory binary is correctly installed.
+        fusiondir_path = os.path.join(os.environ["ProgramFiles"], "FusionInventory-Agent")
+        fusion_bin_path = os.path.join(fusiondir_path, "fusioninventory-agent.bat")
+
+        if os.path.isfile(fusion_bin_path):
+            logger.debug("FusionInventory is correctly installed. Nothing to do")
+        else:
+            logger.error("Something went wrong, we need to reinstall the component.")
+
+            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent" '\
+                '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            result = utils.simplecommand(cmd)
+            if result['code'] == 0:
+                logger.debug("The FusionInventory module is ready to be reinstalled.")
+            else:
+                logger.debug("We failed to reinitialize the registry entry.")
 
 def updatefusion(xmppobject):
     logger.info("Updating FusionInventory Agent to version %s" % FUSIONVERSION)
