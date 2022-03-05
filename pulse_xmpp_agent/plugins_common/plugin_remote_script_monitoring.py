@@ -92,8 +92,8 @@ def action( objectxmpp, action, sessionid, data, message, dataerreur):
 
         if "name_script" in data:
             dataencode = encode_strconsole(strctfilestr)
-            path_file = os.path.join(tempdir,data['name_script'])
-            with open(path_file,"wb") as f:
+            path_file = os.path.join(tempdir, data['name_script'])
+            with open(path_file, "wb") as f:
                 datafile = f.write(dataencode)
         else:
             data_return['data']['result_script'] = "name_script empty"

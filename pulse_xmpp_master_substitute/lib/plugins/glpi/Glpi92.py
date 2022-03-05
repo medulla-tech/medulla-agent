@@ -2661,13 +2661,11 @@ class Glpi92(DatabaseHelper):
                     netmasks = []
                     if networkport.networknames is not None:
                         ipaddresses = list(
-                            set(
-                                [
+                            {
                                     ip.name
                                     for ip in networkport.networknames.ipaddresses
                                     if ip.name != ""
-                                ]
-                            )
+                                }
                         )
                         gateways = []
                         netmasks = []

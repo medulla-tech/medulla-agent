@@ -64,7 +64,7 @@ class networkagentinfo:
         return mac
 
     def getuser(self):
-        userlist = list(set([users[0] for users in psutil.users()]))
+        userlist = list({users[0] for users in psutil.users()})
         return userlist
 
     def networkobjet(self, sessionid, action):

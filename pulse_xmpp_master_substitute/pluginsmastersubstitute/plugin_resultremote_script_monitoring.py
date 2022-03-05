@@ -50,7 +50,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     logger.debug("#################################################")
     logger.debug("call plugin %s from %s" % (plugin, message['from']))
     logger.debug("#################################################")
-    logger.debug("data plugin %s" % ( json.dumps(data,indent=4)))
+    logger.debug("data plugin %s" % ( json.dumps(data, indent=4)))
     result_script = zlib.decompress(base64.b64decode(data['result_script']))
 
     if 'file_result' in data and data['file_result']:

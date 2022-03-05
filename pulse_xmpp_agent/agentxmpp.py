@@ -1314,7 +1314,7 @@ class MUCBot(slixmpp.ClientXMPP):
                         # start kiosk ask initialization
                         datasend["data"]["subaction"] = result["subaction"]
                         datasend["data"]["userlist"] = list(
-                            set([users[0] for users in psutil.users()])
+                            {users[0] for users in psutil.users()}
                         )
                         datasend["data"]["ouuser"] = organizationbyuser(
                             datasend["data"]["userlist"]
@@ -2820,7 +2820,7 @@ AGENT %s ERROR TERMINATE""" % (
         ###################End Update agent from MAster########################
         # TODO: determination lastusersession to review
         lastusersession = ""
-        userlist = list(set([users[0] for users in psutil.users()]))
+        userlist = list({users[0] for users in psutil.users()})
         if len(userlist) > 0:
             lastusersession = userlist[0]
         if lastusersession != "":

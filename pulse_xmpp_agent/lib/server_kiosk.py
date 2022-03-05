@@ -537,7 +537,7 @@ class manage_kiosk_message:
                     # start kiosk ask initialization
                     datasend["data"]["subaction"] = result["subaction"]
                     datasend["data"]["userlist"] = list(
-                        set([users[0] for users in psutil.users()])
+                        {users[0] for users in psutil.users()}
                     )
                     datasend["data"]["ouuser"] = organizationbyuser(
                         datasend["data"]["userlist"]
