@@ -251,7 +251,7 @@ class MUCBot(slixmpp.ClientXMPP):
         logging.log(
             DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
         )
-        handler_slixmpp.setLevel(self.config.log_level_slixmpp )
+        handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
         # _____________ verify network interface _____________
         # verifi si on a changer les interface pendant l'arret de l'agent.

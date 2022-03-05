@@ -2616,10 +2616,10 @@ class Glpi94(DatabaseHelper):
                     if networkport.networknames is not None:
                         ipaddresses = list(
                             {
-                                    ip.name
-                                    for ip in networkport.networknames.ipaddresses
-                                    if ip.name != ""
-                                }
+                                ip.name
+                                for ip in networkport.networknames.ipaddresses
+                                if ip.name != ""
+                            }
                         )
                         gateways = []
                         netmasks = []

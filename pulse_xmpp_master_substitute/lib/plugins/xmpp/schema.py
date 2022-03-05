@@ -765,8 +765,8 @@ class Mon_rules(Base, XmppMasterDBObj):
     type_event = Column(String(255), default=None)
     user = Column(String(255), default=None)
     comment = Column(String(1024))
-    os = Column(String(45),  default=None)
-    type_machine= Column(String(45),  default=None)
+    os = Column(String(45), default=None)
+    type_machine = Column(String(45), default=None)
 
 
 class Mon_event(Base, XmppMasterDBObj):

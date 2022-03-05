@@ -62,9 +62,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                         0,
                         winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY,
                     )
-                    winreg.SetValueEx(
-                        key, "DisplayVersion", 0, winreg.REG_SZ, version
-                    )
+                    winreg.SetValueEx(key, "DisplayVersion", 0, winreg.REG_SZ, version)
                     winreg.CloseKey(key)
         elif sys.platform.startswith("linux"):
             pass

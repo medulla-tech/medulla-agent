@@ -27,18 +27,20 @@ import MySQLdb
 import traceback
 import logging
 
-LOGFILE ="/var/lib/pulse2/script_monitoring/logfilescriptpython.log"
+LOGFILE = "/var/lib/pulse2/script_monitoring/logfilescriptpython.log"
 logger = logging.getLogger()
 
-class Mysqlbase():
+
+class Mysqlbase:
     def __init__(
-            self,
-            dbhost,
-            dbuser,
-            dbpasswd,
-            dbname="xmppmaster",
-            dbport=3306,
-            connect_timeout=30):
+        self,
+        dbhost,
+        dbuser,
+        dbpasswd,
+        dbname="xmppmaster",
+        dbport=3306,
+        connect_timeout=30,
+    ):
         self.boolconnectionbase = False
         self.dbconnectionMysql = None
         self.Mysql_dbhost = dbhost
@@ -53,21 +55,22 @@ class Mysqlbase():
             return self.dbconnectionMysql
         else:
             try:
-                self.dbconnectionMysql = \
-                    MySQLdb.connect(host=self.Mysql_dbhost,
-                                    user=self.Mysql_dbuser,
-                                    passwd=self.Mysql_dbpasswd,
-                                    db=self.Mysql_dbname,
-                                    port=self.Mysql_dbport,
-                                    connect_timeout=self.Mysql_connect_timeout)
+                self.dbconnectionMysql = MySQLdb.connect(
+                    host=self.Mysql_dbhost,
+                    user=self.Mysql_dbuser,
+                    passwd=self.Mysql_dbpasswd,
+                    db=self.Mysql_dbname,
+                    port=self.Mysql_dbport,
+                    connect_timeout=self.Mysql_connect_timeout,
+                )
                 self.boolconnectionbase = True
                 return self.dbconnectionMysql
             except MySQLdb.Error as e:
                 self.boolconnectionbase = False
                 self.dbconnectionMysql = None
                 print(
-                    "We failed to connect to the database and got the error %s" %
-                    str(e))
+                    "We failed to connect to the database and got the error %s" % str(e)
+                )
                 print("\n%s" % (traceback.format_exc()))
                 return self.dbconnectionMysql
             except Exception as e:
@@ -149,11 +152,13 @@ def loads_alert():
     # metadata to be added in the python script
     msgfrom = """@@@@@msgfrom@@@@@"""
     binding = """@@@@@binding@@@@@"""
-    serialisationpickleevent = """@@@@@event@@@@@"""  # replace """\@\@\@\@\@event@@@@@"""
+    serialisationpickleevent = (
+        """@@@@@event@@@@@"""  # replace """\@\@\@\@\@event@@@@@"""
+    )
 
     eventstruct = json.loads(serialisationpickleevent)
-    if 'general_status' in eventstruct['mon_devices_doc']:
-        eventstruct['general_status'] = eventstruct['mon_devices_doc']['general_status']
+    if "general_status" in eventstruct["mon_devices_doc"]:
+        eventstruct["general_status"] = eventstruct["mon_devices_doc"]["general_status"]
     return eventstruct, msgfrom, binding
 
 
@@ -162,18 +167,19 @@ def main():
     # The print are displayed in the final result file. They are needed for a better comprehension.
     # In the following example code, it shows how to use the base directly
 
-
     print("Python Script execution")
     print("We print the comment field of the mon_rules table")
-    print(eventstruct['mon_rules_comment'])
+    print(eventstruct["mon_rules_comment"])
 
     # Exemple use case: We can use every database defined in the plugins_list
-    xmppmaster = Mysqlbase(eventstruct['conf_submon']['xmpp_dbhost'],
-                           eventstruct['conf_submon']['xmpp_dbuser'],
-                           eventstruct['conf_submon']['xmpp_dbpasswd'],
-                           eventstruct['conf_submon']['xmpp_dbname'],
-                           eventstruct['conf_submon']['xmpp_dbport'],
-                           eventstruct['conf_submon']['xmpp_dbpooltimeout'])
+    xmppmaster = Mysqlbase(
+        eventstruct["conf_submon"]["xmpp_dbhost"],
+        eventstruct["conf_submon"]["xmpp_dbuser"],
+        eventstruct["conf_submon"]["xmpp_dbpasswd"],
+        eventstruct["conf_submon"]["xmpp_dbname"],
+        eventstruct["conf_submon"]["xmpp_dbport"],
+        eventstruct["conf_submon"]["xmpp_dbpooltimeout"],
+    )
     sql = """
             SELECT
             machines.id ,
@@ -244,16 +250,20 @@ def main():
                 JOIN
                 xmppmaster.machines ON xmppmaster.machines.id = xmppmaster.mon_machine.machines_id
             WHERE
-                xmppmaster.mon_event.id = %s;""" % (eventstruct['mon_event_id'])
+                xmppmaster.mon_event.id = %s;""" % (
+        eventstruct["mon_event_id"]
+    )
     resultatperso = xmppmaster.fetching(sql)
     print(resultatperso[0])
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(message)s',
-                        filename = LOGFILE,
-                        filemode = 'a')
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(message)s",
+        filename=LOGFILE,
+        filemode="a",
+    )
     logger.debug("Programm Starting")
     eventstruct, msgfrom, binding = loads_alert()
     main()

@@ -62,10 +62,13 @@ def checkfusionversion():
             fusionversion = "0.1"
     return fusionversion
 
+
 def check_if_binary_ok():
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         # We check if the fusion inventory binary is correctly installed.
-        fusiondir_path = os.path.join(os.environ["ProgramFiles"], "FusionInventory-Agent")
+        fusiondir_path = os.path.join(
+            os.environ["ProgramFiles"], "FusionInventory-Agent"
+        )
         fusion_bin_path = os.path.join(fusiondir_path, "fusioninventory-agent.bat")
 
         if os.path.isfile(fusion_bin_path):
@@ -73,13 +76,16 @@ def check_if_binary_ok():
         else:
             logger.error("Something went wrong, we need to reinstall the component.")
 
-            cmd = 'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent" '\
+            cmd = (
+                'REG ADD "hklm\\software\\microsoft\\windows\\currentversion\\uninstall\\FusionInventory-Agent" '
                 '/v "DisplayVersion" /t REG_SZ  /d "0.0" /f'
+            )
             result = utils.simplecommand(cmd)
-            if result['code'] == 0:
+            if result["code"] == 0:
                 logger.debug("The FusionInventory module is ready to be reinstalled.")
             else:
                 logger.debug("We failed to reinitialize the registry entry.")
+
 
 def updatefusion(xmppobject):
     logger.info("Updating FusionInventory Agent to version %s" % FUSIONVERSION)

@@ -133,7 +133,7 @@ class MUCBot(ClientXMPP):
         logging.log(
             DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
         )
-        handler_slixmpp.setLevel(self.config.log_level_slixmpp )
+        handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
         if not hasattr(self.config, "geoservers"):
             self.geoservers = "ifconfig.co, if.siveo.net"
