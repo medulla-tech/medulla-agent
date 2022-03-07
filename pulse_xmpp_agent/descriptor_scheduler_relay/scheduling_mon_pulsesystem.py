@@ -258,12 +258,12 @@ def schedule_main(xmppobject):
                     query = "show status where `variable_name` = 'Uptime';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['uptime']['seconds'] = value
+                    mysql_json['uptime']['seconds'] = value[1]
                     mysql_json['threads_connected'] = {}
                     query = "show status where `variable_name` = 'Threads_connected';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['threads_connected']['number'] = value
+                    mysql_json['threads_connected']['number'] = value[1]
                     mysql_json['connections_rate'] = {}
                     query = "show status where `variable_name` = 'Max_used_connections';"
                     cursor.execute(query)
@@ -271,37 +271,37 @@ def schedule_main(xmppobject):
                     query = "show variables where `variable_name` = 'max_connections';"
                     cursor.execute(query)
                     value_max_connections = cursor.fetchone()
-                    mysql_json['connections_rate']['percentage'] = value_max_used_connections / (value_max_connections * 100)
+                    mysql_json['connections_rate']['percentage'] = value_max_used_connections[1] / (value_max_connections[1] * 100)
                     mysql_json['aborted_connects_rate'] = {}
                     query = "show status where `variable_name` = 'Aborted_connects';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['aborted_connects_rate']['numberperminute'] = value
+                    mysql_json['aborted_connects_rate']['numberperminute'] = value[1]
                     mysql_json['errors_max_connections'] = {}
                     query = "show status where variable_name='Connection_errors_max_connections';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_max_connections']['number'] = value
+                    mysql_json['errors_max_connections']['number'] = value[1]
                     mysql_json['errors_internal'] = {}
                     query = "show status where variable_name='Connection_errors_internal';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_internal']['number'] = value
+                    mysql_json['errors_internal']['number'] = value[1]
                     mysql_json['errors_select'] = {}
                     query = "show status where variable_name='Connection_errors_select';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_select']['number'] = value
+                    mysql_json['errors_select']['number'] = value[1]
                     mysql_json['errors_accept'] = {}
                     query = "show status where variable_name='Connection_errors_accept';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_accept']['number'] = value
+                    mysql_json['errors_accept']['number'] = value[1]
                     mysql_json['subquery_cache_hit'] = {}
                     query = "show status where variable_name='subquery_cache_hit';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['subquery_cache_hit']['number'] = value
+                    mysql_json['subquery_cache_hit']['number'] = value[1]
                     mysql_json['table_cache_usage'] = {}
                     query = "show variables where `variable_name` = 'table_open_cache';"
                     cursor.execute(query)
@@ -309,7 +309,7 @@ def schedule_main(xmppobject):
                     query = "show status where `variable_name` = 'Open_tables';"
                     cursor.execute(query)
                     value_Open_tables = cursor.fetchone()
-                    mysql_json['table_cache_usage']['percentage'] = (value_table_open_cache * 100) / value_Open_tables
+                    mysql_json['table_cache_usage']['percentage'] = (value_table_open_cache[1] * 100) / value_Open_tables[1]
                     cursor.close()
                     cnx.close()
                 except Exception as e:
