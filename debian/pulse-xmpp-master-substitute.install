@@ -14,3 +14,4 @@ usr/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 etc/pulse-xmpp-agent-substitute/*.ini
+var/lib/pulse2/script_monitoring
