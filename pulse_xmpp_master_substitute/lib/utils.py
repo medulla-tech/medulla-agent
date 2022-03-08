@@ -38,12 +38,8 @@ import traceback
 from pprint import pprint
 import hashlib
 import base64
-import urllib.request
-import urllib.parse
-import urllib.error
-import urllib.request
-import urllib.error
-import urllib.parse
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import pickle
 from .agentconffile import conffilename
 import configparser
@@ -61,6 +57,8 @@ from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import string
+import asyncio
+import asyncio as aio
 
 if sys.platform.startswith("win"):
     import wmi
@@ -105,8 +103,6 @@ class Env(object):
 
 
 # debug decorator
-
-
 def minimum_runtime(t):
     """
     Function decorator constrains the minimum execution time of the function
@@ -381,7 +377,7 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
 
 
 def file_put_contents(filename, data):
-    f = open(filename, "wb")
+    f = open(filename, "w")
     f.write(data)
     f.close()
 
@@ -565,15 +561,29 @@ def loadModule(filename):
 
 def call_plugin(name, *args, **kwargs):
     # add compteur appel plugins
+    loop = aio.get_event_loop()
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
+        setattr(args[0], "num_call%s" % args[1], count + 1)
+    except AttributeError:
+        count = 0
+        setattr(args[0], "num_call%s" % args[1], count)
+    pluginaction = loadModule(name)
+    loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+
+
+def call_plugin_sequentially(name, *args, **kwargs):
+    # add compteur appel plugins
+    count = 0
+    try:
+        count = getattr(args[0], "num_call%s" % args[1])
+        setattr(args[0], "num_call%s" % args[1], count + 1)
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
     pluginaction = loadModule(name)
     pluginaction.action(*args, **kwargs)
-    setattr(args[0], "num_call%s" % args[1], count + 1)
 
 
 def getshortenedmacaddress():
@@ -1012,7 +1022,7 @@ def file_put_content(filename, contents, mode="w"):
 # for group in c.Win32_Group():
 # print group.Caption
 # for user in group.associators("Win32_GroupUser"):
-# print "  ", user.Caption
+# print ("  ", user.Caption)
 
 # decorateur pour simplifier les plugins
 
@@ -1272,8 +1282,6 @@ def find_ip():
 # decorateur pour simplifier les plugins
 # verify session exist.
 # pas de session end
-
-
 def pulginmaster(func):
     def wrapper(objetxmpp, action, sessionid, data, message, ret):
         if action.startswith("result"):
@@ -1437,9 +1445,9 @@ def vnc_set_permission(askpermission=1):
         pass
     elif sys.platform.startswith("win"):
         if askpermission == 0:
-            cmd = 'reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 1 && reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryTimeout /t REG_DWORD /d 1 && net stop tvnserver && net start tvnserver'
+            cmd = 'reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 1 && reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryTimeout /t REG_DWORD /d 1 && net stop tvnserver && net start tvnserver'
         else:
-            cmd = 'reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 0 && reg add "HKLM\\SOFTWARE\\TightVNC\\Server" /f /v QueryTimeout /t REG_DWORD /d 20 && net stop tvnserver && net start tvnserver'
+            cmd = 'reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryAcceptOnTimeout /t REG_DWORD /d 0 && reg add "HKLM\SOFTWARE\TightVNC\Server" /f /v QueryTimeout /t REG_DWORD /d 20 && net stop tvnserver && net start tvnserver'
         logging.debug(cmd)
         os.system(cmd)
     elif sys.platform.startswith("darwin"):
@@ -1516,7 +1524,7 @@ def loadjsonfile(filename):
 def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), "loginuser")
     if name is None:
-        userlist = list({users[0] for users in psutil.users()})
+        userlist = list(set([users[0] for users in psutil.users()]))
         if len(userlist) > 0:
             name = userlist[0]
     else:
@@ -1633,8 +1641,7 @@ def add_method(cls):
             return func(*args, **kwargs)
 
         setattr(cls, func.__name__, wrapper)
-        # Note we are not binding func, but wrapper which accepts self but does
-        # exactly the same as func
+        # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
         return func  # returning func means func can still be used normally
 
     return decorator
@@ -1671,8 +1678,7 @@ def is_connectedServer(ip, port):
         sock.close()
 
 
-def unpad(s):
-    return s[0 : -ord(s[-1])]
+unpad = lambda s: s[0 : -ord(s[-1])]
 
 
 class AESCipher:
@@ -2109,7 +2115,7 @@ def get_user_profile(username="pulseuser"):
         return ""
     check_profile_cmd = (
         'powershell "Get-ItemProperty '
-        "-Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\*' "
+        "-Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*' "
         "| Where-Object { $_.PSChildName -eq '%s' } "
         '| Select -ExpandProperty ProfileImagePath"' % usersid
     )

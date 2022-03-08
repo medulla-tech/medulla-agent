@@ -33,29 +33,30 @@ import slixmpp
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin
-
+from lib.utils import (
+    DEBUGPULSE,
+    getRandomName,
+    call_plugin,
+    call_plugin_sequentially,
+    ipfromdns,
+)
 import traceback
 import signal
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.manage_scheduler import manage_scheduler
-
+import asyncio
 import random
 import imp
 
 logger = logging.getLogger()
 
-if sys.version_info < (3, 0):
-    imp.reload(sys)
-    sys.setdefaultencoding("utf8")
-else:
-    raw_input = input
+raw_input = input
 
 
 def getComputerByMac(mac):
     ret = Glpi().getMachineByMacAddress("imaging_module", mac)
-    if isinstance(ret, list):
+    if type(ret) == list:
         if len(ret) != 0:
             return ret[0]
         else:
@@ -63,11 +64,10 @@ def getComputerByMac(mac):
     return ret
 
 
-# faire singeton
-
-
+#### faire singeton
 class MUCBot(slixmpp.ClientXMPP):
-    def __init__(self):  # jid, password, room, nick):
+    def __init__(self, conf_file):  # jid, password, room, nick):
+        self.fileconf = conf_file
         self.modulepath = os.path.abspath(
             os.path.join(
                 os.path.dirname(os.path.realpath(__file__)),
@@ -76,9 +76,9 @@ class MUCBot(slixmpp.ClientXMPP):
             )
         )
         signal.signal(signal.SIGINT, self.signal_handler)
-        self.config = confParameter()
+        self.config = confParameter(conf_file)
 
-        # update level log for slixmpp
+        ### update level log for slixmpp
         handler_slixmpp = logging.getLogger("slixmpp")
         logging.log(
             DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
@@ -93,36 +93,240 @@ class MUCBot(slixmpp.ClientXMPP):
             jid.JID(self.config.jidmastersubstitute),
             self.config.passwordconnection,
         )
-
         # We define the type of the Agent
         self.config.agenttype = "substitute"
         self.manage_scheduler = manage_scheduler(self)
         self.schedule("schedulerfunction", 10, self.schedulerfunction, repeat=True)
         logger.debug("##############################################")
 
-        ####################Update agent from MAster###########################
+        ####################Update agent from MAster#############################
         # self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
         # self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
         # self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
         # self.descriptorimage = Update_Remote_Agent(self.img_agent)
-        ###################END Update agent from MAster########################
+        ###################END Update agent from MAster#############################
         self.agentmaster = jid.JID(self.config.jidmaster)
         # self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
-
-        self.add_event_handler("register", self.register, threaded=True)
+        # _____________ Getion connection agent _______________________
+        self.add_event_handler("register", self.register)
+        self.add_event_handler("connecting", self.handle_connecting)
+        self.add_event_handler("connection_failed", self.handle_connection_failed)
+        self.add_event_handler("disconnected", self.handle_disconnected)
+        # _____________ Getion connection agent _______________________
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("message", self.message, threaded=True)
+        self.add_event_handler("message", self.message)
         # self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         # self.add_event_handler("loginfotomaster", self.loginfotomaster)
         # self.add_event_handler('changed_status', self.changed_status)
         self.add_event_handler(
-            "restartmachineasynchrone", self.restartmachineasynchrone, threaded=True
+            "restartmachineasynchrone", self.restartmachineasynchrone
         )
 
         # self.register_handler(handler.Callback(
         # 'CustomXEP Handler',
         # matcher.MatchXPath('{%s}iq/{%s}query' % (self.default_ns,"custom_xep")),
         # self._handle_custom_iq))
+
+    # -----------------------------------------------------------------------
+    # ----------------------- Getion connection agent -----------------------
+    # -----------------------------------------------------------------------
+
+    def Mode_Marche_Arret_loop(self, nb_reconnect=None, forever=False, timeout=None):
+        """
+        Connect to the XMPP server and start processing XMPP stanzas.
+        """
+        logger.debug("Mode_Marche_Arret_loop")
+        if nb_reconnect:
+            self.startdata = nb_reconnect
+        else:
+            self.startdata = 1
+        while self.startdata > 0:
+            logger.debug("loop Mode_Marche_Arret_loop")
+            self.disconnect(wait=1)
+            logger.debug("reconnect Mode_Marche_Arret_loop")
+            self.config = confParameter(self.fileconf)
+            self.address = (ipfromdns(self.config.Server), int(self.config.Port))
+            logger.debug("try connection (%s) %s " % (self.startdata, self.address))
+            logger.debug("forever (%s) %s " % (forever, timeout))
+            self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
+            if nb_reconnect:
+                self.startdata = self.startdata - 1
+
+    def Mode_Marche_Arret_connect(self, forever=False, timeout=10):
+        """
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser address et port de connection.
+        """
+        self.connect(address=self.address)
+        self.process(forever=forever, timeout=timeout)
+
+    def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
+        self.startdata = nb_reconnect
+
+    def Mode_Marche_Arret_terminate(self):
+        self.startdata = 0
+        self.disconnect()
+
+    def Mode_Marche_Arret_stop_agent(self, time_stop=5):
+        self.startdata = 0
+        self.connect_loop_wait = -1
+        self.disconnect(wait=time_stop)
+
+    def handle_connecting(self, data):
+        """
+        success connecting agent
+        """
+        pass
+
+    def handle_connection_failed(self, data):
+        """
+        on connection failed on libere la connection
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser adress et port de connection.
+        """
+        # self.Mode_Marche_Arret_init_adress_connect("jfk.siveo.net", 5222)
+        print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
+        self.connect_loop_wait = 5
+        self.Mode_Marche_Arret_stop_agent(time_stop=1)
+        # self.disconnect(wait=5)
+
+    def handle_disconnected(self, data):
+        print("handle_disconnected %s\n" % self.connect_loop_wait)
+        self.connect_loop_wait = 2
+        # self.disconnect()
+
+    def register(self, iq):
+        logging.info("register user %s" % self.boundjid)
+        resp = self.Iq()
+        resp["type"] = "set"
+        resp["register"]["username"] = self.boundjid.user
+        resp["register"]["password"] = self.password
+        try:
+            resp.send()
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            logging.error("Could not register account: %s" % e.iq["error"]["text"])
+            self.disconnect()
+
+        except IqTimeout as e:
+            logging.error("No response from server.")
+            self.disconnect()
+
+    # async def register(self, iq):
+    # logging.info("register user %s" % self.boundjid)
+    # resp = self.Iq()
+    # resp['type'] = 'set'
+    # resp['register']['username'] = self.boundjid.user
+    # resp['register']['password'] = self.password
+    # try:
+    # task = asyncio.ensure_future(resp.send())
+    # await task
+    # logging.info("Account created for %s!" % self.boundjid)
+    # except IqError as e:
+    # logging.info("Account created for")
+    # if e.iq["error"]["code"] == "409":
+    # logging.warning(
+    # "Could not register account %s : User already exists"
+    #% resp["register"]["username"])
+    # else:
+    # logging.error(
+    # "Could not register account %s : %s"
+    #% (resp["register"]["username"], e.iq["error"]["text"]))
+    ##self.disconnect()
+    # except IqTimeout as e:
+    # logging.error("No response from server.")
+    # self.Mode_Marche_Arret_stop_agent(time_stop=1)
+
+    # -----------------------------------------------------------------------
+    # --------------------- END Getion connection agent ---------------------
+    # -----------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------
+    # ------------------------ analyse strophe xmpp -------------------------
+    # -----------------------------------------------------------------------
+
+    def _check_message(self, msg):
+        try:
+            # verify message conformity
+            msgkey = msg.keys()
+            msgfrom = ""
+            if "from" not in msgkey:
+                logging.error("Stanza message bad format %s" % msg)
+                return (
+                    False,
+                    "bad format",
+                )
+            msgfrom = str(msg["from"])
+            if "type" in msgkey:
+                # eg: ref section 2.1
+                type = str(msg["type"])
+                if type == "chat":
+                    # The message is sent in the context of a one-to-one chat
+                    # conversation agent
+                    pass
+                elif type == "groupchat":
+                    # The message is sent in the context of a multi-user chat
+                    # environment
+                    logger.error("Stanza groupchat message no process %s " % msg)
+                    msg.reply("Thank you, but I do not treat groupchat messages").send()
+                    return False, "groupchat"
+                elif type == "headline":
+                    # The message is probably generated by an automated service
+                    # that delivers or broadcasts content
+                    logger.error(
+                        "Stanza headline (automated service) message no process %s "
+                        % msg
+                    )
+                    return False, "headline"
+                elif type == "normal":
+                    # The message is a single message that is sent outside the context of a one-to-one conversation
+                    # "or groupchat, and to which it is expected that the recipient will reply
+                    logger.warning("MESSAGE stanza normal %s" % msg)
+                    msg.reply("Thank you, but I do not treat normal messages").send()
+                    return False, "normal"
+                elif type == "error":
+                    # An error has occurred related to a previous message sent
+                    # by the sender
+                    logger.error("Stanza message from %s" % msgfrom)
+                    self.errorhandlingstanza(msg, msgfrom, msgkey)
+                    return False, "error"
+                else:
+                    logger.error("Stanza message type inconu %s" % type)
+                    return False, "error"
+        except Exception as e:
+            logging.error("Stanza message bad format %s" % msg)
+            logging.error("%s" % (traceback.format_exc()))
+            return False, "error %s" % str(e)
+        if "body" not in msgkey:
+            logging.error("Stanza message body missing %s" % msg)
+            return False, "error body missing"
+        return True, "chat"
+
+    def _errorhandlingstanza(self, msg, msgfrom, msgkey):
+        """
+        analyse stanza information
+        """
+        logging.error("child elements message")
+        messagestanza = ""
+        for t in msgkey:
+            if t != "error" and t != "lang":
+                e = str(msg[t])
+                if e != "":
+                    messagestanza += "%s : %s\n" % (t, e)
+        if "error" in msgkey:
+            messagestanza += "Error information\n"
+            msgkeyerror = msg["error"].keys()
+            for t in msg["error"].keys():
+                if t != "lang":
+                    e = str(msg["error"][t])
+                    if e != "":
+                        messagestanza += "%s : %s\n" % (t, e)
+        if messagestanza != "":
+            logging.error(messagestanza)
+
+    # -----------------------------------------------------------------------
+    # ---------------------- END analyse strophe xmpp -----------------------
+    # -----------------------------------------------------------------------
 
     def send_message_to_master(self, msg):
         self.send_message(
@@ -135,10 +339,10 @@ class MUCBot(slixmpp.ClientXMPP):
     # if message['type'] == 'available':
     # pass
 
-    def start(self, event):
+    async def start(self, event):
         self.shutdown = False
-        self.get_roster()
         self.send_presence()
+        await self.get_roster()
         logging.log(DEBUGPULSE, "subscribe xmppmaster")
         self.send_presence(pto=self.agentmaster, ptype="subscribe")
 
@@ -199,18 +403,18 @@ class MUCBot(slixmpp.ClientXMPP):
         self.send_message_to_master(msgevt)
         self.shutdown = True
         logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
-        self.disconnect(wait=10)
+        self.Mode_Marche_Arret_stop_agent(time_stop=1)
+        # self.disconnect(wait=10)
 
     def restartAgent(self, to):
         self.send_message(
             mto=to, mbody=json.dumps({"action": "restartbot", "data": ""}), mtype="chat"
         )
 
-    def restartmachineasynchrone(self, jid):
+    async def restartmachineasynchrone(self, jid):
         waittingrestart = random.randint(10, 20)
         # TODO : Replace print by log
-        # print "Restart Machine jid %s after %s secondes" % (jid,
-        # waittingrestart)
+        # print "Restart Machine jid %s after %s secondes" % (jid, waittingrestart)
         time.sleep(waittingrestart)
         # TODO : Replace print by log
         # print "Restart Machine jid %s fait" % jid
@@ -278,31 +482,6 @@ class MUCBot(slixmpp.ClientXMPP):
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
-    def register(self, iq):
-        """This function is called for automatic registation"""
-        resp = self.Iq()
-        resp["type"] = "set"
-        resp["register"]["username"] = self.boundjid.user
-        resp["register"]["password"] = self.password
-        try:
-            resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
-        except IqError as e:
-            if e.iq["error"]["code"] == "409":
-                logging.warning(
-                    "Could not register account %s : User already exists"
-                    % resp["register"]["username"]
-                )
-            else:
-                logging.error(
-                    "Could not register account %s : %s"
-                    % (resp["register"]["username"], e.iq["error"]["text"])
-                )
-        except IqTimeout:
-            logging.error("No response from server.")
-            logger.error("\n%s" % (traceback.format_exc()))
-            self.disconnect()
-
     def __bool_data(self, variable, default=False):
         if isinstance(variable, bool):
             return variable
@@ -311,10 +490,16 @@ class MUCBot(slixmpp.ClientXMPP):
                 return True
         return default
 
-    def message(self, msg):
-        if not msg["type"] == "chat":
-            return
+    async def message(self, msg):
         if msg["from"].bare == self.boundjid.bare:
+            logging.error("msg from/to self agent : no process.")
+            return
+        if not msg["type"] == "chat":
+            logging.error("Stanza %s message no process." " only chat" % msg["type"])
+            return
+        is_correct_msg, typemessage = self._check_message(msg)
+        if not is_correct_msg:
+            logging.error("Stanza message no process : bad form")
             return
         dataerreur = {
             "action": "resultmsginfoerror",
@@ -325,6 +510,7 @@ class MUCBot(slixmpp.ClientXMPP):
         }
         try:
             dataobj = json.loads(msg["body"])
+
         except Exception as e:
             logging.error("bad struct Message %s %s " % (msg, str(e)))
             self.send_message(
@@ -332,7 +518,6 @@ class MUCBot(slixmpp.ClientXMPP):
             )
             logger.error("\n%s" % (traceback.format_exc()))
             return
-
         if "action" in dataobj and dataobj["action"] == "infomachine":
             dd = {
                 "data": dataobj,
@@ -347,7 +532,7 @@ class MUCBot(slixmpp.ClientXMPP):
             # call function avec dataobj
             return
 
-        # Call plugin in action
+        ### Call plugin in action
         try:
             if "action" in dataobj and dataobj["action"] != "" and "data" in dataobj:
                 # il y a une action a traite dans le message
@@ -364,8 +549,9 @@ class MUCBot(slixmpp.ClientXMPP):
                     )
 
                 del dataobj["data"]
-                # infomachine call plugin registeryagent
-                if dataobj["action"] == "infomachine":
+                if (
+                    dataobj["action"] == "infomachine"
+                ):  # infomachine call plugin registeryagent
                     dataobj["action"] = "registeryagent"
 
                 # traite plugin
@@ -383,7 +569,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     module = "%s/plugin_%s.py" % (self.modulepath, dataobj["action"])
                     if "ret" not in dataobj:
                         dataobj["ret"] = 0
-                    call_plugin(
+                    call_plugin_sequentially(
                         module,
                         self,
                         dataobj["action"],
@@ -439,13 +625,13 @@ class MUCBot(slixmpp.ClientXMPP):
 
     def iqsendpulse(self, to, datain, timeout):
         # send iq synchronous message
-        if isinstance(datain, dict) or isinstance(datain, list):
+        if type(datain) == dict or type(datain) == list:
             try:
                 data = json.dumps(datain)
             except Exception as e:
                 logging.error("iqsendpulse : encode json : %s" % str(e))
                 return '{"err" : "%s"}' % str(e).replace('"', "'")
-        elif isinstance(datain, str):
+        elif type(datain) == str:
             data = str(datain)
         else:
             data = datain

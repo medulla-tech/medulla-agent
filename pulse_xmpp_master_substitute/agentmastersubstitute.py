@@ -19,7 +19,9 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
+# file : pulse_xmpp_master_substitute/agentmastersubstitute.py
+#
 """Launcher for agentsubstitute"""
 
 import sys
@@ -77,6 +79,9 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
 
 def doTask(optsconsoledebug, optsdeamon, optfileconf):
     tg = confParameter(optfileconf)
+    logdir = os.path.dirname(tg.logfile)
+    if not os.path.exists(logdir):
+        os.makedirs(logdir)
     # all non-Windows platforms are supporting ANSI escapes so we use them
     logging.StreamHandler.emit = add_coloring_to_emit_ansi(logging.StreamHandler.emit)
     # format log more informations
@@ -88,11 +93,11 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
             logging.basicConfig(level=logging.DEBUG, format=format)
         else:
             logging.basicConfig(
-                level=tg.levellog, format=format, filename=tg.logfile, filemode="a"
+                level=tg.levellog, format=format, filename=tg.logfile, filemode="a+"
             )
     else:
         logging.basicConfig(
-            level=tg.levellog, format=format, filename=tg.logfile, filemode="a"
+            level=tg.levellog, format=format, filename=tg.logfile, filemode="a+"
         )
 
     # Setup the command line arguments.
@@ -137,9 +142,12 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
             logger.error("Please verify your configuration in %s" % optfileconf)
             return
 
-    xmpp = MUCBot()
+    xmpp = MUCBot(optfileconf)
+    xmpp.shutdown = False
+
     xmpp.register_plugin("xep_0030")  # Service Discovery
-    xmpp.register_plugin("xep_0045")  # Multi-User Chat
+    xmpp.register_plugin("xep_0045")  # M
+    xmpp.register_plugin("xep_0060")  # PubSubulti-User Chat
     xmpp.register_plugin("xep_0004")  # Data Forms
     xmpp.register_plugin("xep_0050")  # Adhoc Commands
     xmpp.register_plugin(
@@ -148,18 +156,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
     )
     xmpp.register_plugin("xep_0077")  # In-band Registration
     xmpp["xep_0077"].force_registration = True
-
-    while True:
-        tg = confParameter(optfileconf)
-        xmpp.config = tg
-        # Connect to the XMPP server and start processing XMPP
-        # stanzas.address=(args.host, args.port)
-        if xmpp.connect(address=(ipfromdns(tg.Server), tg.Port)):
-            xmpp.process(block=True)
-            logging.log(DEBUGPULSE, "terminate infocommand")
-            # event for quit loop server tcpserver for kiosk
-        if xmpp.shutdown:
-            break
+    xmpp.Mode_Marche_Arret_loop()
 
 
 if __name__ == "__main__":
