@@ -23,8 +23,6 @@
 # file : lib/configuration.py
 #
 
-import sys
-
 if sys.version_info[0] == 3:
     from configparser import ConfigParser
     from slixmpp import jid
