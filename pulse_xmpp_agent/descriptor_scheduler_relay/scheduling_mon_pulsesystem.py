@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.12", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.27", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -254,62 +254,52 @@ def schedule_main(xmppobject):
                                                 password=xmppobject.config.pulse_main_db_password,
                                                 database='xmppmaster')
                     cursor = cnx.cursor(buffered=True)
-                    mysql_json['uptime'] = {}
                     query = "show status where `variable_name` = 'Uptime';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['uptime']['seconds'] = value[1]
-                    mysql_json['threads_connected'] = {}
+                    mysql_json['uptime'] = int(value[1])
                     query = "show status where `variable_name` = 'Threads_connected';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['threads_connected']['number'] = value[1]
-                    mysql_json['connections_rate'] = {}
+                    mysql_json['threads_connected'] = int(value[1])
                     query = "show status where `variable_name` = 'Max_used_connections';"
                     cursor.execute(query)
                     value_max_used_connections = cursor.fetchone()
                     query = "show variables where `variable_name` = 'max_connections';"
                     cursor.execute(query)
                     value_max_connections = cursor.fetchone()
-                    mysql_json['connections_rate']['percentage'] = value_max_used_connections[1] / (value_max_connections[1] * 100)
-                    mysql_json['aborted_connects_rate'] = {}
+                    mysql_json['connections_rate'] = int(value_max_used_connections[1]) / (int(value_max_connections[1]) * 100)
                     query = "show status where `variable_name` = 'Aborted_connects';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['aborted_connects_rate']['numberperminute'] = value[1]
-                    mysql_json['errors_max_connections'] = {}
+                    mysql_json['aborted_connects_rate'] = int(value[1])
                     query = "show status where variable_name='Connection_errors_max_connections';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_max_connections']['number'] = value[1]
-                    mysql_json['errors_internal'] = {}
+                    mysql_json['errors_max_connections'] = int(value[1])
                     query = "show status where variable_name='Connection_errors_internal';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_internal']['number'] = value[1]
-                    mysql_json['errors_select'] = {}
+                    mysql_json['errors_internal'] = int(value[1])
                     query = "show status where variable_name='Connection_errors_select';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_select']['number'] = value[1]
-                    mysql_json['errors_accept'] = {}
+                    mysql_json['errors_select'] = int(value[1])
                     query = "show status where variable_name='Connection_errors_accept';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['errors_accept']['number'] = value[1]
-                    mysql_json['subquery_cache_hit'] = {}
+                    mysql_json['errors_accept'] = int(value[1])
                     query = "show status where variable_name='subquery_cache_hit';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['subquery_cache_hit']['number'] = value[1]
-                    mysql_json['table_cache_usage'] = {}
+                    mysql_json['subquery_cache_hit'] = int(value[1])
                     query = "show variables where `variable_name` = 'table_open_cache';"
                     cursor.execute(query)
                     value_table_open_cache = cursor.fetchone()
                     query = "show status where `variable_name` = 'Open_tables';"
                     cursor.execute(query)
                     value_Open_tables = cursor.fetchone()
-                    mysql_json['table_cache_usage']['percentage'] = (value_table_open_cache[1] * 100) / value_Open_tables[1]
+                    mysql_json['table_cache_usage'] = (int(value_table_open_cache[1]) * 100) / int(value_Open_tables[1])
                     cursor.close()
                     cnx.close()
                 except Exception as e:
@@ -404,7 +394,7 @@ def schedule_main(xmppobject):
     except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
-def send_monitoring_message(xmppobject, data_type, json):
+def send_monitoring_message(xmppobject, data_type, json_dict):
     """
         data_type can be terminalInformations or terminalAlert
     """
@@ -427,7 +417,7 @@ def send_monitoring_message(xmppobject, data_type, json):
     message_json['data']['subaction'] = data_type
     message_json['data']['date'] = '%s' % datetime.now()
     message_json['data']['device_service'] = []
-    message_json['data']['device_service'].append(json)
+    message_json['data']['device_service'].append(json_dict)
     message_json['data']['other_data'] = {}
     message_json['ret'] = 0
 
