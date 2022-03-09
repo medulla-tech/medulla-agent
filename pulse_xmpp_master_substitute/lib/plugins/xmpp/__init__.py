@@ -7928,7 +7928,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     ('%s' REGEXP hostname or NULLIF(hostname, "") is null) AND
                     ('%s' REGEXP os or NULLIF(os, "") is null) AND
                     (type_machine like '%s' or NULLIF(type_machine, "") is Null ) AND
-                    device_type LIKE '%s';''' % (machine_hostname,
+                    device_type LIKE '%s';''' % (hostname,
                                                  platform,
                                                  agenttype,
                                                  device_type)
