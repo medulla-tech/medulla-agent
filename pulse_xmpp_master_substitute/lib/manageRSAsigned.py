@@ -72,10 +72,10 @@ class MsgsignedRSA:
         """
         if self.allkey is None or self.publickey is None:
             if os.path.exists(self.filekeypublic) and os.path.exists(self.fileallkey):
-                f = open(self.fileallkey, "r")
+                f = open(self.fileallkey, "rb")
                 self.allkey = pickle.load(f)
                 f.close()
-                f = open(self.filekeypublic, "r")
+                f = open(self.filekeypublic, "rb")
                 self.publickey = pickle.load(f)
                 f.close()
             else:
@@ -87,7 +87,7 @@ class MsgsignedRSA:
         Function load from file the complete keys to object RSA key
         """
         if os.path.exists(self.fileallkey):
-            f = open(self.fileallkey, "r")
+            f = open(self.fileallkey, "rb")
             self.allkey = pickle.load(f)
             f.close()
 
@@ -96,7 +96,7 @@ class MsgsignedRSA:
         Function load from file the public key to object RSA key
         """
         if os.path.exists(self.filekeypublic):
-            f = open(self.filekeypublic, "r")
+            f = open(self.filekeypublic, "rb")
             self.allkey = pickle.load(f)
             f.close()
 
@@ -177,8 +177,8 @@ class MsgsignedRSA:
         # In real life, you use a *much* longer key
         self.allkey = RSA.generate(1024, pool.get_bytes)
         self.publickey = self.allkey.publickey()
-        pickle.dump(self.allkey, open(self.fileallkey, "w"))
-        pickle.dump(self.publickey, open(self.filekeypublic, "w"))
+        pickle.dump(self.allkey, open(self.fileallkey, "wb"))
+        pickle.dump(self.publickey, open(self.filekeypublic, "wb"))
         return self.allkey
 
     def Setdirectorytempinfo(self):
@@ -241,12 +241,12 @@ def installpublickey(name, keybase64):
         "%s-public-RSA.key" % name,
     )
     if os.path.exists(filepublickey):
-        f = open(filepublickey, "r")
+        f = open(filepublickey, "rb")
         key = pickle.load(f)
         f.close()
         return key
     else:
         # install key public
         key = pickle.loads(base64.b64decode(keybase64))
-        pickle.dump(key, open(filepublickey, "w"))
+        pickle.dump(key, open(filepublickey, "wb"))
         return key
