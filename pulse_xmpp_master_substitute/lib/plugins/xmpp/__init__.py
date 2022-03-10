@@ -4021,6 +4021,12 @@ class XmppMasterDatabase(DatabaseHelper):
     def getCountPresenceMachine(self, session):
         return session.query(func.count(Machines.id)).scalar()
 
+    def _iso_8859_1__to__utf8(self, strdata):
+        try:
+            strdata = bytes(strdata,'iso-8859-1').decode('utf8')
+        except Exception:
+            return strdata
+
     @DatabaseHelper._sessionm
     def adduser(
         self,
@@ -4043,12 +4049,12 @@ class XmppMasterDatabase(DatabaseHelper):
             "`users`.`namesession`='%s' and `users`.`hostname`='%s';"
             % (namesession, hostname)
         )
-        city = city.decode("iso-8859-1").encode("utf8")
-        region_name = region_name.decode("iso-8859-1").encode("utf8")
-        time_zone = time_zone.decode("iso-8859-1").encode("utf8")
-        postal_code = postal_code.decode("iso-8859-1").encode("utf8")
-        country_code = country_code.decode("iso-8859-1").encode("utf8")
-        country_name = country_name.decode("iso-8859-1").encode("utf8")
+        city = self._iso_8859_1__to__utf8(city)
+        region_name = self._iso_8859_1__to__utf8(region_name)
+        time_zone = self._iso_8859_1__to__utf8(time_zone)
+        postal_code = self._iso_8859_1__to__utf8(postal_code)
+        country_code = self._iso_8859_1__to__utf8(country_code)
+        country_name = self._iso_8859_1__to__utf8(country_name)
         createuser = datetime.now()
         try:
             nb = session.execute(sql)
