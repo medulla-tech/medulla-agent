@@ -29,7 +29,7 @@ from lib.update_remote_agent import Update_Remote_Agent
 import types
 import configparser
 from lib.plugins.xmpp import XmppMasterDatabase
-from sleekxmpp import jid
+from slixmpp import jid
 import traceback
 
 

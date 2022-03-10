@@ -49,7 +49,7 @@ import types
 import datetime
 import random
 import re
-from sleekxmpp import jid
+from slixmpp import jid
 import time
 
 logger = logging.getLogger()

@@ -25,7 +25,7 @@ import json
 import logging
 from lib.utils import name_random
 import traceback
-from sleekxmpp import jid
+from slixmpp import jid
 import types
 from lib.plugins.xmpp import XmppMasterDatabase
 

@@ -26,7 +26,7 @@
 import json
 from lib.plugins.xmpp import XmppMasterDatabase
 from utils import name_randomplus
-from sleekxmpp import jid
+from slixmpp import jid
 import logging
 import random
 

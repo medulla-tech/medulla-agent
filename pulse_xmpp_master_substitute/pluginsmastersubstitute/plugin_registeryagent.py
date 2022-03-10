@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
-from sleekxmpp import jid
+from slixmpp import jid
 from lib.utils import getRandomName
 import re
 from distutils.version import LooseVersion

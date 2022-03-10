@@ -35,8 +35,8 @@ import types
 import time
 import random
 import re
-from sleekxmpp import jid
-from sleekxmpp.exceptions import IqError, IqTimeout
+from slixmpp import jid
+from slixmpp.exceptions import IqError, IqTimeout
 from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
