@@ -416,7 +416,6 @@ class message_email_smtp_ssl:
                 print(connect_to_server)
 
                 hello_from_server = self.server.ehlo()
-                logger.debug("hello_from_server %s" % hello_from_server)
                 print (hello_from_server)
                 self.server.login(self.compte_email, self.email_password)
                 return True
@@ -511,7 +510,6 @@ class message_email_smtp_ssl_tls:
 
                 hello_from_server = self.server.ehlo()
                 print (hello_from_server)
-                logger.debug("hello_from_server %s" % hello_from_server)
 
                 self.server.starttls()
                 self.server.login(self.compte_email, self.email_password)
