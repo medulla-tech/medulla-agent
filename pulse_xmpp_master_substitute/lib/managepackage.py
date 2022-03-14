@@ -73,7 +73,7 @@ class managepackage:
             It returns the content of the JSON file
         """
         if os.path.isfile(filename):
-            with open(filename, "r") as info:
+            with open(filename, "r", encoding='utf-8', errors='ignore') as info:
                 jsonFile = info.read()
             try:
                 outputJSONFile = json.loads(jsonFile.decode("utf-8", "ignore"))
@@ -231,7 +231,7 @@ class managepackage:
                     % (packageuuid, str(e))
                 )
         logger.error(
-            "package %s verify version" "in descriptor conf.json [%s]" % (packageuuid)
+            "package %s verify version" "in descriptor conf.json %s" % packageuuid
         )
         return None
 

@@ -162,7 +162,7 @@ def changed_status(self, presence):
                                 t["sessionid"],
                                 "DEPLOYMENT PENDING (REBOOT/SHUTDOWN/...)",
                             )
-                            if ret >= 1:
+                            if ret and ret >= 1:
                                 logger.debug(
                                     "Update deploy Status for Machine OffLine %s"
                                     % t["jidmachine"]

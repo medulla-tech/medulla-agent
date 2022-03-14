@@ -124,6 +124,8 @@ except ImportError:
 from sqlalchemy.orm import scoped_session
 import random
 
+if sys.version_info >= (3,0,0):
+    basestring = (str, bytes)
 
 class Error(Exception):
     """Base class for exceptions in this module."""

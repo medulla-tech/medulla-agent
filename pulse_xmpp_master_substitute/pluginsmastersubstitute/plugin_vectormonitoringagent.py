@@ -29,10 +29,12 @@ import logging
 import traceback
 from lib.plugins.xmpp import XmppMasterDatabase
 
+if sys.version_info >= (3,0,0):
+    basestring = (str, bytes)
+
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.4", "NAME": "vectormonitoringagent", "TYPE": "substitute"} # fmt: skip
-
 
 class DateTimeEncoder(json.JSONEncoder):
     """
