@@ -25,7 +25,7 @@
 import json
 from multiprocessing import TimeoutError
 import threading
-from .utils import getRandomName, call_plugin
+from lib.utils import getRandomName, call_plugin
 from slixmpp import jid
 import logging
 

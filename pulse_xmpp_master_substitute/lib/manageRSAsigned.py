@@ -25,7 +25,7 @@ from Crypto.Util import randpool
 import pickle
 import os
 import base64
-from .utils import file_get_contents
+from lib.utils import file_get_contents
 
 
 class MsgsignedRSA:

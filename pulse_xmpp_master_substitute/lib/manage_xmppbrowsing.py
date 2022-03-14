@@ -24,7 +24,7 @@
 import os
 import sys
 import logging
-from .utils import file_get_content, simplecommand, decode_strconsole
+from lib.utils import file_get_content, simplecommand, decode_strconsole
 import math
 import traceback
 

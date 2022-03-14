@@ -84,22 +84,18 @@ def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
         logger.error("\n%s" % (traceback.format_exc()))
 
-
 def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
     codechaine = "%s" % (msg["from"])
     result = False
     for t in objectxmpp.assessor_agent_keyAES32:
         cipher = AESCipher(t)
         decrypted = cipher.decrypt(data["codechaine"])
-        if str(decrypted) == str(codechaine):
-            result = True
-            break
+        if decrypted.decode('utf-8') == str(codechaine):
+            return True
     if not result:
         logger.warning("authentification False %s" % (codechaine))
-
         sendErrorConnectionConf(objectxmpp, sessionid, msg)
     return result
-
 
 def distHaversine(p1, p2):
     """

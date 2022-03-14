@@ -21,7 +21,7 @@
 # MA 02110-1301, USA.
 
 import threading
-from .utils import getRandomName
+from lib.utils import getRandomName
 import logging
 
 logger = logging.getLogger()

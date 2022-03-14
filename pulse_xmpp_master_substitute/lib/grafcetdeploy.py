@@ -27,7 +27,7 @@ import os
 import platform
 import os.path
 import json
-from .utils import (
+from lib.utils import (
     getMacAdressList,
     getIPAdressList,
     MacAdressToIp,

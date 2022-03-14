@@ -26,7 +26,7 @@ import logging
 import configparser
 from configparser import NoOptionError
 import random
-from .utils import ipfromdns
+from lib.utils import ipfromdns
 
 # Singleton/SingletonDecorator.py
 

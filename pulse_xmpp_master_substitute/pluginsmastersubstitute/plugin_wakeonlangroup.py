@@ -25,7 +25,7 @@ import json
 import sys
 from lib.plugins.xmpp import XmppMasterDatabase
 import traceback
-from utils import name_random
+from lib.utils import name_random
 import logging
 import os
 from wakeonlan import wol

@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-from .utils import decode_strconsole, encode_strconsole
+from lib.utils import decode_strconsole, encode_strconsole
 import sys
 import os
 import json

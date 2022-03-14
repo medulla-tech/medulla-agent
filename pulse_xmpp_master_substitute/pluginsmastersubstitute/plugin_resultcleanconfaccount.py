@@ -23,7 +23,7 @@
 # file pluginsmastersubstitute/plugin_resultcleanconfaccount.py
 
 import logging
-from utils import simplecommandstr
+from .utils import simplecommandstr
 
 logger = logging.getLogger()
 

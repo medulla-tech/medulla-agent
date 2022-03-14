@@ -28,7 +28,7 @@ import os
 import logging
 import zlib
 from time import sleep
-from utils import getRandomName, file_get_contents
+from lib.utils import getRandomName, file_get_contents
 import traceback
 
 

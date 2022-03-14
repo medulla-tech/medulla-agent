@@ -1678,7 +1678,7 @@ def is_connectedServer(ip, port):
         sock.close()
 
 
-unpad = lambda s: s[0 : -ord(s[-1])]
+
 
 
 class AESCipher:
@@ -1699,7 +1699,10 @@ class AESCipher:
         enc = base64.b64decode(enc)
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return unpad(cipher.decrypt(enc[16:]))
+        return self._unpad(cipher.decrypt(enc[16:]))
+
+    def _unpad(self, s):
+        return  s[:-ord(s[len(s)-1:])]
 
 
 def sshdup():

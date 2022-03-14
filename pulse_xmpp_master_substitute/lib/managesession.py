@@ -25,7 +25,7 @@ import glob
 import os
 import json
 import logging
-from .utils import loadjsonfile
+from lib.utils import loadjsonfile
 from os import listdir
 import time
 import traceback
