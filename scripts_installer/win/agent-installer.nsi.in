@@ -96,7 +96,7 @@ SetCompressor lzma
 !addincludedir libs
 !include "WinVer.nsh"
 !include "FileFunc.nsh"
-!include "zipdll.nsh"
+!include /CHARSET=CP1252 zipdll.nsh
 !include "LogicLib.nsh"
 !Include "LogString.nsh"
 !Include "psexec.nsh"

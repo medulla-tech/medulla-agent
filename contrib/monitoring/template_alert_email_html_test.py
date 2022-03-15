@@ -39,13 +39,13 @@ import traceback
 LOGFILE ="/var/lib/pulse2/script_monitoring/logfilescriptemail.log"
 logger = logging.getLogger()
 
-# jsonstructparametre={"suject" : "Rapport event",
-# "accountemail" : "systemdev@siveo.net"
+# jsonstructparametre={"subject" : "Event report",
+# "email_account" : "systemdev@siveo.net"
 # "email_password" : "P@ssw0rd$",
-# "accountserver" : "smtp-fr.securemail.pro",
-# "portserver" : 465  ,
-# "typeserver" : "SMTP_SSL",
-# "mine" : "html,text"}
+# "email_server" : "smtp-fr.securemail.pro",
+# "email_serverport" : 465  ,
+# "email_servertype" : "SMTP_SSL",
+# "email_mimetype" : "html,text"}
 
 
 def _template_html_event(dictresult):
@@ -384,7 +384,7 @@ class message_email_smtp_ssl:
         self.compte_email = compte_email
         self.email_password = email_password
         self.fromaddr = 'Alert <%s>' % compte_email
-        self.suject_email = "Rapport event"
+        self.subject_email = "Event report"
         self.namefile = None
 
     def destinaire(self, list_to_addrs_array):
@@ -393,8 +393,8 @@ class message_email_smtp_ssl:
         else:
             self.to_addrs_array = list_to_addrs_array
 
-    def suject(self, suject_email="Rapport event"):
-        self.suject_email = suject_email
+    def subject(self, subject_email="Event report"):
+        self.subject_email = subject_email
 
     def document_attache(self, namefile=None):
         self.namefile = namefile
@@ -416,7 +416,6 @@ class message_email_smtp_ssl:
                 print(connect_to_server)
 
                 hello_from_server = self.server.ehlo()
-                logger.debug("hello_from_server %s" % hello_from_server)
                 print (hello_from_server)
                 self.server.login(self.compte_email, self.email_password)
                 return True
@@ -432,7 +431,7 @@ class message_email_smtp_ssl:
             msg = MIMEMultipart('alternative')
             msg['From'] = self.fromaddr
             msg['To'] = ','.join(self.to_addrs_array)
-            msg['Subject'] = self.suject_email
+            msg['Subject'] = self.subject_email
             msg["Date"] = formatdate(localtime=True)
             # Record the MIME types of both parts - text/plain and text/html.
             if self.msg_plain_text:
@@ -480,14 +479,14 @@ class message_email_smtp_ssl_tls:
         self.compte_email = compte_email
         self.email_password = email_password
         self.fromaddr = 'Alert <%s>' % compte_email
-        self.suject_email = "Rapport event"
+        self.subject_email = "Event report"
         self.namefile = None
 
     def destinaire(self, list_to_addrs_array):
         self.to_addrs_array = list_to_addrs_array
 
-    def suject(self, suject_email="Rapport event"):
-        self.suject_email = suject_email
+    def subject(self, subject_email="Event report"):
+        self.subject_email = subject_email
 
     def document_attache(self, namefile=None):
         self.namefile = namefile
@@ -511,7 +510,6 @@ class message_email_smtp_ssl_tls:
 
                 hello_from_server = self.server.ehlo()
                 print (hello_from_server)
-                logger.debug("hello_from_server %s" % hello_from_server)
 
                 self.server.starttls()
                 self.server.login(self.compte_email, self.email_password)
@@ -528,7 +526,7 @@ class message_email_smtp_ssl_tls:
             msg = MIMEMultipart('alternative')
             msg['From'] = self.fromaddr
             msg['To'] = ','.join(self.to_addrs_array)
-            msg['Subject'] = self.suject_email
+            msg['Subject'] = self.subject_email
             msg["Date"] = formatdate(localtime=True)
             # Record the MIME types of both parts - text/plain and text/html.
             if self.msg_plain_text:
@@ -566,14 +564,14 @@ class message_email_smtp_ssl_tls:
 
 def main():
     doc = _template_html_event(eventstruct)
-    if eventstruct['mon_rules_comment']['typeserver']:
+    if eventstruct['mon_rules_comment']['email_servertype']:
         emailobj = message_email_smtp_ssl(
-            eventstruct['mon_rules_comment']['accountserver'],
-            eventstruct['mon_rules_comment']['portserver'],
-            eventstruct['mon_rules_comment']['accountemail'],
+            eventstruct['mon_rules_comment']['email_server'],
+            eventstruct['mon_rules_comment']['email_serverport'],
+            eventstruct['mon_rules_comment']['email_account'],
             eventstruct['mon_rules_comment']['email_password'])
-        emailobj.suject(
-            suject_email=eventstruct['mon_rules_comment']['suject'])
+        emailobj.subject(
+            subject_email=eventstruct['mon_rules_comment']['subject'])
         emailobj.destinaire([eventstruct['mon_rules_user']])
         emailobj.message_text(minetype_plain_text="ne pas repondre")
         emailobj.message_html(minetype_html_text=doc)
