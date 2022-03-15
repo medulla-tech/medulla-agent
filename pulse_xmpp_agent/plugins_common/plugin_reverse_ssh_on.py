@@ -40,7 +40,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.2", "NAME": "reverse_ssh_on", "TYPE": "all"}
+plugin = {"VERSION": "3.2", "NAME": "reverse_ssh_on", "TYPE": "all"} # fmt: skip
 
 
 def checkresult(result):

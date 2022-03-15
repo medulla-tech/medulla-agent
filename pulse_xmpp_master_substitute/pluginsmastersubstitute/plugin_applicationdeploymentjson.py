@@ -27,7 +27,7 @@ import logging
 import traceback
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "applicationdeploymentjson", "TYPE": "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "applicationdeploymentjson", "TYPE": "substitute"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

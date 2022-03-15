@@ -28,7 +28,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.0", "NAME": "resultenablemmcmodul", "TYPE": "substitute"}
+plugin = {"VERSION": "1.0", "NAME": "resultenablemmcmodul", "TYPE": "substitute"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

@@ -35,7 +35,7 @@ from lib.plugins.glpi import Glpi
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"}
+plugin = {"VERSION": "1.12", "NAME": "resultinventory", "TYPE": "substitute"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

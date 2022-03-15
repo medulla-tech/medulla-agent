@@ -26,7 +26,7 @@
 import os
 from lib import utils
 
-plugin = {"VERSION": "1.1", "NAME": "scheduling_wsusscn2", "TYPE": "relayserver", "SCHEDULED": True} # nopep8
+plugin = {"VERSION": "1.1", "NAME": "scheduling_wsusscn2", "TYPE": "relayserver", "SCHEDULED": True} # fmt: skip
 
 # nb  -1 infinite
 # all tuesday at 10h30PM

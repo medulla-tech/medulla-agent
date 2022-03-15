@@ -54,7 +54,7 @@ import time
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"}
+plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):

@@ -31,7 +31,7 @@ RDPVERSION = "0.2"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "updaterdp", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updaterdp", "TYPE": "machine"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

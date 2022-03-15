@@ -38,7 +38,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin is called at agent start
 
-plugin = {"VERSION": "1.1", "NAME": "loadmonitoringconfig", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "loadmonitoringconfig", "TYPE": "substitute"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

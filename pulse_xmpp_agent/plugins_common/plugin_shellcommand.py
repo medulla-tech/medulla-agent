@@ -24,7 +24,7 @@ import json
 import traceback
 import sys
 
-plugin = {"VERSION": "2.0", "NAME": "shellcommand", "TYPE": "all"}
+plugin = {"VERSION": "2.0", "NAME": "shellcommand", "TYPE": "all"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

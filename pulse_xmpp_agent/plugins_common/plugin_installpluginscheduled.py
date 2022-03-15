@@ -27,7 +27,7 @@ logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
 
-plugin = {"VERSION": "1.0", "NAME": "installpluginscheduled", "TYPE": "all"}
+plugin = {"VERSION": "1.0", "NAME": "installpluginscheduled", "TYPE": "all"} # fmt: skip
 
 
 def action(objetxmpp, action, sessionid, data, message, dataerreur):

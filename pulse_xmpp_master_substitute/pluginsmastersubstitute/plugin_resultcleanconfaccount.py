@@ -27,7 +27,7 @@ from utils import simplecommandstr
 
 logger = logging.getLogger()
 
-plugin = { "VERSION": "1.1", "NAME": "resultcleanconfaccount", "TYPE": "substitute", "FEATURE": "assessor", }
+plugin = { "VERSION": "1.1", "NAME": "resultcleanconfaccount", "TYPE": "substitute", "FEATURE": "assessor", } # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

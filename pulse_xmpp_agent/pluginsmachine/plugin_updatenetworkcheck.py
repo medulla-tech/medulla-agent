@@ -31,7 +31,7 @@ NETWORKVERSION = "2.1.7"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}
+plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

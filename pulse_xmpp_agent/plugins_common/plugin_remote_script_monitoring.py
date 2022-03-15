@@ -45,7 +45,7 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION": "1.0", "NAME": "remote_script_monitoring.py", "VERSIONAGENT": "2.0.0", "TYPE": "all", }
+plugin = {"VERSION": "1.0", "NAME": "remote_script_monitoring.py", "VERSIONAGENT": "2.0.0", "TYPE": "all", } # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

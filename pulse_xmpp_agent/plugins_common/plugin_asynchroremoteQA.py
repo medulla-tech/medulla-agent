@@ -27,7 +27,7 @@ import traceback
 import sys
 import logging
 
-plugin = {"VERSION": "2.0", "NAME": "asynchroremoteQA", "TYPE": "all"}
+plugin = {"VERSION": "2.0", "NAME": "asynchroremoteQA", "TYPE": "all"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

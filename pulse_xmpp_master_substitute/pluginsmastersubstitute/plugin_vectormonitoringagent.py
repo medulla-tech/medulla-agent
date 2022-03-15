@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.4", "NAME": "vectormonitoringagent", "TYPE": "substitute"}
+plugin = {"VERSION": "1.4", "NAME": "vectormonitoringagent", "TYPE": "substitute"} # fmt: skip
 
 
 class DateTimeEncoder(json.JSONEncoder):

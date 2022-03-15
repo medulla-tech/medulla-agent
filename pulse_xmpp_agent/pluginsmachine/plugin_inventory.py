@@ -42,7 +42,7 @@ if sys.platform.startswith("win"):
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
 WARNINGPULSEPLUGIN = 30
-plugin = {"VERSION": "3.6", "NAME": "inventory", "TYPE": "machine"}
+plugin = {"VERSION": "3.6", "NAME": "inventory", "TYPE": "machine"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

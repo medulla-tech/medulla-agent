@@ -24,7 +24,7 @@ import logging
 import json
 
 
-plugin = {"VERSION": "1.26", "NAME": "installplugin", "TYPE": "all"}
+plugin = {"VERSION": "1.26", "NAME": "installplugin", "TYPE": "all"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

@@ -32,7 +32,7 @@ class GuacamoleError(Exception):
     pass
 
 
-plugin = {"VERSION": "2.21", "NAME": "guacamoleconf", "TYPE": "relayserver"}
+plugin = {"VERSION": "2.21", "NAME": "guacamoleconf", "TYPE": "relayserver"} # fmt: skip
 logger = logging.getLogger()
 
 

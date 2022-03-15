@@ -26,7 +26,7 @@ import sys
 import os
 import logging
 
-plugin = {"VERSION": "2.0", "NAME": "asynchromeremoteshell", "TYPE": "all"}
+plugin = {"VERSION": "2.0", "NAME": "asynchromeremoteshell", "TYPE": "all"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

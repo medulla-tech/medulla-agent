@@ -26,7 +26,7 @@ import time
 
 import os
 
-plugin = {"VERSION": "2.1", "NAME": "enddeploy", "TYPE": "all"}
+plugin = {"VERSION": "2.1", "NAME": "enddeploy", "TYPE": "all"} # fmt: skip
 
 logger = logging.getLogger()
 

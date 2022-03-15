@@ -33,7 +33,7 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION": "1.0", "NAME": "updateversion", "TYPE": "all"}
+plugin = {"VERSION": "1.0", "NAME": "updateversion", "TYPE": "all"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

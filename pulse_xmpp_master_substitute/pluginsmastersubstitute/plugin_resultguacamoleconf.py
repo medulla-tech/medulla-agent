@@ -28,7 +28,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.11", "NAME": "resultguacamoleconf", "TYPE": "substitute"}
+plugin = {"VERSION": "1.11", "NAME": "resultguacamoleconf", "TYPE": "substitute"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, objsessiondata):

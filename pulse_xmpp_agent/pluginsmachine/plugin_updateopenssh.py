@@ -33,7 +33,7 @@ OPENSSHVERSION = "7.7"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.72", "NAME": "updateopenssh", "TYPE": "machine"}
+plugin = {"VERSION": "1.72", "NAME": "updateopenssh", "TYPE": "machine"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

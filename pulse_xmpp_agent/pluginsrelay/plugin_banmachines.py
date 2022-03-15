@@ -28,7 +28,7 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
-plugin = {"VERSION": "0.0.9", "NAME": "banmachines", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "Ban specified machines from the relay", }
+plugin = {"VERSION": "0.0.9", "NAME": "banmachines", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "Ban specified machines from the relay", } # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerror):

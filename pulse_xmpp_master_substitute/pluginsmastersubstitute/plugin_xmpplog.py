@@ -32,7 +32,7 @@ import re
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"}
+plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

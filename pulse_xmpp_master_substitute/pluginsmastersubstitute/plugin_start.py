@@ -30,7 +30,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {"VERSION": "1.1", "NAME": "start", "TYPE": "substitute"}
+plugin = {"VERSION": "1.1", "NAME": "start", "TYPE": "substitute"} # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

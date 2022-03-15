@@ -36,7 +36,7 @@ SYNCTHINGVERSION = "1.18.0"
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.23", "NAME": "updatesyncthing", "TYPE": "machine"}
+plugin = {"VERSION": "1.23", "NAME": "updatesyncthing", "TYPE": "machine"} # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
