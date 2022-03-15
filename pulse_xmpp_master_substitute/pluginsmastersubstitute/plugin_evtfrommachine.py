@@ -28,12 +28,7 @@ import logging
 logger = logging.getLogger()
 
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "evtfrommachine",
-    "TYPE": "substitute",
-    "FEATURE": "assessor",
-}
+plugin = { "VERSION": "1.0", "NAME": "evtfrommachine", "TYPE": "substitute", "FEATURE": "assessor", }
 
 # This plugin is calling from an AM (windows), if AM is stopped by a user.
 # Ctrl + c for example.

@@ -51,12 +51,7 @@ DEBUGPULSEPLUGIN = 25
 
 # connectionconf et le nom du plugin appeler.
 
-plugin = {
-    "VERSION": "1.2",
-    "NAME": "assessor_agent",
-    "TYPE": "substitute",
-    "FEATURE": "assessor",
-}
+plugin = { "VERSION": "1.2", "NAME": "assessor_agent", "TYPE": "substitute", "FEATURE": "assessor", }
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret, dataobj):

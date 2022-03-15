@@ -29,12 +29,7 @@ from lib.utils import file_put_contents
 
 from sleekxmpp import jid
 
-plugin = {
-    "VERSION": "1.0",
-    "VERSIONAGENT": "2.1",
-    "NAME": "notify_information",
-    "TYPE": "all",
-}
+plugin = { "VERSION": "1.0", "VERSIONAGENT": "2.1", "NAME": "notify_information",  "TYPE": "all", }
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

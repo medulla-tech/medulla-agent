@@ -30,11 +30,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 logger = logging.getLogger()
 
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "resultapplicationdeploymentjson",
-    "TYPE": "substitute",
-}
+plugin = { "VERSION": "1.0", "NAME": "resultapplicationdeploymentjson", "TYPE": "substitute", }
 
 
 def action(xmppsub, action, sessionid, data, message, ret, dataobj):

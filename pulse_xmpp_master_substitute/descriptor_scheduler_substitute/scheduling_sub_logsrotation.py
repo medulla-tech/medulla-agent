@@ -35,12 +35,7 @@ from lib.utils import file_put_contents
 import traceback
 
 logger = logging.getLogger()
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "scheduling_sub_logsrotation",
-    "TYPE": "all",
-    "SCHEDULED": True,
-}
+plugin = { "VERSION": "1.0", "NAME": "scheduling_sub_logsrotation", "TYPE": "all", "SCHEDULED": True, }
 
 # nb -1 means infinite
 # everyday at 12:00

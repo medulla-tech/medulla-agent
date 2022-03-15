@@ -28,12 +28,7 @@ import traceback
 from lib import utils, managepackage
 from sleekxmpp import jid
 
-plugin = {
-    "VERSION": "2.01",
-    "VERSIONAGENT": "2.1",
-    "NAME": "deploysyncthing",
-    "TYPE": "all",
-}
+plugin = { "VERSION": "2.01", "VERSIONAGENT": "2.1", "NAME": "deploysyncthing", "TYPE": "all", }
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

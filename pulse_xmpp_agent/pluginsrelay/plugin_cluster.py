@@ -27,13 +27,7 @@ logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
 
-plugin = {
-    "VERSION": "1.14",
-    "NAME": "cluster",
-    "VERSIONAGENT": "2.0.0",
-    "TYPE": "relayserver",
-    "DESC": "update list ARS cluster",
-}
+plugin = {"VERSION": "1.14", "NAME": "cluster", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "update list ARS cluster",}
 
 
 def refreshremotears(objectxmpp, action, sessionid):

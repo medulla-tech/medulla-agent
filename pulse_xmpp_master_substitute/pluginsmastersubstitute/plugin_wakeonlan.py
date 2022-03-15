@@ -34,7 +34,7 @@ from wakeonlan import wol
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "master"}
+plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "master" }
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

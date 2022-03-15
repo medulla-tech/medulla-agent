@@ -35,15 +35,9 @@ from lib.utils import file_put_contents
 
 logger = logging.getLogger()
 
-plugin = {
-    "VERSION": "2.3",
-    "NAME": "scheduling_logsrotation",
-    "TYPE": "all",
-    "SCHEDULED": True,
-}
+plugin = {"VERSION": "2.3", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True,}
 
 # nb -1 infinie
-# everyday at 12:00
 SCHEDULE = {"schedule": "0 */2 * * *", "nb": -1}
 
 

@@ -34,12 +34,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "loadlogsrotation",
-    "TYPE": "substitute",
-    "LOAD": "START",
-}
+plugin = { "VERSION": "1.0", "NAME": "loadlogsrotation", "TYPE": "substitute", "LOAD": "START", }
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

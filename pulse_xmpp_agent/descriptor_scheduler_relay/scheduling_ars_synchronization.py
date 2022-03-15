@@ -20,13 +20,8 @@ import traceback
 
 logger = logging.getLogger()
 
-# WARNING: The descriptor MUST be in one line
-plugin = {
-    "VERSION": "1.0.005",
-    "NAME": "scheduling_ars_synchronization",
-    "TYPE": "all",
-    "SCHEDULED": True,
-}
+# WARNING: The plugin variable MUST be in one line.
+plugin = {"VERSION": "1.0.005", "NAME": "scheduling_ars_synchronization", "TYPE": "all", "SCHEDULED": True, }
 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 

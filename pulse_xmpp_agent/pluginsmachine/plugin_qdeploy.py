@@ -36,12 +36,7 @@ elif sys.platform.startswith("win"):
 
 import tempfile
 
-plugin = {
-    "VERSION": "2.0",
-    "NAME": "qdeploy",
-    "VERSIONAGENT": "2.0.0",
-    "TYPE": "machine",
-}
+plugin = { "VERSION": "2.0", "NAME": "qdeploy", "VERSIONAGENT": "2.0.0", "TYPE": "machine", }
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

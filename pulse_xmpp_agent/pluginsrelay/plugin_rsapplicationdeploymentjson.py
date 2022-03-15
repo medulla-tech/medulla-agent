@@ -27,16 +27,10 @@ import logging
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {
-    "VERSION": "2.0",
-    "NAME": "rsapplicationdeploymentjson",
-    "TYPE": "relayserver",
-}
+plugin = {"VERSION": "2.0", "NAME": "rsapplicationdeploymentjson", "TYPE": "relayserver", }
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):
-    # logging.getLogger().debug("RECV data message
-    # %s\n###############\n"%json.dumps(data, indent=4))
     logging.log(
         DEBUGPULSEPLUGIN,
         "plugin %s on %s %s from %s"

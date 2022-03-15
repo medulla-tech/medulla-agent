@@ -31,12 +31,7 @@ import shutil
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
 
-plugin = {
-    "VERSION": "4.1",
-    "NAME": "installkey",
-    "VERSIONAGENT": "2.0.0",
-    "TYPE": "all",
-}
+plugin = { "VERSION": "4.1", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all", }
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

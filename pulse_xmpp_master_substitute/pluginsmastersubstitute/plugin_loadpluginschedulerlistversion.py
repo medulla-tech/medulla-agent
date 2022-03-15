@@ -34,11 +34,7 @@ DEBUGPULSEPLUGIN = 25
 
 # this plugin calling to starting agent
 
-plugin = {
-    "VERSION": "1.0",
-    "NAME": "loadpluginschedulerlistversion",
-    "TYPE": "substitute",
-}
+plugin = { "VERSION": "1.0", "NAME": "loadpluginschedulerlistversion", "TYPE": "substitute", }
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):
