@@ -74,7 +74,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
             logger.error("IQ Error: Please verify that the ARS %s is online." % jidars)
             logger.error("IQ Error: Please verify that the ARS Jid is correct in the ejabberd connected_users command")
 
-            logger.error("The Key of the ARS %s is not installed on the machine %s" (jidars, xmppobject.boundjid.bare))
+            logger.error("The Key of the ARS %s is not installed on the machine %s" % (jidars, xmppobject.boundjid.bare))
             return
 
         relayserver_pubkey = result['keypub']
