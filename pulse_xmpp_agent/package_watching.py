@@ -209,32 +209,16 @@ class MyEventHandler(pyinotify.ProcessEvent):
         send_agent_data(datasendstr, self.config)
 
     def process_IN_CREATE(self, event):
-        diadd = []
+        directory_added = []
         datasend = self.msg_structure()
-        listdirectory = [ x for x in self.config['filelist'] if os.path.isdir(x)]
-        startlistdirectory = [ x for x in self.config['filelist'] if os.path.isdir(x)]
-        for t in startlistdirectory:
-            listdirectory = listdirectory + listdirfile(t)
-        listdirectory = list(set(listdirectory))
         if event.dir:
-            listexistwatch = pathlist(self.wm.watches)
-            for z in listdirectory:
-                if z not in listexistwatch:
-                    self.wm.add_watch(z, self.mask, rec=True)
-                    diadd.append(z)
-            datasend['data'] = { "adddir"    : diadd,
-                                 "notifydir" : diadd,
-                                 "packageid" : os.path.basename(diadd[0])}
+            directory_added.append(os.path.dirname(event.pathname))
+            datasend['data'] = { "adddir" : event.pathname,
+                                 "notifydir" : directory_added,
+                                 "packageid" : os.path.basename(event.pathname)}
             datasendstr = json.dumps(datasend, indent=4)
-        else:
-            return
-            diadd.append(os.path.dirname(event.pathname))
-            datasend['data'] = { "addfile"    : event.pathname,
-                                 "notifydir" : diadd,
-                                 "packageid" : os.path.basename(os.path.dirname(event.pathname))}
-            datasendstr = json.dumps(datasend, indent=4)
-        logging.getLogger().debug("Msg : %s"% datasendstr)
-        send_agent_data(datasendstr, self.config)
+            logging.getLogger().debug("Msg : %s"% datasendstr)
+            send_agent_data(datasendstr, self.config)
 
 class watchingfilepartage:
     def __init__(self, config):
