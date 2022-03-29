@@ -726,7 +726,7 @@ def applicationdeployjsonUuidMachineAndUuidPackage(
                 date=None,
                 fromuser=login,
             )
-        logger.warn("%s package name missing" % uuidpackage)
+        logger.warning("%s package name missing" % uuidpackage)
         return False
 
 
@@ -755,13 +755,13 @@ def applicationdeployjsonuuid(
             uuidmachine, None
         )
         if "error" in objmachine and objmachine["error"] == "MultipleResultsFound":
-            logger.warn("getGuacamoleRelayServerMachineUuid %s" % objmachine["error"])
+            logger.warning("getGuacamoleRelayServerMachineUuid %s" % objmachine["error"])
             dupplicate_machines = (
                 XmppMasterDatabase().get_machine_with_dupplicate_uuidinventory(
                     uuidmachine, None
                 )
             )
-            logger.warn(
+            logger.warning(
                 "get_machine_with_dupplicate_uuidinventory %s" % dupplicate_machines
             )
             grparray = []

@@ -1447,7 +1447,7 @@ class grafcet:
             )
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 900
-                logger.warn("timeout missing : default value 900s")
+                logger.warning("timeout missing : default value 900s")
             # working Step recup from process et session
             self.workingstep["pwd"] = ""
             if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
@@ -1546,7 +1546,7 @@ class grafcet:
             # TODO: si action deja faite return
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 15
-                logger.warn("timeout missing : default value 15s")
+                logger.warning("timeout missing : default value 15s")
             re = shellcommandtimeout(
                 self.workingstep["command"], self.workingstep["timeout"]
             ).run()
@@ -1709,7 +1709,7 @@ class grafcet:
             )
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 900
-                logger.warn("timeout missing : default value 900s")
+                logger.warning("timeout missing : default value 900s")
             self.workingstep["pwd"] = ""
             if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
                 os.chdir(self.datasend["data"]["pathpackageonmachine"])
@@ -2115,9 +2115,9 @@ class grafcet:
             # todo si action deja faite return
             if "waiting" not in self.workingstep:
                 self.workingstep["waiting"] = "10"
-                logger.warn("waiting missing : default value 180s")
+                logger.warning("waiting missing : default value 180s")
             timewaiting = int(self.workingstep["waiting"]) + 180
-            logger.warn("timeout  waiting : %s" % self.workingstep["waiting"])
+            logger.warning("timeout  waiting : %s" % self.workingstep["waiting"])
             self.objectxmpp.xmpplog(
                 "[%s]-[%s]: Waiting %s s before resuming deployment"
                 % (

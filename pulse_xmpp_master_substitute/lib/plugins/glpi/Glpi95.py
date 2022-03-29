@@ -479,11 +479,11 @@ class Glpi95(DatabaseHelper):
             mapper(FusionAntivirus, self.fusionantivirus)
             self.logger.debug("... Success !!")
         except BaseException:
-            self.logger.warn("Load of fusion antivirus table failed")
-            self.logger.warn(
+            self.logger.warning("Load of fusion antivirus table failed")
+            self.logger.warning(
                 "This means you can not know antivirus statuses of your machines."
             )
-            self.logger.warn("This feature comes with Fusioninventory GLPI plugin")
+            self.logger.warning("This feature comes with Fusioninventory GLPI plugin")
 
         # glpi_plugin_fusioninventory_locks
         self.fusionlocks = None
@@ -843,7 +843,7 @@ class Glpi95(DatabaseHelper):
                     "entity",
                     "autoupdatesystems_id",
                 ):
-                    self.logger.warn("dont know how to filter on %s" % (filter_key))
+                    self.logger.warning("dont know how to filter on %s" % (filter_key))
             if len(a_filter_on) == 0:
                 return None
             elif len(a_filter_on) == 1:
@@ -987,7 +987,7 @@ class Glpi95(DatabaseHelper):
                         locationids = [int(x.replace("UUID", "")) for x in location]
                         for locationid in locationids:
                             if locationid not in locsid:
-                                self.logger.warn(
+                                self.logger.warning(
                                     "User '%s' is trying to get the content of an unauthorized entity : '%s'"
                                     % (ctx.userid, "UUID" + location)
                                 )
@@ -1003,7 +1003,7 @@ class Glpi95(DatabaseHelper):
                                 query_filter, (self.machine.c.entities_id == locationid)
                             )
                         else:
-                            self.logger.warn(
+                            self.logger.warning(
                                 "User '%s' is trying to get the content of an unauthorized entity : '%s'"
                                 % (ctx.userid, location)
                             )
@@ -4866,7 +4866,7 @@ class Glpi95(DatabaseHelper):
         try:
             ret = query.one()
         except (MultipleResultsFound, NoResultFound) as e:
-            self.logger.warn(
+            self.logger.warning(
                 "I can't get any UUID for machine %s and macs %s: %s"
                 % (hostname, macs, e)
             )

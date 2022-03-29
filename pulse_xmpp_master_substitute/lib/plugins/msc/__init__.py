@@ -551,7 +551,7 @@ class MscDatabase(DatabaseHelper):
             session.add(cmd)
             session.flush()
             return True
-        self.logger.warn("Failed to set command %s to type %s" % (cmd, type))
+        self.logger.warning("Failed to set command %s to type %s" % (cmd, type))
         return False
 
     @DatabaseHelper._sessionm
@@ -567,7 +567,7 @@ class MscDatabase(DatabaseHelper):
             session.add(cmd)
             session.flush()
             return True
-        self.logger.warn("Failed to set command %s as ready" % (cmd))
+        self.logger.warning("Failed to set command %s as ready" % (cmd))
         return False
 
     def deleteBundle(self, bundle_id):
@@ -583,13 +583,13 @@ class MscDatabase(DatabaseHelper):
 
             bundle = session.query(Bundle).get(bundle_id)
             if not bundle:
-                self.logger.warn("Unable to find bundle (id=%s)" % bundle_id)
+                self.logger.warning("Unable to find bundle (id=%s)" % bundle_id)
                 return False
 
             cmds = session.query(Commands)
             cmds = cmds.select_from(self.commands)
             cmds = cmds.filter(self.commands.c.fk_bundle == bundle_id)
-            # self.logger.warn("Commands : %s)" % cmds.all())
+            # self.logger.warning("Commands : %s)" % cmds.all())
 
             ok = self._deleteCommands(session, cmds)
             if ok:
@@ -1135,7 +1135,7 @@ class MscDatabase(DatabaseHelper):
                         )
                     )
                 else:
-                    self.logger.warn(
+                    self.logger.warning(
                         "Cancel of the deployment in process\n"
                         "Deploy on machine %s [%s] -> %s"
                         % (
@@ -1345,7 +1345,7 @@ class MscDatabase(DatabaseHelper):
                 self.logger.info("Command (id=%s) successfully deleted" % (cmd.id))
 
             else:
-                self.logger.warn(
+                self.logger.warning(
                     "Unable to delete commands on host of command (id=%s)" % cmd.id
                 )
                 return False
@@ -1966,7 +1966,7 @@ class MscDatabase(DatabaseHelper):
             c = ret.count()
             session.close()
             return c
-        self.logger.warn(
+        self.logger.warning(
             "User %s does not have good permissions to access '%s'" % (ctx.userid, uuid)
         )
         return False
@@ -1990,7 +1990,7 @@ class MscDatabase(DatabaseHelper):
             ret = query.all()
             session.close()
             return [(x[0].toH(), x[1], x[2]) for x in ret]
-        self.logger.warn(
+        self.logger.warning(
             "User %s does not have good permissions to access '%s'" % (ctx.userid, uuid)
         )
         return []
@@ -2576,7 +2576,7 @@ class MscDatabase(DatabaseHelper):
         session = create_session()
         coh = session.query(CommandsOnHost).get(coh_id)
         if coh is None:
-            self.logger.warn(
+            self.logger.warning(
                 "User %s try to access an coh that don't exists '%s'"
                 % (ctx.userid, coh_id)
             )
@@ -2593,7 +2593,7 @@ class MscDatabase(DatabaseHelper):
             ctx, target.target_uuid
         ):
             return coh
-        self.logger.warn(
+        self.logger.warning(
             "User %s does not have right permissions to access '%s'"
             % (ctx.userid, target.target_name)
         )
@@ -2702,7 +2702,7 @@ class MscDatabase(DatabaseHelper):
             else:
                 return command
 
-        self.logger.warn(
+        self.logger.warning(
             "User %s does not have good permissions to access command '%s'"
             % (ctx.userid, str(cmd_id))
         )
