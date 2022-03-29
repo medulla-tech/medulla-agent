@@ -37,7 +37,6 @@ import random
 import re
 from slixmpp import jid
 from slixmpp.exceptions import IqError, IqTimeout
-from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 

@@ -23,7 +23,6 @@
 # file : pulse_xmpp_agent/lib/utils.py
 
 import sys
-import urllib
 
 if sys.version_info[0] == 3:
     import urllib.request as urllib2

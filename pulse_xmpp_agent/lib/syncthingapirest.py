@@ -51,7 +51,6 @@ from lib.utils import (
     getRandomName,
     simplecommand,
     file_put_contents,
-    simplecommand,
 )
 from urllib.parse import urlparse
 import logging

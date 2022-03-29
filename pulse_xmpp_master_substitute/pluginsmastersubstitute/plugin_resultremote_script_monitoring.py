@@ -28,7 +28,6 @@ import logging
 import traceback
 import zlib
 import os
-import sys
 import base64
 from datetime import date, datetime, timedelta
 

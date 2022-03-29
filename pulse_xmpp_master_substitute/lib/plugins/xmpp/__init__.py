@@ -108,12 +108,10 @@ from lib.utils import (
     file_put_content,
     simplecommandstr,
 )
-import pickle
 import stat
 import subprocess
 import functools
 import base64
-import copy
 import zlib
 
 try:

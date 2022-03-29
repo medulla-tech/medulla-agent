@@ -32,14 +32,12 @@ import sys
 import os
 import fnmatch
 import logging
-import random
 import re
 import traceback
 from pprint import pprint
 import hashlib
 import base64
 import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
 import pickle
 from .agentconffile import conffilename
 import configparser
@@ -52,12 +50,10 @@ import requests
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
 import random
-import string
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import string
-import asyncio
 import asyncio as aio
 
 if sys.platform.startswith("win"):
