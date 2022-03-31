@@ -1526,7 +1526,7 @@ class grafcet:
                     )
                 except BaseException:
                     self.workingstep["timeout"] = 800
-                logging.getLogger().warn(
+                logging.getLogger().warning(
                     "timeout missing : default value %ss" % self.workingstep["timeout"]
                 )
             else:
@@ -1534,7 +1534,7 @@ class grafcet:
                     self.workingstep["timeout"] = int(self.workingstep["timeout"])
                 except BaseException:
                     self.workingstep["timeout"] = 800
-                    logging.getLogger().warn(
+                    logging.getLogger().warning(
                         "timeout integer error : default value %ss"
                         % self.workingstep["timeout"]
                     )
@@ -1608,7 +1608,7 @@ class grafcet:
             # todo si action deja faite return
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 15
-                logging.getLogger().warn("timeout missing : default value 15s")
+                logging.getLogger().warning("timeout missing : default value 15s")
             re = shellcommandtimeout(
                 self.workingstep["command"], self.workingstep["timeout"]
             ).run()
@@ -1771,7 +1771,7 @@ class grafcet:
             )
             if "timeout" not in self.workingstep:
                 self.workingstep["timeout"] = 900
-                logging.getLogger().warn("timeout missing : default value 900s")
+                logging.getLogger().warning("timeout missing : default value 900s")
 
             self.workingstep["pwd"] = ""
             if os.path.isdir(self.datasend["data"]["pathpackageonmachine"]):
@@ -2211,9 +2211,9 @@ class grafcet:
             # todo si action deja faite return
             if "waiting" not in self.workingstep:
                 self.workingstep["waiting"] = "10"
-                logging.getLogger().warn("waiting missing : default value 180s")
+                logging.getLogger().warning("waiting missing : default value 180s")
             # timewaiting = int(self.workingstep['waiting']) + 180
-            logging.getLogger().warn(
+            logging.getLogger().warning(
                 "timeout  waiting : %s" % self.workingstep["waiting"]
             )
             self.objectxmpp.xmpplog(

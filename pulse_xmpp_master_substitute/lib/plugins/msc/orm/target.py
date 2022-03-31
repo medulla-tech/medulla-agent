@@ -57,7 +57,7 @@ class Target(object):
         try:
             return self.target_name.split(".")[0]
         except BaseException:
-            logging.getLogger().warn(
+            logging.getLogger().warning(
                 "Unable to get shortname from '%s'" % self.target_name
             )
             return self.target_name

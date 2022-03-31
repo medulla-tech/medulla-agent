@@ -3501,7 +3501,7 @@ class Glpi92(DatabaseHelper):
             return self.searchOptions["en_US"][str(log.id_search_option)]
         except Exception:
             if log.id_search_option != 0:
-                logging.getLogger().warn(
+                logging.getLogger().warning(
                     "I can't get a search option for id %s" % log.id_search_option
                 )
             return ""

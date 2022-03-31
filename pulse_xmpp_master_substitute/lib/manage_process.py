@@ -64,7 +64,7 @@ def processcommand(command, queue_out_session, messagestr, timeout):
             "TimeoutError process  %s sessionid : %s" % (command, message["sessionid"])
         )
     except KeyboardInterrupt:
-        logging.warn(
+        logging.warning(
             "KeyboardInterrupt process  %s sessionid : %s"
             % (command, message["sessionid"])
         )
@@ -160,7 +160,7 @@ def processstepcommand(command, queue_out_session, messagestr, timeout, step):
             "TimeoutError process  %s sessionid : %s" % (command, message["sessionid"])
         )
     except KeyboardInterrupt:
-        logging.getLogger().warn(
+        logging.getLogger().warning(
             "KeyboardInterrupt process  %s sessionid : %s"
             % (command, message["sessionid"])
         )
@@ -301,7 +301,7 @@ class process_on_end_send_message_xmpp:
                 % (command, message["sessionid"])
             )
         except KeyboardInterrupt:
-            logging.getLogger().warn(
+            logging.getLogger().warning(
                 "KeyboardInterrupt process  %s sessionid : %s"
                 % (command, message["sessionid"])
             )
@@ -349,7 +349,7 @@ class process_on_end_send_message_xmpp:
                 % (command, message["sessionid"])
             )
         except KeyboardInterrupt:
-            logging.warn(
+            logging.warning(
                 "KeyboardInterrupt process  %s sessionid : %s"
                 % (command, message["sessionid"])
             )
@@ -515,7 +515,7 @@ class mannageprocess:
                 "TimeoutError process  %s sessionid : %s" % (command, sessionid)
             )
         except KeyboardInterrupt:
-            logging.warn(
+            logging.warning(
                 "KeyboardInterrupt process  %s sessionid : %s" % (command, sessionid)
             )
             sys.exit(0)

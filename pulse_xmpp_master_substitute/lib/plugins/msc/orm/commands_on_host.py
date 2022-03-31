@@ -90,7 +90,7 @@ class CommandsOnHost(object):
         if (
             self.getCommandStatut() == "stop"
         ):  # 'stop' deprecated a while ago, but may still be present, so we take the opportunity to fix it here
-            logging.getLogger().warn(
+            logging.getLogger().warning(
                 "Detected command #%s in deprecated state 'stop', setting it to 'stopped'"
             )
             self.setStateStopped()

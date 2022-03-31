@@ -389,7 +389,7 @@ class confParameter:
             self.activeProfiles = confiobject.get("glpi", "active_profiles").split(" ")
         except Exception:
             # put the GLPI default values for actives profiles
-            logging.getLogger().warn(
+            logging.getLogger().warning(
                 "Apply default parameters for GLPI active profiles"
             )
             self.activeProfiles = ["Super-Admin", "Admin", "Supervisor", "Technician"]
@@ -504,7 +504,7 @@ class confParameter:
             return filters
 
         except Exception as e:
-            logging.getLogger().warn("Parsing on filter_on failed: %s" % str(e))
+            logging.getLogger().warning("Parsing on filter_on failed: %s" % str(e))
             return None
 
     def getRandomName(self, nb, pref=""):
