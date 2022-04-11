@@ -99,8 +99,9 @@ def synchro_count_substitut(self):
         And add them to the database. 
     """
     try:
-        cmd = "ejabberdctl get_roster %s %s | wc -l " % (str(self.boundjid.user),
-                                                         str(self.boundjid.domain))
+        cmd = "ejabberdctl get_roster %s %s | "\
+            "awk '{print $3;}' | grep -v out | wc -l " % (str(self.boundjid.user),
+                                                          str(self.boundjid.domain))
         result = simplecommandstr(str(cmd))
         cardinal_roster = int(result['result'].strip()) if result else 0
         logger.debug("roster number (%s) %s" % (cardinal_roster,

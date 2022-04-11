@@ -233,7 +233,7 @@ def unregister_agent(user, domain, resource):
         savejsonfile(filejid, jidinfo)
     return False, jidinfo
 
-def unregister_subcribe(user, domain, resource):
+def unregister_subscribe(user, domain, resource):
     """
     This function is used to know if we need to unregister an old jid.
     Args:

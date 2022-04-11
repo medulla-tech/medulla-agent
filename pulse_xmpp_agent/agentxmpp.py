@@ -65,7 +65,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a
+                        serialnumbermachine, file_put_contents_w_a, unregister_agent
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -1530,11 +1530,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     touser="")
 
     def start(self, event):
-        #new_list = self.sub_subscribe_all[:]
-        #new_list.pop(0)
-        #for t in new_list:
-            #logger.info("unsubscribe  %s agent" % t)
-            #self.send_presence ( pto = t, ptype = 'unsubscribe' )
+        new_list = self.sub_subscribe_all[:]
+        new_list.pop(0)
+        for t in new_list:
+            logger.info("unsubscribe  %s agent" % t)
+            self.send_presence ( pto = t, ptype = 'unsubscribe' )
 
         self.send_presence()
         logger.info("Subscribe %s" % self.sub_subscribe)
@@ -1554,46 +1554,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except Exception:
                 pass
         else:
-            #try:
-                #new_list = self.sub_subscribe_all[:]
-                #new_list.pop(0)
-                #new_list.pop()
-                #new_list = [str(x) for x in new_list]
-            #except:
-                #new_list=[]
             result, jid_struct = unregister_agent(self.boundjid.user,
                                                   self.boundjid.domain,
                                                   self.boundjid.resource)
             if result:
-                # il faut unregistrer jid_struct
-                # send unregistered user to substitut subscribe
-                datasend = {'action' : 'unregistrer_agent',
-                            'sessionid' : getRandomName(6, "unregistrer_agent"),
-                            'data' : jid_struct,
-                            'ret' : 0,
-                            'base64' : False }
-                #datasend['data']['sub_subscribe_all']= new_list
-                self.send_message(  mbody = json.dumps(datasend),
-                                    mto = self.sub_subscribe,
-                                    mtype ='chat')
-            result1, jid_struct1 = unregister_subcribe( self.sub_subscribe.user,
-                                                        self.sub_subscribe.domain,
-                                                        self.sub_subscribe.resource)
-            if result1:
                 # We need to unregistrer jid_struct
-                # send unregistered user to substitut subscribe
-                jidsendsubscribe = "%s@%s"%( jid_struct1['user'].strip(),
-                                             jid_struct1['domain'].strip())
-                datasend = {'action': 'unregistrer_subcribe',
-                            'sessionid': getRandomName(6, "unregistrer_subcribe"),
-                            'data': jid_struct ,
+                # send unregistered user to ars old domain
+                ars = "rs%s@%s"%(jid_struct['domain'].strip(), jid_struct['domain'].strip())
+                datasend = {'action': 'unregister_agent',
+                            'sessionid': getRandomName(6, "unregister_agent"),
+                            'data': jid_struct,
                             'ret': 0,
                             'base64': False }
-                self.send_message(  mbody = json.dumps(datasend),
-                                    mto = jidsendsubscribe,
-                                    mtype ='chat')
-
-        self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0][3:]
+                self.send_message(mbody=json.dumps(datasend),
+                                  mto=ars,
+                                  mtype='chat')
+        self.agentrelayserverrefdeploy = self.config.jidchatroomcommand.split('@')[0]
 
         self.xmpplog("Starting %s agent -> subscription agent is %s" % (self.config.agenttype, self.sub_subscribe),
                      type='info',

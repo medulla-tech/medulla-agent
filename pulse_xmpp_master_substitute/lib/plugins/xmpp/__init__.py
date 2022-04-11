@@ -6091,65 +6091,64 @@ class XmppMasterDatabase(DatabaseHelper):
         excluded_account = 'master@pulse'
         incrementeiscount = []
         try:
-            sql = """SELECT
-                        substituteconf.id AS id,
-                        substituteconf.jidsubtitute AS jidsubtitute,
-                        substituteconf.countsub AS countsub,
-                        substituteconf.type AS type,
-                        relayserver.jid AS namerelayser,
-                        SUM(substituteconf.countsub) AS totsub
-                    FROM
-                        substituteconf
-                            JOIN
-                        relayserver ON substituteconf.relayserver_id = relayserver.id
-                    WHERE
-                        substituteconf.jidsubtitute NOT LIKE '%s'
-                            AND (substituteconf.jidsubtitute IN (SELECT
-                                substituteconf.jidsubtitute
+            excluded_account = 'master@pulse'
+
+            incrementeiscount = []
+            for substituteinfo in listconfsubstitute['conflist']:
+                try:
+                    sql = """SELECT
+                                substituteconf.id AS id,
+                                substituteconf.jidsubtitute AS jidsubtitute,
+                                substituteconf.countsub AS countsub,
+                                substituteconf.type AS type,
+                                relayserver.jid AS namerelayser,
+                                SUM(substituteconf.countsub) AS totsub
                             FROM
                                 substituteconf
+                                    JOIN
+                                relayserver ON substituteconf.relayserver_id = relayserver.id
                             WHERE
-                                substituteconf.relayserver_id = (SELECT
-                                        id
+                                substituteconf.jidsubtitute NOT LIKE '%s'
+                                    AND substituteconf.type LIKE '%s'
+                                    AND (substituteconf.jidsubtitute IN (SELECT
+                                        substituteconf.jidsubtitute
                                     FROM
-                                        relayserver
+                                        substituteconf
                                     WHERE
-                                        relayserver.jid LIKE '%s')))
-                    GROUP BY substituteconf.jidsubtitute
-                    ORDER BY totsub;
-                    ;""" % (excluded_account, arsname)
-            resultproxy = session.execute(sql)
-            listcommand = []
-            infsub = [{"TYPE" : x[3], "id": x[0], "sub": x[1] , "totalcount": int(x[5])} for x in resultproxy]
-            idx = {}
-            for substituteinfo in listconfsubstitute['conflist']:
-                if 'conflist' ==  substituteinfo: continue
-                listconfsubstitute[substituteinfo] =[]
-                idx[substituteinfo] = []
+                                        substituteconf.relayserver_id = (SELECT
+                                                id
+                                            FROM
+                                                relayserver
+                                            WHERE
+                                                relayserver.jid LIKE '%s')))
+                            GROUP BY substituteconf.jidsubtitute
+                            ORDER BY totsub;
+                            ;""" % (excluded_account, substituteinfo, arsname)
+                    resultproxy = session.execute(sql)
+                    listcommand = []
+                    infsub = [{"id": x[0], "sub": x[1] , "totalcount": int(x[5])} for x in resultproxy]
+                    self.logger.debug("%s -> %s" % (substituteinfo ,infsub))
+                    if infsub:
+                        incrementeiscount.append(str(infsub[0]['id']))
+                    for t in infsub:
+                        listcommand.append(t['sub'])
+                    listcommand.append(excluded_account)
+                    listconfsubstitute[substituteinfo] = listcommand
+                except Exception as e:
+                    self.logger.error("An error occured while fetching the ordered list of subsitutes.")
+                    self.logger.error("We hit the backtrace: \n%s" % (traceback.format_exc()))
 
-            for t in infsub:
-                if t['TYPE'] == "deployment": continue
-                idx[t['TYPE']].append(t['id'])
-                listconfsubstitute[t['TYPE']].append(t['sub'])
-            for t in listconfsubstitute:
-                if t == "deployment": continue
-                listconfsubstitute[t].append(excluded_account)
-            idt=[idx[x].pop(0) for x in idx]
-            idt.sort()
-
-            xstr=",".join(str(x) for x in idt)
-            sql1=""" UPDATE `xmppmaster`.`substituteconf`
+            if len(incrementeiscount) != 0:
+                sql = """UPDATE `xmppmaster`.`substituteconf`
                     SET
                         `countsub` = `countsub` + '1'
                     WHERE
-                        (`id` IN (%s));""" %(xstr)
-            result = session.execute(sql)
-            session.commit()
-            session.flush()
-        except Exception as e:
-            self.logger.error("An error occured while fetching the ordered list of subsitutes.")
-            logging.getLogger().error("parameter in : %s %s" % (listconfsubstitute, arsname))
-            logging.getLogger().error("sql information in : %s\n%s" % (sql, sql1))
+                        `id` IN (%s);""" % ','.join([x for x in incrementeiscount])
+                result = session.execute(sql)
+                session.commit()
+        except Exception, e:
+            logging.getLogger().error("substituteinfo : %s" % str(e))
+        logging.getLogger().debug("substitute list : %s"  % listconfsubstitute)
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
