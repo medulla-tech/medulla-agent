@@ -226,9 +226,10 @@ def unregister_agent(user, domain, resource):
         savejsonfile(filejid, jidinfo)
         return False, jidinfo
     oldjid = loadjsonfile(filejid)
+    
     if oldjid['user'] != user or oldjid['domain'] != domain:
         savejsonfile(filejid, jidinfo)
-        return True, jidinfo
+        return True, {"user":  oldjid['user'], "domain" : oldjid['domain'], "resource": oldjid['resource']}
     if oldjid['resource'] != resource:
         savejsonfile(filejid, jidinfo)
     return False, jidinfo
