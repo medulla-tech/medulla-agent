@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.27", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.30", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -97,10 +97,10 @@ def schedule_main(xmppobject):
                     service_json[service_name] = {}
                     if service_name == 'syncthing':
                         service = 'syncthing@syncthing'
-                    elif service_name == 'ssh':
-                        service = 'sshd'
                     elif service_name == 'openldap':
                         service = 'slapd'
+                    elif service_name == 'mysql':
+                        service = 'mariadb'
                     elif service_name == 'apache':
                         if platform.linux_distribution()[0] in ['CentOS Linux', 'centos', 'fedora', 'Red Hat Enterprise Linux Server', 'redhat', 'Mageia']:
                             service = 'httpd'
@@ -140,9 +140,10 @@ def schedule_main(xmppobject):
                         alert_json = {}
                         alert_json['system'] = {}
                         alert_json['system']['status'] = 'error'
-                        alert_json['system']['subject'] = 'Alert: %s service down' % service_name
+                        alert_json['system']['alarms'] = 'Service %s is down' % service
                         alert_json['system']['metriques'] = metriques_json
-                        alert_json['system']['param0'] = service_name
+                        alert_json['system']['subject'] = service_name
+                        alert_json['system']['param0'] = service
                         if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
                             send_monitoring_message(xmppobject, 'terminalInformations', alert_json)
                             file_put_contents(filename, json.dumps(metriques_json))
@@ -159,6 +160,25 @@ def schedule_main(xmppobject):
                         listening_ports.append(port)
                 # check if port is in list of listening ports
                 for port_name in xmppobject.config.ports_list:
+                    if port_name == 'syncthing':
+                        service = 'syncthing@syncthing'
+                    elif port_name == 'openldap':
+                        service = 'slapd'
+                    elif port_name == 'mysql':
+                        service = 'mariadb'
+                    elif port_name == 'apache':
+                        if platform.linux_distribution()[0] in ['CentOS Linux', 'centos', 'fedora', 'Red Hat Enterprise Linux Server', 'redhat', 'Mageia']:
+                            service = 'httpd'
+                        elif platform.linux_distribution()[0] in ['debian']:
+                            service = 'apache2'
+                    elif port_name == 'tomcat':
+                        if platform.linux_distribution()[0] in ['debian']:
+                            service = 'tomcat8'
+                        else:
+                            service = 'tomcat'
+                    else:
+                        service = port_name
+
                     port_number = eval('xmppobject.config.port_%s' % port_name )
                     filename = os.path.join(infostmpdir, "mon_ports_%s_alert.json" % port_name)
                     if port_number in listening_ports:
@@ -175,9 +195,10 @@ def schedule_main(xmppobject):
                         alert_json = {}
                         alert_json['system'] = {}
                         alert_json['system']['status'] = 'error'
-                        alert_json['system']['subject'] = 'Alert: %s port down' % port_name
+                        alert_json['system']['alarms'] = 'Port %s is down' % port_name
                         alert_json['system']['metriques'] = metriques_json
-                        alert_json['system']['param0'] = port_name
+                        alert_json['system']['subject'] = port_name
+                        alert_json['system']['param0'] = service
                         if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
                             send_monitoring_message(xmppobject, 'terminalAlert', alert_json)
                             file_put_contents(filename, json.dumps(metriques_json))
