@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.30", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.32", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -199,6 +199,29 @@ def schedule_main(xmppobject):
                         resources_json['df_var'] = dict(psutil.disk_usage('/var')._asdict())
                     elif filesystem == 'tmp':
                         resources_json['df_tmp'] = dict(psutil.disk_usage('/tmp')._asdict())
+                # Check if need to send alert
+                filename = os.path.join(infostmpdir, "mon_resources_alert.json")
+                if resources_json['cpu'] >= xmppobject.config.alerts_cpu_limit or resources_json['memory']['percent'] >= xmppobject.config.alerts_memory_limit or resources_json['swap']['percent'] >= xmppobject.config.alerts_swap_limit:
+                    send_alert = True
+                for filesystem in xmppobject.config.resources_filesystems_list:
+                    if filesystem == 'root':
+                        if resources_json['df_']['percent'] >= xmppobject.config.alerts_filesystems_limit:
+                            send_alert = True
+                    elif filesystem == 'var':
+                        if resources_json['df_var']['percent'] >= xmppobject.config.alerts_filesystems_limit:
+                            send_alert = True
+                    elif filesystem == 'tmp':
+                        if resources_json['df_tmp']['percent'] >= xmppobject.config.alerts_filesystems_limit:
+                            send_alert = True
+                if send_alert:
+                    metriques_json = {}
+                    metriques_json['general_status'] = 'error'
+                    metriques_json['resources'] = resources_json
+                    check_and_send_alert(xmppobject, filename, False, metriques_json, 'resources', '', 'Resources usage is over the limit')
+                else:
+                    # Remove previous status file if present as error is gone
+                    if os.path.isfile(filename):
+                        os.remove(filename)
                 system_json['resources'] = resources_json
 
             # System ejabberd
@@ -546,7 +569,12 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
                             "enable = 1\n" \
                             "\n" \
                             "[pulse_main]\n" \
-                            "enable = 0\n" % xmpp_domain)                  
+                            "enable = 0\n" \
+                            "[alerts]\n" \
+                            "cpu_limit = 70\n" \
+                            "memory_limit = 70\n" \
+                            "swap_limit = 70\n" \
+                            "filesystems_limit = 70\n" % xmpp_domain)                  
                                 
     # Load configuration from file
     Config = ConfigParser.ConfigParser()
@@ -651,3 +679,21 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
             xmppobject.config.pulse_main_db_user = Config.get('pulse_main','db_user')
         if Config.has_option("pulse_main", "db_password"):
             xmppobject.config.pulse_main_db_password = Config.get('pulse_main','db_password')
+    if Config.has_section("alerts"):
+        if Config.has_option("alerts", "cpu_limit"):
+            xmppobject.config.alerts_cpu_limit = Config.getint('alerts','cpu_limit')
+        else:
+            xmppobject.config.alerts_cpu_limit = 70
+        if Config.has_option("alerts", "memory_limit"):
+            xmppobject.config.alerts_memory_limit = Config.getint('alerts','memory_limit')
+        else:
+            xmppobject.config.alerts_memory_limit = 70
+        if Config.has_option("alerts", "swap_limit"):
+            xmppobject.config.alerts_swap_limit = Config.getint('alerts','swap_limit')
+        else:
+            xmppobject.config.alerts_swap_limit = 70
+        if Config.has_option("alerts", "filesystems_limit"):
+            xmppobject.config.alerts_filesystems_limit = Config.getint('alerts','filesystems_limit')
+        else:
+            xmppobject.config.alerts_filesystems_limit = 70
+        
