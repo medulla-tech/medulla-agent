@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.35", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.36", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -300,6 +300,7 @@ def schedule_main(xmppobject):
             # System mysql
             if xmppobject.config.mysql_enable:
                 mysql_json = {}
+                send_alert = False
                 try:
                     cnx = mysql.connector.connect(host=xmppobject.config.pulse_main_db_host, 
                                                 port=xmppobject.config.pulse_main_db_port,
@@ -321,11 +322,18 @@ def schedule_main(xmppobject):
                     query = "show variables where `variable_name` = 'max_connections';"
                     cursor.execute(query)
                     value_max_connections = cursor.fetchone()
-                    mysql_json['connections_rate'] = int(value_max_used_connections[1]) / (int(value_max_connections[1]) * 100)
+                    mysql_json['connections_rate'] = int(value_max_used_connections[1]) / int(value_max_connections[1]) * 100
+                    if mysql_json['connections_rate'] >= xmppobject.config.alerts_mysql_connections_rate_limit:
+                        send_alert = True
                     query = "show status where `variable_name` = 'Aborted_connects';"
                     cursor.execute(query)
-                    value = cursor.fetchone()
-                    mysql_json['aborted_connects_rate'] = int(value[1])
+                    value_aborted_connects = cursor.fetchone()
+                    query = "show status where `variable_name` = 'Connections';"
+                    cursor.execute(query)
+                    value_connections = cursor.fetchone()
+                    mysql_json['aborted_connects_rate'] = int(value_aborted_connects[1]) / int(value_connections[1]) * 100
+                    if mysql_json['aborted_connects_rate'] >= xmppobject.config.alerts_mysql_aborted_connects_rate_limit:
+                        send_alert = True
                     query = "show status where variable_name='Connection_errors_max_connections';"
                     cursor.execute(query)
                     value = cursor.fetchone()
@@ -345,7 +353,9 @@ def schedule_main(xmppobject):
                     query = "show status where variable_name='subquery_cache_hit';"
                     cursor.execute(query)
                     value = cursor.fetchone()
-                    mysql_json['subquery_cache_hit'] = int(value[1])
+                    mysql_json['subquery_cache_hit'] = float(value[1])
+                    if mysql_json['subquery_cache_hit'] < xmppobject.config.alerts_mysql_subquery_cache_hit_limit:
+                        send_alert = True
                     query = "show variables where `variable_name` = 'table_open_cache';"
                     cursor.execute(query)
                     value_table_open_cache = cursor.fetchone()
@@ -353,11 +363,24 @@ def schedule_main(xmppobject):
                     cursor.execute(query)
                     value_Open_tables = cursor.fetchone()
                     mysql_json['table_cache_usage'] = (int(value_table_open_cache[1]) * 100) / int(value_Open_tables[1])
+                    if mysql_json['table_cache_usage'] >= xmppobject.config.alerts_mysql_table_cache_usage_limit:
+                        send_alert = True
                     cursor.close()
                     cnx.close()
                 except Exception as e:
                     # Probably a connection error. In any case return an empty json
                     pass
+                # Check if need to send alert
+                filename = os.path.join(infostmpdir, "mon_mysql_alert.json")
+                if send_alert:
+                    metriques_json = {}
+                    metriques_json['general_status'] = 'error'
+                    metriques_json['ejabberd'] = mysql_json
+                    check_and_send_alert(xmppobject, filename, False, metriques_json, 'mysql', '', 'MySQL usage is not within the limits')
+                else:
+                    # Remove previous status file if present as error is gone
+                    if os.path.isfile(filename):
+                        os.remove(filename)
                 system_json['mysql'] = mysql_json
 
             # System pulse_relay
@@ -552,6 +575,10 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     xmppobject.config.alerts_filesystems_limit = 70
     xmppobject.config.alerts_ejabberd_offline_count_limit = 10
     xmppobject.config.alerts_ejabberd_roster_size_limit = 1500
+    xmppobject.config.alerts_mysql_connections_rate_limit = 80
+    xmppobject.config.alerts_mysql_aborted_connects_rate_limit = 10
+    xmppobject.config.alerts_mysql_subquery_cache_hit_limit = 0.2
+    xmppobject.config.alerts_mysql_table_cache_usage_limit = 90
     
     if not os.path.isfile(configfilename):
         logger.warning("plugin %s\nConfiguration file  missing\n" \
@@ -610,6 +637,10 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
                             "filesystems_limit = 70\n" \
                             "ejabberd_offline_count_limit = 10\n" \
                             "ejabberd_roster_size_limit = 1500\n" \
+                            "mysql_connections_rate_limit = 80\n" \
+                            "mysql_aborted_connects_rate_limit = 10\n" \
+                            "mysql_subquery_cache_hit_limit = 0.2\n" \
+                            "mysql_table_cache_usage_limit = 90\n" % xmpp_domain)
                                 
     # Load configuration from file
     Config = ConfigParser.ConfigParser()
@@ -727,3 +758,11 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
             xmppobject.config.alerts_ejabberd_offline_count_limit = Config.getint('alerts','ejabberd_offline_count_limit')
         if Config.has_option("alerts", "ejabberd_roster_size_limit"):
             xmppobject.config.alerts_ejabberd_roster_size_limit = Config.getint('alerts','ejabberd_roster_size_limit')
+        if Config.has_option("alerts", "mysql_connections_rate_limit"):
+            xmppobject.config.alerts_mysql_connections_rate_limit = Config.getint('alerts','mysql_connections_rate_limit')
+        if Config.has_option("alerts", "mysql_aborted_connects_rate_limit"):
+            xmppobject.config.alerts_mysql_aborted_connects_rate_limit = Config.getint('alerts','mysql_aborted_connects_rate_limit')
+        if Config.has_option("alerts", "mysql_subquery_cache_hit_limit"):
+            xmppobject.config.alerts_mysql_subquery_cache_hit_limit = Config.getfloat('alerts','mysql_subquery_cache_hit_limit')
+        if Config.has_option("alerts", "mysql_table_cache_usage_limit"):
+            xmppobject.config.alerts_mysql_table_cache_usage_limit = Config.getint('alerts','mysql_table_cache_usage_limit')
