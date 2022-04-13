@@ -550,8 +550,8 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     xmppobject.config.alerts_memory_limit = 70
     xmppobject.config.alerts_swap_limit = 70
     xmppobject.config.alerts_filesystems_limit = 70
-    xmppobject.config.alerts_offline_count_limit = 10
-    xmppobject.config.alerts_roster_size_limit = 1500
+    xmppobject.config.alerts_ejabberd_offline_count_limit = 10
+    xmppobject.config.alerts_ejabberd_roster_size_limit = 1500
     
     if not os.path.isfile(configfilename):
         logger.warning("plugin %s\nConfiguration file  missing\n" \
@@ -608,8 +608,8 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
                             "memory_limit = 70\n" \
                             "swap_limit = 70\n" \
                             "filesystems_limit = 70\n" \
-                            "offline_count_limit = 10\n" \
-                            "roster_size_limit = 1500\n" % xmpp_domain)                  
+                            "ejabberd_offline_count_limit = 10\n" \
+                            "ejabberd_roster_size_limit = 1500\n" \
                                 
     # Load configuration from file
     Config = ConfigParser.ConfigParser()
@@ -723,7 +723,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
             xmppobject.config.alerts_swap_limit = Config.getint('alerts','swap_limit')
         if Config.has_option("alerts", "filesystems_limit"):
             xmppobject.config.alerts_filesystems_limit = Config.getint('alerts','filesystems_limit')
-        if Config.has_option("alerts", "offline_count_limit"):
-            xmppobject.config.alerts_offline_count_limit = Config.getint('alerts','offline_count_limit')
-        if Config.has_option("alerts", "roster_size_limit"):
-            xmppobject.config.alerts_roster_size_limit = Config.getint('alerts','roster_size_limit')
+        if Config.has_option("alerts", "ejabberd_offline_count_limit"):
+            xmppobject.config.alerts_ejabberd_offline_count_limit = Config.getint('alerts','ejabberd_offline_count_limit')
+        if Config.has_option("alerts", "ejabberd_roster_size_limit"):
+            xmppobject.config.alerts_ejabberd_roster_size_limit = Config.getint('alerts','ejabberd_roster_size_limit')
