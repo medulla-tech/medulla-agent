@@ -546,6 +546,12 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     xmppobject.config.pulse_main_db_port = 3306
     xmppobject.config.pulse_main_db_user = 'mmc'
     xmppobject.config.pulse_main_db_password = 'secret'
+    xmppobject.config.alerts_cpu_limit = 70
+    xmppobject.config.alerts_memory_limit = 70
+    xmppobject.config.alerts_swap_limit = 70
+    xmppobject.config.alerts_filesystems_limit = 70
+    xmppobject.config.alerts_offline_count_limit = 10
+    xmppobject.config.alerts_roster_size_limit = 1500
     
     if not os.path.isfile(configfilename):
         logger.warning("plugin %s\nConfiguration file  missing\n" \
@@ -711,26 +717,13 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     if Config.has_section("alerts"):
         if Config.has_option("alerts", "cpu_limit"):
             xmppobject.config.alerts_cpu_limit = Config.getint('alerts','cpu_limit')
-        else:
-            xmppobject.config.alerts_cpu_limit = 70
         if Config.has_option("alerts", "memory_limit"):
             xmppobject.config.alerts_memory_limit = Config.getint('alerts','memory_limit')
-        else:
-            xmppobject.config.alerts_memory_limit = 70
         if Config.has_option("alerts", "swap_limit"):
             xmppobject.config.alerts_swap_limit = Config.getint('alerts','swap_limit')
-        else:
-            xmppobject.config.alerts_swap_limit = 70
         if Config.has_option("alerts", "filesystems_limit"):
             xmppobject.config.alerts_filesystems_limit = Config.getint('alerts','filesystems_limit')
-        else:
-            xmppobject.config.alerts_filesystems_limit = 70
         if Config.has_option("alerts", "offline_count_limit"):
             xmppobject.config.alerts_offline_count_limit = Config.getint('alerts','offline_count_limit')
-        else:
-            xmppobject.config.alerts_offline_count_limit = 10
         if Config.has_option("alerts", "roster_size_limit"):
             xmppobject.config.alerts_roster_size_limit = Config.getint('alerts','roster_size_limit')
-        else:
-            xmppobject.config.alerts_roster_size_limit = 1500
-        
