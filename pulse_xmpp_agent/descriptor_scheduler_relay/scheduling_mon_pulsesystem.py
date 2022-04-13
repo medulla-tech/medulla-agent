@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.34", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.35", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -281,6 +281,17 @@ def schedule_main(xmppobject):
                         response = requests.get(url, headers=api_headers)
                         if response.status_code == requests.codes.ok:
                             syncthing_json[share] = response.json() # eg. {u'needSymlinks': 0, u'globalSymlinks': 0, u'needBytes': 0, u'stateChanged': u'2021-10-06T21:57:47.773217561+02:00', u'sequence': 15, u'globalDeleted': 5, u'needTotalItems': 0, u'globalTotalItems': 10, u'localDeleted': 5, u'errors': 0, u'globalBytes': 314924, u'invalid': u'', u'needDirectories': 0, u'version': 15, u'localFiles': 4, u'localTotalItems': 10, u'state': u'idle', u'needFiles': 0, u'inSyncBytes': 314924, u'localBytes': 314924, u'globalFiles': 4, u'globalDirectories': 1, u'ignorePatterns': False, u'pullErrors': 0, u'localSymlinks': 0, u'inSyncFiles': 4, u'needDeletes': 0, u'localDirectories': 1}
+                            if syncthing_json[share]['state'] == 'error':
+                                # We'll raise an alert if the share is in error state
+                                filename = os.path.join(infostmpdir, "mon_syncthing_alert.json")
+                                metriques_json = {}
+                                metriques_json['general_status'] = 'error'
+                                metriques_json['syncthing'] = syncthing_json
+                                check_and_send_alert(xmppobject, filename, False, metriques_json, 'syncthing', '', 'Syncthing share %s is in error state' % share)
+                            else:
+                                # Remove previous status file if present as error is gone
+                                if os.path.isfile(filename):
+                                    os.remove(filename)
                 except Exception as e:
                     # Probably a connection error. In any case return an empty json
                     pass
