@@ -44,6 +44,9 @@ from sqlalchemy.ext.automap import automap_base
 from datetime import date, datetime, timedelta
 import pprint
 
+from sqlalchemy import Boolean
+from sqlalchemy import TypeDecorator
+
 # PULSE2 modules
 from lib.plugins.xmpp.schema import (
     Network,
@@ -126,9 +129,10 @@ if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
 
 
+logger = logging.getLogger()
+
 class Error(Exception):
     """Base class for exceptions in this module."""
-
     pass
 
 
@@ -167,6 +171,20 @@ class DateTimeEncoder(json.JSONEncoder):
         return encoded_object
 
 
+class LiberalBoolean(TypeDecorator):
+    impl = Boolean
+
+    def process_bind_param(self, value, dialect):
+
+        if value is not None:
+            if isinstance(value, tuple):
+                value = value[0]
+            if isinstance(value,bool):
+                return value
+            value = bool(int(value))
+        return value
+
+
 class DatabaseHelper(Singleton):
     # Session decorator to create and close session automatically
     @classmethod
@@ -199,12 +217,9 @@ class DatabaseHelper(Singleton):
         return __sessionm
 
 
-# TODO: Create a Singleton
-
-
 class XmppMasterDatabase(DatabaseHelper):
     """
-    Singleton Class to query the xmppmaster database.
+        Singleton Class to query the xmppmaster database.
     """
 
     is_activated = False
@@ -212,49 +227,48 @@ class XmppMasterDatabase(DatabaseHelper):
     def activate(self):
         if self.is_activated:
             return None
-        # This is used to automatically create the mapping.
-        Base = automap_base()
         self.logger = logging.getLogger()
         self.logger.debug("Xmpp activation")
         self.engine = None
+        #self.dbpoolrecycle = 60
+        #self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
-        self.logger.info(
-            "Xmpp parameters connections is "
-            " user = %s,host = %s, port = %s, schema = %s,"
-            " poolrecycle = %s, poolsize = %s, pool_timeout %s"
-            % (
-                self.config.xmpp_dbuser,
-                self.config.xmpp_dbhost,
-                self.config.xmpp_dbport,
-                self.config.xmpp_dbname,
-                self.config.xmpp_dbpoolrecycle,
-                self.config.xmpp_dbpoolsize,
-                self.config.xmpp_dbpooltimeout,
-            )
-        )
+        # utilisation xmppmaster
+        # dbpoolrecycle & dbpoolsize global conf
+        # si sizepool et recycle  parametres sont definies pour xmpp, ils sont utilises
         try:
-            self.engine_xmppmmaster_base = create_engine(
-                "mysql://%s:%s@%s:%s/%s?charset=%s"
-                % (
-                    self.config.xmpp_dbuser,
-                    self.config.xmpp_dbpasswd,
-                    self.config.xmpp_dbhost,
-                    self.config.xmpp_dbport,
-                    self.config.xmpp_dbname,
-                    self.config.charset,
-                ),
-                pool_recycle=self.config.xmpp_dbpoolrecycle,
-                pool_size=self.config.xmpp_dbpoolsize,
-                pool_timeout=self.config.xmpp_dbpooltimeout,
-                convert_unicode=True,
-            )
-            self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
-            Base.prepare(self.engine_xmppmmaster_base, reflect=True)
-            self.Update_machine = Base.classes.update_machine
-            self.Ban_machines = Base.classes.ban_machines
+            self.config.xmpp_dbpoolrecycle
+            self.poolrecycle = self.config.xmpp_dbpoolrecycle
+        except Exception:
+            self.poolrecycle = self.config.dbpoolrecycle
 
+        try:
+            self.config.xmpp_dbpoolsize
+            self.poolsize = self.config.xmpp_dbpoolsize
+        except Exception:
+            self.poolsize = self.config.dbpoolsize
+        self.logger.info("Xmpp parameters connections is "\
+            " user = %s,host = %s, port = %s, schema = %s,"\
+            " poolrecycle = %s, poolsize = %s"%(self.config.xmpp_dbuser,
+                                                self.config.xmpp_dbhost,
+                                                self.config.xmpp_dbport,
+                                                self.config.xmpp_dbname,
+                                                self.poolrecycle,
+                                                self.poolsize))
+        try:
+            echodata=False
+            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
+                                                                                    self.config.xmpp_dbpasswd,
+                                                                                    self.config.xmpp_dbhost,
+                                                                                    self.config.xmpp_dbport,
+                                                                                    self.config.xmpp_dbname),
+                                                        pool_recycle=self.poolrecycle,
+                                                        pool_size=self.poolsize,
+                                                        echo=echodata,
+                                                        convert_unicode=True,)
+            self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
             self.is_activated = True
             self.logger.debug("Xmpp activation done.")
             return True
