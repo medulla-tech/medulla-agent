@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.32", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.34", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -217,7 +217,7 @@ def schedule_main(xmppobject):
                     metriques_json = {}
                     metriques_json['general_status'] = 'error'
                     metriques_json['resources'] = resources_json
-                    check_and_send_alert(xmppobject, filename, False, metriques_json, 'resources', '', 'Resources usage is over the limit')
+                    check_and_send_alert(xmppobject, filename, False, metriques_json, 'resources', '', 'Resources usage is above the limit')
                 else:
                     # Remove previous status file if present as error is gone
                     if os.path.isfile(filename):
@@ -227,6 +227,7 @@ def schedule_main(xmppobject):
             # System ejabberd
             if xmppobject.config.ejabberd_enable:
                 ejabberd_json = {}
+                send_alert = False
                 try:
                     result_connected = subprocess.Popen(['ejabberdctl', 'stats', 'onlineusers'], stdout=subprocess.PIPE)
                     ejabberd_json['connected_users'] = int(result_connected.stdout.readline())
@@ -238,12 +239,27 @@ def schedule_main(xmppobject):
                         else:
                             result = subprocess.Popen(['ejabberdctl', 'get_offline_count', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
                         ejabberd_json['offline_count_%s' % jid] = int(result.stdout.readline())
+                        if ejabberd_json['offline_count_%s' % jid] >= xmppobject.config.alerts_offline_count_limit:
+                            send_alert = True
                     for jid in xmppobject.config.roster_size_list:
                         result = subprocess.Popen(['ejabberdctl', 'get_roster', '%s' % jid, '%s' % xmppobject.config.xmpp_domain], stdout=subprocess.PIPE)
                         ejabberd_json['roster_size_%s' % jid] = len(result.stdout.readlines())
+                        if ejabberd_json['roster_size_%s' % jid] >= xmppobject.config.alerts_roster_size_limit:
+                            send_alert = True
                 except Exception as e:
                     # Probably a ejabberdctl error. In any case return an empty json
                     pass
+                # Check if need to send alert
+                filename = os.path.join(infostmpdir, "mon_ejabberd_alert.json")
+                if send_alert:
+                    metriques_json = {}
+                    metriques_json['general_status'] = 'error'
+                    metriques_json['ejabberd'] = ejabberd_json
+                    check_and_send_alert(xmppobject, filename, False, metriques_json, 'ejabberd', '', 'Ejabberd offline count or roster size is above the limit')
+                else:
+                    # Remove previous status file if present as error is gone
+                    if os.path.isfile(filename):
+                        os.remove(filename)
                 system_json['ejabberd'] = ejabberd_json
 
             # System syncthing
@@ -574,7 +590,9 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
                             "cpu_limit = 70\n" \
                             "memory_limit = 70\n" \
                             "swap_limit = 70\n" \
-                            "filesystems_limit = 70\n" % xmpp_domain)                  
+                            "filesystems_limit = 70\n" \
+                            "offline_count_limit = 10\n" \
+                            "roster_size_limit = 1500\n" % xmpp_domain)                  
                                 
     # Load configuration from file
     Config = ConfigParser.ConfigParser()
@@ -696,4 +714,12 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
             xmppobject.config.alerts_filesystems_limit = Config.getint('alerts','filesystems_limit')
         else:
             xmppobject.config.alerts_filesystems_limit = 70
+        if Config.has_option("alerts", "offline_count_limit"):
+            xmppobject.config.alerts_offline_count_limit = Config.getint('alerts','offline_count_limit')
+        else:
+            xmppobject.config.alerts_offline_count_limit = 10
+        if Config.has_option("alerts", "roster_size_limit"):
+            xmppobject.config.alerts_roster_size_limit = Config.getint('alerts','roster_size_limit')
+        else:
+            xmppobject.config.alerts_roster_size_limit = 1500
         
