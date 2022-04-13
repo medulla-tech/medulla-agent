@@ -137,16 +137,7 @@ def schedule_main(xmppobject):
                         metriques_json['services'] = {}
                         metriques_json['services'][service_name] = {}
                         metriques_json['services'][service_name]['status'] = 0
-                        alert_json = {}
-                        alert_json['system'] = {}
-                        alert_json['system']['status'] = 'error'
-                        alert_json['system']['alarms'] = 'Service %s is down' % service
-                        alert_json['system']['metriques'] = metriques_json
-                        alert_json['system']['subject'] = service_name
-                        alert_json['system']['param0'] = service
-                        if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
-                            send_monitoring_message(xmppobject, 'terminalInformations', alert_json)
-                            file_put_contents(filename, json.dumps(metriques_json))
+                        check_and_send_alert(xmppobject, filename, True, metriques_json, service_name, service, 'Service %s is down' % service)
                 system_json['services'] = service_json
             
             # System ports
@@ -192,16 +183,7 @@ def schedule_main(xmppobject):
                         metriques_json['general_status'] = 'error'
                         metriques_json['ports'] = {}
                         metriques_json['ports'][port_name] = 0
-                        alert_json = {}
-                        alert_json['system'] = {}
-                        alert_json['system']['status'] = 'error'
-                        alert_json['system']['alarms'] = 'Port %s is down' % port_name
-                        alert_json['system']['metriques'] = metriques_json
-                        alert_json['system']['subject'] = port_name
-                        alert_json['system']['param0'] = service
-                        if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
-                            send_monitoring_message(xmppobject, 'terminalAlert', alert_json)
-                            file_put_contents(filename, json.dumps(metriques_json))
+                        check_and_send_alert(xmppobject, filename, True, metriques_json, port_name, service, 'Port %s is down' % port_name)
                 system_json['ports'] = ports_json
 
             # System resources
@@ -415,6 +397,26 @@ def schedule_main(xmppobject):
     except Exception:
         logger.error("\n%s"%(traceback.format_exc()))
 
+def check_and_send_alert(xmppobject, filename, strict_check, metriques_json, subject, param0, message):
+    """
+        strict_check is a boolean used to define if we check only the presence of the file or the content as well
+    """
+    alert_json = {}
+    alert_json['system'] = {}
+    alert_json['system']['status'] = 'error'
+    alert_json['system']['alarms'] = message
+    alert_json['system']['metriques'] = metriques_json
+    alert_json['system']['subject'] = subject
+    alert_json['system']['param0'] = param0
+    if strict_check:
+        if not os.path.isfile(filename) or file_get_contents(filename) != json.dumps(metriques_json):
+            send_monitoring_message(xmppobject, 'terminalAlert', alert_json)
+            file_put_contents(filename, json.dumps(metriques_json))
+    else:
+        if not os.path.isfile(filename):
+            send_monitoring_message(xmppobject, 'terminalAlert', alert_json)
+            file_put_contents(filename, json.dumps(metriques_json))
+    
 def send_monitoring_message(xmppobject, data_type, json_dict):
     """
         data_type can be terminalInformations or terminalAlert
