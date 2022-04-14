@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.36", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.37", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -201,6 +201,7 @@ def schedule_main(xmppobject):
                         resources_json['df_tmp'] = dict(psutil.disk_usage('/tmp')._asdict())
                 # Check if need to send alert
                 filename = os.path.join(infostmpdir, "mon_resources_alert.json")
+                send_alert = False
                 if resources_json['cpu'] >= xmppobject.config.alerts_cpu_limit or resources_json['memory']['percent'] >= xmppobject.config.alerts_memory_limit or resources_json['swap']['percent'] >= xmppobject.config.alerts_swap_limit:
                     send_alert = True
                 for filesystem in xmppobject.config.resources_filesystems_list:
