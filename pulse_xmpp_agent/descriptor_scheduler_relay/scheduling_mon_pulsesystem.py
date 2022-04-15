@@ -52,9 +52,9 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.38", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.40", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
-SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
+SCHEDULE = {"schedule" : "*/15 * * * *", "nb" : -1}
 
 globalstruct={}
 
@@ -353,9 +353,13 @@ def schedule_main(xmppobject):
                     mysql_json['errors_accept'] = int(value[1])
                     query = "show status where variable_name='subquery_cache_hit';"
                     cursor.execute(query)
-                    value = cursor.fetchone()
-                    mysql_json['subquery_cache_hit'] = float(value[1])
-                    if mysql_json['subquery_cache_hit'] < xmppobject.config.alerts_mysql_subquery_cache_hit_limit:
+                    value_hit = cursor.fetchone()
+                    query = "show status where variable_name='subquery_cache_miss';"
+                    cursor.execute(query)
+                    value_miss = cursor.fetchone()
+                    subquery_cache_hit_rate = int(value_hit[1]) / (int(value_hit[1]) + int(value_miss[1]))
+                    mysql_json['subquery_cache_hit_rate'] = float(subquery_cache_hit_rate)
+                    if mysql_json['subquery_cache_hit_rate'] < xmppobject.config.alerts_mysql_subquery_cache_hit_rate_limit:
                         send_alert = True
                     query = "show variables where `variable_name` = 'table_open_cache';"
                     cursor.execute(query)
@@ -578,7 +582,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
     xmppobject.config.alerts_ejabberd_roster_size_limit = 1500
     xmppobject.config.alerts_mysql_connections_rate_limit = 80
     xmppobject.config.alerts_mysql_aborted_connects_rate_limit = 10
-    xmppobject.config.alerts_mysql_subquery_cache_hit_limit = 0.2
+    xmppobject.config.alerts_mysql_subquery_cache_hit_rate_limit = 0.2
     xmppobject.config.alerts_mysql_table_cache_usage_limit = 90
     
     if not os.path.isfile(configfilename):
@@ -641,7 +645,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
                             "ejabberd_roster_size_limit = 1500\n" \
                             "mysql_connections_rate_limit = 80\n" \
                             "mysql_aborted_connects_rate_limit = 10\n" \
-                            "mysql_subquery_cache_hit_limit = 0.2\n" \
+                            "mysql_subquery_cache_hit_rate_limit = 0.2\n" \
                             "mysql_table_cache_usage_limit = 90\n" % xmpp_domain)
                                 
     # Load configuration from file
@@ -764,7 +768,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
             xmppobject.config.alerts_mysql_connections_rate_limit = Config.getint('alerts','mysql_connections_rate_limit')
         if Config.has_option("alerts", "mysql_aborted_connects_rate_limit"):
             xmppobject.config.alerts_mysql_aborted_connects_rate_limit = Config.getint('alerts','mysql_aborted_connects_rate_limit')
-        if Config.has_option("alerts", "mysql_subquery_cache_hit_limit"):
-            xmppobject.config.alerts_mysql_subquery_cache_hit_limit = Config.getfloat('alerts','mysql_subquery_cache_hit_limit')
+        if Config.has_option("alerts", "mysql_subquery_cache_hit_rate_limit"):
+            xmppobject.config.alerts_mysql_subquery_cache_hit_rate_limit = Config.getfloat('alerts','mysql_subquery_cache_hit_rate_limit')
         if Config.has_option("alerts", "mysql_table_cache_usage_limit"):
             xmppobject.config.alerts_mysql_table_cache_usage_limit = Config.getint('alerts','mysql_table_cache_usage_limit')
