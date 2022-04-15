@@ -52,7 +52,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {"VERSION": "1.37", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
+plugin = {"VERSION": "1.38", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True}
 
 SCHEDULE = {"schedule" : "*/2 * * * *", "nb" : -1}
 
@@ -590,7 +590,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
         file_put_contents(configfilename,
                             "[services]\n" \
                             "enable = 1\n" \
-                            "services_list = ejabberd, syncthing, apache, tomcat, ssh, openldap, mysql, pulse-xmpp-agent-relay, pulse-package-watching, pulse2-package-server\n" \
+                            "services_list = ejabberd, syncthing, apache, tomcat, ssh, mysql, pulse-xmpp-agent-relay, pulse-package-watching, pulse2-package-server\n" \
                             "openfiles_check = ejabberd, mysql\n" \
                             "\n" \
                             "[ports]\n" \
@@ -631,6 +631,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
                             "\n" \
                             "[pulse_main]\n" \
                             "enable = 0\n" \
+                            "\n" \
                             "[alerts]\n" \
                             "cpu_limit = 70\n" \
                             "memory_limit = 70\n" \
