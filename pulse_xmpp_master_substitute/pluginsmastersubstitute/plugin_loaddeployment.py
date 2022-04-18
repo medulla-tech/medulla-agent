@@ -651,7 +651,7 @@ def scheduledeployrecoveryjob(self):
         logger.error("%s" % (traceback.format_exc()))
     finally:
         wol_set.discard("")
-        if len(wol_set):
+        if wol_set:
             self._sendwolgroup(wol_set)
 
 

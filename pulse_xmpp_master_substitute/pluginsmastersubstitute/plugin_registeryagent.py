@@ -136,7 +136,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 "|%s|%15s|"
                                 % (interface["macaddress"], interface["ipaddress"])
                             )
-                    if len(interfaceblacklistdata):
+                    if interfaceblacklistdata:
                         logger.warning("Interface blacklisted")
                         for interface in interfaceblacklistdata:
                             logger.warning("|   macaddress|      ip address|")
