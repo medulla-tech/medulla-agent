@@ -7381,7 +7381,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                           doc,
                           status_event=1,
                           hostname=None):
-        keysreplace=statusmsg.keys()
+        keysreplace = statusmsg.keys()
+        if "mon_param0" in keysreplace:
+            mon_statusmsg_param0 = statusmsg["mon_param0"]
+        if "mon_subject" in keysreplace:
+            mon_statusmsg_subject = statusmsg["mon_subject"]
         other_data = None
         if 'other_data' in keysreplace:
             if isinstance(statusmsg['other_data'], basestring):
@@ -7393,35 +7397,47 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             # resultproxy = self.get_event_information_id_device(idevent)
             index = 1
             for z in objectlist_local_rule:
-                index=index+1
+                index = index + 1
                 for rep in keysreplace:
-                    keyre="@%s@"%rep
+                    keyre="@%s@" % rep
                     if statusmsg[rep]:
                         if isinstance(statusmsg[rep], basestring):
                             z['binding']=z['binding'].replace(keyre,statusmsg[rep])
+                            # Replace the cmd if it exists
+                            if isinstance(z['no_success_binding_cmd'], basestring):
+                                z['no_success_binding_cmd']=z['no_success_binding_cmd'].replace(keyre, statusmsg[rep])
+                            if isinstance(z['succes_binding_cmd'], basestring):
+                                z['succes_binding_cmd']=z['succes_binding_cmd'].replace(keyre, statusmsg[rep])
+                            if isinstance(z['error_on_binding'], basestring):
+                                z['error_on_binding']=z['error_on_binding'].replace(keyre, statusmsg[rep])
                         else:
                             stringreplace = json.dumps(statusmsg[rep])
-                            z['binding']=z['binding'].replace(keyre,stringreplace)
-                # verify  binding n'est pas 1 template.
-                testkeytemplate=[]
+                            z['binding'] = z['binding'].replace(keyre,stringreplace)
+                            if isinstance(z['no_success_binding_cmd'], basestring):
+                                z['no_success_binding_cmd']=z['no_success_binding_cmd'].replace(keyre, stringreplace)
+                            if isinstance(z['succes_binding_cmd'], basestring):
+                                z['succes_binding_cmd']=z['succes_binding_cmd'].replace(keyre, stringreplace)
+                            if isinstance(z['error_on_binding'], basestring):
+                                z['error_on_binding']=z['error_on_binding'].replace(keyre, stringreplace)
+                # Verify if the binding is not a template
+                testkeytemplate = []
                 for rep in keysreplace:
-                    keyre="@%s@"%rep
+                    keyre="@%s@" % rep
                     if keyre in z['binding']:
                         testkeytemplate.append(keyre)
                 if testkeytemplate:
                     self.logger.warning("No treatment resolution template binding impossible on key %s"%testkeytemplate)
-                    self.logger.warning("rule %s : event type : [%s] on device '%s'" %( z['id'],
-                                                                                    str(z['type_event']),
-                                                                                    str(z['device_type'])) )
-                    self.logger.warning("machine [%s] mon_machine id [%s] id_device [%s]"%(msg_from,
-                                                                                  id_machine,
-                                                                                  id_device))
-                    #self.logger.warning("doc %s"%doc)
+                    self.logger.warning("rule %s : event type : [%s] on device '%s'" % (z['id'],
+                                                                                        str(z['type_event']),
+                                                                                        str(z['device_type'])) )
+                    self.logger.warning("machine [%s] mon_machine id [%s] id_device [%s]" % (msg_from,
+                                                                                             id_machine,
+                                                                                             id_device))
                     continue
-                self.logger.debug("rule %s : event type : %s on device %s" %( z['id'],
+                self.logger.debug("rule %s : event type : %s on device %s" %(z['id'],
                                                                              str(z['type_event']),
                                                                              str(z['device_type'])) )
-                bindingcmd=""
+                bindingcmd = ""
                 msg, result = self.__binding_application_check(doc,
                                                                z['binding'],
                                                                z['device_type'])
@@ -7482,6 +7498,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     listkeyconf=paramsubs.keys()
                     src_script = os.path.join(script_monitoring, bindingcmd)
                     resultproxy = self.get_event_information_id_device(idevent)
+                    try:
+                        resultproxy['mon_statusmsg_param0'] = mon_statusmsg_param0
+                    except:
+                        pass
+                    try:
+                        resultproxy['mon_statusmsg_subject'] = mon_statusmsg_subject
+                    except:
+                        pass
                     resultproxy['conf_submon'] = {}
                     for keyparam in listkeyconf:
                         resultproxy['conf_submon'][keyparam] = paramsubs[keyparam]
