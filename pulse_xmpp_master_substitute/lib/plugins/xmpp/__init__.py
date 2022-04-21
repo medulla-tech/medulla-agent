@@ -7444,19 +7444,27 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 if result == -1:
                     if z['error_on_binding'] is None or \
                         z['error_on_binding'].strip() == "":
-                        # aucun trairement sur error
-                        self.logger.error("No treatment on error  %s " %(z))
+                        # There is not treatment done on errors.
+                        continue
+                    else:
+                        self.logger.warning("We failed to process the binding. We got the error:  %s " % msg)
+                        self.logger.debug("The content of the binding is: %s " % z)
+
+                        bindingcmd = z['error_on_binding']
                         continue
                 elif result == 1:
                     # alert True
                     # create event if action associated to true
                     if z['succes_binding_cmd'] is None or \
                         z['succes_binding_cmd'].strip() == "":
-                        # aucun trairement sur success binding
-                        self.logger.warning("No treatment on expected success  %s " %(z))
+                        # There is not treatment done on success.
                         continue
-                    # 1 event est a prendre en compte.
-                    bindingcmd = z['succes_binding_cmd']
+                    else:
+                        # 1 event to handle
+                        self.logger.debug("The treatment of the binding succeeded with the message:  %s " % msg)
+                        self.logger.debug("The content of the sucessful binding is: %s " % z)
+
+                        bindingcmd = z['succes_binding_cmd']
                 elif result == 0:
                     # alert False
                     # create event if action associated to False
@@ -7465,9 +7473,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         self.logger.warning("No treatment on"\
                             " expected no success  %s " % (z))
                         continue
-                    bindingcmd = z['no_success_binding_cmd']
+                    else:
+
+                        self.logger.debug("no_success_binding_cmd  %s " % msg)
+                        self.logger.debug("The content of the 'expecting to fail binding' is: %s " % z)
+
+                        bindingcmd = z['no_success_binding_cmd']
                 else:
-                    #cas pas encore prevu
+                    # This case is not yet handled
                     self.logger.warning("No treatment on"\
                             "missing on def binding action%s " % (z))
                     continue
@@ -7946,13 +7959,22 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     def __binding_application_check(self, datastring, bindingstring, device_type):
         resultbinding = None
+
+        d = re.search(r'\[\'\@.*\@\'\]', bindingstring)
+        try:
+            d.group
+            logging.getLogger().warning("template binding no replace %s" % bindingstring)
+        except AttributeError:
+            pass
+        except Exception as e:
+            logging.getLogger().error("__binding_application_check %s" % str(e))
+
         try:
             logging.getLogger().debug("data for binding is %s" % datastring)
-            data=json.loads(datastring)
+            data = json.loads(datastring)
         except Exception as e:
-            msg =  "[binding error device rule %s] : data from message" \
+            msg = "[binding error device rule %s] : data from message" \
                 " monitoring format json error %s" % (device_type, str(e))
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
 
         try:
@@ -7966,7 +7988,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     str(e),
                     bindingstring,
                     json.dumps(data,indent=4))
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
         except Exception as e:
             msg = "[binding device rule %s error %s] in binding:\n%s\ "\
@@ -7974,14 +7995,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                str(e),
                                bindingstring,
                                json.dumps(data,indent=4))
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
         msg = "[ %s : result binding %s for binding:\n%s\ "\
                 "on data\n%s"%(device_type,
                                resultbinding,
                                bindingstring,
                                json.dumps(data,indent=4))
-        logging.getLogger().debug("%s" % msg)
         return (msg, resultbinding)
 
     def __binding_application(self, datastring, bindingstring, device_type):
