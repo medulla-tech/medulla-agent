@@ -2369,12 +2369,6 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
             logger.info("###################################################")
             logger.info("URL for downloading package using curl : " + urlfile)
             logger.info("###################################################")
-            
-            try:
-                limit_rate_ko = int(limite_rate_ko)
-            except:
-                limit_rate_ko = 0
-                
             try:
                 if 'limit_rate_ko' in datasend['data']['descriptor']['info'] and \
                                 datasend['data']['descriptor']['info']['limit_rate_ko'] != "" and\
@@ -2453,6 +2447,10 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                 datasend['data']['descriptor']['info']['limit_rate_ko'] != "" and\
                                     int(datasend['data']['descriptor']['info']['limit_rate_ko'])> 0:
                     limit_rate_ko = datasend['data']['descriptor']['info']['limit_rate_ko']
+                    try:
+                        limit_rate_ko = int(limite_rate_ko)
+                    except:
+                        limit_rate_ko = 0
                     msg = 'Downloading file : %s Package : %s [transfer rate %s ko]' % (filepackage, datasend['data']['name'], limit_rate_ko)
                 else:
                     limit_rate_ko = ""
