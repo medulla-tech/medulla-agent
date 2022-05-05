@@ -2219,6 +2219,11 @@ def curlgetdownloadfile(token, destfile, urlfile, insecure=True, limit_rate_ko=N
         c.setopt(c.URL, urlfile)
         c.setopt(c.WRITEDATA, f)
         c.setopt(pycurl.HTTPHEADER, headers)
+        try:
+            limit_rate_ko = int(limite_rate_ko)
+        except:
+            limit_rate_ko = 0
+
         if limit_rate_ko is not None and limit_rate_ko != '' and int(limit_rate_ko) > 0:
             # limit_rate_ko en octed in curl
             c.setopt(c.MAX_RECV_SPEED_LARGE, int(limit_rate_ko) * 1024)
@@ -2364,6 +2369,12 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
             logger.info("###################################################")
             logger.info("URL for downloading package using curl : " + urlfile)
             logger.info("###################################################")
+            
+            try:
+                limit_rate_ko = int(limite_rate_ko)
+            except:
+                limit_rate_ko = 0
+                
             try:
                 if 'limit_rate_ko' in datasend['data']['descriptor']['info'] and \
                                 datasend['data']['descriptor']['info']['limit_rate_ko'] != "" and\
