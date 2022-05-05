@@ -2211,10 +2211,12 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
 
 
 def curlgetdownloadfile(token, destfile, urlfile, insecure=True, limit_rate_ko=None):
+def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate_ko=None):
     # As long as the file is opened in binary mode, both Python 2 and Python 3
     # can write response body to it without decoding.
     with open(destfile, 'wb') as f:
-        headers = ["X-Auth-Token"+token]
+        if token is not None:
+            headers = ["X-Auth-Token"+token]
         c = pycurl.Curl()
         urlfile = urlfile.replace(" ", "%20")
         urlfile = urllib.parse.quote(urlfile)
@@ -2389,7 +2391,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                curlgetdownloadfile('null', dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
+                curlgetdownloadfile(dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
@@ -2466,7 +2468,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                curlgetdownloadfile(token, dest, urlfile, insecure=True, limit_rate_ko=limit_rate_ko)
+                curlgetdownloadfile(dest, urlfile, insecure=True, token=token ,limit_rate_ko=limit_rate_ko)
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
