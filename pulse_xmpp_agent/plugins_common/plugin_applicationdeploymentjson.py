@@ -715,6 +715,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
             data['methodetransfert'] = 'pullcurl'
             data['descriptor']['info']['methodetransfert'] = 'pullcurl'
             url = objectxmpp.config.cdn_baseurl
+            if url[-1] != '/':
+                url = url + "/"
             localisation_server = data['descriptor']['info']['localisation_server']
             token = objectxmpp.config.cdn_token
             add_url = {"url": url, 'localisation_server': localisation_server, 'token': token}
