@@ -2347,7 +2347,7 @@ def pull_package_transfert_rsync(datasend, objectxmpp, ippackage, sessionid, cmd
 def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777, exist_ok=True)
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = "https://%s:%s/mirror1_files/%s/" % (ippackage, portpackage, uuidpackage)
     takeresource(datasend, objectxmpp, sessionid)
