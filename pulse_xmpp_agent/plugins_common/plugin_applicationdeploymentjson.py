@@ -2443,7 +2443,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     for filepackage in datasend['data']['packagefile']:
         if datasend['data']['methodetransfert'] == "pullcurl":
             dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
-            urlfile = curlurlbase + datasend['data']['descriptor']['info']['localisation_server']['localisation_server'] + "/" + datasend['data']['name'] + "/" + filepackage
+            urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']['localisation_server']) + "/" + str(datasend['data']['name']) + "/" + str(filepackage)
             token = datasend['data']['descriptor']['info']['localisation_server']['token']
             logger.info("###################################################")
             logger.info("URL for downloading package using curl : " + urlfile)
