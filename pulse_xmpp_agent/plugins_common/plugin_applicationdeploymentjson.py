@@ -27,6 +27,7 @@ import socket
 import logging
 import pycurl
 import platform
+import urllib.parse
 from lib import utils, \
                 managepackage, \
                 grafcetdeploy
@@ -2216,6 +2217,7 @@ def curlgetdownloadfile(token, destfile, urlfile, insecure=True, limit_rate_ko=N
         headers = ["X-Auth-Token"+token]
         c = pycurl.Curl()
         urlfile = urlfile.replace(" ", "%20")
+        urlfile = urllib.parse.quote(urlfile)
         c.setopt(c.URL, urlfile)
         c.setopt(c.WRITEDATA, f)
         c.setopt(pycurl.HTTPHEADER, headers)
