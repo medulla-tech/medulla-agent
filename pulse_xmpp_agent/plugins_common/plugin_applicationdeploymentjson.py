@@ -2210,7 +2210,6 @@ def initialisesequence(datasend, objectxmpp, sessionid ):
     logger.debug("outing graphcet end initiation")
 
 
-def curlgetdownloadfile(token, destfile, urlfile, insecure=True, limit_rate_ko=None):
 def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate_ko=None):
     # As long as the file is opened in binary mode, both Python 2 and Python 3
     # can write response body to it without decoding.
