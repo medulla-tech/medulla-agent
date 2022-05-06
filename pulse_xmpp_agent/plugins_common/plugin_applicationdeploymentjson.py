@@ -2218,7 +2218,6 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate
             headers = ["X-Auth-Token"+token]
         c = pycurl.Curl()
         urlfile = urlfile.replace(" ", "%20")
-        urlfile = urllib.parse.quote(urlfile)
         c.setopt(c.URL, urlfile)
         c.setopt(c.WRITEDATA, f)
         c.setopt(pycurl.HTTPHEADER, headers)
