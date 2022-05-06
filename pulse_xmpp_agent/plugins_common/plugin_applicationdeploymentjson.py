@@ -28,6 +28,7 @@ import logging
 import pycurl
 import platform
 import urllib
+from urlparse import urlparse
 from lib import utils, \
                 managepackage, \
                 grafcetdeploy
@@ -2440,7 +2441,8 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
         if datasend['data']['methodetransfert'] == "pullcurl":
             dest = os.path.join(datasend['data']['pathpackageonmachine'], filepackage)
             urlfile = str(curlurlbase) + str(datasend['data']['descriptor']['info']['localisation_server']['localisation_server']) + "/" + str(datasend['data']['name']) + "/" + str(filepackage)
-            urllib.quote(urlfile)
+            urlobject = urlparse(urlfile)
+            urlfile = urlobject.scheme + '://' + urllib.quote(urlobject.netloc) + urllib.quote(urlobject.path)
             token = datasend['data']['descriptor']['info']['localisation_server']['token']
             logger.info("###################################################")
             logger.info("URL for downloading package using curl : " + urlfile)
