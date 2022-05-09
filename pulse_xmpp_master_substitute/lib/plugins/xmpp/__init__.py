@@ -429,6 +429,35 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
+    def check_hash_rules(self, session, rules):
+        """Add the specified deployment status rules if they are not existing.
+        Params:
+            session: sqlalchemy session
+            rules: dict containing rules to check.
+            i.e:
+            rules = {
+                "STATUS" : ["regexp", "STATUS", "label"]
+                "ABORT HASH INVALID": [".*hashes is invalid.*", "ABORT HASH INVALID", "aborthashinvalid"],
+                "ERROR HASH MISSING":[".*hashes have not been generated.*", "ERROR HASH MISSING", "errorhashmissing"]
+            }"""
+
+        query = session.query(Def_remote_deploy_status).filter(Def_remote_deploy_status.status.in_(rules.keys())).all()
+
+        founded_status = [response.status for response in query if query is not None]
+        status_to_add = []
+        for status in rules:
+            if status not in founded_status:
+
+                tmp = Def_remote_deploy_status()
+                tmp.regex_logmessage = rules[status][0]
+                tmp.status = status
+                tmp.label = rules[status][2]
+
+                session.add(tmp)
+                session.commit()
+                session.flush()
+
+    @DatabaseHelper._sessionm
     def search_machines_from_state(self, session, state):
         dateend = datetime.now()
         sql = """SELECT
@@ -8463,5 +8492,3 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
         return machines_jid_for_updating
-
-
