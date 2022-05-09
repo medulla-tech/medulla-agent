@@ -37,6 +37,7 @@ import re
 from distutils.version import LooseVersion
 import configparser
 import netaddr
+
 # this import will be used later
 import types
 import time
@@ -50,6 +51,7 @@ logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "__server_file", "TYPE": "code"}
 name_queue = ["/mysend", "/myrep"]
+
 
 def action(xmppobject, action):
     try:
@@ -83,10 +85,11 @@ def action(xmppobject, action):
         logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
-    #['base', 'support', 'backuppc', 'glpi', 'xmppmaster', 'admin', 'dashboard', 'dyngroup', 'msc', 'pkgs', 'services', 'guacamole', 'imaging', 'pulse2']
+    # ['base', 'support', 'backuppc', 'glpi', 'xmppmaster', 'admin', 'dashboard', 'dyngroup', 'msc', 'pkgs', 'services', 'guacamole', 'imaging', 'pulse2']
 
-def decode_msg(xmppobject, msg,prioritymsg):
-    msg=msg.decode('utf-8')
+
+def decode_msg(xmppobject, msg, prioritymsg):
+    msg = msg.decode("utf-8")
     if prioritymsg == 9:
         # notify string
         logger.error("Notify  Priority msg :%s\nmsg :%s" % (prioritymsg, msg))
@@ -96,7 +99,7 @@ def decode_msg(xmppobject, msg,prioritymsg):
         information_mmc(xmppobject, msg)
     elif prioritymsg == 5:
         # send message xmpp
-        obj=json.loads(msg)
+        obj = json.loads(msg)
         logger.error("recv : type :%s\n%s" % (msg, prioritymsg))
         send_message_file(xmppobject, obj)
 
@@ -105,34 +108,43 @@ def information_mmc(xmppobject, *args, **kwargs):
     if args:
         for value in args:
             if isinsance(value, (bytes)):
-                value = value.decode('utf-8')
+                value = value.decode("utf-8")
         if args[0]:
-            obj=json.loads(args[0])
-            if 'action' in obj:
-                if obj['action'] == "list_mmc_module":
-                    xmppobject.list_mmc = obj['data']
-                    logger.error("list des modules MMC sont : %s" % (xmppobject.list_mmc))
+            obj = json.loads(args[0])
+            if "action" in obj:
+                if obj["action"] == "list_mmc_module":
+                    xmppobject.list_mmc = obj["data"]
+                    logger.error(
+                        "list des modules MMC sont : %s" % (xmppobject.list_mmc)
+                    )
 
-                    #xmppobject.list_mmc
-
+                    # xmppobject.list_mmc
 
 
 def send_message_file(xmppobject, *args, **kwargs):
     if args:
         for value in args:
             if isinsance(value, (bytes)):
-                value = value.decode('utf-8')
+                value = value.decode("utf-8")
     if kwargs:
         if "to" in kwargs:
-            to =  kwargs["to"]
+            to = kwargs["to"]
 
         if "action" not in kwargs:
             return False
         else:
-            action = kwargs["action"].decode('utf-8') if isinstance(kwargs["action"],bytes) else kwargs["action"]
+            action = (
+                kwargs["action"].decode("utf-8")
+                if isinstance(kwargs["action"], bytes)
+                else kwargs["action"]
+            )
 
         if "sessionid" in kwargs:
-            sessionid = kwargs["sessionid"].decode('utf-8') if isinstance(kwargs["sessionid"],bytes) else kwargs["sessionid"]
+            sessionid = (
+                kwargs["sessionid"].decode("utf-8")
+                if isinstance(kwargs["sessionid"], bytes)
+                else kwargs["sessionid"]
+            )
         else:
             sessionid = name_random(6, "server_file")
 
@@ -141,15 +153,19 @@ def send_message_file(xmppobject, *args, **kwargs):
                 Base64 = kwargs["base64"]
             elif isinstance(kwargs["base64"], int):
                 if kwargs["base64"] > 0:
-                    Base64  = True
+                    Base64 = True
                 else:
-                    Base64  = False
-            else :
-                Base64 = kwargs["base64"].decode('utf-8') if isinstance(kwargs["base64"], bytes) else kwargs["base64"]
-                if kwargs["base64"].strip().lower()[0] in ["t","y","o","1"]:
-                    Base64  = True
-                else :
-                    Base64  = False
+                    Base64 = False
+            else:
+                Base64 = (
+                    kwargs["base64"].decode("utf-8")
+                    if isinstance(kwargs["base64"], bytes)
+                    else kwargs["base64"]
+                )
+                if kwargs["base64"].strip().lower()[0] in ["t", "y", "o", "1"]:
+                    Base64 = True
+                else:
+                    Base64 = False
         else:
             Base64 = False
 
@@ -157,53 +173,56 @@ def send_message_file(xmppobject, *args, **kwargs):
             if isinstance(kwargs["ret"], int):
                 ret = kwargs["ret"]
             else:
-                ret = int(kwargs["ret"].decode('utf-8')) if isinstance(kwargs["ret"], bytes) else int(kwargs["ret"])
+                ret = (
+                    int(kwargs["ret"].decode("utf-8"))
+                    if isinstance(kwargs["ret"], bytes)
+                    else int(kwargs["ret"])
+                )
         else:
-            ret=0
+            ret = 0
 
         if "data" in kwargs:
-            if isinsance(kwargs["data"], ( list, dict, tuple, float, int, datetime)):
+            if isinsance(kwargs["data"], (list, dict, tuple, float, int, datetime)):
                 data = json.dumps(kwargs["data"], cls=DateTimebytesEncoderjson)
             elif isinsance(kwargs["data"], (bytes)):
-               data = kwargs["data"].decode('utf-8')
+                data = kwargs["data"].decode("utf-8")
             elif isinsance(kwargs["data"], (str)):
-               data = kwargs["data"]
+                data = kwargs["data"]
             else:
-               data=""
+                data = ""
         else:
-            data=""
+            data = ""
         msg = {
             "action": action,
             "sessionid": sessionid,
             "ret": ret,
             "base64": Base64,
-            "data":data }
-        msgsend=json.dumps( msg, cls=DateTimebytesEncoderjson )
+            "data": data,
+        }
+        msgsend = json.dumps(msg, cls=DateTimebytesEncoderjson)
     elif args:
-        if len(args) == 2 :
+        if len(args) == 2:
             # arg[0] jid to
             to = arg[0]
             # arg[1] string body message or dict struct message
             if isinsance(arg[1], (dict)):
-                msg = json.dumps( arg[1], cls=DateTimebytesEncoderjson )
+                msg = json.dumps(arg[1], cls=DateTimebytesEncoderjson)
         else:
             return False
-    xmppobject.send_message(
-        mto=to,
-        mbody=msg,
-        mtype="chat"
-        )
+    xmppobject.send_message(mto=to, mbody=msg, mtype="chat")
     return True
+
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
     Used to hanld datetime in json files.
     """
+
     def default(self, obj):
         if isinstance(obj, datetime):
             encoded_object = obj.isoformat()
         elif isinstance(obj, bytes):
-            encoded_object = obj.decode('utf-8')
+            encoded_object = obj.decode("utf-8")
         else:
             encoded_object = json.JSONEncoder.default(self, obj)
         return encoded_object
