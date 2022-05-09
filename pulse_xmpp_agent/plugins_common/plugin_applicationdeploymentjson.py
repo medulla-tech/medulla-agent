@@ -2473,7 +2473,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
-                logger.debug(str(e))
+                logger.error('Traceback from downloading package via libcurl: %s' % str(e))
                 objectxmpp.xmpplog('<span class="log_err">Transfer error : curl download [%s] package file: %s</span>' % (curlurlbase, filepackage),
                                    type='deploy',
                                    sessionname=datasend['sessionid'],
