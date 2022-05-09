@@ -61,11 +61,11 @@ def listservice():
         finally:
             pythoncom.CoUninitialize()
         for dev in wmi_out:
-            print dev.Caption
-            print dev.DisplayName
+            print(dev.Caption)
+            print(dev.DisplayName)
     else:
         obj = simplecommandstr("systemctl list-units --type=service")
-        print obj['result']
+        print(obj['result'])
 
 def simplecommandstr(cmd):
     obj = {}
@@ -108,7 +108,7 @@ def windowspath(namescript):
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
-    print "powershell -ExecutionPolicy Bypass -File  %s" % namescript
+    print("powershell -ExecutionPolicy Bypass -File  %s" % namescript)
     obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript))
     return obj
 

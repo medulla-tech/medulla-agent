@@ -509,7 +509,7 @@ class message_email_smtp_ssl_tls:
                 logger.debug("connect_to_server %s" % connect_to_server)
 
                 hello_from_server = self.server.ehlo()
-                print (hello_from_server)
+                print(hello_from_server)
 
                 self.server.starttls()
                 self.server.login(self.compte_email, self.email_password)
@@ -585,6 +585,6 @@ if __name__ == "__main__":
                         filemode = 'a')
     logger.debug("Program Starting")
     eventstruct, msgfrom, binding = loads_alert()
-    print json.dumps(eventstruct, indent=4)
+    print(json.dumps(eventstruct, indent=4))
 
     main()

@@ -47,7 +47,7 @@ def schedule_main(objectxmpp):
     re = utils.shellcommandtimeout(
         "wget -O /var/lib/pulse2/Wsusscn2/Wsusscn2.cab -P /var/lib/pulse2/Wsusscn2 http://go.microsoft.com/fwlink/p/?LinkID=74689",
         600).run()
-    print re['codereturn']
+    print(re['codereturn'])
     result = [x.strip('\n') for x in re['result'] if x != '']
     print(result)
     print("*******************************************")
