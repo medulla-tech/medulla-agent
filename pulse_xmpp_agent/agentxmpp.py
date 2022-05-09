@@ -978,9 +978,7 @@ class MUCBot(slixmpp.ClientXMPP):
         if sys.platform.startswith("win"):
             syncthingroot = "%s\\pulse\\var\\syncthing" % os.environ["programfiles"]
         elif sys.platform.startswith("linux"):
-            syncthingroot = os.path.join(
-                os.path.expanduser("~pulseuser"), "syncthing"
-            )
+            syncthingroot = os.path.join(os.path.expanduser("~pulseuser"), "syncthing")
         elif sys.platform.startswith("darwin"):
             syncthingroot = os.path.join("/opt", "Pulse", "var", "syncthing")
         return syncthingroot

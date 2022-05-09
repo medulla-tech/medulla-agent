@@ -67,9 +67,7 @@ class Mysqlbase:
         except MySQLdb.Error as e:
             self.boolconnectionbase = False
             self.dbconnectionMysql = None
-            print(
-                "We failed to connect to the database and got the error %s" % str(e)
-            )
+            print("We failed to connect to the database and got the error %s" % str(e))
             print("\n%s" % (traceback.format_exc()))
             return self.dbconnectionMysql
         except Exception as e:
