@@ -73,7 +73,7 @@ class managepackage:
             It returns the content of the JSON file
         """
         if os.path.isfile(filename):
-            with open(filename, "r", encoding='utf-8', errors='ignore') as info:
+            with open(filename, "r", encoding="utf-8", errors="ignore") as info:
                 jsonFile = info.read()
             try:
                 outputJSONFile = json.loads(jsonFile)

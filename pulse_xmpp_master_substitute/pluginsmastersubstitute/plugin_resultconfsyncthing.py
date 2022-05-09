@@ -26,8 +26,7 @@ import logging
 import traceback
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.1", "NAME": "resultconfsyncthing", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "resultconfsyncthing", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

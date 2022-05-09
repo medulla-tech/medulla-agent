@@ -27,7 +27,6 @@ from .utils import file_get_contents
 import json
 
 
-
 class Update_Remote_Agent:
     """
     this class make finderspring of agent.
@@ -88,7 +87,7 @@ class Update_Remote_Agent:
             .strip()
         )
         self.directory["version_agent"] = hashlib.md5(
-            (self.directory["version"]).encode('utf-8')
+            (self.directory["version"]).encode("utf-8")
         ).hexdigest()
         listmd5.append(self.directory["version_agent"])
         list_script_python_for_update = [
@@ -102,7 +101,9 @@ class Update_Remote_Agent:
         # x[-3:]== ".py"]:
         for fichiername in list_script_python_for_update:
             self.directory["program_agent"][fichiername] = hashlib.md5(
-                file_get_contents(os.path.join(self.dir_agent_base, fichiername)).encode('utf-8')
+                file_get_contents(
+                    os.path.join(self.dir_agent_base, fichiername)
+                ).encode("utf-8")
             ).hexdigest()
             listmd5.append(self.directory["program_agent"][fichiername])
         for fichiername in [
@@ -111,7 +112,9 @@ class Update_Remote_Agent:
             if x[-3:] == ".py"
         ]:
             self.directory["lib_agent"][fichiername] = hashlib.md5(
-                file_get_contents(os.path.join(self.dir_agent_base, "lib", fichiername)).encode('utf-8')
+                file_get_contents(
+                    os.path.join(self.dir_agent_base, "lib", fichiername)
+                ).encode("utf-8")
             ).hexdigest()
             listmd5.append(self.directory["lib_agent"][fichiername])
         for fichiername in [
@@ -122,8 +125,10 @@ class Update_Remote_Agent:
             self.directory["script_agent"][fichiername] = hashlib.md5(
                 file_get_contents(
                     os.path.join(self.dir_agent_base, "script", fichiername)
-                ).encode('utf-8')
+                ).encode("utf-8")
             ).hexdigest()
             listmd5.append(self.directory["script_agent"][fichiername])
         listmd5.sort()
-        self.directory["fingerprint"] = hashlib.md5(json.dumps(listmd5).encode('utf-8')).hexdigest()
+        self.directory["fingerprint"] = hashlib.md5(
+            json.dumps(listmd5).encode("utf-8")
+        ).hexdigest()

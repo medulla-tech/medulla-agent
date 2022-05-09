@@ -27,8 +27,7 @@ import json
 import logging
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.3", "NAME": "restartbot", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "restartbot", "TYPE": "all"}  # fmt: skip
 
 
 def action(objetxmpp, action, sessionid, data, message, dataerreur):

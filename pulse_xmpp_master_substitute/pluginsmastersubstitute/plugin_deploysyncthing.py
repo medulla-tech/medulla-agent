@@ -31,9 +31,7 @@ import logging
 import random
 
 logger = logging.getLogger()
-# plugin run wake on lan on mac address
-
-plugin = {"VERSION": "1.11", "NAME": "deploysyncthing", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.11", "NAME": "deploysyncthing", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataobj):

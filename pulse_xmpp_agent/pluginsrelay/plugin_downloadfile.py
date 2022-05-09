@@ -32,7 +32,7 @@ import traceback
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "3.0", "NAME": "downloadfile", "TYPE": "relayserver"} # fmt: skip
+plugin = {"VERSION": "3.0", "NAME": "downloadfile", "TYPE": "relayserver"}  # fmt: skip
 paramglobal = {
     "timeupreverssh": 20,
     "portsshmaster": 22,

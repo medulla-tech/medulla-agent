@@ -18,13 +18,11 @@ import re
 import MySQLdb
 import traceback
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
 
 logger = logging.getLogger()
-
-# WARNING: The plugin variable MUST be in one line.
-plugin = {"VERSION": "1.0.005", "NAME": "scheduling_ars_synchronization", "TYPE": "all", "SCHEDULED": True, } # fmt: skip
+plugin = {"VERSION": "1.0.005", "NAME": "scheduling_ars_synchronization", "TYPE": "all", "SCHEDULED": True, }  # fmt: skip
 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 

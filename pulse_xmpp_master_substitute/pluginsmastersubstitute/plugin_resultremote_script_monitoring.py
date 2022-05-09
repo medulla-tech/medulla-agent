@@ -32,8 +32,7 @@ import base64
 from datetime import date, datetime, timedelta
 
 logger = logging.getLogger()
-
-plugin = { "VERSION": "1.0", "NAME": "resultremote_script_monitoring", "TYPE": "substitute", } # fmt: skip
+plugin = { "VERSION": "1.0", "NAME": "resultremote_script_monitoring", "TYPE": "substitute", }  # fmt: skip
 
 
 class DateTimeEncoder(json.JSONEncoder):

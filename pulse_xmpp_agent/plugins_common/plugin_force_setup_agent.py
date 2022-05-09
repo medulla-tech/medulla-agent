@@ -23,7 +23,7 @@
 import logging
 import os
 
-plugin = {"VERSION": "1.4", "NAME": "force_setup_agent", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "force_setup_agent", "TYPE": "all"}  # fmt: skip
 
 logger = logging.getLogger()
 

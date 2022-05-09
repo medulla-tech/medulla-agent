@@ -39,8 +39,7 @@ from slixmpp import jid
 from slixmpp.exceptions import IqError, IqTimeout
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.3", "NAME": "loadarscheck", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "loadarscheck", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):

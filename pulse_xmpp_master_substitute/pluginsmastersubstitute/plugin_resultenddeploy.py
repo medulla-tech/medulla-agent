@@ -25,7 +25,7 @@
 
 import logging
 
-plugin = {"VERSION": "1.1", "NAME": "resultenddeploy", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "resultenddeploy", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

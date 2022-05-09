@@ -24,8 +24,7 @@ import logging
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-
-plugin = {"VERSION": "1.305", "NAME": "resultapplicationdeploymentjson", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "1.305", "NAME": "resultapplicationdeploymentjson", "TYPE": "all"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

@@ -31,8 +31,7 @@ from lib import utils
 import re
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.2", "NAME": "updatedoublerun", "TYPE": "machine"}  # fmt: skip
 
 RSYNC_VERSION = "3.1.2"
 

@@ -31,8 +31,7 @@ import re
 # import types
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.02", "NAME": "xmpplog", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, ret, dataobj):

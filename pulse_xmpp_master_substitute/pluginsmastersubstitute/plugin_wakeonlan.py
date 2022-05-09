@@ -33,8 +33,7 @@ import configparser
 from wakeonlan import wol
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "master" } # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "master" }  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

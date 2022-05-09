@@ -31,10 +31,7 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-
-# this plugin calling to starting agent
-
-plugin = { "VERSION": "1.0", "NAME": "loadlogsrotation", "TYPE": "substitute", "LOAD": "START", } # fmt: skip
+plugin = { "VERSION": "1.0", "NAME": "loadlogsrotation", "TYPE": "substitute", "LOAD": "START", }  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, dataerreur):

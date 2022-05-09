@@ -33,8 +33,7 @@ from lib import utils
 import traceback
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "2.0", "NAME": "relayupdateagent", "TYPE": "relayserver"} # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "relayupdateagent", "TYPE": "relayserver"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
