@@ -26,6 +26,8 @@
 # """
 
 # API information http://seb.dbzteam.org/pyinotify/
+from __future__ import print_function
+
 import socket
 import pyinotify
 import os
@@ -36,7 +38,6 @@ import configparser
 import logging
 import getopt
 import base64
-from __future__ import print_function
 
 conf = {}
 
