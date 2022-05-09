@@ -2223,7 +2223,7 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate
         c.setopt(c.WRITEDATA, f)
         c.setopt(pycurl.HTTPHEADER, headers)
         try:
-            limit_rate_ko = int(limite_rate_ko)
+            limit_rate_ko = int(limit_rate_ko)
         except:
             limit_rate_ko = 0
 
@@ -2453,7 +2453,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                     int(datasend['data']['descriptor']['info']['limit_rate_ko'])> 0:
                     limit_rate_ko = datasend['data']['descriptor']['info']['limit_rate_ko']
                     try:
-                        limit_rate_ko = int(limite_rate_ko)
+                        limit_rate_ko = int(limit_rate_ko)
                     except:
                         limit_rate_ko = 0
                     msg = 'Downloading file : %s Package : %s [transfer rate %s ko]' % (filepackage, datasend['data']['name'], limit_rate_ko)
