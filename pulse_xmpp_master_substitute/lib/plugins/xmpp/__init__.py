@@ -122,8 +122,9 @@ except ImportError:
 from sqlalchemy.orm import scoped_session
 import random
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
+
 
 class Error(Exception):
     """Base class for exceptions in this module."""
@@ -4023,7 +4024,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     def _iso_8859_1__to__utf8(self, strdata):
         try:
-            strdata = bytes(strdata,'iso-8859-1').decode('utf8')
+            strdata = bytes(strdata, "iso-8859-1").decode("utf8")
         except Exception:
             return strdata
 

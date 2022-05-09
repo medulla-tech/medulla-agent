@@ -30,8 +30,7 @@ from lib import utils
 CHERRYPYVERSION = "8.9.1"
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.1", "NAME": "updatecherrypy", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

@@ -23,8 +23,7 @@ import logging
 from lib.configuration import setconfigfile
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "updatesettings", "TYPE": "machine"}  # fmt: skip
 
 # Examples
 # param_1 = 'add@__@agentconf.ini@__@global@__@loglevel@__@DEBUG'

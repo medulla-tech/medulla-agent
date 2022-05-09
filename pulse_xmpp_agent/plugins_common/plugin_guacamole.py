@@ -28,7 +28,7 @@ import time
 import logging
 import os
 
-plugin = {"VERSION": "1.13", "NAME": "guacamole", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "1.13", "NAME": "guacamole", "TYPE": "all"}  # fmt: skip
 
 
 logger = logging.getLogger()

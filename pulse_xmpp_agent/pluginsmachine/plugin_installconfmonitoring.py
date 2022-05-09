@@ -27,8 +27,7 @@ import base64
 import traceback
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.0", "NAME": "installconfmonitoring", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "installconfmonitoring", "TYPE": "machine"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

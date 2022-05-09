@@ -31,7 +31,7 @@ import sys
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "2.0", "NAME": "requestinfo", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "requestinfo", "TYPE": "all"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

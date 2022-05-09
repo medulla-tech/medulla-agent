@@ -29,8 +29,7 @@ import time
 from lib import utils
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "2.0", "NAME": "slot_quickdeploy_count", "TYPE": "relayserver"} # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "slot_quickdeploy_count", "TYPE": "relayserver"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

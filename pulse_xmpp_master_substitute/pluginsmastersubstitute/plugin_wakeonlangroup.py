@@ -32,10 +32,7 @@ from wakeonlan import wol
 import configparser
 
 logger = logging.getLogger()
-
-# plugin run wake on lan on mac address
-# group mac address wakeonlangroup different wakeonlan
-plugin = {"VERSION": "1.1", "NAME": "wakeonlangroup", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "wakeonlangroup", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret):

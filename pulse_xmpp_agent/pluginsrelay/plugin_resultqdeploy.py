@@ -26,7 +26,7 @@ import traceback
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-plugin = {"VERSION": "1.0", "NAME": "resultqdeploy", "TYPE": "relayserver"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "resultqdeploy", "TYPE": "relayserver"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

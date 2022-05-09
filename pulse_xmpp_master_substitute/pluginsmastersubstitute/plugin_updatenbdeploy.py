@@ -25,7 +25,7 @@
 from lib.plugins.xmpp import XmppMasterDatabase
 import logging
 
-plugin = {"VERSION": "1.0", "NAME": "updatenbdeploy", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "updatenbdeploy", "TYPE": "substitute"}  # fmt: skip
 
 # =====================================================
 # DEBUG   {'VERSION': '1.0', 'TYPE': 'master', 'NAME': 'updatenbdeploy'} :

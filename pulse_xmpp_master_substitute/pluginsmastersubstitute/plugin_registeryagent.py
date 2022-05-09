@@ -42,8 +42,7 @@ import netaddr
 # import types
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.54", "NAME": "registeryagent", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.54", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 # function comment for next feature
 # this functions will be used later

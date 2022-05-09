@@ -1674,9 +1674,6 @@ def is_connectedServer(ip, port):
         sock.close()
 
 
-
-
-
 class AESCipher:
     def __init__(self, key, BS=32):
         self.key = key
@@ -1698,7 +1695,7 @@ class AESCipher:
         return self._unpad(cipher.decrypt(enc[16:]))
 
     def _unpad(self, s):
-        return  s[:-ord(s[len(s)-1:])]
+        return s[: -ord(s[len(s) - 1 :])]
 
 
 def sshdup():

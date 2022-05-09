@@ -26,7 +26,7 @@ import logging
 import sys
 from lib.managepackage import managepackage
 
-plugin = {"VERSION": "1.3", "NAME": "scheduling_ars_synchro_package", "TYPE": "relayserver", "SCHEDULED": True, } # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "scheduling_ars_synchro_package", "TYPE": "relayserver", "SCHEDULED": True, }  # fmt: skip
 
 # nb  -1 infinie
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}

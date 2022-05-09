@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 import traceback
 import logging
 
-plugin = {"VERSION": "1.0", "NAME": "machineexecutionscheduler", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "machineexecutionscheduler", "TYPE": "substitute"}  # fmt: skip
 
 """
 #eg : data plugin received
