@@ -18,7 +18,7 @@ With Pulse XMPP Agent you are be able to:
 
 * Website : <http://www.siveo.net>
 * Nighty Builds : <http://git.siveo.net>
-* IRC : <irc://irc.freenode.net/#pulse-en > <irc://irc.freenode.net/#pulse-fr >
+* IRC : <irc://irc.libera.chat/#pulse-en > <irc://irc.libera.chat/#pulse-fr >
 * Sources : <https://github.com/pulse-project/pulse-xmpp-agent>
 * Bugtracker : <https://github.com/pulse-project/pulse-xmpp-agent/issues>
 * Forum : <http://forum.pulse2.fr/>
