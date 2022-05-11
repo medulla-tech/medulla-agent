@@ -293,6 +293,9 @@ class confParameter:
     def __init__(self, typeconf="machine"):
         Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
+        if not os.path.isfile(namefileconfig):
+            logger.error("The file %s is missing" % namefileconfig)
+
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
@@ -704,11 +707,11 @@ class confParameter:
         except BaseException:
             self.levellog = 20
         try:
-            self.log_level_sleekxmpp = self._levellogdata(
-                Config.get("global", "log_level_sleekxmpp")
+            self.log_level_slixmpp = self._levellogdata(
+                Config.get("global", "log_level_slixmpp")
             )
         except BaseException:
-            self.log_level_sleekxmpp = 50
+            self.log_level_slixmpp = 50
 
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get("configuration_server", "confdomain")
