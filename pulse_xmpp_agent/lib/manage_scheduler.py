@@ -25,7 +25,7 @@ import sys
 import os
 import os.path
 
-# import traceback
+import traceback
 import logging
 import time
 from datetime import datetime
@@ -56,7 +56,6 @@ class manage_scheduler:
     """
 
     def __init__(self, objectxmpp):
-        # creation repertoire si non exist.
         try:
             self.objectxmpp = objectxmpp
             objectxmpp.config.listcrontabforpluginscheduled = (
@@ -156,8 +155,8 @@ class manage_scheduler:
                 )
                 self.add_event(name, datascheduler)
             except Exception as e:
+                logging.getLogger().error("\n%s" % (traceback.format_exc()))
                 logging.getLogger().error(str(e))
-                pass
 
     def replacecrontabdescriptor(self, descrip):
         rep = []

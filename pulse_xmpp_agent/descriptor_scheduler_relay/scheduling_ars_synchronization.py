@@ -17,6 +17,7 @@ import configparser
 import re
 import MySQLdb
 import traceback
+import sys
 
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
