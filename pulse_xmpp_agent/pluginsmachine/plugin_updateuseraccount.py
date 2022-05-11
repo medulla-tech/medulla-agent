@@ -22,7 +22,7 @@
 import logging
 import json
 from lib import utils
-from sleekxmpp.exceptions import IqError
+from slixmpp.exceptions import IqError
 import traceback
 
 logger = logging.getLogger()

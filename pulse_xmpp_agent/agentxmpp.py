@@ -60,6 +60,8 @@ from lib.utils import (
     load_back_to_deploy,
     cleanbacktodeploy,
     call_plugin,
+    call_plugin_separate,
+    call_plugin_sequentially,
     subnetnetwork,
     createfingerprintnetwork,
     isWinUserAdmin,
@@ -698,7 +700,7 @@ class MUCBot(slixmpp.ClientXMPP):
             self.commandinfoconsole = manage_infoconsole(self.qin, self.qoutARS, self)
             self.managerQueue = QueueManager(
                 ("", self.config.parametersscriptconnection["port"]),
-                authkey=self.config.passwordconnection,
+                authkey=self.config.passwordconnection.encode("utf-8"),
             )
             self.managerQueue.start()
 
@@ -1874,7 +1876,7 @@ class MUCBot(slixmpp.ClientXMPP):
         msg = {"from": self.boundjid.bare, "to": self.boundjid.bare, "type": "chat"}
         if "data" not in startparameter:
             startparameter["data"] = {}
-        call_plugin(
+        call_plugin_sequentially(
             startparameter["action"],
             self,
             startparameter["action"],
@@ -2680,7 +2682,8 @@ class MUCBot(slixmpp.ClientXMPP):
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
         # send key public agent
-        er.messagejson["publickey"] = self.RSA.loadkeypublictobase64()
+        a = self.RSA.loadkeypublictobase64()
+        er.messagejson["publickey"] = a
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
         for t in er.messagejson["listipinfo"]:

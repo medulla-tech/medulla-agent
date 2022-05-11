@@ -61,6 +61,8 @@ import tarfile
 from functools import wraps
 import string
 import platform
+import asyncio
+import asyncio as aio
 
 logger = logging.getLogger()
 
@@ -540,48 +542,114 @@ def md5(fname):
 
 
 def loadModule(filename):
-    if filename == "":
-        raise RuntimeError("Empty filename cannot be loaded")
-    searchPath, file = os.path.split(filename)
-    if searchPath not in sys.path:
-        sys.path.append(searchPath)
-        sys.path.append(os.path.normpath(searchPath + "/../"))
-    moduleName, ext = os.path.splitext(file)
-    fp, pathName, description = imp.find_module(
-        moduleName,
-        [
-            searchPath,
-        ],
-    )
+    module = None
     try:
-        module = imp.load_module(moduleName, fp, pathName, description)
-    finally:
-        if fp:
-            fp.close()
+        if filename == "":
+            raise RuntimeError("Empty filename cannot be loaded")
+        searchPath, file = os.path.split(filename)
+        if searchPath not in sys.path:
+            sys.path.append(searchPath)
+            sys.path.append(os.path.normpath(searchPath + "/../"))
+        moduleName, ext = os.path.splitext(file)
+        fp, pathName, description = imp.find_module(
+            moduleName,
+            [
+                searchPath,
+            ],
+        )
+        try:
+            module = imp.load_module(moduleName, fp, pathName, description)
+        finally:
+            if fp:
+                fp.close()
+    except:
+        logging.getLogger().error(("%s" % (traceback.format_exc())))
     return module
 
 
-def call_plugin(name, *args, **kwargs):
-    if args[0].config.plugin_action:
-        if args[1] not in args[0].config.excludedplugins:
-            nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-            logger.debug("Loading plugin %s" % args[1])
-            # Add compteur appel plugins
-            count = 0
-            try:
-                count = getattr(args[0], "num_call%s" % args[1])
-            except AttributeError:
+def call_plugin_separate(name, *args, **kwargs):
+    try:
+        nameplugin = name
+        if args[0].config.plugin_action:
+            if args[1] not in args[0].config.excludedplugins:
+                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                # add compteur appel plugins
+                loop = aio.get_event_loop()
                 count = 0
-                setattr(args[0], "num_call%s" % args[1], count)
-            pluginaction = loadModule(nameplugin)
-            pluginaction.action(*args, **kwargs)
-            setattr(args[0], "num_call%s" % args[1], count + 1)
+                try:
+                    count = getattr(args[0], "num_call%s" % args[1])
+                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                except AttributeError:
+                    count = 0
+                    setattr(args[0], "num_call%s" % args[1], count)
+                pluginaction = loadModule(name)
+                loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+            else:
+                logging.getLogger().debug("The plugin %s is excluded" % args[1])
         else:
-            logging.getLogger().debug("The scheduled plugin %s is excluded" % args[1])
-    else:
-        logging.getLogger().debug(
-            "The plugin %s is not allowed due to plugin_action parameter" % args[1]
-        )
+            logging.getLogger().debug(
+                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+            )
+    except:
+        logging.getLogger().error(("%s" % (traceback.format_exc())))
+
+
+def call_plugin(name, *args, **kwargs):
+    try:
+        nameplugin = name
+        if args[0].config.plugin_action:
+            if args[1] not in args[0].config.excludedplugins:
+                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                logging.getLogger().debug("JFKJFK cherche name plugin %s" % nameplugin)
+                logger.debug("Loading plugin %s" % args[1])
+
+                loop = asyncio.new_event_loop()
+                count = 0
+                try:
+                    count = getattr(args[0], "num_call%s" % args[1])
+                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                except AttributeError:
+                    count = 0
+                    setattr(args[0], "num_call%s" % args[1], count)
+                pluginaction = loadModule(nameplugin)
+                # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+                result = loop.run_in_executor(
+                    None, pluginaction.action, *args, **kwargs
+                )
+            else:
+                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+        else:
+            logging.getLogger().debug(
+                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+            )
+    except:
+        logging.getLogger().error(("%s" % (traceback.format_exc())))
+
+
+def call_plugin_sequentially(name, *args, **kwargs):
+    try:
+        nameplugin = name
+        if args[0].config.plugin_action:
+            if args[1] not in args[0].config.excludedplugins:
+                nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
+                # add compteur appel plugins
+                count = 0
+                try:
+                    count = getattr(args[0], "num_call%s" % args[1])
+                    setattr(args[0], "num_call%s" % args[1], count + 1)
+                except AttributeError:
+                    count = 0
+                    setattr(args[0], "num_call%s" % args[1], count)
+                pluginaction = loadModule(nameplugin)
+                pluginaction.action(*args, **kwargs)
+            else:
+                logging.getLogger().debug("The plugin %s is excluded" % args[1])
+        else:
+            logging.getLogger().debug(
+                "The plugin %s is not allowed due to plugin_action parameter" % args[1]
+            )
+    except:
+        logging.getLogger().error(("%s" % (traceback.format_exc())))
 
 
 def getshortenedmacaddress():
