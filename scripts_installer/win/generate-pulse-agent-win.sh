@@ -56,7 +56,6 @@ simplejson-3.16.0-cp27-cp27m-win_amd64.whl \
 PY_MODULES_COMMON_FILENAMES="netifaces-0.10.5.tar.gz \
 comtypes-1.1.3-2.zip \
 configparser-3.5.0.tar.gz \
-utils-0.9.0.tar.gz \
 sleekxmpp-1.3.1.tar.gz \
 WMI-1.4.9.zip \
 zipfile2-0.0.12-py2.py3-none-any.whl \
@@ -93,7 +92,7 @@ PULSE_SERVICE_FILENAME="pulse-service.py"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
-PULSE_START_CONFFILE_FILENAME="start.ini"
+PULSE_START_CONFFILE_FILENAME="start_machine.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 PULSE_AGENTUPDATEOPENSSH_CONFFILE="updateopenssh.ini"
 PULSE_AGENTUPDATETIGHTVNC_CONFFILE="updatetightvnc.ini"

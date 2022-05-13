@@ -36,7 +36,7 @@ SSH_PUB_KEY="/root/.ssh/id_rsa.pub"
 PULSE_AGENT_CONFFILE_FILENAME="agentconf.ini"
 PULSE_SCHEDULER_CONFFILE_FILENAME="manage_scheduler_machine.ini"
 PULSE_INVENTORY_CONFFILE_FILENAME="inventory.ini"
-PULSE_START_CONFFILE_FILENAME="start.ini"
+PULSE_START_CONFFILE_FILENAME="start_machine.ini"
 PULSE_STARTUPDATE_CONFFILE_FILENAME="startupdate.ini"
 
 # Go to own folder
