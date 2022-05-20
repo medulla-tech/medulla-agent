@@ -44,6 +44,7 @@ from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
+import imp
 from lib.configuration import (
     confParameter,
     nextalternativeclusterconnection,
