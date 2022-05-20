@@ -145,7 +145,7 @@ def plugin_loadpluginschedulerlistversion(self, msg, data):
 
 def deployPluginscheduled(self, msg, plugin):
     data = ""
-    fichierdata = {}
+    DataFile = {}
     namefile = os.path.join(self.dirschedulerplugins, "%s.py" % plugin)
     if os.path.isfile(namefile):
         logger.debug("File plugin scheduled found %s" % namefile)
@@ -154,21 +154,27 @@ def deployPluginscheduled(self, msg, plugin):
         return
     try:
         fileplugin = open(namefile, "rb")
-        data = fileplugin.read()
+        data = fileplugin.read().decode("utf8")
         fileplugin.close()
     except Exception:
-        logger.error("File read error\n%s" % (traceback.format_exc()))
+        logger.error("An error occurend while trying to read the file %s" % namefile)
+        logger.error("We hit the backtrace \n%s" % traceback.format_exc())
         return
-    fichierdata["action"] = "installpluginscheduled"
-    fichierdata["data"] = {}
-    dd = {}
-    dd["datafile"] = data
-    dd["pluginname"] = "%s.py" % plugin
-    fichierdata["data"] = base64.b64encode(json.dumps(dd))
-    fichierdata["sessionid"] = "sans"
-    fichierdata["base64"] = True
+
+    DataFile["action"] = "installpluginscheduled"
+    DataFile["data"] = {}
+
+    JsonData = {}
+    JsonData["datafile"] = data
+    JsonData["pluginname"] = "%s.py" % plugin
+    DataFile["data"] = base64.b64encode(json.dumps(JsonData).encode("utf-8")).decode(
+        "utf-8"
+    )
+    DataFile["sessionid"] = "sans"
+    DataFile["base64"] = True
+
     try:
-        self.send_message(mto=msg["from"], mbody=json.dumps(fichierdata), mtype="chat")
+        self.send_message(mto=msg["from"], mbody=json.dumps(DataFile), mtype="chat")
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
