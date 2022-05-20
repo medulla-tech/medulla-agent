@@ -606,9 +606,7 @@ def call_plugin(name, *args, **kwargs):
         if args[0].config.plugin_action:
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-                logging.getLogger().debug("JFKJFK cherche name plugin %s" % nameplugin)
                 logger.debug("Loading plugin %s" % args[1])
-
                 loop = asyncio.new_event_loop()
                 count = 0
                 try:

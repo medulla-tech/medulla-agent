@@ -1789,6 +1789,15 @@ class MUCBot(slixmpp.ClientXMPP):
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
+    def get_or_create_eventloop(self):
+        try:
+            return asyncio.get_event_loop()
+        except RuntimeError as ex:
+            if "There is no current event loop in thread" in str(ex):
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                return asyncio.get_event_loop()
+
     def start(self, event):
         self.get_roster()
         self.send_presence()
@@ -2847,7 +2856,7 @@ AGENT %s ERROR TERMINATE""" % (
                     dataobj["plugin"][module["NAME"]] = module["VERSION"]
                 except Exception as e:
                     logger.error(
-                        "error loading plugin %s : %s\verify plugin %s"
+                        "error loading plugin %s : %s\verify plugin %s and import"
                         % (element, str(e), element)
                     )
         # add list scheduler plugins

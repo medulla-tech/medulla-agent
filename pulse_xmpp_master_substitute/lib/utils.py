@@ -2748,10 +2748,6 @@ class base_message_queue_posix(Singleton):
         base_message_queue_posix.file_reponse_iq = listqueue
 
     def clean_file_all_message(self, prefixe=""):
-        logger.debug(
-            "JFKJFK clean_file_all_message base_message_queue_posix.file_reponse_iq"
-        )
-
         listqueue = []
         for fmp in base_message_queue_posix.file_reponse_iq:
             if fmp["time"] == -1:
