@@ -372,7 +372,10 @@ def refreshfingerprint():
     return fp
 
 
-def file_get_contents(filename, use_include_path=0, context=None, offset=-1, maxlen=-1):
+def file_get_contents(
+    filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
+):
+
     if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
         if offset > 0:
@@ -381,7 +384,10 @@ def file_get_contents(filename, use_include_path=0, context=None, offset=-1, max
             ret = ret[:maxlen]
         return ret
     else:
-        fp = open(filename, "r")
+        if encoding:
+            fp = open(filename, "r", encoding=encoding)
+        else:
+            fp = open(filename, "r")
         try:
             if offset > 0:
                 fp.seek(offset)

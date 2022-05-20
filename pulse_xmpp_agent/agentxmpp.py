@@ -2750,7 +2750,9 @@ AGENT %s ERROR TERMINATE""" % (
             "who": "%s/%s" % (self.config.jidchatroomcommand, self.config.NickName),
             "machine": self.config.NickName,
             "platform": os_version(),
-            "completedatamachine": base64.b64encode(json.dumps(er.messagejson)),
+            "completedatamachine": base64.b64encode(
+                json.dumps(er.messagejson).encode("utf-8")
+            ).decode("utf-8"),
             "plugin": {},
             "pluginscheduled": {},
             "versionagent": self.version_agent(),
@@ -2775,7 +2777,9 @@ AGENT %s ERROR TERMINATE""" % (
             "remoteservice": remoteservice.proto,
             "regcomplet": self.FullRegistration,
             "packageserver": self.config.packageserver,
-            "adorgbymachine": base64.b64encode(organizationbymachine()),
+            "adorgbymachine": base64.b64encode(
+                organizationbymachine().encode("utf-8")
+            ).decode("utf-8"),
             "adorgbyuser": "",
             "kiosk_presence": test_kiosk_presence(),
             "countstart": save_count_start(),
@@ -2828,8 +2832,8 @@ AGENT %s ERROR TERMINATE""" % (
             lastusersession = userlist[0]
         if lastusersession != "":
             dataobj["adorgbyuser"] = base64.b64encode(
-                organizationbyuser(lastusersession)
-            )
+                organizationbyuser(lastusersession).encode("utf-8")
+            ).decode("utf-8")
 
         dataobj["lastusersession"] = lastusersession
         sys.path.append(self.config.pathplugins)
