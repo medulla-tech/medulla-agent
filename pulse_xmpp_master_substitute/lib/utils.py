@@ -202,9 +202,12 @@ def Setdirectorytempinfo():
 
 def cleanbacktodeploy(objectxmpp):
     delsession = [
-        session for session in objectxmpp.back_to_deploy if not objectxmpp.session.isexist(session)]
+        session
+        for session in objectxmpp.back_to_deploy
+        if not objectxmpp.session.isexist(session)
+    ]
     for session in delsession:
-        del (objectxmpp.back_to_deploy[session])
+        del objectxmpp.back_to_deploy[session]
     if len(delsession) != 0:
         logging.log(DEBUGPULSE, "Clear dependency : %s" % delsession)
         save_back_to_deploy(objectxmpp.back_to_deploy)
@@ -312,9 +315,8 @@ def confinfoexist():
 def confchanged(typeconf):
     if confinfoexist():
         fingerprintconf = file_get_contents(
-            os.path.join(
-                Setdirectorytempinfo(),
-                'fingerprintconf'))
+            os.path.join(Setdirectorytempinfo(), "fingerprintconf")
+        )
         newfingerprintconf = createfingerprintconf(typeconf)
         if newfingerprintconf == fingerprintconf:
             return False
@@ -323,16 +325,15 @@ def confchanged(typeconf):
 
 def refreshfingerprintconf(typeconf):
     fp = createfingerprintconf(typeconf)
-    file_put_contents(os.path.join(Setdirectorytempinfo(),
-                      'fingerprintconf'),
-                      fp)
+    file_put_contents(os.path.join(Setdirectorytempinfo(), "fingerprintconf"), fp)
     return fp
 
 
 def networkchanged():
     if networkinfoexist():
-        fingerprintnetwork = file_get_contents(os.path.join(Setdirectorytempinfo(),
-                                                            'fingerprintnetwork'))
+        fingerprintnetwork = file_get_contents(
+            os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
+        )
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
             return False
@@ -342,29 +343,28 @@ def networkchanged():
 
 def refreshfingerprint():
     fp = createfingerprintnetwork()
-    file_put_contents(os.path.join(Setdirectorytempinfo(),
-                                   'fingerprintnetwork'),
-                      fp)
+    file_put_contents(os.path.join(Setdirectorytempinfo(), "fingerprintnetwork"), fp)
     return fp
 
 
-def file_get_contents(filename, use_include_path=0, context=None,
-                      offset=-1, maxlen=-1, encoding=None):
+def file_get_contents(
+    filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
+):
 
-    if (filename.find('://') > 0):
+    if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
-        if (offset > 0):
+        if offset > 0:
             ret = ret[offset:]
-        if (maxlen > 0):
+        if maxlen > 0:
             ret = ret[:maxlen]
         return ret
     else:
         if encoding:
-            fp = open(filename, 'r',encoding=encoding)
+            fp = open(filename, "r", encoding=encoding)
         else:
-            fp = open(filename, 'r')
+            fp = open(filename, "r")
         try:
-            if (offset > 0):
+            if offset > 0:
                 fp.seek(offset)
             ret = fp.read(maxlen)
             return ret
@@ -373,7 +373,7 @@ def file_get_contents(filename, use_include_path=0, context=None,
 
 
 def file_get_binarycontents(filename, offset=-1, maxlen=-1):
-    fp = open(filename, 'rb')
+    fp = open(filename, "rb")
     try:
         if offset > 0:
             fp.seek(offset)
@@ -382,6 +382,7 @@ def file_get_binarycontents(filename, offset=-1, maxlen=-1):
     finally:
         fp.close()
 
+
 def file_put_contents(filename, data):
     f = open(filename, "w")
     f.write(data)
@@ -389,7 +390,7 @@ def file_put_contents(filename, data):
 
 
 def file_put_contents_w_a(filename, data, option="w"):
-    if option == "a" or  option == "w":
+    if option == "a" or option == "w":
         f = open(filename, option)
         f.write(data)
         f.close()
@@ -542,8 +543,8 @@ def md5(fname):
 
 
 def loadModule(filename):
-    if filename == '':
-        raise RuntimeError('Empty filename cannot be loaded')
+    if filename == "":
+        raise RuntimeError("Empty filename cannot be loaded")
     # filename = "plugin_%s" % filename
     # logger.debug("Loading module %s" % (filename))
     searchPath, file = os.path.split(filename)
@@ -551,13 +552,19 @@ def loadModule(filename):
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath + "/../"))
     moduleName, ext = os.path.splitext(file)
-    fp, pathName, description = imp.find_module(moduleName, [searchPath,])
+    fp, pathName, description = imp.find_module(
+        moduleName,
+        [
+            searchPath,
+        ],
+    )
     try:
         module = imp.load_module(moduleName, fp, pathName, description)
     finally:
         if fp:
             fp.close()
     return module
+
 
 def call_plugin_separate(name, *args, **kwargs):
     # add compteur appel plugins
@@ -584,16 +591,16 @@ def call_plugin(name, *args, **kwargs):
     except AttributeError:
         setattr(args[0], "num_call%s" % args[1], 0)
     pluginaction = loadModule(name)
-    #loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
-    result =  loop.run_in_executor(
-        None, pluginaction.action, *args, **kwargs)
+    # loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+    result = loop.run_in_executor(None, pluginaction.action, *args, **kwargs)
+
 
 def call_plugin_sequentially(name, *args, **kwargs):
     # add compteur appel plugins
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
-        setattr(args[0], "num_call%s" % args[1], count +1)
+        setattr(args[0], "num_call%s" % args[1], count + 1)
     except AttributeError:
         count = 0
         setattr(args[0], "num_call%s" % args[1], count)
@@ -2607,24 +2614,27 @@ class Singleton(object):
             type._the_instance = object.__new__(type)
         return type._the_instance
 
+
 class base_message_queue_posix(Singleton):
     file_reponse_iq = []
     timeoutmessagequeue = 120
 
     def __init__(self):
         logger.debug("*** INITIALISATION base_message_queue_posix")
-        logger.debug("*** charge %s" %base_message_queue_posix.file_reponse_iq)
+        logger.debug("*** charge %s" % base_message_queue_posix.file_reponse_iq)
 
     def _is_exist(self, name_file):
         for fmp in base_message_queue_posix.file_reponse_iq:
-            if fmp['name'] == name_file :
+            if fmp["name"] == name_file:
                 return True
         return False
 
     def _is_exist_file(self, name_file, prefixe=""):
-        name_file = self._namefile( name_file, prefixe)
+        name_file = self._namefile(name_file, prefixe)
         logger.debug("verify exist %s _______" % os.listdir("/dev/mqueue/"))
-        list_file_name_file = ["/"+x for x in os.listdir("/dev/mqueue/") if x.startswith(prefixe)]
+        list_file_name_file = [
+            "/" + x for x in os.listdir("/dev/mqueue/") if x.startswith(prefixe)
+        ]
         logger.debug("verify exist  %s in %s" % (name_file, list_file_name_file))
         if name_file in list_file_name_file:
             return True
@@ -2633,19 +2643,19 @@ class base_message_queue_posix(Singleton):
     def load_file(self, prefixe):
         deltatime = time.time()
         if os.path.isdir("/dev/mqueue/"):
-           list_file_name_file = ["/"+x for x in os.listdir("/dev/mqueue/") if x.startswith(prefixe)]
+            list_file_name_file = [
+                "/" + x for x in os.listdir("/dev/mqueue/") if x.startswith(prefixe)
+            ]
         for name_file in list_file_name_file:
             if not self._is_exist(name_file):
                 try:
                     mp = posix_ipc.MessageQueue(name_file)
-                    ob = {"obj" : mp,
-                          "name" : name_file,
-                          "time" : deltatime }
+                    ob = {"obj": mp, "name": name_file, "time": deltatime}
                     base_message_queue_posix.file_reponse_iq.append(ob)
                 except:
                     pass
 
-    def _namefile( self, name_file, prefixe = "" ):
+    def _namefile(self, name_file, prefixe=""):
         if not name_file.startswith("/"):
             return "/" + prefixe + name_file
         else:
@@ -2653,17 +2663,15 @@ class base_message_queue_posix(Singleton):
 
     def __rep__(self):
         try:
-            rep = "list message queue for agent :\n%s" % json.dumps(base_message_queue_posix.file_reponse_iq)
+            rep = "list message queue for agent :\n%s" % json.dumps(
+                base_message_queue_posix.file_reponse_iq
+            )
         except:
             rep = "%s" % base_message_queue_posix.file_reponse_iq
         return rep
 
-    def open_file_message(
-        self,
-        name_file,
-        prefixe = ""
-        ):
-        name_file = self._namefile( name_file, prefixe)
+    def open_file_message(self, name_file, prefixe=""):
+        name_file = self._namefile(name_file, prefixe)
         logger.debug("debug open_file_message : open message queue %s" % name_file)
         try:
             mp = posix_ipc.MessageQueue(name_file)
@@ -2675,31 +2683,31 @@ class base_message_queue_posix(Singleton):
             logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
         except Exception as e:
             logger.error("exception %s" % e)
-            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("\n%s" % (traceback.format_exc()))
         logger.debug("open message queue %s" % name_file)
         return self
 
     def create_file_message(
         self,
         name_file,
-        prefixe = "",
-        preservation = False,
+        prefixe="",
+        preservation=False,
         max_message_size=2097152,
-        max_messages=1
-        ):
-        name_file = self._namefile( name_file, prefixe)
+        max_messages=1,
+    ):
+        name_file = self._namefile(name_file, prefixe)
         try:
             mp = posix_ipc.MessageQueue(
-                name_file,
-                posix_ipc.O_CREX,
-                max_message_size=max_message_size
-                )
+                name_file, posix_ipc.O_CREX, max_message_size=max_message_size
+            )
             logger.debug("creation/registred message queue %s" % name_file)
-            base_message_queue_posix.file_reponse_iq.append({
-                "obj" : mp,
-                "name" : name_file,
-                "time" : -1 if preservation else time.time() }
-                )
+            base_message_queue_posix.file_reponse_iq.append(
+                {
+                    "obj": mp,
+                    "name": name_file,
+                    "time": -1 if preservation else time.time(),
+                }
+            )
         except posix_ipc.ExistentialError:
             mp = posix_ipc.MessageQueue(name_file)
             logger.debug("creation/open message queue %s" % name_file)
@@ -2708,18 +2716,18 @@ class base_message_queue_posix(Singleton):
             logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
         except Exception as e:
             logger.error("exception %s" % e)
-            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("\n%s" % (traceback.format_exc()))
         logger.debug("open message queue %s" % name_file)
-        logger.debug("*** charge %s" %base_message_queue_posix.file_reponse_iq)
+        logger.debug("*** charge %s" % base_message_queue_posix.file_reponse_iq)
         return self
 
     def close_file_message(self, name_file, prefixe=""):
-        name_file = self._namefile( name_file, prefixe)
-        listqueue=[]
+        name_file = self._namefile(name_file, prefixe)
+        listqueue = []
         for fmp in base_message_queue_posix.file_reponse_iq:
-            if fmp['name'] == name_file :
+            if fmp["name"] == name_file:
                 try:
-                    fmp['obj'].close()
+                    fmp["obj"].close()
                     posix_ipc.unlink_message_queue(name_file)
                     logger.debug("close message queue %s" % name_file)
                 except:
@@ -2728,72 +2736,71 @@ class base_message_queue_posix(Singleton):
                 listqueue.append(fmp)
         base_message_queue_posix.file_reponse_iq = listqueue
 
-    def clean_file_all_message(self, prefixe = ""):
-        logger.debug("JFKJFK clean_file_all_message base_message_queue_posix.file_reponse_iq")
+    def clean_file_all_message(self, prefixe=""):
+        logger.debug(
+            "JFKJFK clean_file_all_message base_message_queue_posix.file_reponse_iq"
+        )
 
-        listqueue=[]
+        listqueue = []
         for fmp in base_message_queue_posix.file_reponse_iq:
-            if fmp['time'] == -1:
+            if fmp["time"] == -1:
                 listqueue.append(fmp)
                 continue
-            if fmp['name'].startswith("/"+prefixe):
+            if fmp["name"].startswith("/" + prefixe):
                 try:
-                    posix_ipc.unlink_message_queue(fmp['name'])
+                    posix_ipc.unlink_message_queue(fmp["name"])
                     continue
                 except:
                     pass
             listqueue.append(fmp)
         base_message_queue_posix.file_reponse_iq = listqueue
 
-    def clean_file_message_timeout(self, prefixe = "", timeout = None):
-        listqueue=[]
+    def clean_file_message_timeout(self, prefixe="", timeout=None):
+        listqueue = []
         deltatime = time.time()
         if timeout is None:
             timeout = self.timeoutmessagequeue
 
         for fmp in base_message_queue_posix.file_reponse_iq:
-            if fmp['time'] == -1:
+            if fmp["time"] == -1:
                 listqueue.append(fmp)
                 continue
-            if fmp['name'].startswith("/"+prefixe):
-                if ( deltatime - fmp['time'] ) >= timeout:
+            if fmp["name"].startswith("/" + prefixe):
+                if (deltatime - fmp["time"]) >= timeout:
                     try:
-                        posix_ipc.unlink_message_queue(fmp['name'])
+                        posix_ipc.unlink_message_queue(fmp["name"])
                         continue
                     except:
                         pass
             listqueue.append(fmp)
         base_message_queue_posix.file_reponse_iq = listqueue
 
-    def sendbytes(self, name_file, msg, prefixe = "", timeout=None, priority= 9):
-        name_file = self._namefile( name_file, prefixe)
+    def sendbytes(self, name_file, msg, prefixe="", timeout=None, priority=9):
+        name_file = self._namefile(name_file, prefixe)
         if isinstance(msg, str):
-            msg.encode('utf-8')
-        if  isinstance(msg, bytes):
+            msg.encode("utf-8")
+        if isinstance(msg, bytes):
             for fmp in base_message_queue_posix.file_reponse_iq:
-                if  fmp['name'] == name_file :
-                    fmp['obj'].send(msg, priority)
+                if fmp["name"] == name_file:
+                    fmp["obj"].send(msg, priority)
 
-    def recvbytes(self, name_file,
-                  prefixe = "",
-                  timeout=None,
-                  typeoutstr = False):
+    def recvbytes(self, name_file, prefixe="", timeout=None, typeoutstr=False):
         if timeout is None:
             timeout = 20
-        name_file = self._namefile( name_file, prefixe)
-        dd=time.time()
+        name_file = self._namefile(name_file, prefixe)
+        dd = time.time()
         for fmp in base_message_queue_posix.file_reponse_iq:
-            if  fmp['name'] == name_file :
-                logger.debug("TROUVER %s"%name_file)
+            if fmp["name"] == name_file:
+                logger.debug("TROUVER %s" % name_file)
                 try:
                     logger.debug("Start attente %s" % dd)
-                    msg, priority = fmp['obj'].receive(timeout)
-                    logger.debug("stop attente %s" % dd-time.time())
+                    msg, priority = fmp["obj"].receive(timeout)
+                    logger.debug("stop attente %s" % dd - time.time())
                     if typeoutstr:
                         msg = bytes.decode(msg, "utf-8")
                     return msg, priority
                 except posix_ipc.BusyError:
                     logger.error("BusyError timeout %s" % name_file)
-                    ee = dd-time.time()
+                    ee = dd - time.time()
                     logger.debug("stop attente %s" % ee)
                     return None, None
