@@ -1462,13 +1462,13 @@ class protodef:
     def protochanged(self):
         if self.protoinfoexist():
             fproto = protodef.protoandport()
-            self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+            self.fingerprintproto = file_get_binarycontents(self.fileprotoinfo)
             newfingerprint = pickle.dumps(fproto)  # on recalcule le proto
             if self.fingerprintproto == newfingerprint:
                 self.proto = fproto
                 return False, self.proto
         self.refreshfingerprintproto()
-        self.fingerprintproto = file_get_contents(self.fileprotoinfo)
+        self.fingerprintproto = file_get_binarycontents(self.fileprotoinfo)
         self.proto = pickle.loads(self.fingerprintproto)
         return True, self.proto
 
