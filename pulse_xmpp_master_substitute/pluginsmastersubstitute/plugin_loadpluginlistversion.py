@@ -107,7 +107,9 @@ def loadPluginList(self):
     It searches the `name` and `version` informations of the plugins.
     It is used to compare it with the plugins installed on the machines.
     """
-    logger.debug("We search the plugin informations, to compare it with the one installed on the machines")
+    logger.debug(
+        "We search the plugin informations, to compare it with the one installed on the machines"
+    )
     self.plugindata = {}
     self.plugintype = {}
     for element in [
