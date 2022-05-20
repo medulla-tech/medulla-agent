@@ -57,8 +57,10 @@ def action(objectxmpp, action, sessionid, data, msg, dataerreur):
 
 def read_conf_load_plugin_list_version(objectxmpp):
     """
-    lit la configuration du plugin
-    le repertoire ou doit se trouver le fichier de configuration est dans la variable objectxmpp.config.pathdirconffile
+    Read the plugin configuration
+
+    The `objectxmpp.config.pathdirconffile` variable contains the path of the directory where
+    the configuration file is stored
     """
     objectxmpp.config_loadpluginlistversion = True
 
@@ -66,13 +68,11 @@ def read_conf_load_plugin_list_version(objectxmpp):
     pathfileconf = os.path.join(objectxmpp.config.pathdirconffile, namefichierconf)
     if not os.path.isfile(pathfileconf):
         logger.error(
-            "plugin %s\nConfiguration file  missing\n  %s"
-            "\neg conf:\n[parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"
+            "The configuration file for the plugin %s is missing in %s \n"
+            "it may contains [parameters]\ndirpluginlist = /var/lib/pulse2/xmpp_baseplugin/"
             % (plugin["NAME"], pathfileconf)
         )
-        logger.warning(
-            "default value for dirplugins is /var/lib/pulse2/xmpp_baseplugin/"
-        )
+
         objectxmpp.dirpluginlist = "/var/lib/pulse2/xmpp_baseplugin/"
         objectxmpp.reload_plugins_interval = 1000
     else:
@@ -92,11 +92,9 @@ def read_conf_load_plugin_list_version(objectxmpp):
             objectxmpp.reload_plugins_interval = 1000
     logger.debug("directory base plugins is %s" % objectxmpp.dirpluginlist)
     logger.debug("reload plugins interval%s" % objectxmpp.reload_plugins_interval)
-    # loadPluginList function definie dynamiquement
+    # The loadPluginList function is dynamically defined.
     objectxmpp.file_deploy_plugin = []
     objectxmpp.loadPluginList = types.MethodType(loadPluginList, objectxmpp)
-    ##objectxmpp.restartmachineasynchrone = types.MethodType(restartmachineasynchrone, objectxmpp)
-    # objectxmpp.restartAgent = types.MethodType(restartAgent, objectxmpp)
     objectxmpp.remoteinstallPlugin = types.MethodType(remoteinstallPlugin, objectxmpp)
     objectxmpp.deployPlugin = types.MethodType(deployPlugin, objectxmpp)
     objectxmpp.plugin_loadpluginlistversion = types.MethodType(
@@ -105,10 +103,11 @@ def read_conf_load_plugin_list_version(objectxmpp):
 
 
 def loadPluginList(self):
-    """charges les informations des plugins 'nom plugins et version' pour
-    faire la comparaison avec les plugin sur les machines.
     """
-    logger.debug("Load and Verify base plugin")
+    It searches the `name` and `version` informations of the plugins.
+    It is used to compare it with the plugins installed on the machines.
+    """
+    logger.debug("We search the plugin informations, to compare it with the one installed on the machines")
     self.plugindata = {}
     self.plugintype = {}
     for element in [
@@ -117,8 +116,8 @@ def loadPluginList(self):
         if x[-3:] == ".py" and x[:7] == "plugin_"
     ]:
         element_name = os.path.join(self.dirpluginlist, element)
-        # verify syntax error for plugin python
-        # we do not deploy a plugin with syntax error.
+        # Used to verify the syntax of the plugin
+        # This way we do not deploy plugins with wrong syntax
         if os.system('python -m py_compile "%s"' % element_name) == 0:
             f = open(element_name, "r")
             lignes = f.readlines()
@@ -142,7 +141,8 @@ def loadPluginList(self):
 
 def remoteinstallPlugin(self):
     """
-    This function installs the plugins to agent M and RS
+    This function is used  to installed the plugins on the Machines and
+    Relayservers.
     """
     restart_machine = set()
     for indexplugin in range(0, len(self.file_deploy_plugin)):
@@ -166,30 +166,32 @@ def remoteinstallPlugin(self):
 
 def deployPlugin(self, jid, plugin):
     content = ""
-    fichierdata = {}
-    namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
-    if os.path.isfile(namefile):
-        logger.debug("File plugin found %s" % namefile)
+    DataFile = {}
+    FileName = os.path.join(self.dirpluginlist, "plugin_%s" % plugin)
+    if not FileName.endswith(".py"):
+        FileName += ".py"
+    if os.path.isfile(FileName):
+        logger.debug("File plugin found %s" % FileName)
     else:
-        logger.error("The plugin file %s does not exists" % namefile)
+        logger.error("The plugin file %s does not exists" % FileName)
         return
     try:
-        fileplugin = open(namefile, "rb")
-        content = fileplugin.read()
-        fileplugin.close()
+        PluginFile = open(FileName, "rb")
+        content = PluginFile.read()
+        PluginFile.close()
     except Exception:
         logger.error("File read error\n%s" % (traceback.format_exc()))
         return
-    fichierdata["action"] = "installplugin"
-    fichierdata["data"] = {}
+    DataFile["action"] = "installplugin"
+    DataFile["data"] = {}
     dd = {}
     dd["datafile"] = content
     dd["pluginname"] = "plugin_%s.py" % plugin
-    fichierdata["data"] = base64.b64encode(json.dumps(dd))
-    fichierdata["sessionid"] = "sans"
-    fichierdata["base64"] = True
+    DataFile["data"] = base64.b64encode(json.dumps(dd))
+    DataFile["sessionid"] = "sans"
+    DataFile["base64"] = True
     try:
-        self.send_message(mto=jid, mbody=json.dumps(fichierdata), mtype="chat")
+        self.send_message(mto=jid, mbody=json.dumps(DataFile), mtype="chat")
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
 
