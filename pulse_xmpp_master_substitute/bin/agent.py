@@ -630,6 +630,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     if "ret" not in dataobj:
                         dataobj["ret"] = 0
                         # call_plugin_sequentially(
+                        logging.debug("call plugin %s from %s" % (module, msg))
                         call_plugin(
                             module,
                             self,
