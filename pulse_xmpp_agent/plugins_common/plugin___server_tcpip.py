@@ -25,7 +25,6 @@
 import base64
 import traceback
 import os
-import json
 import logging
 from slixmpp import jid
 import re
@@ -39,17 +38,16 @@ import asyncio
 import socket
 import select
 import threading
+import ast
+import json
+import pickle
 
 from lib.agentconffile import directoryconffile
 
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "code"}
-
-
-clients = {}  # task -> (reader, writer)
+plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "code"}  # fmt: skip
 
 
 def action(xmppobject, action):
@@ -57,8 +55,6 @@ def action(xmppobject, action):
         logger.debug("=====================================================")
         logger.debug("call plugin code %s " % (plugin))
         logger.debug("=====================================================")
-        for _ in range(10):
-            logger.debug("JFKJFK __server_tcpip")
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
 
         if compteurcallplugin == 0:
@@ -68,29 +64,29 @@ def action(xmppobject, action):
             read_conf_server_tcpip_agent_machine(xmppobject)
             logger.debug("====================================")
 
-            asyncio.run(run_server())
+            asyncio.run(run_server(xmppobject))
 
     except Exception as e:
-        logger.error("Plugin load_TCIIP, we encountered the error %s" % str(e))
-        logger.error("We obtained the backtrace %s" % traceback.format_exc())
+        logger.error("Plugin load_TCI/IP, we encountered the error %s" % str(e))
+        logger.error("We hit the backtrace %s" % traceback.format_exc())
 
 
 def read_conf_server_tcpip_agent_machine(xmppobject):
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
     configfilename = os.path.join(directoryconffile(), plugin["NAME"] + ".ini")
     if os.path.isfile(configfilename):
-        # lit la configuration
         Config = configparser.ConfigParser()
         Config.read(configfilename)
         if os.path.isfile(configfilename + ".local"):
             Config.read(configfilename + ".local")
     else:
-        logger.warning("file configuration plugin %s missing" % plugin["NAME"])
+        logger.warning(
+            "The configuration file for the plugin %s is missing" % plugin["NAME"]
+        )
         xmppobject.port_tcp_kiosk = 15555
 
 
 def client_info(client, show_info=False):
-    # logger.debug("id socket %s" % client.fd)
     addresslisten, portlisten = client.getsockname()
     adressrecept, portrecept = client.getpeername()
     adressfamily = str(client.family)
@@ -103,6 +99,7 @@ def client_info(client, show_info=False):
         logger.debug("proto socket %s" % client.proto)
         logger.debug("listen adress %s %s" % (addresslisten, portlisten))
         logger.debug("recept adress %s %s" % (adressrecept, portrecept))
+
     return {
         "adressfamily": adressfamily,
         "typesocket": clienttype,
@@ -114,36 +111,106 @@ def client_info(client, show_info=False):
     }
 
 
-async def handle_client(client):
+def _convert_string(data):
+    """
+    This function convert data bytes received on the socket into an object (dict or string data)
+      1 bytes represents 1 json string,
+      1 bytes represents 1 pickle object
+      1 bytes represents 1 yaml string
+      1 bytes represents 1 string
+    """
+    if isinstance(data, (bytes)):
+        try:
+            requestdata = pickle.loads(data)
+            return requestdata
+        except:
+            try:
+                data = data.decode("utf8", "ignore")
+            except:
+                return None
+    if isinstance(data, (str)):
+        try:
+            requestdata = ast.literal_eval(data)
+            if isinstance(requestdata, (list, dict, tuple, set)):
+                return requestdata
+        except:
+            # Error in the format of the object
+            # We look if this is a json string
+            try:
+                requestdata = json.loads(data)
+                return requestdata
+            except:
+                # Error in the json, maybe in the pickle serialisation
+                try:
+                    requestdata = yaml.load(data, Loader=yaml.Loader)
+                    return requestdata
+                except:
+                    return data
+    return data
+
+
+async def handle_client(client, xmppobject):
     loop = asyncio.get_event_loop()
     request = None
     try:
         infoclient = client_info(client, show_info=True)
         if infoclient["adress_recept"] != "127.0.0.1":
-            logger.error("error inet_resource_not_found:\nOnly local client for client")
+            logger.error(
+                "Only a local client will be allowed to connect to the server."
+            )
             return
+
         while request != "":
-            request = (await loop.sock_recv(client, 255)).decode("utf8")
-            logger.warning("reception : ___%s___" % request)
-            ##response = str(eval(request)) + '\n'
-            if request == "":
-                logger.warning("reception vide :")
+            request = await loop.sock_recv(client, 1048576)
+            requestobj = _convert_string(request)
+
+            if requestobj is None:
                 break
-            testresult = request[0:4].lower()
-            if testresult == "quit" or testresult == "exit" or testresult == "end":
-                logger.warning("reception connexion end")
-                break
-            logger.warning("DEDE DEDE %s" % request)
-            # logger.warning("renvoi eccho")
-            # time.sleep(15)
-            await loop.sock_sendall(client, request.encode("utf8"))
+
+            if isinstance(requestobj, (str)):
+                testresult = requestobj[0:4].lower()
+                if (
+                    requestobj == ""
+                    or requestobj == "quit_server_kiosk"
+                    or testresult == "quit"
+                    or testresult == "exit"
+                    or testresult == "end"
+                ):
+                    logger.debug("Receiving a `connexion end` request")
+                    break
+                else:
+                    logger.warning("Receiving data: %s" % requestobj)
+                    break
+
+            if isinstance(requestobj, (dict)):
+                # Creating the action
+                ErrorCode, result = xmppobject.handle_client_connection(
+                    json.dumps(requestobj)
+                )
+                logger.warning(
+                    "Receiving the datas: __%s__ __%s__" % (ErrorCode, result)
+                )
+                if not ErrorCode or result == "":
+                    # Send `end connect` and `close connection`
+                    await loop.sock_sendall(client, b"end_connection")
+                    break
+                if ErrorCode and result:
+                    # We receive the result and we close the server
+                    # We can keep the connexion open for special messages:
+                    # For exemple  a stream of log messages
+                    # We may want to look to this later.
+                    resultrequest = json.loads(result)
+                    await loop.sock_sendall(client, resultrequest.encode("utf8"))
+                    break  # suivant type de connexion desire
     except Exception:
-        logger.error("backtrace handle_client %s" % traceback.format_exc())
-    logger.warning("handle_client : close")
+        logger.error(
+            "We hit a backtrace in the handle_client function \n %s"
+            % traceback.format_exc()
+        )
     client.close()
 
 
-async def run_server():
+async def run_server(xmppobject):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("localhost", 15555))
     server.listen(8)
@@ -152,7 +219,5 @@ async def run_server():
     loop = asyncio.get_event_loop()
 
     while True:
-        logger.warning("reception dede")
         client, client_address = await loop.sock_accept(server)
-        loop.create_task(handle_client(client))
-        logger.warning("fin dede")
+        loop.create_task(handle_client(client, xmppobject))
