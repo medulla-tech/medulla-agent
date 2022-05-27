@@ -1,3 +1,14 @@
+pulse-xmpp-agent 2.1.8
+======================
+* [FEATURE] Add the possibility to use CDN for the deploiements
+* [BUGFIX]  Fix the calculation of the substitute load and remove the machines
+not connected.
+* [BUGFIX]  Fix diplaying the name of the Windows in the Computer page.
+* [BUGFIX]  Fix retrieving the SSH Key of the ARS.
+* [BUGFIX]  Fix restarting deploiements if the transfert started.
+* [BUGFIX]  Fix the doublerun plugin start
+* [BUGFIX]  Restart stalled deployements.
+
 pulse-xmpp-agent 2.1.7
 ======================
 * [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.
