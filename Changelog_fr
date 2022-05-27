@@ -1,3 +1,17 @@
+pulse-xmpp-agent 2.1.8
+======================
+* [FONCTIONNALITE]     Ajout de la possibilité d'utiliser un CDN pour les
+déploiements.
+* [CORRECTION DE BUG]  Correction du calcul de la charge des subsituts et
+suppression des machines non connectées
+* [CORRECTION DE BUG]  Correction de l'affichage du nom du Windows dans la
+page Ordinateur
+* [CORRECTION DE BUG] Correction du rappatriement de la clef SSH de l'ARS
+* [CORRECTION DE BUG]  Correction du redémarrage des déploiements sur le
+transfert a déjà démarré.
+* [CORRECTION DE BUG] Correction du démarrage du plugin "doublerun"
+* [CORRECTION DE BUG]  Redémarrage des déploiements interrompus
+
 pulse-xmpp-agent 2.1.7
 ======================
 * [CORRECTION DE BUG]  Correction de la détection de l'adresse IP du serveur
