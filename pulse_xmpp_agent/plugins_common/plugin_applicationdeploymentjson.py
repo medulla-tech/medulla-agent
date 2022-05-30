@@ -2405,7 +2405,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777, exist_ok=True)
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = datasend['data']['descriptor']['info']['localisation_server']['url']
     takeresource(datasend, objectxmpp, sessionid)
