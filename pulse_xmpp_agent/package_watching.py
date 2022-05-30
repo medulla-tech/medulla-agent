@@ -104,7 +104,7 @@ def conf_information(conffile):
     if Config.has_option("rsynctocdn", "enable"):
         configdata['rsynctocdn_enable'] = Config.getboolean('rsynctocdn', 'enable')
     else:
-        configdata['rsynctocdn_enable'] = True
+        configdata['rsynctocdn_enable'] = False
     if Config.has_option("rsynctocdn", "localfolder"):
         configdata['rsynctocdn_localfolder'] = Config.get('rsynctocdn', 'localfolder')
     else:
