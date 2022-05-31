@@ -38,13 +38,13 @@ import psutil
 import random
 import hashlib
 from lib.manageresourceplugin import resource_plugin
+import imp
 import cherrypy
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
 from lib.xmppiq import dispach_iq_command
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
-import imp
 from lib.configuration import (
     confParameter,
     nextalternativeclusterconnection,
@@ -89,6 +89,8 @@ from lib.utils import (
     serialnumbermachine,
     file_put_contents_w_a,
     os_version,
+    base_message_queue_posix,
+    file_message_iq,
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -112,6 +114,11 @@ if sys.version_info[0] == 3:
     from slixmpp.xmlstream import handler, matcher
     from slixmpp.exceptions import IqError, IqTimeout
     from slixmpp.xmlstream.stanzabase import ET
+    from slixmpp.xmlstream.handler import CoroutineCallback
+    from slixmpp.xmlstream.handler import Callback
+    from slixmpp.xmlstream.matcher.xpath import MatchXPath
+    from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
+    from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
     import slixmpp
     import asyncio
 
@@ -136,6 +143,8 @@ if sys.platform.startswith("win"):
 else:
     import signal
     from resource import RLIMIT_NOFILE, RLIM_INFINITY, getrlimit
+    import posix_ipc
+
 
 from lib.server_kiosk import (
     process_tcp_serveur,
@@ -212,6 +221,21 @@ class QueueManager(SyncManager):
     pass
 
 
+class DateTimebytesEncoderjson(json.JSONEncoder):
+    """
+    Used to handle datetime in json files.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            encoded_object = obj.isoformat()
+        elif isinstance(obj, bytes):
+            encoded_object = obj.decode("utf-8")
+        else:
+            encoded_object = json.JSONEncoder.default(self, obj)
+        return encoded_object
+
+
 class MUCBot(slixmpp.ClientXMPP):
     def __init__(
         self, conf, queue_recv_tcp_to_xmpp, queueout, eventkilltcp, eventkillpipe
@@ -219,6 +243,8 @@ class MUCBot(slixmpp.ClientXMPP):
         logging.log(
             DEBUGPULSE, "start machine  %s Type %s" % (conf.jidagent, conf.agenttype)
         )
+        self.iq_msg = file_message_iq(dev_mod=True)
+
         # create mutex
         self.mutex = threading.Lock()
         self.mutexslotquickactioncount = threading.Lock()
@@ -655,7 +681,6 @@ class MUCBot(slixmpp.ClientXMPP):
         else:
             logging.warning("not enable cyclic inventory")
 
-        # self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ["relayserver"]:
             if self.config.sched_session_reload:
                 self.schedule("session reload", 15, self.reloadsesssion, repeat=False)
@@ -664,9 +689,14 @@ class MUCBot(slixmpp.ClientXMPP):
                 "reprise_evenement", 10, self.handlereprise_evenement, repeat=True
             )
 
-        self.add_event_handler("register", self.register, threaded=True)
+        # Parameters for the agent connexion
+        self.add_event_handler("register", self.register)
+        self.add_event_handler("connecting", self.handle_connecting)
+        self.add_event_handler("connection_failed", self.handle_connection_failed)
+        self.add_event_handler("disconnected", self.handle_disconnected)
+
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler("message", self.message, threaded=True)
+        self.add_event_handler("message", self.message)
         self.add_event_handler(
             "signalsessioneventrestart", self.signalsessioneventrestart
         )
@@ -689,6 +719,24 @@ class MUCBot(slixmpp.ClientXMPP):
         logger.info("VERSION AGENT IS %s" % self.version_agent())
         # manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
+
+        self.register_handler(
+            CoroutineCallback(
+                "CustomXEP_Handle2",
+                StanzaPath("/iq@type=result"),
+                self._handle_custom_iq,
+            )
+        )
+        self.register_handler(
+            CoroutineCallback(
+                "CustomXEP_Handle",
+                StanzaPath("/iq@type=error"),
+                self._handle_custom_iq_error,
+            )
+        )
+
+        base_message_queue_posix().clean_file_all_message(prefixe=self.boundjid.user)
+
         if self.config.agenttype in ["relayserver"]:
             from lib.manage_info_command import manage_infoconsole
 
@@ -721,21 +769,230 @@ class MUCBot(slixmpp.ClientXMPP):
         elif sys.platform.startswith("darwin"):
             signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.register_handler(
-            handler.Callback(
-                "CustomXEP Handler",
-                matcher.MatchXPath(
-                    "{%s}iq/{%s}query" % (self.default_ns, "custom_xep")
-                ),
-                self._handle_custom_iq,
-            )
-        )
         if self.config.sched_check_cmd_file:
             self.schedule(
                 "execcmdfile", laps_time_action_extern, self.execcmdfile, repeat=True
             )
         if self.config.sched_init_syncthing:
             self.schedule("initsyncthing", 15, self.initialise_syncthing, repeat=False)
+
+    async def _handle_custom_iq_error(self, iq):
+        if iq["type"] == "error":
+            miqkeys = iq.keys()
+            logger.debug("An error occured in the iq. We obtained the error type.")
+            logger.debug("We failed with the iq with the id %s and the miqkeys: %s"% (iq["id"], miqkeys))
+
+            errortext = iq["error"]["text"]
+            t = time.time()
+            queue = ""
+            liststop = []
+            deleted_queue = []
+
+            try:
+                for ta in self.datas_send:
+                    logger.debug("We treat %s" % ta["name_iq_queue"])
+                    logger.debug("Time of the end %s " % (ta["time"]))
+                    logger.debug("Time now %s " % (t))
+                    logger.debug("The sessioniq is: %s" % ta["sesssioniq"])
+
+                    if ta["time"] < t:
+                        logger.debug("The queue %s timed out, we remove it." % ta["name_iq_queue"])
+                        deleted_queue.append(ta["name_iq_queue"])
+                        continue
+                    if ta["sesssioniq"] == iq["id"]:
+                        queue = ta["name_iq_queue"]
+                    liststop.append(ta)
+                self.datas_send = liststop
+                logger.debug("The pending lists to remove %s" % deleted_queue)
+                # We delete the ended queues
+                # We remove the old lists
+                for ta in deleted_queue:
+                    try:
+                        logger.debug("delete queue %s" % ta["name_iq_queue"])
+                        posix_ipc.unlink_message_queue(ta["name_iq_queue"])
+                    except:
+                        pass
+                if not queue:
+                    logger.debug("There is no queue left. We quit")
+                    return
+
+                # A queue exits for the result.
+                # Creation or opening of queues
+                try:
+                    quposix = posix_ipc.MessageQueue(
+                        queue, posix_ipc.O_CREX, max_message_size=2097152
+                    )
+                except posix_ipc.ExistentialError as existant_error:
+                    logger.debug("An error occured while trying to open the %s queue" % queue)
+
+                    quposix = posix_ipc.MessageQueue(queue)
+                except OSError as error_creating_queue_oserror:
+                    logger.error("An error occured while trying to create the Posix Queue")
+                    logger.error("We obtained the error: \n %s" % error_creating_queue_oserror)
+
+                    logger.error("To fix this, please modify/etc/security/limits.conf and /etc/sysctl.conf")
+                    logger.error("The system limits might have been reached for posix queues. Please review them")
+                    return
+                except Exception as error_exception:
+                    logger.error("An error occured while trying to create the Posix Queue.")
+                    logger.error("We obtained the error: \n %s" % error_exception)
+
+                    logger.error("We hit the backtrace \n%s" % (traceback.format_exc()))
+                    return
+                ret = '{"err" : "%s"}' % errortext
+                logger.error("The IQ error when trying to create the Posix queue is: %s" % ret)
+
+                logger.error("")
+
+                quposix.send(ret, 2)
+            except AttributeError as error_attribute:
+                logger.error("An error occured while trying to create the Posix Queue because of AttributeError.")
+                logger.error("We obtained the error: \n %s" % error_attribute)
+                pass
+            except Exception as error_exception:
+                logger.error("An exception occured with the error %s" % error_exception)
+                logger.error("We hit the backtrace: \n %s" % traceback.format_exc())
+
+    async def _handle_custom_iq(self, iq):
+        if iq["query"] != "custom_xep":
+            return
+        if iq["type"] == "get":
+            pass
+        elif iq["type"] == "set":
+            pass
+        elif iq["type"] == "error":
+            logger.error("we got an iq with error type. The id of this iq is: %s" % iq["id"])
+        elif iq["type"] == "result":
+            logger.debug("we got an iq with result type. The id of this iq is: %s" % iq["id"])
+            t = time.time()
+            queue = ""
+            liststop = []
+            deleted_queue = []
+            for child in iq.xml:
+                if child.tag.endswith("query"):
+                    for z in child:
+                        if z.tag.endswith("data"):
+                            ret = base64.b64decode(bytes(z.tag[1:-5], "utf-8"))
+                            self.iq_msg.set_iq_result(
+                                iq["id"], json.loads(ret.decode("utf-8"))
+                            )
+                            logger.debug(
+                                "The result with the id %s has been injected in the message queue to be processed."
+                                % iq["id"]
+                            )
+                            return ret
+                            try:
+                                strdatajson = base64.b64decode(
+                                    bytes(z.tag[1:-5], "utf-8")
+                                )
+                                data = json.loads(strdatajson.decode("utf-8"))
+                                self.iq_msg.set_iq_result(iq["id"], data["result"])
+                                return data["result"]
+                            except Exception as e:
+                                logging.error("_handle_custom_iq : %s" % str(e))
+                                logger.error("\n%s" % (traceback.format_exc()))
+                                ret = '{"err" : "%s"}' % str(e).replace('"', "'")
+                                self.iq_msg.set_iq_result(ret, ret)
+                                return ret
+                            ret = "{}"
+                            # quposix.send(ret, 2)
+                            self.iq_msg.set_iq_result(iq["id"], ret)
+                            return ret
+        else:
+            # ... This will capture error responses too
+            logger.debug("REV IQ OTHRER TYPE REQUEST")
+            ret = "{}"
+            return ret
+            pass
+
+    # ------------------------------------------------------------------
+    # ------------------ Getion connection agent -----------------------
+    # ------------------------------------------------------------------
+
+    def Mode_Marche_Arret_loop(
+        self, nb_reconnect=None, forever=False, timeout=None, type_machine="relayserver"
+    ):
+        """
+        Connect to the XMPP server and start processing XMPP stanzas.
+        """
+        if nb_reconnect:
+            self.startdata = nb_reconnect
+        else:
+            self.startdata = 1
+        while self.startdata > 0:
+            self.disconnect(wait=1)
+            self.config = tgconf(type_machine)
+            self.address = (ipfromdns(self.config.Server), int(self.config.Port))
+            logger.error("Mode_Marche_Arret_loop self.address %s " % self.config.Port)
+            logger.debug("try connection (%s) %s " % (self.startdata, self.address))
+            logger.debug("forever (%s) %s " % (forever, timeout))
+            self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
+            if nb_reconnect:
+                self.startdata = self.startdata - 1
+
+    def Mode_Marche_Arret_connect(self, forever=False, timeout=10):
+        """
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser address et port de connection.
+        """
+        self.connect(address=self.address)
+        self.process(forever=forever, timeout=timeout)
+
+    def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
+        self.startdata = nb_reconnect
+
+    def Mode_Marche_Arret_terminate(self):
+        self.startdata = 0
+        self.disconnect()
+
+    def Mode_Marche_Arret_stop_agent(self, time_stop=5):
+        self.startdata = 0
+        self.connect_loop_wait = -1
+        self.disconnect(wait=time_stop)
+
+    def handle_connecting(self, data):
+        """
+        success connecting agent
+        """
+        pass
+
+    def handle_connection_failed(self, data):
+        """
+        on connection failed on libere la connection
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser adress et port de connection.
+        """
+        # self.Mode_Marche_Arret_init_adress_connect("jfk.siveo.net", 5222)
+        print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
+        self.connect_loop_wait = 5
+        self.Mode_Marche_Arret_stop_agent(time_stop=1)
+        # self.disconnect(wait=5)
+
+    def handle_disconnected(self, data):
+        print("handle_disconnected %s\n" % self.connect_loop_wait)
+        self.connect_loop_wait = 2
+        # self.disconnect()
+
+    def register(self, iq):
+        logging.info("register user %s" % self.boundjid)
+        resp = self.Iq()
+        resp["type"] = "set"
+        resp["register"]["username"] = self.boundjid.user
+        resp["register"]["password"] = self.password
+        try:
+            resp.send()
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            logging.error("Could not register account: %s" % e.iq["error"]["text"])
+            self.disconnect()
+
+        except IqTimeout as e:
+            logging.error("No response from server.")
+            self.disconnect()
+
+    # -----------------------------------------------------------------------
+    # --------------------- END Getion connection agent ---------------------
+    # -----------------------------------------------------------------------
 
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
@@ -765,9 +1022,6 @@ class MUCBot(slixmpp.ClientXMPP):
             dataerreur,
         )
 
-    ###############################################################
-    # syncthing function
-    ###############################################################
     # syncthing function
     def is_exist_folder_id(self, idfolder, config):
         for folder in config["folders"]:
@@ -1213,162 +1467,63 @@ class MUCBot(slixmpp.ClientXMPP):
             self.versionagent = 0.0
         return self.versionagent
 
-    def iqsendpulse(self, to, datain, timeout):
-        # send iq synchronous message
-        if isinstance(datain, dict) or isinstance(datain, list):
+    def iqsendpulse(self, destinataire, msg, mtimeout):
+        def close_posix_queue(name):
+            # conserver result et supprimer datafile['name_iq_queue'].
+            logger.debug("close queue msg %s" % (name))
             try:
-                data = json.dumps(datain)
-            except Exception as e:
-                logging.error("iqsendpulse : encode json : %s" % str(e))
-                return '{"err" : "%s"}' % str(e).replace('"', "'")
-        elif isinstance(datain, str):
-            data = str(datain)
-        else:
-            data = datain
+                posix_ipc.unlink_message_queue(name)
+            except:
+                pass
+
+        if isinstance(msg, (bytes)):
+            msg = msg.decode("utf-8")
+        if isinstance(msg, (dict, list)):
+            msg = json.dumps(msg, cls=DateTimebytesEncoderjson)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        tempo = time.time()
+        datafile = {"sesssioniq": "", "time": tempo + mtimeout + 1, "name_iq_queue": ""}
         try:
-            data = data.encode("base64")
+            data = base64.b64encode(bytes(msg, "utf-8")).decode("utf8")
         except Exception as e:
             logging.error("iqsendpulse : encode base64 : %s" % str(e))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
-            iq = self.make_iq_get(queryxmlns="custom_xep", ito=to)
+            iq = self.make_iq_get(queryxmlns="custom_xep", ito=destinataire)
+            datafile["sesssioniq"] = iq["id"]
+            datafile["name_iq_queue"] = "/" + iq["id"]
             itemXML = ET.Element("{%s}data" % data)
             for child in iq.xml:
                 if child.tag.endswith("query"):
                     child.append(itemXML)
+            self.datas_send.append(datafile)
+            result = iq.send(timeout=mtimeout)
+        except IqError as e:
+            err_resp = e.iq
+            logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
+            logger.error("\n%s" % (traceback.format_exc()))
+            ret = '{"err" : "%s"}' % str(err_resp).replace('"', "'")
+            return ret
+        # creation ou ouverture queu datafile['name_iq_queue']
+        logger.debug(
+            "*** send_iq_message_resquest create queue %s" % datafile["name_iq_queue"]
+        )
+        if sys.platform.startswith("win"):
+            pass
+        else:
             try:
-                result = iq.send(timeout=timeout)
-                if result["type"] == "result":
-                    for child in result.xml:
-                        if child.tag.endswith("query"):
-                            for z in child:
-                                if z.tag.endswith("data"):
-                                    # decode result
-                                    # TODO: Replace print by log
-                                    # print z.tag[1:-5]
-                                    return base64.b64decode(z.tag[1:-5])
-                                    try:
-                                        data = base64.b64decode(z.tag[1:-5])
-                                        # TODO: Replace print by log
-                                        # print "RECEIVED data"
-                                        # print data
-                                        return data
-                                    except Exception as e:
-                                        logging.error("iqsendpulse : %s" % str(e))
-                                        logger.error("\n%s" % (traceback.format_exc()))
-                                        return '{"err" : "%s"}' % str(e).replace(
-                                            '"', "'"
-                                        )
-                                    return "{}"
-            except IqError as e:
-                err_resp = e.iq
-                logging.error(
-                    "iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'")
+                logger.debug("call iq_msg.get_iq_result(%s)" % datafile["sesssioniq"])
+                msginfo = "IQ TO %s\n%s" % (destinataire, msg)
+                result_waitting = self.iq_msg.get_iq_result(
+                    datafile["sesssioniq"], strmsg=msginfo
                 )
-                logger.debug("\n%s" % (traceback.format_exc()))
-                return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
+                return result_waitting
+            except Exception as e:
 
-            except IqTimeout:
-                logging.error("iqsendpulse : Timeout Error")
-                return '{"err" : "Timeout Error"}'
-        except Exception as e:
-            logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
-            logger.error("\n%s" % (traceback.format_exc()))
-            return '{"err" : "%s"}' % str(e).replace('"', "'")
-        return "{}"
-
-    def handle_client_connection(self, client_socket):
-        """
-        this function handles the message received from kiosk or watching syncting service
-        the function must provide a response to an acknowledgment kiosk or a result
-        Args:
-            client_socket: socket for exchanges between AM and Kiosk
-
-        Returns:
-            no return value
-        """
-        try:
-            # request the recv message
-            recv_msg_from_kiosk = client_socket.recv(4096)
-            if len(recv_msg_from_kiosk) != 0:
-                print(("Received {}".format(recv_msg_from_kiosk)))
-                datasend = {
-                    "action": "resultkiosk",
-                    "sessionid": getRandomName(6, "kioskGrub"),
-                    "ret": 0,
-                    "base64": False,
-                    "data": {},
-                }
-                msg = str(recv_msg_from_kiosk.decode("utf-8", "ignore"))
-                ##############
-                if isBase64(msg):
-                    msg = base64.b64decode(msg)
-                try:
-                    result = json.loads(msg)
-                except ValueError as e:
-                    logger.error("Message socket is not json correct : %s" % (str(e)))
-                    return
-                if "uuid" in result:
-                    datasend["data"]["uuid"] = result["uuid"]
-                if "utcdatetime" in result:
-                    datasend["data"]["utcdatetime"] = result["utcdatetime"]
-                if "action" in result:
-                    if result["action"] == "kioskinterface":
-                        # start kiosk ask initialization
-                        datasend["data"]["subaction"] = result["subaction"]
-                        datasend["data"]["userlist"] = list(
-                            {users[0] for users in psutil.users()}
-                        )
-                        datasend["data"]["ouuser"] = organizationbyuser(
-                            datasend["data"]["userlist"]
-                        )
-                        datasend["data"]["oumachine"] = organizationbymachine()
-                    elif result["action"] == "kioskinterfaceInstall":
-                        datasend["data"]["subaction"] = "install"
-                    elif result["action"] == "kioskinterfaceLaunch":
-                        datasend["data"]["subaction"] = "launch"
-                    elif result["action"] == "kioskinterfaceDelete":
-                        datasend["data"]["subaction"] = "delete"
-                    elif result["action"] == "kioskinterfaceUpdate":
-                        datasend["data"]["subaction"] = "update"
-                    elif result["action"] == "kioskLog":
-                        if "message" in result and result["message"] != "":
-                            self.xmpplog(
-                                result["message"],
-                                type="noset",
-                                sessionname="",
-                                priority=0,
-                                action="xmpplog",
-                                who=self.boundjid.bare,
-                                how="Planned",
-                                why="",
-                                module="Kiosk | Notify",
-                                fromuser="",
-                                touser="",
-                            )
-                            if "type" in result:
-                                if result["type"] == "info":
-                                    logging.getLogger().info(result["message"])
-                                elif result["type"] == "warning":
-                                    logging.getLogger().warning(result["message"])
-                    elif result["action"] == "notifysyncthing":
-                        datasend["action"] = "notifysyncthing"
-                        datasend["sessionid"] = getRandomName(6, "syncthing")
-                        datasend["data"] = result["data"]
-                    else:
-                        # bad action
-                        logging.getLogger().warning(
-                            "this action is not taken into account : %s"
-                            % result["action"]
-                        )
-                        return
-                    # call plugin on master
-                    self.send_message_to_master(datasend)
-        except Exception as e:
-            logging.error("message to kiosk server : %s" % str(e))
-            logger.error("\n%s" % (traceback.format_exc()))
-        finally:
-            client_socket.close()
+                ret = '{"err" : "timeout %s" }' % mtimeout
+                return ret
 
     def established_connection(self):
         """check connection xmppmaster"""
@@ -1472,53 +1627,7 @@ class MUCBot(slixmpp.ClientXMPP):
                             mtype="chat",
                         )
 
-    def _handle_custom_iq(self, iq):
-        if iq["type"] == "get":
-            for child in iq.xml:
-                if child.tag.endswith("query"):
-                    for z in child:
-                        data = z.tag[1:-5]
-                        try:
-                            data = base64.b64decode(data)
-                        except Exception as e:
-                            logging.error(
-                                "_handle_custom_iq : decode base64 : %s" % str(e)
-                            )
-                            logger.error("\n%s" % (traceback.format_exc()))
-                            return
-                        try:
-                            # traitement de la function
-                            # result json str
-                            result = dispach_iq_command(self, data)
-                            try:
-                                result = result.encode("base64")
-                            except Exception as e:
-                                logging.error(
-                                    "_handle_custom_iq : encode base64 : %s" % str(e)
-                                )
-                                logger.error("\n%s" % (traceback.format_exc()))
-                                return ""
-                        except Exception as e:
-                            logging.error(
-                                "_handle_custom_iq : error function : %s" % str(e)
-                            )
-                            logger.error("\n%s" % (traceback.format_exc()))
-                            return
-            # retourn result iq get
-            for child in iq.xml:
-                if child.tag.endswith("query"):
-                    for z in child:
-                        z.tag = "{%s}data" % result
-            iq["to"] = iq["from"]
-            iq.reply(clear=False)
-            iq.send()
-        elif iq["type"] == "set":
-            pass
-        else:
-            pass
-
-    ########################################################
-    ################## manage levelcharge ##################
+    # Manage levelcharge
     def checklevelcharge(self, ressource=0):
         self.levelcharge["charge"] = self.levelcharge["charge"] + ressource
         if self.levelcharge["charge"] < 0:
@@ -1538,8 +1647,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 del self.levelcharge["machinelist"][index]
                 # self.checklevelcharge(ressource = -1)
         self.levelcharge["charge"] = len(self.levelcharge["machinelist"])
-
-    ########################################################
 
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
@@ -1682,8 +1789,6 @@ class MUCBot(slixmpp.ClientXMPP):
             q.put("action missing in jsopn Message console %s" % (dataobj))
             return
 
-    ##################
-
     def remove_sessionid_in_ban_deploy_sessionid_list(self):
         """
         this function remove sessionid banned
@@ -1798,17 +1903,26 @@ class MUCBot(slixmpp.ClientXMPP):
                 asyncio.set_event_loop(loop)
                 return asyncio.get_event_loop()
 
-    def start(self, event):
-        self.get_roster()
+    async def start(self, event):
+        mg = base_message_queue_posix()
+        mg.load_file(self.boundjid.user)
+        mg.clean_file_all_message(prefixe=self.boundjid.user)
+
+        self.datas_send = []
+        await self.get_roster()
         self.send_presence()
+
         logger.info("subscribe to %s agent" % self.sub_subscribe.user)
         self.limit_message_presence_clean_substitute = []
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
-        self.unsubscribe_agent()
-        self.unsubscribe_substitute_subscribe()
+        # self.unsubscribe_agent()
+        # self.unsubscribe_substitute_subscribe()
+        try:
+            self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
 
-        self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         if self.config.agenttype in ["relayserver"]:
             try:
                 if self.config.public_ip_relayserver != "":
@@ -1868,6 +1982,7 @@ class MUCBot(slixmpp.ClientXMPP):
             self.send_message(
                 mto=self.agentmaster, mbody=json.dumps(dataerrornotify), mtype="chat"
             )
+
         # call plugin start
         startparameter = {
             "action": "start",
@@ -2434,35 +2549,10 @@ class MUCBot(slixmpp.ClientXMPP):
         setgetrestart(0)
         self.disconnect(wait=wait)
 
-    def register(self, iq):
-        """This function is called for automatic registation"""
-        resp = self.Iq()
-        resp["type"] = "set"
-        resp["register"]["username"] = self.boundjid.user
-        resp["register"]["password"] = self.password
-        try:
-            resp.send(now=True)
-            logging.info("Account created for %s!" % self.boundjid)
-        except IqError as e:
-            if e.iq["error"]["code"] == "409":
-                logging.warning(
-                    "Could not register account %s : User already exists"
-                    % resp["register"]["username"]
-                )
-            else:
-                logging.error(
-                    "Could not register account %s : %s"
-                    % (resp["register"]["username"], e.iq["error"]["text"])
-                )
-        except IqTimeout:
-            logging.error("No response from server.")
-            logger.error("\n%s" % (traceback.format_exc()))
-            self.disconnect()
-
     def filtre_message(self, msg):
         pass
 
-    def message(self, msg):
+    async def message(self, msg):
         possibleclient = [
             "master",
             self.agentcommand.user,
@@ -2829,12 +2919,14 @@ AGENT %s ERROR TERMINATE""" % (
                     dataobj["packageserver"]["public_ip"] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
-        ###################Update agent from MAster############################
+
+        # Update agent from master
         if self.config.updating == 1:
             dataobj["md5agent"] = Update_Remote_Agent(
                 self.pathagent, True
             ).get_fingerprint_agent_base()
-        ###################End Update agent from MAster########################
+        # End Update agent from master
+
         # TODO: determination lastusersession to review
         lastusersession = ""
         userlist = list({users[0] for users in psutil.users()})
@@ -3143,73 +3235,11 @@ def doTask(
     logger.info(
         "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
     )
-    p = Process(
-        target=process_tcp_serveur,
-        name="tcp_serveur",
-        args=(
-            14000,
-            optstypemachine,
-            optsconsoledebug,
-            optsdeamon,
-            tglevellog,
-            tglogfile,
-            queue_recv_tcp_to_xmpp,
-            queueout,
-            eventkilltcp,
-        ),
-    )
-    processes.append(p)
-    p.start()
-    windowfilepidname = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidagentwintreename"
-    )
 
-    file_put_contents_w_a(
-        windowfilepidname,
-        "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid),
-        option="a",
-    )
-    logger.info(
-        "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
-    )
-    if sys.platform.startswith("win"):
-        logger.debug("_______________________________________________________")
-        logger.info("__________ INSTALL SERVER PIPE NAMED WINDOWS __________")
-        logger.debug("_______________________________________________________")
-        # using event eventkillpipe for signal stop thread
-        p = Process(
-            target=process_serverPipe,
-            name="serveur pipe windows",
-            args=(
-                optstypemachine,
-                optsconsoledebug,
-                optsdeamon,
-                tglevellog,
-                tglogfile,
-                queue_recv_tcp_to_xmpp,
-                queueout,
-                eventkillpipe,
-            ),
-        )
-        processes.append(p)
-        p.start()
-        windowfilepidname = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "INFOSTMP",
-            "pidagentwintreename",
-        )
-
-        file_put_contents_w_a(
-            windowfilepidname,
-            "\r\nfrom %s : %s %s" % (os.getpid(), p.name, p.pid),
-            option="a",
-        )
-        logger.info(
-            "%s -> %s : [Process Alive %s (%s)]" % (os.getpid(), p.pid, p.name, p.pid)
-        )
     # ==========================
     # = cherrypy server config =
     # ==========================
+
     config = confParameter(optstypemachine)
     if config.agenttype in ["machine"]:
         port = 52044
@@ -3297,7 +3327,6 @@ def doTask(
 
         server1.subscribe()
         cherrypy.engine.start()
-
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # completing process
         programrun = True
@@ -3425,132 +3454,44 @@ class process_xmpp_agent:
             "____________________________________________________________"
         )
         setgetcountcycle()
-        while True:
-            setgetrestart()
-            logging.log(DEBUGPULSE, "WHILE RESTART VARIABLE %s" % setgetrestart(-1))
-            tg = tgconf(optstypemachine)
-            xmpp = MUCBot(
-                tg, queue_recv_tcp_to_xmpp, queueout, eventkilltcp, eventkillpipe
+        setgetrestart()
+        logging.log(DEBUGPULSE, "WHILE RESTART VARIABLE %s" % setgetrestart(-1))
+        tg = tgconf(optstypemachine)
+        xmpp = MUCBot(tg, queue_recv_tcp_to_xmpp, queueout, eventkilltcp, eventkillpipe)
+
+        xmpp.auto_reconnect = False
+        xmpp.register_plugin("xep_0030")  # Service Discovery
+        xmpp.register_plugin("xep_0045")  # Multi-User Chat
+        xmpp.register_plugin("xep_0004")  # Data Forms
+        xmpp.register_plugin("xep_0050")  # Adhoc Commands
+        xmpp.register_plugin(
+            "xep_0199",
+            {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
+        )
+        xmpp.register_plugin("xep_0077")  # In-band Registration
+        xmpp["xep_0077"].force_registration = True
+
+        # tg = tgconf(optstypemachine)
+        # xmpp.config.__dict__.update(tg.__dict__)
+        # Connect to the XMPP server and start processing XMPP
+        # stanzas.address=(args.host, args.port)
+        # if xmpp.config.agenttype in ["relayserver"]:
+        # attempt = True
+        # Flag indicating if the socket should reconnect after disconnections
+        # will cause connection attempts to
+        # be made every second until a successful connection is established.
+        # else:
+        # attempt = False
+
+        logging.log(DEBUGPULSE, "connect to %s" % ipfromdns(tg.Server))
+        logging.log(DEBUGPULSE, "connect to port %s" % tg.Port)
+        time.sleep(5)
+        if xmpp.config.agenttype in ["relayserver"]:
+            xmpp.Mode_Marche_Arret_loop(forever=False, timeout=2)
+        else:
+            xmpp.Mode_Marche_Arret_loop(
+                forever=False, timeout=2, type_machine="machine"
             )
-
-            xmpp.auto_reconnect = False
-            xmpp.register_plugin("xep_0030")  # Service Discovery
-            xmpp.register_plugin("xep_0045")  # Multi-User Chat
-            xmpp.register_plugin("xep_0004")  # Data Forms
-            xmpp.register_plugin("xep_0050")  # Adhoc Commands
-            xmpp.register_plugin(
-                "xep_0199",
-                {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
-            )
-            xmpp.register_plugin("xep_0077")  # In-band Registration
-            xmpp["xep_0077"].force_registration = True
-
-            # tg = tgconf(optstypemachine)
-            # xmpp.config.__dict__.update(tg.__dict__)
-            # Connect to the XMPP server and start processing XMPP
-            # stanzas.address=(args.host, args.port)
-            if xmpp.config.agenttype in ["relayserver"]:
-                attempt = True
-            else:
-                attempt = False
-            logging.log(DEBUGPULSE, "connect to %s" % ipfromdns(tg.Server))
-            logging.log(DEBUGPULSE, "connect to port %s" % tg.Port)
-            time.sleep(5)
-            if xmpp.connect(address=(ipfromdns(tg.Server), tg.Port), reattempt=attempt):
-                xmpp.process(block=True)
-                logging.log(DEBUGPULSE, "terminate infocommand")
-                logging.log(
-                    DEBUGPULSE, "event for quit loop server tcpserver for kiosk"
-                )
-                logging.log(DEBUGPULSE, "RESTART %s" % setgetrestart(-1))
-                logging.log(DEBUGPULSE, "RESTART VARIABLE %s" % setgetrestart(-1))
-                time.sleep(2)
-            else:
-                logging.log(DEBUGPULSE, "Unable to connect. search alternative")
-                setgetrestart(0)
-                logging.log(DEBUGPULSE, "RESTART VARIABLE %s" % setgetrestart(-1))
-                time.sleep(2)
-            if signalint:
-                logging.log(DEBUGPULSE, "bye bye Agent CTRL-C")
-                try:
-                    xmpp.eventkilltcp.set()
-                    xmpp.eventkillpipe.set()
-                except Exception:
-                    pass
-                time.sleep(1)
-                break
-            if xmpp.config.agenttype in ["relayserver"]:
-                terminateserver(xmpp)
-
-            if setgetrestart(-1) == 0:
-                logging.log(DEBUGPULSE, "not restart")
-                # verify if signal stop
-                # verify if alternative connection
-                if os.path.isfile(conffilename("cluster")):
-                    # il y a une configuration alternative
-                    logging.log(
-                        DEBUGPULSE, "analyse alternative alternative connection"
-                    )
-                    logging.log(DEBUGPULSE, "file %s" % conffilename("cluster"))
-                    logging.log(DEBUGPULSE, "alternative configuration")
-                    xmpp.force_full_registration()
-                    setgetcountcycle(1)
-                    try:
-                        timealternatifars = random.randint(*xmpp.config.timealternatif)
-                        logging.log(
-                            DEBUGPULSE,
-                            "waiting %s for reconnection alternatif ARS"
-                            % timealternatifars,
-                        )
-                        time.sleep(timealternatifars)
-                        newparametersconnect = nextalternativeclusterconnection(
-                            conffilename("cluster")
-                        )
-
-                        changeconnection(
-                            conffilename(xmpp.config.agenttype),
-                            newparametersconnect[2],
-                            newparametersconnect[1],
-                            newparametersconnect[0],
-                            newparametersconnect[3],
-                        )
-                        if newparametersconnect[5] < setgetcountcycle(-1):
-                            # if plus d'un cycle fait on relance le
-                            # configurateur
-                            setgetcountcycle()
-                            logging.log(
-                                DEBUGPULSE,
-                                "run subprocess connectionagent on cycle alternatif terminate",
-                            )
-                            nameprogconnection = os.path.join(
-                                os.path.dirname(os.path.realpath(__file__)),
-                                "connectionagent.py",
-                            )
-                            args = ["python", nameprogconnection, "-t", "machine"]
-                            subprocess.call(args)
-                            time.sleep(10)
-                    except Exception:
-                        logging.log(40, " ERROR analyse alternative connection")
-                        logging.log(
-                            40, " Check file %s" % conffilename(xmpp.config.agenttype)
-                        )
-                else:
-                    logging.log(40, "The file %s is missing" % conffilename("cluster"))
-                    setgetcountcycle(1)
-                    if setgetcountcycle(-1) > 3:
-                        setgetcountcycle()
-                        logging.log(
-                            DEBUGPULSE,
-                            "We need to restart the configurator as the file cluster.ini is missing",
-                        )
-                        nameprogconnection = os.path.join(
-                            os.path.dirname(os.path.realpath(__file__)),
-                            "connectionagent.py",
-                        )
-                        args = ["python", nameprogconnection, "-t", "machine"]
-                        subprocess.call(args)
-                        time.sleep(10)
-        terminateserver(xmpp)
 
 
 class process_agent_search:

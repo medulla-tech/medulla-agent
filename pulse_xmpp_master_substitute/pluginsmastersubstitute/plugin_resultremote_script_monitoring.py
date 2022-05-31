@@ -37,7 +37,7 @@ plugin = { "VERSION": "1.0", "NAME": "resultremote_script_monitoring", "TYPE": "
 
 class DateTimeEncoder(json.JSONEncoder):
     """
-    Used to hanld datetime in json files.
+    Used to handle datetime in json files.
     """
 
     def default(self, obj):

@@ -38,7 +38,7 @@ plugin = {"VERSION": "1.4", "NAME": "vectormonitoringagent", "TYPE": "substitute
 
 class DateTimeEncoder(json.JSONEncoder):
     """
-    Used to hanld datetime in json files.
+    Used to handle datetime in json files.
     """
 
     def default(self, obj):

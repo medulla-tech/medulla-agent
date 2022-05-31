@@ -43,6 +43,7 @@ import json
 import pickle
 
 from lib.agentconffile import directoryconffile
+from lib.utils import DateTimebytesEncoderjson
 
 # file : pluginsmachine/plugin___server_tcpip.py
 
@@ -183,25 +184,42 @@ async def handle_client(client, xmppobject):
                     break
 
             if isinstance(requestobj, (dict)):
-                # Creating the action
-                ErrorCode, result = xmppobject.handle_client_connection(
-                    json.dumps(requestobj)
-                )
-                logger.warning(
-                    "Receiving the datas: __%s__ __%s__" % (ErrorCode, result)
-                )
-                if not ErrorCode or result == "":
-                    # Send `end connect` and `close connection`
-                    await loop.sock_sendall(client, b"end_connection")
-                    break
-                if ErrorCode and result:
-                    # We receive the result and we close the server
-                    # We can keep the connexion open for special messages:
-                    # For exemple  a stream of log messages
-                    # We may want to look to this later.
-                    resultrequest = json.loads(result)
-                    await loop.sock_sendall(client, resultrequest.encode("utf8"))
+                try:
+                    # creation action
+                    codeerror, result = xmppobject.handle_client_connection(
+                        json.dumps(requestobj)
+                    )
+                    logger.warning(
+                        "reception data : __%s__ __%s__" % (codeerror, result)
+                    )
+
+                    if not result:
+                        await loop.sock_sendall(
+                            client, "aucun resultat".encode("utf-8")
+                        )
+                    if isinstance(result, (list, dict, set, tuple)):
+                        await loop.sock_sendall(
+                            client,
+                            json.dumps(
+                                result, cls=DateTimebytesEncoderjson, indent=4
+                            ).encode("utf-8"),
+                        )
+                    elif isinstance(result, (str)):
+                        await loop.sock_sendall(client, result.encode("utf-8"))
+                    elif isinstance(result, (bytes)):
+                        await loop.sock_sendall(client, result)
+                    else:
+                        try:
+                            strdata = str(result).encode("utf-8")
+                            await loop.sock_sendall(client, result)
+                        except Exception as e:
+                            await loop.sock_sendall(client, str(e).encode("utf-8"))
+
+                        logger.warning("type reception data %s" % type(result))
                     break  # suivant type de connexion desire
+                except Exception as e:
+                    await loop.sock_sendall(client, str(e).encode("utf-8"))
+                    break
     except Exception:
         logger.error(
             "We hit a backtrace in the handle_client function \n %s"

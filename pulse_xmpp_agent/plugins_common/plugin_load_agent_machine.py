@@ -38,6 +38,7 @@ from slixmpp import jid
 from lib import utils
 
 import base64
+import zlib
 import re
 from distutils.version import LooseVersion
 import configparser
@@ -182,8 +183,10 @@ def _runjson(jsonf, level=0):
 def handle_client_connection(self, msg):
     """
     traitement du message recu sur la socket
+    Cette methode est installee dynamiquement en meme temps que le serveur tcp/ip par plugin
     """
     substitute_recv = ""
+
     try:
         logger.info("Received {}".format(msg))
         datasend = {
@@ -339,9 +342,37 @@ def handle_client_connection(self, msg):
                         elif result["type"] == "warning":
                             logger.warning(result["message"])
             elif result["action"] == "notifysyncthing":
+                datasend["sessionid"] = utils.getRandomName(6, "notifysyncthing")
                 datasend["action"] = "notifysyncthing"
                 datasend["sessionid"] = utils.getRandomName(6, "syncthing")
                 datasend["data"] = result["data"]
+            elif result["action"] == "iqsendpulse":
+                tosend = result["data"]["mto"]
+                totimeout = result["data"]["mtimeout"]
+                del result["data"]["mtimeout"]
+                del result["data"]["mto"]
+                resultat = self.iqsendpulse(tosend, result["data"], totimeout)
+                return False, resultat
+            elif result["action"] == "unzip":
+                # direct action decompresse str64
+                msg = '\nrefactory cli cmd json : {"action": "unzip", "data":  "string compresse en base64=="}\n'
+                try:
+                    if "data" in result and isinstance(result["data"], str):
+                        resultdata = zlib.decompress(base64.b64decode(result["data"]))
+                        return False, resultdata.encode("utf-8") + "\n"
+                    else:
+                        return False, msg
+                except Exception as e:
+                    msgr = "%s\n%s" % (msg, traceback.format_exc())
+                    traceback.format_exc()
+                    logger.warning(msgr)
+                    return False, msgr
+            elif result["action"] == "help":
+                # direct action decompresse str64
+                msg = 'format cli cmd json : {"action": "cmd","data": "string"}'
+                msg += "\ncommand exist :\\n"
+                msg += '{"action": "unzip", "data":  "string compresse en base64=="}\\n'
+                return False, msg
             elif (
                 result["action"] == "terminalInformations"
                 or result["action"] == "terminalAlert"

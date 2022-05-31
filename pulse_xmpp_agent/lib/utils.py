@@ -375,7 +375,6 @@ def refreshfingerprint():
 def file_get_contents(
     filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
 ):
-
     if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
         if offset > 0:
@@ -607,6 +606,7 @@ def call_plugin(name, *args, **kwargs):
             if args[1] not in args[0].config.excludedplugins:
                 nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
                 logger.debug("Loading plugin %s" % args[1])
+
                 loop = asyncio.new_event_loop()
                 count = 0
                 try:
@@ -3522,3 +3522,386 @@ def base64strencode(data):
         logger.error("error decode data in function base64strencode %s" % str(e))
     finally:
         return result
+
+
+class Singleton(object):
+    def __new__(type, *args):
+        if not "_the_instance" in type.__dict__:
+            type._the_instance = object.__new__(type)
+        return type._the_instance
+
+
+class base_message_queue_posix(Singleton):
+    file_reponse_iq = []
+    timeoutmessagequeue = 120
+
+    def __init__(self):
+        logger.debug("*** INITIALISATION base_message_queue_posix")
+        logger.debug("*** charge %s" % base_message_queue_posix.file_reponse_iq)
+
+    def _is_exist(self, name_file):
+        for fmp in base_message_queue_posix.file_reponse_iq:
+            if fmp["name"] == name_file:
+                return True
+        return False
+
+    def _is_exist_file(self, name_file, prefixe=""):
+        name_file = self._namefile(name_file, prefixe)
+        logger.debug("verify exist %s _______" % os.listdir("/dev/mqueue/"))
+        list_file_name_file = [
+            "/" + x for x in os.listdir("/dev/mqueue/") if x.startswith(prefixe)
+        ]
+        logger.debug("verify exist  %s in %s" % (name_file, list_file_name_file))
+        if name_file in list_file_name_file:
+            return True
+        return False
+
+    def load_file(self, prefixe):
+        deltatime = time.time()
+        if os.path.isdir("/dev/mqueue/"):
+            list_file_name_file = [
+                "/" + x for x in os.listdir("/dev/mqueue/") if x.startswith(prefixe)
+            ]
+        for name_file in list_file_name_file:
+            if not self._is_exist(name_file):
+                try:
+                    mp = posix_ipc.MessageQueue(name_file)
+                    ob = {"obj": mp, "name": name_file, "time": deltatime}
+                    base_message_queue_posix.file_reponse_iq.append(ob)
+                except:
+                    pass
+
+    def _namefile(self, name_file, prefixe=""):
+        if not name_file.startswith("/"):
+            return "/" + prefixe + name_file
+        else:
+            return name_file
+
+    def __rep__(self):
+        try:
+            rep = "list message queue for agent :\n%s" % json.dumps(
+                base_message_queue_posix.file_reponse_iq
+            )
+        except:
+            rep = "%s" % base_message_queue_posix.file_reponse_iq
+        return rep
+
+    def open_file_message(self, name_file, prefixe=""):
+        name_file = self._namefile(name_file, prefixe)
+        logger.debug("debug open_file_message : open message queue %s" % name_file)
+        try:
+            mp = posix_ipc.MessageQueue(name_file)
+            logger.debug("ERROR")
+        except posix_ipc.ExistentialError:
+            pass
+        except OSError as e:
+            logger.error("ERROR CREATE QUEUE POSIX %s" % e)
+            logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
+        except Exception as e:
+            logger.error("exception %s" % e)
+            logger.error("\n%s" % (traceback.format_exc()))
+        logger.debug("open message queue %s" % name_file)
+        return self
+
+    def create_file_message(
+        self,
+        name_file,
+        prefixe="",
+        preservation=False,
+        max_message_size=2097152,
+        max_messages=1,
+    ):
+        name_file = self._namefile(name_file, prefixe)
+        try:
+            mp = posix_ipc.MessageQueue(
+                name_file, posix_ipc.O_CREX, max_message_size=max_message_size
+            )
+            logger.debug("creation/registred message queue %s" % name_file)
+            base_message_queue_posix.file_reponse_iq.append(
+                {
+                    "obj": mp,
+                    "name": name_file,
+                    "time": -1 if preservation else time.time(),
+                }
+            )
+        except posix_ipc.ExistentialError:
+            mp = posix_ipc.MessageQueue(name_file)
+            logger.debug("creation/open message queue %s" % name_file)
+        except OSError as e:
+            logger.error("ERROR CREATE QUEUE POSIX %s" % e)
+            logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
+        except Exception as e:
+            logger.error("exception %s" % e)
+            logger.error("\n%s" % (traceback.format_exc()))
+        logger.debug("open message queue %s" % name_file)
+        logger.debug("*** charge %s" % base_message_queue_posix.file_reponse_iq)
+        return self
+
+    def close_file_message(self, name_file, prefixe=""):
+        name_file = self._namefile(name_file, prefixe)
+        listqueue = []
+        for fmp in base_message_queue_posix.file_reponse_iq:
+            if fmp["name"] == name_file:
+                try:
+                    fmp["obj"].close()
+                    posix_ipc.unlink_message_queue(name_file)
+                    logger.debug("close message queue %s" % name_file)
+                except:
+                    pass
+            else:
+                listqueue.append(fmp)
+        base_message_queue_posix.file_reponse_iq = listqueue
+
+    def clean_file_all_message(self, prefixe=""):
+        logger.debug("clean_file_all_message base_message_queue_posix.file_reponse_iq")
+
+        listqueue = []
+        for fmp in base_message_queue_posix.file_reponse_iq:
+            if fmp["time"] == -1:
+                listqueue.append(fmp)
+                continue
+            if fmp["name"].startswith("/" + prefixe):
+                try:
+                    posix_ipc.unlink_message_queue(fmp["name"])
+                    continue
+                except:
+                    pass
+            listqueue.append(fmp)
+        base_message_queue_posix.file_reponse_iq = listqueue
+
+    def clean_file_message_timeout(self, prefixe="", timeout=None):
+        listqueue = []
+        deltatime = time.time()
+        if timeout is None:
+            timeout = self.timeoutmessagequeue
+
+        for fmp in base_message_queue_posix.file_reponse_iq:
+            if fmp["time"] == -1:
+                listqueue.append(fmp)
+                continue
+            if fmp["name"].startswith("/" + prefixe):
+                if (deltatime - fmp["time"]) >= timeout:
+                    try:
+                        posix_ipc.unlink_message_queue(fmp["name"])
+                        continue
+                    except:
+                        pass
+            listqueue.append(fmp)
+        base_message_queue_posix.file_reponse_iq = listqueue
+
+    def sendbytes(self, name_file, msg, prefixe="", timeout=None, priority=9):
+        name_file = self._namefile(name_file, prefixe)
+        if isinstance(msg, str):
+            msg.encode("utf-8")
+        if isinstance(msg, bytes):
+            for fmp in base_message_queue_posix.file_reponse_iq:
+                if fmp["name"] == name_file:
+                    fmp["obj"].send(msg, priority)
+
+    def recvbytes(self, name_file, prefixe="", timeout=None, typeoutstr=False):
+        if timeout is None:
+            timeout = 20
+        name_file = self._namefile(name_file, prefixe)
+        dd = time.time()
+        for fmp in base_message_queue_posix.file_reponse_iq:
+            if fmp["name"] == name_file:
+                logger.debug("TROUVER %s" % name_file)
+                try:
+                    logger.debug("Start attente %s" % dd)
+                    msg, priority = fmp["obj"].receive(timeout)
+                    logger.debug("stop attente %s" % dd - time.time())
+                    if typeoutstr:
+                        msg = bytes.decode(msg, "utf-8")
+                    return msg, priority
+                except posix_ipc.BusyError:
+                    logger.error("BusyError timeout %s" % name_file)
+                    ee = dd - time.time()
+                    logger.debug("stop attente %s" % ee)
+                    return None, None
+
+
+class DateTimebytesEncoderjson(json.JSONEncoder):
+    """
+    Used to handle datetime in json files.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            encoded_object = obj.isoformat()
+        elif isinstance(obj, bytes):
+            encoded_object = obj.decode("utf-8")
+        else:
+            encoded_object = json.JSONEncoder.default(self, obj)
+        return encoded_object
+
+
+class file_message_iq:
+    def __init__(self, dev_mod=False):
+        self.iqdata = {}
+        self.setscrutationtime()
+        self.index = 0
+        self.base_message = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "file_message_base"
+        )
+        self.persitance_file = 3600
+        if not os.path.exists(self.base_message):
+            os.makedirs(self.base_message)
+        self.dev_mod = dev_mod
+        self.del_timeout_iq_old()
+        if self.dev_mod:
+            logger.info(
+                "initialisation file_message_iq\n "
+                "debug_file_message_iq in %s" % self.base_message
+            )
+            logger.info("Message iq send est recv in base %s" % self.base_message)
+            logger.info("Persistance file is %s secondes" % self.persitance_file)
+
+    def setscrutationtime(self, timescrutation=0.5):
+        self.timescrutation = timescrutation
+
+    def create_ref_iq(self, id_iq, time_out_iq):
+        """creation demande iq"""
+        self.index += 1
+        createtime = time.time() + time_out_iq
+        item_iq = {"time": createtime, "id_iq": id_iq, "result": None}
+        self.iqdata[self.index] = item_iq
+
+    def removekey(self, indexkey):
+        """renove key index indexkey"""
+        if indexkey in self.iqdata:
+            if self.dev_mod:
+                logger.info(
+                    "delete iq index [%s] %s" % (indexkey, self.iqdata[indexkey])
+                )
+            del self.iqdata[indexkey]
+        else:
+            if self.dev_mod:
+                logger.info("delete iq index [%s] not exits" % (indexkey))
+
+    def del_timeout_iq_old(self):
+        """delete les items qui sont en timeout"""
+        indexdel = []
+        nowtime = time.time()
+        for indexitem in self.iqdata:
+            if nowtime > self.iqdata[indexitem]["time"]:
+                indexdel.append(indexitem)
+        for deleteitemindexe in indexdel:
+            self.removekey(deleteitemindexe)
+        filelist = [
+            os.path.join(self.base_message, x)
+            for x in os.listdir(self.base_message)
+            if (x.endswith("result") or x.endswith("send"))
+        ]
+        delfile = [
+            x
+            for x in filelist
+            if (nowtime - os.path.getmtime(x)) > self.persitance_file
+        ]
+        if self.dev_mod and delfile:
+            logger.info("list file deleted [%s] iq" % (delfile))
+        for filefordelname in delfile:
+            if os.path.exists(filefordelname):
+                os.remove(filefordelname)
+
+    def search_iq(self, id_iq):
+        """
+        search si 1 iq a renvoyer 1 resultat
+        """
+        try:
+            for indexitem in self.iqdata:
+                if self.iqdata[indexitem]["id_iq"] == id_iq:
+                    return indexitem, self.iqdata[indexitem]["result"]
+            return None, None
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+            return None, None
+
+    def set_iq_result(self, id_iq, data):
+        logger.debug("set_iq_result [%s] pour data %s" % (id_iq, data))
+        iqindex, iq_data = self.search_iq(id_iq)
+        if iqindex:
+            self.iqdata[iqindex]["result"] = data
+            if self.dev_mod:
+                logger.info(
+                    "update RECV result IQ %s" % (self.iqdata[iqindex]["id_iq"])
+                )
+                # write iq dans file id_iq.result
+                # logger.debug("set iq [%s]" % (id_iq))
+                filename = os.path.join(self.base_message, "%s.result" % id_iq)
+                file_put_contents(
+                    filename, json.dumps(data, cls=DateTimebytesEncoderjson, indent=4)
+                )
+            return True
+        else:
+            return False
+
+    def get_iq_result(
+        self, id_iq, strmsg=None, timeout=10, delta_time=None, time_max_loop=120
+    ):
+        """
+        boucle attente iq for traitement
+        on regarde si 1 iq est a traiter toutes les deltatimes.
+        """
+        try:
+            if strmsg is not None:
+                logger.warning("creation object attente get_iq_result")
+                self.dumps_msg_iq_in_file(id_iq, strmsg)
+                # self.add_msg_iq_in_file(id_iq, textmsg)
+            logger.warning("creation object attente get_iq_result")
+
+            if self.dev_mod:
+                logger.info("waitting (%s)s max result iq %s" % (timeout, id_iq))
+            self.create_ref_iq(id_iq, timeout)
+            time_end = time.time() + time_max_loop
+            if delta_time is None:
+                delta_time = self.timescrutation
+            while True:
+
+                if time.time() > time_end:
+                    logger.warning("quit sur timeout")
+                    if self.dev_mod:
+                        logger.info("iq [%s] in timeout" % (id_iq))
+                    return None
+                """ delete les items qui sont en timeout """
+                self.del_timeout_iq_old()
+                time.sleep(delta_time)
+                logger.warning("start boucle analyse %s" % id_iq)
+                logger.warning("start boucle analyse reslytat %s" % self.iqdata)
+
+                iqindex, iq_data = self.search_iq(id_iq)
+
+                logger.warning("retout  search_iq %s %s" % (iqindex, iq_data))
+
+                if iqindex and iq_data:
+                    logger.warning("on a trouve ")
+                if iqindex:
+                    if not iq_data:
+                        continue
+                    else:
+                        # renvoi iq trouver
+
+                        if self.dev_mod:
+                            logger.info("result iq [%s] %s" % (id_iq, iq_data))
+                        self.removekey(iqindex)
+                        return iq_data
+                else:
+                    return None
+        except Exception:
+            logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    def dumps_msg_iq_in_file(self, id_iq, msg):
+        if self.dev_mod:
+            timestamp = time.time()
+            date_time = datetime.fromtimestamp(timestamp).strftime("%c")
+            filename = os.path.join(self.base_message, "%s.send" % id_iq)
+            msgdump = """%s\n send iq %s\n%s\n\n""" % (date_time, id_iq, msg)
+            file_put_contents(filename, msgdump)
+
+    def add_msg_iq_in_file(self, id_iq, textmsg):
+        if self.dev_mod:
+            timestamp = time.time()
+            date_time = datetime.fromtimestamp(timestamp).strftime("%c")
+            msgdump = """%s : %s""" % (date_time, textmsg)
+            filename = os.path.join(self.base_message, "%s.send" % id_iq)
+            file_put_contents_w_a(filename, textmsg, option="a")
