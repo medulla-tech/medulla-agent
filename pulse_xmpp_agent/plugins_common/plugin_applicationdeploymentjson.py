@@ -43,7 +43,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.24", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.25", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -713,7 +713,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         namefolder = None
         msgdeploy=[]
 
-        if hasattr(objectxmpp.config, 'cdn_enable') and objectxmpp.config.cdn_enable == "true" or objectxmpp.config.cdn_enable == "True":
+        if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
             data['methodetransfert'] = 'pullcurl'
             data['descriptor']['info']['methodetransfert'] = 'pullcurl'
             url = objectxmpp.config.cdn_baseurl
