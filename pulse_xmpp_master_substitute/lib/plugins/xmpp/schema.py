@@ -576,7 +576,7 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     regex_logmessage = Column(String(80), nullable=False)
     status = Column(String(80), nullable=False)
-
+    label = Column(String, nullable=False)
 
 class Uptime_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
