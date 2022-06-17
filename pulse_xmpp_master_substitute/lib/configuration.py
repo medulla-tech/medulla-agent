@@ -162,6 +162,9 @@ class confParameter:
         if "pkgs" in self.plugins_list:
             self.readConfpkgs(Config)
 
+        if "admin" in self.plugins_list:
+            self.readConfadmin(Config)
+
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()
         if strlevel in ['CRITICAL', 'FATAL']:
@@ -180,6 +183,51 @@ class confParameter:
             return 25
         else:
             return 20
+
+    def readConfadmin(self, confiobject):
+        self.admin_dbpooltimeout = 30
+        if confiobject.has_option("admindatabase", "admin_dbpooltimeout"):
+            self.admin_dbpooltimeout = confiobject.getint(
+                "admindatabase", "admin_dbpooltimeout"
+            )
+
+        self.admin_dbhost = "localhost"
+        if confiobject.has_option("admindatabase", "admin_dbhost"):
+            self.admin_dbhost = confiobject.get("admindatabase", "admin_dbhost")
+
+        self.admin_dbport = 3306
+        if confiobject.has_option("admindatabase", "admin_dbport"):
+            self.admin_dbport = confiobject.getint("admindatabase", "admin_dbport")
+
+        self.admin_dbname = "admin"
+        if confiobject.has_option("admindatabase", "admin_dbname"):
+            self.admin_dbname = confiobject.get("admindatabase", "admin_dbname")
+
+        self.admin_dbuser = "mmc"
+        if confiobject.has_option("admindatabase", "admin_dbuser"):
+            self.admin_dbuser = confiobject.get("admindatabase", "admin_dbuser")
+
+        self.admin_dbpasswd = "mmc"
+        if confiobject.has_option("admindatabase", "admin_dbpasswd"):
+            self.admin_dbpasswd = confiobject.get("admindatabase", "admin_dbpasswd")
+
+        self.admin_dbpoolrecycle = 3600
+        if confiobject.has_option("admindatabase", "admin_dbpoolrecycle"):
+            self.admin_dbpoolrecycle = confiobject.getint(
+                "admindatabase", "admin_dbpoolrecycle"
+            )
+
+        self.admin_dbpoolsize = 60
+        if confiobject.has_option("admindatabase", "admin_dbpoolsize"):
+            self.admin_dbpoolsize = confiobject.getint(
+                "admindatabase", "admin_dbpoolsize"
+            )
+
+        self.admin_dbechoquery = False
+        if confiobject.has_option("admindatabase", "admin_dbechoquery"):
+            self.admin_dbechoquery = confiobject.getboolean(
+                "admindatabase", "admin_dbechoquery"
+            )
 
     def readConfkiosk(self, confiobject):
         self.kiosk_dbpooltimeout = 30
