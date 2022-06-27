@@ -29,7 +29,7 @@ import re
 import socket
 import psutil
 import os
-from distutils.util import strtobool
+# from distutils.util import strtobool
 from lib.utils import simplecommand, powerschellscriptps1
 from . import utils
 
@@ -505,7 +505,7 @@ def isMachineInDomain():
             ["powershell.exe", """(gwmi win32_computersystem).partofdomain"""],
             shell=True,
         )
-        return bool(strtobool(output.strip()))
+        return output.strip() == "true"
     except subprocess.CalledProcessError as e:
         logger.error("subproces isMachineInDomain.output = " + e.output)
     return False
