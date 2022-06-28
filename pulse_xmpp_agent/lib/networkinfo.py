@@ -30,7 +30,7 @@ import socket
 import psutil
 import os
 # from distutils.util import strtobool
-from lib.utils import simplecommand, powerschellscriptps1
+from lib.utils import simplecommand, powerschellscriptps1, powerschellscript1ps1
 from . import utils
 
 if sys.platform.startswith("win"):
@@ -459,36 +459,36 @@ def powershellfqdnwindowscommandbyuser(user):
         )
     return ""
 
-
 def powershellgetlastuser():
     if sys.platform.startswith("win"):
         script = os.path.abspath(
             os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "script", "getlastuser.ps1"
+                os.path.dirname(os.path.realpath(__file__)),"..", "script", "getlastuser.ps1"
             )
         )
-        result = powerschellscriptps1(script)
+        result = powerschellscript1ps1(script)
         try:
             if result["code"] == 0:
                 ret = []
                 line = [
-                    x.replace("\n", "")
-                    for x in result["result"].split("\r\n")
-                    if x.replace("\n", "") != ""
+                    x.replace(os.linesep, "")
+                    for x in result["result"]
+                    if x.strip().replace(os.linesep, "") != ""
                 ]
-                if len(line) == 3:
-                    descriptor = [x for x in line[0].split(" ") if x != ""]
-                    informationuser = [x for x in line[2].split(" ") if x != ""]
-                    if descriptor[0].startswith("Last"):
-                        ret = informationuser[1].split("\\")
-                    if descriptor[1].startswith("Last"):
-                        ret = informationuser[0].split("\\")
-                    return ret[1]
+                namelist=[]
+                if len(line)> 2:
+                    for t in line[2:]:
+                        res=t.split("\\")[1]
+                        if res:
+                            final = res.split(" ")[:-1]
+                            if final:
+                                namelist.append(" ".join(final))
+                return ",".join(namelist)
         except IndexError:
             logger.warning("detection last name")
+            logger.error("\n%s" % (traceback.format_exc()))
             return "system"
     return "system"
-
 
 def isMachineInDomain():
     """

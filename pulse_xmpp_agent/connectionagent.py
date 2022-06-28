@@ -714,17 +714,18 @@ class MUCBot(ClientXMPP):
             dataobj["geolocalisation"] = self.geodata.localisation
         else:
             logging.warning("geolocalisation disabled")
-        lastusersession = powershellgetlastuser()
-        if lastusersession == "":
-            try:
-                lastusersession = os.environ["USERNAME"]
-            except KeyError as e:
-                lastusersession = ""
-                logging.error(str(e))
-        if lastusersession != "":
+        lastusersession = ""
+        try:
+            lastusersession = os.environ["USERNAME"]
+        except KeyError as e:
+            lastusersession = ""
+
+        if not lastusersession :
             dataobj["adorgbyuser"] = base64strencode(
                 organizationbyuser(lastusersession)
             )
+        if not lastusersession :
+            lastusersession = powershellgetlastuser()
         return dataobj
 
     # -----------------------------------------------------------------------

@@ -862,6 +862,8 @@ def isprogramme(name):
 
 def simplecommand(cmd, strimresult=False):
     obj = {"code": -1, "result": ""}
+    if isinstance(cmd, bytes):
+        cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
@@ -882,6 +884,8 @@ def simplecommand(cmd, strimresult=False):
 
 def simplecommandstr(cmd):
     obj = {}
+    if isinstance(cmd, bytes):
+        cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
@@ -910,6 +914,17 @@ def powerschellscriptps1(namescript):
     )
     return obj
 
+
+def powerschellscript1ps1(namescript):
+    namescript = windowspath(namescript)
+    obj={"code" : -1,"result":""}
+    try:
+        obj = simplecommand(
+            "powershell -ExecutionPolicy Bypass -File %s" % namescript
+        )
+    except Exception:
+        logger.error("\n%s" % (traceback.format_exc()))
+    return obj
 
 class shellcommandtimeout(object):
     def __init__(self, cmd, timeout=15, strimresult=False):
