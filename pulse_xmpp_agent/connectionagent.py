@@ -678,38 +678,48 @@ class MUCBot(ClientXMPP):
             self.FullRegistration = True
             os.remove(BOOLFILECOMPLETREGISTRATION)
         # (base64.b64encode(bytes(json.dumps(er.messagejson),'utf-8'))).decode('utf-8')
-        dataobj = {
-            "action": "connectionconf",
-            "from": self.config.jidagent,
-            "compress": False,
-            "deployment": self.config.jidchatroomcommand,
-            "who": "%s/%s" % (self.config.jidchatroomcommand, self.config.NickName),
-            "machine": self.config.NickName,
-            "platform": platform.platform(),
-            "completedatamachine": base64strencode(json.dumps(er.messagejson)),
-            "plugin": {},
-            "portxmpp": self.config.Port,
-            "serverxmpp": self.config.Server,
-            "agenttype": self.config.agenttype,
-            "baseurlguacamole": self.config.baseurlguacamole,
-            "subnetxmpp": subnetreseauxmpp,
-            "xmppip": self.config.ipxmpp,
-            "xmppmask": xmppmask,
-            "xmppbroadcast": xmppbroadcast,
-            "xmppdhcp": xmppdhcp,
-            "xmppdhcpserver": xmppdhcpserver,
-            "xmppgateway": xmppgateway,
-            "xmppmacaddress": xmppmacaddress,
-            "xmppmacnotshortened": xmppmacnotshortened,
-            "classutil": self.config.classutil,
-            "ippublic": self.ippublic,
-            "geolocalisation": {},
-            "adorgbymachine": base64strencode(organizationbymachine()),
-            "adorgbyuser": "",
-            "agent_machine_name": self.agent_machine_name,
-            "uuid_serial_machine": serialnumbermachine(),
-            "regcomplet": self.FullRegistration,
-        }
+        try:
+
+            dataobj = {
+                "action": "connectionconf",
+                "from": self.config.jidagent,
+                "compress": False,
+                "deployment": self.config.jidchatroomcommand,
+                "who": "%s/%s" % (self.config.jidchatroomcommand, self.config.NickName),
+                "machine": self.config.NickName,
+                "platform": platform.platform(),
+                "completedatamachine": base64strencode(json.dumps(er.messagejson)),
+                "plugin": {},
+                "portxmpp": self.config.Port,
+                "serverxmpp": self.config.Server,
+                "agenttype": self.config.agenttype,
+                "baseurlguacamole": self.config.baseurlguacamole,
+                "subnetxmpp": subnetreseauxmpp,
+                "xmppip": self.config.ipxmpp,
+                "xmppmask": xmppmask,
+                "xmppbroadcast": xmppbroadcast,
+                "xmppdhcp": xmppdhcp,
+                "xmppdhcpserver": xmppdhcpserver,
+                "xmppgateway": xmppgateway,
+                "xmppmacaddress": xmppmacaddress,
+                "xmppmacnotshortened": xmppmacnotshortened,
+                "classutil": self.config.classutil,
+                "ippublic": self.ippublic,
+                "geolocalisation": {},
+                "adorgbymachine": base64strencode(organizationbymachine()),
+                "adorgbyuser": "",
+                "agent_machine_name": self.agent_machine_name,
+                "uuid_serial_machine": serialnumbermachine(),
+                "regcomplet": self.FullRegistration,
+                }
+
+
+        except Exception:
+            logger.error(
+                "dataobj %s"
+                % traceback.format_exc()
+            )
+
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
         else:

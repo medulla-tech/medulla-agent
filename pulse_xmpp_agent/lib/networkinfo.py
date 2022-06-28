@@ -33,6 +33,8 @@ import os
 from lib.utils import simplecommand, powerschellscriptps1, powerschellscript1ps1
 from . import utils
 
+import traceback
+
 if sys.platform.startswith("win"):
     import wmi
 
