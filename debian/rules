@@ -9,7 +9,7 @@ VERSION_KIOSK_INTERFACE=0.2
 FILETREE_VERSION=0.1
 BRANCH=integration
 
-PYVER="3.7"
+PYVER="3.9"
 # Used during building to set the version
 export CFLAGS=-DVERSION=\"$(DEB_UPSTREAM_VERSION)\"
 
