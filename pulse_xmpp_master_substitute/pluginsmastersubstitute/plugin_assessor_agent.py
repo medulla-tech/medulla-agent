@@ -86,7 +86,7 @@ def testsignaturecodechaine(objectxmpp, data, sessionid, msg):
     for t in objectxmpp.assessor_agent_keyAES32:
         cipher = AESCipher(t)
         decrypted = cipher.decrypt(data["codechaine"])
-        if decrypted.decode("utf-8") == str(codechaine):
+        if decrypted == str(codechaine):
             return True
     if not result:
         logger.warning("authentification False %s" % (codechaine))

@@ -647,7 +647,7 @@ class MUCBot(ClientXMPP):
             if x.strip() != "" and len(x) == 32
         ][0]
         cipher = AESCipher(self.config.keyAES32)
-        msginfo["data"]["codechaine"] = cipher.encrypt(str(self.boundjid)).decode()
+        msginfo["data"]["codechaine"] = cipher.encrypt(str(self.boundjid))
         self.send_message(
             mto=self.sub_assessor, mbody=json.dumps(msginfo), mtype="chat"
         )
