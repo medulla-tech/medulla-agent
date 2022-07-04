@@ -780,7 +780,10 @@ class MUCBot(slixmpp.ClientXMPP):
         if iq["type"] == "error":
             miqkeys = iq.keys()
             logger.debug("An error occured in the iq. We obtained the error type.")
-            logger.debug("We failed with the iq with the id %s and the miqkeys: %s"% (iq["id"], miqkeys))
+            logger.debug(
+                "We failed with the iq with the id %s and the miqkeys: %s"
+                % (iq["id"], miqkeys)
+            )
 
             errortext = iq["error"]["text"]
             t = time.time()
@@ -796,7 +799,10 @@ class MUCBot(slixmpp.ClientXMPP):
                     logger.debug("The sessioniq is: %s" % ta["sesssioniq"])
 
                     if ta["time"] < t:
-                        logger.debug("The queue %s timed out, we remove it." % ta["name_iq_queue"])
+                        logger.debug(
+                            "The queue %s timed out, we remove it."
+                            % ta["name_iq_queue"]
+                        )
                         deleted_queue.append(ta["name_iq_queue"])
                         continue
                     if ta["sesssioniq"] == iq["id"]:
@@ -823,30 +829,46 @@ class MUCBot(slixmpp.ClientXMPP):
                         queue, posix_ipc.O_CREX, max_message_size=2097152
                     )
                 except posix_ipc.ExistentialError as existant_error:
-                    logger.debug("An error occured while trying to open the %s queue" % queue)
+                    logger.debug(
+                        "An error occured while trying to open the %s queue" % queue
+                    )
 
                     quposix = posix_ipc.MessageQueue(queue)
                 except OSError as error_creating_queue_oserror:
-                    logger.error("An error occured while trying to create the Posix Queue")
-                    logger.error("We obtained the error: \n %s" % error_creating_queue_oserror)
+                    logger.error(
+                        "An error occured while trying to create the Posix Queue"
+                    )
+                    logger.error(
+                        "We obtained the error: \n %s" % error_creating_queue_oserror
+                    )
 
-                    logger.error("To fix this, please modify/etc/security/limits.conf and /etc/sysctl.conf")
-                    logger.error("The system limits might have been reached for posix queues. Please review them")
+                    logger.error(
+                        "To fix this, please modify/etc/security/limits.conf and /etc/sysctl.conf"
+                    )
+                    logger.error(
+                        "The system limits might have been reached for posix queues. Please review them"
+                    )
                     return
                 except Exception as error_exception:
-                    logger.error("An error occured while trying to create the Posix Queue.")
+                    logger.error(
+                        "An error occured while trying to create the Posix Queue."
+                    )
                     logger.error("We obtained the error: \n %s" % error_exception)
 
                     logger.error("We hit the backtrace \n%s" % (traceback.format_exc()))
                     return
                 ret = '{"err" : "%s"}' % errortext
-                logger.error("The IQ error when trying to create the Posix queue is: %s" % ret)
+                logger.error(
+                    "The IQ error when trying to create the Posix queue is: %s" % ret
+                )
 
                 logger.error("")
 
                 quposix.send(ret, 2)
             except AttributeError as error_attribute:
-                logger.error("An error occured while trying to create the Posix Queue because of AttributeError.")
+                logger.error(
+                    "An error occured while trying to create the Posix Queue because of AttributeError."
+                )
                 logger.error("We obtained the error: \n %s" % error_attribute)
                 pass
             except Exception as error_exception:
@@ -861,9 +883,13 @@ class MUCBot(slixmpp.ClientXMPP):
         elif iq["type"] == "set":
             pass
         elif iq["type"] == "error":
-            logger.error("we got an iq with error type. The id of this iq is: %s" % iq["id"])
+            logger.error(
+                "we got an iq with error type. The id of this iq is: %s" % iq["id"]
+            )
         elif iq["type"] == "result":
-            logger.debug("we got an iq with result type. The id of this iq is: %s" % iq["id"])
+            logger.debug(
+                "we got an iq with result type. The id of this iq is: %s" % iq["id"]
+            )
             t = time.time()
             queue = ""
             liststop = []
