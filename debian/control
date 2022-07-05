@@ -15,7 +15,7 @@ X-Python-Version: >= 2.7
 Package: pulse-xmpp-agent-relay
 Architecture: all
 Provides: ${python:Provides}
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python3-slixmpp, python3-netifaces, python3-configparser, python3-zipfile2, python3-pycurl, python3-mysqldb-dbg, python3-croniter, python3-psutil, python3-crypto, python3-lxml, python3-requests, python3-sftp, python3-pyinotify, python3-wakeonlan, python3-cherrypy3, net-tools, jq
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python3-slixmpp, python3-netifaces, python3-zipfile2, python3-pycurl, python3-mysqldb-dbg, python3-croniter, python3-psutil, python3-crypto, python3-lxml, python3-requests, python3-sftp, python3-pyinotify, python3-wakeonlan, python3-cherrypy3, net-tools, jq
 Description: Pulse xmpp agent
 Breaks: pulse-agent-installers  (<< 1.9.1), pulseagent-plugins-relay (<< 2.0.5), pulse-xmpp-agent (<< 2.0.5)
 Replaces: pulse-agent-installers (<< 1.9.1), pulseagent-plugins-relay , pulse-xmpp-agent
@@ -33,7 +33,7 @@ Description: plugins for pulse xmppmaster
 
 Package: pulse-agent-installers
 Architecture: all
-Depends: ${misc:Depends}, pulse-xmpp-agent-deps (>= 1.8), dos2unix, unzip, zip, nsis-plugins-accesscontrol, nsis-plugins-inetc, nsis-plugins-pwgen, nsis-plugins-zipdll, uuid, nsis-plugins-textreplace, pulse-kiosk-agent-deps, xz-utils, dpkg-dev, debhelper (>= 9), python3-all-dev (>= 2.6.6-3~), build-essential, createrepo, crudini
+Depends: ${misc:Depends}, pulse-xmpp-agent-deps (>= 1.8), dos2unix, unzip, zip, nsis-plugins-accesscontrol, nsis-plugins-inetc, nsis-plugins-pwgen, nsis-plugins-zipdll, uuid, nsis-plugins-textreplace, pulse-kiosk-agent-deps, xz-utils, dpkg-dev, debhelper (>= 9), python3-all-dev (>= 2.6.6-3~), build-essential, createrepo-c, crudini
 Description: Pulse 2 Xmpp agent installer
 Breaks: pulse-xmppmaster-agentplugins (<< 2.0.7)
 Replaces: pulse-xmppmaster-agentplugins
