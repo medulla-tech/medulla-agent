@@ -40,6 +40,7 @@ from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
 
+from lib import manageRSAsigned
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "bin"))
@@ -167,6 +168,7 @@ if __name__ == "__main__":
     dirkey = Setdirectorytempinfo()
     filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
     fileallkey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
+    msgkey = manageRSAsigned.MsgsignedRSA()
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileallkey)):
         print("key missing")
         print(

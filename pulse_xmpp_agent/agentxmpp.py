@@ -720,7 +720,7 @@ class MUCBot(slixmpp.ClientXMPP):
 
         self.add_event_handler("changed_subscription", self.changed_subscription)
 
-        self.RSA = MsgsignedRSA(self.config.agenttype)
+        self.RSA = MsgsignedRSA(self.boundjid.user)
         logger.info("VERSION AGENT IS %s" % self.version_agent())
         # manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
@@ -802,11 +802,14 @@ class MUCBot(slixmpp.ClientXMPP):
 
     async def _handle_custom_iq_error(self, iq):
         if iq["type"] == "error":
-            miqkeys = iq.keys()
-            logger.debug("An error occured in the iq. We obtained the error type.")
-            logger.debug("We failed with the iq with the id %s and the miqkeys: %s"% (iq["id"], miqkeys))
-
             errortext = iq["error"]["text"]
+            if "User already exists" in errortext:
+                # ce n'est pas 1 erreur iq
+                logger.warning("User already exists")
+                self.isaccount = False
+                return
+            miqkeys = iq.keys()
+            logger.debug("ERROR ERROR TYPE %s - %s" % (iq["id"], miqkeys))
             t = time.time()
             queue = ""
             liststop = []
@@ -1179,23 +1182,6 @@ class MUCBot(slixmpp.ClientXMPP):
         logger.debug("Reconection in %s" % self.get_connect_loop_wait())
         # self.disconnect()
 
-    def register(self, iq):
-        logging.info("register user %s" % self.boundjid)
-        resp = self.Iq()
-        resp["type"] = "set"
-        resp["register"]["username"] = self.boundjid.user
-        resp["register"]["password"] = self.password
-        try:
-            resp.send()
-            logging.info("Account created for %s!" % self.boundjid)
-        except IqError as e:
-            logging.error("Could not register account: %s" % e.iq["error"]["text"])
-            self.disconnect(wait=10)
-
-        except IqTimeout as e:
-            logging.error("No response from server.")
-            self.disconnect(wait=10)
-
     async def register(self, iq):
         """
         Fill out and submit a registration form.
@@ -1214,12 +1200,6 @@ class MUCBot(slixmpp.ClientXMPP):
         To get the list of basic registration fields, you can use:
             iq['register']['fields']
         """
-        try:
-            self.dede
-            return
-        except:
-            self.dede=1
-
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
@@ -3015,8 +2995,9 @@ class MUCBot(slixmpp.ClientXMPP):
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
         # send key public agent
-        a = self.RSA.loadkeypublictobase64()
-        er.messagejson["publickey"] = a
+        er.messagejson["publickey"] = self.RSA.get_key_public()
+        er.messagejson["publickeyname"] = self.RSA.get_name_key()[0]
+        er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
         for t in er.messagejson["listipinfo"]:
