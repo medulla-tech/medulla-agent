@@ -167,15 +167,15 @@ if __name__ == "__main__":
     # controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
     filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
-    fileallkey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
-    msgkey = manageRSAsigned.MsgsignedRSA()
-    if not (os.path.isfile(filekeypublic) and os.path.isfile(fileallkey)):
+    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
+    msgkey = manageRSAsigned.MsgsignedRSA("master")
+    if not (os.path.isfile(filekeypublic) and os.path.isfile(filekey)):
         print("key missing")
         print(
-            ("install key of master in \n\t%s\n\t%s\n\n" % (filekeypublic, fileallkey))
+            ("install key of master in \n\t%s\n\t%s\n\n" % (filekeypublic, fileprivatekey))
         )
         print(
-            "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-all-RSA.key "
+            "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-private-RSA.key "
         )
         sys.exit(0)
     namefileconfigdefault = os.path.join(
