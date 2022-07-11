@@ -519,6 +519,22 @@ def isMacOsUserAdmin():
         return False
 
 
+def search_system_info_reg():
+    result_cmd = { }
+    if sys.platform.startswith("win"):
+        informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
+        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+        result = simplecommand(encode_strconsole(cmd), strimresult= True)
+        if int(result["code"]) == 0:
+            # analyse result
+            line = [ x for x in result['result'] if x.startswith(informationlist)]
+            for t in line:
+                lcmd = [ x for x in t.split (" ") if x != ""]
+                if len(lcmd) >= 3:
+                    result_cmd[lcmd[0]] = lcmd[2]
+    logging.getLogger().debug("info version update %s" % result_cmd)
+    return result_cmd
+
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref

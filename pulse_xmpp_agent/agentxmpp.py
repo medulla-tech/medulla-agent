@@ -66,7 +66,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent
+                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
+                        search_system_info_reg
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -2456,7 +2457,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'kiosk_presence': test_kiosk_presence(),
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid,
-            'uuid_serial_machine' : serialnumbermachine()
+            'uuid_serial_machine' : serialnumbermachine(),
+            'system_info' : search_system_info_reg()
         }
         try:
             dataobj['md5_conf_monitoring'] = ""
