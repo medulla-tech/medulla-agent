@@ -1354,13 +1354,6 @@ def read_conf_loaddeployment(objectxmpp):
     objectxmpp.mutexdeploy = threading.Lock()
     objectxmpp.hastable = {}
 
-    # We need to add and check some deployment rules.
-    rules = {
-            "ABORT HASH INVALID": [".*hash invalid.*", "ABORT HASH INVALID", "aborthashinvalid"],
-            "ERROR HASH MISSING":[".*hashes have not been generated.*", "ERROR HASH MISSING", "errorhashmissing"]
-    }
-    XmppMasterDatabase().check_hash_rules(rules)
-
     objectxmpp.wolglobal_set = set()  # use group wol
     #clean old folder session
     foldersession = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "sessiondeploysubstitute"))
