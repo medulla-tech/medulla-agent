@@ -96,6 +96,8 @@ SetCompressor lzma
 !addincludedir libs
 !include "WinVer.nsh"
 !include "FileFunc.nsh"
+; Needed on newer nsis but does not seems to work on stretch nsis
+;!include /CHARSET=CP1252 zipdll.nsh
 !include "zipdll.nsh"
 !include "LogicLib.nsh"
 !Include "LogString.nsh"

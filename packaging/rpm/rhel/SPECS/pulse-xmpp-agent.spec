@@ -186,6 +186,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+%_var/lib/pulse2/script_monitoring/
 
 
 #--------------------------------------------------------------------
@@ -432,3 +433,5 @@ cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
+mkdir -p %buildroot%_var/lib/pulse2/script_monitoring
+cp -fv contrib/monitoring/* %buildroot%_var/lib/pulse2/script_monitoring/
