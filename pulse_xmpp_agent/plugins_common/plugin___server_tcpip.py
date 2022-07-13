@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 #
 # plugin register machine dans presence table xmpp.
-# file pluginsmachine/plugin___server_tcpip.py
+# file : plugin___server_tcpip.py
 #
 import base64
 import traceback
@@ -48,8 +48,7 @@ from lib.utils import DateTimebytesEncoderjson
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "code"}  # fmt: skip
-
+plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" } # fmt: skip
 
 def action(xmppobject, action):
     try:
@@ -73,19 +72,31 @@ def action(xmppobject, action):
 
 
 def read_conf_server_tcpip_agent_machine(xmppobject):
-    logger.debug("Initializing plugin :% s " % plugin["NAME"])
-    configfilename = os.path.join(directoryconffile(), plugin["NAME"] + ".ini")
+    xmppobject.port_tcp_kiosk = 8765
+    prefixe_agent = ""
+    if xmppobject.config.agenttype in ["relayserver"]:
+        prefixe_agent = "ars_"
+        if "ars_local_port" in vars(xmppobject.config) and  xmppobject.config()["ars_local_port"] != None:
+            xmppobject.port_tcp_kiosk = xmppobject.config.ars_local_port
+            logger.warning("paraneter tcp_ip port in section [kiosk]/ars_local_port in relayconf.ini : %s" % xmppobject.port_tcp_kiosk)
+    elif xmppobject.config.agenttype in ["machine"]:
+        prefixe_agent = "am_"
+        if "am_local_port" in vars(xmppobject.config) and  xmppobject.config()["am_local_port"] != None:
+            xmppobject.port_tcp_kiosk = xmppobject.config.am_local_port
+            logger.warning("paraneter tcp_ip port in section [kiosk]/am_local_port in agentconf.ini : %s" % xmppobject.port_tcp_kiosk)
+    configfilename = os.path.join(directoryconffile(), prefixe_agent+plugin["NAME"] + ".ini")
+    logger.info("optionel config file local for plugin___server_tcpip is : %s" % configfilename)
     if os.path.isfile(configfilename):
         Config = configparser.ConfigParser()
         Config.read(configfilename)
         if os.path.isfile(configfilename + ".local"):
             Config.read(configfilename + ".local")
+            if Config.has_option("server_tcpip", "port_tcpip"):
+                xmppobject.port_tcp_kiosk = Config.getint("server_tcpip", "port_tcpip")
+                logger.warning("config local redefini paraneter tcp_ip port in section [server_tcpip]/port_tcpip")
     else:
-        logger.warning(
-            "The configuration file for the plugin %s is missing" % plugin["NAME"]
-        )
-        xmppobject.port_tcp_kiosk = 15555
-
+        logger.warning("local file configuration %s of plugin %s no exist" % (configfilename, plugin["NAME"]))
+    logger.warning("port_tcp_kiosk is %s " % xmppobject.port_tcp_kiosk)
 
 def client_info(client, show_info=False):
     addresslisten, portlisten = client.getsockname()
