@@ -21,7 +21,7 @@
 #
 # plugin register machine dans presence table xmpp.
 #
-# file pluginsmachine/plugin_load_agent_machine.py
+# file : plugin_load_agent_machine.py
 #
 """
     Ce plugin install les plugins de codes necessaire au fonctionnement de l'agent machine dans des boucles événement différente. (Ce plugin doit etre appeler par le plugin start.
@@ -39,9 +39,10 @@ from lib import utils
 
 import base64
 import zlib
-import re
-from distutils.version import LooseVersion
 import configparser
+import re
+from lib.agentconffile import directoryconffile
+from distutils.version import LooseVersion
 
 # this import will be used later
 import types
@@ -74,6 +75,24 @@ def action(xmppobject, action, sessionid, data, msg, dataerreur):
 def read_conf_load_agent_machine(xmppobject):
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
     conf_filename = plugin["NAME"] + ".ini"
+
+    try:
+        pathfileconf = os.path.join(xmppobject.config.nameplugindir, namefichierconf)
+        if not os.path.isfile(pathfileconf):
+            logger.warning(
+                "Plugin %s\nConfiguration file :"
+                "\n\t%s missing" % (plugin["NAME"], pathfileconf)
+            )
+        else:
+            logger.info("Read Configuration in File %s" % pathfileconf)
+        Config = configparser.ConfigParser()
+        Config.read(pathfileconf)
+        if os.path.exists(pathfileconf + ".local"):
+            Config.read(pathfileconf + ".local")
+            ### actuelly parameter empty
+            pass
+    except Exception as e:
+        logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
     logger.debug("Install fonction code specialiser agent machine")
     xmppobject.list_function_agent_name = []
@@ -183,7 +202,6 @@ def _runjson(jsonf, level=0):
 def handle_client_connection(self, msg):
     """
     traitement du message recu sur la socket
-    Cette methode est installee dynamiquement en meme temps que le serveur tcp/ip par plugin
     """
     substitute_recv = ""
 
@@ -347,32 +365,25 @@ def handle_client_connection(self, msg):
                 datasend["sessionid"] = utils.getRandomName(6, "syncthing")
                 datasend["data"] = result["data"]
             elif result["action"] == "iqsendpulse":
-                tosend = result["data"]["mto"]
-                totimeout = result["data"]["mtimeout"]
-                del result["data"]["mtimeout"]
-                del result["data"]["mto"]
-                resultat = self.iqsendpulse(tosend, result["data"], totimeout)
-                return False, resultat
+                return iqsendpulse_str(self, result)
             elif result["action"] == "unzip":
-                # direct action decompresse str64
-                msg = '\nrefactory cli cmd json : {"action": "unzip", "data":  "string compresse en base64=="}\n'
-                try:
-                    if "data" in result and isinstance(result["data"], str):
-                        resultdata = zlib.decompress(base64.b64decode(result["data"]))
-                        return False, resultdata.encode("utf-8") + "\n"
-                    else:
-                        return False, msg
-                except Exception as e:
-                    msgr = "%s\n%s" % (msg, traceback.format_exc())
-                    traceback.format_exc()
-                    logger.warning(msgr)
-                    return False, msgr
+                # direct action unzip str64
+                return unzip_str(self, result)
+            elif result["action"] == "setparameter":
+                # direct action setparameter
+                return setparameter_str(self, result)
+            elif result["action"] == "getparameter":
+                # direct action getparameter
+                return getparameter_str(self, result)
+            elif result["action"] == "get_debug_level":
+                logger.warning("action get_debug_level")
+                return get_debug_level_str(self, result)
+            elif result["action"] == "set_debug_level":
+                logger.warning("action set_debug_level")
+                return set_debug_level_str(self, result)
             elif result["action"] == "help":
-                # direct action decompresse str64
-                msg = 'format cli cmd json : {"action": "cmd","data": "string"}'
-                msg += "\ncommand exist :\\n"
-                msg += '{"action": "unzip", "data":  "string compresse en base64=="}\\n'
-                return False, msg
+                # direct action help
+                return helpcmd(self, result)
             elif (
                 result["action"] == "terminalInformations"
                 or result["action"] == "terminalAlert"
@@ -410,3 +421,273 @@ def handle_client_connection(self, msg):
         logger.error("message to kiosk server : %s" % str(e))
         logger.error("\n%s" % (traceback.format_exc()))
         return False, ""
+
+
+def helpcmd(xmppobject, result):
+    actioncmd = {
+        "cmd": {
+            "setparameter": {
+                "factory command": {
+                    "action": "setparameter",
+                    "data": {"parameter_name": "parameter_value"},
+                },
+                "comment": "Define or modify the value of a parameter.",
+                "exemple": 'echo -n \'{"action": "setparameter", "data":  {"packageserver": {\n        "public_ip": "192.168.0.69",\n        "port": 9990\n    }}}\' | nc localhost 8765',
+            },
+            "getparameter": {
+                "factory command": {"action": "getparameter"},
+                "comment": "show parameter",
+                "exemple": 'echo -n \'\n{"action": "getparameter"}\'| nc localhost 8765',
+            },
+            "help": {
+                "factory command": {
+                    "action": "help",
+                    "data": "command name",
+                },
+                "comment": "help on command",
+                "exemple": 'echo -n \'{"action": "help", "data" : "unzip" }\'| nc localhost 8765',
+            },
+            "unzip": {
+                "factory command": {
+                    "action": "unzip",
+                    "data": "string compressed in base64",
+                },
+                "comment": "unzip base64 string",
+                "exemple": 'echo -n \'{"action": "unzip", "data":  "eNpzSS3LTE5VQAUh+SWJOWBWaHFqCpjhVpSaCuYqqELVVBYABXzzS/NKuJytYhTQgamBnoGBO5BhZK5nBGEY6VmAGQqmJlBD/ELcghUUgNq5ACckHJk="}\' | nc localhost 8765',
+            },
+            "iqsendpulse": {
+                "factory command": {
+                    "action": "iqsendpulse",
+                    "data": {
+                        "action": "action_function_iq",
+                        "data": "suject_iq",
+                        "mto": "recipient_complete_jid",
+                        "mtimeout": "time in seconds",
+                    },
+                },
+                "comment": "Send a synchrone IQ to the target with complete jid: user@domain/resource",
+                "exemple": 'echo -n \'{"action": "iqsendpulse", "data":  {"action": "remotexmppmonitoring", "data": "disk_usage",  "mto": "test-win-1.hpl@pulse/52540014cf93", "mtimeout": 100}}\' | nc localhost 8765',
+            },
+            "get_debug_level": {
+                "factory command": {
+                    "action": "get_debug_level",
+                    "data": "name_module",
+                },
+                "comment": 'get level handler omettre key data pour le logger principal. autrement "data": "nom de module"',
+                "comment": "",
+                "exemple": 'echo -n \'{"action": "get_debug_level", "data": "slixmpp" }\'| nc localhost 8765}',
+            },
+            "set_debug_level": {
+                "factory command": [
+                    {
+                        "action": "set_debug_level",
+                        "data": "###POUR LOGGER PRINCIPAL### (int levelnumber | str in value 'critical,error,warning,info,debug')",
+                        "exemple": 'echo -n \'{"action": "get_debug_level", "data": "debug" }\'| nc localhost 8765}',
+                    },
+                    {
+                        "action": "set_debug_level",
+                        "data": '{ ###POUR LOGGER SPECIFIQUE### "loggername" : "nom module ", "level" : (int levelnumber | str in value \'critical,error,warning,info,debug\')}',
+                        "exemple": 'echo -n \'{"action": "get_debug_level", "data": { "loggername" : "slixmpp", "level":"debug" }\'| nc localhost 8765}',
+                    },
+                ],
+                "comment": "set level facility logger",
+                "exemple": "suivant cas",
+            },
+        }
+    }
+    if "data" in result and result["data"]:
+        try:
+            cmdsearch = result["data"].lower()
+            return False, json.dumps(actioncmd["cmd"][cmdsearch], indent=4)
+        except Exception:
+            pass
+    return False, json.dumps(actioncmd["cmd"], indent=4)
+
+
+def iqsendpulse_str(xmppobject, result):
+    boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
+    try:
+        tosend = result["data"]["mto"]
+        totimeout = result["data"]["mtimeout"]
+        del result["data"]["mtimeout"]
+        del result["data"]["mto"]
+        resultat = xmppobject.iqsendpulse(tosend, result["data"], totimeout)
+        return False, resultat
+    except Exception as e:
+        msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
+        logger.warning(msgr)
+        return False, msgr
+
+
+def unzip_str(xmppobject, result):
+    boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
+    try:
+        if "data" in result and isinstance(result["data"], str):
+            resultdata = zlib.decompress(base64.b64decode(result["data"]))
+            msg = resultdata.decode("utf-8")
+            return False, msg
+        else:
+            msgdecompress = "error verify format command \n"
+            return False, msgdecompress + msg
+    except Exception as e:
+        msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
+        logger.warning(msgr)
+        return False, msgr
+
+
+def setparameter_str(xmppobject, result):
+    # direct action decompresse str64
+    boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
+    try:
+        if "data" in result and isinstance(result["data"], dict):
+            for parameter in result["data"]:
+                setattr(xmppobject.config, parameter, result["data"][parameter])
+            cc = json.dumps(
+                vars(xmppobject.config), cls=utils.DateTimebytesEncoderjson, indent=4
+            )
+            return False, "Parameters list\n" + cc + "\n"
+        else:
+            return False, "error verify format command\n %s" % msg
+    except Exception as e:
+        msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
+        logger.warning(msgr)
+        return False, msgr
+
+
+def getparameter_str(xmppobject, result):
+    # direct action decompresse str64
+    boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
+    try:
+        cc = json.dumps(
+            vars(xmppobject.config), cls=utils.DateTimebytesEncoderjson, indent=4
+        )
+        return False, cc + "\n"
+    except Exception as e:
+        msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
+        logger.warning(msgr)
+        return False, msgr
+
+
+def value_facility(leveldeb):
+    try:
+        if isinstance(leveldeb, int):
+            return leveldeb
+        leveldeb = leveldeb.lower()
+        if leveldeb == "critical":
+            return 50
+        elif leveldeb == "error":
+            return 40
+        elif leveldeb == "warning":
+            return 30
+        elif leveldeb == "info":
+            return 20
+        elif leveldeb == "debug":
+            return 10
+        elif leveldeb == "notset":
+            return 0
+        else:
+            return None
+    except:
+        return None
+
+
+def levellogger(module_name_handler=None):
+    if module_name_handler is None:
+        r = vars(logging.getLogger())
+        return r["name"], r["level"]
+    elif isinstance(module_name_handler, str):
+        try:
+            r = vars(logging.getLogger(module_name_handler))
+            return r["name"], r["level"]
+        except:
+            pass
+
+    return None, None
+
+
+def set_debug_level_str(xmppobject, result):
+    # direct action decompresse str64
+    boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
+    msgr = ""
+    try:
+        if "data" in result and result["data"]:
+            if isinstance(result["data"], (str, int)):
+                name, level = levellogger()
+                newlevel = value_facility(result["data"])
+                if newlevel:
+                    msgr = "logger name %s( old level %s)\n" % (name, level)
+                    logging.getLogger().setLevel(newlevel)
+                    name, level = levellogger()
+                    msgr = msgr + "logger name %s( new level %s)\n" % (name, level)
+                    return False, msgr
+                msgr = "error verify format command \n %s" % (msg)
+                return False, msgr
+            elif isinstance(result["data"], dict):
+                # on travaille sur 1 handler
+                if (
+                    "loggername" in result["data"]
+                    and result["data"]["loggername"]
+                    and "level" in result["data"]
+                    and result["data"]["level"]
+                ):
+                    try:
+                        if value_facility(result["data"]["level"]):
+                            handler_name_obj = logging.getLogger(
+                                result["data"]["loggername"]
+                            )
+                            name, level = levellogger(
+                                module_name_handler=result["data"]["loggername"]
+                            )
+                            msgr = "logger name %s( old level %s)\n" % (name, level)
+                            handler_name_obj.setLevel(
+                                value_facility(result["data"]["level"])
+                            )
+                            name, level = levellogger(
+                                module_name_handler=result["data"]["loggername"]
+                            )
+                            msgr = msgr + "logger name %s( new level %s)\n" % (
+                                name,
+                                level,
+                            )
+                            return False, msgr
+                        else:
+                            msgr = "error verify format module existe\n %s" % (
+                                result["data"]["loggername"],
+                                msg,
+                            )
+                            return False, msgr
+                    except Exception as e:
+                        logger.error("%s" % traceback.format_exc())
+                        logger.error(
+                            "handler module logger missing %s"
+                            % result["data"]["loggername"]
+                        )
+                        msgr = "handler module logger missing %s\n%s" % (
+                            result["data"]["loggername"],
+                            msg,
+                        )
+                        return False, msgr
+    except Exception as e:
+        msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
+        logger.warning(msgr)
+
+
+def get_debug_level_str(xmppobject, result):
+    logger.error("get_debug_level_str %s" % result)
+    boolresult, msg = helpcmd(xmppobject, {"data": result["action"]})
+    logger.error("get_debug_level_str %s %s" % (boolresult, msg))
+    try:
+        if "data" in result and result["data"]:
+            handler_name_obj = logging.getLogger(result["data"])
+            name, level = levellogger(module_name_handler=result["data"])
+            msgr = "logger name %s( level %s)\n" % (name, level)
+            return False, msgr
+        else:
+            handler_name_obj = logging.getLogger()
+            name, level = levellogger()
+            msgr = "logger name %s( level %s)\n" % (name, level)
+            return False, msgr
+    except Exception:
+        msgr = "error verify format command %s\n%s" % (msg, traceback.format_exc())
+        logger.warning(msgr)
+        return False, msgr
