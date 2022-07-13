@@ -43,7 +43,7 @@ import json
 import pickle
 
 from lib.agentconffile import directoryconffile
-from lib.utils import DateTimebytesEncoderjson, simplecommand
+from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase64
 
 # file : pluginsmachine/plugin___server_tcpip.py
 
@@ -173,7 +173,18 @@ async def handle_client(client, xmppobject):
             return
 
         while request != "":
-            request = await loop.sock_recv(client, 1048576)
+            # request = (await loop.sock_recv(client, 255)).decode('utf8')
+            request = (await loop.sock_recv(client, xmppobject.sizebufferrecv))
+            if len(request) >= xmppobject.sizebufferrecv:
+                logger.warning("message may be incomplete : size message Recv is egal max size message (%s) :\"verify param sizebufferrecv\""%xmppobject.sizebufferrecv)
+            if xmppobject.encryptionAES and len(xmppobject.config.keyAES32) > 0:
+                if not isBase64(request.strip()):
+                    logger.warning("message input no encryption")
+                else:
+                    logger.warning("message input base64")
+                cipher = AESCipher(xmppobject.config.keyAES32)
+                request = cipher.decrypt(str(request.decode('utf8')))
+                logger.warning("request data is %s"%request)
             requestobj = _convert_string(request)
 
             if requestobj is None:
