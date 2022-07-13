@@ -924,6 +924,7 @@ def powerschellscript1ps1(namescript):
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
 
+
 class shellcommandtimeout(object):
     def __init__(self, cmd, timeout=15, strimresult=False):
         self.process = None
@@ -2066,8 +2067,9 @@ class AESCipher:
         return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[:-ord(s[len(s) - 1 :])]
+        dtrdata = s[: -ord(s[len(s) - 1 :])]
         return dtrdata.decode("utf-8")
+
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
@@ -3525,7 +3527,9 @@ def serialnumbermachine():
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = simplecommand(cmd)
             if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = "".join(result["result"]).replace("UUID", "").strip()
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         else:
             logger.warning(
                 "the serialnumbermachine function is not implemented for your os: %s"
