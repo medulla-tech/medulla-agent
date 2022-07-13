@@ -1754,7 +1754,8 @@ class AESCipher:
         return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[: -ord(s[len(s) - 1 :])]
+        dtrdata = s[:-ord(s[len(s)-1:])]
+        return dtrdata.decode("utf-8")
 
 def sshdup():
     if sys.platform.startswith("linux"):
