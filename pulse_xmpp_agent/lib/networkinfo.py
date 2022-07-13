@@ -35,8 +35,6 @@ from . import utils
 
 if sys.platform.startswith("win"):
     import wmi
-    import pythoncom
-
 
 logger = logging.getLogger()
 
@@ -134,13 +132,9 @@ class networkagentinfo:
             # self.messagejson['dnshostname'] = dev.DNSHostName
             # self.messagejson['msg'] = platform.system()
             # all interface
-            pythoncom.CoInitialize()
-            try:
-                wmi_obj = wmi.WMI()
-                wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
-                wmi_out = wmi_obj.query(wmi_sql)
-            finally:
-                pythoncom.CoUninitialize()
+            wmi_obj = wmi.WMI()
+            wmi_sql = "select * from Win32_NetworkAdapterConfiguration"
+            wmi_out = wmi_obj.query(wmi_sql)
             for dev in wmi_out:
                 objnet = {}
                 if dev.MACAddress is None:
