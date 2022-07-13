@@ -131,8 +131,10 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
+
 class Error(Exception):
     """Base class for exceptions in this module."""
+
     pass
 
 
@@ -179,7 +181,7 @@ class LiberalBoolean(TypeDecorator):
         if value is not None:
             if isinstance(value, tuple):
                 value = value[0]
-            if isinstance(value,bool):
+            if isinstance(value, bool):
                 return value
             value = bool(int(value))
         return value
@@ -219,7 +221,7 @@ class DatabaseHelper(Singleton):
 
 class XmppMasterDatabase(DatabaseHelper):
     """
-        Singleton Class to query the xmppmaster database.
+    Singleton Class to query the xmppmaster database.
     """
 
     is_activated = False
@@ -230,8 +232,8 @@ class XmppMasterDatabase(DatabaseHelper):
         self.logger = logging.getLogger()
         self.logger.debug("Xmpp activation")
         self.engine = None
-        #self.dbpoolrecycle = 60
-        #self.dbpoolsize = 5
+        # self.dbpoolrecycle = 60
+        # self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
@@ -249,25 +251,35 @@ class XmppMasterDatabase(DatabaseHelper):
             self.poolsize = self.config.xmpp_dbpoolsize
         except Exception:
             self.poolsize = self.config.dbpoolsize
-        self.logger.info("Xmpp parameters connections is "\
-            " user = %s,host = %s, port = %s, schema = %s,"\
-            " poolrecycle = %s, poolsize = %s"%(self.config.xmpp_dbuser,
-                                                self.config.xmpp_dbhost,
-                                                self.config.xmpp_dbport,
-                                                self.config.xmpp_dbname,
-                                                self.poolrecycle,
-                                                self.poolsize))
+        self.logger.info(
+            "Xmpp parameters connections is "
+            " user = %s,host = %s, port = %s, schema = %s,"
+            " poolrecycle = %s, poolsize = %s"
+            % (
+                self.config.xmpp_dbuser,
+                self.config.xmpp_dbhost,
+                self.config.xmpp_dbport,
+                self.config.xmpp_dbname,
+                self.poolrecycle,
+                self.poolsize,
+            )
+        )
         try:
-            echodata=False
-            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
-                                                                                    self.config.xmpp_dbpasswd,
-                                                                                    self.config.xmpp_dbhost,
-                                                                                    self.config.xmpp_dbport,
-                                                                                    self.config.xmpp_dbname),
-                                                        pool_recycle=self.poolrecycle,
-                                                        pool_size=self.poolsize,
-                                                        echo=echodata,
-                                                        convert_unicode=True,)
+            echodata = False
+            self.engine_xmppmmaster_base = create_engine(
+                "mysql://%s:%s@%s:%s/%s"
+                % (
+                    self.config.xmpp_dbuser,
+                    self.config.xmpp_dbpasswd,
+                    self.config.xmpp_dbhost,
+                    self.config.xmpp_dbport,
+                    self.config.xmpp_dbname,
+                ),
+                pool_recycle=self.poolrecycle,
+                pool_size=self.poolsize,
+                echo=echodata,
+                convert_unicode=True,
+            )
             self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
             self.is_activated = True
             self.logger.debug("Xmpp activation done.")
