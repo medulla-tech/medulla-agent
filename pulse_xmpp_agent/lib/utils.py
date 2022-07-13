@@ -869,9 +869,9 @@ def simplecommand(cmd, strimresult=False):
     obj["code"] = p.wait()
     if sys.version_info[0] == 3:
         if strimresult:
-            obj["result"] = [x.decode("utf-8").strip() for x in result]
+            obj["result"] = [decode_strconsole(x).strip() for x in result]
         else:
-            obj["result"] = [x.decode("utf-8") for x in result]
+            obj["result"] = [decode_strconsole(x) for x in result]
     else:
         if strimresult:
             obj["result"] = [x.strip() for x in result]
@@ -888,7 +888,7 @@ def simplecommandstr(cmd):
     obj["code"] = p.wait()
     result = p.stdout.readlines()
     if sys.version_info[0] == 3:
-        result = [x.decode("utf-8") for x in result]
+        result = [decode_strconsole(x) for x in result]
     else:
         result = [x for x in result]
     obj["result"] = "".join(result)
@@ -2032,7 +2032,7 @@ class AESCipher:
         return self._unpad(cipher.decrypt(enc[16:]))
 
     def _unpad(self, s):
-        return  s[:-ord(s[len(s)-1:])]
+        return s[: -ord(s[len(s) - 1 :])]
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
