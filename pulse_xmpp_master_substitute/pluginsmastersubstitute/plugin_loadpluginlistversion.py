@@ -107,7 +107,9 @@ def loadPluginList(self):
     It searches the `name` and `version` informations of the plugins.
     It is used to compare it with the plugins installed on the machines.
     """
-    logger.debug("We search the plugin informations, to compare it with the one installed on the machines")
+    logger.debug(
+        "We search the plugin informations, to compare it with the one installed on the machines"
+    )
     self.plugindata = {}
     self.plugintype = {}
     for element in [
@@ -200,8 +202,10 @@ def plugin_loadpluginlistversion(self, msg, data):
     # function de rappel dans boucle de message.
     # cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
     # Show plugins information logs
-    if "updatingplugin" in  data and data['updatingplugin'] == False:
-        logger.warning("config remote agent [%s] is \"not updating plugin\"" % (msg["from"]))
+    if "updatingplugin" in data and data["updatingplugin"] == False:
+        logger.warning(
+            'config remote agent [%s] is "not updating plugin"' % (msg["from"])
+        )
         return
     restartAgent = False
     for k, v in self.plugindata.items():

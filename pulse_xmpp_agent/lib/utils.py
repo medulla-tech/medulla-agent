@@ -2032,7 +2032,8 @@ class AESCipher:
         return self._unpad(cipher.decrypt(enc[16:]))
 
     def _unpad(self, s):
-        return  s[:-ord(s[len(s)-1:])]
+        return s[: -ord(s[len(s) - 1 :])]
+
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
