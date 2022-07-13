@@ -475,10 +475,16 @@ class confParameter:
         logger.info("moderelayserver %s" % self.moderelayserver)
 
         if Config.has_option("updateagent", "updating"):
-            self.updating = Config.getint("updateagent", "updating")
+            self.updating = Config.getboolean("updateagent", "updating")
         else:
             self.updating = 1
         logger.info("updating %s" % self.updating)
+
+        if Config.has_option("updateagent", "plugin"):
+            self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")
+        else:
+            self.updatingplugin = 1
+        logger.info("updating %s" % self.updatingplugin)
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint("networkstatus", "netchanging")
