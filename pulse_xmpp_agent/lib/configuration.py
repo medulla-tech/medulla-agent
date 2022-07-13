@@ -480,7 +480,7 @@ class confParameter:
             self.updating = 1
         logger.info("updating %s" % self.updating)
 
-        if Config.has_option("updateagent", "plugin"):
+        if Config.has_option("updateagent", "updatingplugin"):
             self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")
         else:
             self.updatingplugin = 1
