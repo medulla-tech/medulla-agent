@@ -883,7 +883,7 @@ def simplecommand(cmd, strimresult=False):
 
 
 def simplecommandstr(cmd):
-    obj = {}
+    obj = {"code": -1, "result": ""}
     if isinstance(cmd, bytes):
         cmd = decode_strconsole(cmd)
     p = subprocess.Popen(
