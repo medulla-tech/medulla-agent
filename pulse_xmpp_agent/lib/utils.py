@@ -2011,10 +2011,6 @@ class Program:
         self.programlist.clear()
 
 
-def unpad(s):
-    return s[0 : -ord(s[-1])]
-
-
 class AESCipher:
     def __init__(self, key, BS=32):
         self.key = key
@@ -2033,8 +2029,10 @@ class AESCipher:
         enc = base64.b64decode(enc)
         iv = enc[:16]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return unpad(cipher.decrypt(enc[16:]))
+        return self._unpad(cipher.decrypt(enc[16:]))
 
+    def _unpad(self, s):
+        return  s[:-ord(s[len(s)-1:])]
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
