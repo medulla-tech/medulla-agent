@@ -917,14 +917,13 @@ def powerschellscriptps1(namescript):
 
 def powerschellscript1ps1(namescript):
     namescript = windowspath(namescript)
-    obj={"code" : -1,"result":""}
+    obj = {"code": -1, "result": ""}
     try:
-        obj = simplecommand(
-            "powershell -ExecutionPolicy Bypass -File %s" % namescript
-        )
+        obj = simplecommand("powershell -ExecutionPolicy Bypass -File %s" % namescript)
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
+
 
 class shellcommandtimeout(object):
     def __init__(self, cmd, timeout=15, strimresult=False):
@@ -2048,6 +2047,7 @@ class AESCipher:
 
     def _unpad(self, s):
         return s[: -ord(s[len(s) - 1 :])]
+
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
@@ -3504,7 +3504,9 @@ def serialnumbermachine():
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = simplecommand(cmd)
             if result["code"] == 0 and result["result"]:
-                serial_uuid_machine = "".join(result["result"]).replace("UUID", "").strip()
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         else:
             logger.warning(
                 "the serialnumbermachine function is not implemented for your os: %s"

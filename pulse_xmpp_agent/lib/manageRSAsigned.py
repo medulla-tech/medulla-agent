@@ -25,7 +25,7 @@ import os
 import base64
 from lib.utils import file_get_contents
 import logging
- 
+
 logger = logging.getLogger()
 
 
@@ -131,7 +131,7 @@ class MsgsignedRSA:
         """
         Function load from file the public keys RSA as a base64 string
         """
-        return base64.b64encode(self.loadkeypublic().exportKey( format='OpenSSH'))
+        return base64.b64encode(self.loadkeypublic().exportKey(format="OpenSSH"))
 
     def keypublictostr(self):
         """
