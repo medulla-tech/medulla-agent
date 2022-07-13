@@ -137,6 +137,66 @@ def alternativeclusterconnection(conffile, data):
                 os.unlink(conffile)
 
 
+def nextalternativeclusterconnectioninformation(conffile):
+    """
+    This function allow to add more alternative clusters
+
+    Args:
+        conffile: the configuration file to modify
+    """
+    alternatif_conf = {}
+    logger.error("JFKJFK function nextalternativeclusterconnection")
+    if not os.path.isfile(conffile):
+        logger.error("file alternatif conf missing %s" % conffile)
+        return {}
+
+    Config = ConfigParser()
+    Config.read(conffile)
+    alternatif_conf["nextserver"] = Config.getint("alternativelist", "nextserver")
+    alternatif_conf["nbserver"] = Config.getint("alternativelist", "nbserver")
+    alternatif_conf["listars"] = [
+        x.strip()
+        for x in Config.get("alternativelist", "listars").split(",")
+        if x.strip() != ""
+    ]
+
+    if len(alternatif_conf["listars"]) != alternatif_conf["nbserver"]:
+        logger.error(
+            "format alternatif file %s : count list ars != nbserver" % conffile
+        )
+        return {}
+
+    if alternatif_conf["nextserver"] > alternatif_conf["nbserver"]:
+        alternatif_conf["nextserver"] = 1
+
+    # charge les informations server
+    for ars in alternatif_conf["listars"]:
+        if not Config.has_section(ars):
+            logger.error(
+                "format alternatif file %s : section %s missing" % (conffile, ars)
+            )
+            return {}
+
+    for ars in alternatif_conf["listars"]:
+        if not (
+            Config.has_option(ars, "port")
+            and Config.has_option(ars, "server")
+            and Config.has_option(ars, "guacamole_baseurl")
+        ):
+            logger.error(
+                "format alternatif file %s : section %s farmat error" % (conffile, ars)
+            )
+            return {}
+        else:
+            alternatif_conf[ars] = {}
+            alternatif_conf[ars]["port"] = Config.getint(ars, "port")
+            alternatif_conf[ars]["server"] = Config.get(ars, "server")
+            alternatif_conf[ars]["guacamole_baseurl"] = Config.get(
+                ars, "guacamole_baseurl"
+            )
+    return alternatif_conf
+
+
 def nextalternativeclusterconnection(conffile):
     """
     This function allow to add more alternative clusters
