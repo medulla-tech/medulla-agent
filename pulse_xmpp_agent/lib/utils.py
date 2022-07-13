@@ -3489,8 +3489,7 @@ def serialnumbermachine():
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = simplecommand(cmd)
             if result["code"] == 0 and result["result"]:
-                a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
-                serial_uuid_machine = "".join(a).replace("UUID", "").strip()
+                serial_uuid_machine = "".join(result["result"]).replace("UUID", "").strip()
         else:
             logger.warning(
                 "the serialnumbermachine function is not implemented for your os: %s"
