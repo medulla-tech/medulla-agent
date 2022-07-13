@@ -1024,12 +1024,12 @@ class MUCBot(slixmpp.ClientXMPP):
             # on force 1 restart bot xmpp
             self.startdata = -1
             self.readconfig_Marche_Arret = True
-            self.set.connect_loop_wait(3)
+            self.set_connect_loop_wait(3)
             self.disconnect()
             self.loop.stop()
             return
         if self.config.agenttype in ["relayserver"]:
-            self.set.connect_loop_wait(3)
+            self.set_connect_loop_wait(3)
             self.disconnect()
             self.readconfig_Marche_Arret = False
             self.loop.stop()
@@ -1179,7 +1179,7 @@ class MUCBot(slixmpp.ClientXMPP):
             self.connect_loop_wait = int_time
 
     def handle_disconnected(self, data):
-        # self.set.connect_loop_wait(2)
+        # self.set_connect_loop_wait(2)
         logger.debug("Reconection in %s" % self.get_connect_loop_wait())
         # self.disconnect()
 
