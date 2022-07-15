@@ -665,6 +665,7 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
     status = Column(String(80), nullable=False)
     label = Column(String, nullable=False)
 
+
 class Uptime_machine(Base, XmppMasterDBObj):
     # ====== Table name =========================
     __tablename__ = "uptime_machine"
