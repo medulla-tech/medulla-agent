@@ -1805,7 +1805,6 @@ class AESCipher:
         return dtrdata.decode("utf-8")
 
 
-
 def sshdup():
     if sys.platform.startswith("linux"):
         # verify sshd up
