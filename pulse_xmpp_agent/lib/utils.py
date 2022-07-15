@@ -2117,7 +2117,6 @@ class AESCipher:
         return dtrdata.decode("utf-8")
 
 
-
 def setgetcountcycle(data=None):
     chemin = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
