@@ -711,14 +711,10 @@ class MUCBot(ClientXMPP):
                 "agent_machine_name": self.agent_machine_name,
                 "uuid_serial_machine": serialnumbermachine(),
                 "regcomplet": self.FullRegistration,
-                }
-
+            }
 
         except Exception:
-            logger.error(
-                "dataobj %s"
-                % traceback.format_exc()
-            )
+            logger.error("dataobj %s" % traceback.format_exc())
 
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
@@ -730,11 +726,11 @@ class MUCBot(ClientXMPP):
         except KeyError as e:
             lastusersession = ""
 
-        if not lastusersession :
+        if not lastusersession:
             dataobj["adorgbyuser"] = base64strencode(
                 organizationbyuser(lastusersession)
             )
-        if not lastusersession :
+        if not lastusersession:
             lastusersession = powershellgetlastuser()
         return dataobj
 
