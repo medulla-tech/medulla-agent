@@ -1463,15 +1463,12 @@ class MUCBot(slixmpp.ClientXMPP):
         syncthingroot = ""
         if self.config.agenttype in ["relayserver"]:
             return self.config.syncthing_share
-        else:
-            if sys.platform.startswith("win"):
-                syncthingroot = "%s\\pulse\\var\\syncthing" % os.environ["programfiles"]
-            elif sys.platform.startswith("linux"):
-                syncthingroot = os.path.join(
-                    os.path.expanduser("~pulseuser"), "syncthing"
-                )
-            elif sys.platform.startswith("darwin"):
-                syncthingroot = os.path.join("/opt", "Pulse", "var", "syncthing")
+        if sys.platform.startswith("win"):
+            syncthingroot = "%s\\pulse\\var\\syncthing" % os.environ["programfiles"]
+        elif sys.platform.startswith("linux"):
+            syncthingroot = os.path.join(os.path.expanduser("~pulseuser"), "syncthing")
+        elif sys.platform.startswith("darwin"):
+            syncthingroot = os.path.join("/opt", "Pulse", "var", "syncthing")
         return syncthingroot
 
     def scan_syncthing_deploy(self):
@@ -1921,30 +1918,29 @@ class MUCBot(slixmpp.ClientXMPP):
                 logging.log(DEBUGPULSE, "CTRL_SHUTDOWN EVENT")
                 signalint = True
                 return True
-            elif evt == win32con.CTRL_LOGOFF_EVENT:
+            if evt == win32con.CTRL_LOGOFF_EVENT:
                 msgevt["data"]["event"] = "LOGOFF_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL_LOGOFF EVENT")
                 return True
-            elif evt == win32con.CTRL_BREAK_EVENT:
+            if evt == win32con.CTRL_BREAK_EVENT:
                 msgevt["data"]["event"] = "BREAK_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL_BREAK EVENT")
                 return True
-            elif evt == win32con.CTRL_CLOSE_EVENT:
+            if evt == win32con.CTRL_CLOSE_EVENT:
                 msgevt["data"]["event"] = "CLOSE_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL_CLOSE EVENT")
                 return True
-            elif evt == win32con.CTRL_C_EVENT:
+            if evt == win32con.CTRL_C_EVENT:
                 msgevt["data"]["event"] = "CTRL_C_EVENT"
                 self.send_message_to_master(msgevt)
                 logging.log(DEBUGPULSE, "CTRL-C EVENT")
                 signalint = True
                 self.quit_application(wait=3)
                 return True
-            else:
-                return False
+            return False
         else:
             pass
 

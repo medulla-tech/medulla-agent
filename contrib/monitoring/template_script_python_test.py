@@ -53,31 +53,28 @@ class Mysqlbase:
     def connection_Mysql(self):
         if self.boolconnectionbase:
             return self.dbconnectionMysql
-        else:
-            try:
-                self.dbconnectionMysql = MySQLdb.connect(
-                    host=self.Mysql_dbhost,
-                    user=self.Mysql_dbuser,
-                    passwd=self.Mysql_dbpasswd,
-                    db=self.Mysql_dbname,
-                    port=self.Mysql_dbport,
-                    connect_timeout=self.Mysql_connect_timeout,
-                )
-                self.boolconnectionbase = True
-                return self.dbconnectionMysql
-            except MySQLdb.Error as e:
-                self.boolconnectionbase = False
-                self.dbconnectionMysql = None
-                print(
-                    "We failed to connect to the database and got the error %s" % str(e)
-                )
-                print("\n%s" % (traceback.format_exc()))
-                return self.dbconnectionMysql
-            except Exception as e:
-                self.boolconnectionbase = False
-                self.dbconnectionMysql = None
-                print("\n%s" % (traceback.format_exc()))
-                return self.dbconnectionMysql
+        try:
+            self.dbconnectionMysql = MySQLdb.connect(
+                host=self.Mysql_dbhost,
+                user=self.Mysql_dbuser,
+                passwd=self.Mysql_dbpasswd,
+                db=self.Mysql_dbname,
+                port=self.Mysql_dbport,
+                connect_timeout=self.Mysql_connect_timeout,
+            )
+            self.boolconnectionbase = True
+            return self.dbconnectionMysql
+        except MySQLdb.Error as e:
+            self.boolconnectionbase = False
+            self.dbconnectionMysql = None
+            print("We failed to connect to the database and got the error %s" % str(e))
+            print("\n%s" % (traceback.format_exc()))
+            return self.dbconnectionMysql
+        except Exception as e:
+            self.boolconnectionbase = False
+            self.dbconnectionMysql = None
+            print("\n%s" % (traceback.format_exc()))
+            return self.dbconnectionMysql
 
     def disconnect_mysql(self):
         if self.boolconnectionbase:
