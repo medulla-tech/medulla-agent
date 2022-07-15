@@ -53,8 +53,9 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "netifaces >= 0.11.0",
-        "slixmpp >= 1.8.2",
+        "netifaces >= 0.10.5",
+        "configparser >= 3.5.0",
+        "sleekxmpp >= 1.3.1",
         "zipfile2 >= 0.0.12",
         "pycurl >= 7.43.0",
         "lxml >= 3.6.0",

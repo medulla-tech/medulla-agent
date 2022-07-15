@@ -325,6 +325,22 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     ]:
 
         logger.debug("package json correct %s" % (data["subaction"]))
+
+        if "device_service" in data:
+            for element in data["device_service"]:
+                for devicename in element:
+                    # call process functions defined
+                    devicename = devicename
+                    logger.debug("devicename %s" % (devicename))
+                    if devicename.lower() in xmppobject.typelistMonitoring_device:
+                        if devicename in element:
+                            if "subject" in element[devicename]:
+                                statusmsg["mon_subject"] = element[devicename][
+                                    "subject"
+                                ]
+                            if "param0" in element[devicename]:
+                                statusmsg["mon_param0"] = element[devicename]["param0"]
+
         id_mom_machine = XmppMasterDatabase().setMonitoring_machine(
             machine["id"],
             machine["hostname"],

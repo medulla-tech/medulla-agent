@@ -32,6 +32,7 @@ import os
 import sys
 import json
 import logging
+import hashlib
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
 from lib.managepackage import managepackage
@@ -51,9 +52,10 @@ import random
 import re
 from slixmpp import jid
 import time
+import threading
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.4", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
@@ -1021,6 +1023,65 @@ def applicationdeployjsonuuid(
         return False
 
 
+def generate_hash(path, package_id, hash_type, packages, keyAES32):
+    source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
+    dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
+    BLOCK_SIZE = 65535
+
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logging.error("Wrong hash type")
+
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+
+    source_file = os.listdir(source)
+
+    for file_package in sorted(source_file):
+        with open(os.path.join(source, file_package), "rb") as _file:
+            try:
+                file_hash = hashlib.new(hash_type)
+            except:
+                logging.error("Wrong hash type")
+            file_block = _file.read(
+                BLOCK_SIZE
+            )  # Read from the file. Take in the amount declared above
+            while (
+                len(file_block) > 0
+            ):  # While there is still data being read from the file
+                file_hash.update(file_block)  # Update the hash
+                file_block = _file.read(BLOCK_SIZE)  # Read the next block from the file
+
+        try:
+            with open(
+                "%s.hash" % (os.path.join(dest, file_package)) + ".hash", "wb"
+            ) as _file:
+                _file.write(file_hash.hexdigest())
+        except:
+            logging.error("Error writing the hash for %s" % file_package)
+
+    # FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
+    content = ""
+
+    salt = keyAES32
+    filelist = os.listdir(dest)
+    for file_package in sorted(filelist):
+        with open(os.path.join(dest, file_package), "rb") as infile:
+            content += infile.read()
+
+    content += salt
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logging.error("Wrong hash type")
+    file_hash.update(content)
+    content = file_hash.hexdigest()
+
+    with open("%s.hash" % dest, "wb") as outfile:
+        outfile.write(content)
+
+
 def applicationdeploymentjson(
     self,
     jidrelay,
@@ -1290,14 +1351,95 @@ def applicationdeploymentjson(
 
             data["advanced"]["syncthing"] = 0
             result = None
-            sessionid = self.send_session_command(
-                jidrelay,
-                "applicationdeploymentjson",
-                data,
-                datasession=None,
-                encodebase64=False,
-                prefix="command",
-            )
+
+            if self.send_hash:
+                try:
+                    self.mutexdeploy.acquire()
+                    if data["name"] in self.hastable:
+                        if (self.hastable[data["name"]] + 10) > time.time():
+                            del self.hastable[data["name"]]
+                    if not data["name"] in self.hastable:
+                        dest_not_hash = (
+                            "/var/lib/pulse2/packages/sharing/"
+                            + data["descriptor"]["info"]["localisation_server"]
+                            + "/"
+                            + data["name"]
+                        )
+                        dest = (
+                            "/var/lib/pulse2/packages/hash/"
+                            + data["descriptor"]["info"]["localisation_server"]
+                            + "/"
+                            + data["name"]
+                        )
+
+                        need_hash = False
+                        counter_no_hash = 0
+                        counter_hash = 0
+
+                        for file_not_hashed in dest_not_hash:
+                            counter_no_hash += 1
+
+                        if not os.path.exists(dest):
+                            need_hash = True
+                        else:
+                            if len(os.listdir(dest)) == 0:
+                                need_hash = True
+                            else:
+                                filelist = os.listdir(dest)
+                                for file_package in filelist:
+                                    file_package_no_hash = file_package.replace(
+                                        ".hash", ""
+                                    )
+                                    counter_hash += 1
+                                    if os.path.getmtime(
+                                        dest + "/" + file_package
+                                    ) < os.path.getmtime(
+                                        dest_not_hash + "/" + file_package_no_hash
+                                    ):
+                                        need_hash = True
+                            if counter_hash != counter_no_hash:
+                                need_hash = True
+
+                        if need_hash == True:
+                            generate_hash(
+                                data["descriptor"]["info"]["localisation_server"],
+                                data["name"],
+                                self.hashing_algo,
+                                data["packagefile"],
+                                self.keyAES32,
+                            )
+                        self.hastable[data["name"]] = time.time()
+                except Exception:
+                    logger.error("%s" % (traceback.format_exc()))
+                finally:
+                    self.mutexdeploy.release()
+                content = ""
+                try:
+                    with open(dest + ".hash", "rb") as infile:
+                        content += infile.read()
+                        data["hash"] = {}
+                        data["hash"]["global"] = content
+                        data["hash"]["type"] = self.hashing_algo
+
+                    sessionid = self.send_session_command(
+                        jidrelay,
+                        "applicationdeploymentjson",
+                        data,
+                        datasession=None,
+                        encodebase64=False,
+                        prefix="command",
+                    )
+                except IOError:
+                    logger.error(
+                        "Pulse is configured to check integrity of packages but the hashes have not been generated"
+                    )
+                    msg.append(
+                        "<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>"
+                    )
+                    sessiondeployementless = name_random(5, "hashmissing")
+                    sessionid = sessiondeployementless
+                    state = "ERROR HASH MISSING"
+
     if wol >= 1:
         advancedparameter_syncthing = 0
     else:
@@ -1535,6 +1677,9 @@ def createsessionfordeploydiffered(self, data):
 def read_conf_loaddeployment(objectxmpp):
     # dictionary used for deploy
 
+    objectxmpp.mutexdeploy = threading.Lock()
+    objectxmpp.hastable = {}
+
     objectxmpp.wolglobal_set = set()  # use group wol
     # clean old folder session
     foldersession = os.path.abspath(
@@ -1560,6 +1705,9 @@ def read_conf_loaddeployment(objectxmpp):
         objectxmpp.recover_glpi_identifier_from_name = False
         objectxmpp.force_redeploy = 1
         objectxmpp.reschedule = 0
+        objectxmpp.send_hash = False
+        objectxmpp.hashing_algo = "sha256"
+        objectxmpp.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
     else:
         Config = configparser.ConfigParser()
         Config.read(pathfileconf)
@@ -1618,6 +1766,21 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.reschedule = Config.getboolean("parameters", "reschedule")
         else:
             objectxmpp.reschedule = 0
+
+        if Config.has_option("parameters", "send_hash"):
+            objectxmpp.send_hash = Config.getboolean("parameters", "send_hash")
+        else:
+            objectxmpp.send_hash = False
+
+        if Config.has_option("parameters", "hashing_algo"):
+            objectxmpp.hashing_algo = Config.get("parameters", "hashing_algo")
+        else:
+            objectxmpp.hashing_algo = "sha256"
+
+        if Config.has_option("parameters", "keyAES32"):
+            objectxmpp.keyAES32 = Config.get("parameters", "keyAES32")
+        else:
+            objectxmpp.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
 
     # initialisation des object for deployement
 

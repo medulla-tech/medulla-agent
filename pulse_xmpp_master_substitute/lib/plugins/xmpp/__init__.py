@@ -131,8 +131,10 @@ if sys.version_info >= (3, 0, 0):
 
 logger = logging.getLogger()
 
+
 class Error(Exception):
     """Base class for exceptions in this module."""
+
     pass
 
 
@@ -179,7 +181,7 @@ class LiberalBoolean(TypeDecorator):
         if value is not None:
             if isinstance(value, tuple):
                 value = value[0]
-            if isinstance(value,bool):
+            if isinstance(value, bool):
                 return value
             value = bool(int(value))
         return value
@@ -219,7 +221,7 @@ class DatabaseHelper(Singleton):
 
 class XmppMasterDatabase(DatabaseHelper):
     """
-        Singleton Class to query the xmppmaster database.
+    Singleton Class to query the xmppmaster database.
     """
 
     is_activated = False
@@ -230,8 +232,8 @@ class XmppMasterDatabase(DatabaseHelper):
         self.logger = logging.getLogger()
         self.logger.debug("Xmpp activation")
         self.engine = None
-        #self.dbpoolrecycle = 60
-        #self.dbpoolsize = 5
+        # self.dbpoolrecycle = 60
+        # self.dbpoolsize = 5
         self.sessionxmpp = None
         self.sessionglpi = None
         self.config = confParameter()
@@ -249,25 +251,35 @@ class XmppMasterDatabase(DatabaseHelper):
             self.poolsize = self.config.xmpp_dbpoolsize
         except Exception:
             self.poolsize = self.config.dbpoolsize
-        self.logger.info("Xmpp parameters connections is "\
-            " user = %s,host = %s, port = %s, schema = %s,"\
-            " poolrecycle = %s, poolsize = %s"%(self.config.xmpp_dbuser,
-                                                self.config.xmpp_dbhost,
-                                                self.config.xmpp_dbport,
-                                                self.config.xmpp_dbname,
-                                                self.poolrecycle,
-                                                self.poolsize))
+        self.logger.info(
+            "Xmpp parameters connections is "
+            " user = %s,host = %s, port = %s, schema = %s,"
+            " poolrecycle = %s, poolsize = %s"
+            % (
+                self.config.xmpp_dbuser,
+                self.config.xmpp_dbhost,
+                self.config.xmpp_dbport,
+                self.config.xmpp_dbname,
+                self.poolrecycle,
+                self.poolsize,
+            )
+        )
         try:
-            echodata=False
-            self.engine_xmppmmaster_base = create_engine('mysql://%s:%s@%s:%s/%s' % (self.config.xmpp_dbuser,
-                                                                                    self.config.xmpp_dbpasswd,
-                                                                                    self.config.xmpp_dbhost,
-                                                                                    self.config.xmpp_dbport,
-                                                                                    self.config.xmpp_dbname),
-                                                        pool_recycle=self.poolrecycle,
-                                                        pool_size=self.poolsize,
-                                                        echo=echodata,
-                                                        convert_unicode=True,)
+            echodata = False
+            self.engine_xmppmmaster_base = create_engine(
+                "mysql://%s:%s@%s:%s/%s"
+                % (
+                    self.config.xmpp_dbuser,
+                    self.config.xmpp_dbpasswd,
+                    self.config.xmpp_dbhost,
+                    self.config.xmpp_dbport,
+                    self.config.xmpp_dbname,
+                ),
+                pool_recycle=self.poolrecycle,
+                pool_size=self.poolsize,
+                echo=echodata,
+                convert_unicode=True,
+            )
             self.Sessionxmpp = sessionmaker(bind=self.engine_xmppmmaster_base)
             self.is_activated = True
             self.logger.debug("Xmpp activation done.")
@@ -391,6 +403,37 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
         except Exception as e:
             logging.getLogger().error(str(e))
+
+    @DatabaseHelper._sessionm
+    def update_count_subscription(self, session, agentsubtitutename, countroster):
+        logging.getLogger().debug("update_count_subscription %s" % agentsubtitutename)
+        try:
+            result = (
+                session.query(Substituteconf)
+                .filter(Substituteconf.jidsubtitute == agentsubtitutename)
+                .all()
+            )
+            first_value = True
+            for t in result:
+                logging.getLogger().debug(
+                    "The ARS id: %s contains %s machines on the substitute %s"
+                    % (t.relayserver_id, t.countsub, t.jidsubtitute)
+                )
+
+                if first_value:
+                    first_value = False
+                    t.countsub = countroster
+                else:
+                    t.countsub = 0
+            session.commit()
+            session.flush()
+            return True
+        except Exception as e:
+            logging.getLogger().error(
+                "An error occured on update_count_subscription function."
+            )
+            logging.getLogger().error("We obtained the error: \n %s" % str(e))
+            return False
 
     @DatabaseHelper._sessionm
     def update_enable_for_agent_subscription(
@@ -4519,6 +4562,43 @@ class XmppMasterDatabase(DatabaseHelper):
         return ret
 
     @DatabaseHelper._sessionm
+    def getRelayServerfromjiddomain(self, session, jiddomain):
+        relayserver = session.query(RelayServer).filter(
+            RelayServer.jid.like("%%@%s/%%" % jiddomain)
+        )
+        relayserver = relayserver.first()
+        session.commit()
+        session.flush()
+        try:
+            result = {
+                "id": relayserver.id,
+                "urlguacamole": relayserver.urlguacamole,
+                "subnet": relayserver.subnet,
+                "nameserver": relayserver.nameserver,
+                "ipserver": relayserver.ipserver,
+                "ipconnection": relayserver.ipconnection,
+                "port": relayserver.port,
+                "portconnection": relayserver.portconnection,
+                "mask": relayserver.mask,
+                "jid": relayserver.jid,
+                "longitude": relayserver.longitude,
+                "latitude": relayserver.latitude,
+                "enabled": relayserver.enabled,
+                "switchonoff": relayserver.switchonoff,
+                "mandatory": relayserver.mandatory,
+                "classutil": relayserver.classutil,
+                "groupdeploy": relayserver.groupdeploy,
+                "package_server_ip": relayserver.package_server_ip,
+                "package_server_port": relayserver.package_server_port,
+                "moderelayserver": relayserver.moderelayserver,
+                "keysyncthing": relayserver.keysyncthing,
+                "syncthing_port": relayserver.syncthing_port,
+            }
+        except Exception:
+            result = {}
+        return result
+
+    @DatabaseHelper._sessionm
     def getdeploybyuserpast(self, session, login, duree, min=None, max=None, filt=None):
 
         deploylog = session.query(Deploy)
@@ -6949,45 +7029,76 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def substituteinfo(self, session, listconfsubstitute, arsname):
         """
-        search  subtitute agent jid for agent machine
+        This function creates sorted lists of substitutes to configure machines.
+        It uses the sum of every substitute and attribute the one with the less machines in. It is used for the load balancing.
+        The calculation is done taking into consideration all the substitutes associated to the relay to which the machine is connected.
+
+        Args:
+            session: The SQL Alchemy session
+            listconfsubstitute: The list of the substitutes in the machine configuration
+            arsname: The ars where the machine is connected to.
+        Returns:
         """
         try:
-            exclud = "master@pulse"
+            excluded_account = "master@pulse"
 
             incrementeiscount = []
-            for t in listconfsubstitute["conflist"]:
-                result = (
-                    session.query(
-                        Substituteconf.id.label("id"),
-                        Substituteconf.jidsubtitute.label("jidsubtitute"),
-                        Substituteconf.countsub.label("countsub"),
-                        RelayServer.jid.label("namerelayser"),
+            for substituteinfo in listconfsubstitute["conflist"]:
+                try:
+                    sql = """SELECT
+                                substituteconf.id AS id,
+                                substituteconf.jidsubtitute AS jidsubtitute,
+                                substituteconf.countsub AS countsub,
+                                substituteconf.type AS type,
+                                relayserver.jid AS namerelayser,
+                                SUM(substituteconf.countsub) AS totsub
+                            FROM
+                                substituteconf
+                                    JOIN
+                                relayserver ON substituteconf.relayserver_id = relayserver.id
+                            WHERE
+                                substituteconf.jidsubtitute NOT LIKE '%s'
+                                    AND substituteconf.type LIKE '%s'
+                                    AND (substituteconf.jidsubtitute IN (SELECT
+                                        substituteconf.jidsubtitute
+                                    FROM
+                                        substituteconf
+                                    WHERE
+                                        substituteconf.relayserver_id = (SELECT
+                                                id
+                                            FROM
+                                                relayserver
+                                            WHERE
+                                                relayserver.jid LIKE '%s')))
+                            GROUP BY substituteconf.jidsubtitute
+                            ORDER BY totsub;
+                            ;""" % (
+                        excluded_account,
+                        substituteinfo,
+                        arsname,
                     )
-                    .join(RelayServer, Substituteconf.relayserver_id == RelayServer.id)
-                    .filter(
-                        and_(
-                            not_(Substituteconf.jidsubtitute.like(exclud)),
-                            Substituteconf.type.like(t),
-                            RelayServer.jid == arsname,
-                        )
+                    resultproxy = session.execute(sql)
+                    listcommand = []
+                    infsub = [
+                        {"id": x[0], "sub": x[1], "totalcount": int(x[5])}
+                        for x in resultproxy
+                    ]
+                    self.logger.debug("%s -> %s" % (substituteinfo, infsub))
+                    if infsub:
+                        incrementeiscount.append(str(infsub[0]["id"]))
+                    for t in infsub:
+                        listcommand.append(t["sub"])
+                    listcommand.append(excluded_account)
+                    listconfsubstitute[substituteinfo] = listcommand
+                except Exception as e:
+                    self.logger.error(
+                        "An error occured while fetching the ordered list of subsitutes."
                     )
-                    .order_by(Substituteconf.countsub)
-                    .all()
-                )
-                listcommand = []
-                test = False
-                for y in result:
-                    listcommand.append(y.jidsubtitute)
-                    if not test:
-                        test = True
-                        incrementeiscount.append(str(y.id))
-                        # y.countsub = y.countsub + 1
-                # session.commit()
-                # session.flush()
-                listcommand.append(exclud)
-                listconfsubstitute[t] = listcommand
+                    self.logger.error(
+                        "We hit the backtrace: \n%s" % (traceback.format_exc())
+                    )
+
             if len(incrementeiscount) != 0:
-                # update contsub
                 sql = """UPDATE `xmppmaster`.`substituteconf`
                     SET
                         `countsub` = `countsub` + '1'
@@ -7000,12 +7111,19 @@ class XmppMasterDatabase(DatabaseHelper):
                 session.flush()
         except Exception as e:
             logging.getLogger().error("substituteinfo : %s" % str(e))
+        logging.getLogger().debug("substitute list : %s" % listconfsubstitute)
         return listconfsubstitute
 
     @DatabaseHelper._sessionm
     def GetMachine(self, session, jid):
         """
         Initialize boolean presence in table machines
+        This function tells if the machine is present of not.
+        Args:
+            session: The SQL Alchemy session
+            jid: The JID of the machine
+        Returns:
+            It returns None in case of error.
         """
         user = str(jid).split("@")[0]
         try:
@@ -7023,10 +7141,17 @@ class XmppMasterDatabase(DatabaseHelper):
             session.commit()
             session.flush()
             return [x for x in result][0]
-        except IndexError:
+        except IndexError as index_error:
+            logging.getLogger().error(
+                "An index error occured while trying to set up online/offline machine: %s"
+                % str(index_error)
+            )
             return None
         except Exception as e:
-            logging.getLogger().error("GetMachine : %s" % str(e))
+            logging.getLogger().error(
+                "An error occured while trying to set up online/offline machine: %s"
+                % str(e)
+            )
             return None
 
     @DatabaseHelper._sessionm
@@ -8305,6 +8430,10 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         hostname=None,
     ):
         keysreplace = statusmsg.keys()
+        if "mon_param0" in keysreplace:
+            mon_statusmsg_param0 = statusmsg["mon_param0"]
+        if "mon_subject" in keysreplace:
+            mon_statusmsg_subject = statusmsg["mon_subject"]
         other_data = None
         if "other_data" in keysreplace:
             if isinstance(statusmsg["other_data"], basestring):
@@ -8322,10 +8451,35 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if statusmsg[rep]:
                         if isinstance(statusmsg[rep], basestring):
                             z["binding"] = z["binding"].replace(keyre, statusmsg[rep])
+                            # Replace the cmd if it exists
+                            if isinstance(z["no_success_binding_cmd"], basestring):
+                                z["no_success_binding_cmd"] = z[
+                                    "no_success_binding_cmd"
+                                ].replace(keyre, statusmsg[rep])
+                            if isinstance(z["succes_binding_cmd"], basestring):
+                                z["succes_binding_cmd"] = z[
+                                    "succes_binding_cmd"
+                                ].replace(keyre, statusmsg[rep])
+                            if isinstance(z["error_on_binding"], basestring):
+                                z["error_on_binding"] = z["error_on_binding"].replace(
+                                    keyre, statusmsg[rep]
+                                )
                         else:
                             stringreplace = json.dumps(statusmsg[rep])
                             z["binding"] = z["binding"].replace(keyre, stringreplace)
-                # verify  binding n'est pas 1 template.
+                            if isinstance(z["no_success_binding_cmd"], basestring):
+                                z["no_success_binding_cmd"] = z[
+                                    "no_success_binding_cmd"
+                                ].replace(keyre, stringreplace)
+                            if isinstance(z["succes_binding_cmd"], basestring):
+                                z["succes_binding_cmd"] = z[
+                                    "succes_binding_cmd"
+                                ].replace(keyre, stringreplace)
+                            if isinstance(z["error_on_binding"], basestring):
+                                z["error_on_binding"] = z["error_on_binding"].replace(
+                                    keyre, stringreplace
+                                )
+                # Verify if the binding is not a template
                 testkeytemplate = []
                 for rep in keysreplace:
                     keyre = "@%s@" % rep
@@ -8344,7 +8498,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         "machine [%s] mon_machine id [%s] id_device [%s]"
                         % (msg_from, id_machine, id_device)
                     )
-                    # self.logger.warning("doc %s"%doc)
                     continue
                 self.logger.debug(
                     "rule %s : event type : %s on device %s"
@@ -8359,8 +8512,16 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         z["error_on_binding"] is None
                         or z["error_on_binding"].strip() == ""
                     ):
-                        # aucun trairement sur error
-                        self.logger.error("No treatment on error  %s " % (z))
+                        # There is not treatment done on errors.
+                        continue
+                    else:
+                        self.logger.warning(
+                            "We failed to process the binding. We got the error:  %s "
+                            % msg
+                        )
+                        self.logger.debug("The content of the binding is: %s " % z)
+
+                        bindingcmd = z["error_on_binding"]
                         continue
                 elif result == 1:
                     # alert True
@@ -8369,13 +8530,19 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         z["succes_binding_cmd"] is None
                         or z["succes_binding_cmd"].strip() == ""
                     ):
-                        # aucun trairement sur success binding
-                        self.logger.warning(
-                            "No treatment on expected success  %s " % (z)
-                        )
+                        # There is not treatment done on success.
                         continue
-                    # 1 event est a prendre en compte.
-                    bindingcmd = z["succes_binding_cmd"]
+                    else:
+                        # 1 event to handle
+                        self.logger.debug(
+                            "The treatment of the binding succeeded with the message:  %s "
+                            % msg
+                        )
+                        self.logger.debug(
+                            "The content of the sucessful binding is: %s " % z
+                        )
+
+                        bindingcmd = z["succes_binding_cmd"]
                 elif result == 0:
                     # alert False
                     # create event if action associated to False
@@ -8387,9 +8554,16 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             "No treatment on" " expected no success  %s " % (z)
                         )
                         continue
-                    bindingcmd = z["no_success_binding_cmd"]
+                    else:
+
+                        self.logger.debug("no_success_binding_cmd  %s " % msg)
+                        self.logger.debug(
+                            "The content of the 'expecting to fail binding' is: %s " % z
+                        )
+
+                        bindingcmd = z["no_success_binding_cmd"]
                 else:
-                    # cas pas encore prevu
+                    # This case is not yet handled
                     self.logger.warning(
                         "No treatment on" "missing on def binding action%s " % (z)
                     )
@@ -8431,6 +8605,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     listkeyconf = paramsubs.keys()
                     src_script = os.path.join(script_monitoring, bindingcmd)
                     resultproxy = self.get_event_information_id_device(idevent)
+                    try:
+                        resultproxy["mon_statusmsg_param0"] = mon_statusmsg_param0
+                    except:
+                        pass
+                    try:
+                        resultproxy["mon_statusmsg_subject"] = mon_statusmsg_subject
+                    except:
+                        pass
                     resultproxy["conf_submon"] = {}
                     for keyparam in listkeyconf:
                         resultproxy["conf_submon"][keyparam] = paramsubs[keyparam]
@@ -8971,6 +9153,18 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     def __binding_application_check(self, datastring, bindingstring, device_type):
         resultbinding = None
+
+        d = re.search(r"\[\'\@.*\@\'\]", bindingstring)
+        try:
+            d.group
+            logging.getLogger().warning(
+                "template binding no replace %s" % bindingstring
+            )
+        except AttributeError:
+            pass
+        except Exception as e:
+            logging.getLogger().error("__binding_application_check %s" % str(e))
+
         try:
             logging.getLogger().debug("data for binding is %s" % datastring)
             data = json.loads(datastring)
@@ -8979,7 +9173,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "[binding error device rule %s] : data from message"
                 " monitoring format json error %s" % (device_type, str(e))
             )
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
 
         try:
@@ -8992,23 +9185,20 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 "binding:\n%s\nis missing. Check your binding on data\n%s"
                 % (device_type, str(e), bindingstring, json.dumps(data, indent=4))
             )
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
         except Exception as e:
             msg = (
-                "[binding device rule %s error %s] in binding:\n%s\\ "
+                "[binding device rule %s error %s] in binding:\n%s\ "
                 "on data\n%s"
                 % (device_type, str(e), bindingstring, json.dumps(data, indent=4))
             )
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
-        msg = "[ %s : result binding %s for binding:\n%s\\ " "on data\n%s" % (
+        msg = "[ %s : result binding %s for binding:\n%s\ " "on data\n%s" % (
             device_type,
             resultbinding,
             bindingstring,
             json.dumps(data, indent=4),
         )
-        logging.getLogger().debug("%s" % msg)
         return (msg, resultbinding)
 
     def __binding_application(self, datastring, bindingstring, device_type):
