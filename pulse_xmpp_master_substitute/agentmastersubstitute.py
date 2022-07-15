@@ -172,7 +172,10 @@ if __name__ == "__main__":
     if not (os.path.isfile(filekeypublic) and os.path.isfile(filekey)):
         print("key missing")
         print(
-            ("install key of master in \n\t%s\n\t%s\n\n" % (filekeypublic, fileprivatekey))
+            (
+                "install key of master in \n\t%s\n\t%s\n\n"
+                % (filekeypublic, fileprivatekey)
+            )
         )
         print(
             "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-private-RSA.key "
