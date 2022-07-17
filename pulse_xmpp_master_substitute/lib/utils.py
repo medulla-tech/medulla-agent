@@ -23,6 +23,9 @@
 # file : pulse_xmpp_master_substitute/lib/utils.py
 #
 
+"""
+    This file contains shared functions use in pulse client/server agents.
+"""
 
 import netifaces
 import json
@@ -188,10 +191,13 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This functions create a temporary directory.
+    This function is used to obtain the path to the temporary directory used 
+    by the agent to store informations like network or configuration fingerprints.
+
 
     Returns:
-    path directory INFO Temporaly and key RSA
+        It returns the path to the temporary directory.
+
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
@@ -213,6 +219,14 @@ def cleanbacktodeploy(objectxmpp):
 
 
 def networkinfoexist():
+    """
+        This function is used to check that the fingerprintnetwork folder
+        exists.
+
+        Returns:
+            True if the file exists
+            False if the file does not exists
+    """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
     if os.path.exists(filenetworkinfo):
         return True
