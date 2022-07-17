@@ -1620,6 +1620,7 @@ def decode_strconsole(x):
 
     return x
 
+
 def encode_strconsole(x):
     """
     Encode strings into the format used on the OS.
@@ -1631,7 +1632,6 @@ def encode_strconsole(x):
     Returns:
         The encoded `x` string
     """
-
 
     if sys.platform.startswith("linux"):
         return x.encode("utf-8")
