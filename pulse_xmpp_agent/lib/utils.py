@@ -21,6 +21,9 @@
 # MA 02110-1301, USA.
 
 # file : pulse_xmpp_agent/lib/utils.py
+"""
+    This file contains shared functions use in pulse client/server agents.
+"""
 
 import sys
 
@@ -105,8 +108,8 @@ class Env(object):
             )
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
-        else:
-            return os.path.expanduser("~pulseuser")
+
+        return os.path.expanduser("~pulseuser")
 
 
 def os_version():
@@ -209,9 +212,13 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This functions create a temporary directory.
+    This function is used to obtain the path to the temporary directory used 
+    by the agent to store informations like network or configuration fingerprints.
 
-    @returns path directory INFO Temporaly and key RSA
+
+    Returns:
+        It returns the path to the temporary directory.
+
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
@@ -384,6 +391,19 @@ def confinfoexist():
 
 
 def confchanged(typeconf):
+    """
+    This function is used to know if the configuration changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the configuration changed.
+
+    We check the fingerprint between the old saved configuration
+    which is stored in the `fingerprintconf` variable.
+
+    Returns:
+        True if we consider that the configuration changed
+        False if we consider that the configuration has not changed
+    """
     if confinfoexist():
         fingerprintconf = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
@@ -401,6 +421,18 @@ def refreshfingerprintconf(typeconf):
 
 
 def networkchanged():
+    """
+    This function is used to know if the network changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed 
+        False if we consider that the network has not changed
+    """
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
