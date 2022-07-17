@@ -413,7 +413,7 @@ def networkchanged():
     A network change means that the interfaces changed ( new or deleted )
 
     Returns:
-        True if we consider that the network changed 
+        True if we consider that the network changed
         False if we consider that the network has not changed
     """
     if networkinfoexist():
@@ -423,7 +423,7 @@ def networkchanged():
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
             return False
-    
+
     return True
 
 
