@@ -27,6 +27,7 @@ import json
 import logging
 from lib.utils import name_random
 import asyncio
+
 # 3rd party modules
 import posix_ipc
 
@@ -54,14 +55,16 @@ def action(xmppobject, action):
                 xmppobject.mq = posix_ipc.MessageQueue("/mysend")
             except OSError as e:
                 logger.error("ERROR CREATE QUEUE POSIX %s" % e)
-                logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
+                logger.error(
+                    "eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf"
+                )
             except Exception as e:
                 logger.error("exception %s" % e)
-                logger.error("\n%s"%(traceback.format_exc()))
-            #try:
-                #xmppobject.mq = posix_ipc.MessageQueue("/myrep", posix_ipc.O_CREX)
-            #except posix_ipc.ExistentialError:
-                #xmppobject.mq = posix_ipc.MessageQueue("/myrep")
+                logger.error("\n%s" % (traceback.format_exc()))
+            # try:
+            # xmppobject.mq = posix_ipc.MessageQueue("/myrep", posix_ipc.O_CREX)
+            # except posix_ipc.ExistentialError:
+            # xmppobject.mq = posix_ipc.MessageQueue("/myrep")
 
         logger.debug("================ RUNNING SERVER MMC ================")
         while 1:
@@ -113,21 +116,23 @@ def information_mmc(xmppobject, *args, **kwargs):
                         "list des modules MMC sont : %s" % (xmppobject.list_mmc)
                     )
 
+
 def send_iq_message(xmppobject, msg):
-    obj=json.loads(msg)
+    obj = json.loads(msg)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     # creation queu resultat
     try:
-        mqresult = posix_ipc.MessageQueue(obj['name_iq_queue'], posix_ipc.O_CREX)
+        mqresult = posix_ipc.MessageQueue(obj["name_iq_queue"], posix_ipc.O_CREX)
     except posix_ipc.ExistentialError:
-        mqresult = posix_ipc.MessageQueue(obj['name_iq_queue'])
+        mqresult = posix_ipc.MessageQueue(obj["name_iq_queue"])
 
-    mtimeout = obj['mtimeout']
-    destinataire = obj['mto']
-    del obj['mto']
-    del obj['mtimeout']
+    mtimeout = obj["mtimeout"]
+    destinataire = obj["mto"]
+    del obj["mto"]
+    del obj["mtimeout"]
     result = xmppobject.iqsendpulse1(destinataire, obj, mtimeout)
+
 
 def send_message_file(xmppobject, *args, **kwargs):
     if args:

@@ -42,7 +42,7 @@ from lib.utils import (
     call_plugin,
     name_random,
     name_randomplus,
-    )
+)
 import configparser
 import types
 import datetime
