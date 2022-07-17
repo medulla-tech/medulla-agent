@@ -99,8 +99,8 @@ class Env(object):
             )
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
-        else:
-            return os.path.expanduser("~pulseuser")
+
+        return os.path.expanduser("~pulseuser")
 
 
 # debug decorator
@@ -359,6 +359,19 @@ def confinfoexist():
 
 
 def confchanged(typeconf):
+    """
+    This function is used to know if the configuration changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the configuration changed.
+
+    We check the fingerprint between the old saved configuration
+    which is stored in the `fingerprintconf` variable.
+
+    Returns:
+        True if we consider that the configuration changed
+        False if we consider that the configuration has not changed
+    """
     if confinfoexist():
         fingerprintconf = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
@@ -366,6 +379,7 @@ def confchanged(typeconf):
         newfingerprintconf = createfingerprintconf(typeconf)
         if newfingerprintconf == fingerprintconf:
             return False
+
     return True
 
 
@@ -376,6 +390,18 @@ def refreshfingerprintconf(typeconf):
 
 
 def networkchanged():
+    """
+    This function is used to know if the network changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed 
+        False if we consider that the network has not changed
+    """
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
@@ -383,8 +409,8 @@ def networkchanged():
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
             return False
-    else:
-        return True
+    
+    return True
 
 
 def refreshfingerprint():
@@ -1812,13 +1838,13 @@ def sshdup():
         if result["code"] == 0:
             return True
         return False
-    elif sys.platform.startswith("darwin"):
+    if sys.platform.startswith("darwin"):
         cmd = "launchctl list com.openssh.sshd"
         result = simplecommand(cmd)
         if result["code"] == 0:
             return True
         return False
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         cmd = "TASKLIST | FINDSTR sshd"
         result = simplecommand(cmd)
         if len(result["result"]) > 0:
@@ -1832,11 +1858,11 @@ def restartsshd():
         if not sshdup():
             cmd = "systemctrl restart sshd"
             result = simplecommand(cmd)
-    elif sys.platform.startswith("darwin"):
+    if sys.platform.startswith("darwin"):
         if not sshdup():
             cmd = "launchctl restart /System/Library/LaunchDaemons/ssh.plist"
             result = simplecommand(cmd)
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         if not sshdup():
             # on cherche le nom reel du service pour sshd.
             cmd = 'sc query state= all | findstr "sshd" | findstr "SERVICE_NAME"'
