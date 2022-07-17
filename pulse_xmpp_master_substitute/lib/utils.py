@@ -1600,28 +1600,49 @@ def isBase64(s):
 
 def decode_strconsole(x):
     """
-    input str decode to default coding python(# -*- coding: utf-8; -*-)
+    Decode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The decoded `x` string
     """
     if sys.platform.startswith("linux"):
         return x.decode("utf-8", "ignore")
-    elif sys.platform.startswith("win"):
-        return x.decode("cp850", "ignore")
-    elif sys.platform.startswith("darwin"):
-        return x.decode("utf-8", "ignore")
-    else:
-        return x
 
+    if sys.platform.startswith("win"):
+        return x.decode("cp850", "ignore")
+
+    if sys.platform.startswith("darwin"):
+        return x.decode("utf-8", "ignore")
+
+    return x
 
 def encode_strconsole(x):
-    """output str encode to coding other system"""
+    """
+    Encode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The encoded `x` string
+    """
+
+
     if sys.platform.startswith("linux"):
         return x.encode("utf-8")
-    elif sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
         return x.encode("cp850")
-    elif sys.platform.startswith("darwin"):
+
+    if sys.platform.startswith("darwin"):
         return x.encode("utf-8")
-    else:
-        return x
+
+    return x
 
 
 def savejsonfile(filename, data, indent=4):
