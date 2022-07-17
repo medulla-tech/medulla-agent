@@ -63,7 +63,6 @@ from lib.plugins.msc.orm.target import Target
 from lib.plugins.msc.orm.pull_targets import PullTargets
 from lib.plugins.msc.orm.bundle import Bundle
 from lib.configuration import confParameter
-from lib.plugins.xmpp import XmppMasterDatabase
 
 # Imported last
 import logging

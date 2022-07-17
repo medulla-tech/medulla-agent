@@ -30,7 +30,6 @@ import logging
 import time
 from datetime import datetime
 import croniter
-import json
 from random import randint
 
 

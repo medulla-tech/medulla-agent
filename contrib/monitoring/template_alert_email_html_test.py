@@ -22,18 +22,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA
 
-import pickle
 import json
 import smtplib
-import sys
 import logging
 from email.mime.multipart import MIMEMultipart
 import email.mime.application
 from email.mime.text import MIMEText
 from email.utils import formatdate
 import os.path
-import mimetypes
-import re
 import traceback
 
 LOGFILE ="/var/lib/pulse2/script_monitoring/logfilescriptemail.log"

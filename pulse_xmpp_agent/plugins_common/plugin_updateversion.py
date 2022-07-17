@@ -25,9 +25,6 @@ import sys
 import os
 import logging
 from lib import utils
-from lib.agentconffile import directoryconffile
-import configparser
-import re
 
 logger = logging.getLogger()
 

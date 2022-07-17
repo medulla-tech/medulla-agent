@@ -24,7 +24,6 @@ from Crypto.Signature import pss
 from Crypto.Hash import SHA256
 import os
 import base64
-from lib.utils import file_get_contents
 import logging
 import traceback
 

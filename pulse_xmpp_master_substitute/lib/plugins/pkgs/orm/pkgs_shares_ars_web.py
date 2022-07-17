@@ -26,7 +26,6 @@
 
 # file : orm/pkgs_shares_ars_web.py
 
-import logging
 
 """ Class to map pkgs.pkgs_shares_ars_web to SA
 """

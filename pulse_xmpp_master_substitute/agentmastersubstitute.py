@@ -28,7 +28,6 @@ import sys
 import os
 import logging
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi
 
 import traceback

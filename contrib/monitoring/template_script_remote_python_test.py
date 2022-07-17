@@ -23,9 +23,6 @@
 # MA 02110-1301, USA
 
 import json
-import MySQLdb
-import traceback
-import logging
 import subprocess
 import sys
 

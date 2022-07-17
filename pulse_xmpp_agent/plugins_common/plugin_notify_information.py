@@ -20,14 +20,9 @@
 # MA 02110-1301, USA.
 # file : pluginsrelay/plugin_notify_information.py
 
-import sys
 import os
 import logging
-import json
-import traceback
 from lib.utils import file_put_contents
-
-from slixmpp import jid
 
 plugin = { "VERSION": "1.0", "VERSIONAGENT": "2.1", "NAME": "notify_information",  "TYPE": "all", }  # fmt: skip
 

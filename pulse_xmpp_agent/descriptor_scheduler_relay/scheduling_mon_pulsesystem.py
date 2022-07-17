@@ -46,7 +46,7 @@ import socket
 import psutil
 from xml.etree import ElementTree
 import requests
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from pulse_xmpp_agent.lib.utils import file_put_contents, getRandomName, file_get_contents
 from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector

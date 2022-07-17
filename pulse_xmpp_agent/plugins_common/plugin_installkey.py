@@ -20,13 +20,9 @@
 # MA 02110-1301, USA.
 # file common/plugin_installkey.py
 
-import sys
 import os
 import logging
 from lib import utils
-import subprocess
-import uuid
-import shutil
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25

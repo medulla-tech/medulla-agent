@@ -34,13 +34,10 @@ from .utils import (
     shellcommandtimeout,
     file_put_contents,
     file_get_contents,
-    file_put_contents_w_a,
     decode_strconsole,
     encode_strconsole,
     keypub,
-    simplecommand,
     restartsshd,
-    showlinelog,
     pulseuser_useraccount_mustexist,
     pulseuser_profile_mustexist,
     create_idrsa_on_client,
@@ -65,8 +62,7 @@ from .utils_psutil import (
     ifconfig,
     cpu_num,
     netstat,
-    cputimes,
-)
+    )
 from lib.update_remote_agent import agentinfoversion
 
 if sys.platform.startswith("win"):

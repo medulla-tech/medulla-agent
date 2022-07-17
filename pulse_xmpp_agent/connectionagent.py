@@ -48,7 +48,6 @@ import os
 import logging
 import platform
 import subprocess
-import base64
 import time
 import json
 import re

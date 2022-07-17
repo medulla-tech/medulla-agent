@@ -25,9 +25,6 @@
 """
 Provides access to PKGS database
 """
-
-# standard modules
-import time
 import traceback
 import os
 
@@ -37,24 +34,14 @@ from sqlalchemy import (
     create_engine,
     MetaData,
     Table,
-    Column,
-    String,
-    Integer,
-    ForeignKey,
-    select,
     asc,
-    or_,
     desc,
-    func,
-    not_,
     distinct,
 )
-from sqlalchemy.orm import create_session, mapper, relation
-from sqlalchemy.exc import NoSuchTableError, TimeoutError
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import create_session, mapper
+from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import scoped_session
-import datetime
 
 # ORM mappings
 from lib.plugins.pkgs.orm.dependencies import Dependencies

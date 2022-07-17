@@ -24,7 +24,6 @@ import sys
 import os
 from distutils.version import StrictVersion
 import logging
-import shutil
 from lib import utils
 
 FILETREEVERSION = "0.1"

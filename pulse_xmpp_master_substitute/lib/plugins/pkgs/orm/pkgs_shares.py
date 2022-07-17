@@ -26,7 +26,6 @@
 
 # file : pkgs/orm/pkgs_shares.py
 
-import logging
 
 """ Class to map pkgs.Extensions to SA
 """

@@ -30,7 +30,7 @@ import socket
 import psutil
 import os
 # from distutils.util import strtobool
-from lib.utils import simplecommand, powerschellscriptps1, powerschellscript1ps1
+from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
 
 import traceback
