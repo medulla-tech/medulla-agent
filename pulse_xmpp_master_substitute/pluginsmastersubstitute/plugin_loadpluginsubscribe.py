@@ -30,8 +30,6 @@ import types
 from lib.plugins.xmpp import XmppMasterDatabase
 import os
 import time
-
-import subprocess
 from lib.utils import file_put_contents, simplecommandstr
 import ConfigParser
 

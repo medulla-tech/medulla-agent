@@ -22,27 +22,10 @@
 # plugin register machine dans presence table xmpp.
 # file /pluginsmastersubstitute/plugin___server_file.py
 #
-import base64
 import traceback
-import os
 import json
 import logging
-from lib.plugins.xmpp import XmppMasterDatabase
-from lib.plugins.glpi import Glpi
-from lib.plugins.kiosk import KioskDatabase
-from lib.manageRSAsigned import MsgsignedRSA
-from slixmpp import jid
-from lib.utils import getRandomName, name_random
-import re
-from distutils.version import LooseVersion
-import configparser
-import netaddr
-
-# this import will be used later
-import types
-import time
-import sys
-import hashlib
+from lib.utils import name_random
 import asyncio
 # 3rd party modules
 import posix_ipc

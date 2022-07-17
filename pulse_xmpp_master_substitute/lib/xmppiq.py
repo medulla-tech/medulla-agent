@@ -34,11 +34,9 @@ from .utils import (
     shellcommandtimeout,
     file_put_contents,
     file_get_contents,
-    file_put_contents_w_a,
     decode_strconsole,
     encode_strconsole,
     keypub,
-    simplecommand,
     restartsshd,
     pulseuser_useraccount_mustexist,
     pulseuser_profile_mustexist,
@@ -51,7 +49,6 @@ import zlib
 import re
 import base64
 import traceback
-import uuid
 import subprocess
 from lib.managepackage import managepackage
 from lib.update_remote_agent import Update_Remote_Agent

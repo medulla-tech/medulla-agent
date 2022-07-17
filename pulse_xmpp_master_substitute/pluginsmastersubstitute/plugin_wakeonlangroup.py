@@ -22,7 +22,6 @@
 #
 
 import json
-import sys
 from lib.plugins.xmpp import XmppMasterDatabase
 import traceback
 from lib.utils import name_random

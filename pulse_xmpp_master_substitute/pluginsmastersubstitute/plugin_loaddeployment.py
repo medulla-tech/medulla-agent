@@ -42,14 +42,11 @@ from lib.utils import (
     call_plugin,
     name_random,
     name_randomplus,
-    file_get_contents,
-    file_put_contents,
-)
+    )
 import configparser
 import types
 import datetime
 import random
-import re
 from slixmpp import jid
 import time
 import threading

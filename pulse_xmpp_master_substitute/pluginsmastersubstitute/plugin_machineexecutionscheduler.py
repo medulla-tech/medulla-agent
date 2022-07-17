@@ -26,7 +26,6 @@ if deploy is pause, run, abandonned
 
 """
 import json
-import sys
 from lib.plugins.xmpp import XmppMasterDatabase
 import traceback
 import logging
