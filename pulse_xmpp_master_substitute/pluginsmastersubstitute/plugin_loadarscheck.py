@@ -33,8 +33,6 @@ from lib.utils import name_random
 import configparser
 import types
 import time
-import random
-import re
 from slixmpp import jid
 from slixmpp.exceptions import IqError, IqTimeout
 

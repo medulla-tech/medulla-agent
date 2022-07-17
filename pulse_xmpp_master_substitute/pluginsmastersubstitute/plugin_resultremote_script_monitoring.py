@@ -22,14 +22,11 @@
 #
 # file : pluginsmastersubstitute/plugin_resultremote_script_monitoring.py
 
-import sys
 import json
 import logging
-import traceback
 import zlib
-import os
 import base64
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger()
 plugin = { "VERSION": "1.0", "NAME": "resultremote_script_monitoring", "TYPE": "substitute", }  # fmt: skip

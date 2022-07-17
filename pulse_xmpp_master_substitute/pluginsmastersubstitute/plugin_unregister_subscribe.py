@@ -22,10 +22,6 @@
 #
 # file pluginsmastersubstitute/plugin_unregister_subscribe.py
 import logging
-import traceback
-import json
-
-from lib.plugins.xmpp import XmppMasterDatabase
 
 logger = logging.getLogger()
 
