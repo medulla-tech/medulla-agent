@@ -25,6 +25,7 @@
 """ Class to map msc.commands_on_host to SA
 """
 
+
 class Packages(object):
     """Mapping between msc.commands_on_host and SA"""
 
