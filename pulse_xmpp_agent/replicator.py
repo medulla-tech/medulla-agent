@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# (c) 2016-2020 siveo, http://www.siveo.net
+# (c) 2016-2022 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -19,19 +19,18 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-# Attention, ce programme doit ce trouver dans le même répertoire que l'agent
-# file : pulse_xmpp_agent/replicator.py
 
-# fait une copy  de l'agent actuel.
+
+"""
+    Allow to create a copy of the actual agent.
+    WARNING: This software MUST BE in the same folder as the actual agent.
+"""
 import os
 import sys
 import logging
 import json
 import hashlib
 import shutil
-import urllib.request
-import urllib.error
-import urllib.parse
 import importlib
 
 from optparse import OptionParser

@@ -38,8 +38,7 @@ import traceback
 from pprint import pprint
 import hashlib
 import base64
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
 import pickle
 from .agentconffile import conffilename
 import configparser

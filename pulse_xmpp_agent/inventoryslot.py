@@ -30,8 +30,6 @@ from optparse import OptionParser
 import traceback
 import time
 import urllib.request
-import urllib.error
-import urllib.parse
 import signal
 from threading import Thread
 import imp

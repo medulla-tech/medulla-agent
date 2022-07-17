@@ -31,8 +31,6 @@ import os
 import logging
 import logging.handlers
 import urllib.request
-import urllib.error
-import urllib.parse
 
 # to had event log, do not remove
 # https://stackoverflow.com/questions/51385195/writing-to-windows-event-log-using-win32evtlog-from-pywin32-library

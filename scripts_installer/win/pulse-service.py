@@ -35,8 +35,6 @@ import sys
 import logging
 import logging.handlers
 import urllib.request
-import urllib.error
-import urllib.parse
 
 
 class SMWinservice(win32serviceutil.ServiceFramework):

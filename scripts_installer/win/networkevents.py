@@ -26,7 +26,6 @@
 
 from collections import deque
 import logging
-import logging.handlers
 from threading import Thread
 import pythoncom
 import win32file

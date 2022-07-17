@@ -43,7 +43,6 @@ import json
 from lxml import etree
 import urllib.request
 import urllib.parse
-import urllib.error
 import socket
 from threading import Lock
 from lib.utils import (
