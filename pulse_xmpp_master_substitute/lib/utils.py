@@ -191,7 +191,7 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This function is used to obtain the path to the temporary directory used 
+    This function is used to obtain the path to the temporary directory used
     by the agent to store informations like network or configuration fingerprints.
 
 
@@ -220,12 +220,12 @@ def cleanbacktodeploy(objectxmpp):
 
 def networkinfoexist():
     """
-        This function is used to check that the fingerprintnetwork folder
-        exists.
+    This function is used to check that the fingerprintnetwork folder
+    exists.
 
-        Returns:
-            True if the file exists
-            False if the file does not exists
+    Returns:
+        True if the file exists
+        False if the file does not exists
     """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
     if os.path.exists(filenetworkinfo):
