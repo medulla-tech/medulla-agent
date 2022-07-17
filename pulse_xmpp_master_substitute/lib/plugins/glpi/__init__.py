@@ -28,10 +28,10 @@ import logging
 from sqlalchemy import (
     create_engine,
     MetaData,
-    )
+)
 from sqlalchemy.orm import (
     sessionmaker,
-    )
+)
 
 try:
     from sqlalchemy.orm.util import _entity_descriptor

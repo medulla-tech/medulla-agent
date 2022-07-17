@@ -62,7 +62,7 @@ from .utils_psutil import (
     ifconfig,
     cpu_num,
     netstat,
-    )
+)
 from lib.update_remote_agent import agentinfoversion
 
 if sys.platform.startswith("win"):
