@@ -212,7 +212,7 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This function is used to obtain the path to the temporary directory used 
+    This function is used to obtain the path to the temporary directory used
     by the agent to store informations like network or configuration fingerprints.
 
 
@@ -430,7 +430,7 @@ def networkchanged():
     A network change means that the interfaces changed ( new or deleted )
 
     Returns:
-        True if we consider that the network changed 
+        True if we consider that the network changed
         False if we consider that the network has not changed
     """
     if networkinfoexist():
