@@ -22,7 +22,6 @@
 import logging
 import json
 from lib import utils
-from slixmpp.exceptions import IqError
 import traceback
 
 logger = logging.getLogger()

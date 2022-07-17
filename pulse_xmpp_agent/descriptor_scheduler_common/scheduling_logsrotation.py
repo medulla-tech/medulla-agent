@@ -21,9 +21,8 @@
 
 # file : descriptor_scheduler_machine/scheduling_logsrotation.py
 
-from lib.agentconffile import directoryconffile, conffilename
+from lib.agentconffile import directoryconffile
 import os
-import sys
 import shutil
 import logging
 import datetime

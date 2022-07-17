@@ -28,9 +28,7 @@ import shlex
 import json
 import subprocess
 from lib import utils
-import shutil
 import logging
-import traceback
 import time
 
 if sys.platform.startswith("win"):

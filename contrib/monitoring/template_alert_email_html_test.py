@@ -22,21 +22,17 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA
 
-import pickle
 import json
 import smtplib
-import sys
 import logging
 from email.mime.multipart import MIMEMultipart
 import email.mime.application
 from email.mime.text import MIMEText
 from email.utils import formatdate
 import os.path
-import mimetypes
-import re
 import traceback
 
-LOGFILE ="/var/lib/pulse2/script_monitoring/logfilescriptemail.log"
+LOGFILE = "/var/lib/pulse2/script_monitoring/logfilescriptemail.log"
 logger = logging.getLogger()
 
 # jsonstructparametre={"subject" : "Event report",
@@ -110,7 +106,7 @@ font-family:sans-serif;
 <!-- mon_devices_serial = @mon_devices_serial@ -->
 <!-- mon_devices_id = @mon_devices_id@ -->"""
 
-    if dictresult['mon_devices_device_type'] == "device":
+    if dictresult["mon_devices_device_type"] == "device":
         templateevent += """
 <table>
   <!-- <caption>Device information</caption> -->
@@ -136,9 +132,10 @@ font-family:sans-serif;
     </tr>
   </tbody>
 </table>"""
-    elif dictresult['mon_devices_device_type'] == "system":
-        codemetrique = json.dumps(dictresult['mon_devices_doc'], indent=4)
-        templateevent += """
+    elif dictresult["mon_devices_device_type"] == "system":
+        codemetrique = json.dumps(dictresult["mon_devices_doc"], indent=4)
+        templateevent += (
+            """
 <table>
   <!-- <caption>System information</caption> -->
    <thead>
@@ -154,7 +151,9 @@ font-family:sans-serif;
       <td><code>%s</code></td>
     </tr>
   </tbody>
-</table>""" % codemetrique
+</table>"""
+            % codemetrique
+        )
 
     templateevent += """
 <!-- MACHINES INFORMATION -->
@@ -164,10 +163,10 @@ mon_machine_date = @mon_machine_date@
 mon_machine_id = @mon_machine_id@
 mon_machine_machines_id = @mon_machine_machines_id@ -->
 """
-    if dictresult['agenttype'] == "relayserver":
-        Tmach = "RELAY SERVER (%s)" % dictresult['platform']
+    if dictresult["agenttype"] == "relayserver":
+        Tmach = "RELAY SERVER (%s)" % dictresult["platform"]
     else:
-        Tmach = "MACHINE (%s)" % dictresult['platform']
+        Tmach = "MACHINE (%s)" % dictresult["platform"]
     templateevent += """
 <table>
   <!-- <caption>Device information</caption> -->
@@ -197,7 +196,9 @@ mon_machine_machines_id = @mon_machine_machines_id@ -->
 
     </tr>
   </tbody>
-</table>""" % (Tmach)
+</table>""" % (
+        Tmach
+    )
 
     templateevent += """
 <!-- network INFORMATION -->
@@ -269,7 +270,7 @@ glpi_owner = @glpi_owner@ -->
   </tbody>
 </table>"""
 
-    if dictresult['ad_ou_machine'] or dictresult['ad_ou_user']:
+    if dictresult["ad_ou_machine"] or dictresult["ad_ou_user"]:
         templateevent += """
         <!-- AD INFORMATION -->
         <!-- ad_ou_machine = @ad_ou_machine@
@@ -355,16 +356,16 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
 def loads_alert():
     """
-        Metadata to be added in the python script
+    Metadata to be added in the python script
     """
     msgfrom = """@@@@@msgfrom@@@@@"""
     binding = """@@@@@binding@@@@@"""
 
-    serialisationpickleevent = u"""@@@@@event@@@@@"""
+    serialisationpickleevent = """@@@@@event@@@@@"""
 
     eventstruct = json.loads(serialisationpickleevent)
-    if 'general_status' in eventstruct['mon_devices_doc']:
-        eventstruct['general_status'] = eventstruct['mon_devices_doc']['general_status']
+    if "general_status" in eventstruct["mon_devices_doc"]:
+        eventstruct["general_status"] = eventstruct["mon_devices_doc"]["general_status"]
 
     # ---------------------------------------------
     # eventstruct est la structure des informations de l'alerte.
@@ -373,17 +374,12 @@ def loads_alert():
 
 
 class message_email_smtp_ssl:
-    def __init__(
-            self,
-            serverhost,
-            porthost,
-            compte_email,
-            email_password):
+    def __init__(self, serverhost, porthost, compte_email, email_password):
         self.serverhost = serverhost
         self.porthost = porthost
         self.compte_email = compte_email
         self.email_password = email_password
-        self.fromaddr = 'Alert <%s>' % compte_email
+        self.fromaddr = "Alert <%s>" % compte_email
         self.subject_email = "Event report"
         self.namefile = None
 
@@ -408,15 +404,16 @@ class message_email_smtp_ssl:
     def connectsend(self):
         if self.msg_plain_text or self.msg_plain_text:
             try:
-                self.server = smtplib.SMTP_SSL()  # We use the SMTP_SSL() function instead of SMTP()
+                self.server = (
+                    smtplib.SMTP_SSL()
+                )  # We use the SMTP_SSL() function instead of SMTP()
                 print(self.serverhost)
                 print(self.porthost)
-                connect_to_server = self.server.connect(
-                    self.serverhost, self.porthost) 
+                connect_to_server = self.server.connect(self.serverhost, self.porthost)
                 print(connect_to_server)
 
                 hello_from_server = self.server.ehlo()
-                print (hello_from_server)
+                print(hello_from_server)
                 self.server.login(self.compte_email, self.email_password)
                 return True
             except BaseException:
@@ -428,57 +425,52 @@ class message_email_smtp_ssl:
 
     def send_mail(self):
         if self.connectsend():
-            msg = MIMEMultipart('alternative')
-            msg['From'] = self.fromaddr
-            msg['To'] = ','.join(self.to_addrs_array)
-            msg['Subject'] = self.subject_email
+            msg = MIMEMultipart("alternative")
+            msg["From"] = self.fromaddr
+            msg["To"] = ",".join(self.to_addrs_array)
+            msg["Subject"] = self.subject_email
             msg["Date"] = formatdate(localtime=True)
             # Record the MIME types of both parts - text/plain and text/html.
             if self.msg_plain_text:
-                part1 = MIMEText(self.msg_plain_text, 'plain')
+                part1 = MIMEText(self.msg_plain_text, "plain")
                 msg.attach(part1)
             if self.msg_html_text:
-                part2 = MIMEText(self.msg_html_text, 'html')
+                part2 = MIMEText(self.msg_html_text, "html")
                 msg.attach(part2)
             if self.namefile:
                 if os.path.isfile(self.namefile):
-                    suffixe = self.namefile.split('.')
+                    suffixe = self.namefile.split(".")
                     if len(suffixe) > 1:
                         suffixe = suffixe[-1]
                     else:
                         suffixe = "dat"
-                    fp = open(self.namefile, 'rb')
+                    fp = open(self.namefile, "rb")
                     att = email.mime.application.MIMEApplication(
-                        fp.read(), _subtype=suffixe)
+                        fp.read(), _subtype=suffixe
+                    )
                     fp.close()
                     att.add_header(
-                        'Content-Disposition',
-                        'attachment',
-                        filename=os.path.basename(
-                            self.namefile))
+                        "Content-Disposition",
+                        "attachment",
+                        filename=os.path.basename(self.namefile),
+                    )
                     msg.attach(att)
             try:
                 self.server.sendmail(
-                    self.fromaddr,
-                    self.to_addrs_array,
-                    msg.as_string())
+                    self.fromaddr, self.to_addrs_array, msg.as_string()
+                )
             except smtplib.SMTPException as e:
                 print(e)
             self.server.quit()
 
 
 class message_email_smtp_ssl_tls:
-    def __init__(
-            self,
-            serverhost,
-            porthost,
-            compte_email,
-            email_password):
+    def __init__(self, serverhost, porthost, compte_email, email_password):
         self.serverhost = serverhost
         self.porthost = porthost
         self.compte_email = compte_email
         self.email_password = email_password
-        self.fromaddr = 'Alert <%s>' % compte_email
+        self.fromaddr = "Alert <%s>" % compte_email
         self.subject_email = "Event report"
         self.namefile = None
 
@@ -503,8 +495,7 @@ class message_email_smtp_ssl_tls:
                 self.server = smtplib.SMTP()  # With TLS, we use SMTP()
                 print(self.serverhost)
                 print(self.porthost)
-                connect_to_server = self.server.connect(
-                    self.serverhost, self.porthost)
+                connect_to_server = self.server.connect(self.serverhost, self.porthost)
                 print(connect_to_server)
                 logger.debug("connect_to_server %s" % connect_to_server)
 
@@ -523,40 +514,40 @@ class message_email_smtp_ssl_tls:
 
     def send_mail(self):
         if self.connectsend():
-            msg = MIMEMultipart('alternative')
-            msg['From'] = self.fromaddr
-            msg['To'] = ','.join(self.to_addrs_array)
-            msg['Subject'] = self.subject_email
+            msg = MIMEMultipart("alternative")
+            msg["From"] = self.fromaddr
+            msg["To"] = ",".join(self.to_addrs_array)
+            msg["Subject"] = self.subject_email
             msg["Date"] = formatdate(localtime=True)
             # Record the MIME types of both parts - text/plain and text/html.
             if self.msg_plain_text:
-                part1 = MIMEText(self.msg_plain_text, 'plain')
+                part1 = MIMEText(self.msg_plain_text, "plain")
                 msg.attach(part1)
             if self.msg_html_text:
-                part2 = MIMEText(self.msg_html_text, 'html')
+                part2 = MIMEText(self.msg_html_text, "html")
                 msg.attach(part2)
             if self.namefile:
                 if os.path.isfile(self.namefile):
-                    suffixe = self.namefile.split('.')
+                    suffixe = self.namefile.split(".")
                     if len(suffixe) > 1:
                         suffixe = suffixe[-1]
                     else:
                         suffixe = "dat"
-                    fp = open(self.namefile, 'rb')
+                    fp = open(self.namefile, "rb")
                     att = email.mime.application.MIMEApplication(
-                        fp.read(), _subtype=suffixe)
+                        fp.read(), _subtype=suffixe
+                    )
                     fp.close()
                     att.add_header(
-                        'Content-Disposition',
-                        'attachment',
-                        filename=os.path.basename(
-                            self.namefile))
+                        "Content-Disposition",
+                        "attachment",
+                        filename=os.path.basename(self.namefile),
+                    )
                     msg.attach(att)
             try:
                 self.server.sendmail(
-                    self.fromaddr,
-                    self.to_addrs_array,
-                    msg.as_string())
+                    self.fromaddr, self.to_addrs_array, msg.as_string()
+                )
             except smtplib.SMTPException as e:
                 print(e)
             self.server.quit()
@@ -564,25 +555,27 @@ class message_email_smtp_ssl_tls:
 
 def main():
     doc = _template_html_event(eventstruct)
-    if eventstruct['mon_rules_comment']['email_servertype']:
+    if eventstruct["mon_rules_comment"]["email_servertype"]:
         emailobj = message_email_smtp_ssl(
-            eventstruct['mon_rules_comment']['email_server'],
-            eventstruct['mon_rules_comment']['email_serverport'],
-            eventstruct['mon_rules_comment']['email_account'],
-            eventstruct['mon_rules_comment']['email_password'])
-        emailobj.subject(
-            subject_email=eventstruct['mon_rules_comment']['subject'])
-        emailobj.destinaire([eventstruct['mon_rules_user']])
+            eventstruct["mon_rules_comment"]["email_server"],
+            eventstruct["mon_rules_comment"]["email_serverport"],
+            eventstruct["mon_rules_comment"]["email_account"],
+            eventstruct["mon_rules_comment"]["email_password"],
+        )
+        emailobj.subject(subject_email=eventstruct["mon_rules_comment"]["subject"])
+        emailobj.destinaire([eventstruct["mon_rules_user"]])
         emailobj.message_text(minetype_plain_text="ne pas repondre")
         emailobj.message_html(minetype_html_text=doc)
         emailobj.send_mail()
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(message)s',
-                        filename = LOGFILE,
-                        filemode = 'a')
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(message)s",
+        filename=LOGFILE,
+        filemode="a",
+    )
     logger.debug("Program Starting")
     eventstruct, msgfrom, binding = loads_alert()
     print(json.dumps(eventstruct, indent=4))

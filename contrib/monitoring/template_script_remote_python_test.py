@@ -23,14 +23,11 @@
 # MA 02110-1301, USA
 
 import json
-import MySQLdb
-import traceback
-import logging
 import subprocess
 import sys
 
 
-if sys.platform.startswith('win'):
+if sys.platform.startswith("win"):
     import wmi
     import pythoncom
     import _winreg as wr
@@ -48,11 +45,12 @@ if sys.platform.startswith('win'):
 # LOGFILE ="/var/lib/pulse2/script_monitoring/log_file_script_remote_python.log"
 # logger = logging.getLogger()
 
+
 def listservice():
     """
     This function lists the available services
     """
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         pythoncom.CoInitialize()
         try:
             wmi_obj = wmi.WMI()
@@ -65,51 +63,55 @@ def listservice():
             print(dev.DisplayName)
     else:
         obj = simplecommandstr("systemctl list-units --type=service")
-        print(obj['result'])
+        print(obj["result"])
+
 
 def simplecommandstr(cmd):
     obj = {}
-    p = subprocess.Popen(cmd,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
-    obj['result'] = [x.strip() for x in result if x.strip() != ""]
-    obj['result']="\n".join(obj['result'])
+    obj["code"] = p.wait()
+    obj["result"] = [x.strip() for x in result if x.strip() != ""]
+    obj["result"] = "\n".join(obj["result"])
     return obj
+
 
 def simplecommand(cmd):
     obj = {}
-    p = subprocess.Popen(cmd,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
     result = p.stdout.readlines()
-    obj['code'] = p.wait()
-    obj['result'] = result
+    obj["code"] = p.wait()
+    obj["result"] = result
     return obj
+
 
 def loads_alert():
     # The metadata we need to add on the python script
     serialisationpickleevent = """@@@@@event@@@@@"""
-    
+
     eventstruct = json.loads(serialisationpickleevent)
-    if 'general_status' in eventstruct['mon_devices_doc']:
-        eventstruct['general_status'] = eventstruct['mon_devices_doc']['general_status']
+    if "general_status" in eventstruct["mon_devices_doc"]:
+        eventstruct["general_status"] = eventstruct["mon_devices_doc"]["general_status"]
     return eventstruct
 
 
 def windowspath(namescript):
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         return '"' + namescript + '"'
     else:
         return namescript
 
+
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
     print("powershell -ExecutionPolicy Bypass -File  %s" % namescript)
-    obj = simplecommandstr(encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript))
+    obj = simplecommandstr(
+        encode_strconsole("powershell -ExecutionPolicy Bypass -File %s" % namescript)
+    )
     return obj
 
 
@@ -117,18 +119,20 @@ def main():
     # Personal Code below exec on remote machine
     # In the example code.
     # we recover the list of services on the remote machine
-    print ("CECI EST LE RESULTAT DU SCRIPT DISTANT 'EXECUTION SCRIPT REMOTE PYTHON'")
-    print ("les sorties de print sont directs renvoyes")
-    print ("exemple liste des services")
+    print("CECI EST LE RESULTAT DU SCRIPT DISTANT 'EXECUTION SCRIPT REMOTE PYTHON'")
+    print("les sorties de print sont directs renvoyes")
+    print("exemple liste des services")
     listservice()
 
     # END Personal Code
     # Please modify the code before ( in the Personal code part ), if you know what you are doing.
+
+
 if __name__ == "__main__":
-    #logging.basicConfig(level=logging.DEBUG,
-                        #format='%(asctime)s %(message)s',
-                        #filename = LOGFILE,
-                        #filemode = 'a')
-    #logger.debug("Program started")
+    # logging.basicConfig(level=logging.DEBUG,
+    # format='%(asctime)s %(message)s',
+    # filename = LOGFILE,
+    # filemode = 'a')
+    # logger.debug("Program started")
     eventstruct = loads_alert()
     main()

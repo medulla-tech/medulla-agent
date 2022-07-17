@@ -28,8 +28,6 @@ xmppmaster database handler
 # SqlAlchemy
 from sqlalchemy import (
     create_engine,
-    MetaData,
-    select,
     func,
     and_,
     desc,
@@ -37,10 +35,9 @@ from sqlalchemy import (
     distinct,
     not_,
 )
-from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from sqlalchemy.ext.automap import automap_base
 from datetime import date, datetime, timedelta
 import pprint
 
@@ -53,16 +50,13 @@ from lib.plugins.xmpp.schema import (
     Machines,
     RelayServer,
     Users,
-    Regles,
     Has_machinesusers,
     Has_relayserverrules,
     Has_guacamole,
-    Base,
     UserLog,
     Deploy,
     Has_login_command,
     Logs,
-    ParametersDeploy,
     Organization,
     Packages_list,
     Qa_custom_command,
@@ -82,8 +76,6 @@ from lib.plugins.xmpp.schema import (
     Uptime_machine,
     Mon_machine,
     Mon_devices,
-    Mon_device_service,
-    Mon_rules,
     Mon_event,
     Mon_panels_template,
     Glpi_entity,
@@ -107,11 +99,8 @@ import uuid
 from lib.configuration import confParameter
 from lib.utils import (
     getRandomName,
-    file_get_content,
-    file_put_content,
     simplecommandstr,
 )
-import stat
 import subprocess
 import functools
 import base64

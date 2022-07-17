@@ -23,11 +23,9 @@
 kiosk database handler
 """
 # SqlAlchemy
-from sqlalchemy import create_engine, MetaData, select, func, and_, desc, or_, distinct
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import DBAPIError, NoSuchTableError
-from sqlalchemy import update
-from datetime import date, datetime, timedelta
+from sqlalchemy.exc import DBAPIError
 
 # PULSE2 modules
 # from mmc.database.database_helper import DatabaseHelper
@@ -41,13 +39,9 @@ from lib.plugins.kiosk.schema import (
 
 # Imported last
 import logging
-import json
 import time
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
 import functools
-from sqlalchemy.orm import Query
 
 try:
     from sqlalchemy.orm.util import _entity_descriptor

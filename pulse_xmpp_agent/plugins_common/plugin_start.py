@@ -20,7 +20,6 @@
 # MA 02110-1301, USA.
 # file  pulse_xmpp_agent/pluginsmachine/plugin_start.py
 
-import sys
 import os
 import logging
 from lib import utils

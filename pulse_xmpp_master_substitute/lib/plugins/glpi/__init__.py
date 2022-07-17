@@ -24,46 +24,14 @@
 This module declare all the necessary stuff to connect to a glpi database in it's
 version 9.2
 """
-import os
 import logging
-import re
-import base64
-import json
-import requests
-import traceback
-import sys
-import datetime
-import calendar
-import hashlib
-import time
-from xmlrpc.client import ProtocolError
-import functools
 from sqlalchemy import (
-    and_,
     create_engine,
     MetaData,
-    Table,
-    Column,
-    String,
-    Integer,
-    Date,
-    ForeignKey,
-    asc,
-    or_,
-    not_,
-    desc,
-    func,
-    distinct,
 )
 from sqlalchemy.orm import (
-    create_session,
-    mapper,
-    relationship,
     sessionmaker,
-    Query,
-    scoped_session,
 )
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 try:
     from sqlalchemy.orm.util import _entity_descriptor
@@ -73,29 +41,8 @@ try:
     from sqlalchemy.sql.expression import ColumnOperators
 except ImportError:
     from sqlalchemy.sql.operators import ColumnOperators
-from sqlalchemy.exc import OperationalError, NoSuchTableError
-
-# TODO rename location into entity (and locations in location)
-
-# from mmc.plugins.glpi.config import GlpiConfig
-# from mmc.plugins.glpi.utilities import complete_ctx
-# from lib.plugins.kiosk import KioskDatabase
-from lib.plugins.utils.database_utils import (
-    decode_latin1,
-    encode_latin1,
-    decode_utf8,
-    encode_utf8,
-    fromUUID,
-    toUUID,
-    setUUID,
-)
-
-from lib.plugins.utils.database_utils import DbTOA  # pyflakes.ignore
-
-# from mmc.plugins.dyngroup.config import DGConfig
-from distutils.version import LooseVersion, StrictVersion
+from sqlalchemy.exc import OperationalError
 from lib.configuration import confParameter
-from lib.plugins.xmpp import XmppMasterDatabase
 
 from lib.plugins.glpi.Glpi84 import Glpi84
 from lib.plugins.glpi.Glpi92 import Glpi92

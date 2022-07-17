@@ -34,15 +34,12 @@ import traceback
 import os
 import json
 import logging
-from slixmpp import jid
 from lib import utils
 
 import base64
 import zlib
 import configparser
 import re
-from lib.agentconffile import directoryconffile
-from distutils.version import LooseVersion
 
 # this import will be used later
 import types

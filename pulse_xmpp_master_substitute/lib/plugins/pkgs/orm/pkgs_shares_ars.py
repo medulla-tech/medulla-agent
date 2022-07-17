@@ -24,7 +24,6 @@
 
 # flie : pkgs/orm/pkgs_shares_ars.py
 
-import logging
 
 """ Class to map pkgs.pkgs_shares_ars to SA
 """

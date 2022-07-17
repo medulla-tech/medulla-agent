@@ -25,7 +25,6 @@
 # uses SA to handle sessions
 # file : pkgs_agent/lib/plugins/pkgs/orm/pkgs_rules_algos.py
 
-import logging
 
 """ Class to map pkgs.pkgs_rules_algos to SA
 """

@@ -20,11 +20,8 @@
 # MA 02110-1301, USA.
 
 import sys
-import os
 from distutils.version import StrictVersion
 import logging
-import zipfile
-import platform
 from lib import utils
 
 RDPVERSION = "0.2"

@@ -24,10 +24,6 @@
 
 """ Class to map msc.commands_on_host to SA
 """
-
-import logging
-import time
-import datetime
 import sqlalchemy.orm
 
 

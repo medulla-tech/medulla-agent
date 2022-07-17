@@ -41,7 +41,6 @@ from lib.utils import (
     DEBUGPULSE,
     getRandomName,
     call_plugin,
-    call_plugin_sequentially,
     ipfromdns,
     base_message_queue_posix,
 )
@@ -52,12 +51,8 @@ from lib.plugins.glpi import Glpi
 from lib.manage_scheduler import manage_scheduler
 import asyncio
 import random
-import imp
 from slixmpp.xmlstream.handler import CoroutineCallback
-from slixmpp.xmlstream.handler import Callback
-from slixmpp.xmlstream.matcher.xpath import MatchXPath
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
-from slixmpp.xmlstream.matcher.xmlmask import MatchXMLMask
 
 logger = logging.getLogger()
 

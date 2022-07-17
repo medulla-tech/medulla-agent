@@ -20,7 +20,6 @@
 # MA 02110-1301, USA.
 # file pluginsmachine/plugin_installconfmonitoring.py
 
-import os
 import logging
 import json
 import base64

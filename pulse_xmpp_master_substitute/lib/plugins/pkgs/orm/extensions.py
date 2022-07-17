@@ -24,7 +24,6 @@
 
 # uses SA to handle sessions
 
-import logging
 
 """ Class to map pkgs.Extensions to SA
 """

@@ -25,7 +25,6 @@
 # uses SA to handle sessions
 # file : /pkgs/orm/pkgs_rules_local.py
 
-import logging
 
 """ Class to map pkgs.pkgs_rules_local to SA
 """

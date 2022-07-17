@@ -20,7 +20,6 @@
 # MA 02110-1301, USA.
 # file : pulse_agent_plugins/relay/plugin_cluster.py
 
-import json
 import logging
 from lib import utils
 

@@ -29,8 +29,9 @@ import re
 import socket
 import psutil
 import os
+
 # from distutils.util import strtobool
-from lib.utils import simplecommand, powerschellscriptps1, powerschellscript1ps1
+from lib.utils import simplecommand, powerschellscript1ps1
 from . import utils
 
 import traceback
@@ -461,11 +462,15 @@ def powershellfqdnwindowscommandbyuser(user):
         )
     return ""
 
+
 def powershellgetlastuser():
     if sys.platform.startswith("win"):
         script = os.path.abspath(
             os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),"..", "script", "getlastuser.ps1"
+                os.path.dirname(os.path.realpath(__file__)),
+                "..",
+                "script",
+                "getlastuser.ps1",
             )
         )
         result = powerschellscript1ps1(script)
@@ -477,10 +482,10 @@ def powershellgetlastuser():
                     for x in result["result"]
                     if x.strip().replace(os.linesep, "") != ""
                 ]
-                namelist=[]
-                if len(line)> 2:
+                namelist = []
+                if len(line) > 2:
                     for t in line[2:]:
-                        res=t.split("\\")[1]
+                        res = t.split("\\")[1]
                         if res:
                             final = res.split(" ")[:-1]
                             if final:
@@ -491,6 +496,7 @@ def powershellgetlastuser():
             logger.error("\n%s" % (traceback.format_exc()))
             return "system"
     return "system"
+
 
 def isMachineInDomain():
     """

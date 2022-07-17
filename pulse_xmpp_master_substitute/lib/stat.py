@@ -22,8 +22,6 @@
 # file /pulse_xmpp_master_substitute/lib/stat.py
 
 
-import sys
-import os
 import time
 import logging
 import datetime
