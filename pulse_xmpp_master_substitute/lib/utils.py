@@ -2264,8 +2264,8 @@ def get_user_profile(username="pulseuser"):
     result = simplecommand(encode_strconsole(check_profile_cmd))
     if result["code"] == 0 and result["result"]:
         return result["result"][0]
-    else:
-        return ""
+
+    return ""
 
 
 def get_user_sid(username="pulseuser"):
@@ -2474,9 +2474,9 @@ def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
     if result["code"] == 0:
         msg = "Creation of %s user account successful: %s" % (username, result)
         return True, msg
-    else:
-        msg = "Creation of %s user account failed: %s" % (username, result)
-        return False, msg
+
+    msg = "Creation of %s user account failed: %s" % (username, result)
+    return False, msg
 
 
 def reversessh_keys_mustexist_on_relay(username="reversessh"):
@@ -2628,21 +2628,13 @@ class geolocalisation_agent:
                 self.determination = True
                 self.setdatafilegeolocalisation()
                 return self.localisation
-            else:
-                if self.localisation is not None:
-                    if not self.geoinfoexist():
-                        self.setdatafilegeolocalisation()
-                        self.determination = False
-                    return self.localisation
-                elif not self.geoinfoexist():
-                    self.localisation = geolocalisation_agent.searchgeolocalisation(
-                        self.listgeoserver
-                    )
+
+            if self.localisation is not None:
+                if not self.geoinfoexist():
                     self.setdatafilegeolocalisation()
-                    self.determination = True
-                    return self.localisation
-            return None
-        else:
+                    self.determination = False
+                return self.localisation
+
             if not self.geoinfoexist():
                 self.localisation = geolocalisation_agent.searchgeolocalisation(
                     self.listgeoserver
@@ -2650,6 +2642,16 @@ class geolocalisation_agent:
                 self.setdatafilegeolocalisation()
                 self.determination = True
                 return self.localisation
+
+            return None
+
+        if not self.geoinfoexist():
+            self.localisation = geolocalisation_agent.searchgeolocalisation(
+                self.listgeoserver
+            )
+            self.setdatafilegeolocalisation()
+            self.determination = True
+            return self.localisation
 
         return self.localisation
 
