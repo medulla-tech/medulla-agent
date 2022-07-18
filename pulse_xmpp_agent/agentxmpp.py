@@ -913,23 +913,6 @@ class MUCBot(slixmpp.ClientXMPP):
                                 % iq["id"]
                             )
                             return ret
-                            try:
-                                strdatajson = base64.b64decode(
-                                    bytes(z.tag[1:-5], "utf-8")
-                                )
-                                data = json.loads(strdatajson.decode("utf-8"))
-                                self.iq_msg.set_iq_result(iq["id"], data["result"])
-                                return data["result"]
-                            except Exception as e:
-                                logging.error("_handle_custom_iq : %s" % str(e))
-                                logger.error("\n%s" % (traceback.format_exc()))
-                                ret = '{"err" : "%s"}' % str(e).replace('"', "'")
-                                self.iq_msg.set_iq_result(ret, ret)
-                                return ret
-                            ret = "{}"
-                            # quposix.send(ret, 2)
-                            self.iq_msg.set_iq_result(iq["id"], ret)
-                            return ret
         else:
             # ... This will capture error responses too
             logger.debug("REV IQ OTHRER TYPE REQUEST")
