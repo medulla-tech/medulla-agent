@@ -956,21 +956,9 @@ class MUCBot(slixmpp.ClientXMPP):
             else:
                 self.startdata = 1
             while self.startdata > 0:
-                for _ in range(4):
-                    logger.debug("START loop Mode_Marche_Arret_loop")
                 if self.readconfig_Marche_Arret:
-                    logger.debug("on relit la configuration")
-                    # on reli la configuration si voulue
                     self.config = tgconf(type_machine)
-                    # self.config = confParameter(self.fileconf)
                 self.address = (ipfromdns(self.config.Server), int(self.config.Port))
-                logger.error(
-                    "Mode_Marche_Arret_loop self.address %s" % (str(self.address))
-                )
-                logger.debug(
-                    "try connection (%s) %s " % (self.startdata, str(self.address))
-                )
-                logger.debug("forever (%s) %s " % (forever, timeout))
                 ctrlC = self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
                 if ctrlC:  # ctrl+c on quit
                     return False

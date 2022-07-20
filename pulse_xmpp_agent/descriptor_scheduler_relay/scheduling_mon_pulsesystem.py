@@ -57,12 +57,7 @@ from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
 # WARNING: The descriptor MUST be in one line
-plugin = {
-    "VERSION": "1.40",
-    "NAME": "scheduling_mon_pulsesystem",
-    "TYPE": "relayserver",
-    "SCHEDULED": True,
-}
+plugin = {"VERSION": "1.40", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True,} # fmt: skip
 
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
 
