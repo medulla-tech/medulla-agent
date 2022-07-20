@@ -678,6 +678,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                       "pluginsrelay")
 
     while True:
+        if not tg.confserver.strip():
+            tg = confParameter(optstypemachine)
+
         if ipfromdns(tg.confserver) != "" and \
             check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
             break
