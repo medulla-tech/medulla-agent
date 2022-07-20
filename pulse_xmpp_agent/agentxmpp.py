@@ -803,7 +803,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 cmd = "ps -ef | grep 'relayserver' | grep 'agentxmpp' | grep -v grep | awk '{print $2}' | xargs -r kill -9"
             else:
                 cmd = "ps -ef | grep 'machine' | grep 'agentxmpp' | grep -v grep | awk '{print $2}' | xargs -r kill -9"
-            os.system(cmd
+            os.system(cmd)
 
     async def _handle_custom_iq_error(self, iq):
         if iq["type"] == "error":
@@ -3600,32 +3600,6 @@ def doTask(
                 processwin = json.dumps(dd.pidlist(), indent=4)
                 file_put_contents(windowfilepid, "%s" % processwin)
                 logging.debug("Process agent list : %s" % processwin)
-                # list python process
-                lpidsearch = []
-                for k, v in dd.get_pid().iteritems():
-                    if "python.exe" in v:
-                        lpidsearch.append(int(k))
-                logging.debug("Process python list : %s" % lpidsearch)
-                for pr in processes:
-                    logging.debug("search %s in %s" % (pr.pid, lpidsearch))
-                    if pr.pid not in lpidsearch:
-                        logging.debug(
-                            "Process %s pid %s is missing %s"
-                            % (pr.name, pr.pid, lpidsearch)
-                        )
-                        for p in processes:
-                            p.terminate()
-                        logging.debug("END PROGRAMM")
-                        cmd = "taskkill /F /PID %s" % os.getpid()
-                        result = simplecommand(cmd)
-                        break
-        except KeyboardInterrupt:
-            logging.error("TERMINATE PROGRAMM ON CTRL+C")
-            logging.debug("END PROGRAMM")
-            for p in processes:
-                p.terminate()
-            cmd = "taskkill /F /PID %s" % os.getpid()
-            result = simplecommand(cmd)
                 # list python process
                 lpidsearch = []
                 for k, v in dd.get_pid().iteritems():
