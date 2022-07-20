@@ -499,7 +499,6 @@ class confParameter:
             self.detectiontime = Config.getint("networkstatus", "detectiontime")
         else:
             self.detectiontime = 300
-        logger.info("detection time for networkstatus%s" % self.detectiontime)
 
         self.parametersscriptconnection = {}
 
