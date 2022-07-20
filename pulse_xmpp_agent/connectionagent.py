@@ -1034,6 +1034,8 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         )
 
     while True:
+        if not tg.confserver.strip():
+            tg = confParameter(optstypemachine)
         logging.log(
             DEBUGPULSE, "ipfromdns %s %s" % (ipfromdns(tg.confserver), tg.confserver)
         )
