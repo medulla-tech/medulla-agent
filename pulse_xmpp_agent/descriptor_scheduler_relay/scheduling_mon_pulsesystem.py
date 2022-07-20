@@ -39,7 +39,7 @@ import traceback
 import re
 import os
 import platform
-import ConfigParser
+import configparser
 
 logger = logging.getLogger()
 import subprocess
@@ -612,7 +612,7 @@ def schedule_main(xmppobject):
             if xmppobject.config.pulse_relay_enable:
                 pulse_relay_json = {}
                 pulse_relay_json["deployments"] = {}
-                relayconf = ConfigParser.ConfigParser()
+                relayconf = configparser.ConfigParser()
                 relayconf.read("/etc/pulse-xmpp-agent/relayconf.ini")
                 if os.path.exists("/etc/pulse-xmpp-agent/relayconf.ini.local"):
                     relayconf.read("/etc/pulse-xmpp-agent/relayconf.ini.local")
@@ -740,7 +740,7 @@ def send_monitoring_message(xmppobject, data_type, json_dict):
     data_type can be terminalInformations or terminalAlert
     """
     # Get monitoring agent
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read("/etc/pulse-xmpp-agent/relayconf.ini")
     if os.path.exists("/etc/pulse-xmpp-agent/relayconf.ini.local"):
         Config.read("/etc/pulse-xmpp-agent/relayconf.ini.local")
@@ -946,7 +946,7 @@ def __read_conf_scheduling_mon_pulsesystem(xmppobject):
         )
 
     # Load configuration from file
-    Config = ConfigParser.ConfigParser()
+    Config = configparser.ConfigParser()
     Config.read(configfilename)
     if os.path.exists(configfilename + ".local"):
         Config.read(configfilename + ".local")
