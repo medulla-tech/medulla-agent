@@ -969,7 +969,6 @@ class MUCBot(slixmpp.ClientXMPP):
         except:
             self.readconfig_Marche_Arret = True
         try:
-            logger.debug("Mode_Marche_Arret_loop")
             if nb_reconnect:
                 self.startdata = nb_reconnect
             else:
@@ -985,7 +984,6 @@ class MUCBot(slixmpp.ClientXMPP):
                     return True  # reinitialise agent
                 if nb_reconnect:
                     self.startdata = self.startdata - 1
-                logger.debug("Next reconect Mode_Marche_Arret_loop")
         except Exception:
             logger.error("Mode_Marche_Arret_loop\n%s" % (traceback.format_exc()))
         return False  # False quit agent xmpp
