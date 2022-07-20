@@ -23,7 +23,7 @@
 import hashlib
 import os
 import logging
-from .utils import file_get_contents, simplecommand
+from .utils import file_get_contents, simplecommand, file_get_binarycontents
 import json
 
 logger = logging.getLogger()
@@ -157,7 +157,7 @@ class Update_Remote_Agent:
             if x[-4:] == ".ps1"
         ]:
             self.directory["script_agent"][filename] = hashlib.md5(
-                file_get_contents(
+                file_get_binarycontents(
                     os.path.join(self.dir_agent_base, "script", filename).encode(
                         "utf-8"
                     )
