@@ -951,8 +951,8 @@ class MUCBot(slixmpp.ClientXMPP):
             cmd = "kill -s kill %s" % pidprogrammprincipal
             result = simplecommand(cmd)
         elif sys.platform.startswith("win"):
-            logging.error("TERMINATE PROGRAMM ON CTRL+C")
-            logging.debug("END PROGRAMM")
+            logging.debug("CTRL+C have been asked.")
+            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
             for p in processes:
                 p.terminate()
             cmd = "taskkill /F /PID %s" % pidprogrammprincipal
@@ -3617,8 +3617,9 @@ def doTask(
                     result = simplecommand(cmd)
                     break
         except KeyboardInterrupt:
-            logging.error("TERMINATE PROGRAMM ON CTRL+C")
-            logging.debug("END PROGRAMM")
+            logging.debug("CTRL+C have been asked.")
+            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
+
             for p in processes:
                 p.terminate()
             cmd = "kill -s kill %s" % os.getpid()
@@ -3662,8 +3663,8 @@ def doTask(
                         result = simplecommand(cmd)
                         break
         except KeyboardInterrupt:
-            logging.error("TERMINATE PROGRAMM ON CTRL+C")
-            logging.debug("END PROGRAMM")
+            logging.debug("CTRL+C have been asked.")
+            logging.debug("The Pulse Xmpp Agent Relay is now stopped")
             for p in processes:
                 p.terminate()
             cmd = "taskkill /F /PID %s" % os.getpid()
@@ -3674,11 +3675,12 @@ def doTask(
             for p in processes:
                 p.join()
         except KeyboardInterrupt:
-            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            logging.debug("CTRL+C have been asked.")
             sys.exit(1)
         except Exception as e:
-            logging.error("TERMINATE PROGRAMM ON ERROR : %s" % str(e))
-    logging.debug("END PROGRAMM")
+            logging.error("An error occured while trying to stop the agent with CTRL+C")
+            logging.error("The error is %s" % str(e))
+    logging.debug("The Pulse Xmpp Agent Relay is now stopped")
     sys.exit(0)
 
 
