@@ -276,7 +276,7 @@ class MsgsignedRSA:
         key = RSA.import_key(open(file_private_key).read())
         b_h = SHA256.new(message)
         signature = pss.new(key).sign(b_h)
-        return self.tostr(base64.b64encode(signature)
+        return self.tostr(base64.b64encode(signature))
 
     def verifymsg(self,message, b64_signed_message, file_public_key = None):
         """
