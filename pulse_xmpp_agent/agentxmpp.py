@@ -1171,7 +1171,10 @@ class MUCBot(slixmpp.ClientXMPP):
             self.connect_loop_wait = int_time
 
     def handle_disconnected(self, data):
-        logger.debug("We got disconnected. We will reconnect in %s seconds" % self.get_connect_loop_wait())
+        logger.debug(
+            "We got disconnected. We will reconnect in %s seconds"
+            % self.get_connect_loop_wait()
+        )
 
     async def register(self, iq):
         """
