@@ -168,7 +168,7 @@ if __name__ == "__main__":
     filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
     fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
     msgkey = manageRSAsigned.MsgsignedRSA("master")
-    if not (os.path.isfile(filekeypublic) and os.path.isfile(filekey)):
+    if not (os.path.isfile(filekeypublic) and os.path.isfile(fileprivatekey)):
         print("key missing")
         print(
             (
