@@ -74,7 +74,6 @@ def action(xmppobject, action):
             # send message
             try:
                 msg, prioritymsg = xmppobject.mq.receive()
-                logger.error("JFKJFK MSG RECU %s %s" % (msg, prioritymsg))
                 decode_msg(xmppobject, msg, prioritymsg)
             except posix_ipc.BusyError:
                 logger.debug("msg file empty")

@@ -141,7 +141,6 @@ def nextalternativeclusterconnectioninformation(conffile):
         conffile: the configuration file to modify
     """
     alternatif_conf = {}
-    logger.error("JFKJFK function nextalternativeclusterconnection")
     if not os.path.isfile(conffile):
         logger.error("file alternatif conf missing %s" % conffile)
         return {}
