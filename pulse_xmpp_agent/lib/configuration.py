@@ -478,7 +478,9 @@ class confParameter:
         if self.updating:
             logger.debug("The agent is configured to autoupdate.")
         else:
-            logger.debug("The agent will not auto udpdate. Modifications on the server will not be used on this client")
+            logger.debug(
+                "The agent will not auto udpdate. Modifications on the server will not be used on this client"
+            )
 
         if Config.has_option("updateagent", "updatingplugin"):
             self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")
