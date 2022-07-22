@@ -783,7 +783,7 @@ class MUCBot(slixmpp.ClientXMPP):
 
         # ####### Alternatf Configuration agent Machine #########
         self.brestartbot = False
-        if not self.config.agenttype in ["relayserver"]:
+        if self.config.agenttype not in ["relayserver"]:
             self.startmode = (
                 True  # si connection echoue on charge alternative configuration
             )

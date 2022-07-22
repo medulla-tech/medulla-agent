@@ -8969,7 +8969,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         message_to_send = simplecommandstr(cmd)["result"].replace(
                             "\n\n", "\n"
                         )
-                        if not "ERROR_MESSAGE_XMPP" in message_to_send:
+                        if "ERROR_MESSAGE_XMPP" not in message_to_send:
                             self.logger.debug(
                                 "send message to send  : %s " % (str(msg_from))
                             )
