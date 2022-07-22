@@ -118,7 +118,9 @@ def schedule_main(objectxmpp):
                     "copy file log %s to %s"
                     % (objectxmpp.config.logfile, objectxmpp.config.logfile + ".1.gz")
                 )
-                with open(objectxmpp.config.logfile, "rb") as f_in, gzip.open(objectxmpp.config.logfile + ".1.gz", "wb") as f_out:
+                with open(objectxmpp.config.logfile, "rb") as f_in, gzip.open(
+                    objectxmpp.config.logfile + ".1.gz", "wb"
+                ) as f_out:
                     shutil.copyfileobj(f_in, f_out)
             except BaseException:
                 pass
@@ -128,7 +130,9 @@ def schedule_main(objectxmpp):
                     "copy file log %s to %s"
                     % (objectxmpp.config.logfile, objectxmpp.config.logfile + ".1.bz2")
                 )
-                with open(objectxmpp.config.logfile, "rb") as f_in, open(objectxmpp.config.logfile + ".1.bz2", "wb") as f_out:
+                with open(objectxmpp.config.logfile, "rb") as f_in, open(
+                    objectxmpp.config.logfile + ".1.bz2", "wb"
+                ) as f_out:
                     f_out.write(bz2.compress(f_in.read(), 9))
             except BaseException:
                 pass
