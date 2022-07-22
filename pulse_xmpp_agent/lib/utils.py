@@ -1780,7 +1780,6 @@ def reboot_command():
         os.system("shutdown /r")
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
-    return
 
 
 def isBase64(s):
