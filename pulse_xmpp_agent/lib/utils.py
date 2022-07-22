@@ -915,7 +915,6 @@ def typelinux():
     )
     result = p.stdout.readlines()
     system = result[0].rstrip("\n")
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 
@@ -3993,7 +3992,7 @@ class file_message_iq:
                     if self.dev_mod:
                         logger.info("iq [%s] in timeout" % (id_iq))
                     return None
-                """ delete les items qui sont en timeout """
+                # delete les items qui sont en timeout
                 self.del_timeout_iq_old()
                 time.sleep(delta_time)
                 logger.warning("start boucle analyse %s" % id_iq)

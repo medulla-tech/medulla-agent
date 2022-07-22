@@ -284,12 +284,12 @@ class NetworkManager(DesignatedWrapPolicy):
         win32file.CloseHandle(fileHandle)
 
     def run(self):
-        global iplist
         """Thread run
         >>> manager = NetworkManager(connected, disconnected)
         >>> p = Thread(target=manager.run)
         >>> p.start()
         """
+        global iplist
         pilemessage = deque()
         self.register()
         # pythoncom.PumpMessages()

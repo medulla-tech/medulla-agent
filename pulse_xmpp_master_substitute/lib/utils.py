@@ -870,7 +870,6 @@ def typelinux():
     result = p.stdout.readlines()
     # code_result = p.wait()
     system = result[0].rstrip("\n")
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 
