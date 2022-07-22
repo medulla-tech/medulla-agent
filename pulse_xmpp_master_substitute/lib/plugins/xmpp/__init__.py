@@ -646,7 +646,6 @@ class XmppMasterDatabase(DatabaseHelper):
             connection.commit()
         finally:
             connection.close()
-        return
 
     def restart_blocked_deployments(self, nb_reload=50):
         """

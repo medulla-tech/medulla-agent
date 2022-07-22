@@ -1746,7 +1746,6 @@ def shutdown_command(time=0, msg=""):
             cmd = 'shutdown -h +%s "%s"' % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
-    return
 
 
 def vnc_set_permission(askpermission=1):
@@ -1769,8 +1768,6 @@ def vnc_set_permission(askpermission=1):
         os.system(cmd)
     elif sys.platform.startswith("darwin"):
         pass
-
-    return
 
 
 def reboot_command():
