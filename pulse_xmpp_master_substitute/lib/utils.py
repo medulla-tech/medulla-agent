@@ -1549,6 +1549,7 @@ def shutdown_command(time=0, msg=""):
             logging.debug(cmd)
             os.system(cmd)
 
+
 def vnc_set_permission(askpermission=1):
     """
     This function allows to change the setting of VNC to ask for
@@ -1570,6 +1571,7 @@ def vnc_set_permission(askpermission=1):
     elif sys.platform.startswith("darwin"):
         pass
 
+
 def reboot_command():
     """
     This function allow to reboot a machine.
@@ -1580,6 +1582,7 @@ def reboot_command():
         os.system("shutdown /r")
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
+
 
 def isBase64(s):
     try:
