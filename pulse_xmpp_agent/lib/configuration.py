@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2022 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -25,12 +25,8 @@
 
 import sys
 
-if sys.version_info[0] == 3:
-    from configparser import ConfigParser
-    from slixmpp import jid
-else:
-    from configparser import ConfigParser
-    from sleekxmpp import jid
+from configparser import ConfigParser
+from slixmpp import jid
 import netifaces
 import json
 import platform
