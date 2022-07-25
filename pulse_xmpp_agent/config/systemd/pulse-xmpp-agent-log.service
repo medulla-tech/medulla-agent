@@ -8,7 +8,7 @@ Requires=ejabberd.service
 #User=pulse
 #Group=pulse
 Type=forking
-ExecStart=/usr/lib/python3.7/site-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py -d
+ExecStart=/usr/lib/python3/site-packages/pulse_xmpp_agent/pulse-xmpp-agent-log.py -d
 Restart=always
 RestartSec=1
 
