@@ -144,6 +144,7 @@ def schedule_main(xmppobject):
                                 "-p",
                                 "MemoryCurrent",
                             ],
+                            text=True,
                             stdout=subprocess.PIPE,
                         )
                         service_json[service_name]["memory"] = int(
@@ -151,6 +152,7 @@ def schedule_main(xmppobject):
                         )
                         result_cpu = subprocess.Popen(
                             ["systemctl", "show", "%s" % service, "-p", "CPUUsageNSec"],
+                            text=True,
                             stdout=subprocess.PIPE,
                         )
                         service_json[service_name]["cpu"] = (
@@ -158,7 +160,7 @@ def schedule_main(xmppobject):
                         )
                         if service_name in xmppobject.config.openfiles_check:
                             result_openfiles = subprocess.Popen(
-                                ["lsof", "-u", "%s" % service], stdout=subprocess.PIPE
+                                ["lsof", "-u", "%s" % service], text=True, stdout=subprocess.PIPE
                             )
                             service_json[service_name]["nbopenfiles"] = len(
                                 result_openfiles.stdout.readlines()
@@ -329,13 +331,14 @@ def schedule_main(xmppobject):
                 send_alert = False
                 try:
                     result_connected = subprocess.Popen(
-                        ["ejabberdctl", "stats", "onlineusers"], stdout=subprocess.PIPE
+                        ["ejabberdctl", "stats", "onlineusers"], text=True, stdout=subprocess.PIPE
                     )
                     ejabberd_json["connected_users"] = int(
                         result_connected.stdout.readline()
                     )
                     result_registered = subprocess.Popen(
                         ["ejabberdctl", "stats", "registeredusers"],
+                        text=True,
                         stdout=subprocess.PIPE,
                     )
                     ejabberd_json["registered_users"] = int(
@@ -350,6 +353,7 @@ def schedule_main(xmppobject):
                                     "rs%s" % xmppobject.config.xmpp_domain,
                                     "%s" % xmppobject.config.xmpp_domain,
                                 ],
+                                text=True,
                                 stdout=subprocess.PIPE,
                             )
                         else:
@@ -378,6 +382,7 @@ def schedule_main(xmppobject):
                                 "%s" % jid,
                                 "%s" % xmppobject.config.xmpp_domain,
                             ],
+                            text=True,
                             stdout=subprocess.PIPE,
                         )
                         ejabberd_json["roster_size_%s" % jid] = len(
@@ -430,6 +435,7 @@ def schedule_main(xmppobject):
                                 shell=True,
                                 stdout=subprocess.PIPE,
                             )
+                            text=True,
                             share = result.stdout.readline()
                         else:
                             share = share_name
