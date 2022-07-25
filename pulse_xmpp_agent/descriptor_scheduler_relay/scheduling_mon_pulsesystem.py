@@ -160,7 +160,9 @@ def schedule_main(xmppobject):
                         )
                         if service_name in xmppobject.config.openfiles_check:
                             result_openfiles = subprocess.Popen(
-                                ["lsof", "-u", "%s" % service], text=True, stdout=subprocess.PIPE
+                                ["lsof", "-u", "%s" % service],
+                                text=True,
+                                stdout=subprocess.PIPE,
                             )
                             service_json[service_name]["nbopenfiles"] = len(
                                 result_openfiles.stdout.readlines()
@@ -331,7 +333,9 @@ def schedule_main(xmppobject):
                 send_alert = False
                 try:
                     result_connected = subprocess.Popen(
-                        ["ejabberdctl", "stats", "onlineusers"], text=True, stdout=subprocess.PIPE
+                        ["ejabberdctl", "stats", "onlineusers"],
+                        text=True,
+                        stdout=subprocess.PIPE,
                     )
                     ejabberd_json["connected_users"] = int(
                         result_connected.stdout.readline()
@@ -435,7 +439,7 @@ def schedule_main(xmppobject):
                                 shell=True,
                                 stdout=subprocess.PIPE,
                             )
-                            text=True,
+                            text = (True,)
                             share = result.stdout.readline()
                         else:
                             share = share_name
