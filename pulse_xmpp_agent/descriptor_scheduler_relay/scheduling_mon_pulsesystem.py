@@ -56,7 +56,7 @@ from pulse_xmpp_agent.lib.utils import (
 from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
-plugin = {"VERSION": "1.40", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True,}  # fmt: skip
+plugin = {"VERSION": "1.41", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True,}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
 
@@ -100,7 +100,7 @@ def schedule_main(xmppobject):
                 active_services = []
                 cmd = "systemctl -t service --state=active | grep running"
                 result_services = subprocess.Popen(
-                    cmd, shell=True, stdout=subprocess.PIPE
+                    cmd, text=True, shell=True, stdout=subprocess.PIPE
                 )
                 for line in result_services.stdout.readlines():
                     active_services.append(line.split(".")[0])
