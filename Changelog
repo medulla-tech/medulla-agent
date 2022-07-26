@@ -4,6 +4,8 @@ pulse-xmpp-agent 2.1.7
 * [BUGFIX]  Fix backtrace in the substitute registration when there is more
 than on location.
 * [BUGFIX]  Fix handling some accounts creation
+* [BUGFIX]  Fix a backtrace when the Network changes and we ask for infos at
+the same moment
 
 pulse-xmpp-agent 2.1.6
 ======================

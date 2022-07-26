@@ -308,6 +308,11 @@ def createfingerprintnetwork():
     md5network = ""
     if sys.platform.startswith('win'):
         obj = simplecommandstr("ipconfig")
+        if obj['code'] != 0 or obj['result'] == "":
+            logger.error("A error occured while determining the network. ipconfig failed.")
+            createfingerprintnetwork()
+        else:
+            logger.info("The network changes have been correctly catched.")
         md5network = hashlib.md5(obj['result']).hexdigest()
     elif sys.platform.startswith('linux'):
         obj = simplecommandstr("LANG=C ifconfig | egrep '.*(inet|HWaddr).*' | grep -v inet6")
