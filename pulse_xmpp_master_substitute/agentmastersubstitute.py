@@ -161,7 +161,7 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
-        print("Agent must be running as root")
+        logger.error("Agent must be running as root")
         sys.exit(0)
     # controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
