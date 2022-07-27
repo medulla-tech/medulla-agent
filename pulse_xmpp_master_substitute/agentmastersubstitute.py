@@ -170,7 +170,10 @@ if __name__ == "__main__":
     msgkey = manageRSAsigned.MsgsignedRSA("master")
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileprivatekey)):
         logger.error("The security keys are missing.")
-        logger.error("To work correctly we need the following keys: \n - %s \n - %s" %(filekeypublic, fileprivatekey))
+        logger.error(
+            "To work correctly we need the following keys: \n - %s \n - %s"
+            % (filekeypublic, fileprivatekey)
+        )
         sys.exit(0)
     namefileconfigdefault = os.path.join(
         "/", "etc", "pulse-xmpp-agent_substitute", "agent_master_substitute.ini"
