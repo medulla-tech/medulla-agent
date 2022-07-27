@@ -169,16 +169,8 @@ if __name__ == "__main__":
     fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
     msgkey = manageRSAsigned.MsgsignedRSA("master")
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileprivatekey)):
-        print("key missing")
-        print(
-            (
-                "install key of master in \n\t%s\n\t%s\n\n"
-                % (filekeypublic, fileprivatekey)
-            )
-        )
-        print(
-            "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-private-RSA.key "
-        )
+        logger.error("The security keys are missing.")
+        logger.error("To work correctly we need the following keys: \n - %s \n - %s" %(filekeypublic, fileprivatekey))
         sys.exit(0)
     namefileconfigdefault = os.path.join(
         "/", "etc", "pulse-xmpp-agent_substitute", "agent_master_substitute.ini"
