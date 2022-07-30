@@ -24,7 +24,6 @@
 import sys
 import os
 import logging
-import logging.config
 from logging.handlers import TimedRotatingFileHandler
 import traceback
 import platform
@@ -35,15 +34,12 @@ import threading
 import shutil
 import subprocess
 import psutil
-import random
 import hashlib
-from lib.manageresourceplugin import resource_plugin
 import imp
 import cherrypy
 from lib.reverseport import reverse_port_ssh
 from lib.agentconffile import conffilename
 from lib.update_remote_agent import Update_Remote_Agent
-from lib.xmppiq import dispach_iq_command
 from lib.networkinfo import networkagentinfo, organizationbymachine, organizationbyuser
 from lib.configuration import (
     confParameter,
@@ -62,8 +58,6 @@ from lib.utils import (
     load_back_to_deploy,
     cleanbacktodeploy,
     call_plugin,
-    call_plugin_separate,
-    call_plugin_sequentially,
     subnetnetwork,
     createfingerprintnetwork,
     isWinUserAdmin,
@@ -76,7 +70,6 @@ from lib.utils import (
     save_count_start,
     test_kiosk_presence,
     file_get_contents,
-    isBase64,
     connection_established,
     file_put_contents,
     simplecommand,
@@ -88,7 +81,6 @@ from lib.utils import (
     geolocalisation_agent,
     Env,
     serialnumbermachine,
-    file_put_contents_w_a,
     os_version,
     unregister_agent,
 )
@@ -147,9 +139,7 @@ else:
 
 
 from lib.server_kiosk import (
-    process_tcp_serveur,
     manage_kiosk_message,
-    process_serverPipe,
 )
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))

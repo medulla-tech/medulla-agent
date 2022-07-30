@@ -41,7 +41,6 @@
 import requests
 import json
 from lxml import etree
-import urllib.request
 import urllib.parse
 import socket
 from threading import Lock
