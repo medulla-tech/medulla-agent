@@ -23,25 +23,13 @@
 # file  : pulse_xmpp_agent/connectionagent.py
 import sys
 
-if sys.version_info[0] == 3:
-    from slixmpp import ClientXMPP
-    from slixmpp import jid
-    from slixmpp.xmlstream import handler, matcher
-    from slixmpp.exceptions import IqError, IqTimeout
-    from slixmpp.xmlstream.stanzabase import ET
-    import slixmpp
-    import asyncio
-else:
-    import imp
-    import sleekxmpp
-    from sleekxmpp.xmlstream import handler, matcher
-    from sleekxmpp.exceptions import IqError, IqTimeout
-    from sleekxmpp.xmlstream.stanzabase import ET
-    from sleekxmpp import jid
-    from sleekxmpp import ClientXMPP
-
-    imp.reload(sys)
-    sys.setdefaultencoding("utf8")
+from slixmpp import ClientXMPP
+from slixmpp import jid
+from slixmpp.xmlstream import handler, matcher
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream.stanzabase import ET
+import slixmpp
+import asyncio
 
 import shutil
 import os
