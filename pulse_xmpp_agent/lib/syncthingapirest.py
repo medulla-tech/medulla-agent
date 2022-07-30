@@ -57,8 +57,7 @@ import time
 import os
 import sys
 
-if sys.version_info[0] == 3:
-    from configparser import ConfigParser
+from configparser import ConfigParser
 
 logger = logging.getLogger()
 
