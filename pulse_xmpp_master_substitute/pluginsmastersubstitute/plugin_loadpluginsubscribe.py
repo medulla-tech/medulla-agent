@@ -31,7 +31,7 @@ from lib.plugins.xmpp import XmppMasterDatabase
 import os
 import time
 from lib.utils import file_put_contents, simplecommandstr
-import ConfigParser
+import configparser
 
 try:
     from lib.stat import statcallplugin
@@ -147,7 +147,7 @@ def read_conf_load_plugin_subscribe(objectxmpp):
             objectxmpp.stat_subcription_agent.display_param_config(msg="DEFAULT")
         return False
     else:
-        Config = ConfigParser.ConfigParser()
+        Config = configparser.ConfigParser()
         Config.read(objectxmpp.pathfileconf)
         if os.path.exists(objectxmpp.pathfileconf + ".local"):
             Config.read(objectxmpp.pathfileconf + ".local")
