@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
     filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
-    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
+    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-private-RSA.key")
     msgkey = manageRSAsigned.MsgsignedRSA("master")
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileprivatekey)):
         logger.error("The security keys are missing.")
