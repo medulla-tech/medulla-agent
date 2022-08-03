@@ -271,7 +271,8 @@ async def run_server(xmppobject):
     else:
         logger.error("os system error %s" %  sys.platform)
         return
-   server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         server.bind(('localhost', xmppobject.port_tcp_kiosk))
         server.listen(8)
