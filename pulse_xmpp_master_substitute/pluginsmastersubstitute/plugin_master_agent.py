@@ -83,3 +83,4 @@ def read_conf_remote_master_agent(xmppobject):
 
 def masterfunctioncode(self):
     #TODO: IMPLEMENT ME
+    logger.debug("IMPLEMENT ME")
