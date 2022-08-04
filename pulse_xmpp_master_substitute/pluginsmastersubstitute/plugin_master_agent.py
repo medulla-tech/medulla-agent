@@ -33,7 +33,8 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, call_plugin_separate
-#, call_pluginseparatedthred
+
+# , call_pluginseparatedthred
 import re
 from distutils.version import LooseVersion
 import configparser
@@ -59,7 +60,9 @@ def action(xmppobject, action, sessionid, data, msg, dataerreur):
             read_conf_remote_master_agent(xmppobject)
             logger.debug("========================================================")
     except Exception as e:
-        logger.error("The master_agent substitute failed. We encountered the error %s" % str(e))
+        logger.error(
+            "The master_agent substitute failed. We encountered the error %s" % str(e)
+        )
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
@@ -82,5 +85,5 @@ def read_conf_remote_master_agent(xmppobject):
 
 
 def masterfunctioncode(self):
-    #TODO: IMPLEMENT ME
+    # TODO: IMPLEMENT ME
     logger.debug("IMPLEMENT ME")
