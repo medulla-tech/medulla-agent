@@ -38,9 +38,14 @@ def read_conf_plugin_start(objectxmpp):
         configfilename = os.path.join(directoryconffile(), "start_machine.ini")
     elif objectxmpp.config.agenttype in ["relayserver"]:
         configfilename = os.path.join(directoryconffile(), "start_relay.ini")
+    else:
+        logger.error(
+            "The %s agenttype is not supported in this function, it must be machine or relayserver."
+            % objectxmpp.config.agenttype
+        )
+
     objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
-        # lit la configuration
         Config = configparser.ConfigParser()
         Config.read(configfilename)
         if os.path.isfile(configfilename + ".local"):
