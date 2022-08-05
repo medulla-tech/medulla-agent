@@ -36,7 +36,7 @@ def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
     if objectxmpp.config.agenttype in ["machine"]:
         configfilename = os.path.join(directoryconffile(), "start_machine.ini")
-    elif objectxmpp.config.agenttype in ["relay"]:
+    elif objectxmpp.config.agenttype in ["relayserver"]:
         configfilename = os.path.join(directoryconffile(), "start_relay.ini")
     objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
