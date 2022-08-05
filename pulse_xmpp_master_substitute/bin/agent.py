@@ -98,29 +98,21 @@ class MUCBot(slixmpp.ClientXMPP):
             jid.JID(self.config.jidmastersubstitute),
             self.config.passwordconnection,
         )
+
+        msgkey = manageRSAsigned.MsgsignedRSA(self.boundjid.user)
+
         # We define the type of the Agent
         self.config.agenttype = "substitute"
         self.manage_scheduler = manage_scheduler(self)
         self.schedule("schedulerfunction", 10, self.schedulerfunction, repeat=True)
 
-        # Update agent from Master
-        # self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-        # self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
-        # self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
-        # self.descriptorimage = Update_Remote_Agent(self.img_agent)
-        # END Update agent from Master
         self.agentmaster = jid.JID(self.config.jidmaster)
-        # self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
-        # _____________ Getion connection agent _______________________
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
         self.add_event_handler("disconnected", self.handle_disconnected)
-        # _____________ Getion connection agent _______________________
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
-        # self.add_event_handler('iqsendpulseasync', self.iqsendpulseasync)
-        # self.add_event_handler('iq_function', self.myiq)
 
         self.schedule("Clean_old_queue", 10, self.Clean_old_queue, [200], repeat=True)
         self.add_event_handler(
@@ -201,11 +193,8 @@ class MUCBot(slixmpp.ClientXMPP):
             self.startdata = 1
         while self.startdata > 0:
             self.disconnect(wait=1)
-            logger.debug("reconnect Mode_Marche_Arret_loop")
             self.config = confParameter(self.fileconf)
             self.address = (ipfromdns(self.config.Server), int(self.config.Port))
-            logger.debug("try connection (%s) %s " % (self.startdata, self.address))
-            logger.debug("forever (%s) %s " % (forever, timeout))
             self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
             if nb_reconnect:
                 self.startdata = self.startdata - 1
@@ -242,16 +231,12 @@ class MUCBot(slixmpp.ClientXMPP):
         a savoir apres "CONNECTION FAILED"
         il faut reinitialiser adress et port de connection.
         """
-        # self.Mode_Marche_Arret_init_adress_connect("jfk.siveo.net", 5222)
         print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
         self.connect_loop_wait = 5
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
-        # self.disconnect(wait=5)
 
     def handle_disconnected(self, data):
-        print("handle_disconnected %s\n" % self.connect_loop_wait)
         self.connect_loop_wait = 2
-        # self.disconnect()
 
     def register(self, iq):
         logging.info("register user %s" % self.boundjid)
@@ -269,39 +254,6 @@ class MUCBot(slixmpp.ClientXMPP):
         except IqTimeout as e:
             logging.error("No response from server.")
             self.disconnect()
-
-    # async def register(self, iq):
-    # logging.info("register user %s" % self.boundjid)
-    # resp = self.Iq()
-    # resp['type'] = 'set'
-    # resp['register']['username'] = self.boundjid.user
-    # resp['register']['password'] = self.password
-    # try:
-    # task = asyncio.ensure_future(resp.send())
-    # await task
-    # logging.info("Account created for %s!" % self.boundjid)
-    # except IqError as e:
-    # logging.info("Account created for")
-    # if e.iq["error"]["code"] == "409":
-    # logging.warning(
-    # "Could not register account %s : User already exists"
-    #% resp["register"]["username"])
-    # else:
-    # logging.error(
-    # "Could not register account %s : %s"
-    #% (resp["register"]["username"], e.iq["error"]["text"]))
-    ##self.disconnect()
-    # except IqTimeout as e:
-    # logging.error("No response from server.")
-    # self.Mode_Marche_Arret_stop_agent(time_stop=1)
-
-    # -----------------------------------------------------------------------
-    # --------------------- END Getion connection agent ---------------------
-    # -----------------------------------------------------------------------
-
-    # -----------------------------------------------------------------------
-    # ------------------------ analyse strophe xmpp -------------------------
-    # -----------------------------------------------------------------------
 
     def _check_message(self, msg):
         try:
@@ -987,7 +939,7 @@ class MUCBot(slixmpp.ClientXMPP):
             pass
         elif iq["type"] == "set":
             pass
-        elif id["type"] == "error":
+        elif iq["type"] == "error":
             logger.debug("ERROR ERROR TYPE %s" % iq["id"])
 
         elif iq["type"] == "result":
