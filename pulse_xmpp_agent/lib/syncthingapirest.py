@@ -134,7 +134,9 @@ def conf_ars_deploy(
 def save_xml_file(
     elementxml, configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"
 ):
-    file_put_contents(configfile, etree.tostring(elementxml, pretty_print=True, encoding='unicode'))
+    file_put_contents(
+        configfile, etree.tostring(elementxml, pretty_print=True, encoding="unicode")
+    )
 
 
 def iddevice(
