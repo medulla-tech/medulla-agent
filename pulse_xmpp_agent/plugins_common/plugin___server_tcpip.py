@@ -252,24 +252,21 @@ async def handle_client(client, xmppobject):
 
 async def run_server(xmppobject):
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        # --listening --numeric-hosts --tcp --program
         linux_command = 'netstat -lnt4p | grep python | grep ":%s"' % xmppobject.port_tcp_kiosk
         logger.warning("linux command : %s" % linux_command)
         result = simplecommand(linux_command)
 
-        logger.warning("len :%s" %  len(result["result"]))
         if len(result["result"]) > 0:
-            logger.warning("server tcp_ip kiosk exist localhost:%s" % xmppobject.port_tcp_kiosk)
+            logger.debug("The tcp_ip kiosk server is already running locally in the port %s" % xmppobject.port_tcp_kiosk)
             return
     elif sys.platform.startswith("win"):
         windows_command = 'netstat -aof -p TCP | findstr LISTENING | findstr ":%s"' % xmppobject.port_tcp_kiosk
-        # verify process from pid tasklist /fi "PID eq 560"
         result = simplecommand(windows_command)
         if len(result["result"]) > 0:
-            logger.warning("server tcp_ip kiosk exist localhost:%s" % xmppobject.port_tcp_kiosk)
+            logger.debug("The tcp_ip kiosk server is already running locally in the port %s" % xmppobject.port_tcp_kiosk)
             return
     else:
-        logger.error("os system error %s" %  sys.platform)
+        logger.error("We do not support your Operating System %s" % sys.platform
         return
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -277,8 +274,8 @@ async def run_server(xmppobject):
         server.bind(('localhost', xmppobject.port_tcp_kiosk))
         server.listen(8)
     except Exception as e:
-        logger.error("message error %s" % str(e))
-        logger.error("backtrace handle_client %s" % traceback.format_exc())
+        logger.error("The run_server function failed with the error %s" % str(e))
+        logger.error("We hit the backtrace \n %s" % traceback.format_exc())
         return
     server.setblocking(False)
 
