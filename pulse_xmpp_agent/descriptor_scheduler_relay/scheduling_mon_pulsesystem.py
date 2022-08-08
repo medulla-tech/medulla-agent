@@ -94,7 +94,12 @@ def schedule_main(xmppobject):
             system_json = {}
             system_json["general_status"] = "info"
             # System services
-            if xmppobject.config.services_enable:
+            if hasattr(xmppobject.config, "services_enable"):
+                services_enable = xmppobject.config.services_enable
+            else:
+                services_enable = False
+
+            if services_enable:
                 service_json = {}
                 # List all active services
                 active_services = []
