@@ -53,6 +53,7 @@ import asyncio
 import random
 from slixmpp.xmlstream.handler import CoroutineCallback
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
+from lib import manageRSAsigned
 
 logger = logging.getLogger()
 
