@@ -120,7 +120,7 @@ def loadPluginList(self):
         element_name = os.path.join(self.dirpluginlist, element)
         # Used to verify the syntax of the plugin
         # This way we do not deploy plugins with wrong syntax
-        if os.system('python -m py_compile "%s"' % element_name) == 0:
+        if os.system('python3 -m py_compile "%s"' % element_name) == 0:
             f = open(element_name, "r")
             lignes = f.readlines()
             f.close()
