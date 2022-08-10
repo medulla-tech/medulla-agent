@@ -48,7 +48,8 @@ from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase
 # file : pluginsmachine/plugin___server_tcpip.py
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" } # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "__server_tcpip", "TYPE": "all", "INFO": "code" }  # fmt: skip
+
 
 def action(xmppobject, action):
     try:
@@ -76,16 +77,32 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
     prefixe_agent = ""
     if xmppobject.config.agenttype in ["relayserver"]:
         prefixe_agent = "ars_"
-        if "ars_local_port" in vars(xmppobject.config) and  xmppobject.config()["ars_local_port"] != None:
+        if (
+            "ars_local_port" in vars(xmppobject.config)
+            and xmppobject.config()["ars_local_port"] != None
+        ):
             xmppobject.port_tcp_kiosk = xmppobject.config.ars_local_port
-            logger.warning("paraneter tcp_ip port in section [kiosk]/ars_local_port in relayconf.ini : %s" % xmppobject.port_tcp_kiosk)
+            logger.warning(
+                "paraneter tcp_ip port in section [kiosk]/ars_local_port in relayconf.ini : %s"
+                % xmppobject.port_tcp_kiosk
+            )
     elif xmppobject.config.agenttype in ["machine"]:
         prefixe_agent = "am_"
-        if "am_local_port" in vars(xmppobject.config) and  xmppobject.config()["am_local_port"] != None:
+        if (
+            "am_local_port" in vars(xmppobject.config)
+            and xmppobject.config()["am_local_port"] != None
+        ):
             xmppobject.port_tcp_kiosk = xmppobject.config.am_local_port
-            logger.warning("paraneter tcp_ip port in section [kiosk]/am_local_port in agentconf.ini : %s" % xmppobject.port_tcp_kiosk)
-    configfilename = os.path.join(directoryconffile(), prefixe_agent+plugin["NAME"] + ".ini")
-    logger.info("optionel config file local for plugin___server_tcpip is : %s" % configfilename)
+            logger.warning(
+                "paraneter tcp_ip port in section [kiosk]/am_local_port in agentconf.ini : %s"
+                % xmppobject.port_tcp_kiosk
+            )
+    configfilename = os.path.join(
+        directoryconffile(), prefixe_agent + plugin["NAME"] + ".ini"
+    )
+    logger.info(
+        "optionel config file local for plugin___server_tcpip is : %s" % configfilename
+    )
     if os.path.isfile(configfilename):
         Config = configparser.ConfigParser()
         Config.read(configfilename)
@@ -93,10 +110,16 @@ def read_conf_server_tcpip_agent_machine(xmppobject):
             Config.read(configfilename + ".local")
             if Config.has_option("server_tcpip", "port_tcpip"):
                 xmppobject.port_tcp_kiosk = Config.getint("server_tcpip", "port_tcpip")
-                logger.warning("config local redefini paraneter tcp_ip port in section [server_tcpip]/port_tcpip")
+                logger.warning(
+                    "config local redefini paraneter tcp_ip port in section [server_tcpip]/port_tcpip"
+                )
     else:
-        logger.warning("local file configuration %s of plugin %s no exist" % (configfilename, plugin["NAME"]))
+        logger.warning(
+            "local file configuration %s of plugin %s no exist"
+            % (configfilename, plugin["NAME"])
+        )
     logger.warning("port_tcp_kiosk is %s " % xmppobject.port_tcp_kiosk)
+
 
 def client_info(client, show_info=False):
     addresslisten, portlisten = client.getsockname()
@@ -174,17 +197,20 @@ async def handle_client(client, xmppobject):
 
         while request != "":
             # request = (await loop.sock_recv(client, 255)).decode('utf8')
-            request = (await loop.sock_recv(client, xmppobject.sizebufferrecv))
+            request = await loop.sock_recv(client, xmppobject.sizebufferrecv)
             if len(request) >= xmppobject.sizebufferrecv:
-                logger.warning("message may be incomplete : size message Recv is egal max size message (%s) :\"verify param sizebufferrecv\""%xmppobject.sizebufferrecv)
+                logger.warning(
+                    'message may be incomplete : size message Recv is egal max size message (%s) :"verify param sizebufferrecv"'
+                    % xmppobject.sizebufferrecv
+                )
             if xmppobject.encryptionAES and len(xmppobject.config.keyAES32) > 0:
                 if not isBase64(request.strip()):
                     logger.warning("message input no encryption")
                 else:
                     logger.warning("message input base64")
                 cipher = AESCipher(xmppobject.config.keyAES32)
-                request = cipher.decrypt(str(request.decode('utf8')))
-                logger.warning("request data is %s"%request)
+                request = cipher.decrypt(str(request.decode("utf8")))
+                logger.warning("request data is %s" % request)
             requestobj = _convert_string(request)
 
             if requestobj is None:
@@ -252,18 +278,29 @@ async def handle_client(client, xmppobject):
 
 async def run_server(xmppobject):
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
-        linux_command = 'netstat -lnt4p | grep python | grep ":%s"' % xmppobject.port_tcp_kiosk
+        linux_command = (
+            'netstat -lnt4p | grep python | grep ":%s"' % xmppobject.port_tcp_kiosk
+        )
         logger.warning("linux command : %s" % linux_command)
         result = simplecommand(linux_command)
 
         if len(result["result"]) > 0:
-            logger.debug("The tcp_ip kiosk server is already running locally in the port %s" % xmppobject.port_tcp_kiosk)
+            logger.debug(
+                "The tcp_ip kiosk server is already running locally in the port %s"
+                % xmppobject.port_tcp_kiosk
+            )
             return
     elif sys.platform.startswith("win"):
-        windows_command = 'netstat -aof -p TCP | findstr LISTENING | findstr ":%s"' % xmppobject.port_tcp_kiosk
+        windows_command = (
+            'netstat -aof -p TCP | findstr LISTENING | findstr ":%s"'
+            % xmppobject.port_tcp_kiosk
+        )
         result = simplecommand(windows_command)
         if len(result["result"]) > 0:
-            logger.debug("The tcp_ip kiosk server is already running locally in the port %s" % xmppobject.port_tcp_kiosk)
+            logger.debug(
+                "The tcp_ip kiosk server is already running locally in the port %s"
+                % xmppobject.port_tcp_kiosk
+            )
             return
     else:
         logger.error("We do not support your Operating System %s" % sys.platform)
@@ -271,7 +308,7 @@ async def run_server(xmppobject):
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        server.bind(('localhost', xmppobject.port_tcp_kiosk))
+        server.bind(("localhost", xmppobject.port_tcp_kiosk))
         server.listen(8)
     except Exception as e:
         logger.error("The run_server function failed with the error %s" % str(e))
