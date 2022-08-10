@@ -48,6 +48,7 @@ Requires:       python-crypto
 Requires:       python-cherrypy
 Requires:       net-tools
 Requires:       jq
+Requires:       python3-distro
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version

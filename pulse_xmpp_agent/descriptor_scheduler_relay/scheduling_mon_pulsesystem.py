@@ -38,7 +38,7 @@ import logging
 import traceback
 import re
 import os
-import platform
+import distro
 import configparser
 
 logger = logging.getLogger()
@@ -56,7 +56,7 @@ from pulse_xmpp_agent.lib.utils import (
 from pulse_xmpp_agent.lib.agentconffile import directoryconffile
 import mysql.connector
 
-plugin = {"VERSION": "1.41", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True,}  # fmt: skip
+plugin = {"VERSION": "1.42", "NAME": "scheduling_mon_pulsesystem", "TYPE": "relayserver", "SCHEDULED": True,}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/15 * * * *", "nb": -1}
 
@@ -118,7 +118,7 @@ def schedule_main(xmppobject):
                     elif service_name == "mysql":
                         service = "mariadb"
                     elif service_name == "apache":
-                        if platform.linux_distribution()[0] in [
+                        if distro.id() in [
                             "CentOS Linux",
                             "centos",
                             "fedora",
@@ -127,10 +127,10 @@ def schedule_main(xmppobject):
                             "Mageia",
                         ]:
                             service = "httpd"
-                        elif platform.linux_distribution()[0] in ["debian"]:
+                        elif distro.id() in ["debian"]:
                             service = "apache2"
                     elif service_name == "tomcat":
-                        if platform.linux_distribution()[0] in ["debian"]:
+                        if distro.id() in ["debian"]:
                             service = "tomcat8"
                         else:
                             service = "tomcat"
@@ -215,7 +215,7 @@ def schedule_main(xmppobject):
                     elif port_name == "mysql":
                         service = "mariadb"
                     elif port_name == "apache":
-                        if platform.linux_distribution()[0] in [
+                        if distro.id() in [
                             "CentOS Linux",
                             "centos",
                             "fedora",
@@ -224,10 +224,10 @@ def schedule_main(xmppobject):
                             "Mageia",
                         ]:
                             service = "httpd"
-                        elif platform.linux_distribution()[0] in ["debian"]:
+                        elif distro.id() in ["debian"]:
                             service = "apache2"
                     elif port_name == "tomcat":
-                        if platform.linux_distribution()[0] in ["debian"]:
+                        if distro.id() in ["debian"]:
                             service = "tomcat8"
                         else:
                             service = "tomcat"
