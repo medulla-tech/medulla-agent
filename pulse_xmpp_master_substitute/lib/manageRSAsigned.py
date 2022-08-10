@@ -319,6 +319,7 @@ class MsgsignedRSA:
         else:
             return False
 
+
 def installpublickey(name_or_filepublickey, keybase64, typekey="public"):
     return install_key(name_or_filepublickey, keybase64, typekey)
 
