@@ -797,9 +797,10 @@ class MUCBot(ClientXMPP):
         self.disconnect(wait=5)
 
     def handle_disconnected(self, data):
-        print("handle_disconnected %s\n" % self.connect_loop_wait)
-        self.connect_loop_wait = 2
-        # self.disconnect()
+        logger.debug(
+            "We got disconnected. We will reconnect in %s seconds"
+            % self.get_connect_loop_wait()
+        )
 
     def register(self, iq):
         logging.info("register user %s" % self.boundjid)
