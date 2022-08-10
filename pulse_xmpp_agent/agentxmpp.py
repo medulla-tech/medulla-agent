@@ -2705,7 +2705,7 @@ class MUCBot(slixmpp.ClientXMPP):
         except OSError:
             pass
 
-        replycatorcmd = "python %s" % (os.path.join(self.pathagent, "replicator.py"))
+        replycatorcmd = "python3 %s" % (os.path.join(self.pathagent, "replicator.py"))
         logger.debug("cmd : %s" % (replycatorcmd))
         result = simplecommand(replycatorcmd)
         if result["code"] == 0:

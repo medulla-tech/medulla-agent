@@ -237,11 +237,11 @@ for MODULE_FILENAME in ${MODULES_LIST_FILENAMES}; do
       export PYCURL_SSL_LIBRARY=openssl
       export LDFLAGS=-L/usr/local/opt/openssl/lib
       export CPPFLAGS=-I/usr/local/opt/openssl/include
-      python2 -m pip install --upgrade --no-deps --install-option="--with-openssl" --install-option="--openssl-dir=/usr/local/opt/openssl" @@PY_CURL_FILENAME@@
+      python3 -m pip install --upgrade --no-deps --install-option="--with-openssl" --install-option="--openssl-dir=/usr/local/opt/openssl" @@PY_CURL_FILENAME@@
     elif [[ "${MODULE_FILENAME}" == "@@PY_CRON_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_CRON_DEPS_1_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_SFTP_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_SFTP_DEPS_1_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_4_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_3_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_2_FILENAME@@" || "${MODULE_FILENAME}" == "@@PY_REQUESTS_DEPS_1_FILENAME@@" ]]; then
-      python2 -m pip install --upgrade --no-deps --ignore-installed --no-index --find-links="." ${MODULE_FILENAME}
+      python3 -m pip install --upgrade --no-deps --ignore-installed --no-index --find-links="." ${MODULE_FILENAME}
     else
-      python2 -m pip install --upgrade --no-deps --no-index --find-links="." ${MODULE_FILENAME}
+      python3 -m pip install --upgrade --no-deps --no-index --find-links="." ${MODULE_FILENAME}
     fi
   else
     echo "ERROR: downloaded package ${MODULE_FILENAME} not found"
@@ -266,7 +266,7 @@ curl -O ${BASE_URL}/${PULSE_AGENT_FILENAME}
 curl -O ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
 
 if [[ -f ${PULSE_AGENT_FILENAME} ]]; then
-  python2 -m pip install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
+  python3 -m pip install --upgrade --no-index --find-links="." ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}
 else
   echo "ERROR: downloaded package ${PULSE_AGENT_FILENAME} not found"
   exit 1

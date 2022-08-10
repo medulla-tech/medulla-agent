@@ -8962,9 +8962,9 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                 % resultproxy["jid"]
                             )
 
-                        progran = "python %s" % resultproxy["program"]
+                        progran = "python3 %s" % resultproxy["program"]
                         param = base64.b64encode(serializeinformationjson)
-                        cmd = "python %s '%s'" % (resultproxy["program"], param)
+                        cmd = "python3 %s '%s'" % (resultproxy["program"], param)
                         message_to_send = simplecommandstr(cmd)["result"].replace(
                             "\n\n", "\n"
                         )

@@ -1677,8 +1677,8 @@ class grafcet:
             extensionscriptfile = {
                 "python": {
                     "suffix": "py",
-                    "bang": "#!/usr/bin/python",
-                    "commandtype": "python ",
+                    "bang": "#!/usr/bin/python3",
+                    "commandtype": "python3 ",
                 },
                 "Batch": {
                     "suffix": "sh",

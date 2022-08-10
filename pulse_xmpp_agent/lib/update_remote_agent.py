@@ -179,7 +179,7 @@ def agentinfoversion(xmppobject):
         (like testmodule , pathagent, agentdescriptor, pathimg,
           imgdescriptor, actiontxt, conf and plugins)
     """
-    cmd = "python %s -i -v" % (os.path.join(xmppobject.pathagent, "replicator.py"))
+    cmd = "python3 %s -i -v" % (os.path.join(xmppobject.pathagent, "replicator.py"))
     logger.debug("cmd : %s" % (cmd))
     result = simplecommand(cmd)
     resultobj = {}

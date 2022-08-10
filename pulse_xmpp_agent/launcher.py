@@ -140,18 +140,18 @@ if __name__ == "__main__":
                     print(
                         (
                             "Running",
-                            "python2 connectionagent.py -t %s" % opts.typemachine,
+                            "python3 connectionagent.py -t %s" % opts.typemachine,
                         )
                     )
-                    os.system("python2 connectionagent.py -t %s" % opts.typemachine)
+                    os.system("python3 connectionagent.py -t %s" % opts.typemachine)
                 else:
                     print(
                         "Running",
-                        "python %s/connectionagent.py -t %s"
+                        "python3 %s/connectionagent.py -t %s"
                         % (filePath, opts.typemachine),
                     )
                     os.system(
-                        "python %s/connectionagent.py -t %s"
+                        "python3 %s/connectionagent.py -t %s"
                         % (filePath, opts.typemachine)
                     )
 
@@ -164,14 +164,14 @@ if __name__ == "__main__":
             )
             os.system("%s %s -t %s" % (pythonexec, agentxmpp, opts.typemachine))
         elif sys.platform.startswith("darwin"):
-            print(("Running", "python2 agentxmpp.py -t %s" % opts.typemachine))
-            os.system("python2 agentxmpp.py -t %s" % opts.typemachine)
+            print(("Running", "python3 agentxmpp.py -t %s" % opts.typemachine))
+            os.system("python3 agentxmpp.py -t %s" % opts.typemachine)
         else:
             print(
                 "Running",
-                "python %s/agentxmpp.py -d -t %s" % (filePath, opts.typemachine),
+                "python3 %s/agentxmpp.py -d -t %s" % (filePath, opts.typemachine),
             )
-            os.system("python %s/agentxmpp.py -d -t %s" % (filePath, opts.typemachine))
+            os.system("python3 %s/agentxmpp.py -d -t %s" % (filePath, opts.typemachine))
     else:
         if opts.typemachine.lower() in ["machine"]:
             if testspeedagent:
@@ -190,18 +190,18 @@ if __name__ == "__main__":
                     print(
                         (
                             "Running",
-                            "python2 connectionagent.py -c -t %s" % opts.typemachine,
+                            "python3 connectionagent.py -c -t %s" % opts.typemachine,
                         )
                     )
-                    os.system("python2 connectionagent.py -c -t %s" % opts.typemachine)
+                    os.system("python3 connectionagent.py -c -t %s" % opts.typemachine)
                 else:
                     print(
                         "Running",
-                        "python %s/connectionagent.py -c -t %s"
+                        "python3 %s/connectionagent.py -c -t %s"
                         % (filePath, opts.typemachine),
                     )
                     os.system(
-                        "python %s/connectionagent.py -c -t %s"
+                        "python3 %s/connectionagent.py -c -t %s"
                         % (filePath, opts.typemachine)
                     )
         if sys.platform.startswith("win"):
@@ -216,13 +216,13 @@ if __name__ == "__main__":
             print(
                 (
                     "Running",
-                    "/usr/local/bin/python2 agentxmpp.py -c -t %s" % opts.typemachine,
+                    "/usr/local/bin/python3 agentxmpp.py -c -t %s" % opts.typemachine,
                 )
             )
-            os.system("python2 agentxmpp.py -c -t %s" % opts.typemachine)
+            os.system("python3 agentxmpp.py -c -t %s" % opts.typemachine)
         else:
             print(
                 "Running",
-                "python %s/agentxmpp.py -c -t %s" % (filePath, opts.typemachine),
+                "python3 %s/agentxmpp.py -c -t %s" % (filePath, opts.typemachine),
             )
-            os.system("python %s/agentxmpp.py -c -t %s" % (filePath, opts.typemachine))
+            os.system("python3 %s/agentxmpp.py -c -t %s" % (filePath, opts.typemachine))
