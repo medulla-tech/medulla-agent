@@ -266,7 +266,7 @@ async def run_server(xmppobject):
             logger.debug("The tcp_ip kiosk server is already running locally in the port %s" % xmppobject.port_tcp_kiosk)
             return
     else:
-        logger.error("We do not support your Operating System %s" % sys.platform
+        logger.error("We do not support your Operating System %s" % sys.platform)
         return
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
