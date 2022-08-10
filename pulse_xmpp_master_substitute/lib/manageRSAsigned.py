@@ -304,6 +304,21 @@ class MsgsignedRSA:
             pass
         return False
 
+    def isPublicKey(self, name):
+        """
+        function check if  key name file exist
+        :param name: Uses this parameter to give a name to the key
+        :type name : string
+        :return boolean exist or not exist
+        """
+        filepublickey = os.path.join(
+            self.Setdirectorytempinfo(), "%s-public-RSA.key" % name
+        )
+        if os.path.exists(filepublickey):
+            return True
+        else:
+            return False
+
 
 def installpublickey(name_or_filepublickey, keybase64, typekey="public"):
     return install_key(name_or_filepublickey, keybase64, typekey)
