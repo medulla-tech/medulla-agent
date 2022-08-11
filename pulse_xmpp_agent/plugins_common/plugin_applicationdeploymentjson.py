@@ -29,9 +29,9 @@ import socket
 import logging
 import pycurl
 import platform
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import shutil
-from urlparse import urlparse
+from urllib.parse import urlparse
 from lib import utils, managepackage, grafcetdeploy
 import copy
 import traceback
@@ -3164,8 +3164,8 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
             urlfile = (
                 urlobject.scheme
                 + "://"
-                + urllib.quote(urlobject.netloc)
-                + urllib.quote(urlobject.path)
+                + urllib.parse.quote(urlobject.netloc)
+                + urllib.parse.quote(urlobject.path)
             )
             token = datasend["data"]["descriptor"]["info"]["localisation_server"][
                 "token"
