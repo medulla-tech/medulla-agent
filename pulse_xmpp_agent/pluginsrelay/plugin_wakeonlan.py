@@ -20,7 +20,7 @@
 # MA 02110-1301, USA.
 
 from lib import utils
-from wakeonlan import wol
+import wakeonlan as wol
 
 plugin = {"VERSION": "2.0", "NAME": "wakeonlan", "TYPE": "relayserver"}  # fmt: skip
 

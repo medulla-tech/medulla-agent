@@ -27,7 +27,7 @@ import traceback
 from lib.utils import name_random
 import logging
 import os
-from wakeonlan import wol
+import wakeonlan as wol
 import configparser
 
 logger = logging.getLogger()
