@@ -1093,6 +1093,13 @@ def applicationdeploymentjson(self,
             data['advanced']['syncthing'] = 0
             result = None
 
+            sessionid = self.send_session_command(jidrelay,
+                                                    "applicationdeploymentjson",
+                                                    data,
+                                                    datasession=None,
+                                                    encodebase64=False,
+                                                    prefix="command")
+
             if self.send_hash:
                 try:
                     self.mutexdeploy.acquire()
@@ -1140,12 +1147,6 @@ def applicationdeploymentjson(self,
                         data['hash']['global'] = content
                         data['hash']['type'] = self.hashing_algo
 
-                    sessionid = self.send_session_command(jidrelay,
-                                                  "applicationdeploymentjson",
-                                                  data,
-                                                  datasession=None,
-                                                  encodebase64=False,
-                                                  prefix="command")
                 except IOError:
                     logger.error("Pulse is configured to check integrity of packages but the hashes have not been generated")
                     msg.append("<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>")
