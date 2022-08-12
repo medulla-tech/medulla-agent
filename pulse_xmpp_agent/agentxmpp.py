@@ -2113,7 +2113,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 asyncio.set_event_loop(loop)
                 return asyncio.get_event_loop()
 
-    async def start(self, event):
+    def start(self, event):
         self.datas_send = []
         new_list = self.sub_subscribe_all[:]
         new_list.pop(0)
@@ -2125,7 +2125,7 @@ class MUCBot(slixmpp.ClientXMPP):
         logger.info("Subscribe %s" % self.sub_subscribe)
         self.send_presence(pto=self.sub_subscribe, ptype="subscribe")
         logger.info("get_roster")
-        await self.get_roster()
+        self.get_roster()
 
         self.ipconnection = self.config.Server
         self.config.ipxmpp = getIpXmppInterface(self.config.Server, self.config.Port)
