@@ -1100,7 +1100,7 @@ def applicationdeploymentjson(self,
                                                     encodebase64=False,
                                                     prefix="command")
 
-            if self.send_hash:
+            if self.send_hash is True:
                 try:
                     self.mutexdeploy.acquire()
                     if data['name'] in self.hastable:
