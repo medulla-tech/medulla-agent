@@ -172,7 +172,7 @@ class KioskDatabase(DatabaseHelper):
             if ret:
                 break
         if not ret:
-            raise "Database kiosk connection error"
+            raise RuntimeError("Database kiosk connection error")
         return ret
 
     # =====================================================================
