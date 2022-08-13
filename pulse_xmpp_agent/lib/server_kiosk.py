@@ -373,11 +373,7 @@ class manage_kiosk_message:
                 self.logger.info("loop event wait stop")
 
     def test_type(self, value):
-        if (
-            isinstance(value, bool)
-            or isinstance(value, int)
-            or isinstance(value, float)
-        ):
+        if isinstance(value, (bool, int, float)):
             return value
         else:
             try:

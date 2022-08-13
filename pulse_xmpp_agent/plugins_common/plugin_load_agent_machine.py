@@ -160,7 +160,7 @@ def _minifyjsonstringrecv(strjson):
 
 
 def _test_type(value):
-    if isinstance(value, bool) or isinstance(value, int) or isinstance(value, float):
+    if isinstance(value, (bool, int, float)):
         return value
     else:
         try:

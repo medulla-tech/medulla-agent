@@ -3818,9 +3818,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 new_logincommand.syncthing = True
             try:
-                if (isinstance(params, list) or isinstance(params, dict)) and len(
-                    params
-                ) != 0:
+                if isinstance(params, (list, dict)) and len(params) != 0:
                     new_logincommand.params_json = json.dumps(params)
             except Exception as e:
                 logging.getLogger().error(
