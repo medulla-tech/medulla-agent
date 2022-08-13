@@ -258,7 +258,7 @@ class functionsynchroxmpp:
     def remotefilesimple(xmppobject, data):
         logger.debug("iq remotefilesimple")
         datapath = data["data"]
-        if isinstance(datapath, str) or isinstance(datapath, str):
+        if isinstance(datapath, str):
             datapath = str(data["data"])
             filesystem = xmppobject.xmppbrowsingpath.listfileindir(datapath)
             data["data"] = filesystem
