@@ -36,7 +36,6 @@ import json
 import logging
 from lib import utils
 
-import base64
 import zlib
 import configparser
 import re

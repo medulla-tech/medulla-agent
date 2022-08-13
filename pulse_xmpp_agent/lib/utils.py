@@ -64,7 +64,6 @@ import tarfile
 from functools import wraps
 import string
 import platform
-import asyncio
 import asyncio as aio
 
 logger = logging.getLogger()
