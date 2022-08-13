@@ -470,7 +470,6 @@ def helpcmd(xmppobject, result):
                     "data": "name_module",
                 },
                 "comment": 'get level handler omettre key data pour le logger principal. autrement "data": "nom de module"',
-                "comment": "",
                 "exemple": 'echo -n \'{"action": "get_debug_level", "data": "slixmpp" }\'| nc localhost 8765}',
             },
             "set_debug_level": {
