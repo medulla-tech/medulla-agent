@@ -148,7 +148,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             else:
                 #supprime cet input
-                objectxmpp.xmpplog('<span class="log_err">Package deplayed execution error</span>',
+                objectxmpp.xmpplog('<span class="log_err">Package delayed execution error</span>',
                                    type='deploy',
                                    sessionname=sessionid,
                                    priority=-1,

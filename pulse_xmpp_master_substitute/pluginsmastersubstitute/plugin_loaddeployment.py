@@ -1093,11 +1093,18 @@ def applicationdeploymentjson(self,
             data['advanced']['syncthing'] = 0
             result = None
 
-            if self.send_hash:
+            sessionid = self.send_session_command(jidrelay,
+                                                    "applicationdeploymentjson",
+                                                    data,
+                                                    datasession=None,
+                                                    encodebase64=False,
+                                                    prefix="command")
+
+            if self.send_hash is True:
                 try:
                     self.mutexdeploy.acquire()
                     if data['name'] in self.hastable:
-                        if (self.hastable[data['name']] + 10) > time.time():
+                        if (self.hastable[data['name']] + 10) > time:
                             del self.hastable[data['name']]
                     if not data['name'] in self.hastable:
                         dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
@@ -1127,7 +1134,7 @@ def applicationdeploymentjson(self,
 
                         if need_hash == True:
                             generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
-                        self.hastable[data['name']]= time.time()
+                        self.hastable[data['name']]= time
                 except Exception:
                     logger.error("%s" % (traceback.format_exc()))
                 finally:
@@ -1140,12 +1147,6 @@ def applicationdeploymentjson(self,
                         data['hash']['global'] = content
                         data['hash']['type'] = self.hashing_algo
 
-                    sessionid = self.send_session_command(jidrelay,
-                                                  "applicationdeploymentjson",
-                                                  data,
-                                                  datasession=None,
-                                                  encodebase64=False,
-                                                  prefix="command")
                 except IOError:
                     logger.error("Pulse is configured to check integrity of packages but the hashes have not been generated")
                     msg.append("<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>")
