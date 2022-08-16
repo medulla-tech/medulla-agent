@@ -25,7 +25,7 @@
 import json
 import subprocess
 import sys
-
+from .utils import encode_strconsole
 
 if sys.platform.startswith("win"):
     import wmi
