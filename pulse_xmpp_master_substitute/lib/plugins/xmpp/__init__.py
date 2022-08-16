@@ -8213,6 +8213,14 @@ class XmppMasterDatabase(DatabaseHelper):
     def _template_python_string_event(self, python_dict):
         # creation string parameter for bash script.
         python_string = ""
+        def is_number_string(s):
+            """Returns True is string is a number."""
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+
         for t in python_dict:
             valor = python_dict[t]
             if isinstance(valor, basestring):
