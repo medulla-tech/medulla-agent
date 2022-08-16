@@ -8760,7 +8760,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         )
                         type_script = z["user"].strip()
                         if z["user"].strip() == "":
-                            type_script = python
+                            type_script = "python"
                         with open(namefileout, "ab") as out:
                             out.write(
                                 "\n-------- script %s--------\n"
