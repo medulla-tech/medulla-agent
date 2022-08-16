@@ -56,7 +56,7 @@ def decode_utf8(self, s):
 def decode_latin1(self, s):
     try:
         return s.decode("latin-1")
-    except exceptions.UnicodeEncodeError:
+    except UnicodeEncodeError:
         return s
 
 
