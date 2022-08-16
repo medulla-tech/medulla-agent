@@ -936,6 +936,7 @@ class PkgsDatabase(DatabaseHelper):
                         packages.pkgs_share_id = %s;""" % (
                 share_id
             )
+        result = session.execute(sql)
         session.commit()
         session.flush()
         return [x for x in result][0][0]
