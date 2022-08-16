@@ -384,9 +384,10 @@ def __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata):
 
 
 def finger_print_md5(file):
+    json_md5 = ""
     try:
         with open(file, "r") as source_file:
-            json_md5 = hashlib.md5(source_file.read()).hexdigest()
+            json_md5 = hashlib.md5(source_file.read().encode("utf-8")).hexdigest()
     except BaseException:
         json_md5 += ""
     return json_md5
