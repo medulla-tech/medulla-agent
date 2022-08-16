@@ -119,7 +119,7 @@ class manageschedulerdeploy:
 
             try:
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
-            except DBInvalidArgError:
+            except bsddb.db.DBInvalidArgError:
                 logger.error(
                     "An error occured while opening the bsddb database: %s"
                     % self.name_basesession
