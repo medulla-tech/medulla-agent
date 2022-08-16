@@ -291,7 +291,8 @@ class Glpi84(DatabaseHelper):
         except OperationalError:
             self._glpi_version = list(
                 self.db.execute('SELECT value FROM glpi_configs WHERE name = "version"')
-                .fetchone().values()
+                .fetchone()
+                .values()
             )[0].replace(" ", "")
             if LooseVersion(self._glpi_version) >= LooseVersion(
                 "0.84"
