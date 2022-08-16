@@ -43,6 +43,7 @@ logger = logging.getLogger()
 # "email_servertype" : "SMTP_SSL",
 # "email_mimetype" : "html,text"}
 
+import sys
 if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
 
