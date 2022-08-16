@@ -790,6 +790,10 @@ class Glpi95(DatabaseHelper):
         )
         mapper(RegContents, self.regcontents)
 
+        self.peripherals = Table("glpi_peripherals", self.metadata, autoload=True)
+        mapper(Peripherals, self.peripherals)
+
+
     # internal query generators
     def __filter_on(self, query):
         """
