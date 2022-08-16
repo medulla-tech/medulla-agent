@@ -740,7 +740,7 @@ class PkgsDatabase(DatabaseHelper):
         ars_share_id,
         packages_id,
         status,
-        finger_print,
+        fingerprint,
         size,
         edition_date,
     ):
@@ -752,9 +752,9 @@ class PkgsDatabase(DatabaseHelper):
             new_Pkgs_shares_ars_web.ars_share_id = ars_share_id
             new_Pkgs_shares_ars_web.packages_id = packages_id
             new_Pkgs_shares_ars_web.status = status
-            new_Pkgs_shares_ars_web.finger_print = finger_print
+            new_Pkgs_shares_ars_web.finger_print = fingerprint
             new_Pkgs_shares_ars_web.size = size
-            new_Pkgs_shares_ars_web.date_edition = date_edition
+            new_Pkgs_shares_ars_web.date_edition = edition_date
             session.add(new_Pkgs_shares_ars_web)
             session.commit()
             session.flush()
