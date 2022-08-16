@@ -35,6 +35,7 @@ import os
 import json
 import logging
 from lib import utils
+from lib.networkinfo import organizationbymachine, organizationbyuser
 
 import zlib
 import configparser
