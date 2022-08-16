@@ -252,7 +252,7 @@ def handle_client_connection(self, msg):
                 try:
                     self.config.ipxmpp
                 except BaseException:
-                    self.config.ipxmpp = getIpXmppInterface(
+                    self.config.ipxmpp = utils.getIpXmppInterface(
                         self.config.Server, self.config.Port
                     )
                 if self.config.ipxmpp in result["removedinterface"]:
@@ -267,7 +267,7 @@ def handle_client_connection(self, msg):
                         "The new network interface can replace the previous one. "
                         "The service will resume after restarting the agent"
                     )
-                    if is_connectedServer(self.ipconnection, self.config.Port):
+                    if utils.is_connectedServer(self.ipconnection, self.config.Port):
                         # We only do a restart
                         logger.warning(logmsg)
                         self.md5reseau = utils.refreshfingerprint()
@@ -276,7 +276,7 @@ def handle_client_connection(self, msg):
                         # We reconfigure all
                         # Activating the new interface can take a while.
                         time.sleep(15)
-                        if is_connectedServer(
+                        if utils.is_connectedServer(
                             self.ipconnection,
                             self.config.Port,
                         ):
