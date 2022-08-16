@@ -30,6 +30,8 @@ from slixmpp import jid
 import re
 import configparser
 
+import yaml
+
 # this import will be used later
 import time
 import sys
