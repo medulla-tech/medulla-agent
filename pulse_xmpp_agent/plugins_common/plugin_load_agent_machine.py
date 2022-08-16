@@ -128,7 +128,7 @@ def read_conf_load_agent_machine(xmppobject):
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
-def get_list_function_dyn_agent_machine(self):
+def get_list_function_dyn_agent_machine(xmppobject):
     logger.debug(
         "return list function install from this plugin : %s"
         % xmppobject.list_function_agent_name
