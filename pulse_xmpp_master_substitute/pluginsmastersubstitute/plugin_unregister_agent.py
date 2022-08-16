@@ -62,7 +62,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             else:
                 logger.error("No relay server found for the domain: %s" % data['domain'])
 
-        except Exception, e:
+        except Exception as e:
             logger.error("An error occured when trying to unregister old JID. We got the error: %s" % str(e))
             logger.error("We hit the backtrace: \n%s" % traceback.format_exc())
     else:

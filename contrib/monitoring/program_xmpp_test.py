@@ -94,7 +94,7 @@ def action(struct):
         out.write("\n----------------------------------------------------")
         out.write("\n%s" % result)
         out.write("\n----------------------------------------------------")
-    print result
+    print(result)
 
 if __name__ == "__main__":
     # The program received the event structure as parameter (in base64)

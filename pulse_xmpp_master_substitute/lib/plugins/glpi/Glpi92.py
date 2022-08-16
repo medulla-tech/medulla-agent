@@ -820,7 +820,7 @@ class Glpi92(DatabaseHelper):
             ),
             autoload=True,
         )
-        mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers).
+        mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
 
 
     # Internal query generators
