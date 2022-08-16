@@ -812,7 +812,6 @@ class Glpi95(DatabaseHelper):
         )
         mapper(Computersitems, self.computersitems)
 
-
     # internal query generators
     def __filter_on(self, query):
         """
