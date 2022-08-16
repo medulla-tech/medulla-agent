@@ -136,7 +136,7 @@ def send_iq_message(xmppobject, msg):
 def send_message_file(xmppobject, *args, **kwargs):
     if args:
         for value in args:
-            if isinsance(value, (bytes)):
+            if isinstance(value, (bytes)):
                 value = value.decode("utf-8")
     if kwargs:
         if "to" in kwargs:
@@ -194,11 +194,11 @@ def send_message_file(xmppobject, *args, **kwargs):
             ret = 0
 
         if "data" in kwargs:
-            if isinsance(kwargs["data"], (list, dict, tuple, float, int, datetime)):
+            if isinstance(kwargs["data"], (list, dict, tuple, float, int, datetime)):
                 data = json.dumps(kwargs["data"], cls=DateTimebytesEncoderjson)
-            elif isinsance(kwargs["data"], (bytes)):
+            elif isinstance(kwargs["data"], (bytes)):
                 data = kwargs["data"].decode("utf-8")
-            elif isinsance(kwargs["data"], (str)):
+            elif isinstance(kwargs["data"], (str)):
                 data = kwargs["data"]
             else:
                 data = ""
@@ -217,7 +217,7 @@ def send_message_file(xmppobject, *args, **kwargs):
             # arg[0] jid to
             to = args[0]
             # arg[1] string body message or dict struct message
-            if isinsance(args[1], (dict)):
+            if isinstance(args[1], (dict)):
                 msg = json.dumps(args[1], cls=DateTimebytesEncoderjson)
         else:
             return False
