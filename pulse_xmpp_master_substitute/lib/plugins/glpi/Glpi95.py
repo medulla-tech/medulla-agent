@@ -6113,6 +6113,9 @@ class OsVersion(DbTOA):
 class Peripherals(DbTOA):
     pass
 
+class Peripheralsmanufacturers(DbTOA):
+    pass
+
 
 def noNone(var, res=""):
     """
