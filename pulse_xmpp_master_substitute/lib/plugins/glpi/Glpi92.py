@@ -798,6 +798,15 @@ class Glpi92(DatabaseHelper):
         )
         mapper(RegContents, self.regcontents)
 
+        # items contents
+        self.computersitems = Table(
+            "glpi_computers_items",
+            self.metadata,
+            Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            autoload=True,
+        )
+        mapper(Computersitems, self.computersitems)
+
         self.peripherals = Table("glpi_peripherals", self.metadata, autoload=True)
         mapper(Peripherals, self.peripherals)
 
@@ -6466,6 +6475,8 @@ class RuleAction(DbTOA):
 class OsVersion(DbTOA):
     pass
 
+class Computersitems(DbTOA):
+    pass
 
 class Peripherals(DbTOA):
     pass

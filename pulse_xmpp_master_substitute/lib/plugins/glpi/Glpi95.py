@@ -804,6 +804,14 @@ class Glpi95(DatabaseHelper):
         )
         mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
 
+        self.computersitems = Table(
+            "glpi_computers_items",
+            self.metadata,
+            Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            autoload=True,
+        )
+        mapper(Computersitems, self.computersitems)
+
 
     # internal query generators
     def __filter_on(self, query):
@@ -6113,7 +6121,12 @@ class OsVersion(DbTOA):
 class Peripherals(DbTOA):
     pass
 
+
 class Peripheralsmanufacturers(DbTOA):
+    pass
+
+
+class Computersitems(DbTOA):
     pass
 
 

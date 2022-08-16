@@ -790,6 +790,15 @@ class Glpi94(DatabaseHelper):
         )
         mapper(RegContents, self.regcontents)
 
+        # items contents
+        self.computersitems = Table(
+            "glpi_computers_items",
+            self.metadata,
+            Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            autoload=True,
+        )
+        mapper(Computersitems, self.computersitems)
+
         self.peripherals = Table("glpi_peripherals", self.metadata, autoload=True)
         mapper(Peripherals, self.peripherals)
 
@@ -6142,6 +6151,11 @@ class Peripherals(DbTOA):
 
 class Peripheralsmanufacturers(DbTOA):
     pass
+
+
+class Computersitems(DbTOA):
+    pass
+
 
 def noNone(var, res=""):
     """
