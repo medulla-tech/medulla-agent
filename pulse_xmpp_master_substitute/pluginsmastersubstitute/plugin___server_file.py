@@ -215,10 +215,10 @@ def send_message_file(xmppobject, *args, **kwargs):
     elif args:
         if len(args) == 2:
             # arg[0] jid to
-            to = arg[0]
+            to = args[0]
             # arg[1] string body message or dict struct message
-            if isinsance(arg[1], (dict)):
-                msg = json.dumps(arg[1], cls=DateTimebytesEncoderjson)
+            if isinsance(args[1], (dict)):
+                msg = json.dumps(args[1], cls=DateTimebytesEncoderjson)
         else:
             return False
     xmppobject.send_message(mto=to, mbody=msg, mtype="chat")
