@@ -104,6 +104,8 @@ from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
 
+import zipfile
+
 if sys.version_info[0] == 3:
     from slixmpp import ClientXMPP
     from slixmpp import jid
