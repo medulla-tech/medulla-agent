@@ -73,7 +73,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         )
     except Exception as e:
         print("Error in plugin %s" % str(e))
-        logger.error("\n%s" % (traceback.format_exc()))
+        logging.getLogger().error("\n%s" % (traceback.format_exc()))
         # abandonmentdeploy, run or pause
         advanced["actionscheduler"] = "error"
         datasend = {
