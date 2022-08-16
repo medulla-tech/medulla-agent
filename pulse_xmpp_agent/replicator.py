@@ -32,6 +32,7 @@ import json
 import hashlib
 import shutil
 import importlib
+import urllib
 
 from optparse import OptionParser
 
