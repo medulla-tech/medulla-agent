@@ -74,7 +74,7 @@ def read_conf_load_agent_machine(xmppobject):
     conf_filename = plugin["NAME"] + ".ini"
 
     try:
-        pathfileconf = os.path.join(xmppobject.config.nameplugindir, namefichierconf)
+        pathfileconf = os.path.join(xmppobject.config.nameplugindir, conf_filename)
         if not os.path.isfile(pathfileconf):
             logger.warning(
                 "Plugin %s\nConfiguration file :"
