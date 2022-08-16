@@ -69,7 +69,7 @@ class Pkgs_shares_ars(object):
             "id": self.getId(),
             "hostname": self.getHostname(),
             "jid": self.getJid(),
-            "pkgs_shares_id": getShareid(),
+            "pkgs_shares_id": self.getShareid(),
         }
 
     def toH(self):
