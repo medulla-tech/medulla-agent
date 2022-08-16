@@ -804,7 +804,6 @@ class Glpi94(DatabaseHelper):
         )
         mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
 
-
     # internal query generators
     def __filter_on(self, query):
         """
