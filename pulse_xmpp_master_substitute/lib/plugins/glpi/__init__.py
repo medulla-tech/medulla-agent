@@ -60,7 +60,7 @@ class Glpi(object):
 
     is_activated = False
 
-    def activate(self):  # jid, password, room, nick):
+    def activate(self):
         global glpi
         if self.is_activated:
             return None
