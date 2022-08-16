@@ -245,19 +245,19 @@ class Glpi95(DatabaseHelper):
         )
 
         try:
-            self._glpi_version = (
-                list(self.engine_glpi.execute("SELECT version FROM glpi_configs")
-                .fetchone().values())[0]
-                .replace(" ", "")
-            )
+            self._glpi_version = list(
+                self.engine_glpi.execute("SELECT version FROM glpi_configs")
+                .fetchone()
+                .values()
+            )[0].replace(" ", "")
         except OperationalError:
-            self._glpi_version = (
-                list(self.engine_glpi.execute(
+            self._glpi_version = list(
+                self.engine_glpi.execute(
                     'SELECT value FROM glpi_configs WHERE name = "version"'
                 )
-                .fetchone().values())[0]
-                .replace(" ", "")
-            )
+                .fetchone()
+                .values()
+            )[0].replace(" ", "")
 
         if LooseVersion(self._glpi_version) >= LooseVersion("9.5") and LooseVersion(
             self._glpi_version
@@ -1211,15 +1211,21 @@ class Glpi95(DatabaseHelper):
                 gid = filt["gid"]
                 machines = []
                 if ComputerGroupManager().isrequest_group(ctx, gid):
-                    machines = list(map(
-                        lambda m: fromUUID(m),
-                        ComputerGroupManager().requestresult_group(ctx, gid, 0, -1, ""),
-                    ))
+                    machines = list(
+                        map(
+                            lambda m: fromUUID(m),
+                            ComputerGroupManager().requestresult_group(
+                                ctx, gid, 0, -1, ""
+                            ),
+                        )
+                    )
                 else:
-                    machines = list(map(
-                        lambda m: fromUUID(m),
-                        ComputerGroupManager().result_group(ctx, gid, 0, -1, ""),
-                    ))
+                    machines = list(
+                        map(
+                            lambda m: fromUUID(m),
+                            ComputerGroupManager().result_group(ctx, gid, 0, -1, ""),
+                        )
+                    )
                 query = query.filter(self.machine.c.id.in_(machines))
 
             if "request" in filt:
@@ -1228,10 +1234,14 @@ class Glpi95(DatabaseHelper):
                     bool = None
                     if "equ_bool" in filt:
                         bool = filt["equ_bool"]
-                    machines = list(map(
-                        lambda m: fromUUID(m),
-                        ComputerGroupManager().request(ctx, request, bool, 0, -1, ""),
-                    ))
+                    machines = list(
+                        map(
+                            lambda m: fromUUID(m),
+                            ComputerGroupManager().request(
+                                ctx, request, bool, 0, -1, ""
+                            ),
+                        )
+                    )
                     query = query.filter(self.machine.c.id.in_(machines))
 
             if "date" in filt:
