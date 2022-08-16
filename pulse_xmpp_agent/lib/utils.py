@@ -65,6 +65,7 @@ from functools import wraps
 import string
 import platform
 import asyncio as aio
+import posix_ipc
 
 logger = logging.getLogger()
 
