@@ -804,7 +804,6 @@ class Glpi94(DatabaseHelper):
         )
         mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
 
-
     # internal query generators
     def __filter_on(self, query):
         """
@@ -6140,8 +6139,10 @@ class OsVersion(DbTOA):
 class Peripherals(DbTOA):
     pass
 
+
 class Peripheralsmanufacturers(DbTOA):
     pass
+
 
 def noNone(var, res=""):
     """
