@@ -678,7 +678,7 @@ def call_plugin_separate(name, *args, **kwargs):
 def call_plugin(name, *args, **kwargs):
     # util only asyncio
     # add compteur appel plugins
-    loop = asyncio.new_event_loop()
+    loop = aio.new_event_loop()
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
