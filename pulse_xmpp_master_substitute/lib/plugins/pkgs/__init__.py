@@ -783,7 +783,7 @@ class PkgsDatabase(DatabaseHelper):
         self, session, pkgs_rules_algos_id, pkgs_cluster_ars_id, order, subject
     ):
         try:
-            new_Pkgs_rules_global = Pkgs_rules_local()
+            new_Pkgs_rules_global = Pkgs_rules_global()
             new_Pkgs_rules_global.pkgs_rules_algos_id = pkgs_rules_algos_id
             new_Pkgs_rules_global.pkgs_cluster_ars_id = pkgs_cluster_ars_id
             new_Pkgs_rules_global.order = order
@@ -801,6 +801,7 @@ class PkgsDatabase(DatabaseHelper):
         self, session, pkgs_rules_algos_id, pkgs_shares_id, order, subject, permission
     ):
         try:
+            new_Pkgs_rules_local = Pkgs_rules_local()
             new_Pkgs_rules_local.pkgs_rules_algos_id = pkgs_rules_algos_id
             new_Pkgs_rules_local.pkgs_shares_id = pkgs_shares_id
             new_Pkgs_rules_local.order = order
