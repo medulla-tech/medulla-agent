@@ -37,6 +37,7 @@ import logging
 from lib import utils
 from lib.networkinfo import organizationbymachine, organizationbyuser
 
+import psutil
 import zlib
 import configparser
 import re
