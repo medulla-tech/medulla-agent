@@ -1165,7 +1165,7 @@ def subnetnetwork(adressmachine, mask):
     return decimaltoIpV4(reseaumachine)
 
 def subnet_address(address,maskvalue):
-    addr = [int(x) for x in adress.split(".")]
+    addr = [int(x) for x in address.split(".")]
     mask = [int(x) for x in maskvalue.split(".")]
     subnet = [addr[i] & mask[i] for i in range(4)]
     broadcast =  [(addr[i] & mask[i]) | (255^mask[i]) for i in range(4)]
