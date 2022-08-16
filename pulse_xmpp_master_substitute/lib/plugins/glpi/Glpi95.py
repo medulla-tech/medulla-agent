@@ -6097,6 +6097,10 @@ class OsVersion(DbTOA):
     pass
 
 
+class Peripherals(DbTOA):
+    pass
+
+
 def noNone(var, res=""):
     """
     Some times, we don't want to see any None affected to a variable
