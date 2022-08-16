@@ -793,6 +793,17 @@ class Glpi95(DatabaseHelper):
         self.peripherals = Table("glpi_peripherals", self.metadata, autoload=True)
         mapper(Peripherals, self.peripherals)
 
+        self.glpi_view_peripherals_manufacturers = Table(
+            "glpi_view_peripherals_manufacturers",
+            self.metadata,
+            Column("id", Integer, primary_key=True),
+            Column(
+                "items_id", Integer, ForeignKey("glpi_peripherals.manufacturers_id")
+            ),
+            autoload=True,
+        )
+        mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
+
 
     # internal query generators
     def __filter_on(self, query):
