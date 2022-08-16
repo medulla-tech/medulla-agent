@@ -1166,13 +1166,6 @@ class Glpi84(DatabaseHelper):
             result["data"]["uuidglpicomputer"] = result["data"].pop("uuid")
         return result
 
-    def getMachineByUuidSetup(self, uuidsetupmachine):
-        """@return: all computers that have this uuid setup machine"""
-        session = create_session()
-        ret = session.query(Machine).filter(Machine.uuid.like(uuidsetupmachine)).first()
-        session.close()
-        return self._machineobject(ret)
-
     def getMachineInformationByUuidSetup(self, uuidsetupmachine):
         """@return: all computers that have this uuid setup machine"""
         return self.get_machines_list(0, 0, {"uuidsetup": uuidsetupmachine})

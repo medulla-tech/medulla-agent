@@ -1521,33 +1521,6 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
-    def updateName_Qa_custom_command(
-        self, session, user, osname, namecmd, customcmd, description
-    ):
-        """
-        update updateName_Qa_custom_command
-        """
-
-        try:
-            session.query(Qa_custom_command).filter(
-                Qa_custom_command.namecmd == namecmd
-            ).update(
-                {
-                    Qa_custom_command.customcmd: customcmd,
-                    Qa_custom_command.description: description,
-                    Qa_custom_command.os: osname,
-                }
-            )
-            session.commit()
-            session.flush()
-            return 1
-        except Exception as e:
-            logging.getLogger().debug(
-                "updateName_Qa_custom_command error %s->" % str(e)
-            )
-            return -1
-
-    @DatabaseHelper._sessionm
     def delQa_custom_command(self, session, user, osname, namecmd):
         """
         del Qa_custom_command
