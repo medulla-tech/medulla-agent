@@ -649,7 +649,7 @@ def set_debug_level_str(xmppobject, result):
                             )
                             return False, msgr
                         else:
-                            msgr = "error verify format module existe\n %s" % (
+                            msgr = "error verify format module existe\n %s %s" % (
                                 result["data"]["loggername"],
                                 msg,
                             )
