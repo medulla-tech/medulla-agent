@@ -6096,6 +6096,8 @@ class RuleAction(DbTOA):
 class OsVersion(DbTOA):
     pass
 
+class Peripherals(DbTOA):
+    pass
 
 def noNone(var, res=""):
     """
