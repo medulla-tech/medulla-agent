@@ -44,7 +44,7 @@ class DBObj(object):
     def toDict(self, relations=True):
         d = self.__dict__
         # Convert relations to dict, if 'relations'
-        for k in d.keys():
+        for k in d.copy().keys():
             if isinstance(d[k], DBObj):
                 if relations:
                     d[k] = d[k].toDict()
