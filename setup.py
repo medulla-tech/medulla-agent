@@ -40,4 +40,4 @@ setup(
     entry_points={},
     extras_require={},
     install_requires=[],
-)
+) # fmt: skip

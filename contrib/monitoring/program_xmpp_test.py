@@ -36,9 +36,10 @@ import traceback
 from datetime import date, datetime
 
 # global variable
-LOGFILE ="/var/lib/pulse2/script_monitoring/logfilescriptxmpp.log"
+LOGFILE = "/var/lib/pulse2/script_monitoring/logfilescriptxmpp.log"
 logger = logging.getLogger()
-ERROR_TEST="ERROR_MESSAGE_XMPP" # To be analysed submon side
+ERROR_TEST = "ERROR_MESSAGE_XMPP"  # To be analysed submon side
+
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -48,13 +49,14 @@ class DateTimeEncoder(json.JSONEncoder):
             encoded_object = json.JSONEncoder.default(self, obj)
         return encoded_object
 
+
 def action(struct):
     try:
-        action= None
-        if struct['mon_rules_user']:
-            action = struct['mon_rules_user']
-        elif struct['mon_rules_comment'] and 'action' in struct['mon_rules_comment']:
-            action = struct['mon_rules_comment']['action']
+        action = None
+        if struct["mon_rules_user"]:
+            action = struct["mon_rules_user"]
+        elif struct["mon_rules_comment"] and "action" in struct["mon_rules_comment"]:
+            action = struct["mon_rules_comment"]["action"]
 
         # Action is the name of the plugin call.
         # in rule it is defined in my_rules:
@@ -65,42 +67,47 @@ def action(struct):
         # action = "my_plugin_appleler" # action defined directly in code if not defined in my_rules
 
         # action is the name of the plugin call
-        send_message = { "action"   : action,
-                         "sessionid" : struct['session_id'],
-                         "base64"    : False,
-                         "ret"       : 0,
-                         "data"      : {} }
+        send_message = {
+            "action": action,
+            "sessionid": struct["session_id"],
+            "base64": False,
+            "ret": 0,
+            "data": {},
+        }
         # Personal Code below
         # We write the JSON CORE call for the remote plugin
 
         # In the exemple code. send_message is the message sent to  the machine
         # which triggers the alert
-        send_message['data']['struct'] = struct
+        send_message["data"]["struct"] = struct
 
         # END Personal Code
         # modifies the code below if you know what you do
-        if not send_message['action']:
+        if not send_message["action"]:
             logger.error("action missing")
             raise
         result = json.dumps(send_message, indent=4, cls=DateTimeEncoder)
         logger.debug("struct %s" % result)
     except:
-        result = "%s"%(traceback.format_exc())
+        result = "%s" % (traceback.format_exc())
         result = ERROR_TEST
     # le str json et copier dansle fichier result
-    with open(struct['namefileout'], "ab") as out:
+    with open(struct["namefileout"], "ab") as out:
         out.write("\n-------- xmppmsg Message--------\n")
-        out.write("\nMESSAGE TO MACHINE (%s)" % struct['jid'])
+        out.write("\nMESSAGE TO MACHINE (%s)" % struct["jid"])
         out.write("\n----------------------------------------------------")
         out.write("\n%s" % result)
         out.write("\n----------------------------------------------------")
-    print result
+    print(result)
+
 
 if __name__ == "__main__":
     # The program received the event structure as parameter (in base64)
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(message)s',
-                        filename = LOGFILE,
-                        filemode = 'a')
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(message)s",
+        filename=LOGFILE,
+        filemode="a",
+    )
     logger.debug("Programm starting")
     action(json.loads(base64.b64decode(sys.argv[1])))

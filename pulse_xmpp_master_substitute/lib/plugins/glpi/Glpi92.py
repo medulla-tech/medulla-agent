@@ -810,7 +810,6 @@ class Glpi92(DatabaseHelper):
         self.peripherals = Table("glpi_peripherals", self.metadata, autoload=True)
         mapper(Peripherals, self.peripherals)
 
-
         self.glpi_view_peripherals_manufacturers = Table(
             "glpi_view_peripherals_manufacturers",
             self.metadata,
@@ -820,8 +819,7 @@ class Glpi92(DatabaseHelper):
             ),
             autoload=True,
         )
-        mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers).
-
+        mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
 
     # Internal query generators
     def __filter_on(self, query):
@@ -6475,11 +6473,14 @@ class RuleAction(DbTOA):
 class OsVersion(DbTOA):
     pass
 
+
 class Computersitems(DbTOA):
     pass
 
+
 class Peripherals(DbTOA):
     pass
+
 
 class Peripheralsmanufacturers(DbTOA):
     pass
