@@ -104,6 +104,8 @@ from multiprocessing.managers import SyncManager
 import multiprocessing
 from modulefinder import ModuleFinder
 
+import datetime
+
 import zipfile
 
 if sys.version_info[0] == 3:
