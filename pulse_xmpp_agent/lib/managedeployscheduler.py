@@ -102,36 +102,36 @@ class manageschedulerdeploy:
                 )
         else:
             try:
-                self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
+                self.dbcmdscheduler = bsddb3.btopen(self.name_basecmd, "c")
             except DBInvalidArgError:
                 logger.error(
-                    "An error occured while opening the bsddb database: %s"
+                    "An error occured while opening the bsddb3 database: %s"
                     % self.name_basecmd
                 )
                 os.remove(self.name_basecmd)
-                self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
+                self.dbcmdscheduler = bsddb3.btopen(self.name_basecmd, "c")
             except Exception as error:
                 logger.error(
-                    "Opening the bsddb database failed with the error \n %s" % error
+                    "Opening the bsddb3 database failed with the error \n %s" % error
                 )
                 os.remove(self.name_basecmd)
-                self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
+                self.dbcmdscheduler = bsddb3.btopen(self.name_basecmd, "c")
 
             try:
-                self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
+                self.dbsessionscheduler = bsddb3.btopen(self.name_basesession, "c")
             except DBInvalidArgError:
                 logger.error(
-                    "An error occured while opening the bsddb database: %s"
+                    "An error occured while opening the bsddb3 database: %s"
                     % self.name_basesession
                 )
                 os.remove(self.name_basesession)
-                self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
+                self.dbsessionscheduler = bsddb3.btopen(self.name_basesession, "c")
             except Exception as error:
                 logger.error(
-                    "Opening the bsddb database failed with the error \n %s" % error
+                    "Opening the bsddb3 database failed with the error \n %s" % error
                 )
                 os.remove(self.name_basecmd)
-                self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
+                self.dbsessionscheduler = bsddb3.btopen(self.name_basesession, "c")
 
     def closebase(self):
         self.dbcmdscheduler.close()
