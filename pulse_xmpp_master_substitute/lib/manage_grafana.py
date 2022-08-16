@@ -59,9 +59,9 @@ class manage_grafana:
         Reads the configuration from ini and ini.local files
         """
         config = configparser.ConfigParser()
-        config.readfp(open(self.configfile))
+        config.read_file(open(self.configfile))
         if os.path.isfile(self.configfile + ".local"):
-            config.readfp(open(self.configfile + ".local", "r"))
+            config.read_file(open(self.configfile + ".local", "r"))
 
         if config.has_option("grafana_api", "api_key"):
             self.api_config["api_key"] = config.get("grafana_api", "api_key")
