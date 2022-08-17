@@ -225,9 +225,14 @@ class MsgsignedRSA:
         """
         Function load from file the public keys RSA as a base64 string
         """
+        if filekeypublic is None:
+            return None
+
         bkespub = self.loadkeypublicbytes(self, filekeypublic=filekeypublic)
+
         if bkespub is None:
             return None
+
         return base64.b64encode(bkespub)
 
     def loadkeypublictobase64(self, filekeypublic=None):
@@ -240,9 +245,14 @@ class MsgsignedRSA:
         """
         Function load from file the private keys RSA as a base64 string
         """
+        if filekeypublic is None:
+            return None
+
         bkespriv = self.loadkeyprivatebytes(self, filekeyprivate=filekeyprivate)
+
         if bkespriv is None:
             return None
+
         return base64.b64encode(bkespriv)
 
     def loadkeyprivatetobase64(self, filekeyprivate=None):
