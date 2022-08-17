@@ -504,7 +504,7 @@ class MUCBot(slixmpp.ClientXMPP):
 
     async def message(self, msg):
         if msg["from"].bare == self.boundjid.bare:
-            logging.error("msg from/to self agent : no process.")
+            logging.debug("I am talking to myself, nothing to add!")
             return
         if not msg["type"] == "chat":
             logging.error("Stanza %s message no process." " only chat" % msg["type"])
