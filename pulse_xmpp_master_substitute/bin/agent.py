@@ -581,7 +581,7 @@ class MUCBot(slixmpp.ClientXMPP):
                     module = "%s/plugin_%s.py" % (self.modulepath, dataobj["action"])
                     if "ret" not in dataobj:
                         dataobj["ret"] = 0
-                    
+
                     call_plugin(
                         module,
                         self,
