@@ -42,7 +42,7 @@ import netaddr
 # import types
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.54", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
+plugin = {"VERSION": "1.55", "NAME": "registeryagent", "TYPE": "substitute"}  # fmt: skip
 
 # function comment for next feature
 # this functions will be used later
@@ -63,10 +63,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
         if compteurcallplugin == 0:
             read_conf_remote_registeryagent(xmppobject)
-            logger.debug(
-                "Including debug information for list jid %s"
-                % (xmppobject.registeryagent_showinfomachine)
-            )
+            if xmppobject.registeryagent_showinfomachine:
+                logger.debug(
+                    "Including debug information for list jid %s"
+                    % (xmppobject.registeryagent_showinfomachine)
+                )
             # return
             # function comment for next feature
             # this functions will be used later
@@ -924,11 +925,14 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 xmppobject.boundjid.bare,
                 xmppobject.boundjid.bare,
             )
+
             pluginfunction = [
                 str("plugin_%s" % x) for x in xmppobject.pluginlistunregistered
             ]
+
             if showinfobool:
                 logger.info("Calling plugin action for machine %s ." % msg["from"])
+
             for function_plugin in pluginfunction:
                 try:
                     if hasattr(xmppobject, function_plugin):
