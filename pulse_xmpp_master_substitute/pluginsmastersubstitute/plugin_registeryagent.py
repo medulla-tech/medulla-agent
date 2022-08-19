@@ -79,7 +79,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         for x in listupt:
             if x in str(msg["from"]).upper():
                 logger.info(
-                    "** Detailed information for machine %s" % (str(msg["from"]))
+                    "We will show detailled information for the machine %s"
+                    % (str(msg["from"]))
                 )
                 showinfobool = True
                 break
@@ -89,10 +90,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             showinfobool = True
         if "action" in data and data["action"] == "infomachine":
             if showinfobool:
-                logger.info(
-                    "** Processing machine %s that sends this"
-                    " information (mini inventory)" % msg["from"]
-                )
+                logger.info("The machine %s is sending a mini inventory" % msg["from"])
             if "completedatamachine" in data:
                 info = json.loads(base64.b64decode(data["completedatamachine"]))
                 data["information"] = info
@@ -100,8 +98,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     data["uuid_serial_machine"] = ""
                     if showinfobool:
                         logger.info(
-                            "parameter use_uuid is False: "
-                            "uuid serial machine is not used"
+                            "The parameter use_uuid is set to False"
+                            "The uuid_serial_machine information will not be used"
                         )
                 if "uuid_serial_machine" not in data:
                     data["uuid_serial_machine"] = ""
@@ -110,7 +108,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 else:
                     if showinfobool:
                         logger.info(
-                            "** uuid setup_machine is %s" % data["uuid_serial_machine"]
+                            "The uuid_setup_machine is  %s"
+                            % data["uuid_serial_machine"]
                         )
                 interfacedata = []
                 interfaceblacklistdata = []
@@ -127,9 +126,9 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
                 data["information"]["listipinfo"] = interfacedata
                 if showinfobool:
-                    logger.info("machine %s" % str(msg["from"]))
+                    logger.info("For the machine %s" % str(msg["from"]))
                     if len(data["information"]["listipinfo"]):
-                        logger.info("Interface Actif")
+                        logger.info("The actives interfaces are:")
                         logger.info("|   macaddress|      ip address|")
                         for interface in data["information"]["listipinfo"]:
                             logger.info(
@@ -137,7 +136,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 % (interface["macaddress"], interface["ipaddress"])
                             )
                     if interfaceblacklistdata:
-                        logger.warning("Interface blacklisted")
+                        logger.warning("The interface below are blacklisted")
                         for interface in interfaceblacklistdata:
                             logger.warning("|   macaddress|      ip address|")
                             logger.warning(
@@ -145,7 +144,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 % (interface["macaddress"], interface["ipaddress"])
                             )
 
-                logger.info("Registering machine %s" % data["from"])
+                logger.info("We are registering the machine %s" % data["from"])
                 XmppMasterDatabase().setlogxmpp(
                     "Registering machine %s" % data["from"],
                     "info",
@@ -177,22 +176,23 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                 ):
                     if showinfobool:
                         logger.info(
-                            "Performing a complete re-registration of the machine %s"
+                            "We are performing a complete re-registration of the machine %s"
                             % msg["from"]
                         )
                         logger.info(
-                            "Deleting machine %s in machines table" % msg["from"]
+                            "We are deleting machine %s in the machines table"
+                            % msg["from"]
                         )
                     XmppMasterDatabase().delPresenceMachinebyjiduser(msg["from"].user)
                     machine = {}
 
             if showinfobool:
                 if len(machine) != 0:
-                    logger.info("Machine %s already exists in base" % msg["from"])
+                    logger.info("The machine %s already exists in base" % msg["from"])
                 else:
-                    logger.info("Machine %s does not exist in base" % msg["from"])
+                    logger.info("The machine %s does not exist in base" % msg["from"])
             if len(machine) != 0:
-                # on regarde si coherence avec table network.
+                # We look if the network table is coherent.
                 try:
                     result = XmppMasterDatabase().listMacAdressforMachine(
                         machine["id"], infomac=showinfobool
@@ -219,19 +219,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         raise
                     machine["enabled"] = 1
                 except Exception:
-                    # incoherence entre machine list et network list mac table
-                    # delete machine and new registration
+                    # There is an incoherence in the mac tables between the machine list and the network list.
+                    # So we need to delete the machine from the table and proceed to a new registration
                     logger.warning(
-                        "*** Machine %s : incoherence between machines list mac "
-                        "and network list mac tables." % data["from"]
+                        "We detected and incoherence in the mac tables between the machine list and the network list for the machine %s. \n"
+                        "We need to delete the machine and proceed a new registration"
+                        % data["from"]
                     )
+
                     machine["enabled"] = 0
-                    # on supprime la machine de la base machine
                     XmppMasterDatabase().delPresenceMachinebyjiduser(msg["from"].user)
-                    logger.warning(
-                        "*** Full reinscription of the %s %s"
-                        % (msg["from"].user, data["agenttype"])
-                    )
+                    logger.warning("We are proceeding at the full reinscription of %s %s"
+                        % (msg["from"].user, data["agenttype"]))
+
                     XmppMasterDatabase().setlogxmpp(
                         "Full reinscription of "
                         "the %s %s" % (msg["from"].user, data["agenttype"]),
@@ -248,11 +248,11 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     )
                 if machine["enabled"] == 1:
                     logger.debug(
-                        "Machine %s registered with the id: %s"
+                        "The machine %s registered with the id: %s"
                         % (msg["from"], machine["id"])
                     )
                     XmppMasterDatabase().setlogxmpp(
-                        "Machine %s registered with %s" % (msg["from"], machine["id"]),
+                        "The machine %s registered with %s" % (msg["from"], machine["id"]),
                         "info",
                         sessionid,
                         -1,
@@ -267,7 +267,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
                     if showinfobool:
                         logger.info(
-                            "** machine %s reports online in table machine"
+                            "The machine %s is now Online in the machine table."
                             % data["from"]
                         )
                     pluginfunction = [
@@ -275,7 +275,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                     ]
                     if showinfobool:
                         logger.info(
-                            "Calling plugins for all registration actions on online machine."
+                            "We are loading the plugins for online machines"
                         )
                     for function_plugin in pluginfunction:
                         try:
@@ -294,23 +294,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         % (function_plugin, function_plugin)
                                     )
                         except Exception:
-                            logger.error("\n%s" % (traceback.format_exc()))
+                            logger.error("An error occured while loading plugins for online machines.")
+                            logger.error("We hit this backtrace: i\n%s" % (traceback.format_exc()))
+
                     if showinfobool:
-                        logger.debug("=============")
-                        logger.debug("=============")
-                        logger.debug(
-                            "Case 1 : The machine %s already exists : "
-                            % str(msg["from"])
-                        )
-                        logger.debug("Update it's uuid_inventory_machine")
-                        logger.debug("=============")
-                        logger.debug("=============")
+                        logger.debug("The machine %s already exists in the database" % str(msg["from"]))
+                        logger.debug("We will update it's uuid_inventory_machine")
                     if (
                         data["from"] != machine["jid"]
                         or data["baseurlguacamole"] != machine["urlguacamole"]
                         or data["deployment"] != machine["groupdeploy"]
                     ):
                         if showinfobool:
+                            # TODO: Make it more userfriendly
                             logger.debug(
                                 "Update machine id %s\njid %s\n"
                                 "urlguacamole %s\n"
@@ -349,13 +345,12 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         # correspond au hostname dans glpi.
                         hostname = None
                         if showinfobool:
-                            logger.info(
-                                "Searching for incoherences between "
-                                "xmpp and glpi for uuid %s : "
-                                % machine["uuid_inventorymachine"]
+                            logger.info("We are looking if there is incoherences between "
+                                        "xmpp and glpi for the uuid %s"
+                                        % machine["uuid_inventorymachine"]
                             )
                         try:
-                            # todo utilisation d'une requette plus light.
+                            # TODO: Use a SQL request quicker/smaller
                             ret = Glpi().getLastMachineInventoryFull(
                                 machine["uuid_inventorymachine"]
                             )
@@ -363,10 +358,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                 if t[0] == "name":
                                     hostname = t[1]
                                     break
-                            # on vérifie que la machine ayant le même uuid que celui présenter
-                            # a l'enregistrement correspond.
-                            # on refait l'enregistrement complet si celui-ci ne
-                            # correspond pas
+
+                            # We verify that the hostname in the database and the one provided
+                            # by the inventory are the same.
+                            # If not we will update by a new full registration
                             if (
                                 hostname
                                 and "hostname" in data
@@ -377,6 +372,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                     logger.warning(
                                         "When there is an incoherence between "
                                         "xmpp and glpi uuid, we restore the uuid from glpi"
+                                    )
+                                    logger.warning(
+                                        "The hostname in the database and the one provided by the"
+                                        ""
                                     )
                             else:
                                 # la correspondance existe.
