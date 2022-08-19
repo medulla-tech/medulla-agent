@@ -229,8 +229,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
                     machine["enabled"] = 0
                     XmppMasterDatabase().delPresenceMachinebyjiduser(msg["from"].user)
-                    logger.warning("We are proceeding at the full reinscription of %s %s"
-                        % (msg["from"].user, data["agenttype"]))
+                    logger.warning(
+                        "We are proceeding at the full reinscription of %s %s"
+                        % (msg["from"].user, data["agenttype"])
+                    )
 
                     XmppMasterDatabase().setlogxmpp(
                         "Full reinscription of "
@@ -252,7 +254,8 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         % (msg["from"], machine["id"])
                     )
                     XmppMasterDatabase().setlogxmpp(
-                        "The machine %s registered with %s" % (msg["from"], machine["id"]),
+                        "The machine %s registered with %s"
+                        % (msg["from"], machine["id"]),
                         "info",
                         sessionid,
                         -1,
@@ -274,9 +277,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         str("plugin_%s" % x) for x in xmppobject.pluginlistregistered
                     ]
                     if showinfobool:
-                        logger.info(
-                            "We are loading the plugins for online machines"
-                        )
+                        logger.info("We are loading the plugins for online machines")
                     for function_plugin in pluginfunction:
                         try:
                             if hasattr(xmppobject, function_plugin):
@@ -294,11 +295,19 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                                         % (function_plugin, function_plugin)
                                     )
                         except Exception:
-                            logger.error("An error occured while loading plugins for online machines.")
-                            logger.error("We hit this backtrace: i\n%s" % (traceback.format_exc()))
+                            logger.error(
+                                "An error occured while loading plugins for online machines."
+                            )
+                            logger.error(
+                                "We hit this backtrace: i\n%s"
+                                % (traceback.format_exc())
+                            )
 
                     if showinfobool:
-                        logger.debug("The machine %s already exists in the database" % str(msg["from"]))
+                        logger.debug(
+                            "The machine %s already exists in the database"
+                            % str(msg["from"])
+                        )
                         logger.debug("We will update it's uuid_inventory_machine")
                     if (
                         data["from"] != machine["jid"]
@@ -345,9 +354,10 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                         # correspond au hostname dans glpi.
                         hostname = None
                         if showinfobool:
-                            logger.info("We are looking if there is incoherences between "
-                                        "xmpp and glpi for the uuid %s"
-                                        % machine["uuid_inventorymachine"]
+                            logger.info(
+                                "We are looking if there is incoherences between "
+                                "xmpp and glpi for the uuid %s"
+                                % machine["uuid_inventorymachine"]
                             )
                         try:
                             # TODO: Use a SQL request quicker/smaller
