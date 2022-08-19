@@ -237,6 +237,24 @@ class MUCBot(slixmpp.ClientXMPP):
         self.connect_loop_wait = 5
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
 
+    def get_connect_loop_wait(self):
+        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
+        # cf commit d3063a0368503
+        try:
+            self._connect_loop_wait
+            return self._connect_loop_wait
+        except AttributeError:
+            return self.connect_loop_wait
+
+    def set_connect_loop_wait(self, int_time):
+        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
+        # cf commit d3063a0368503
+        try:
+            self._connect_loop_wait
+            self._connect_loop_wait = int_time
+        except AttributeError:
+            self.connect_loop_wait = int_time
+
     def handle_disconnected(self, data):
         logger.debug(
             "We got disconnected. We will reconnect in %s seconds"
