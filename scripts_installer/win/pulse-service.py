@@ -101,7 +101,9 @@ class SMWinservice(win32serviceutil.ServiceFramework):
 
 
 log_file = os.path.join("c:\\", "Program Files", "Pulse", "var", "log", "service.log")
-agent_dir = os.path.join("C:\\", "Program Files", "Python39", "Lib", "site-packages", "pulse_xmpp_agent")
+agent_dir = os.path.join(
+    "C:\\", "Program Files", "Python39", "Lib", "site-packages", "pulse_xmpp_agent"
+)
 
 logger = logging.getLogger("pulseagentservice")
 
