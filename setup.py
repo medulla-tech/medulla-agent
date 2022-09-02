@@ -30,7 +30,7 @@ setup(
     ],
     keywords="pulse-xmpp-agent",
     name="pulse_xmpp_agent",
-    version='2.1.7', # fmt: skip
+    version='3.0.0', # fmt: skip
     debian_distro='stretch',  # fmt: skip
     description="pulse-xmpp-agent",
     url="https://www.siveo.net/",

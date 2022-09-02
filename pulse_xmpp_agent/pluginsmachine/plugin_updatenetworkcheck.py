@@ -27,10 +27,10 @@ import logging
 import shutil
 from lib import utils
 
-NETWORKVERSION = "2.1.7"
+NETWORKVERSION = "3.0.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.5", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "updatenetworkcheck", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -166,13 +166,14 @@ def updatenetworkcheck(xmppobject):
     if sys.platform.startswith("win"):
         pywintypes27_file = os.path.join(
             "c:\\",
-            "Python27",
+            "Program Files",
+            "Python39",
             "Lib",
             "site-packages",
             "pywin32_system32",
             "pywintypes27.dll",
         )
-        win32_path = os.path.join("c:\\", "Python27", "Lib", "site-packages", "win32")
+        win32_path = os.path.join("c:\\", "Program Files", "Python39", "Lib", "site-packages", "win32")
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
         filename = "networkevents.py"
@@ -212,7 +213,7 @@ def updatenetworkcheck(xmppobject):
             querycmd_result = utils.simplecommand(querycmd)
             if querycmd_result["code"] != 0:
                 servicecmd = (
-                    'C:\\Python27\\python.exe "%s\\%s" --startup=auto install'
+                    'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" --startup=auto install'
                     % (pulsedir_path, servicefilename)
                 )
                 servicecmd_result = utils.simplecommand(servicecmd)
@@ -224,13 +225,13 @@ def updatenetworkcheck(xmppobject):
                         % (servicefilename, servicecmd_result["result"])
                     )
 
-            update_command = 'C:\\Python27\\python.exe "%s\\%s" update' % (
+            update_command = 'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" update' % (
                 pulsedir_path,
                 servicefilename,
             )
             utils.simplecommand(update_command)
 
-            restart_command = 'C:\\Python27\\python.exe "%s\\%s" restart' % (
+            restart_command = 'C:\\Program\ Files\\Python39\\python.exe "%s\\%s" restart' % (
                 pulsedir_path,
                 servicefilename,
             )

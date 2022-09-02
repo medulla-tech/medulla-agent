@@ -74,7 +74,8 @@ def fileviewer_path():
     if sys.platform.startswith("win"):
         destpath = os.path.join(
             "c:\\",
-            "Python27",
+            "Program Files",
+            "Python39",
             "Lib",
             "site-packages",
             "pulse_xmpp_agent",

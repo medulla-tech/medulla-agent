@@ -38,7 +38,6 @@ RequestExecutionLevel admin
 
 ; Variables replaced by the script calling the nsi
 !define PYTHON64_FILENAME "@@PYTHON64_FILENAME@@"
-!define PY_VCPYTHON27_FILENAME "@@PY_VCPYTHON27_FILENAME@@"
 !define LIBCURL_FILENAME "@@LIBCURL_FILENAME@@"
 
 !define PULSE_AGENT_FILENAME "@@PULSE_AGENT_FILENAME@@"
@@ -152,7 +151,6 @@ Section "Python" sec_py
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
   @@FULL_OR_DL_PYTHON64@@
-  @@FULL_OR_DL_PY_VCPYTHON27@@
   @@FULL_OR_DL_LIBCURL@@
   ${LogString} "Python Installation...."
   ${LogString} "------------------------------------------------------"
@@ -219,7 +217,7 @@ Section "Python" sec_py
   ${LogString} $0
 
   ; Install pip
-  StrCpy $0 `C:\Python27\python.exe -m ensurepip --upgrade`
+  StrCpy $0 `C:\$PROGRAMFILES\Python39\python.exe -m ensurepip --upgrade`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -238,27 +236,12 @@ Section "Python" sec_py
     nsExec::ExecToLog $0
     StrCpy $0 `taskkill /F /IM syncthing*`
     nsExec::ExecToLog $0
-    StrCpy $0 `attrib -r -s -h -a "C:\Python27"`
+    StrCpy $0 `attrib -r -s -h -a "C:\$PROGRAMFILES\Python39"`
     nsExec::ExecToLog $0
-    StrCpy $0 `rd /s /q "C:\Python27"`
+    StrCpy $0 `rd /s /q "C:\$PROGRAMFILES\Python39"`
     nsExec::ExecToLog $0
     ${LogString} `Return code 0: $0`
     Goto InstallPython
-  ${EndIf}
-
-  ; Install of Visual C++ Compiler for Python
-  StrCpy $0 `msiexec /i "$INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}" /quiet /qn /norestart ALLUSERS=1`
-  ${LogString} "Running $0"
-  nsExec::ExecToLog $0
-  Pop $1 # return value/error/timeout
-  ${LogString} "Return code was: $1"
-  ${IfNot} $1 == 0
-    ${IfNot} ${Silent}
-        MessageBox MB_OK|MB_ICONSTOP "Visual C++ Compiler for Python installation failed. $\n\
-        Please check the logs in $INSTDIR\tmp\install.log"
-    ${EndIf}
-    SetErrorLevel 106
-    Quit
   ${EndIf}
 
   ; Copy libcurl DLL to system32 folder
@@ -276,7 +259,6 @@ Section "Python" sec_py
   ${EndIf}
 
   Delete $INSTDIR\tmp\${PYTHON64_FILENAME}
-  Delete $INSTDIR\tmp\${PY_VCPYTHON27_FILENAME}
   Delete $INSTDIR\tmp\${LIBCURL_FILENAME}
 SectionEnd
 
@@ -289,7 +271,6 @@ Section "!${PRODUCT_NAME}" sec_app
   ${LogString} "Downloads all dependencies"
   ${LogString} "------------------------------------------------------"
   @@FULL_OR_DL_PY_MODULES_64_FILENAMES@@
-  @@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@
 
   ${LogString} "Pulse Agent Installation...."
   ${LogString} "------------------------------------------------------"
@@ -305,7 +286,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Install of Pulse agent
-  StrCpy $0 `C:\Python27\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
+  StrCpy $0 `C:\$PROGRAMFILES\Python39\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -375,8 +356,8 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndSwitch}
   ${LogString} $0
 
-  CopyFiles /SILENT "C:\Python27\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\Python27\Lib\site-packages\win32\"
-  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
+  CopyFiles /SILENT "C:\$PROGRAMFILES\Python39\Lib\site-packages\pywin32_system32\pywintypes27.dll" "C:\$PROGRAMFILES\Python39\Lib\site-packages\win32\"
+  StrCpy $0 `C:\$PROGRAMFILES\Python39\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" --startup=auto install`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -395,7 +376,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Create bin folder
   CreateDirectory $INSTDIR\bin
 
-  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
+  StrCpy $0 `C:\$PROGRAMFILES\Python39\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" update`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout
@@ -409,7 +390,7 @@ Section "!${PRODUCT_NAME}" sec_app
     Quit
   ${EndIf}
 
-  StrCpy $0 `C:\Python27\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
+  StrCpy $0 `C:\$PROGRAMFILES\Python39\python.exe "$INSTDIR\bin\${PULSE_SERVICE_FILENAME}" restart`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout

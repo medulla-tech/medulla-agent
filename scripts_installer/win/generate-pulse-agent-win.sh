@@ -40,48 +40,79 @@ BASE_URL="https://agents.siveo.net" # Overridden if --base-url is defined
 cd "`dirname $0`"
 
 # To be defined
-AGENT_VERSION="2.1.7"
+AGENT_VERSION="3.0.0"
 PULSE_AGENT_FILENAME="pulse-xmpp-agent-${AGENT_VERSION}.tar.gz"
 AGENT_PLUGINS_FILENAME="pulse-machine-plugins-${AGENT_VERSION}.tar.gz"
-PYTHON64_FILENAME="python-2.7.9.amd64.msi"
-PY_VCPYTHON27_FILENAME="VCForPython27.msi"
+PYTHON64_FILENAME="python-3.9.9-amd64.exe"
 LIBCURL_DL_FILENAME="libcurl4-7.52.1-1.tar.xz"
 LIBCURL_FILENAME="cygcurl-4.dll"
-PY_MODULES_64_FILENAMES="pypiwin32-219-cp27-none-win_amd64.whl \
-pycurl-7.43.0-cp27-none-win_amd64.whl \
-lxml-3.6.0-cp27-none-win_amd64.whl \
-psutil-5.4.3-cp27-none-win_amd64.whl \
-simplejson-3.16.0-cp27-cp27m-win_amd64.whl \
-"
-PY_MODULES_COMMON_FILENAMES="netifaces-0.10.5.tar.gz \
-comtypes-1.1.3-2.zip \
-configparser-3.5.0.tar.gz \
-sleekxmpp-1.3.1.tar.gz \
-WMI-1.4.9.zip \
-zipfile2-0.0.12-py2.py3-none-any.whl \
-pycrypto-2.6.1.tar.gz \
-python_dateutil-2.6.1-py2.py3-none-any.whl \
-six-1.10.0-py2.py3-none-any.whl \
-croniter-0.3.16.tar.gz \
+PY_MODULES_64_FILENAMES="CherryPy-18.8.0-py2.py3-none-any.whl \
+PyNaCl-1.5.0-cp36-abi3-win_amd64.whl \
+PyQt6-6.3.1-cp37-abi3-win_amd64.whl \
+PyQt6_Qt6-6.3.1-py3-none-win_amd64.whl \
+PyQt6_sip-13.4.0-cp39-cp39-win_amd64.whl \
+Routes-2.5.1-py2.py3-none-any.whl \
+WMI-1.5.1-py2.py3-none-any.whl \
+WebOb-1.8.7-py2.py3-none-any.whl \
+aiodns-3.0.0-py3-none-any.whl \
+autocommand-2.2.1-py3-none-any.whl \
+bcrypt-4.0.0-cp36-abi3-win_amd64.whl \
+certifi-2022.6.15-py3-none-any.whl \
+cffi-1.15.1-cp39-cp39-win_amd64.whl \
+chardet-5.0.0-py3-none-any.whl \
+charset_normalizer-2.1.1-py3-none-any.whl \
+cheroot-8.6.0-py2.py3-none-any.whl \
+comtypes-1.1.14-py2.py3-none-any.whl \
+croniter-1.3.5-py2.py3-none-any.whl \
+cryptography-37.0.4-cp36-abi3-win_amd64.whl \
+ecdsa-0.18.0-py2.py3-none-any.whl \
+idna-3.3-py3-none-any.whl \
+inflect-6.0.0-py3-none-any.whl \
+jaraco.classes-3.2.2-py3-none-any.whl \
+jaraco.collections-3.5.2-py3-none-any.whl \
+jaraco.context-4.1.2-py3-none-any.whl \
+jaraco.functools-3.5.1-py3-none-any.whl \
+jaraco.text-3.9.1-py3-none-any.whl \
+lxml-4.9.1-cp39-cp39-win_amd64.whl \
+more_itertools-8.14.0-py3-none-any.whl \
+netifaces-0.11.0-cp39-cp39-win_amd64.whl \
+packaging-21.3-py3-none-any.whl \
+paramiko-2.11.0-py2.py3-none-any.whl \
+pathlib-1.0.1-py3-none-any.whl \
+ply-3.11-py2.py3-none-any.whl \
+portend-3.1.0-py3-none-any.whl \
+psutil-5.9.1-cp39-cp39-win_amd64.whl \
+pyasn1-0.4.8-py2.py3-none-any.whl \
+pyasn1_modules-0.2.8-py2.py3-none-any.whl \
+pycares-4.2.2-cp39-cp39-win_amd64.whl \
+pycparser-2.21-py2.py3-none-any.whl \
+pycryptodome-3.15.0-cp35-abi3-win_amd64.whl \
+pycurl-7.45.1-cp39-cp39-win_amd64.whl \
+pydantic-1.10.1-cp39-cp39-win_amd64.whl \
+pyparsing-3.0.9-py3-none-any.whl \
+pypiwin32-223-py3-none-any.whl \
 pysftp-0.2.9.tar.gz \
-paramiko-1.18.5-py2.py3-none-any.whl \
-ecdsa-0.13-py2.py3-none-any.whl \
-requests-2.18.4-py2.py3-none-any.whl \
-idna-2.6-py2.py3-none-any.whl \
-urllib3-1.22-py2.py3-none-any.whl \
-certifi-2019.3.9-py2.py3-none-any.whl \
-chardet-3.0.4-py2.py3-none-any.whl \
-pathlib-1.0.1.tar.gz \
-CherryPy-8.9.1-py2.py3-none-any.whl \
-Routes-2.4.1-py2.py3-none-any.whl \
+python_dateutil-2.8.2-py2.py3-none-any.whl \
+pytz-2022.2.1-py2.py3-none-any.whl \
+pywin32-304-cp39-cp39-win_amd64.whl \
 repoze.lru-0.7-py3-none-any.whl \
-WebOb-1.8.5-py2.py3-none-any.whl \
+requests-2.28.1-py3-none-any.whl \
+simplejson-3.17.6-cp39-cp39-win_amd64.whl \
+sip-6.6.2-cp37-abi3-win_amd64.whl \
+six-1.16.0-py2.py3-none-any.whl \
+slixmpp-1.8.2.tar.gz \
+syncthing-2.4.2.tar.gz \
+tempora-5.0.2-py3-none-any.whl \
+toml-0.10.2-py2.py3-none-any.whl \
+typing_extensions-4.3.0-py3-none-any.whl \
+urllib3-1.26.12-py2.py3-none-any.whl \
+zc.lockfile-2.0-py2.py3-none-any.whl \
 "
 PULSE_AGENT_MODULE="pulse_xmpp_agent"
 RSYNC_DL_FILENAME="cwRsync_5.5.0_x86_Free.zip"
 RSYNC_FILENAME="rsync.zip"
 OPENSSH_NAME="Pulse SSH"
-OPENSSH_VERSION="7.7"
+OPENSSH_VERSION="8.9"
 LAUNCHER_SSH_KEY="/root/.ssh/id_rsa.pub"
 DOWNLOADS_DIR="downloads"
 SSH_PORT="22"
@@ -101,7 +132,7 @@ DISABLE_VNC=0
 DISABLE_RDP=0
 DISABLE_INVENTORY=0
 CHERRYPY_NAME="Pulse CherryPy"
-CHERRYPY_VERSION="8.9.1"
+CHERRYPY_VERSION="18.8.0"
 NETWORK_NAME="Pulse network notify"
 RDP_NAME="Pulse RDP"
 SYNCTHING_NAME="Pulse Syncthing"
@@ -176,22 +207,15 @@ check_arguments() {
 
 compute_parameters_full() {
     PY_MODULES_64=''
-    PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
     FULL_OR_DL_PYTHON64=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PYTHON64_FILENAME}'"')
-    FULL_OR_DL_PY_VCPYTHON27=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${PY_VCPYTHON27_FILENAME}'"')
     FULL_OR_DL_LIBCURL=$(sed_escape 'File "'${DOWNLOADS_DIR}'/bin/'${LIBCURL_FILENAME}'"')
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
         PY_MODULES_64='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
     done
     FULL_OR_DL_PY_MODULES_64_FILENAMES=$(sed_escape ${PY_MODULES_64})
-    for FILENAME in ${PY_MODULES_COMMON_FILENAMES}; do
-        PY_MODULES_COMMON='File "'${DOWNLOADS_DIR}'/python_modules/'${FILENAME}'"XOXOXOX'${PY_MODULES_COMMON}
-        DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
-    done
-    FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_RSYNC=$(sed_escape 'File "'${DOWNLOADS_DIR}'/'${RSYNC_FILENAME}'"')
     GENERATED_SIZE='FULL'
@@ -201,22 +225,15 @@ compute_parameters_dl() {
     DL_URL="${BASE_URL}/win/downloads"
     DL_MODULES_URL="${DL_URL}/python_modules"
     PY_MODULES_64=''
-    PY_MODULES_COMMON=''
     DELETE_PY_MODULES=''
 
     FULL_OR_DL_PYTHON64=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PYTHON64_FILENAME}' '${PYTHON64_FILENAME})
-    FULL_OR_DL_PY_VCPYTHON27=$(sed_escape '${DownloadFile} '${DL_URL}'/'${PY_VCPYTHON27_FILENAME}' '${PY_VCPYTHON27_FILENAME})
     FULL_OR_DL_LIBCURL=$(sed_escape '${DownloadFile} '${DL_URL}'/bin/'${LIBCURL_FILENAME}' '${LIBCURL_FILENAME})
     for FILENAME in ${PY_MODULES_64_FILENAMES}; do
         PY_MODULES_64='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_64}
         DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
     done
     FULL_OR_DL_PY_MODULES_64_FILENAMES=$(sed_escape ${PY_MODULES_64})
-    for FILENAME in ${PY_MODULES_COMMON_FILENAMES}; do
-        PY_MODULES_COMMON='${DownloadFile} '${DL_MODULES_URL}'/'${FILENAME}' '${FILENAME}'XOXOXOX'${PY_MODULES_COMMON}
-        DELETE_PY_MODULES='Delete $INSTDIR\tmp\'${FILENAME}'XOXOXOX'${DELETE_PY_MODULES}
-    done
-    FULL_OR_DL_PY_MODULES_COMMON_FILENAMES=$(sed_escape ${PY_MODULES_COMMON})
     DELETE_PY_MODULES_FILENAMES=$(sed_escape ${DELETE_PY_MODULES})
     FULL_OR_DL_RSYNC=$(sed_escape '${DownloadFile} '${DL_URL}'/'${RSYNC_FILENAME}' '${RSYNC_FILENAME})
     GENERATED_SIZE='MINIMAL'
@@ -331,12 +348,9 @@ update_nsi_script() {
 		-e "s/@@DOWNLOADS_DIR@@/${DOWNLOADS_DIR}/" \
 		-e "s/@@PYTHON64_FILENAME@@/${PYTHON64_FILENAME}/" \
 		-e "s/@@FULL_OR_DL_PYTHON64@@/${FULL_OR_DL_PYTHON64}/" \
-		-e "s/@@PY_VCPYTHON27_FILENAME@@/${PY_VCPYTHON27_FILENAME}/" \
-		-e "s/@@FULL_OR_DL_PY_VCPYTHON27@@/${FULL_OR_DL_PY_VCPYTHON27}/" \
 		-e "s/@@LIBCURL_FILENAME@@/${LIBCURL_FILENAME}/" \
         -e "s/@@FULL_OR_DL_LIBCURL@@/${FULL_OR_DL_LIBCURL}/" \
         -e "s/@@FULL_OR_DL_PY_MODULES_64_FILENAMES@@/${FULL_OR_DL_PY_MODULES_64_FILENAMES}/" \
-        -e "s/@@FULL_OR_DL_PY_MODULES_COMMON_FILENAMES@@/${FULL_OR_DL_PY_MODULES_COMMON_FILENAMES}/" \
         -e "s/@@DELETE_PY_MODULES_FILENAMES@@/${DELETE_PY_MODULES_FILENAMES}/" \
 		-e "s/@@PULSE_AGENT_FILENAME@@/${PULSE_AGENT_FILENAME}/" \
 		-e "s/@@AGENT_PLUGINS_FILENAME@@/${AGENT_PLUGINS_FILENAME}/" \

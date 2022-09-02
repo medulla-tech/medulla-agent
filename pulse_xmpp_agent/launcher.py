@@ -120,7 +120,7 @@ if __name__ == "__main__":
     connectionagent = os.path.join(pathagent, "connectionagent.py")
     agentxmpp = os.path.join(pathagent, "agentxmpp.py")
 
-    pythonexec = "C:\\python27\\python.exe"
+    pythonexec = "C:\\Program\ Files\\Python39\\python.exe"
 
     os.chdir(pathagent)
     if not opts.consoledebug:

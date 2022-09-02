@@ -27,10 +27,10 @@ import logging
 import tempfile
 from lib import utils
 
-CHERRYPYVERSION = "8.9.1"
+CHERRYPYVERSION = "18.8.0"
 
 logger = logging.getLogger()
-plugin = {"VERSION": "1.1", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "updatecherrypy", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -123,7 +123,7 @@ def updatecherrypy(xmppobject, installed_version):
 
         if result:
             cmd = (
-                'C:\\Python27\\Scripts\\pip install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
+                'C:\\Program\ Files\\Python39\\Scripts\\pip install --quiet --upgrade --no-index --find-links="%s" CherryPy-%s-py2.py3-none-any.whl'
                 % (install_tempdir, CHERRYPYVERSION)
             )
             os.chdir(install_tempdir)

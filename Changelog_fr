@@ -1,3 +1,7 @@
+pulse-xmpp-agent 3.0.0
+======================
+* [FONCTIONNALITE]  Python 3.9 est désormais utilisé
+
 pulse-xmpp-agent 2.1.7
 ======================
 * [CORRECTION DE BUG]  Correction de la détection de l'adresse IP du serveur
