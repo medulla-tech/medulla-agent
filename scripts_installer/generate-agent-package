@@ -85,7 +85,7 @@ cat <<EOF > xmppdeploy.json
             },
             {
                 "typescript": "Batch",
-                "script": "pip install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/win/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
+                "script": "pip3 install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/win/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
                 "step": 1,
                 "codereturn": "",
                 "action": "actionprocessscriptfile",
@@ -138,7 +138,7 @@ cat <<EOF > xmppdeploy.json
             },
             {
                 "typescript": "Batch",
-                "script": "pip install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/lin/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
+                "script": "pip3 install --upgrade --no-index --find-links=\".\" --find-links=\"${BASE_URL}/lin/downloads/python_modules/\" ${PULSE_AGENT_FILENAME} ${PULSE_MACHINE_PLUGINS_FILENAME}",
                 "step": 1,
                 "codereturn": "",
                 "action": "actionprocessscriptfile",

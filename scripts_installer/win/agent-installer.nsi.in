@@ -290,7 +290,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ${EndIf}
 
   ; Install of Pulse agent
-  StrCpy $0 `$PROGRAMFILES64\Python39\Scripts\pip install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
+  StrCpy $0 `$PROGRAMFILES64\Python39\Scripts\pip3 install --quiet --upgrade --no-index --find-links="$INSTDIR\tmp" ${PULSE_AGENT_FILENAME} ${AGENT_PLUGINS_FILENAME}`
   ${LogString} "Running $0"
   nsExec::ExecToLog $0
   Pop $1 # return value/error/timeout

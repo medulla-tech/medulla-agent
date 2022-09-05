@@ -88,7 +88,7 @@ install_agent() {
         ;;
         esac
 
-pip install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
+pip3 install --quiet --upgrade --no-index --find-links="tmp" ${BASE_URL}/${PULSE_AGENT_FILENAME} ${BASE_URL}/${AGENT_PLUGINS_FILENAME}
 
 [ ! -d "/var/lib/pulse2/packages" ] && mkdir -p /var/lib/pulse2/packages
 
