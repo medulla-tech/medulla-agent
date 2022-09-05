@@ -53,21 +53,21 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "netifaces >= 0.10.5",
-        "configparser >= 3.5.0",
-        "sleekxmpp >= 1.3.1",
+        "netifaces >= 0.11.0",
+        "configparser >= 5.3.0",
+        "slixmpp >= 1.8.2",
         "zipfile2 >= 0.0.12",
-        "pycurl >= 7.43.0",
-        "lxml >= 3.6.0",
-        "pycrypto >= 2.6.1",
-        "croniter >= 0.3.16",
-        "psutil >= 5.4.3",
+        "pycurl >= 7.45.1",
+        "lxml >= 4.9.1",
+        "pycryptodome >= 3.15.0",
+        "croniter >= 1.3.5",
+        "psutil >= 5.9.1",
         "pysftp >= 0.2.9",
-        "cherrypy >= 3.0.0",
-        "requests >= 2.8.14",
+        "cherrypy >= 18.8.0",
+        "requests >= 2.28.1",
     ]
     + (
-        ["pathlib >= 1.0.1", "pypiwin32 >= 219", "comtypes >= 1.1.3", "wmi >= 1.4.9"]
+        ["pathlib >= 1.0.1", "pypiwin32 >= 223", "comtypes >= 1.1.14", "wmi >= 1.5.1"]
         if "win" in sys.platform
         else []
     ),
