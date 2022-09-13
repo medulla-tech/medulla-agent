@@ -69,6 +69,6 @@ setup(
     + (
         ["pathlib >= 1.0.1", "pypiwin32 >= 223", "comtypes >= 1.1.14", "wmi >= 1.5.1"]
         if "win" in sys.platform
-        else []
+        else ["posix_ipc >= 1.0.5", "bsddb3 >= 6.2.9"]
     ),
 )

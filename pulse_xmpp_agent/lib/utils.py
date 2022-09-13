@@ -65,7 +65,6 @@ from functools import wraps
 import string
 import platform
 import asyncio as aio
-import posix_ipc
 
 logger = logging.getLogger()
 
@@ -90,6 +89,7 @@ if sys.platform.startswith("win"):
 if sys.platform.startswith("linux"):
     import pwd
     import grp
+    import posix_ipc
 
 if sys.platform.startswith("darwin"):
     import pwd
