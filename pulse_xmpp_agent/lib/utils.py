@@ -3241,3 +3241,42 @@ class kb_catalogue:
         except Timeout:
             status = 408,
         return status, text_result
+
+
+def search_history_update():
+    """
+    cette fonction renvoi l'historique des kb installer sur la machine.
+    cette function utilise le script powershell history_update.ps1
+
+    """
+    if sys.platform.startswith("win"):
+        ret = []
+        script = os.path.abspath(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),  "history_update.ps1"
+            )
+        )
+        result = powerschellscriptps1(script)
+        try:
+            if result["code"] == 0:
+                line =[
+                    x.strip()
+                    for x in result["result"] if x.strip()]
+                line.pop(0)
+                line.pop(0)
+                retdict ={}
+                for t in set(line):
+                    t=t.split()
+                    retdict[t[1]]=t[0]
+                    ret.append(t[1])
+
+                print (retdict)
+                strt=("%s"%retdict.keys()).replace('[','').replace(']','').replace('dict_keys','')
+                print (strt)
+                print (ret)
+                return json.dumps(ret,indent=4)
+        except IndexError as e:
+            logger.warning("search_history_update : %s" %e)
+    return json.dumps(ret,indent=4)
+
+search_history_update()
