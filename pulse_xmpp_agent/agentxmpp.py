@@ -67,7 +67,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
                         serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
-                        search_system_info_reg
+                        offline_search_kb
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -2458,7 +2458,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid,
             'uuid_serial_machine' : serialnumbermachine(),
-            'system_info' : search_system_info_reg()
+            "system_info" : offline_search_kb().get_json(),
         }
         try:
             dataobj['md5_conf_monitoring'] = ""

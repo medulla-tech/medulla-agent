@@ -522,21 +522,124 @@ def isMacOsUserAdmin():
         return False
 
 
-def search_system_info_reg():
-    result_cmd = { }
-    if sys.platform.startswith("win"):
-        informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
-        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
-        result = simplecommand(encode_strconsole(cmd), strimresult= True)
-        if int(result["code"]) == 0:
-            # analyse result
-            line = [ x for x in result['result'] if x.startswith(informationlist)]
-            for t in line:
-                lcmd = [ x for x in t.split (" ") if x != ""]
-                if len(lcmd) >= 3:
-                    result_cmd[lcmd[0]] = lcmd[2]
-    logging.getLogger().debug("info version update %s" % result_cmd)
-    return result_cmd
+class offline_search_kb:
+    def __init__(self):
+        self.info_package={ "history_package_uuid" : [], "kb_installed" : [], "infobuild" : { }, "platform_info" : {}}
+        self.info_package['history_package_uuid'] = self.search_history_update()
+        self.info_package['kb_installed'] = self.searchpackage()
+        self.info_package['infobuild'] = self.search_system_info_reg()
+        self.info_package['platform_info'] = self.platform_info()
+
+    def get_json(self):
+        return json.dumps(self.info_package, indent=4)
+
+    def searchpackage(self):
+        endresult=[]
+        try:
+            ret=simplecommand(encode_strconsole("wmic qfe list brief /format:texttablewsys"), strimresult=True)
+            if ret["code"] == 0:
+                for t in ret["result"]:
+                    resultat={}
+                    resultat['description'] =t[0:16].strip()
+                    # resultat['FixComments'] =t[17:29].strip()
+                    resultat['HotFixID'] =t[30:40].strip()
+                    if not resultat['HotFixID'].startswith("KB"):
+                        continue
+                    # resultat['InstallDate'] =t[41:53].strip()
+                    resultat['InstalledBy'] =t[54:74].strip()
+                    resultat['InstalledOn'] =t[75:87].strip()
+                    # resultat['Name'] =t[88:93].strip()
+                    # resultat['ServicePackInEffect'] =t[94:114].strip()
+                    # resultat['Status'] =t[115:].strip()
+                    endresult.append(resultat)
+        except Exception as e:
+            logger.error("searchpackage : %s" %e)
+            logger.error (traceback.format_exc())
+        return endresult
+
+    def search_history_update(self):
+        if sys.platform.startswith("win"):
+            ret = []
+            script = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),  "history_update.ps1"
+                )
+            )
+            result = powerschellscriptps1(script)
+            try:
+                if result["code"] == 0:
+                    line =[
+                        x.strip()
+                        for x in result["result"] if x.strip()]
+                    line.pop(0)
+                    line.pop(0)
+                    retdict ={}
+                    for t in set(line):
+                        t=t.split()
+                        retdict[t[1]]=t[0]
+                        ret.append(t[1])
+                    strt=("%s"%retdict.keys()).replace('[','').replace(']','').replace('dict_keys','')
+                    return ret
+            except IndexError as e:
+                logger.error("search_history_update : %s" %e)
+                logger.error (traceback.format_exc())
+        return ret
+
+    def search_system_info_reg(self):
+        result_cmd = { }
+        if sys.platform.startswith("win"):
+            informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
+            cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+            result = simplecommand(encode_strconsole(cmd), strimresult= True)
+            if int(result["code"]) == 0:
+                # analyse result
+                line = [ x for x in result['result'] if x.startswith(informationlist)]
+                for t in line:
+                    lcmd = [ x for x in t.split (" ") if x != ""]
+                    if len(lcmd) >= 3:
+                        result_cmd[lcmd[0]] = lcmd[2]
+            # search code langue
+            try:
+                result_cmd["Locale"] = {"LCID" : None , "Name" : "", "DisplayName" : "", "ThreeLetterWindowsLanguageName" : "" }
+                cmd = """powershell -ExecutionPolicy Bypass Get-WinSystemLocale"""
+                result = simplecommand(encode_strconsole(cmd), strimresult= True)
+                langs=[ x for x in result['result'] if x != ""][-1:]
+                langs=[x.strip() for x in langs[0].split('  ') if x != ""]
+                if len(langs) >= 3:
+                    result_cmd["Locale"]["LCID"] = langs[0]
+                    result_cmd["Locale"]["Name"] = langs[1]
+                    result_cmd["Locale"]["DisplayName"] = langs[2]
+            except:
+                logging.getLogger().error(("%s" % (traceback.format_exc())))
+                pass
+
+            try:
+                cmd="""powershell -ExecutionPolicy Bypass "Get-WinSystemLocale| select ThreeLetterWindowsLanguageName" """
+                result = simplecommand(encode_strconsole(cmd), strimresult= True)
+                T_L_W_LanguageName=[ x for x in result['result'] if x != ""][-1:]
+                result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName[0]
+            except:
+                logging.getLogger().error(("%s" % (traceback.format_exc())))
+                pass
+        logging.getLogger().debug("infor version update %s" % result_cmd)
+        return result_cmd
+
+    def platform_info(self):
+        mach= platform.machine()
+        if mach =="AMD64":
+            mach = "x64"
+        windows = "%s %s"%(platform.system(), platform.release() )
+        res={"machine" : mach,
+            "type" : windows,
+        "node" : platform.node(),
+        "platform" : platform.platform(aliased=0, terse=0),
+        "processor" : platform.processor(),
+        "version":platform.version(),
+        # "uname":platform.uname(),
+        # "win32_ver": platform.win32_ver(release='', version='', csd='', ptype='')
+        }
+        return res
+
 
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
