@@ -3238,6 +3238,9 @@ class offline_search_kb:
     def get_json(self):
         return json.dumps(self.info_package, indent=4)
 
+    def get(self):
+        return self.info_package
+
     def searchpackage(self):
         endresult=[]
         try:
@@ -3263,14 +3266,18 @@ class offline_search_kb:
         return endresult
 
     def search_history_update(self):
+        ret = []
         if sys.platform.startswith("win"):
-            ret = []
+
             script = os.path.abspath(
                 os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),  "history_update.ps1"
+                    os.path.dirname(os.path.realpath(__file__)),
+                    "..",
+                    "script",
+                    "history_update.ps1"
                 )
             )
-            result = powerschellscriptps1(script)
+            result = powerschellscript1ps1(script)
             try:
                 if result["code"] == 0:
                     line =[
