@@ -2458,7 +2458,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid,
             'uuid_serial_machine' : serialnumbermachine(),
-            "system_info" : offline_search_kb().get_json(),
+            "system_info" : offline_search_kb().get(),
         }
         try:
             dataobj['md5_conf_monitoring'] = ""
