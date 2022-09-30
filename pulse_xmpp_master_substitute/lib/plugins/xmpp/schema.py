@@ -723,7 +723,7 @@ class Update_data(Base):
     creationdate = Column(DateTime, default=datetime.datetime.now)
     company =  Column(String(36), default="")
     product =  Column(String(361024), default="")
-    productfamily =  Column(String(36), default="")
+    productfamily =  Column(String(52), default="")
     updateclassification =  Column(String(36), default="")
     prerequisite =  Column(String(364096), default="")
     title =  Column(String(1024), default="")

@@ -8507,7 +8507,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             connection = self.engine_xmppmmaster_base.raw_connection()
             results = None
             cursor = connection.cursor()
-            cursor.callproc( "mmc_search_kb_windows",[filter, kb_list])
+            cursor.callproc( "up_search_kb_windows",[filter, kb_list])
 
             results = list(cursor.fetchall())
             for lineresult in results:
@@ -8527,6 +8527,76 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         finally:
             connection.close()
 
+    @DatabaseHelper._sessionm
+    def search_kb_windows1(self, session,
+                           filter="",
+                           product="%Windows 10%",
+                           version="%%21H2%%",
+                           sevrity="Critical",
+                           archi="%%x64%%",
+                           kb_list=""):
+        """
+        filter filter on title table
+        kblist string list de tous les kb remonter depuis la lmachine
+
+        eg : search_kb_windows("%Windows 10 Version 21H2 for x64-based%",
+             "5007289,5003791" );
+        """
+        result=[]
+
+        colonnename=["updateid"
+                    ,"revisionid"
+                    ,"creationdate"
+                    ,"company"
+                    ,"product"
+                    ,"productfamily"
+                    ,"updateclassification"
+                    ,"prerequisite"
+                    ,"title"
+                    ,"description"
+                    ,"msrcseverity"
+                    ,"msrcnumber"
+                    ,"kb"
+                    ,"languages"
+                    ,"category"
+                    ,"supersededby"
+                    ,"supersedes"
+                    ,"payloadfiles"
+                    ,"revisionnumber"
+                    ,"bundledby_revision"
+                    ,"isleaf"
+                    ,"issoftware"
+                    ,"deploymentaction"
+                    ,"title_short"]
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_windows1",[filter, product,
+                           version,
+                           sevrity,
+                           archi,
+                           kb_list])
+
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                #result.append(dictline)
+            #logging.getLogger().error("results : %s" %results)
+            #logging.getLogger().error("result : %s" %result)
+            #for t in result:
+                #logging.getLogger().error("update title   : %s" %t['title'])
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
 
 
 
