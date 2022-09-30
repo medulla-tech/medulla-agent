@@ -713,6 +713,36 @@ class Mon_panels_template(Base, XmppMasterDBObj):
     status = Column(Boolean, default=True)
     comment = Column(String(1024), default="")
 
+
+class Update_data(Base):
+    # ====== Table name =========================
+    __tablename__ = "update_data"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    revisionid =  Column(String(16), nullable=False, default="")
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    company =  Column(String(36), default="")
+    product =  Column(String(361024), default="")
+    productfamily =  Column(String(36), default="")
+    updateclassification =  Column(String(36), default="")
+    prerequisite =  Column(String(364096), default="")
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    msrcseverity =  Column(String(16), default="")
+    msrcnumber =  Column(String(16), default="")
+    kb =  Column(String(16), default="")
+    languages =  Column(String(16), default="")
+    category =  Column(String(128), default="")
+    supersededby =  Column(String(3072), default="")
+    supersedes = Column(Text, default=None)
+    payloadfiles =  Column(String(2048), default="")
+    revisionnumber =  Column(String(30), default="")
+    bundledby_revision =  Column(String(30), default="")
+    isleaf =  Column(String(16), default="")
+    issoftware =  Column(String(30), default="")
+    deploymentaction =  Column(String(30), default="")
+    title_short =  Column(String(1024), default="")
+
 """
 This code is kept here as a comment, "if" we need to use it
 and not use the automatic table anymore.

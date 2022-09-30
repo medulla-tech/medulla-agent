@@ -57,7 +57,9 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Mon_panels_template, \
     Glpi_entity, \
     Glpi_location, \
-    Glpi_Register_Keys
+    Glpi_Register_Keys, \
+    Update_data
+    
 # Imported last
 import logging
 import json
@@ -8462,3 +8464,92 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
         return machines_jid_for_updating
+
+# ----------------------------- Update windows ---------------------------------
+    # appel procedure stocke
+    @DatabaseHelper._sessionm
+    def search_kb_windows(self, session, filter, kb_list):
+        """
+        filter filter on title table
+        kblist string list de tous les kb remonter depuis la lmachine
+
+        eg : search_kb_windows("%Windows 10 Version 21H2 for x64-based%",
+             "5007289,5003791" );
+        """
+
+        result=[]
+
+        colonnename=["updateid"
+                    ,"revisionid"
+                    ,"creationdate"
+                    ,"company"
+                    ,"product"
+                    ,"productfamily"
+                    ,"updateclassification"
+                    ,"prerequisite"
+                    ,"title"
+                    ,"description"
+                    ,"msrcseverity"
+                    ,"msrcnumber"
+                    ,"kb"
+                    ,"languages"
+                    ,"category"
+                    ,"supersededby"
+                    ,"supersedes"
+                    ,"payloadfiles"
+                    ,"revisionnumber"
+                    ,"bundledby_revision"
+                    ,"isleaf"
+                    ,"issoftware"
+                    ,"deploymentaction"
+                    ,"title_short"]
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "mmc_search_kb_windows",[filter, kb_list])
+
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            logging.getLogger().error("results : %s" %results)
+            logging.getLogger().error("result : %s" %result)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+
+
+
+
+    @DatabaseHelper._sessionm
+    def history_list_kb(self, session, list_updateid):
+        try:
+            if list_updateid:
+                indata=[ '"%s"'%x for x in  list_updateid ]
+                sql="""SELECT
+                            kb
+                        FROM
+                            xmppmaster.update_data
+                        WHERE
+                            updateid IN (%s); """ % ",".join(e)
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            ret=[elt for elt in req]
+            return ret
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return 0
+# -------------------------------------------------------------------------------
+    def return_dict_from_dataset_mysql(self, resultproxy):
+        return [{column: value for column, value in rowproxy.items()}
+                for rowproxy in resultproxy]
