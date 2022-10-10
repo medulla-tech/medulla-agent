@@ -8466,6 +8466,36 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return machines_jid_for_updating
 
 # ----------------------------- Update windows ---------------------------------
+
+    def _colonne_name_update(self):
+        """
+            return colonne fo result
+        """
+        return ["updateid"
+                ,"revisionid"
+                ,"creationdate"
+                ,"company"
+                ,"product"
+                ,"productfamily"
+                ,"updateclassification"
+                ,"prerequisite"
+                ,"title"
+                ,"description"
+                ,"msrcseverity"
+                ,"msrcnumber"
+                ,"kb"
+                ,"languages"
+                ,"category"
+                ,"supersededby"
+                ,"supersedes"
+                ,"payloadfiles"
+                ,"revisionnumber"
+                ,"bundledby_revision"
+                ,"isleaf"
+                ,"issoftware"
+                ,"deploymentaction"
+                ,"title_short"]
+
     # appel procedure stocke
     @DatabaseHelper._sessionm
     def search_kb_windows(self, session, filter, kb_list):
@@ -8479,30 +8509,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
         result=[]
 
-        colonnename=["updateid"
-                    ,"revisionid"
-                    ,"creationdate"
-                    ,"company"
-                    ,"product"
-                    ,"productfamily"
-                    ,"updateclassification"
-                    ,"prerequisite"
-                    ,"title"
-                    ,"description"
-                    ,"msrcseverity"
-                    ,"msrcnumber"
-                    ,"kb"
-                    ,"languages"
-                    ,"category"
-                    ,"supersededby"
-                    ,"supersedes"
-                    ,"payloadfiles"
-                    ,"revisionnumber"
-                    ,"bundledby_revision"
-                    ,"isleaf"
-                    ,"issoftware"
-                    ,"deploymentaction"
-                    ,"title_short"]
+        colonnename=self._colonne_name_update()
         try:
             connection = self.engine_xmppmmaster_base.raw_connection()
             results = None
@@ -8526,6 +8533,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error("sql : %s" % traceback.format_exc())
         finally:
             connection.close()
+        return result
 
     @DatabaseHelper._sessionm
     def search_kb_windows1(self, session,
@@ -8544,30 +8552,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
         result=[]
 
-        colonnename=["updateid"
-                    ,"revisionid"
-                    ,"creationdate"
-                    ,"company"
-                    ,"product"
-                    ,"productfamily"
-                    ,"updateclassification"
-                    ,"prerequisite"
-                    ,"title"
-                    ,"description"
-                    ,"msrcseverity"
-                    ,"msrcnumber"
-                    ,"kb"
-                    ,"languages"
-                    ,"category"
-                    ,"supersededby"
-                    ,"supersedes"
-                    ,"payloadfiles"
-                    ,"revisionnumber"
-                    ,"bundledby_revision"
-                    ,"isleaf"
-                    ,"issoftware"
-                    ,"deploymentaction"
-                    ,"title_short"]
+        colonnename=self._colonne_name_update()
         try:
             connection = self.engine_xmppmmaster_base.raw_connection()
             results = None
@@ -8586,22 +8571,63 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if isinstance(lineresult[index], datetime):
                         lr=lineresult[index].isoformat()
                     dictline[value] = lr
-                #result.append(dictline)
-            #logging.getLogger().error("results : %s" %results)
-            #logging.getLogger().error("result : %s" %result)
-            #for t in result:
-                #logging.getLogger().error("update title   : %s" %t['title'])
+                result.append(dictline)
+            logging.getLogger().error("results : %s" %results)
+            logging.getLogger().error("result : %s" %result)
             cursor.close()
             connection.commit()
         except Exception as e:
             logging.getLogger().error("sql : %s" % traceback.format_exc())
         finally:
             connection.close()
-
+        return result
 
 
     @DatabaseHelper._sessionm
+    def search_update_windows_malicious_software_tool(self, session,
+                           product="Windows 10",
+                           archi="x64",
+                           major= 5,
+                           minor=104):
+        """
+        cette fonction renvoi update for windows malicious software tool
+        eg : search_update_windows_malicious_software_tool(product="Windows 10",
+                           archi="x64",
+                           major= 5,
+                           minor=105);
+        """
+        result=[]
+
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_windows_malicious_software_tool",[ product,
+                                                                    archi,
+                                                                    major,
+                                                                    minor])
+
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+    @DatabaseHelper._sessionm
     def history_list_kb(self, session, list_updateid):
+        ret=[]
         try:
             if list_updateid:
                 indata=[ '"%s"'%x for x in  list_updateid ]
@@ -8618,7 +8644,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             return ret
         except Exception as e:
             logging.getLogger().error(str(e))
-            return 0
+        return ret
 # -------------------------------------------------------------------------------
     def return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
