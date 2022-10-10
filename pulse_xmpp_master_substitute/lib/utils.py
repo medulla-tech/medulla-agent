@@ -71,17 +71,70 @@ if sys.platform.startswith('win'):
     from win32com.client import GetObjectif
     import ctypes
     from ctypes.wintypes import LPCWSTR, LPCSTR, WinError
+    import msvcrt
 if sys.platform.startswith('linux'):
     import pwd
     import grp
-
+    import fcntl
 if sys.platform.startswith('darwin'):
     import pwd
     import grp
+    import fcntl
+
 
 logger = logging.getLogger()
 
 DEBUGPULSE = 25
+
+class Locker:
+    """
+        Cette class permet de verrouiller 1 partie de code entre application sur 1 même machine
+        les fichiers de lock et temoin sont mis dans :
+           /usr/lib/python2.7/dist-packages/pulse_xmpp_master_substitute/lib/INFOSTMP
+    """
+    def __init__(self, lock_filename,text_lock_indicator_file="notext", lock_indicator_file="lockindicator"):
+        dirfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                               "INFOSTMP")
+        self.indicatorfile = os.path.join(dirfile, lock_indicator_file )
+        self.text_lock_indicator_file=text_lock_indicator_file
+        if not os.path.exists(dirfile):
+            os.makedirs(dirfile)
+        lock_filename = os.path.join(dirfile, lock_filename)
+        self.lock_filename = lock_filename
+        if not os.path.isfile(self.lock_filename):
+            open(self.lock_filename, "w").close()
+
+    def __enter__(self):
+        self.fp = open(self.lock_filename)
+        if os.name == "nt":
+            self.portable_locknt(self.fp)
+        else:
+            self.portable_lockli(self.fp)
+        with open(self.indicatorfile,"w") as infile:
+            infile.write(self.text_lock_indicator_file)
+
+    def __exit__(self, _type, value, tb):
+        if os.name == "nt":
+            self.portable_unlocknt(self.fp)
+        else:
+            self.portable_unlockli(self.fp)
+        if os.path.exists(self.indicatorfile):
+            os.remove(self.indicatorfile)
+        self.fp.close()
+
+    def portable_locknt(self,fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_LOCK, 1)
+
+    def portable_unlocknt(self, fp):
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_UNLCK, 1)
+
+    def portable_lockli(self, fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_EX)
+
+    def portable_unlockli(self, fp):
+        fcntl.flock(fp.fileno(), fcntl.LOCK_UN)
 
 
 class Env(object):
