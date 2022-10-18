@@ -2606,7 +2606,7 @@ def delete_profile(username='pulseuser'):
                     if result['code'] == 0:
                         logger.debug('Deleted %s folder' % os.path.join('C:/Users/', name))
                     else:
-                        logger.debug('Error deleting %s folder' % os.path.join('C:/Users/', name))
+                        logger.error('Error deleting %s folder' % os.path.join('C:/Users/', name))
         except Exception as e:
             pass
         # Delete profile
@@ -2616,7 +2616,7 @@ def delete_profile(username='pulseuser'):
         if delete_profile_result == 0:
             logger.debug('%s profile deleted.' % username)
         else:
-            logger.debug('Error deleting %s profile: %s' % (username, delete_profile_result))
+            logger.error('Error deleting %s profile: %s' % (username, delete_profile_result))
     return True
 
 def create_idrsa_on_client(username='pulseuser', key=''):
