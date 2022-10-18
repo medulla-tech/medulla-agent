@@ -132,7 +132,7 @@ def scheduledeploy(self):
         listobjsupp = []
         try:
             # Searching for deployements to start
-            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=self.deployment_nbr_mach_cycle)
+            nb_machine_select_for_deploy_cycle, resultdeploymachine = MscDatabase().deployxmpp(limitnbr=self.deployment_nbr_mach_cycle,textindicator=self.boundjid.bare)
         except Exception as error_while_deploy:
             logger.error("We encountered the following error while trying to deploy: \n %s" % error_while_deploy)
             logger.error("We hit the backtrace: \n %s" % (traceback.format_exc()))
