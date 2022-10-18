@@ -79,7 +79,7 @@ def action(struct):
 
         # END Personal Code
         # modifies the code below if you know what you do
-        if not send_message['action']
+        if not send_message['action']:
             logger.error("action missing")
             raise
         result = json.dumps(send_message, indent=4, cls=DateTimeEncoder)
