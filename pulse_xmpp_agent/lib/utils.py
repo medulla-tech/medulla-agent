@@ -3268,13 +3268,23 @@ class offline_search_kb:
             logger.error("\n%s" % (traceback.format_exc()))
 
         try:
-            self.info_package['kb_installed'] = self.searchpackage()
+            searchkb =  self.searchpackage()
+            self.info_package['kb_installed'] = searchkb
+            self.info_package['kb_list'] = self.compact_kb(searchkb )
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
         try:
             self.info_package['infobuild'] = self.search_system_info_reg()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
+
+    def compact_kb(self, listkb ):
+        logger.error("listkb\n%s" % (listkb))
+        compactlist=[]
+        for t in listkb:
+            logger.error("\n%s" % (t))
+            compactlist.append(t['HotFixID'][2:])
+        return "(" + ",".join(compactlist) + ")"
 
     def get_json(self):
         return json.dumps(self.info_package, indent=4)
