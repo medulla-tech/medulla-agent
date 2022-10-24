@@ -19,8 +19,7 @@ License:	MIT
 Group:		Development/Python
 Url:		http://www.siveo.net
 
-BuildRequires:	python-setuptools
-BuildRequires:	python-sphinx
+BuildRequires:	python3-setuptools
 BuildRequires:  git
 
 %description
@@ -35,21 +34,20 @@ BuildArch:      noarch
 
 Requires(pre):  shadow-utils
 
-Requires:       python-netifaces
-Requires:       python-sleekxmpp
-Requires:       python-croniter
-Requires:       python-requests
+Requires:       python3-netifaces
+Requires:       python3-sleekxmpp
+Requires:       python3-croniter
+Requires:       python3-requests
 Requires:       python3-pysftp
-Requires:       python-inotify
-Requires:       python-dateutil
+Requires:       python3-inotify
+Requires:       python3-dateutil
 Requires:       python3-psutil
-Requires:       python-wakeonlan
-Requires:       python-crypto
-Requires:       python-cherrypy
+Requires:       python3-wakeonlan
+Requires:       python3-crypto
+Requires:       python3-cherrypy
 Requires:       net-tools
 Requires:       jq
 Requires:       python3-distro
-Requires:       python3-posix-ipc
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -161,6 +159,7 @@ fi
 %{python3_sitelib}/pulse_xmpp_agent/agentversion
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_relay/
 %{python3_sitelib}/pulse_xmpp_agent/descriptor_scheduler_machine/
+%{python3_sitelib}/pulse_xmpp_agent/__pycache__/
 
 #--------------------------------------------------------------------
 
@@ -435,4 +434,12 @@ cp scripts_installer/win/netcheck-service.py %buildroot%_var/lib/pulse2/clients/
 cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
 mkdir -p %buildroot%_var/lib/pulse2/script_monitoring
-cp -fv contrib/monitoring/* %buildroot%_var/lib/pulse2/script_monitoring/
+#cp -fv contrib/monitoring/* %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/readme %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/schema_mon_pulsesystem.sql %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/template_alert_email_html_test.py %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/template_consolidate_online_machines_count.py %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/template_script_bash_test.sh %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/template_script_python_test.py %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/template_script_remote_bash_test.sh %buildroot%_var/lib/pulse2/script_monitoring/
+cp -fv contrib/monitoring/template_script_remote_python_test.py %buildroot%_var/lib/pulse2/script_monitoring/
