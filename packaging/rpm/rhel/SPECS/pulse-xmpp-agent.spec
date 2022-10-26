@@ -4,6 +4,8 @@
 %define branch integration
 %define filetree_version 0.2
 
+%global __python %{__python3}
+
 Summary:	Pulse XMPP Agent
 Name:		pulse-xmpp-agent
 Version:	3.0.0
