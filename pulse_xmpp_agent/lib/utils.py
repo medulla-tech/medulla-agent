@@ -3228,9 +3228,11 @@ class kb_catalogue:
 
 def powerschellscript1ps1(namescript):
     namescript = windowspath(namescript)
-    obj = {"code": -1, "result": ""}
+    obj={"code" : -1, "result" : ""}
     try:
-        obj = simplecommand("powershell -ExecutionPolicy Bypass -File %s" % namescript)
+        obj = simplecommand(
+            "powershell -ExecutionPolicy Bypass -File %s" % namescript
+        )
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
@@ -3266,7 +3268,6 @@ class offline_search_kb:
             self.info_package['version_net'] = self.search_net_info_reg()
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
-
         try:
             searchkb =  self.searchpackage()
             self.info_package['kb_installed'] = searchkb
@@ -3278,25 +3279,23 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
-    def compact_kb(self, listkb ):
-        logger.error("listkb\n%s" % (listkb))
-        compactlist=[]
-        for t in listkb:
-            logger.error("\n%s" % (t))
-            compactlist.append(t['HotFixID'][2:])
-        return "(" + ",".join(compactlist) + ")"
-
     def get_json(self):
         return json.dumps(self.info_package, indent=4)
 
     def get(self):
         return self.info_package
 
+    def compact_kb(self, listkb ):
+        compactlist=[]
+        for t in listkb:
+            compactlist.append(t['HotFixID'][2:])
+        return "(" + ",".join(compactlist) + ")"
+
     def searchpackage(self):
         endresult=[]
         if sys.platform.startswith("win"):
             try:
-                ret=simplecommand(encode_strconsole("wmic qfe list brief /format:texttablewsys"), strimresult= True )
+                ret=simplecommand(encode_strconsole("wmic qfe list brief /format:texttablewsys"))
                 if ret["code"] == 0:
                     for t in ret["result"]:
                         t=decode_strconsole(t)
@@ -3329,7 +3328,7 @@ class offline_search_kb:
                 informationlist = ("FileMajorPart", "FileMinorPart", "ProductVersion","ProductName")
                 try:
                     cmd="""powershell "(Get-ChildItem 'C:\\Windows\\System32\\mrt.exe').VersionInfo | Format-List *" """
-                    result = simplecommand(encode_strconsole(cmd), strimresult= True )
+                    result = simplecommand(encode_strconsole(cmd))
                     if int(result["code"]) == 0:
                         line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
                         for t in line:
@@ -3353,7 +3352,7 @@ class offline_search_kb:
         if sys.platform.startswith("win"):
             try:
                 cmd = """powershell.exe "(Get-AppxPackage Microsoft.MicrosoftEdge).Version" """
-                result = simplecommand(encode_strconsole(cmd), strimresult= True )
+                result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
                     vers=[ x.strip() for x in result['result'] if x.strip() != ""]
                     if vers:
@@ -3398,7 +3397,7 @@ class offline_search_kb:
         if sys.platform.startswith("win"):
             informationlist = ("CBS", "Install", "InstallPath", "Release," "Servicing", "TargetVersion", "Version")
             cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" """
-            result = simplecommand(encode_strconsole(cmd), strimresult= True )
+            result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 # analyse result
                 line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
@@ -3416,7 +3415,7 @@ class offline_search_kb:
         if sys.platform.startswith("win"):
             informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
             cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" | findstr REG_SZ"""
-            result = simplecommand(encode_strconsole(cmd), strimresult= True )
+            result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 # analyse result
                 line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
@@ -3430,7 +3429,7 @@ class offline_search_kb:
             try:
                 result_cmd["Locale"] = {"LCID" : None , "Name" : "", "DisplayName" : "", "ThreeLetterWindowsLanguageName" : "" }
                 cmd = """powershell -ExecutionPolicy Bypass Get-WinSystemLocale"""
-                result = simplecommand(encode_strconsole(cmd), strimresult= True )
+                result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
                     langs=[ x.strip() for x in result['result'] if x.strip() != ""][-1:]
                     langs=[x.strip() for x in langs[0].split('  ') if x != ""]
@@ -3444,7 +3443,7 @@ class offline_search_kb:
                 logging.getLogger().error(("%s" % (traceback.format_exc())))
             try:
                 cmd="""powershell -ExecutionPolicy Bypass "Get-WinSystemLocale| select ThreeLetterWindowsLanguageName" """
-                result = simplecommand(encode_strconsole(cmd), strimresult= True )
+                result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
 
                     result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName=[ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
@@ -3477,7 +3476,7 @@ class offline_search_kb:
                                 "System Locale",
                                 "Time Zone")
             cmd = """systeminfo"""
-            result = simplecommand(encode_strconsole(cmd), strimresult= True )
+            result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 line = [ x.strip() for x in result['result'] if x.strip().startswith(informationlist)]
                 for t in line:
@@ -3541,7 +3540,7 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             if not os.path.isdir(base_file):
                 Raise
         #os.makedirs(base_file, exist_ok=True)
-        res=simplecommand("wget --connect-timeout=20 '%s'"% sys.argv[1], strimresult= True )
+        res=simplecommand("wget --connect-timeout=20 '%s'"% sys.argv[1])
         if res["code"] == 0:
             # correct download
             logging.getLogger().debug("download %s in [%s]" % (url, base_file))
@@ -3552,3 +3551,5 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
     else:
         logging.getLogger().error("download_file_windows_update function download_file_windows_update linux only")
     return False
+
+

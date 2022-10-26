@@ -1,3 +1,4 @@
+
 function Convert-WuaResultCodeToName
 {
 	param( [Parameter(Mandatory=$true)]
