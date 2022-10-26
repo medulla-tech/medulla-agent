@@ -58,8 +58,9 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Glpi_entity, \
     Glpi_location, \
     Glpi_Register_Keys, \
-    Update_data
-    
+    Update_data, \
+    Up_black_list, \
+    Up_machine_windows
 # Imported last
 import logging
 import json
@@ -8500,22 +8501,23 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     @DatabaseHelper._sessionm
     def search_kb_windows(self, session, filter, kb_list):
         """
-        filter filter on title table
-        kblist string list de tous les kb remonter depuis la lmachine
+        Cette fonction renvoi les updates pour 1 machine en fonctions des kb installer et de os present sur la machine
+        sous forme d'un list de dict
+         Parameters :
+            filter filter on title field obligatoire value
+                rq: la value % doit commencer et terminer le filtre
+            kblist "string list separator ," de tous les kb remontés depuis la machine
 
         eg : search_kb_windows("%Windows 10 Version 21H2 for x64-based%",
-             "5007289,5003791" );
+                                "5007289,5003791" );
         """
-
         result=[]
-
         colonnename=self._colonne_name_update()
         try:
             connection = self.engine_xmppmmaster_base.raw_connection()
             results = None
             cursor = connection.cursor()
             cursor.callproc( "up_search_kb_windows",[filter, kb_list])
-
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
@@ -8525,8 +8527,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         lr=lineresult[index].isoformat()
                     dictline[value] = lr
                 result.append(dictline)
-            logging.getLogger().error("results : %s" %results)
-            logging.getLogger().error("result : %s" %result)
             cursor.close()
             connection.commit()
         except Exception as e:
@@ -8538,18 +8538,25 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     @DatabaseHelper._sessionm
     def search_kb_windows1(self, session,
                            filter="",
-                           product="%Windows 10%",
-                           version="%%21H2%%",
+                           product="Windows 10",
+                           version="21H2",
                            sevrity="Critical",
-                           archi="%%x64%%",
+                           archi="x64",
                            kb_list=""):
         """
-        filter filter on title table
-        kblist string list de tous les kb remonter depuis la lmachine
+        Cette fonction renvoi les updates pour 1 machine en fonctions des kb installer et de os present sur la machine
+        sous forme d'un list de dict
+        Parameters :
+            filter filter on title field "" par default
+            product windows default "Windows 10"
+            version produit default "21H2"
+            severity de update default "Critical"
+            architecture de la machine default x64
+            kblist "string list separator ," de tous les kb remontés depuis la machine
 
-        eg : search_kb_windows("%Windows 10 Version 21H2 for x64-based%",
-             "5007289,5003791" );
+        eg : search_kb_windows1("", "Windows 10", "21H2", "Critical", "x64", "5007289, 5003791");
         """
+
         result=[]
 
         colonnename=self._colonne_name_update()
@@ -8562,7 +8569,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                            sevrity,
                            archi,
                            kb_list])
-
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
@@ -8572,8 +8578,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         lr=lineresult[index].isoformat()
                     dictline[value] = lr
                 result.append(dictline)
-            logging.getLogger().error("results : %s" %results)
-            logging.getLogger().error("result : %s" %result)
             cursor.close()
             connection.commit()
         except Exception as e:
@@ -8591,13 +8595,18 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                            minor=104):
         """
         cette fonction renvoi update for windows malicious software tool
+        sous forme d'un list de dict
+        Parameters :
+            product windows default "Windows 10"
+            architecture de la machine default "x64"
+            major la valeur major de la version installer
+            minor la valeur mineur de la version installer
         eg : search_update_windows_malicious_software_tool(product="Windows 10",
-                           archi="x64",
-                           major= 5,
-                           minor=105);
+                                                            archi="x64",
+                                                            major= 5,
+                                                            minor=105);
         """
         result=[]
-
         colonnename=self._colonne_name_update()
         try:
             connection = self.engine_xmppmmaster_base.raw_connection()
@@ -8607,7 +8616,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                                                     archi,
                                                                     major,
                                                                     minor])
-
             results = list(cursor.fetchall())
             for lineresult in results:
                 dictline={}
@@ -8627,6 +8635,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     @DatabaseHelper._sessionm
     def history_list_kb(self, session, list_updateid):
+        """
+            Cette onction renvoi les numero de kb en fonction d'une list python des updateid des update
+            Parameters:
+                list updateid ["00009be5-c940-498d-b04d-620a572436df","00009be5-c940-498d-b04d-620a572436df"]
+            return
+                listt kb
+        """
         ret=[]
         try:
             if list_updateid:
@@ -8636,16 +8651,225 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         FROM
                             xmppmaster.update_data
                         WHERE
-                            updateid IN (%s); """ % ",".join(e)
+                            updateid IN (%s); """ % ",".join(indata)
+                #logging.getLogger().error("sql history_list_kb : %s" %sql)
+                req = session.execute(sql)
+                session.commit()
+                session.flush()
+                ret=[elt[0] for elt in req]
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        return ret
+
+        @DatabaseHelper._sessionm
+    def history_list_base(self, session, list_updateid):
+        """
+            Cette fonction renvoi update en fonction d'une list python des updateid
+            return 1 tableau de dict
+            Parameters:
+                list updateid ["00009be5-c940-498d-b04d-620a572436df","00009be5-c940-498d-b04d-620a572436df"]
+            return
+                listt kb
+        """
+        ret=[]
+        try:
+            if list_updateid:
+                indata=[ '"%s"'%x for x in  list_updateid ]
+                sql="""SELECT
+                            *
+                        FROM
+                            xmppmaster.update_data
+                        WHERE
+                            updateid IN (%s); """ % ",".join(indata)
+                req = session.execute(sql)
+                session.commit()
+                session.flush()
+                ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def getId_UuidFromJid(self, session, jid):
+        """ return machine uuid and id for machines """
+        user = str(jid).split("@")[0]
+        uuid_inventorymachine = session.query(Machines.id,
+                                              Machines.uuid_inventorymachine).\
+                                                  filter(Machines.jid.like(user + '%')).first()
+        session.commit()
+        session.flush()
+        result = {}
+        if uuid_inventorymachine:
+            result = {"id": uuid_inventorymachine.id,
+                      "uuid_inv" : uuid_inventorymachine.uuid_inventorymachine}
+        return result
+
+    def __Up_machine_windows(self, object_Up_machine_windows):
+        """
+            This function create a dictionnary with  update kb
+            Args:
+                object_Up_machine_windows: dataset line Up_machine_windows
+            Returns:
+                A dicth with the informations of the update.
+        """
+        try:
+            ret = {'id_machine': object_Up_machine_windows.id_machine,
+                   'update_id': object_Up_machine_windows.update_id,
+                   'kb': object_Up_machine_windows.kb}
+            return ret
+        except Exception as error_creating:
+            logging.getLogger().error("We failed to retrieve the informations of the Up_machine_windows")
+            logging.getLogger().error("We got the error \n : %s" % str(error_creating))
+            return None
+
+    @DatabaseHelper._sessionm
+    def test_black_list(self, session, jid):
+        """
+            This function renvoi la liste des tables produits a prendre en compte pour les updates.
+        """
+        ret={}
+        up=[]
+        kb=[]
+        try:
+            user = "".join(str(jid).split("@")[0].split('.')[:-1])
+            sql="""SELECT DISTINCT
+                    updateid_or_kb, type_rule
+                FROM
+                    xmppmaster.up_black_list
+                WHERE
+                    enable_rule = 1
+                        AND "%s" REGEXP userjid_regexp;"""%user
+            #self.logger.info("sql : %s" % sql)
             req = session.execute(sql)
             session.commit()
             session.flush()
-            ret=[elt for elt in req]
-            return ret
-        except Exception as e:
-            logging.getLogger().error(str(e))
+            if req:
+                for x in req:
+                    if x[1].lower() == 'kb':
+                        kb.append(x[0])
+                    elif x[1].lower() == 'id':
+                        up.append(x[0])
+            ret={"update_id":up, "kb" : kb}
+            #ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql test_black_list : %s" % traceback.format_exc())
         return ret
+
+    @DatabaseHelper._sessionm
+    def del_all_Up_machine_windows(self,
+                            session,
+                            id_machine):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.commit()
+        session.flush()
+
+     #@DatabaseHelper._sessionm
+     #def download_files_wsusscan2_for_package(  self,
+                                                #session,
+                                                #id_machine):
+        #"""
+            #del tout les updates de la machines
+        #"""
+        #session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        #session.commit()
+        #session.flush()
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows(self,
+                            session,
+                            id_machine,
+                            update_id,
+                            kb=""):
+        """
+            creation 1 update pour 1 machine
+        """
+        try:
+            new_Up_machine_windows = Up_machine_windows()
+            new_Up_machine_windows.id_machine = id_machine
+            new_Up_machine_windows.update_id = update_id
+            new_Up_machine_windows.kb = kb
+            session.add(new_Up_machine_windows)
+            session.commit()
+            session.flush()
+            return self.__Up_machine_windows(new_Up_machine_windows)
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_machine_windows : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    @DatabaseHelper._sessionm
+    def del_all_Up_machine_windows(self,
+                            session,
+                            id_machine):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def list_produits(self,session):
+        """
+            This function renvoi la liste des table produitss a prendre en compte pour les updates.
+        """
+        ret ={}
+        try:
+            sql="""SELECT
+                    name_procedure
+                FROM
+                    xmppmaster.up_list_produit
+                WHERE
+                    enable = 1; """
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def search_update_by_products(self, session,
+                           tableproduct="",
+                           str_kb_list=""):
+        """
+        cette fonction renvoi update en fonction des produits
+        Parameters :
+            tableproduct voir table produits dans la table list_produits
+            str_kb_list list des kb installer sur la machine
+        """
+        result=[]
+        colonnename=self._colonne_name_update_product()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_update",
+                            [str(tableproduct), str(str_kb_list).strip('"() ')] )
+            results = list(cursor.fetchall())
+            for lineresult in results:
+
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lr, datetime):
+                        lr=lr.isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
 # -------------------------------------------------------------------------------
-    def return_dict_from_dataset_mysql(self, resultproxy):
+    def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
                 for rowproxy in resultproxy]

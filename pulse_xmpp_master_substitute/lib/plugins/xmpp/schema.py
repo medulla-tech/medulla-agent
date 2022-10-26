@@ -722,26 +722,44 @@ class Update_data(Base):
     revisionid =  Column(String(16), nullable=False, default="")
     creationdate = Column(DateTime, default=datetime.datetime.now)
     company =  Column(String(36), default="")
-    product =  Column(String(361024), default="")
-    productfamily =  Column(String(52), default="")
+    product =  Column(String(512), default="")
+    productfamily =  Column(String(100), default="")
     updateclassification =  Column(String(36), default="")
-    prerequisite =  Column(String(364096), default="")
-    title =  Column(String(1024), default="")
-    description =  Column(String(3096), default="")
+    prerequisite =  Column(String(2048), default="")
+    title =  Column(String(500), default="")
+    description =  Column(String(2048), default="")
     msrcseverity =  Column(String(16), default="")
     msrcnumber =  Column(String(16), default="")
     kb =  Column(String(16), default="")
     languages =  Column(String(16), default="")
-    category =  Column(String(128), default="")
-    supersededby =  Column(String(3072), default="")
+    category =  Column(String(80), default="")
+    supersededby =  Column(String(2048), default="")
     supersedes = Column(Text, default=None)
-    payloadfiles =  Column(String(2048), default="")
+    payloadfiles =  Column(String(1024), default="")
     revisionnumber =  Column(String(30), default="")
     bundledby_revision =  Column(String(30), default="")
-    isleaf =  Column(String(16), default="")
+    isleaf =  Column(String(6), default="")
     issoftware =  Column(String(30), default="")
     deploymentaction =  Column(String(30), default="")
-    title_short =  Column(String(1024), default="")
+    title_short =  Column(String(500), default="")
+
+class Up_black_list(Base, XmppMasterDBObj):
+    # ====== Table name =========================
+    __tablename__ = "up_black_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), nullable=False)
+    userjid_regexp = Column(String(180), nullable=False)
+    enable_rule = Column(Boolean, unique=True)
+    type_rule =  Column(String(2), nullable=False, default="id")
+
+class Up_machine_windows(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_machine_windows"
+    # ====== Fields =============================
+    id_machine = Column(Integer, primary_key=True)
+    update_id = Column(String(38), primary_key=True)
+    kb = Column(String(45),  default="")
+
 
 """
 This code is kept here as a comment, "if" we need to use it
