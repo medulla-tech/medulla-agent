@@ -45,7 +45,7 @@ BuildArch:      noarch
 Requires(pre):  shadow-utils
 
 Requires:       python3-netifaces
-Requires:       python3-sleekxmpp
+Requires:       python3-slixmpp
 Requires:       python3-croniter
 Requires:       python3-requests
 Requires:       python3-pysftp
