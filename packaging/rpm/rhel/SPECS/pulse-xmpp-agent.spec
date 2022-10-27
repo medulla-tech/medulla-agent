@@ -1,3 +1,11 @@
+%define __python3 /usr/bin/python3
+%define python3_sitelib %(%{__python3} -Ic "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+%define python3_sitearch %(%{__python3} -Ic "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")
+%define python3_version %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3])")
+%define python3_version_nodots %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3].replace('.',''))")
+%define python3_platform %(%{__python3} -Ic "import sysconfig; print(sysconfig.get_platform())")
+
+
 %define tarname		pulse-xmpp-agent
 %define git                    SHA
 %define use_git         1
