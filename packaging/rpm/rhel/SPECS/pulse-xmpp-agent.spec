@@ -53,7 +53,7 @@ Requires:       python3-inotify
 Requires:       python3-dateutil
 Requires:       python3-psutil
 Requires:       python3-wakeonlan
-Requires:       python3-crypto
+Requires:       python3-cryptodome
 Requires:       python3-cherrypy
 Requires:       net-tools
 Requires:       jq
