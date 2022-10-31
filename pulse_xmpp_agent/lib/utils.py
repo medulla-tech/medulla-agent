@@ -3245,6 +3245,7 @@ class offline_search_kb:
                                 "version_edge": "",
                                 "infobuild" : { },
                                 "platform_info" : {}}
+
         try:
             self.info_package['platform_info'] = self.platform_info()
         except Exception:
@@ -3279,8 +3280,9 @@ class offline_search_kb:
         except Exception:
             logger.error("\n%s" % (traceback.format_exc()))
 
+
     def get_json(self):
-        return json.dumps(self.info_package, indent=4)
+        return json.dumps(self.info_package, indent=4, ensure_ascii=False)
 
     def get(self):
         return self.info_package
@@ -3327,7 +3329,7 @@ class offline_search_kb:
             if os.path.exists('C:\\Windows\\System32\\mrt.exe'):
                 informationlist = ("FileMajorPart", "FileMinorPart", "ProductVersion","ProductName")
                 try:
-                    cmd="""powershell "(Get-ChildItem 'C:\\Windows\\System32\\mrt.exe').VersionInfo | Format-List *" """
+                    cmd="""powershell "(Get-ChildItem 'C:\Windows\System32\mrt.exe').VersionInfo | Format-List *" """
                     result = simplecommand(encode_strconsole(cmd))
                     if int(result["code"]) == 0:
                         line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
@@ -3414,11 +3416,11 @@ class offline_search_kb:
         result_cmd = { }
         if sys.platform.startswith("win"):
             informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
-            cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" | findstr REG_SZ"""
+            cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
             result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 # analyse result
-                line = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip().startswith(informationlist)]
+                line = [ x.decode('ascii', 'ignore').encode('utf-8').strip() for x in result['result'] if x.strip().startswith(informationlist)]
                 for t in line:
                     lcmd = [ x for x in t.split (" ") if x != ""]
                     if len(lcmd) >= 3:
@@ -3431,8 +3433,8 @@ class offline_search_kb:
                 cmd = """powershell -ExecutionPolicy Bypass Get-WinSystemLocale"""
                 result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
-                    langs=[ x.strip() for x in result['result'] if x.strip() != ""][-1:]
-                    langs=[x.strip() for x in langs[0].split('  ') if x != ""]
+                    langs=[  x.decode('ascii', 'ignore').encode('utf-8').strip() for x in result['result'] if x.strip() != ""][-1:]
+                    langs=[  x.decode('ascii', 'ignore').encode('utf-8').strip() for x in langs[0].split('  ') if x != ""]
                     if len(langs) >= 3:
                         result_cmd["Locale"]["LCID"] = langs[0]
                         result_cmd["Locale"]["Name"] = langs[1]
@@ -3446,12 +3448,15 @@ class offline_search_kb:
                 result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
 
-                    result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName=[ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
+                    T_L_W_LanguageName=    [ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
+                    result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName
+                    # result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName=[ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
                 else:
                     logging.getLogger().error("search ThreeLetterWindowsLanguageName %s" % result['result'])
             except:
                 logging.getLogger().error(("%s" % (traceback.format_exc())))
         return result_cmd
+
 
     def platform_info(self):
         res={"machine" :  platform.machine(),
@@ -3460,53 +3465,40 @@ class offline_search_kb:
                 "platform" : platform.platform(aliased=0, terse=0),
                 "processor" : platform.processor(),
                 "version":platform.version()}
-
+                 # x.decode('cp850', 'ignore')
         if sys.platform.startswith("win"):
-            result_cmd={}
-            informationlist = ( "Host Name",
-                                "OS Name",
-                                "OS Version",
-                                "OS Version",
-                                "OS Configuration",
-                                "Product ID",
-                                "Original Install Date",
-                                "System Model",
-                                "System Type",
-                                "BIOS Version",
-                                "System Locale",
-                                "Time Zone")
-            cmd = """systeminfo"""
-            result = simplecommand(encode_strconsole(cmd))
+            informationlist ={}
+            cmd = """systeminfo.exe /FO csv /NH"""
+            result = simplecommand(cmd)
             if int(result["code"]) == 0:
-                line = [ x.strip() for x in result['result'] if x.strip().startswith(informationlist)]
-                for t in line:
-                    lcmd = [ x for x in t.split (" ") if x != ""]
-                    if len(lcmd) >= 3:
-                        keystring = ' '.join(lcmd[:2])
-                        del lcmd[:2]
-                        if not keystring.endswith(":"):
-                            keystring = "%s %s"%(keystring , lcmd.pop(0))
-                        keystring = keystring.replace(':','')
-                        result_cmd[keystring] = ' '.join(lcmd)
-                result_cmd["node"] =  result_cmd["Host Name"]
-                result_cmd["processor"] = platform.processor()
-                if "x64" in result_cmd["System Type"]:
-                    result_cmd["machine"] = "x64"
+                result['result'][0] = result['result'][0].decode('ascii', 'ignore').encode('utf-8')
+                line = [ x.strip("\" ") for x in result['result'][0].split('","')]
+                informationlist ={ "node": str(line[0]),
+                            "platform": line[1].lower(),
+                            "version":line[2],
+                            "OS Configuration":line[4],
+                            "Product ID":line[8],
+                            "Original Install Date":line[9],
+                            "System Model":line[12],
+                            "System Type":line[13],
+                            "BIOS Version":line[15],
+                            "System Locale":line[19],
+                            "Time Zone":line[21],
+                            "processor" : str(platform.processor()),
+                            "machine":line[13]
+                            }
+                if "x64" in informationlist["System Type"]:
+                    informationlist["machine"] = "x64"
+                if "windows 10" in informationlist["platform"]:
+                    informationlist["type"] = "Windows 10"
                 else:
-                    result_cmd["machine"] = result_cmd["System Type"]
+                    informationlist["type"] = informationlist["platform"]
 
-                if "windows 10" in result_cmd["OS Name"].lower():
-                    result_cmd["type"] = "Windows 10"
-                else:
-                    result_cmd["type"] = result_cmd["OS Name"]
-                result_cmd["platform"] = result_cmd["OS Name"]
-                result_cmd["version"] = result_cmd["OS Version"]
-                del result_cmd["OS Version"]
-                del result_cmd["Host Name"]
-                return result_cmd
+                return informationlist
             else:
                 logging.getLogger().error("systeminfo error")
         return res
+
 
 
 def download_file_windows_update(url, connecttimeout=30, outdirname=None):
