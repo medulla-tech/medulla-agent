@@ -3226,6 +3226,8 @@ class kb_catalogue:
             status = 408,
         return status, text_result
 
+
+
 def powerschellscript1ps1(namescript):
     namescript = windowspath(namescript)
     obj={"code" : -1, "result" : ""}
@@ -3398,7 +3400,7 @@ class offline_search_kb:
         result_cmd = { }
         if sys.platform.startswith("win"):
             informationlist = ("CBS", "Install", "InstallPath", "Release," "Servicing", "TargetVersion", "Version")
-            cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" """
+            cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" """
             result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 # analyse result
@@ -3450,7 +3452,6 @@ class offline_search_kb:
 
                     T_L_W_LanguageName=    [ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
                     result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName
-                    # result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName=[ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
                 else:
                     logging.getLogger().error("search ThreeLetterWindowsLanguageName %s" % result['result'])
             except:
@@ -3498,6 +3499,7 @@ class offline_search_kb:
             else:
                 logging.getLogger().error("systeminfo error")
         return res
+
 
 
 
