@@ -6198,7 +6198,9 @@ class XmppMasterDatabase(DatabaseHelper):
             result = session.execute(sql)
             session.commit()
             session.flush()
-            return [x for x in result][0]
+            re=[x for x in result]
+            if re:
+                return re[0]
         except IndexError as index_error:
             logging.getLogger().error("An index error occured while trying to set up online/offline machine: %s" % str(index_error))
             return None
@@ -6252,6 +6254,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 return { "type": "machine", "reconf": mach[3]}
         else:
+            self.logger.warning("absent %s Mach table" % ( jid))
             return {}
 
 
