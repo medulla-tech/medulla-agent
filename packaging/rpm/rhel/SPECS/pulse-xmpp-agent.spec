@@ -267,8 +267,8 @@ fi
 %package -n pulse-xmppmaster-agentplugins
 Summary:    Console agent
 Group:      System/Servers
-Requires:   python-netifaces
-Requires:   python-sleekxmpp
+Requires:   python3-netifaces
+Requires:   python3-slixmpp
 
 %description -n pulse-xmppmaster-agentplugins
 plugins for pulse xmppmaster
@@ -282,9 +282,9 @@ plugins for pulse xmppmaster
 %package -n pulseagent-plugins-relay
 Summary:    Console agent
 Group:      System/Servers
-Requires:   python-wakeonlan
-Requires:   python-netifaces
-Requires:   python-sleekxmpp
+Requires:   python3-wakeonlan
+Requires:   python3-netifaces
+Requires:   python3-slixmpp
 Requires:   lsof
 
 %description -n pulseagent-plugins-relay
