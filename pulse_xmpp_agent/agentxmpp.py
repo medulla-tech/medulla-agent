@@ -288,20 +288,6 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.agentupdating = True
             logging.warning("Agent installed is different from agent on master.")
         # END Update agent from Master#############################
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # Bind the socket to the port
-        server_address = ('localhost',  self.config.am_local_port)
-        logging.log(DEBUGPULSE,  'starting server tcp kiosk on %s port %s' % server_address)
-        self.sock.bind(server_address)
-        # Listen for incoming connections
-        self.sock.listen(5)
-        #using event eventkill for signal stop thread
-        self.eventkill = threading.Event()
-        client_handlertcp = threading.Thread(target=self.tcpserver)
-        # run server tcpserver for kiosk
-        client_handlertcp.start()
-        self.manage_scheduler  = manage_scheduler(self)
-        self.session = session(self.config.agenttype)
 
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
