@@ -981,7 +981,6 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
             logging.getLogger().debug("qa_custom_command error")
             return -1
-            return -1
 
     @DatabaseHelper._sessionm
     def update_Glpi_entity( self,
