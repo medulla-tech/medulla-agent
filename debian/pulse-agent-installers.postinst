@@ -12,6 +12,7 @@ cd /var/lib/pulse2/clients
 ./generate-pulse-agent.sh
 ./generate-pulse-agent.sh --minimal
 ./generate-agent-package
+./generate-kiosk-package
 
 #DEBHELPER#
 
