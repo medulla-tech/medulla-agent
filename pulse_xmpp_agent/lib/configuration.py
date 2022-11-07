@@ -730,6 +730,7 @@ class confParameter:
         self.sched_scheduled_plugins = True
         self.sched_update_plugin = True
         self.sched_check_network = True
+        self.sched_send_ping_kiosk = True
         # controle si doit installer image
         self.sched_update_agent = True
         self.sched_manage_session = True
@@ -770,6 +771,10 @@ class confParameter:
                              "sched_check_network"):
             self.sched_check_network = Config.getboolean('switch_scheduling',
                                                          'sched_check_network')
+
+        if Config.has_option("switch_scheduling", "sched_send_ping_kiosk"):
+            self.sched_send_ping_kiosk = Config.getboolean('switch_scheduling',
+                                                        'sched_send_ping_kiosk')
 
         if Config.has_option("switch_scheduling", "sched_update_agent"):
             self.sched_update_agent = Config.getboolean('switch_scheduling',

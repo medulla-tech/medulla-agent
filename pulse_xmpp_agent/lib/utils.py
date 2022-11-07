@@ -208,11 +208,12 @@ def networkinfoexist():
         return True
     return False
 
+
 def save_count_start():
     filecount = os.path.join(Setdirectorytempinfo(), 'countstart')
     if not os.path.exists(filecount):
         file_put_contents(filecount, "1")
-        return  1
+        return 1
     countstart = file_get_contents(filecount)
     try:
         if countstart != "":
@@ -787,11 +788,13 @@ def simplecommandstr(cmd):
     obj['result'] = "\n".join(result)
     return obj
 
+
 def windowspath(namescript):
     if sys.platform.startswith('win'):
         return '"' + namescript + '"'
     else:
         return namescript
+
 
 def powerschellscriptps1(namescript):
     namescript = windowspath(namescript)
@@ -1233,6 +1236,41 @@ def subnetnetwork(adressmachine, mask):
     return decimaltoIpV4(reseaumachine)
 
 
+def searchippublic(site=1):
+    if site == 1:
+        try:
+            page = urllib.urlopen("http://ifconfig.co/json").read()
+            objip = json.loads(page)
+            if is_valid_ipv4(objip['ip']):
+                return objip['ip']
+            else:
+                return searchippublic(2)
+        except BaseException:
+            return searchippublic(2)
+    elif site == 2:
+        try:
+            page = urllib.urlopen("http://www.monip.org/").read()
+            ip = page.split("IP : ")[1].split("<br>")[0]
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(3)
+        except Exception:
+            return searchippublic(3)
+    elif site == 3:
+        try:
+            ip = urllib.urlopen("http://ip.42.pl/raw").read()
+            if is_valid_ipv4(ip):
+                return ip
+            else:
+                return searchippublic(4)
+        except Exception:
+            searchippublic(4)
+    elif site == 4:
+        return find_ip()
+    return None
+
+
 def find_ip():
     candidates = []
     for test_ip in ["192.0.2.0", "192.51.100.0", "203.0.113.0"]:
@@ -1254,6 +1292,8 @@ def find_ip():
 # decorateur pour simplifier les plugins
 # verify session exist.
 # pas de session end
+
+
 def pulginmaster(func):
     def wrapper(objetxmpp, action, sessionid, data, message, ret):
         if action.startswith("result"):
@@ -1493,6 +1533,7 @@ if sys.platform.startswith('win'):
         except WindowsError:  # skipcq: PYL-E0602
             return None
 
+
 def shutdown_command(time=0, msg=''):
     """
         This  function allow to shutdown a machine, and if needed
@@ -1526,6 +1567,7 @@ def shutdown_command(time=0, msg=''):
             os.system(cmd)
     return
 
+
 def vnc_set_permission(askpermission=1):
     """
     This function allows to change the setting of VNC to ask for
@@ -1549,6 +1591,7 @@ def vnc_set_permission(askpermission=1):
 
     return
 
+
 def reboot_command():
     """
         This function allow to reboot a machine.
@@ -1561,6 +1604,7 @@ def reboot_command():
         os.system("shutdown -r now")
     return
 
+
 def isBase64(s):
     try:
         if base64.b64encode(base64.b64decode(s)) == s:
@@ -1568,6 +1612,7 @@ def isBase64(s):
     except Exception:
         pass
     return False
+
 
 def decode_strconsole(x):
     """
@@ -1581,6 +1626,7 @@ def decode_strconsole(x):
         return x.decode('utf-8', 'ignore')
     else:
         return x
+
 
 def encode_strconsole(x):
     """
@@ -1600,6 +1646,7 @@ def savejsonfile(filename, data, indent=4):
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
 
+
 def loadjsonfile(filename):
     if os.path.isfile(filename):
         with open(filename, 'r') as info:
@@ -1610,10 +1657,11 @@ def loadjsonfile(filename):
             logger.error("filename %s error decodage [%s]" % (filename, str(e)))
     return None
 
+
 def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
     if name is None:
-        userlist = list(set([users[0]  for users in psutil.users()]))
+        userlist = list(set([users[0] for users in psutil.users()]))
         if len(userlist) > 0:
             name = userlist[0]
     else:
@@ -1624,7 +1672,7 @@ def save_user_current(name=None):
                   'suite': [name],
                   'curent': name}
         savejsonfile(loginuser, result)
-        return  result['curent']
+        return result['curent']
 
     datauseruser = loadjsonfile(loginuser)
     if name in datauseruser:
@@ -1687,6 +1735,7 @@ def test_kiosk_presence():
     else:
         return "False"
 
+
 def utc2local(utc):
     """
     utc2local transform a utc datetime object to local object.
@@ -1699,6 +1748,7 @@ def utc2local(utc):
     epoch = time.mktime(utc.timetuple())
     offset = datetime.fromtimestamp(epoch) - datetime.utcfromtimestamp(epoch)
     return utc + offset
+
 
 def keypub():
     keypubstring = ""
@@ -3109,3 +3159,25 @@ def serialnumbermachine():
     except Exception:
         logger.error("An error occured while using the serialnumbermachine function \n we got the error below \n%s" % (traceback.format_exc()))
     return serial_uuid_machine
+
+
+def send_data_tcp(datastrdata, hostaddress="127.0.0.1", port=8766):
+    """Send tcp message throught a web socket
+    Params:
+        datastrdata string of datas sent
+        hostaddress string of the destination addresse
+        port int is the port on which the data are sent
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = (hostaddress, port)
+    data = None
+    try:
+        sock.connect(server_address)
+        sock.sendall(datastrdata.encode('ascii'))
+        data = sock.recv(2048)
+    except Exception as e:
+        logger.error("[%s]" % (str(e)))
+        data = None
+    finally:
+        sock.close()
+        return data

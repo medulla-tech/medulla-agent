@@ -54,6 +54,7 @@ from lib.configuration import confParameter,\
 from lib.managesession import session
 from lib.managefifo import fifodeploy
 from lib.managedeployscheduler import manageschedulerdeploy
+from lib.managedbkiosk import manageskioskdb
 from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         getRandomName, load_back_to_deploy, cleanbacktodeploy,\
                         call_plugin, subnetnetwork,\
@@ -195,6 +196,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
         logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
+        laps_time_send_ping_to_kiosk = 350
         self.back_to_deploy = {}
         self.config = conf
 
@@ -286,6 +288,22 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.agentupdating = True
             logging.warning("Agent installed is different from agent on master.")
         # END Update agent from Master#############################
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Bind the socket to the port
+        server_address = ('localhost',  self.config.am_local_port)
+        logging.log(DEBUGPULSE,  'starting server tcp kiosk on %s port %s' % server_address)
+        self.sock.bind(server_address)
+        # Listen for incoming connections
+        self.sock.listen(5)
+        #using event eventkill for signal stop thread
+        self.eventkill = threading.Event()
+        client_handlertcp = threading.Thread(target=self.tcpserver)
+        # run server tcpserver for kiosk
+        client_handlertcp.start()
+        self.manage_scheduler  = manage_scheduler(self)
+        self.session = session(self.config.agenttype)
+
+        # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
             self.managefifo = fifodeploy()
             self.levelcharge = {}
@@ -425,6 +443,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                           repeat=True)
         self.Deploybasesched = manageschedulerdeploy()
         self.eventkiosk = manage_kiosk_message(self.queue_recv_tcp_to_xmpp, self)
+        self.infolauncherkiook =  manageskioskdb()
+        self.kiosk_presence = "False"
         self.eventmanage = manage_event(self.queue_read_event_from_command, self)
         self.mannageprocess = mannageprocess(self.queue_read_event_from_command)
         self.process_on_end_send_message_xmpp = process_on_end_send_message_xmpp(self.queue_read_event_from_command)
@@ -483,6 +503,11 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                 repeat=True)
         else:
             logging.warning("Network Changing disable")
+        if self.config.agenttype not in ['relayserver']:
+            if self.config.sched_send_ping_kiosk:
+                self.schedule('send_ping', laps_time_send_ping_to_kiosk,
+                            self.send_ping_to_kiosk,
+                            repeat=True)
         if self.config.sched_update_agent:
             self.schedule('check AGENT INSTALL', 350,
                         self.checkinstallagent,
@@ -1071,6 +1096,58 @@ class MUCBot(sleekxmpp.ClientXMPP):
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
 
+    def send_ping_to_kiosk(self):
+        """Send a ping to the kiosk  to ask it's presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"ping"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
+
+    def send_pong_to_kiosk(self):
+        """Send a pong to the kiosk  to answer to ping presence"""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_address = ('localhost', 8766)
+        try:
+            sock.connect(server_address)
+            try:
+                msg = '{"action":"presence","type":"pong"}'
+                sock.sendall(msg.encode('ascii'))
+                self.kiosk_presence = "True"
+            except:
+                self.kiosk_presence = "False"
+        except:
+            self.kiosk_presence = "False"
+        finally:
+            sock.close()
+
+        datasend = { 'action' : "resultkiosk",
+                            "sessionid" : getRandomName(6, "kioskGrub"),
+                            "ret" : 0,
+                            "base64" : False,
+                            'data': {}}
+        datasend['data']['subaction'] = "presence"
+        datasend['data']['value'] = self.kiosk_presence
+        self.send_message_to_master(datasend)
+
     def handle_client_connection(self, client_socket):
         """
         this function handles the message received from kiosk or watching syncting service
@@ -1109,7 +1186,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         #start kiosk ask initialization
                         datasend['data']['subaction'] =  result['subaction']
                         datasend['data']['userlist'] = list(set([users[0]  for users in psutil.users()]))
-                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'])
+                        datasend['data']['ouuser'] = organizationbyuser(datasend['data']['userlist'][0])
                         datasend['data']['oumachine'] = organizationbymachine()
                     elif result['action'] == 'kioskinterfaceInstall':
                         datasend['data']['subaction'] =  'install'
@@ -1119,6 +1196,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
                         datasend['data']['subaction'] =  'delete'
                     elif result['action'] == 'kioskinterfaceUpdate':
                         datasend['data']['subaction'] =  'update'
+                    elif result['action'] == 'presence':
+                        if result['type'] == "ping":
+                            # Send pong message
+                            self.kiosk_presence = "True"
+                            self.send_pong_to_kiosk()
+                            logging.getLogger().info("Sendback pong message to kiosk")
+                        elif result['type'] == 'pong':
+                            # Set the kiosk_presence variable to True
+                            logging.getLogger().info("Receive pong message from kiosk")
+                            self.kiosk_presence = "True"
+
+                        else:
+                            # Ignore the others messages
+                            pass
+                        datasend['data']['subaction'] = "presence"
+                        datasend['data']['value'] = self.kiosk_presence
+
                     elif result['action'] == 'kioskLog':
                         if 'message' in result and result['message'] != "":
                             self.xmpplog(
@@ -1592,6 +1686,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                            'ret': 0,
                            'base64': False
                           }
+        self.send_ping_to_kiosk()
 
         if not os.path.isdir(self.config.defaultdir):
             dataerrornotify['data']['msg'] = "An error occured while configuring the browserfile. The default dir %s does not exist on %s." % (self.boundjid.bare, self.config.defaultdir)
