@@ -1364,9 +1364,6 @@ class grafcet:
                 os.chdir(self.datasend['data']['pathpackageonmachine'])
                 self.workingstep['pwd'] = os.getcwd()
             self.__alternatefolder()
-            zip_ref = zipfile.ZipFile(self.workingstep['filename'], 'r')
-            if 'pathdirectorytounzip' not in self.workingstep:
-
             if 'packageuuid' in self.workingstep:
                 self.workingstep['packageuuid'] = self.replaceTEMPLATE(
                     self.workingstep['packageuuid'])
