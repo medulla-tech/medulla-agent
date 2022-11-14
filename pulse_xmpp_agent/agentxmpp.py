@@ -66,7 +66,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent
+                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent, \
+                        offline_search_kb
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -641,6 +642,23 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     transfertdeploy['data'],
                     msg,
                     dataerreur)
+
+    def send_pluging_update_window(self):
+        sessioniddata = getRandomName(6, "update_window")
+        try:
+            update_information = {
+                "action": "update_window",
+                "sessionid": sessioniddata,
+                "data": { "system_info" : offline_search_kb().get()},
+                "ret": 0,
+                "base64": False,
+            }
+
+            self.send_message( mto="master_asse@pulse",
+                               mbody=json.dumps(update_information),
+                               mtype="chat")
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))
 
     ###############################################################
     # syncthing function
@@ -2456,7 +2474,8 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'kiosk_presence': test_kiosk_presence(),
             'countstart': save_count_start(),
             'keysyncthing': self.deviceid,
-            'uuid_serial_machine' : serialnumbermachine()
+            'uuid_serial_machine' : serialnumbermachine(),
+            "system_info" : offline_search_kb().get(),
         }
         try:
             dataobj['md5_conf_monitoring'] = ""

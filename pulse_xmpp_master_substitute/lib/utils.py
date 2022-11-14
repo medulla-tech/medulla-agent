@@ -49,6 +49,7 @@ import time
 from datetime import datetime
 import imp
 import requests
+from requests.exceptions import Timeout
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
 import random
@@ -479,6 +480,22 @@ def isMacOsUserAdmin():
     else:
         return False
 
+
+def search_system_info_reg():
+    result_cmd = { }
+    if sys.platform.startswith("win"):
+        informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
+        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+        result = simplecommand(encode_strconsole(cmd), strimresult= True)
+        if int(result["code"]) == 0:
+            # analyse result
+            line = [ x for x in result['result'] if x.startswith(informationlist)]
+            for t in line:
+                lcmd = [ x for x in t.split (" ") if x != ""]
+                if len(lcmd) >= 3:
+                    result_cmd[lcmd[0]] = lcmd[2]
+    logging.getLogger().debug("infor version update %s" % result_cmd)
+    return result_cmd
 
 # listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
@@ -2338,3 +2355,87 @@ class geolocalisation_agent:
             except BaseException:
                 pass
         return None
+
+
+class kb_catalogue:
+    """
+        class for request catalog update site
+        eg : utilisation
+            print( kb_catalogue().KB_update_exits("KB4586864"))
+    """
+    URL = "https://www.catalog.update.microsoft.com/Search.aspx"
+    filter = "We did not find any results for"
+    def __init__(self):
+        pass
+
+    def KB_update_exits(self, location):
+        """
+            return if kb existe in update catalogue
+        """
+        PARAMS = { 'q' : location }
+        status, textresult = self.__get_requests(kb_catalogue.URL, params = PARAMS)
+        if status == 200 and textresult.find(kb_catalogue.filter) == -1:
+            return True
+        else:
+            return False
+
+    def __get_requests(self, url, params, timeout=5):
+        """
+        this function send get to url
+        return status et content text request
+        status 200 correct reponse
+        status 408 incorrect reponse content text empty
+        """
+        status = 408 # error timeout
+        text_result = ""
+        try:
+            r = requests.get(url = url, params = params, timeout=timeout)
+            status = r.status_code
+            if status == 200:
+                text_result = r.text
+        except Timeout:
+            status = 408,
+        return status, text_result
+
+def download_file_windows_update(url, connecttimeout=30, outdirname=None):
+    """
+        Cette function download file dans base windows
+        wget system linux is used
+    """
+    if sys.platform.startswith("linux"):
+        regex = re.compile(
+            r'^(?:http|ftp)s?://' # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+            r'localhost|' #localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+            r'(?::\d+)?' # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+            if not re.match(regex,url) is not None):
+                "url non conforme"
+                logging.getLogger().error("incorrect url [%s]" % (url))
+                return False
+            if  outdir is None:
+                base_file= os.path.join("/","var","lib","pulse2","base_file_update")
+            else:
+                base_file= os.path.join("/","var","lib","pulse2",outdirname)
+            if os.path.dirname(base_file) !=  os.path.join("/","var","lib","pulse2"):
+                # name repertoire non conforme
+                logging.getLogger().error("download_file_windows_update incorrect path [%s]" % (base_file))
+                return False
+            try:
+                os.makedirs(base_file)
+            except OSError:
+                if not os.path.isdir(base_file):
+                    Raise
+            #os.makedirs(base_file, exist_ok=True)
+            res=simplecommand("wget --connect-timeout=20 '%s'"% sys.argv[1])
+            if res["code"] == 0:
+                # correct download
+                logging.getLogger().debug("download %s in [%s]" % (url, base_file))
+                return True
+            else:
+                # incorrect download
+                logging.getLogger().error("download_file_windows_update incorrect download %s [%s]" % (url, res['result']))
+    else:
+        logging.getLogger().error("download_file_windows_update function download_file_windows_update linux only")
+    return False
