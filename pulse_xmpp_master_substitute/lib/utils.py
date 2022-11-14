@@ -2410,7 +2410,7 @@ def download_file_windows_update(url, connecttimeout=30, outdirname=None):
             r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
             r'(?::\d+)?' # optional port
             r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-        if not re.match(regex,url) is not None):
+        if not re.match(regex,url) is not None:
             "url non conforme"
             logging.getLogger().error("incorrect url [%s]" % (url))
             return False
