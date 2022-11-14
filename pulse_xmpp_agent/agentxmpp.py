@@ -317,7 +317,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.agentmaster = jid.JID("master@pulse")
         self.sub_subscribe_all = []
         if not hasattr(self.config, 'sub_subscribe'):
-            self.sub_subscribe = self.agentmaster
+            self.sub_subscribe = jid.JID("master_subs@pulse")
         else:
             if isinstance(self.config.sub_subscribe, list):
                 self.sub_subscribe_all = [jid.JID(x) for x in self.config.sub_subscribe]
@@ -329,7 +329,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_subscribe = jid.JID(self.config.sub_subscribe)
 
         if not hasattr(self.config, 'sub_logger'):
-            self.sub_logger = self.agentmaster
+            self.sub_logger = jid.JID("master_log@pulse")
         else:
             if isinstance(self.config.sub_logger, list) and\
                 len(self.config.sub_logger) > 0:
@@ -338,10 +338,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                 self.sub_logger = jid.JID(self.config.sub_logger)
 
         if self.sub_subscribe.bare == "":
-            self.sub_subscribe = self.agentmaster
+            self.sub_subscribe = jid.JID("master_subs@pulse")
 
         if not hasattr(self.config, 'sub_inventory'):
-            self.sub_inventory = self.agentmaster
+            self.sub_inventory = jid.JID("master_inv@pulse")
         else:
             if isinstance(self.config.sub_inventory, list) and\
                 len(self.config.sub_inventory) > 0:
@@ -349,10 +349,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_inventory = jid.JID(self.config.sub_inventory)
         if self.sub_inventory.bare == "":
-            self.sub_inventory = self.agentmaster
+            self.sub_inventory = jid.JID("master_inv@pulse")
 
         if not hasattr(self.config, 'sub_registration'):
-            self.sub_registration = self.agentmaster
+            self.sub_registration = jid.JID("master_reg@pulse")
         else:
             if isinstance(self.config.sub_registration, list) and\
                 len(self.config.sub_registration) > 0:
@@ -360,10 +360,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_registration = jid.JID(self.config.sub_registration)
         if self.sub_registration.bare == "":
-            self.sub_registration = self.agentmaster
+            self.sub_registration = jid.JID("master_reg@pulse")
 
         if not hasattr(self.config, 'sub_monitoring'):
-            self.sub_monitoring = self.agentmaster
+            self.sub_monitoring = jid.JID("master_mon@pulse")
         else:
             if isinstance(self.config.sub_monitoring, list) and\
                 len(self.config.sub_monitoring) > 0:
@@ -371,7 +371,18 @@ class MUCBot(sleekxmpp.ClientXMPP):
             else:
                 self.sub_monitoring = jid.JID(self.config.sub_monitoring)
         if self.sub_monitoring.bare == "":
-            self.sub_monitoring = self.agentmaster
+            self.sub_monitoring = jid.JID("master_mon@pulse")
+
+        if not hasattr(self.config, 'sub_updates'):
+            self.sub_updates = jid.JID("master_upd@pulse")
+        else:
+            if isinstance(self.config.sub_updates, list) and\
+                len(self.config.sub_updates) > 0:
+                self.sub_updates = jid.JID(self.config.sub_updates[0])
+            else:
+                self.sub_updates = jid.JID(self.config.sub_updates)
+        if self.sub_updates.bare == "":
+            self.sub_updates = jid.JID("master_upd@pulse")
 
         if sys.platform.startswith('linux'):
             if self.config.agenttype in ['relayserver']:

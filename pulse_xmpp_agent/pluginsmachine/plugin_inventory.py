@@ -37,6 +37,7 @@ if sys.platform.startswith('win'):
     from lib import registerwindows
     import _winreg
 from xml.etree import ElementTree
+from sleekxmpp import jid
 
 DEBUGPULSEPLUGIN = 25
 ERRORPULSEPLUGIN = 40
@@ -104,7 +105,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         xmppobject.sub_inventory
     except :
-        xmppobject.sub_inventory = xmppobject.agentmaster
+        xmppobject.sub_inventory = jid.JID("master_inv@pulse")
+    try:
+        xmppobject.sub_updates
+    except :
+        xmppobject.sub_updates = jid.JID("master_upd@pulse")
     resultaction = "result%s" % action
     result = {}
     result['action'] = resultaction
@@ -729,7 +734,7 @@ def send_pluging_update_window(xmppobject):
                 "base64": False,
             }
 
-            xmppobject.send_message( mto=xmppobject.sub_inventory,
+            xmppobject.send_message( mto=xmppobject.sub_updates,
                                mbody=json.dumps(update_information),
                                mtype="chat")
         except Exception as e:

@@ -239,12 +239,13 @@ class substitutelist:
             Config.read(namefileconfig + ".local")
         #################substitute####################
 
-        self.sub_inventory = ["master@pulse"]
-        self.sub_subscribe = ["master@pulse"]
-        self.sub_registration = ["master@pulse"]
-        self.sub_assessor = ["master@pulse"]
-        self.sub_logger = ["log@pulse", "master@pulse"]
-        self.sub_monitoring = ["master@pulse"]
+        self.sub_inventory = ["master_inv@pulse"]
+        self.sub_subscribe = ["master_subs@pulse"]
+        self.sub_registration = ["master_reg@pulse"]
+        self.sub_assessor = ["master_asse@pulse"]
+        self.sub_logger = ["log@pulse", "maste_log@pulse"]
+        self.sub_monitoring = ["master_mon@pulse"]
+        self.sub_updates = ["master_upd@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -270,6 +271,10 @@ class substitutelist:
             sub_monitoringlocal = Config.get('substitute', 'monitoring')
             self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
+        if Config.has_option('substitute', 'updates'):
+            sub_updateslocal = Config.get('substitute', 'updates')
+            self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
+
     def parameterssubtitute(self):
         conflist = []
         data={ 'subscription': self.sub_subscribe,
@@ -277,7 +282,8 @@ class substitutelist:
                'registration': self.sub_registration,
                'assessor': self.sub_assessor,
                'logger': self.sub_logger,
-               'monitoring': self.sub_monitoring}
+               'monitoring': self.sub_monitoring,
+               'updates': self.sub_updates}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -305,12 +311,13 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
-        self.sub_inventory = ["master@pulse"]
-        self.sub_subscribe = ["master@pulse"]
-        self.sub_registration = ["master@pulse"]
-        self.sub_assessor = ["master@pulse"]
-        self.sub_monitoring= ["master@pulse"]
-        self.sub_logger = ["log@pulse", "master@pulse"]
+        self.sub_inventory = ["master_inv@pulse"]
+        self.sub_subscribe = ["master_subs@pulse"]
+        self.sub_registration = ["master_reg@pulse"]
+        self.sub_assessor = ["master_asse@pulse"]
+        self.sub_monitoring= ["master_mon@pulse"]
+        self.sub_updates= ["master_upd@pulse"]
+        self.sub_logger = ["log@pulse", "master_log@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -327,6 +334,10 @@ class confParameter:
         if Config.has_option('substitute', 'monitoring'):
             sub_monitoringlocal = Config.get('substitute', 'monitoring')
             self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+
+        if Config.has_option('substitute', 'updates'):
+            sub_updateslocal = Config.get('substitute', 'updates')
+            self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
             sub_assessorlocal = Config.get('substitute', 'assessor')
