@@ -486,7 +486,7 @@ class manage_kiosk_message:
                                                 touser="")
                         if 'type' in result:
                             if result['type'] == "info":
-                                self.logger.getself.logger().info(result['message'])
+                                self.logger.info(result['message'])
                             elif result['type'] == "warning":
                                 self.logger.warning(result['message'])
                 elif result['action'] == "notifysyncthing":
