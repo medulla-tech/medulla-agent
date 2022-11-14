@@ -8664,7 +8664,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error("sql : %s" % traceback.format_exc())
         return ret
 
-        @DatabaseHelper._sessionm
+    @DatabaseHelper._sessionm
     def history_list_base(self, session, list_updateid):
         """
             Cette fonction renvoi update en fonction d'une list python des updateid
