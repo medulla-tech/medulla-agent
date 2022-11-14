@@ -86,7 +86,6 @@ class AdminDatabase(DatabaseHelper):
                 self.config.admin_dbpoolrecycle,
                 self.config.admin_dbpoolsize,
                 self.config.admin_dbpooltimeout,
-                self.config.admin_dbpooltimeout,
                 self.config.admin_dbechoquery,
             )
         )
