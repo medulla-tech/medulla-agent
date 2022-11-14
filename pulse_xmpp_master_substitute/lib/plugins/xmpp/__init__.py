@@ -8627,6 +8627,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     if isinstance(lineresult[index], datetime):
                         lr=lineresult[index].isoformat()
                     dictline[value] = lr
+                    dictline['tableproduct'] ="up_packages_Win_Malicious_X64"
                 result.append(dictline)
             cursor.close()
             connection.commit()
@@ -8857,13 +8858,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             [str(tableproduct), str(str_kb_list).strip('"() ')] )
             results = list(cursor.fetchall())
             for lineresult in results:
-
                 dictline={}
                 for index, value in enumerate(colonnename):
                     lr = lineresult[index]
                     if isinstance(lr, datetime):
                         lr=lr.isoformat()
                     dictline[value] = lr
+                    dictline['tableproduct'] = tableproduct
                 result.append(dictline)
             cursor.close()
             connection.commit()
@@ -8872,6 +8873,146 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         finally:
             connection.close()
         return result
+
+
+    @DatabaseHelper._sessionm
+    def is_exist_value_in_table(self, session,
+                                valchamp,
+                                namefield="updateid",
+                                tablename="up_gray_list"):
+        """
+            test si il existe dans 1 table 1 enregistrement avec la valeur pour le nom du champ passe
+        """
+        try:
+            sql="""SELECT
+                    COUNT(%s)
+                FROM
+                    %s
+                WHERE
+                    updateid LIKE '%s'
+                LIMIT 1;"""% (namefield, tablename, valchamp)
+            #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+            rest= session.execute(sql)
+            session.commit()
+            session.flush()
+            if rest:
+                ret=[elt for elt in rest][0]
+                #self.logger.info("is_exist_value_in_table ret: %s" % ret)
+                return True if ret[0]==1 else False
+        except Exception:
+            logging.getLogger().error("sql is_exist_value_in_table: %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows_gray_list(self, session, updateid, tableproduct="", validity_day=10):
+        """
+        cette fonction insert dans la table gray list 1 update
+        Si l update existe. Il update seulement la date de validity
+        Parameters :
+            tableproduct voir table produits dans la table list_produits
+            str_kb_list list des kb installer sur la machine
+        """
+        # if le update existe dans la table up_gray_list_flop
+        # on supprime dans la stock_table up_gray_list_flop
+        # ce qui fera que l'update sera reinitialiser
+        # auterment on insert ou update
+
+        try:
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
+                                            tablename="up_gray_list_flop"):
+                sql="""DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');"""%(updateid)
+                session.execute(sql)
+                session.commit()
+                session.flush()
+            else:
+                sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
+                                                                kb,
+                                                                revisionid,
+                                                                title,
+                                                                description,
+                                                                updateid_package,
+                                                                payloadfiles,supersededby,
+                                                                title_short,
+                                                                validity_date)
+                            ( SELECT updateid,
+                                    kb,
+                                    revisionid,
+                                    title,
+                                    description,
+                                    updateid_package,
+                                    payloadfiles,
+                                    supersededby,
+                                    title_short,
+                                    now() + INTERVAL %s day
+                            FROM
+                                xmppmaster.%s
+                            WHERE
+                                updateid LIKE '%s')
+                            ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
+                #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+                session.execute(sql)
+                session.commit()
+                session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def delette_in_gray_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            updateidreduit=updateid[-12:]
+            sql=""" UPDATE `up_gray_list_flop` SET `updateid` = '%s' WHERE (`updateid` = '%s');
+                    UPDATE `up_gray_list` SET `updateid` = '%s' WHERE (`updateid` = '%s');
+                    DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');
+                    DELETE FROM `up_gray_list` WHERE (`updateid` = '%s');
+            """%(updateidreduit, updateid, updateidreduit, updateid,updateidreduit, updateidreduit)
+            #self.logger.info("delette_in_gray_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delette_in_gray_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def get_all_update_in_gray_list(self, session, updateid=None):
+        """ cette function renvoi tout les update de la list gray"""
+        try:
+            sql="""
+                select * from
+                    (SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list
+                    UNION
+                    SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list_flop) as e"""
+            if updateid:
+                filter = """ WHERE
+                            updateid = '%s'"""%(updateid)
+                sql=sql+filter
+            sql+=";"
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [{column: value for column,
+                    value in rowproxy.items()}
+                            for rowproxy in resultproxy]
+        except Exception:
+            logging.getLogger().error("sql get_all_update_in_gray_list : %s" % traceback.format_exc())
+        return []
+
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
         return [{column: value for column, value in rowproxy.items()}
