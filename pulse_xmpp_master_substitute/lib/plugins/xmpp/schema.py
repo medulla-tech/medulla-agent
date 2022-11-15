@@ -760,6 +760,33 @@ class Up_machine_windows(Base):
     update_id = Column(String(38), primary_key=True)
     kb = Column(String(45),  default="")
 
+class Up_white_list(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_white_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    kb =  Column(String(16), default="")
+    title_short =  Column(String(1024), default="")
+    valided = Column(Boolean, unique=False)
+
+class Up_gray_list(Base):
+    # ====== Table name =========================
+    __tablename__ = "up_gray_list"
+    # ====== Fields =============================
+    updateid = Column(String(38), primary_key=True)
+    revisionid =  Column(String(16), nullable=False, default="")
+    creationdate = Column(DateTime, default=datetime.datetime.now)
+    title =  Column(String(1024), default="")
+    description =  Column(String(3096), default="")
+    kb =  Column(String(16), default="")
+    supersededby =  Column(String(3072), default="")
+    payloadfiles =  Column(String(2048), default="")
+    title_short =  Column(String(1024), default="")
+    valided = Column(Boolean, unique=False)
+    validity_date = Column(DateTime, default=datetime.datetime.now)
 
 """
 This code is kept here as a comment, "if" we need to use it

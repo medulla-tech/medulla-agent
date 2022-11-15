@@ -60,7 +60,11 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Glpi_Register_Keys, \
     Update_data, \
     Up_black_list, \
-    Up_machine_windows
+    Up_machine_windows, \
+    Update_data, \
+    Up_black_list, \
+    Up_white_list, \
+    Up_gray_list
 # Imported last
 import logging
 import json
