@@ -3450,7 +3450,7 @@ class offline_search_kb:
                 result = simplecommand(encode_strconsole(cmd))
                 if int(result["code"]) == 0:
 
-                    T_L_W_LanguageName=    [ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
+                    T_L_W_LanguageName = [ decode_strconsole(x.strip()) for x in result['result'] if x.strip() != ""][-1:][0]
                     result_cmd["Locale"]["ThreeLetterWindowsLanguageName"] = T_L_W_LanguageName
                 else:
                     logging.getLogger().error("search ThreeLetterWindowsLanguageName %s" % result['result'])

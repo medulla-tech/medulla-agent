@@ -47,7 +47,7 @@ from lib.utils import DEBUGPULSE, getIpXmppInterface,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent, \
-                        serialnumbermachine, search_system_info_reg
+                        serialnumbermachine, offline_search_kb
 
 from optparse import OptionParser
 
@@ -579,7 +579,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'agent_machine_name':self.agent_machine_name,
             'uuid_serial_machine' : serialnumbermachine(),
             'regcomplet': self.FullRegistration,
-            'system_info' : search_system_info_reg()
+            'system_info' :  offline_search_kb().search_system_info_reg()
         }
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
