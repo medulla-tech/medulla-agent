@@ -44,7 +44,7 @@ import netaddr
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.54", "NAME": "update_window", "TYPE": "substitute"}
+plugin = {"VERSION": "1.55", "NAME": "update_window", "TYPE": "substitute"}
 
 # function comment for next feature
 # this functions will be used later
@@ -61,9 +61,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
         logger.debug("call %s from %s" % (plugin, msg["from"]))
         logger.debug("=====================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-        logger.debug("JFKJFK compteurcallplugin %s" % compteurcallplugin)
         if compteurcallplugin == 0:
-            logger.debug("JFKJFK initialisation %s" % compteurcallplugin)
             try:
                 xmppobject.registeryagent_showinfomachine
             except:
@@ -117,9 +115,9 @@ def exclude_update_in_select( msg, exclude_update, list_update ):
     return res
 
 def traitement_update(xmppobject, action, sessionid, data, msg, ret):
-    logger.debug( "TRAITEMENT UPDATE from %s "%msg['from'])
-    logger.debug(json.dumps(data, indent=4))
-    logger.debug("xmppobject.list_produits  %s" % xmppobject.list_produits)
+    #logger.debug( "TRAITEMENT UPDATE from %s "%msg['from'])
+    #logger.debug(json.dumps(data, indent=4))
+    #logger.debug("xmppobject.list_produits  %s" % xmppobject.list_produits)
     # suivant type de windows exclude list produit
     list_table_product_select = list_produis_on(xmppobject, data, xmppobject.list_produits)
 
@@ -188,6 +186,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
         XmppMasterDatabase().setUp_machine_windows(machine['id'],
                                                     t['updateid'],
                                                     kb=t['kb'])
+        # on add ou update le kb dans la gray list
+        XmppMasterDatabase().setUp_machine_windows_gray_list(t['updateid'], t['product_table'])
 
 def list_produis_on(xmppobject, data, list_produits):
     prds = list_produits[:]
