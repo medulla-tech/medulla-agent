@@ -8960,7 +8960,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return False
 
     @DatabaseHelper._sessionm
-    def delette_in_gray_list(self, session, updateid):
+    def delete_in_gray_list(self, session, updateid):
         """
             cettte fonction supprime 1 update completement depuis les grays list
             update est supprime du flip flop (up_gray_list_flop/up_gray_list)
@@ -8974,13 +8974,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');
                     DELETE FROM `up_gray_list` WHERE (`updateid` = '%s');
             """%(updateidreduit, updateid, updateidreduit, updateid,updateidreduit, updateidreduit)
-            #self.logger.info("delette_in_gray_list : %s" % sql)
+            #self.logger.info("delete_in_gray_list : %s" % sql)
             session.execute(sql)
             session.commit()
             session.flush()
             return True
         except Exception:
-            logging.getLogger().error("sql delette_in_gray_list : %s" % traceback.format_exc())
+            logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
         return False
 
     @DatabaseHelper._sessionm
