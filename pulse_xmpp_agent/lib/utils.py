@@ -3400,7 +3400,7 @@ class offline_search_kb:
         result_cmd = { }
         if sys.platform.startswith("win"):
             informationlist = ("CBS", "Install", "InstallPath", "Release," "Servicing", "TargetVersion", "Version")
-            cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" """
+            cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full" """
             result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 # analyse result
@@ -3411,14 +3411,14 @@ class offline_search_kb:
                         keystring = ' '.join(lcmd[2:])
                         result_cmd[lcmd[0]] = keystring
             else:
-                logging.getLogger().error("search REG QUERY \"HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\"")
+                logging.getLogger().error("search REG QUERY \"HKLM\\SOFTWARE\\Microsoft\\NET Framework Setup\\NDP\\v4\\Full\"")
         return result_cmd
 
     def search_system_info_reg(self):
         result_cmd = { }
         if sys.platform.startswith("win"):
             informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
-            cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+            cmd = """REG QUERY "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" | findstr REG_SZ"""
             result = simplecommand(encode_strconsole(cmd))
             if int(result["code"]) == 0:
                 # analyse result
