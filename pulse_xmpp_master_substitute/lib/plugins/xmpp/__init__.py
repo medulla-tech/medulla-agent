@@ -58,8 +58,6 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Glpi_entity, \
     Glpi_location, \
     Glpi_Register_Keys, \
-    Update_data, \
-    Up_black_list, \
     Up_machine_windows, \
     Update_data, \
     Up_black_list, \
