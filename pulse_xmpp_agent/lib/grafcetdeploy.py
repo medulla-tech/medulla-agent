@@ -1373,7 +1373,8 @@ class grafcet:
                 else:
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '
                                             'directory missing!!!:  %s' % (self.data['name'],
-                                                                           self.workingstep['step']),
+                                                                           self.workingstep['step'],
+                                                                           self.workingstep['packageuuid']),
                                             type='deploy',
                                             sessionname=self.sessionid,
                                             priority=self.workingstep['step'],
@@ -1519,7 +1520,8 @@ class grafcet:
                 else:
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '
                                             'directory missing!!!:  %s' % (self.data['name'],
-                                                                           self.workingstep['step']),
+                                                                           self.workingstep['step'],
+                                                                           self.workingstep['packageuuid']),
                                             type='deploy',
                                             sessionname=self.sessionid,
                                             priority=self.workingstep['step'],
@@ -1639,7 +1641,7 @@ class grafcet:
             self.terminate(
                 -1, False, "end error in action_command_natif_shell step %s" %
                 self.workingstep['step'])
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error action_command_natif_shell : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in action_command_natif_shell step' % (self.data['name'], self.workingstep['step']),
                                     type='deploy',
                                     sessionname=self.sessionid,
                                     priority=self.workingstep['step'],
@@ -1775,7 +1777,8 @@ class grafcet:
                 else:
                     self.objectxmpp.xmpplog('[%s]-[%s]: Warning : Requested package '
                                             'directory missing!!!:  %s' % (self.data['name'],
-                                                                           self.workingstep['step']),
+                                                                           self.workingstep['step'],
+                                                                           self.workingstep['packageuuid']),
                                             type='deploy',
                                             sessionname=self.sessionid,
                                             priority=self.workingstep['step'],
@@ -2300,7 +2303,7 @@ class grafcet:
             logging.getLogger().error(str(e))
             logger.error("\n%s"%(traceback.format_exc()))
             self.terminate(-1, False, "end error in actionrestart %s step %s" %(self.workingstep['targetrestart'], self.workingstep['step']))
-            self.objectxmpp.xmpplog('[%s]-[%s]: Error actionrestart : %s' % (self.data['name'], self.workingstep['step']),
+            self.objectxmpp.xmpplog('[%s]-[%s]: Error in actionrestart step' % (self.data['name'], self.workingstep['step']),
                                     type = 'deploy',
                                     sessionname = self.sessionid,
                                     priority = self.workingstep['step'],
