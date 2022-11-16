@@ -58,9 +58,11 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Glpi_entity, \
     Glpi_location, \
     Glpi_Register_Keys, \
+    Up_machine_windows, \
     Update_data, \
     Up_black_list, \
-    Up_machine_windows
+    Up_white_list, \
+    Up_gray_list
 # Imported last
 import logging
 import json
@@ -9012,6 +9014,72 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         except Exception:
             logging.getLogger().error("sql get_all_update_in_gray_list : %s" % traceback.format_exc())
         return []
+
+    @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql=""" DELETE FROM `up_white_list` WHERE (`updateid` = '%s');"""%(updateid)
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_white_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def get_all_update_in_gray_list(self, session, updateid=None):
+        """
+            cettte fonction display tout les update dans gray list. du flip flop complet
+        """
+        try:
+            sql="""
+                select * from
+                    (SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list
+                    UNION
+                    SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list_flop) as e"""
+            if updateid:
+                filter = """ WHERE
+                            updateid = '%s'"""%(updateid)
+                sql=sql+filter
+            sql+=";"
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [{column: value for column,
+                    value in rowproxy.items()}
+                            for rowproxy in resultproxy]
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
+        return []
+
+
+    @DatabaseHelper._sessionm
+    def delete_in_gray_and_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            et white list
+        """
+        try:
+            self.delete_in_gray_list(updateid)
+            self.delete_in_white_list(updateid)
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_and_white_list : %s" % traceback.format_exc())
+        return False
 
 # -------------------------------------------------------------------------------
     def _return_dict_from_dataset_mysql(self, resultproxy):
