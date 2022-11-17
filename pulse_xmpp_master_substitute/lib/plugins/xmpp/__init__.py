@@ -8762,6 +8762,32 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return ret
 
     @DatabaseHelper._sessionm
+    def setUp_machine_windows(self,
+                            session,
+                            id_machine,
+                            update_id,
+                            kb=""):
+        """
+            creation 1 update pour 1 machine
+        """
+
+        try:
+            new_Up_machine_windows = Up_machine_windows()
+            new_Up_machine_windows.id_machine = id_machine
+            new_Up_machine_windows.update_id = update_id
+            new_Up_machine_windows.kb = kb
+            session.add(new_Up_machine_windows)
+            session.commit()
+            session.flush()
+            return self.__Up_machine_windows(new_Up_machine_windows)
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_machine_windows : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    @DatabaseHelper._sessionm
     def del_all_Up_machine_windows(self,
                             session,
                             id_machine):
@@ -8772,16 +8798,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         session.commit()
         session.flush()
 
-     #@DatabaseHelper._sessionm
-     #def download_files_wsusscan2_for_package(  self,
-                                                #session,
-                                                #id_machine):
-        #"""
-            #del tout les updates de la machines
-        #"""
-        #session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
-        #session.commit()
-        #session.flush()
 
     @DatabaseHelper._sessionm
     def setUp_machine_windows(self,
@@ -8986,6 +9002,25 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         return False
 
     @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql=""" DELETE FROM `up_white_list` WHERE (`updateid` = '%s');"""%(updateid)
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_white_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
     def get_all_update_in_gray_list(self, session, updateid=None):
         """ cette function renvoi tout les update de la list gray"""
         try:
@@ -9065,7 +9100,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         except Exception:
             logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
         return []
-
 
     @DatabaseHelper._sessionm
     def delete_in_gray_and_white_list(self, session, updateid):

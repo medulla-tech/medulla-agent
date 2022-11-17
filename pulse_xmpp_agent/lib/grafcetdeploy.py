@@ -26,7 +26,7 @@ import os
 import platform
 import os.path
 import json
-from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, send_data_tcp
+from utils import getMacAdressList, getIPAdressList, MacAdressToIp, shellcommandtimeout, shutdown_command, reboot_command, isBase64, downloadfile, send_data_tcp, simplecommand
 from configuration import setconfigfile
 import traceback
 import logging
@@ -2551,3 +2551,187 @@ class grafcet:
                                     module="Deployment | Error | Execution",
                                     date=None,
                                     fromuser=self.data['login'])
+
+
+    def __Setdirectorysessionreprise(self):
+        """
+            This functions a  directory if no exist
+            @returns path directory INFO Temporaly and key RSA
+        """
+        dir_reprise_session = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+            "INFOSTMP", "REPRISE")
+        if not os.path.exists(dir_reprise_session):
+            os.makedirs(dir_reprise_session, mode=0o007)
+        return dir_reprise_session
+
+
+    def __sauvedatasessionrepriseinterface(self, name, datasession):
+        """
+            INFOSTMPrepriseinterface
+
+        """
+        namesession = os.path.join(self.__Setdirectorysessionreprise(),name)
+
+        try:
+            with open(namesession, 'w') as f:
+                json.dump(datasession, f, indent=4)
+            return True
+        except Exception as e:
+            logging.getLogger().error("We encountered an issue while creating the session %s" % namesession)
+            logging.getLogger().error("The error is %s" % str(e))
+            if os.path.isfile(namesession):
+                os.remove(namesession)
+            return False
+        return True
+
+    def action_loop_question(self):
+        """
+        descriptor type
+           {
+                "gototimeout": "ff42b4fa",
+                "gotolookterminate": "8435f9c4",
+                "timeloop": "900",
+                "gotonouser": "4748358d",
+                "actionlabel": "choisir_dev",
+                "codereturn": "",
+                "step": 0,
+                "loopnumber": "1",
+                "gotoyes": "ebd5fd77",
+                "timeout": "10",
+                "action": "action_loop_question",
+                "message": "Y2hvaXggYXZlYyBsb29w"
+            }
+        """
+        if  "loopnumber" in  self.workingstep:
+            self.workingstep['loopnumber']=int(self.workingstep['loopnumber'])
+        if  "timeloop" in  self.workingstep:
+            self.workingstep['timeloop']=int(self.workingstep['timeloop'])
+        if  "timeout" in  self.workingstep:
+            self.workingstep['timeout']=int(self.workingstep['timeout'])
+
+        self.__initialise_user_connected__() # le comportement peut changer si user se deconecte
+        try:
+            msg=[]
+            command=""
+            msg.append("""[%s]-[%s]:user question message %s"""% (self.data['name'],
+                                                                  self.workingstep['step'],
+                                                                  self.workingstep['message']))
+            if self.userconecter is None:
+                msg.append("""[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]""" %(self.data['name'],
+                                                                                                                   self.workingstep['step'],
+                                                                                                                   self.workingstep['message']))
+            if sys.platform.startswith('linux'):
+                logging.debug("machine linux")
+                msg=[]
+                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
+            elif sys.platform.startswith('win'):
+                # self.objectxmpp.userconnected=None
+                # self.objectxmpp.statusconnected=None
+                # START query user /MIN /B
+                # command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
+                # """start /MIN /B python C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "Avez vous lue se message." -t 20 -Y "OUI" -N "NON" -S20 -s10 -c"""
+
+                command = """C:\\progra~1\\pulse\\bin\\paexec.exe -accepteula -s -i 1 """\
+                """pythonw C:\\progra~1\\Pulse\\bin\\pulse2_update_notification.py -M "%s" -t 20 -Y "OUI" -N "NON" -S20 -s10 -c""" % self.workingstep['message']
+                logging.debug("command on windows %s" % command)
+            elif sys.platform.startswith('darwin'):
+                logging.debug("command on darwin")
+                msg=[]
+                msg.append("""[%s]-[%s]: linux notification not implemented yet""" % (self.data['name'],self.workingstep['step']))
+            self.steplog()
+            if self.userconecter is None:
+                msg.append("""[%s]-[%s]: user session not active, the question is not delivered. [notif : %s]""" %(self.data['name'],
+                self.workingstep['step'],
+                self.workingstep['message']))
+                self.__affiche_message(msg, module="Deployment | Execution | Notification")
+
+                if 'gotonouser' in self.workingstep:
+                    self.__search_Next_step_int__(self.workingstep['gototimeout'])
+                    self.__execstep__()
+                else:
+                    self.__Etape_Next_in__()
+                return True
+            if command:
+                re = shellcommandtimeout(command, 1000).run()
+                self.steplog()
+                result = [x.strip('\n') for x in re['result'] if x != '']
+                logging.getLogger().debug("result action notification: %s" % re)
+                if  re['code'] == 2:
+                    ## timeout pas de reponse utilisateur
+                    msg.append("""[%s]-[%s]:<span class="log_warn">The user question message """\
+                    """was not acknowledged within %s seconds.</span>""" % (self.data['name'],self.workingstep['step'],self.workingstep['timeout']))
+                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
+                    if 'gototimeout' in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep['gototimeout'])
+                        self.__execstep__()
+                    else:
+                        self.__Etape_Next_in__()
+                    return True
+
+                elif re['code'] == 0:
+                    # bouton positif
+                    msg.append("""[%s]-[%s]:The user question message has been acknowledged. Positif resp""" % (self.data['name'],self.workingstep['step']))
+                    self.__affiche_message(msg, module="Deployment | Execution | Notification")
+                    if 'gotoyes' in self.workingstep:
+                        self.__search_Next_step_int__(self.workingstep['gotoyes'])
+                        self.__execstep__()
+                    else:
+                        self.__Etape_Next_in__()
+                    return True
+                elif re['code'] == 1:
+                    # bouton negatif
+                    # On doit reposer la question a n + timeloop si compteur n'est pas a 0
+                    msg.append("""[%s]-[%s]:The user Question message has been acknowledged. Negatif resp""" % (self.data['name'],
+                    self.workingstep['step']))
+                    # on verify le compteur -1
+                    if 'loopnumber' not in self.workingstep:
+                        self.workingstep['loopnumber']=1
+                    else:
+                        self.workingstep['loopnumber']=int(self.workingstep['loopnumber'])
+                    if 'timeloop' not in self.workingstep:
+                        self.workingstep['timeloop']=10
+                    self.workingstep['loopnumber'] = int(self.workingstep['loopnumber'])-1
+                    if self.workingstep['loopnumber'] <=0:
+                        # branchement gotolookterminate
+                        if 'gotolookterminate' in self.workingstep:
+                            msg.append("""[%s]-[%s]: Le compteur de demande " \
+                            "est termine sans reponse positive""" % (self.data['name'],
+                                                                      self.workingstep['step']))
+                            self.__search_Next_step_int__(self.workingstep['gotolookterminate'])
+                            self.__execstep__()
+                    else:
+                        # on attend n seconde
+                        # 2 facons de regler cela
+                        #   avec 1 sleep mais voir si le temps peut etre > 15 minutes.
+                        # autrement save session et relancer apres n seconde.
+                        # on sauve la session avec la convention suivante.   time de reprise en timestamp@@@_@@@sessionnumber
+                        # exemple 1668091410@@@_@@@commandd04eb8ae68844bcb99
+                        # rewrite session
+
+                        # Restart machine based on OS
+                        self.__search_Next_step_int__(self.workingstep['actionlabel'])
+                        namefile="medulla_messagebox@_@%s@_@%s@_@%s@_@%s"%( int(time.time()),self.workingstep['timeloop'],self.workingstep['actionlabel'],self.sessionid)
+                        self.__sauvedatasessionrepriseinterface( namefile, self.datasend)
+
+                        msg.append("""[%s]-[%s]: Remise dans %s seconde de cette demande a l'utilisateur %s""" % (self.data['name'],
+                            self.workingstep['step'], self.workingstep['timeloop'], self.userconecter))
+                        self.__affiche_message(msg)
+                        msg=[]
+
+                        time.sleep(float(self.workingstep['timeloop']))
+                        self.__execstep__()
+                    self.__affiche_message(msg)
+                    return True
+            else:
+                msg.append("""[%s]-[%s]:command question missing.""" % (self.data['name'],self.workingstep['step']))
+                self.__Etape_Next_in__()
+                return True
+            # self.__action_completed__(self.workingstep)
+            # self.__Etape_Next_in__()
+        except Exception as e:
+            logger.error("\n%s"%(traceback.format_exc()))
+            self.terminate(-1, False, "end error in action_comment step %s" %
+                           self.workingstep['step'])
+            self.__affiche_message('[%s] - [%s]: Error action_comment : %s' % (self.data['name'], self.workingstep['step'], str(e)), module="Deployment | Error | Notification")
