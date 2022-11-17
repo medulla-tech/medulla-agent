@@ -3671,7 +3671,7 @@ class Glpi95(DatabaseHelper):
                         'operatingsystemservicepacks_id': ret.operatingsystemservicepacks_id,
                         'operatingsystemarchitectures_id': ret.operatingsystemarchitectures_id,
                         'license_number': ret.license_number,
-                        'license_id': ret.licenseid,
+                        'licenseid': ret.licenseid,
                         'operatingsystemkernelversions_id': ret.operatingsystemkernelversions_id}
             except Exception:
                 self.logger.error("\n%s" % (traceback.format_exc()))
@@ -3793,7 +3793,7 @@ class Glpi95(DatabaseHelper):
                                     'operatingsystemservicepacks_id',
                                     'operatingsystemarchitectures_id',
                                     'license_number',
-                                    'license_id',
+                                    'licenseid',
                                     'operatingsystemkernelversions_id']
             for addcolunm in listcolumaddforinfo                     :
                 query = query.add_column(getattr(Machine, addcolunm).label(addcolunm))
