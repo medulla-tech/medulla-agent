@@ -30,7 +30,7 @@ PAEXECVERSION = '1.29'
 
 logger = logging.getLogger()
 
-plugin = {"VERSION": "1.0", "NAME": "updatepaexec", "TYPE": "machine"}
+plugin = {"VERSION": "1.1", "NAME": "updatepaexec", "TYPE": "machine"}
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):
@@ -83,7 +83,7 @@ def updatepaexec(xmppobject, installed_version):
         pulsedir_path = os.path.join(os.environ["ProgramFiles"], "Pulse", "bin")
 
         filename = 'paexec_1_29.exe'
-        dl_url = 'http://%s/downloads/win/%s' % (
+        dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
         result, txtmsg = utils.downloadfile(dl_url, os.path.join(pulsedir_path, 'paexec.exe')).downloadurl()
