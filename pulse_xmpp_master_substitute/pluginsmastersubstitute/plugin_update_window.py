@@ -74,9 +74,6 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
 
             xmppobject.list_produits=[]
             init_list_produits = XmppMasterDatabase().list_produits()
-            for t in init_list_produits:
-                xmppobject.list_produits.append(t['name_procedure'])
-
             # return
             # function comment for next feature
             # this functions will be used later
@@ -115,9 +112,9 @@ def exclude_update_in_select( msg, exclude_update, list_update ):
     return res
 
 def traitement_update(xmppobject, action, sessionid, data, msg, ret):
-    #logger.debug( "TRAITEMENT UPDATE from %s "%msg['from'])
-    #logger.debug(json.dumps(data, indent=4))
-    #logger.debug("xmppobject.list_produits  %s" % xmppobject.list_produits)
+    logger.debug( "TRAITEMENT UPDATE from %s "%msg['from'])
+    logger.debug(json.dumps(data, indent=4))
+    logger.debug("xmppobject.list_produits  %s" % xmppobject.list_produits)
     # suivant type de windows exclude list produit
     list_table_product_select = list_produis_on(xmppobject, data, xmppobject.list_produits)
 
@@ -129,6 +126,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                                              #data['system_info']['infobuild']['DisplayVersion'],
                                              #data['system_info']['platform_info']['machine'])
     #logger.info("filtersql %s" % filtersql)
+
 
     if not xmppobject.exclud_history_list:
         logger.debug("Verify avec kb historique")
@@ -151,6 +149,8 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
             continue
         list_update=[]
         logger.debug("produit search  %s" % t)
+        logger.debug("produit search  %s" % data['system_info']["kb_list"])
+
         list_update=XmppMasterDatabase().search_update_by_products(
                            tableproduct=t,
                            str_kb_list=data['system_info']["kb_list"])
@@ -176,8 +176,7 @@ def traitement_update(xmppobject, action, sessionid, data, msg, ret):
                 data['system_info']['malicious_software_removal_tool']['FileMajorPart'],
                 data['system_info']['malicious_software_removal_tool']['FileMinorPart'])
             #logger.info("result search_update_windows_malicious_software_tool\n %s" % res)
-            res_update.extend(exclude_update_in_select( msg, exclude_update, list_update ))
-
+            res_update.extend(exclude_update_in_select( msg, exclude_update, list_update))
     # update les updates windows a installer
     XmppMasterDatabase().del_all_Up_machine_windows(machine['id'])
 

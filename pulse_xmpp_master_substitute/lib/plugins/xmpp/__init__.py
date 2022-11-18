@@ -8502,6 +8502,22 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                 ,"deploymentaction"
                 ,"title_short"]
 
+    def _colonne_name_update_product(self):
+        """
+            return colonne fo result
+        """
+        return ["updateid"
+                ,"kb"
+                ,"revisionid"
+                ,"title"
+                ,"description"
+                ,"updateid_package"
+                ,"payloadfiles"
+                ,"supersededby"
+                ,"creationdate"
+                ,"title_short"
+               ]
+
     # appel procedure stocke
     @DatabaseHelper._sessionm
     def search_kb_windows(self, session, filter, kb_list):
