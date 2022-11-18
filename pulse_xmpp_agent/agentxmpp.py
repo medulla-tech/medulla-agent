@@ -1684,7 +1684,10 @@ class MUCBot(sleekxmpp.ClientXMPP):
                            'ret': 0,
                            'base64': False
                           }
-        self.send_ping_to_kiosk()
+        try:
+            self.send_ping_to_kiosk()
+        except Exception:
+            pass
 
         if not os.path.isdir(self.config.defaultdir):
             dataerrornotify['data']['msg'] = "An error occured while configuring the browserfile. The default dir %s does not exist on %s." % (self.boundjid.bare, self.config.defaultdir)
