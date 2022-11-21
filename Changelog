@@ -1,3 +1,6 @@
+* [FEATURE] New OS Updates feature
+* [FEATURE] New Kiosk feature
+
 pulse-xmpp-agent 2.1.7
 ======================
 * [BUGFIX]  Fix detecting IP address of the XMPP server when the agent starts.

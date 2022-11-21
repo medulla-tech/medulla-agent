@@ -107,6 +107,7 @@ NETWORK_NAME="Pulse network notify"
 RDP_NAME="Pulse RDP"
 SYNCTHING_NAME="Pulse Syncthing"
 FILETREE_NAME="Pulse Filetree Generator"
+PAEXEC_NAME="PAExec"
 
 # Display usage
 display_usage() {
@@ -366,6 +367,7 @@ update_nsi_script() {
         -e "s/@@RDP_NAME@@/${RDP_NAME}/" \
         -e "s/@@SYNCTHING_NAME@@/${SYNCTHING_NAME}/" \
         -e "s/@@FILETREE_NAME@@/${FILETREE_NAME}/" \
+        -e "s/@@PAEXEC_NAME@@/${PAEXEC_NAME}/" \
 		agent-installer.nsi.in \
 		> agent-installer.nsi
 

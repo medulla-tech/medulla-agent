@@ -73,6 +73,8 @@ RequestExecutionLevel admin
 !define SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SYNCTHING_NAME}"
 !define FILETREE_NAME "@@FILETREE_NAME@@"
 !define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
+!define PAEXEC_NAME "@@PAEXEC_NAME@@"
+!define PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PAEXEC_NAME}"
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -505,6 +507,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "${RDP_UNINST_KEY}"
   DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
+  DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
 
   ; Stop all Pulse services
   Call un.StopPulseServices
