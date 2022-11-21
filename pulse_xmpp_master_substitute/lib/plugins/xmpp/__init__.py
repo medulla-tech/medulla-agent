@@ -31,6 +31,7 @@ from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.sql.expression import literal
 from datetime import date, datetime, timedelta
 import pprint
 # PULSE2 modules
@@ -57,7 +58,12 @@ from lib.plugins.xmpp.schema import Network, Machines, RelayServer, Users, Regle
     Mon_panels_template, \
     Glpi_entity, \
     Glpi_location, \
-    Glpi_Register_Keys
+    Glpi_Register_Keys, \
+    Up_machine_windows, \
+    Update_data, \
+    Up_black_list, \
+    Up_white_list, \
+    Up_gray_list
 # Imported last
 import logging
 import json
@@ -1036,7 +1042,6 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             logging.getLogger().debug("qa_custom_command error")
-            return -1
             return -1
 
     @DatabaseHelper._sessionm
@@ -4437,30 +4442,32 @@ class XmppMasterDatabase(DatabaseHelper):
         """
 
         if classutilMachine == "private":
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND `relayserver`.`classutil` = '%s'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, userou, enabled, classutilMachine)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(userou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.classutil == classutilMachine,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         else:
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, userou, enabled)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(userou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -4478,31 +4485,33 @@ class XmppMasterDatabase(DatabaseHelper):
                to a use of the private machine.
         """
         if classutilMachine == "private":
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND `relayserver`.`classutil` = '%s'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, machineou, enabled, classutilMachine)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(machineou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            RelayServer.classutil == classutilMachine,
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         else:
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, machineou, enabled)
-        result = session.execute(sql)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(machineou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
+        result = sql.all()
         session.commit()
         session.flush()
         return [x for x in result]
@@ -4531,7 +4540,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, username, enabled, classutilMachine)
+            limit 1;""" % (rule, re.escape(username), enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
             from `relayserver`
@@ -4543,7 +4552,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, username, enabled)
+            limit 1;""" % (rule, re.escape(username), enabled)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -6258,7 +6267,9 @@ class XmppMasterDatabase(DatabaseHelper):
             result = session.execute(sql)
             session.commit()
             session.flush()
-            return [x for x in result][0]
+            re=[x for x in result]
+            if re:
+                return re[0]
         except IndexError as index_error:
             logging.getLogger().error("An index error occured while trying to set up online/offline machine: %s" % str(index_error))
             return None
@@ -6312,6 +6323,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 return { "type": "machine", "reconf": mach[3]}
         else:
+            self.logger.warning("absent %s Mach table" % ( jid))
             return {}
 
 
@@ -6669,6 +6681,49 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception, e:
             logging.getLogger().error(str(e))
             return -1
+
+    @DatabaseHelper._sessionm
+    def Update_version_agent_machine_md5(self,
+                                         session,
+                                         hostname,
+                                         md5,
+                                         version):
+        """
+        This function updates the md5 and the version of the agent in the uptime_machine
+        table.
+        Args:
+            session: The sqlalchemy session
+            hostname: The hostname of the machine
+            md5: The md5 fingerprint of the agent.
+            version: The version of the agent
+        """
+
+        try:
+            sql="""
+                UPDATE
+                    `xmppmaster`.`uptime_machine`
+                SET
+                    `md5agentversion` = '%s',
+                    `version` = '%s'
+                WHERE
+                    (id = (SELECT
+                            id
+                        FROM
+                            xmppmaster.uptime_machine
+                        WHERE
+                            hostname LIKE '%s' AND status = 1
+                        ORDER BY id DESC
+                        LIMIT 1));"""%(md5,
+                                    version,
+                                    hostname)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception, e:
+            logging.getLogger().error("We failed to update the md5 and the version of the running agent for %s" % hostname)
+            logging.getLogger().error("we encounterd the error: %s" % str(e))
+            return False
 
     @DatabaseHelper._sessionm
     def last_event_presence_xmpp(self,
@@ -7443,7 +7498,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                           doc,
                           status_event=1,
                           hostname=None):
-        keysreplace=statusmsg.keys()
+        keysreplace = statusmsg.keys()
+        if "mon_param0" in keysreplace:
+            mon_statusmsg_param0 = statusmsg["mon_param0"]
+        if "mon_subject" in keysreplace:
+            mon_statusmsg_subject = statusmsg["mon_subject"]
         other_data = None
         if 'other_data' in keysreplace:
             if isinstance(statusmsg['other_data'], basestring):
@@ -7455,54 +7514,74 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             # resultproxy = self.get_event_information_id_device(idevent)
             index = 1
             for z in objectlist_local_rule:
-                index=index+1
+                index = index + 1
                 for rep in keysreplace:
-                    keyre="@%s@"%rep
+                    keyre="@%s@" % rep
                     if statusmsg[rep]:
                         if isinstance(statusmsg[rep], basestring):
                             z['binding']=z['binding'].replace(keyre,statusmsg[rep])
+                            # Replace the cmd if it exists
+                            if isinstance(z['no_success_binding_cmd'], basestring):
+                                z['no_success_binding_cmd']=z['no_success_binding_cmd'].replace(keyre, statusmsg[rep])
+                            if isinstance(z['succes_binding_cmd'], basestring):
+                                z['succes_binding_cmd']=z['succes_binding_cmd'].replace(keyre, statusmsg[rep])
+                            if isinstance(z['error_on_binding'], basestring):
+                                z['error_on_binding']=z['error_on_binding'].replace(keyre, statusmsg[rep])
                         else:
                             stringreplace = json.dumps(statusmsg[rep])
-                            z['binding']=z['binding'].replace(keyre,stringreplace)
-                # verify  binding n'est pas 1 template.
-                testkeytemplate=[]
+                            z['binding'] = z['binding'].replace(keyre,stringreplace)
+                            if isinstance(z['no_success_binding_cmd'], basestring):
+                                z['no_success_binding_cmd']=z['no_success_binding_cmd'].replace(keyre, stringreplace)
+                            if isinstance(z['succes_binding_cmd'], basestring):
+                                z['succes_binding_cmd']=z['succes_binding_cmd'].replace(keyre, stringreplace)
+                            if isinstance(z['error_on_binding'], basestring):
+                                z['error_on_binding']=z['error_on_binding'].replace(keyre, stringreplace)
+                # Verify if the binding is not a template
+                testkeytemplate = []
                 for rep in keysreplace:
-                    keyre="@%s@"%rep
+                    keyre="@%s@" % rep
                     if keyre in z['binding']:
                         testkeytemplate.append(keyre)
                 if testkeytemplate:
                     self.logger.warning("No treatment resolution template binding impossible on key %s"%testkeytemplate)
-                    self.logger.warning("rule %s : event type : [%s] on device '%s'" %( z['id'],
-                                                                                    str(z['type_event']),
-                                                                                    str(z['device_type'])) )
-                    self.logger.warning("machine [%s] mon_machine id [%s] id_device [%s]"%(msg_from,
-                                                                                  id_machine,
-                                                                                  id_device))
-                    #self.logger.warning("doc %s"%doc)
+                    self.logger.warning("rule %s : event type : [%s] on device '%s'" % (z['id'],
+                                                                                        str(z['type_event']),
+                                                                                        str(z['device_type'])) )
+                    self.logger.warning("machine [%s] mon_machine id [%s] id_device [%s]" % (msg_from,
+                                                                                             id_machine,
+                                                                                             id_device))
                     continue
-                self.logger.debug("rule %s : event type : %s on device %s" %( z['id'],
+                self.logger.debug("rule %s : event type : %s on device %s" %(z['id'],
                                                                              str(z['type_event']),
                                                                              str(z['device_type'])) )
-                bindingcmd=""
+                bindingcmd = ""
                 msg, result = self.__binding_application_check(doc,
                                                                z['binding'],
                                                                z['device_type'])
                 if result == -1:
                     if z['error_on_binding'] is None or \
                         z['error_on_binding'].strip() == "":
-                        # aucun trairement sur error
-                        self.logger.error("No treatment on error  %s " %(z))
+                        # There is not treatment done on errors.
+                        continue
+                    else:
+                        self.logger.warning("We failed to process the binding. We got the error:  %s " % msg)
+                        self.logger.debug("The content of the binding is: %s " % z)
+
+                        bindingcmd = z['error_on_binding']
                         continue
                 elif result == 1:
                     # alert True
                     # create event if action associated to true
                     if z['succes_binding_cmd'] is None or \
                         z['succes_binding_cmd'].strip() == "":
-                        # aucun trairement sur success binding
-                        self.logger.warning("No treatment on expected success  %s " %(z))
+                        # There is not treatment done on success.
                         continue
-                    # 1 event est a prendre en compte.
-                    bindingcmd = z['succes_binding_cmd']
+                    else:
+                        # 1 event to handle
+                        self.logger.debug("The treatment of the binding succeeded with the message:  %s " % msg)
+                        self.logger.debug("The content of the sucessful binding is: %s " % z)
+
+                        bindingcmd = z['succes_binding_cmd']
                 elif result == 0:
                     # alert False
                     # create event if action associated to False
@@ -7511,9 +7590,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         self.logger.warning("No treatment on"\
                             " expected no success  %s " % (z))
                         continue
-                    bindingcmd = z['no_success_binding_cmd']
+                    else:
+
+                        self.logger.debug("no_success_binding_cmd  %s " % msg)
+                        self.logger.debug("The content of the 'expecting to fail binding' is: %s " % z)
+
+                        bindingcmd = z['no_success_binding_cmd']
                 else:
-                    #cas pas encore prevu
+                    # This case is not yet handled
                     self.logger.warning("No treatment on"\
                             "missing on def binding action%s " % (z))
                     continue
@@ -7544,6 +7628,14 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     listkeyconf=paramsubs.keys()
                     src_script = os.path.join(script_monitoring, bindingcmd)
                     resultproxy = self.get_event_information_id_device(idevent)
+                    try:
+                        resultproxy['mon_statusmsg_param0'] = mon_statusmsg_param0
+                    except:
+                        pass
+                    try:
+                        resultproxy['mon_statusmsg_subject'] = mon_statusmsg_subject
+                    except:
+                        pass
                     resultproxy['conf_submon'] = {}
                     for keyparam in listkeyconf:
                         resultproxy['conf_submon'][keyparam] = paramsubs[keyparam]
@@ -7984,13 +8076,22 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
 
     def __binding_application_check(self, datastring, bindingstring, device_type):
         resultbinding = None
+
+        d = re.search(r'\[\'\@.*\@\'\]', bindingstring)
+        try:
+            d.group
+            logging.getLogger().warning("template binding no replace %s" % bindingstring)
+        except AttributeError:
+            pass
+        except Exception as e:
+            logging.getLogger().error("__binding_application_check %s" % str(e))
+
         try:
             logging.getLogger().debug("data for binding is %s" % datastring)
-            data=json.loads(datastring)
+            data = json.loads(datastring)
         except Exception as e:
-            msg =  "[binding error device rule %s] : data from message" \
+            msg = "[binding error device rule %s] : data from message" \
                 " monitoring format json error %s" % (device_type, str(e))
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
 
         try:
@@ -8004,7 +8105,6 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                     str(e),
                     bindingstring,
                     json.dumps(data,indent=4))
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
         except Exception as e:
             msg = "[binding device rule %s error %s] in binding:\n%s\ "\
@@ -8012,14 +8112,12 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                str(e),
                                bindingstring,
                                json.dumps(data,indent=4))
-            logging.getLogger().error("%s" % msg)
             return (msg, -1)
         msg = "[ %s : result binding %s for binding:\n%s\ "\
                 "on data\n%s"%(device_type,
                                resultbinding,
                                bindingstring,
                                json.dumps(data,indent=4))
-        logging.getLogger().debug("%s" % msg)
         return (msg, resultbinding)
 
     def __binding_application(self, datastring, bindingstring, device_type):
@@ -8483,4 +8581,667 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.flush()
         return machines_jid_for_updating
 
+# ----------------------------- Update windows ---------------------------------
 
+    def _colonne_name_update(self):
+        """
+            return colonne fo result
+        """
+        return ["updateid"
+                ,"revisionid"
+                ,"creationdate"
+                ,"company"
+                ,"product"
+                ,"productfamily"
+                ,"updateclassification"
+                ,"prerequisite"
+                ,"title"
+                ,"description"
+                ,"msrcseverity"
+                ,"msrcnumber"
+                ,"kb"
+                ,"languages"
+                ,"category"
+                ,"supersededby"
+                ,"supersedes"
+                ,"payloadfiles"
+                ,"revisionnumber"
+                ,"bundledby_revision"
+                ,"isleaf"
+                ,"issoftware"
+                ,"deploymentaction"
+                ,"title_short"]
+
+    def _colonne_name_update_product(self):
+        """
+            return colonne fo result
+        """
+        return ["updateid"
+                ,"kb"
+                ,"revisionid"
+                ,"title"
+                ,"description"
+                ,"updateid_package"
+                ,"payloadfiles"
+                ,"supersededby"
+                ,"creationdate"
+                ,"title_short"
+               ]
+
+    # appel procedure stocke
+    @DatabaseHelper._sessionm
+    def search_kb_windows(self, session, filter, kb_list):
+        """
+        Cette fonction renvoi les updates pour 1 machine en fonctions des kb installer et de os present sur la machine
+        sous forme d'un list de dict
+         Parameters :
+            filter filter on title field obligatoire value
+                rq: la value % doit commencer et terminer le filtre
+            kblist "string list separator ," de tous les kb remontés depuis la machine
+
+        eg : search_kb_windows("%Windows 10 Version 21H2 for x64-based%",
+                                "5007289,5003791" );
+        """
+        result=[]
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_windows",[filter, kb_list])
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+    @DatabaseHelper._sessionm
+    def search_kb_windows1(self, session,
+                           filter="",
+                           product="Windows 10",
+                           version="21H2",
+                           sevrity="Critical",
+                           archi="x64",
+                           kb_list=""):
+        """
+        Cette fonction renvoi les updates pour 1 machine en fonctions des kb installer et de os present sur la machine
+        sous forme d'un list de dict
+        Parameters :
+            filter filter on title field "" par default
+            product windows default "Windows 10"
+            version produit default "21H2"
+            severity de update default "Critical"
+            architecture de la machine default x64
+            kblist "string list separator ," de tous les kb remontés depuis la machine
+
+        eg : search_kb_windows1("", "Windows 10", "21H2", "Critical", "x64", "5007289, 5003791");
+        """
+
+        result=[]
+
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_windows1",[filter, product,
+                           version,
+                           sevrity,
+                           archi,
+                           kb_list])
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+
+    @DatabaseHelper._sessionm
+    def search_update_windows_malicious_software_tool(self, session,
+                           product="Windows 10",
+                           archi="x64",
+                           major= 5,
+                           minor=104):
+        """
+        cette fonction renvoi update for windows malicious software tool
+        sous forme d'un list de dict
+        Parameters :
+            product windows default "Windows 10"
+            architecture de la machine default "x64"
+            major la valeur major de la version installer
+            minor la valeur mineur de la version installer
+        eg : search_update_windows_malicious_software_tool(product="Windows 10",
+                                                            archi="x64",
+                                                            major= 5,
+                                                            minor=105);
+        """
+        result=[]
+        colonnename=self._colonne_name_update()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_windows_malicious_software_tool",[ product,
+                                                                    archi,
+                                                                    major,
+                                                                    minor])
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lineresult[index], datetime):
+                        lr=lineresult[index].isoformat()
+                    dictline[value] = lr
+                    dictline['tableproduct'] ="up_packages_Win_Malicious_X64"
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+    @DatabaseHelper._sessionm
+    def history_list_kb(self, session, list_updateid):
+        """
+            Cette onction renvoi les numero de kb en fonction d'une list python des updateid des update
+            Parameters:
+                list updateid ["00009be5-c940-498d-b04d-620a572436df","00009be5-c940-498d-b04d-620a572436df"]
+            return
+                listt kb
+        """
+        ret=[]
+        try:
+            if list_updateid:
+                indata=[ '"%s"'%x for x in  list_updateid ]
+                sql="""SELECT
+                            kb
+                        FROM
+                            xmppmaster.update_data
+                        WHERE
+                            updateid IN (%s); """ % ",".join(indata)
+                #logging.getLogger().error("sql history_list_kb : %s" %sql)
+                req = session.execute(sql)
+                session.commit()
+                session.flush()
+                ret=[elt[0] for elt in req]
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def history_list_base(self, session, list_updateid):
+        """
+            Cette fonction renvoi update en fonction d'une list python des updateid
+            return 1 tableau de dict
+            Parameters:
+                list updateid ["00009be5-c940-498d-b04d-620a572436df","00009be5-c940-498d-b04d-620a572436df"]
+            return
+                listt kb
+        """
+        ret=[]
+        try:
+            if list_updateid:
+                indata=[ '"%s"'%x for x in  list_updateid ]
+                sql="""SELECT
+                            *
+                        FROM
+                            xmppmaster.update_data
+                        WHERE
+                            updateid IN (%s); """ % ",".join(indata)
+                req = session.execute(sql)
+                session.commit()
+                session.flush()
+                ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def getId_UuidFromJid(self, session, jid):
+        """ return machine uuid and id for machines """
+        user = str(jid).split("@")[0]
+        uuid_inventorymachine = session.query(Machines.id,
+                                              Machines.uuid_inventorymachine).\
+                                                  filter(Machines.jid.like(user + '%')).first()
+        session.commit()
+        session.flush()
+        result = {}
+        if uuid_inventorymachine:
+            result = {"id": uuid_inventorymachine.id,
+                      "uuid_inv" : uuid_inventorymachine.uuid_inventorymachine}
+        return result
+
+    def __Up_machine_windows(self, object_Up_machine_windows):
+        """
+            This function create a dictionnary with  update kb
+            Args:
+                object_Up_machine_windows: dataset line Up_machine_windows
+            Returns:
+                A dicth with the informations of the update.
+        """
+        try:
+            ret = {'id_machine': object_Up_machine_windows.id_machine,
+                   'update_id': object_Up_machine_windows.update_id,
+                   'kb': object_Up_machine_windows.kb}
+            return ret
+        except Exception as error_creating:
+            logging.getLogger().error("We failed to retrieve the informations of the Up_machine_windows")
+            logging.getLogger().error("We got the error \n : %s" % str(error_creating))
+            return None
+
+    @DatabaseHelper._sessionm
+    def test_black_list(self, session, jid):
+        """
+            This function renvoi la liste des tables produits a prendre en compte pour les updates.
+        """
+        ret={}
+        up=[]
+        kb=[]
+        try:
+            user = "".join(str(jid).split("@")[0].split('.')[:-1])
+            sql="""SELECT DISTINCT
+                    updateid_or_kb, type_rule
+                FROM
+                    xmppmaster.up_black_list
+                WHERE
+                    enable_rule = 1
+                        AND "%s" REGEXP userjid_regexp;"""%user
+            #self.logger.info("sql : %s" % sql)
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            if req:
+                for x in req:
+                    if x[1].lower() == 'kb':
+                        kb.append(x[0])
+                    elif x[1].lower() == 'id':
+                        up.append(x[0])
+            ret={"update_id":up, "kb" : kb}
+            #ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql test_black_list : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows(self,
+                            session,
+                            id_machine,
+                            update_id,
+                            kb=""):
+        """
+            creation 1 update pour 1 machine
+        """
+
+        try:
+            new_Up_machine_windows = Up_machine_windows()
+            new_Up_machine_windows.id_machine = id_machine
+            new_Up_machine_windows.update_id = update_id
+            new_Up_machine_windows.kb = kb
+            session.add(new_Up_machine_windows)
+            session.commit()
+            session.flush()
+            return self.__Up_machine_windows(new_Up_machine_windows)
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_machine_windows : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    @DatabaseHelper._sessionm
+    def del_all_Up_machine_windows(self,
+                            session,
+                            id_machine):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.commit()
+        session.flush()
+
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows(self,
+                            session,
+                            id_machine,
+                            update_id,
+                            kb=""):
+        """
+            creation 1 update pour 1 machine
+        """
+        try:
+            new_Up_machine_windows = Up_machine_windows()
+            new_Up_machine_windows.id_machine = id_machine
+            new_Up_machine_windows.update_id = update_id
+            new_Up_machine_windows.kb = kb
+            session.add(new_Up_machine_windows)
+            session.commit()
+            session.flush()
+            return self.__Up_machine_windows(new_Up_machine_windows)
+        except IntegrityError as e:
+            self.logger.info("IntegrityError setUp_machine_windows : %s" % str(e))
+        except Exception as e:
+            self.logger.info("Except setUp_machine_windows : %s" % str(e))
+            self.logger.error("\n%s" % (traceback.format_exc()))
+        return None
+
+    @DatabaseHelper._sessionm
+    def del_all_Up_machine_windows(self,
+                            session,
+                            id_machine):
+        """
+            del tout les updates de la machines
+        """
+        session.query(Up_machine_windows).filter(Up_machine_windows.id_machine == id_machine).delete()
+        session.commit()
+        session.flush()
+
+    @DatabaseHelper._sessionm
+    def list_produits(self,session):
+        """
+            This function renvoi la liste des table produitss a prendre en compte pour les updates.
+        """
+        ret ={}
+        try:
+            sql="""SELECT
+                    name_procedure
+                FROM
+                    xmppmaster.up_list_produit
+                WHERE
+                    enable = 1; """
+            req = session.execute(sql)
+            session.commit()
+            session.flush()
+            ret = self._return_dict_from_dataset_mysql(req)
+        except Exception:
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return ret
+
+    @DatabaseHelper._sessionm
+    def search_update_by_products(self, session,
+                           tableproduct="",
+                           str_kb_list=""):
+        """
+        cette fonction renvoi update en fonction des produits
+        Parameters :
+            tableproduct voir table produits dans la table list_produits
+            str_kb_list list des kb installer sur la machine
+        """
+        result=[]
+        colonnename=self._colonne_name_update_product()
+        try:
+            connection = self.engine_xmppmmaster_base.raw_connection()
+            results = None
+            cursor = connection.cursor()
+            cursor.callproc( "up_search_kb_update",
+                            [str(tableproduct), str(str_kb_list).strip('"() ')] )
+            results = list(cursor.fetchall())
+            for lineresult in results:
+                dictline={}
+                for index, value in enumerate(colonnename):
+                    lr = lineresult[index]
+                    if isinstance(lr, datetime):
+                        lr=lr.isoformat()
+                    dictline[value] = lr
+                    dictline['tableproduct'] = tableproduct
+                result.append(dictline)
+            cursor.close()
+            connection.commit()
+        except Exception as e:
+            logging.getLogger().error("sql : %s" % traceback.format_exc())
+        finally:
+            connection.close()
+        return result
+
+
+    @DatabaseHelper._sessionm
+    def is_exist_value_in_table(self, session,
+                                valchamp,
+                                namefield="updateid",
+                                tablename="up_gray_list"):
+        """
+            test si il existe dans 1 table 1 enregistrement avec la valeur pour le nom du champ passe
+        """
+        try:
+            sql="""SELECT
+                    COUNT(%s)
+                FROM
+                    %s
+                WHERE
+                    updateid LIKE '%s'
+                LIMIT 1;"""% (namefield, tablename, valchamp)
+            #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+            rest= session.execute(sql)
+            session.commit()
+            session.flush()
+            if rest:
+                ret=[elt for elt in rest][0]
+                #self.logger.info("is_exist_value_in_table ret: %s" % ret)
+                return True if ret[0]==1 else False
+        except Exception:
+            logging.getLogger().error("sql is_exist_value_in_table: %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def setUp_machine_windows_gray_list(self, session, updateid, tableproduct="", validity_day=10):
+        """
+        cette fonction insert dans la table gray list 1 update
+        Si l update existe. Il update seulement la date de validity
+        Parameters :
+            tableproduct voir table produits dans la table list_produits
+            str_kb_list list des kb installer sur la machine
+        """
+        # if le update existe dans la table up_gray_list_flop
+        # on supprime dans la stock_table up_gray_list_flop
+        # ce qui fera que l'update sera reinitialiser
+        # auterment on insert ou update
+
+        try:
+            if self.is_exist_value_in_table(updateid,
+                                            namefield="updateid",
+                                            tablename="up_gray_list_flop"):
+                sql="""DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');"""%(updateid)
+                session.execute(sql)
+                session.commit()
+                session.flush()
+            else:
+                sql="""INSERT INTO `xmppmaster`.`up_gray_list` (updateid,
+                                                                kb,
+                                                                revisionid,
+                                                                title,
+                                                                description,
+                                                                updateid_package,
+                                                                payloadfiles,supersededby,
+                                                                title_short,
+                                                                validity_date)
+                            ( SELECT updateid,
+                                    kb,
+                                    revisionid,
+                                    title,
+                                    description,
+                                    updateid_package,
+                                    payloadfiles,
+                                    supersededby,
+                                    title_short,
+                                    now() + INTERVAL %s day
+                            FROM
+                                xmppmaster.%s
+                            WHERE
+                                updateid LIKE '%s')
+                            ON DUPLICATE KEY UPDATE validity_date = now() + INTERVAL %s day;"""%(validity_day,tableproduct,updateid,validity_day)
+                #self.logger.info("setUp_machine_windows_gray_list : %s" % sql)
+                session.execute(sql)
+                session.commit()
+                session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql list_produits : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def delete_in_gray_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            updateidreduit=updateid[-12:]
+            sql=""" UPDATE `up_gray_list_flop` SET `updateid` = '%s' WHERE (`updateid` = '%s');
+                    UPDATE `up_gray_list` SET `updateid` = '%s' WHERE (`updateid` = '%s');
+                    DELETE FROM `up_gray_list_flop` WHERE (`updateid` = '%s');
+                    DELETE FROM `up_gray_list` WHERE (`updateid` = '%s');
+            """%(updateidreduit, updateid, updateidreduit, updateid,updateidreduit, updateidreduit)
+            #self.logger.info("delete_in_gray_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql=""" DELETE FROM `up_white_list` WHERE (`updateid` = '%s');"""%(updateid)
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_white_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def get_all_update_in_gray_list(self, session, updateid=None):
+        """ cette function renvoi tout les update de la list gray"""
+        try:
+            sql="""
+                select * from
+                    (SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list
+                    UNION
+                    SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list_flop) as e"""
+            if updateid:
+                filter = """ WHERE
+                            updateid = '%s'"""%(updateid)
+                sql=sql+filter
+            sql+=";"
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [{column: value for column,
+                    value in rowproxy.items()}
+                            for rowproxy in resultproxy]
+        except Exception:
+            logging.getLogger().error("sql get_all_update_in_gray_list : %s" % traceback.format_exc())
+        return []
+
+    @DatabaseHelper._sessionm
+    def delete_in_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            update est supprime du flip flop (up_gray_list_flop/up_gray_list)
+            le principe on renome le updateid en "a_efface"
+            updateid < 36 caracteres il est donc directement supprimable sans effet flip flop
+        """
+        try:
+            sql=""" DELETE FROM `up_white_list` WHERE (`updateid` = '%s');"""%(updateid)
+            self.logger.info("delete_in_white_list : %s" % sql)
+            session.execute(sql)
+            session.commit()
+            session.flush()
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_white_list : %s" % traceback.format_exc())
+        return False
+
+    @DatabaseHelper._sessionm
+    def get_all_update_in_gray_list(self, session, updateid=None):
+        """
+            cettte fonction display tout les update dans gray list. du flip flop complet
+        """
+        try:
+            sql="""
+                select * from
+                    (SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list
+                    UNION
+                    SELECT
+                        *
+                    FROM
+                        xmppmaster.up_gray_list_flop) as e"""
+            if updateid:
+                filter = """ WHERE
+                            updateid = '%s'"""%(updateid)
+                sql=sql+filter
+            sql+=";"
+            resultproxy = session.execute(sql)
+            session.commit()
+            session.flush()
+            return [{column: value for column,
+                    value in rowproxy.items()}
+                            for rowproxy in resultproxy]
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_list : %s" % traceback.format_exc())
+        return []
+
+    @DatabaseHelper._sessionm
+    def delete_in_gray_and_white_list(self, session, updateid):
+        """
+            cettte fonction supprime 1 update completement depuis les grays list
+            et white list
+        """
+        try:
+            self.delete_in_gray_list(updateid)
+            self.delete_in_white_list(updateid)
+            return True
+        except Exception:
+            logging.getLogger().error("sql delete_in_gray_and_white_list : %s" % traceback.format_exc())
+        return False
+
+# -------------------------------------------------------------------------------
+    def _return_dict_from_dataset_mysql(self, resultproxy):
+        return [{column: value for column, value in rowproxy.items()}
+                for rowproxy in resultproxy]
