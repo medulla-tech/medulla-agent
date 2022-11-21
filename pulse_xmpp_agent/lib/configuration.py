@@ -944,23 +944,13 @@ class confParameter:
         if Config.has_option('fileviewer', 'date_format'):
             self.date_format = Config.get('fileviewer', 'date_format')
 
-
-    def loadparametersplugins(self, namefile):
-        Config = ConfigParser.ConfigParser()
-        Config.read(namefile)
-        if os.path.isfile(namefile+".local"):
-            Config.read(namefile+".local")
-        return Config.items("parameters")
-
+        self.fv_host = "127.0.0.1"
         if Config.has_option('fileviewer', 'host'):
             self.fv_host = Config.get('fileviewer', 'host')
-        else:
-            self.fv_host = "127.0.0.1"
 
+        self.fv_port = 52044
         if Config.has_option('fileviewer', 'port'):
             self.fv_port = Config.getint('fileviewer', 'port')
-        else:
-            self.fv_port = 52044
 
         if Config.has_option('fileviewer', 'maxwidth'):
             self.fv_maxwidth = Config.getint('fileviewer', 'maxwidth')
@@ -974,6 +964,14 @@ class confParameter:
 
         if self.fv_minwidth > self.fv_maxwidth:
             self.fv_minwidth, self.fv_maxwidth = self.fv_maxwidth, self.fv_minwidth
+
+
+    def loadparametersplugins(self, namefile):
+        Config = ConfigParser.ConfigParser()
+        Config.read(namefile)
+        if os.path.isfile(namefile+".local"):
+            Config.read(namefile+".local")
+        return Config.items("parameters")
 
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()

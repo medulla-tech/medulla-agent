@@ -31,6 +31,7 @@ from sqlalchemy.orm import sessionmaker, Query
 from sqlalchemy.exc import DBAPIError, NoSuchTableError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.ext.automap import automap_base
+from sqlalchemy.sql.expression import literal
 from datetime import date, datetime, timedelta
 import pprint
 # PULSE2 modules
@@ -4381,30 +4382,32 @@ class XmppMasterDatabase(DatabaseHelper):
         """
 
         if classutilMachine == "private":
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND `relayserver`.`classutil` = '%s'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, userou, enabled, classutilMachine)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(userou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.classutil == classutilMachine,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         else:
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, userou, enabled)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(userou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         result = session.execute(sql)
         session.commit()
         session.flush()
@@ -4422,31 +4425,33 @@ class XmppMasterDatabase(DatabaseHelper):
                to a use of the private machine.
         """
         if classutilMachine == "private":
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND `relayserver`.`classutil` = '%s'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, machineou, enabled, classutilMachine)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(machineou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            RelayServer.classutil == classutilMachine,
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
         else:
-            sql = """select `relayserver`.`id`
-            from `relayserver`
-                inner join
-                    `has_relayserverrules` ON  `relayserver`.`id` = `has_relayserverrules`.`relayserver_id`
-            where
-                `has_relayserverrules`.`rules_id` = %d
-                    AND '%s' REGEXP `has_relayserverrules`.`subject`
-                    AND `relayserver`.`enabled` = %d
-                    AND `relayserver`.`moderelayserver` = 'static'
-                    AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, machineou, enabled)
-        result = session.execute(sql)
+            sql = session.query(RelayServer.id)\
+                    .filter(
+                        and_(
+                            Has_relayserverrules.rules_id == rule,
+                            literal(machineou).op('regexp')(Has_relayserverrules.subject),
+                            RelayServer.enabled == enabled,
+                            RelayServer.moderelayserver == 'static',
+                            or_(RelayServer.switchonoff, RelayServer.mandatory)
+                        )
+                    )\
+                    .join(Has_relayserverrules, RelayServer.id == Has_relayserverrules.relayserver_id)\
+                    .limit(1)
+        result = sql.all()
         session.commit()
         session.flush()
         return [x for x in result]
@@ -4475,7 +4480,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND `relayserver`.`classutil` = '%s'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, username, enabled, classutilMachine)
+            limit 1;""" % (rule, re.escape(username), enabled, classutilMachine)
         else:
             sql = """select `relayserver`.`id`
             from `relayserver`
@@ -4487,7 +4492,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     AND `relayserver`.`enabled` = %d
                     AND `relayserver`.`moderelayserver` = 'static'
                     AND (`relayserver`.`switchonoff` OR `relayserver`.`mandatory`)
-            limit 1;""" % (rule, username, enabled)
+            limit 1;""" % (rule, re.escape(username), enabled)
         result = session.execute(sql)
         session.commit()
         session.flush()
