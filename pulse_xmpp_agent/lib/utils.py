@@ -1147,8 +1147,6 @@ def pulgindeploy1(func):
         return response
     return wrapper
 
-# determine address ip utiliser pour xmpp
-
 def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     """
         This function is used to retrieve the local IP from the client which is talking
@@ -1167,7 +1165,8 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     resultip = ''
     xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
     if sys.platform.startswith('linux'):
-        logging.log(DEBUGPULSE, "Searching for the XMPP Server IP Adress")
+        logger.info("Searching for the XMPP Server IP Adress")
+        logger.info("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress))
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, xmpp_server_ipaddress))
@@ -2799,7 +2798,7 @@ def add_key_to_authorizedkeys_on_client(username='pulseuser', key=''):
             return False, logs
         return True, msg
     # Function didn't return earlier, meaning the key is not present
-    msg = 'Error add key to authorizedkeys: id_rsa missing' 
+    msg = 'An error occured while adding the public key to the authorized_keys file. The id_rsa.pub key is missing'
     return False, msg
 
 def reversessh_useraccount_mustexist_on_relay(username='reversessh'):
