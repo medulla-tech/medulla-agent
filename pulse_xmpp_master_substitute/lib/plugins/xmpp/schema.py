@@ -424,6 +424,7 @@ class Deploy(Base, XmppMasterDBObj):
     command = Column(Integer)
     macadress=Column(String(255))
     syncthing = Column(Integer)
+    subdep = Column(String(45))
 
 class Cluster_resources(Base, XmppMasterDBObj):
     # ====== Table name =========================
