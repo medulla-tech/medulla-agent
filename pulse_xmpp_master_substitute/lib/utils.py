@@ -366,7 +366,7 @@ def file_get_contents(filename,
 
 
 def file_put_contents(filename, data):
-    f = open(filename, 'w')
+    f = open(filename, 'wb')
     f.write(data)
     f.close()
 

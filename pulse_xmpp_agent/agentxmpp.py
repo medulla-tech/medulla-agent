@@ -65,7 +65,8 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
                         protodef, geolocalisation_agent, Env, \
-                        serialnumbermachine, file_put_contents_w_a, unregister_agent
+                        serialnumbermachine, file_put_contents_w_a, os_version, unregister_agent
+
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -1059,7 +1060,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             except IqError as e:
                 err_resp = e.iq
                 logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-                logger.debug("\n%s" % (traceback.format_exc()))
+                #logger.warning("traceback info\n%s" % (traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
@@ -2344,7 +2345,7 @@ AGENT %s ERROR TERMINATE"""%(self.boundjid.bare,
             'deployment': self.config.jidchatroomcommand,
             'who'    : "%s/%s"%(self.config.jidchatroomcommand,self.config.NickName),
             'machine': self.config.NickName,
-            'platform': platform.platform(),
+            'platform': os_version(),
             'completedatamachine': base64.b64encode(json.dumps(er.messagejson)),
             'plugin': {},
             'pluginscheduled': {},

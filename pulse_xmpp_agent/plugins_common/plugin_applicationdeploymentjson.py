@@ -41,7 +41,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.22", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.23", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -1617,6 +1617,18 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                                date=None,
                                                fromuser=data_in_session['login'],
                                                touser="")
+                            objectxmpp.xmpplog(msg,
+                                               type='deploy',
+                                               sessionname=sessionid,
+                                               priority=-1,
+                                               action="xmpplog",
+                                               who=strjidagent,
+                                               how="",
+                                               why="",
+                                               module="Deployment | Error | Download | Transfer",
+                                               date=None,
+                                               fromuser=data_in_session['login'],
+                                               touser="")
                             obcmd = utils.simplecommandstr(cmdexec)
                             if obcmd['code'] != 0:
                                 objectxmpp.xmpplog('<span class="log_err">%s transfer error : %s </span>' % (objectxmpp.config.pushmethod,
@@ -1646,18 +1658,6 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                                                    fromuser=data_in_session['login'],
                                                    touser="")
                                 obcmd = utils.simplecommandstr(cmdexec)
-                            objectxmpp.xmpplog(msg,
-                                               type='deploy',
-                                               sessionname=sessionid,
-                                               priority=-1,
-                                               action="xmpplog",
-                                               who=strjidagent,
-                                               how="",
-                                               why="",
-                                               module="Deployment | Error | Download | Transfer",
-                                               date=None,
-                                               fromuser=data_in_session['login'],
-                                               touser="")
                         finally:
                             time.sleep(2)
                             removeresource(data_in_session, objectxmpp, sessionid)
@@ -1876,7 +1876,25 @@ def install_key_by_iq(objectxmpp, tomachine, sessionid, fromrelay):
                            date = None )
     # Install keys on client
     keyreversessh = utils.get_relayserver_reversessh_idrsa(username)
-    key = utils.get_relayserver_pubkey('root')
+    try:
+        key = utils.get_relayserver_pubkey('root')
+    except IOError as e:
+        msg = []
+        msg.append("The public key /root/.ssh/id_rsa.pub is missing on the ARS %s" % fromrelay)
+
+
+        msg.append("<span class='log_warn'>Please verify that the key is present.</span>")
+        msg.append("<span class='log_warn'>Trying to continue the deploiement</span>")
+        for line in msg:
+            objectxmpp.xmpplog( line,
+                                type = 'deploy',
+                                sessionname = sessionid,
+                                priority = 0,
+                                action = "xmpplog",
+                                who = fromrelay,
+                                module = "Deployment | Install",
+                                date = None )
+        return False
     time_out_install_key = 60
     resultiqstr = objectxmpp.iqsendpulse(tomachine,
                                          {"action": "keyinstall",

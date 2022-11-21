@@ -70,11 +70,14 @@ import sys
 import re
 import uuid
 from lib.configuration import confParameter
-from lib.utils import getRandomName, file_get_content, file_put_content
+from lib.utils import getRandomName, file_get_content, file_put_content, simplecommandstr
 import pickle
 import stat
 import subprocess
 import functools
+import base64
+import copy
+import zlib
 
 try:
     from sqlalchemy.orm.util import _entity_descriptor
@@ -115,6 +118,14 @@ class Singleton(object):
         if '_the_instance' not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            encoded_object = obj.isoformat()
+        else:
+            encoded_object =json.JSONEncoder.default(self, obj)
+        return encoded_object
 
 class DatabaseHelper(Singleton):
     # Session decorator to create and close session automatically
@@ -470,7 +481,7 @@ class XmppMasterDatabase(DatabaseHelper):
         except Exception:
             logger.error("%s" % (traceback.format_exc()))
         return resultlist
-
+        
 
     @DatabaseHelper._sessionm
     def Timeouterrordeploy(self, session):
@@ -543,8 +554,80 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
+
+    def replaydeploysessionid(self, sessionid, force_redeploy=0, reschedule=0):
+        """
+            Call the mmc_restart_deploy_sessionid stored procedure
+            Args:
+                session: The SQL Alchemy session
+                sessionid: The sessionid of the deploiement
+                force_redeploy: Tells if we force to redeploy ALL.
+                reschedule: Tell if we reschedule the deploiements
+        """
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+            self.logger.info("Call the mmc_restart_deploy_sessionid stored procedure for the sessionid: %s"
+                             "force_redeploy is set to %s and reschedule is set to %s" % (sessionid,
+                                                                                          force_redeploy,
+                                                                                          reschedule))
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_deploy_sessionid", [sessionid, force_redeploy, reschedule])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        return
+
+
+    def restart_blocked_deployments(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments stored procedure
+            It plans with blocked deployments again
+        """
+        self.restart_blocked_deployments_on_status_transfer_failed(nb_reload)
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_deploy_sessionid stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
+
+    def restart_blocked_deployments_on_status_transfer_failed(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments_transfer_error stored procedure
+            It plans with transfert failed blocked deployments again
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments_transfer_error", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_blocked_deployments_transfer_error stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
 
     @DatabaseHelper._sessionm
     def replaydeploysessionid(self, session, sessionid, force_redeploy=0,rechedule=0):
@@ -597,7 +680,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -610,7 +693,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.execute(sql)
             session.commit()
             session.flush()
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
@@ -628,7 +711,7 @@ class XmppMasterDatabase(DatabaseHelper):
             session.flush()
             ret=[elt for elt in req]
             return ret[0][0]
-        except Exception, e:
+        except Exception as e:
             logging.getLogger().error(str(e))
             return 0
 
@@ -3184,7 +3267,8 @@ class XmppMasterDatabase(DatabaseHelper):
             this function return the machines list for 1 group id and 1 command id
         """
         machine = session.query(Deploy).filter(and_(Deploy.group_uuid == grpid,
-                                                    Deploy.command == cmdid))
+                                                        Deploy.command == cmdid,
+                                                        not_(Deploy.sessionid.like('missingagent%'))))
         machine = machine.all()
         session.commit()
         session.flush()
@@ -4981,7 +5065,7 @@ class XmppMasterDatabase(DatabaseHelper):
         return updatedb
 
     @DatabaseHelper._sessionm
-    def getPresenceuuidenabled(self, session, uuid, enabled = 0):
+    def getPresenceuuidenabled(self, session, uuid, enabled=0):
         return session.query(exists().where (and_(Machines.uuid_inventorymachine == uuid,
                                               Machines.enabled == enabled))).scalar()
     @DatabaseHelper._sessionm
@@ -6736,8 +6820,6 @@ class XmppMasterDatabase(DatabaseHelper):
                              alarm_msg,
                              doc):
         try:
-            logging.getLogger().debug("==================================\n"
-                                      "device_type [%s]"%device_type)
             #if device_type not in ['thermalPrinter',
                                    #'nfcReader',
                                    #'opticalReader',
@@ -6760,7 +6842,6 @@ class XmppMasterDatabase(DatabaseHelper):
             session.add(new_Monitoring_device)
             session.commit()
             session.flush()
-            logging.getLogger().debug("==================================")
             return new_Monitoring_device.id
         except Exception as e:
             logging.getLogger().error(str(e))
@@ -6771,6 +6852,10 @@ class XmppMasterDatabase(DatabaseHelper):
     def setMonitoring_device_reg(self,
                                  session,
                                  hostname,
+                                 id_machine,
+                                 platform,
+                                 agenttype,
+                                 statusmsg,
                                  xmppobject,
                                  msg_from,
                                  sessionid,
@@ -6781,8 +6866,10 @@ class XmppMasterDatabase(DatabaseHelper):
                                  status,
                                  alarm_msg,
                                  doc):
+        machine_hostname = msg_from.split("@")[0]
+        result = None
         try:
-            id_device_reg = self.setMonitoring_device(hostname,
+            id_device_reg = self.setMonitoring_device(msg_from,
                                                       mon_machine_id,
                                                       device_type,
                                                       serial,
@@ -6790,9 +6877,12 @@ class XmppMasterDatabase(DatabaseHelper):
                                                       status,
                                                       alarm_msg,
                                                       doc)
-
             # creation event on rule
-            objectlist_local_rule = self._rule_monitoring(hostname,
+            objectlist_local_rule = self._rule_monitoring(machine_hostname,
+                                                          hostname,
+                                                          id_machine,
+                                                          platform,
+                                                          agenttype,
                                                           mon_machine_id,
                                                           device_type,
                                                           serial,
@@ -6803,36 +6893,19 @@ class XmppMasterDatabase(DatabaseHelper):
                                                           localrule=True)
             if objectlist_local_rule:
                 # A rule is defined for this device on this machine
-                self._action_new_event(objectlist_local_rule,
-                                       xmppobject,
-                                       msg_from,
-                                       sessionid,
-                                       mon_machine_id,
-                                       id_device_reg,
-                                       doc,
-                                       status_event=1,
-                                       hostname=hostname)
-            else:
-                # Check if there is a general rule for this device
-                objectlist_local_rule = self._rule_monitoring(hostname,
-                                                              mon_machine_id,
-                                                              device_type,
-                                                              serial,
-                                                              firmware,
-                                                              status,
-                                                              alarm_msg,
-                                                              doc,
-                                                              localrule=False)
-                if objectlist_local_rule:
-                    self._action_new_event(objectlist_local_rule,
-                                           xmppobject,
-                                           msg_from,
-                                           sessionid,
-                                           mon_machine_id,
-                                           id_device_reg,
-                                           doc,
-                                           status_event=1,
-                                           hostname=hostname)
+                result = self._action_new_event(objectlist_local_rule,
+                                                statusmsg,
+                                                xmppobject,
+                                                msg_from,
+                                                sessionid,
+                                                mon_machine_id,
+                                                id_device_reg,
+                                                doc,
+                                                status_event=1,
+                                                hostname=hostname)
+            if result and result == -1:
+                logging.getLogger().warning("treatment stop : alarm from  %s:" % msg_from)
+                return -1
             logging.getLogger().debug("==================================")
             return id_device_reg
         except Exception as e:
@@ -6871,10 +6944,178 @@ class XmppMasterDatabase(DatabaseHelper):
             return -1
 
     @DatabaseHelper._sessionm
+    def get_machine_information_id_device(self,session,id_mon_machine):
+        sql="""SELECT
+                    statusmsg as mon_machine_statusmsg
+                FROM
+                    xmppmaster.mon_machine
+                WHERE
+                    id = %s limit 1;"""%id_mon_machine
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        if not result:
+            return False
+        resultmon_machine=[{column: value for column,
+            value in rowproxy.items()}
+                    for rowproxy in result]
+        resultmon_machine=resultmon_machine[0]
+
+        if "mon_machine_statusmsg" in resultmon_machine and\
+            isinstance(resultmon_machine['mon_machine_statusmsg'], basestring):
+            try:
+                resultmon_machine['mon_machine_statusmsg'] = json.loads(resultmon_machine['mon_machine_statusmsg'])
+            except ValueError:
+                return False
+        return resultmon_machine
+
+    @DatabaseHelper._sessionm
+    def get_event_information_id_device(self,session,id_device):
+        sql="""
+            SELECT
+            machines.id ,
+            machines.jid as jid,
+            machines.uuid_serial_machine as uuid_serial_machine,
+            machines.platform as platform,
+            machines.archi as archi,
+            machines.hostname as machine_hostname,
+            machines.uuid_inventorymachine,
+            machines.ippublic as ippublic,
+            machines.ip_xmpp as ip_xmpp,
+            machines.macaddress as macaddress,
+            machines.subnetxmpp as subnetxmpp,
+            machines.agenttype as agenttype,
+            machines.groupdeploy as groupdeploy,
+            machines.urlguacamole as urlguacamole,
+            machines.ad_ou_machine as ad_ou_machine,
+            machines.ad_ou_user as ad_ou_user,
+            machines.lastuser as lastuser,
+            machines.glpi_description as glpi_description,
+            machines.glpi_owner_firstname as glpi_owner_firstname,
+            machines.glpi_owner_realname as glpi_owner_realname,
+            machines.glpi_owner as glpi_owner,
+            machines.model as model,
+            machines.manufacturer as manufacturer,
+            mon_event.id as mon_event_id,
+            mon_event.status_event as mon_event_status_event,
+            mon_event.type_event as mon_event_type_event,
+            mon_event.cmd as mon_event_cmd,
+            mon_event.id_rule as mon_event_id_rule ,
+            mon_event.machines_id as mon_event_machines_id,
+            mon_event.id_device as mon_event_id_device,
+            mon_event.parameter_other as mon_event_parameter_other,
+            mon_event.ack_user as mon_event_ack_user,
+            mon_event.ack_date as mon_event_ack_date,
+            mon_rules.id as mon_rules_id ,
+            mon_rules.hostname as mon_rules_hostname,
+            mon_rules.device_type as mon_rules_device_type,
+            mon_rules.binding as mon_rules_binding,
+            mon_rules.succes_binding_cmd as mon_rules_succes_binding_cmd,
+            mon_rules.no_success_binding_cmd as mon_rules_no_success_binding_cmd,
+            mon_rules.error_on_binding as mon_rules_error_on_binding,
+            mon_rules.type_event as mon_rules_type_event,
+            mon_rules.user as mon_rules_user,
+            mon_rules.comment as mon_rules_comment,
+            mon_machine.id as mon_machine_id,
+            mon_machine.machines_id as mon_machine_machines_id,
+            mon_machine.date as mon_machine_date,
+            mon_machine.hostname as mon_machine_hostname,
+            mon_machine.statusmsg as mon_machine_statusmsg,
+            mon_devices.id as mon_devices_id,
+            mon_devices.mon_machine_id as mon_devices_mon_machine_id ,
+            mon_devices.device_type as mon_devices_device_type,
+            mon_devices.serial as mon_devices_serial,
+            mon_devices.firmware as mon_devices_firmware,
+            mon_devices.status asmon_devices_status,
+            mon_devices.alarm_msg as mon_devices_alarm_msg,
+            mon_devices.doc as mon_devices_doc,
+            machines.hostname as machine_hostname
+            FROM
+                xmppmaster.mon_event
+                    JOIN
+                xmppmaster.mon_rules ON xmppmaster.mon_rules.id = xmppmaster.mon_event.id_rule
+                    JOIN
+                xmppmaster.mon_machine ON xmppmaster.mon_machine.id = xmppmaster.mon_event.machines_id
+                    JOIN
+                xmppmaster.mon_devices ON xmppmaster.mon_devices.id = xmppmaster.mon_event.id_device
+                JOIN
+                xmppmaster.machines ON xmppmaster.machines.id = xmppmaster.mon_machine.machines_id
+            WHERE
+                xmppmaster.mon_event.id = %s;""" %(id_device)
+        result = session.execute(sql)
+        session.commit()
+        session.flush()
+        if not result:
+            return {}
+        resultproxy=[{column: value for column,
+            value in rowproxy.items()}
+                    for rowproxy in result]
+        resultproxy=resultproxy[0]
+        resultproxy["mon_param0"]=""
+        resultproxy["mon_subject"]=""
+        resultproxy["mon_status"]=""
+        if "mon_machine_statusmsg" in resultproxy and\
+            isinstance(resultproxy['mon_machine_statusmsg'], basestring):
+            try:
+                resultproxy['mon_machine_statusmsg'] = json.loads(resultproxy['mon_machine_statusmsg'])
+                if "mon_param0" in resultproxy['mon_machine_statusmsg']:
+                    resultproxy["mon_param0"]=resultproxy['mon_machine_statusmsg']["mon_param0"]
+                if "mon_subject" in resultproxy['mon_machine_statusmsg']:
+                    resultproxy["mon_subject"]=resultproxy['mon_machine_statusmsg']["mon_subject"]
+                if "mon_status" in resultproxy['mon_machine_statusmsg']:
+                    resultproxy["mon_status"]=resultproxy['mon_machine_statusmsg']["mon_status"]
+            except ValueError:
+                pass
+
+        if "mon_devices_doc" in resultproxy and\
+            isinstance(resultproxy['mon_devices_doc'], basestring):
+            try:
+                resultproxy['mon_devices_doc'] = json.loads(resultproxy['mon_devices_doc'])
+            except ValueError:
+                pass
+        if "mon_rules_comment" in resultproxy and\
+            isinstance(resultproxy['mon_rules_comment'], basestring):
+            try:
+                resultproxy['mon_rules_comment']=resultproxy['mon_rules_comment'].replace('\\t','').replace('\\n','').replace('\\"','"')
+
+                resultproxy['mon_rules_comment'] = json.loads(resultproxy['mon_rules_comment'])
+            except ValueError:
+                pass
+
+
+        #f=r"\[\'.*\'\]"
+        #r=re.compile(f)
+        #data = resultproxy['mon_rules_binding']
+        #data = data.replace("resultbinding =","")
+        #data = data.replace("resultbinding  =","")
+        #data = data.replace("resultbinding   =","")
+
+        #chaine=r.findall(data)
+        #chaine = chaine[0].replace("[","")
+        #chaine = chaine.replace("'","")
+        #chaine = chaine.replace("]",",")
+        #params= [x.strip() for x in chaine.split(",") if x.strip() != ""]
+        #f=r"=.*else"
+        #r=re.compile(f)
+        #valuebind=r.findall(data)
+        #valuebind=valuebind[0].replace("=","")
+        #valuebind=valuebind.replace("else","")
+        #resultproxy["valuebind"]=valuebind
+        #nb=0
+        #for val in params:
+            #nameparam="param%s"%nb
+            #resultproxy[nameparam]=val
+            #nb=nb+1
+        return resultproxy
+
+    @DatabaseHelper._sessionm
     def get_info_event(self,
                        session,
                        id_device,
                        outformat = None):
+
+
+
         def is_number_string(s):
             """ Returns True is string is a number. """
             try:
@@ -6936,68 +7177,15 @@ class XmppMasterDatabase(DatabaseHelper):
                 'mon_devices_status',
                 'mon_devices_alarm_msg',
                 'mon_devices_doc']
+        resultproxy = self.get_event_information_id_device(id_device)
+        resultjsonstr=json.dumps(resultproxy, indent = 4, cls=DateTimeEncoder)
 
-        sql="""
-            SELECT
-            mon_event.id as mon_event_id,
-            mon_event.status_event as mon_event_status_event,
-            mon_event.type_event as mon_event_type_event,
-            mon_event.cmd as mon_event_cmd,
-            mon_event.id_rule as mon_event_id_rule ,
-            mon_event.machines_id as mon_event_machines_id,
-            mon_event.id_device as mon_event_id_device,
-            mon_event.parameter_other as mon_event_parameter_other,
-            mon_event.ack_user as mon_event_ack_user,
-            mon_event.ack_date as mon_event_ack_date,
-            mon_rules.id as mon_rules_id ,
-            mon_rules.hostname as mon_rules_hostname,
-            mon_rules.device_type as mon_rules_device_type,
-            mon_rules.binding as mon_rules_binding,
-            mon_rules.succes_binding_cmd as mon_rules_succes_binding_cmd,
-            mon_rules.no_success_binding_cmd as mon_rules_no_success_binding_cmd,
-            mon_rules.error_on_binding as mon_rules_error_on_binding,
-            mon_rules.type_event as mon_rules_type_event,
-            mon_rules.user as mon_rules_user,
-            mon_rules.comment as mon_rules_comment,
-            mon_machine.id as mon_machine_id,
-            mon_machine.machines_id as mon_machine_machines_id,
-            mon_machine.date as mon_machine_date,
-            mon_machine.hostname as mon_machine_hostname,
-            mon_machine.statusmsg as mon_devices_id,
-            mon_devices.id as mon_devices_id,
-            mon_devices.mon_machine_id as mon_devices_mon_machine_id ,
-            mon_devices.device_type as mon_devices_device_type,
-            mon_devices.serial as mon_devices_serial,
-            mon_devices.firmware as mon_devices_firmware,
-            mon_devices.status asmon_devices_status,
-            mon_devices.alarm_msg as mon_devices_alarm_msg,
-            mon_devices.doc as mon_devices_doc
-            FROM
-                xmppmaster.mon_event
-                    JOIN
-                xmppmaster.mon_rules ON xmppmaster.mon_rules.id = xmppmaster.mon_event.id_rule
-                    JOIN
-                xmppmaster.mon_machine ON xmppmaster.mon_machine.id = xmppmaster.mon_event.machines_id
-                    JOIN
-                xmppmaster.mon_devices ON xmppmaster.mon_devices.id = xmppmaster.mon_event.id_device
-            WHERE
-                xmppmaster.mon_event.id = %s;""" %(id_device)
-        result = session.execute(sql)
-        session.commit()
-        session.flush()
-        python_dict = {}
-        tupleresult =  [i for i in result]
-        if tupleresult:
-            for count, value in enumerate(tupleresult[0]):
-                tp=type(value)
-                if tp == datetime  or tp == datetime.time:
-                    value = value.strftime('%Y-%m-%d %H:%M:%S')
-                python_dict[keys[count]] = value
+        python_dict = resultproxy
         if outformat is None:
             return python_dict
         #serialization for remplace in script
         if outformat == "json_string":
-            return json.dumps(python_dict)
+            return resultjsonstr
         elif outformat == "pickle_string":
             import pickle
             return pickle.dumps(python_dict)
@@ -7035,6 +7223,16 @@ class XmppMasterDatabase(DatabaseHelper):
         #close input and output files
         fin.close()
         fout.close()
+
+    def replace_in_file_template1(self, srcfile, destfile, oldvalue, newvalue):
+        fin  = open(srcfile, "rt")
+        completfile = fin.read()
+        fin.close()
+        completfile.replace(oldvalue, newvalue)
+        fout = open(destfile, "wt")
+        fout.write(completfile)
+        fout.close()
+        return completfile
 
     def _template_bash_string_event(self, python_dict):
         bash_string=""
@@ -7223,8 +7421,20 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             templateevent = templateevent.replace(search, str(dictresult[t]))
         return templateevent
 
+    def _load_file_to_datas(self, path_file):
+        try:
+            if os.path.exists(path_file):
+                with open(path_file,"rb") as f:
+                    data = f.read()
+                return  base64.b64encode(zlib.compress(data, 9))
+
+            return None
+        except:
+            return None
+
     def _action_new_event(self,
                           objectlist_local_rule,
+                          statusmsg,
                           xmppobject,
                           msg_from,
                           sessionid,
@@ -7233,10 +7443,43 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                           doc,
                           status_event=1,
                           hostname=None):
+        keysreplace=statusmsg.keys()
+        other_data = None
+        if 'other_data' in keysreplace:
+            if isinstance(statusmsg['other_data'], basestring):
+                other_data = statusmsg['other_data']
+            else:
+                other_data = json.dumps(statusmsg['other_data'])
         if objectlist_local_rule:
             # apply binding to find out if an alert or event is defined
+            # resultproxy = self.get_event_information_id_device(idevent)
+            index = 1
             for z in objectlist_local_rule:
-
+                index=index+1
+                for rep in keysreplace:
+                    keyre="@%s@"%rep
+                    if statusmsg[rep]:
+                        if isinstance(statusmsg[rep], basestring):
+                            z['binding']=z['binding'].replace(keyre,statusmsg[rep])
+                        else:
+                            stringreplace = json.dumps(statusmsg[rep])
+                            z['binding']=z['binding'].replace(keyre,stringreplace)
+                # verify  binding n'est pas 1 template.
+                testkeytemplate=[]
+                for rep in keysreplace:
+                    keyre="@%s@"%rep
+                    if keyre in z['binding']:
+                        testkeytemplate.append(keyre)
+                if testkeytemplate:
+                    self.logger.warning("No treatment resolution template binding impossible on key %s"%testkeytemplate)
+                    self.logger.warning("rule %s : event type : [%s] on device '%s'" %( z['id'],
+                                                                                    str(z['type_event']),
+                                                                                    str(z['device_type'])) )
+                    self.logger.warning("machine [%s] mon_machine id [%s] id_device [%s]"%(msg_from,
+                                                                                  id_machine,
+                                                                                  id_device))
+                    #self.logger.warning("doc %s"%doc)
+                    continue
                 self.logger.debug("rule %s : event type : %s on device %s" %( z['id'],
                                                                              str(z['type_event']),
                                                                              str(z['device_type'])) )
@@ -7275,12 +7518,13 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                             "missing on def binding action%s " % (z))
                     continue
 
-                idevent = self.setMonitoring_event(id_machine,
-                                         id_device,
-                                         z['id'],
-                                         bindingcmd,
-                                         type_event=z['type_event'],
-                                         status_event=1)
+                idevent = self.setMonitoring_event( id_machine,
+                                                    id_device,
+                                                    z['id'],
+                                                    bindingcmd,
+                                                    type_event=z['type_event'],
+                                                    status_event=1,
+                                                    parameter_other=other_data)
                 self.logger.debug("%s create event %s [%s]" %(z['device_type'],
                                                               z['type_event'],
                                                               idevent))
@@ -7293,85 +7537,99 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                                 z['type_event'],
                                                 getRandomName(5, pref=datetime.now().strftime("%a_%d%b%Y_%Hh%M")),
                                                 bindingcmd)
-                dest_script = os.path.join(tmpprocessmonitoring, namescript)
+                dest_script = os.path.join(tmpprocessmonitoring,
+                                           namescript)
                 if bindingcmd != "":
+                    paramsubs = copy.deepcopy(vars(self.config))
+                    listkeyconf=paramsubs.keys()
                     src_script = os.path.join(script_monitoring, bindingcmd)
+                    resultproxy = self.get_event_information_id_device(idevent)
+                    resultproxy['conf_submon'] = {}
+                    for keyparam in listkeyconf:
+                        resultproxy['conf_submon'][keyparam] = paramsubs[keyparam]
+                    resultproxy['msg_from'] = msg_from
+                    resultproxy['session_id'] = sessionid
+                    resultproxy['hostname'] = hostname
+                    resultproxy['status_event'] = status_event
+                    resultproxy['submon'] = xmppobject.boundjid.bare
+                    resultproxy['src_script'] = src_script
+                    resultproxy['dest_script'] = dest_script
+                    resultproxy['mysqlxmpp_dbuser'] = self.config.xmpp_dbuser
+                    resultproxy['mysqlxmpp_dbhost'] = self.config.xmpp_dbhost
+                    resultproxy['mysqlxmpp_dbport'] = self.config.xmpp_dbport
+                    resultproxy['mysqlxmpp_dbname'] = self.config.xmpp_dbname
+                    resultproxy['mysqlxmpp_dbpoolrecycle'] = self.config.xmpp_dbpoolrecycle
+                    resultproxy['mysqlxmpp_dbpoolsize'] = self.config.xmpp_dbpoolsize
+                    resultproxy['mysqlxmpp_dbpooltimeout'] = self.config.xmpp_dbpooltimeout
+                    resultproxy['start_script'] = datetime.now().strftime("%a_%d%b%Y_%Hh%M")
                     if z['type_event'] == "ack":
+                        #rd = getRandomName(2, pref=datetime.now().strftime("%a_%d%b%Y_%Hh%M"))
+                        #rd = getRandomName(2, pref="%s"%time.time())
+                        self.logger.debug("ack event %s"%idevent)
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "ack_%s_%s_%s.txt"%(rd, idevent,msgfrom))
+                        resultproxy['namefileout']=namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                          indent=4,
+                                                          cls=DateTimeEncoder)
+                        with open(namefileout, "ab") as out:
+                            out.write("\n-------- ACK --------\n" \
+                                      "evenement id : %s\n"  % (idevent))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- out cmd ------------\n")
+                        self.update_status_event(idevent)
                         continue
                     elif z['type_event'] == "log":
-                        self.logger.debug("from %s log  %s" %(str(msg_from),
-                                                              z))
+                        self.logger.debug("log event %s"%idevent)
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "log_%s_%s_%s.txt"%(rd, idevent,msgfrom))
+                        resultproxy['namefileout']=namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
+                        with open(namefileout, "ab") as out:
+                            out.write("\n-------- log --------\n" \
+                                      "evenement id : %s\n"  % (idevent))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- out cmd ------------\n")
+                        msglog = "from %s log  %s" %(str(msg_from), z)
+                        self.logger.info(msglog)
+                        xmppobject.xmpplog(msglog,
+                                            type = 'noset',
+                                            sessionname = '',
+                                            priority = 0,
+                                            action = "xmpplog",
+                                            who = str(msg_from),
+                                            how = "Remote",
+                                            why = "",
+                                            module = "Monitoring | Notify",
+                                            fromuser = "",
+                                            touser = "")
+                        continue
                     elif z['type_event'] == "script_python" and \
                         os.path.isfile(src_script) and \
                                 bindingcmd.endswith("py"):
-                        # on doit executer le script python
-                        # le sript python doit contenir
-                        # import suivant
-                        # import pickle
-                        # et le texte suivant pour template.
-                        # serialisationpickleevent = "@@@@@event@@@@@"
-                        # variable messagefrom = "@@@@@msgfrom@@@@@"
-                        # le script possede toutes les donne pour pouvoir effectier 1 traitement
-
-                        # on copy le script dans tmpprocessmonitoring le script python pour cet event.
-                        serializeinformation = self.get_info_event(idevent, outformat = "pickle_string")
-
+                        self.logger.debug("script_python event %s" % idevent)
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "script_python_%s_%s_%s.txt" % (rd,
+                                                                               idevent,
+                                                                               msgfrom))
+                        resultproxy['namefileout']=namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
                         self.replace_in_file_template(src_script,
                                                       dest_script,
-                                                     "@@@@@event@@@@@",
-                                                     serializeinformation)
-                        self.replace_in_file_exist_template(dest_script,
-                                                             dest_script,
-                                                             "@@@@@msgfrom@@@@@",
-                                                             str(msg_from))
-                        self.replace_in_file_exist_template(dest_script,
-                                                            dest_script,
-                                                            "@@@@@binding@@@@@",
-                                                            str(bindingcmd))
-                        pid =subprocess.Popen(["python", dest_script], stdin=None, stdout=None, stderr=None).pid
-                        self.logger.debug("call script python pid %s : %s " %(pid,
-                                                                              dest_script))
-                        self.update_status_event(idevent)
-
-                    elif z['type_event'] == "email" and \
-                        os.path.isfile(src_script) and \
-                                bindingcmd.endswith("py"):
-                        # on doit executer le script python
-                        # le sript python doit contenir la texte suivant pour template.
-                        # serialisationpickleevent = "@@@@@event@@@@@"
-
-                        # on copy le script dans tmpprocessmonitoring le script python pour cet event.
-                        serializeinformation = self.get_info_event(idevent, outformat = "html_string")
-                        self.replace_in_file_template(src_script,
-                                                      dest_script,
-                                                     "@@@@@event@@@@@",
-                                                     serializeinformation)
-                        self.replace_in_file_exist_template(dest_script,
-                                                             dest_script,
-                                                             "@@@@@to_addrs_string@@@@@",
-                                                             z['user'])
-                        self.replace_in_file_exist_template(dest_script,
-                                                             dest_script,
-                                                             "@@@@@msgfrom@@@@@",
-                                                             str(msg_from))
-                        self.replace_in_file_exist_template(dest_script,
-                                                            dest_script,
-                                                            "@@@@@binding@@@@@",
-                                                            str(bindingcmd))
-                        ##pid =subprocess.Popen(["python", dest_script]).pid
-                        pid =subprocess.Popen(["python", dest_script], stdin=None, stdout=None, stderr=None).pid
-                        self.logger.debug("call script pid %s  : %s " %(pid,
-                                                                        dest_script))
-                        self.update_status_event(idevent)
-
-                    elif z['type_event'] == "json_string" and \
-                        os.path.isfile(src_script):
-                        serializeinformation_json =""
-                        serializeinformation_json = self.get_info_event(idevent, outformat = "json_string")
-                        self.replace_in_file_template(src_script,
-                                                      dest_script,
-                                                     "@@@@@event@@@@@",
-                                                     serializeinformation_json)
+                                                      "@@@@@event@@@@@",
+                                                      serializeinformationjson)
                         self.replace_in_file_exist_template(dest_script,
                                                             dest_script,
                                                             "@@@@@msgfrom@@@@@",
@@ -7380,67 +7638,318 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                                                             dest_script,
                                                             "@@@@@binding@@@@@",
                                                             str(bindingcmd))
-                        os.chmod(dest_script, stat.S_IEXEC)
-                        pid =subprocess.Popen( dest_script, stdin=None, stdout=None, stderr=None).pid
-                        self.logger.debug("call script python pid %s : %s " %(pid,
-                                                                              dest_script))
+                        with open(namefileout, "ab") as out:
+                            out.write("\n-------- script  python --------\n" \
+                                      "evenement id : %s \n" \
+                                      "script name  : %s\n"  % (idevent, dest_script))
+                            out.write("\n--------- pid cmd ---------\n")
+                            pid = subprocess.Popen(["python", dest_script],
+                                                   stdin=None,
+                                                   stdout=out,
+                                                   stderr=out).pid
+                            out.write("pid : %s\n" % pid)
+                            self.logger.debug("call script pid %s : %s " %(pid,
+                                                                           bindingcmd))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s" % serializeinformationjson)
+                            out.write("\n--------- out cmd ------------\n")
+
                         self.update_status_event(idevent)
+                        continue
+                    elif z['type_event'] == "script_remote" and \
+                        os.path.isfile(src_script):
+                        self.logger.debug("script_remote %s" % idevent)
+
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "script_remote_%s_%s_%s.txt"%(rd,
+                                                                             idevent,
+                                                                             msgfrom))
+                        resultproxy['namefileout'] = namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
+                        self.replace_in_file_template(src_script,
+                                                      dest_script,
+                                                      "@@@@@event@@@@@",
+                                                      serializeinformationjson)
+                        type_script = z['user'].strip()
+                        if z['user'].strip() == "":
+                            type_script = python
+                        with open(namefileout, "ab") as out:
+                            out.write("\n-------- script %s--------\n" \
+                                      "evenement id : %s \n" \
+                                      "script name  : %s\n"  % (type_script, idevent, dest_script))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- send "\
+                                      "script remote machine %s"\
+                                      "---------\n" % datetime.now().strftime("%a_%d%b%Y_%Hh%M"))
+                            out.write("\nsend script %s:"%dest_script)
+                            script_sending = self._load_file_to_datas(dest_script)
+
+                            if script_sending is not None:
+                                message_to_send = { "action"    : "remote_script_monitoring",
+                                                    "sessionid" : sessionid,
+                                                    "base64"    : False,
+                                                    "ret"       : 0,
+                                                    "data"      : { "file_result" : namefileout,
+                                                                    "script_data" : script_sending,
+                                                                    "name_script" : os.path.basename(dest_script),
+                                                                    "type_script" : type_script } }
+                                out.write("\n--------- Waiting Result from %s ------------\n" % str(msg_from))
+                                xmppobject.send_message(mto=str(msg_from),
+                                                        mbody=json.dumps(message_to_send, cls=DateTimeEncoder),
+                                                        mtype='chat')
+                        self.update_status_event(idevent)
+                        continue
+                    elif z['type_event'] == "email" and \
+                        os.path.isfile(src_script) and \
+                                bindingcmd.endswith("py"):
+                        self.logger.debug("email event %s"%idevent)
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        toemail=""
+                        if "mon_rules_user" in resultproxy:
+                            nameto=resultproxy['mon_rules_user'].split("@")[0]
+                            toemail=resultproxy['mon_rules_user']
+
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "email_%s_%s_%s_to_%s.txt"%(rd,
+                                                                           idevent,
+                                                                           msgfrom,
+                                                                           toemail))
+                        resultproxy['namefileout']=namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                          indent=4,
+                                                          cls=DateTimeEncoder)
+                        # We copy the python script in tmpprocessmonitoring for this event.
+                        self.replace_in_file_template(src_script,
+                                                      dest_script,
+                                                     "@@@@@event@@@@@",
+                                                     serializeinformationjson)
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@to_addrs_string@@@@@",
+                                                             z['user'])
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@paramcompte@@@@@",
+                                                             z['comment'])
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@msgfrom@@@@@",
+                                                             str(msg_from))
+                        self.replace_in_file_exist_template(dest_script,
+                                                            dest_script,
+                                                            "@@@@@binding@@@@@",
+                                                            str(bindingcmd))
+                        with open(namefileout,"ab") as out:
+                            out.write("\n-------- email  python --------\n" \
+                                      "to : %s \n" \
+                                      "evenement id : %s \n" \
+                                      "script email  : %s\n"  % (resultproxy['mon_rules_user'], idevent, dest_script))
+                            out.write("\n--------- pid cmd ---------\n")
+                            pid = subprocess.Popen(["python", dest_script], stdin=None, stdout=out, stderr=out).pid
+                            out.write("pid : %s\n" % pid)
+                            self.logger.debug("call script  pid %s : %s " %(pid,
+                                                                            bindingcmd))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- out cmd ------------\n")
+
+                        self.update_status_event(idevent)
+                        continue
+                    elif z['type_event'] == "json_bash" and \
+                        os.path.isfile(src_script):
+                        self.logger.debug("json_bash event%s"%idevent)
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                                 "json_bash_%s_%s_%s.txt"%(rd,
+                                                                           idevent,
+                                                                           msgfrom))
+                        resultproxy['namefileout']=namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
+                        serializeinformationjsonsh=serializeinformationjson.replace("'","\'")
+                        self.replace_in_file_template(src_script,
+                                                      dest_script,
+                                                     "@@@@@event@@@@@",
+                                                     serializeinformationjson)
+                        self.replace_in_file_exist_template(dest_script,
+                                                             dest_script,
+                                                             "@@@@@msgfrom@@@@@",
+                                                             str(msg_from))
+                        self.replace_in_file_exist_template(dest_script,
+                                                            dest_script,
+                                                            "@@@@@binding@@@@@",
+                                                            str(bindingcmd))
+
+                        with open(namefileout,"ab") as out:
+                            out.write("\n-------- json_bash --------\n" \
+                                      "evenement id : %s \n" \
+                                      "script name  : %s\n"  % (idevent, dest_script))
+                            out.write("\n--------- pid cmd ---------\n")
+                            pid = subprocess.Popen(["/bin/bash", dest_script],
+                                                   stdin=None,
+                                                   stdout=out,
+                                                   stderr=out).pid
+                            out.write("pid : %s\n" % pid)
+                            self.logger.debug("call script  pid %s : %s " %(pid,
+                                                                            bindingcmd))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- out cmd ------------\n")
+
+                        self.update_status_event(idevent)
+                        continue
                     elif z['type_event'] == "xmppmsg":
-                        # send message user a jid reception
-                        # comment le json du message a envoyer
-                        destinataire = ""
-                        if  z['user'] != "" and "@" in z['user']:
-                            # message to user
-                            destinataire = z['user']
-                        elif  z['user'] == "this":
-                            destinataire = xmppobject.boundjid.bare
-                        else:
-                            destinataire = str(msg_from)
-                        if destinataire != "":
-                            serializeinformation = self.get_info_event(idevent, outformat = "pickle_string")
-                            datal = pickle.loads(serializeinformation)
-                            datal['mon_rules_comment'] = ""
-                            serializeinformation_json=json.dumps(datal, indent=4)
-                            z['comment'] = z['comment'].replace("@@@@@event@@@@@", serializeinformation_json)
-                            z['comment'] = z['comment'].replace("@@@@@session_id@@@@@", str(sessionid))
-                            z['comment'] = z['comment'].replace("@@@@@msgfrom@@@@@", str(msg_from))
-                            z['comment'] = z['comment'].replace("@@@@@binding@@@@@", bindingcmd)
-                            # z['comment'] json message
+                        self.logger.debug("xmppmsg event%s"%idevent)
+                        resultproxy['program'] = resultproxy['src_script']
+                        del resultproxy['src_script']
+                        del resultproxy['dest_script']
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout = os.path.join(tmpprocessmonitoring,
+                                               "xmppmsg_%s_%s_%s.txt"%(rd, idevent,msgfrom))
+                        resultproxy['namefileout']=namefileout
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
+                        with open(namefileout,"ab") as out:
+                            out.write("\n-------- xmppmsg --------\n" \
+                                      "evenement id : %s\n"  % (idevent))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- sent message to %s ---------\n" % resultproxy['jid'])
+
+                        progran = "python %s" % resultproxy['program']
+                        param = base64.b64encode(serializeinformationjson)
+                        cmd = "python %s '%s'"%(resultproxy['program'], param)
+                        message_to_send = simplecommandstr(cmd)['result'].replace("\n\n","\n")
+                        if not 'ERROR_MESSAGE_XMPP' in message_to_send:
+                            self.logger.debug("send message to send  : %s " %(str(msg_from)))
                             xmppobject.send_message(mto=str(msg_from),
-                                                    mbody=z['comment'],
+                                                    mbody=message_to_send,
                                                     mtype='chat')
-                            self.logger.debug("msg to %s" %(str(msg_from)))
-                            self.update_status_event(idevent)
+                        self.update_status_event(idevent)
+                        continue
                     elif z['type_event'] == "cmd terminal":
+                        self.logger.debug("cmd terminal event %s"%idevent)
                         cmd = bindingcmd
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "cmd_terminal_%s_%s_%s.txt"%(rd, idevent,msgfrom))
+                        resultproxy['namefileout']=namefileout
+
+                        for t in resultproxy:
+                            # We replace in the command if we find a value for @namevariable@
+                            if isinstance(t, basestring):
+                                search="@%s@"%t
+                                cmd = cmd.replace(search, str(resultproxy[t]))
                         if z['user'] is None or z['user'].strip() =="":
                             z['user'] = "root"
                         if  z['user'] != "root"  :
                             cmd = bindingcmd.replace('"','\\"')
                             cmd = """/bin/su - %s -c "%s" """ % (z['user'], cmd)
                         self.logger.debug("command %s" %(cmd))
-                        with open(os.path.join(tmpprocessmonitoring,
-                                               "monitoring_cmd_terminal_stdout.txt"),"ab") as out:
-                            # if strerr in other file
-                        #,\
-                             #open(os.path.join(tmpprocessmonitoring,
-                                               #"monitoring_cmd_terminal_stderr.txt"),"ab") as err:
-                            out.write("\n--------------------------\n" \
-                                      "evenement %s \n" \
-                                      "command : %s\n" \
-                                      "out cmd : "%(idevent, cmd))
-                            #err.write("\n--------------------------\n" \
-                                      #"evenement %s \n" \
-                                      #"command : %s\n " \
-                                      #"error cmd : "%(idevent, cmd))
-
+                        resultproxy['command']=cmd
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
+                        with open(namefileout,"ab") as out:
+                            out.write("\n-------- cmd terminal --------\n" \
+                                      "evenement id : %s \n" \
+                                      "command  : %s\n"  % (idevent, cmd))
+                            out.write("\n--------- pid cmd ---------\n")
                             pid = subprocess.Popen([cmd] , shell=True, stdin=None, stdout=out, stderr=out).pid
+                            out.write("pid : %s\n" % pid)
                             self.logger.debug("call script  pid %s : %s " %(pid,
                                                                             bindingcmd))
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- out cmd ------------\n")
                         self.update_status_event(idevent)
+                        continue
+                    elif z['type_event'] == "cmd remote terminal":
+                        self.logger.debug("cmd remote terminal %s"%idevent)
+                        cmd = bindingcmd
+                        rd="%s"%time.time()
+                        msgfrom="%s"%msg_from.split('/')[0]
+                        namefileout=os.path.join(tmpprocessmonitoring,
+                                               "cmd_remote_terminal%s_%s_%s.txt"%(rd, idevent,msgfrom))
+                        resultproxy['namefileout']=namefileout
+
+                        for t in resultproxy:
+                            # We replace in the command if we find a value for @namevariable@
+                            if isinstance(t, basestring):
+                                search="@%s@"%t
+                                cmd = cmd.replace(search, str(resultproxy[t]))
+                        self.logger.debug("command %s" %(cmd))
+                        namefilelog = resultproxy['jid']
+                        resultproxy['command_remote']=cmd
+                        serializeinformationjson = json.dumps(resultproxy,
+                                                              indent=4,
+                                                              cls=DateTimeEncoder)
+                        with open(namefileout,"ab") as out:
+                            out.write("\n------- cmd remote terminal -------\n" \
+                                      "cmd on %s \n" \
+                                      "evenement id%s \n" \
+                                      "command : %s\n"%(resultproxy['jid'],
+                                                        idevent,
+                                                        cmd))
+                            try:
+                                result1 = xmppobject.iqsendpulse(resultproxy['jid'], {"action": "remotecommandshell",
+                                                                                "data": cmd,
+                                                                                "timeout": 1},1)
+                                outcmd = json.loads(result1)
+                                outcmd = json.dumps(outcmd, indent=4, cls=DateTimeEncoder)
+                                out.write("\n--------- out cmd ---------\n")
+                                out.write("\n%s"% outcmd)
+                            except:
+                                msgerror = "\n%s" % (traceback.format_exc())
+                                self.logger.error("%s"%msgerror)
+                                out.write("\n--------- out error cmd ---------\n")
+                                self.logger.error("result1 %s" %msgerror)
+                            out.write("\n--------- information event ------------\n")
+                            out.write("%s"%serializeinformationjson)
+                            out.write("\n--------- end ------------\n")
+                        self.update_status_event(idevent)
+                        continue
                     else:
-                        #pas de stype trouver
+                        # No type found
+                        self.logger.warning("Event type not processes  %s" %(z['type_event']))
                         self.update_status_event(idevent, 2)
+                        continue
+                return True
+
+    @DatabaseHelper._sessionm
+    def update_status_event(self,
+                            session,
+                            id_event,
+                            value_status=0):
+        """
+            this function update status event
+            1 event for process
+            0 event terminate.
+        """
+        try:
+            sql=""" UPDATE `xmppmaster`.`mon_event`
+                    SET
+                        `status_event` = '%d'
+                    WHERE
+                        (`id` = '%d');""" % (value_status,
+                                             id_event)
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return -1
 
     @DatabaseHelper._sessionm
     def remise_status_event(self,
@@ -7473,6 +7982,45 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             logging.getLogger().error(str(e))
             return -1
 
+    def __binding_application_check(self, datastring, bindingstring, device_type):
+        resultbinding = None
+        try:
+            logging.getLogger().debug("data for binding is %s" % datastring)
+            data=json.loads(datastring)
+        except Exception as e:
+            msg =  "[binding error device rule %s] : data from message" \
+                " monitoring format json error %s" % (device_type, str(e))
+            logging.getLogger().error("%s" % msg)
+            return (msg, -1)
+
+        try:
+            logging.getLogger().debug("compile")
+            code = compile(bindingstring, '<string>', 'exec')
+            exec(code)
+        except KeyError as e:
+            msg = "[binding error device rule %s] : key %s in "\
+                "binding:\n%s\nis missing. Check your binding on data\n%s" % (
+                    device_type,
+                    str(e),
+                    bindingstring,
+                    json.dumps(data,indent=4))
+            logging.getLogger().error("%s" % msg)
+            return (msg, -1)
+        except Exception as e:
+            msg = "[binding device rule %s error %s] in binding:\n%s\ "\
+                "on data\n%s"%(device_type,
+                               str(e),
+                               bindingstring,
+                               json.dumps(data,indent=4))
+            logging.getLogger().error("%s" % msg)
+            return (msg, -1)
+        msg = "[ %s : result binding %s for binding:\n%s\ "\
+                "on data\n%s"%(device_type,
+                               resultbinding,
+                               bindingstring,
+                               json.dumps(data,indent=4))
+        logging.getLogger().debug("%s" % msg)
+        return (msg, resultbinding)
 
     def __binding_application(self, datastring, bindingstring, device_type):
         resultbinding = None
@@ -7518,7 +8066,11 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
     @DatabaseHelper._sessionm
     def _rule_monitoring(self,
                          session,
+                         machine_hostname,
                          hostname,
+                         id_machine,
+                         platform,
+                         agenttype,
                          mon_machine_id,
                          device_type,
                          serial,
@@ -7527,36 +8079,37 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                          alarm_msg,
                          doc,
                          localrule=True):
-        if localrule:
-            sql = ''' SELECT
-                        *
-                    FROM
-                        xmppmaster.mon_rules
-                    WHERE
-                        hostname LIKE '%s'
-                            AND device_type LIKE '%s';''' % (hostname,
-                                                             device_type)
-        else:
-            sql = ''' SELECT
-                        *
-                    FROM
-                        xmppmaster.mon_rules
-                    WHERE
-                        device_type LIKE '%s';''' % (device_type)
+        result = None
+        sql = ''' SELECT
+                    *
+                FROM
+                    xmppmaster.mon_rules
+                WHERE
+                    enable = 1 AND
+                    ('%s' REGEXP hostname or NULLIF(hostname, "") is null) AND
+                    ('%s' REGEXP os or NULLIF(os, "") is null) AND
+                    (type_machine like '%s' or NULLIF(type_machine, "") is Null ) AND
+                    device_type LIKE '%s';''' % (hostname,
+                                                 platform,
+                                                 agenttype,
+                                                 device_type)
         #logging.getLogger().debug("sql %s"%sql)
         result = session.execute(sql)
         session.commit()
         session.flush()
-        return [{'id': i[0],
-                 'hostname': i[1],
-                 'device_type': i[2],
-                 "binding": i[3],
-                 "succes_binding_cmd": i[4],
-                 "no_success_binding_cmd": i[5],
-                 "error_on_binding": i[6],
-                 "type_event": i[7],
-                 "user": i[8],
-                 "comment": i[9]} for i in result]
+        if result:
+            return [{'id': i[0],
+                    'hostname': i[2],
+                    'device_type': i[3],
+                    "binding": i[4],
+                    "succes_binding_cmd": i[5],
+                    "no_success_binding_cmd": i[6],
+                    "error_on_binding": i[7],
+                    "type_event": i[8],
+                    "user": i[9],
+                    "comment": i[10]} for i in result]
+        else:
+            return[]
 
     @DatabaseHelper._sessionm
     def analyse_mon_rules(self,
@@ -7662,7 +8215,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         """
         setsearch = clusterid
         if isinstance(clusterid, list):
-            # liste de clusters
+            # Cluster's list
             listidcluster = [x for x in set(clusterid)]
             if listidcluster:
                 setsearch=("%s"%listidcluster)[1:-1]
@@ -7706,7 +8259,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
         if enabled is not None:
             sql +="""AND
                             `relayserver`.`enabled` = %s""" % enabled
-        sql +=";"
+        sql += ";"
         logging.getLogger().error(sql)
         result = session.execute(sql)
         session.commit()
@@ -7929,3 +8482,5 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
             session.commit()
             session.flush()
         return machines_jid_for_updating
+
+

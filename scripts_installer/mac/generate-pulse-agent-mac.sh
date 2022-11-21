@@ -35,7 +35,6 @@
 #	In /var/lib/pulse2/clients/mac/downloads/python_modules/:
 #	https://pypi.python.org/packages/a7/4c/8e0771a59fd6e55aac993a7cc1b6a0db993f299514c464ae6a1ecf83b31d/netifaces-0.10.5.tar.gz
 #	https://pypi.python.org/packages/7c/69/c2ce7e91c89dc073eb1aa74c0621c3eefbffe8216b3f9af9d3885265c01c/configparser-3.5.0.tar.gz
-#	https://pypi.python.org/packages/07/49/42c86388fed58455e7e18d3821d7687f4921e47a40cb312e69b82f75c660/utils-0.9.0.tar.gz
 #	https://pypi.python.org/packages/2e/33/7adcc8d6b35cb72f9cc56785a3d9c63d540200c476b0cb3a0926f5b51102/sleekxmpp-1.3.1.tar.gz
 #	https://pypi.python.org/packages/60/ad/d6bc08f235b66c11bbb76df41b973ce93544a907cc0e23c726ea374eee79/zipfile2-0.0.12-py2.py3-none-any.whl
 #	https://pypi.python.org/packages/77/d9/d272b38e6e25d2686e22f6058820298dadead69340b1c57ff84c87ef81f0/pycurl-7.43.0.1.tar.gz
@@ -72,7 +71,6 @@ PY_NETIFACES_VERSION="0.10.5"
 PY_CONFIGPARSER_MODULE="configparser"
 PY_CONFIGPARSER_VERSION="3.5.0"
 PY_UTILS_MODULE="utils"
-PY_UTILS_VERSION="0.9.0"
 PY_SLEEKXMPP_MODULE="sleekxmpp"
 PY_SLEEKXMPP_VERSION="1.3.1"
 PY_ZIPFILE_MODULE="zipfile2"
@@ -198,7 +196,6 @@ compute_parameters() {
 	PYTHON_FILENAME="python-${PYTHON_VERSION}-macosx10.6.pkg"
 	PY_NETIFACES_FILENAME="${PY_NETIFACES_MODULE}-${PY_NETIFACES_VERSION}.tar.gz"
 	PY_CONFIGPARSER_FILENAME="${PY_CONFIGPARSER_MODULE}-${PY_CONFIGPARSER_VERSION}.tar.gz"
-	PY_UTILS_FILENAME="${PY_UTILS_MODULE}-${PY_UTILS_VERSION}.tar.gz"
 	PY_SLEEKXMPP_FILENAME="${PY_SLEEKXMPP_MODULE}-${PY_SLEEKXMPP_VERSION}.tar.gz"
 	PY_ZIPFILE_FILENAME="${PY_ZIPFILE_MODULE}-${PY_ZIPFILE_VERSION}-py2.py3-none-any.whl"
 	PY_CURL_FILENAME="${PY_CURL_MODULE}-${PY_CURL_VERSION}.tar.gz"
@@ -310,7 +307,6 @@ update_postflight_script_mini() {
 		-e "s/@@PYTHON_FILENAME@@/${PYTHON_FILENAME}/" \
 		-e "s/@@PY_NETIFACES_FILENAME@@/${PY_NETIFACES_FILENAME}/" \
 		-e "s/@@PY_CONFIGPARSER_FILENAME@@/${PY_CONFIGPARSER_FILENAME}/" \
-		-e "s/@@PY_UTILS_FILENAME@@/${PY_UTILS_FILENAME}/" \
 		-e "s/@@PY_SLEEKXMPP_FILENAME@@/${PY_SLEEKXMPP_FILENAME}/" \
 		-e "s/@@PY_ZIPFILE_FILENAME@@/${PY_ZIPFILE_FILENAME}/" \
 		-e "s/@@PY_CURL_FILENAME@@/${PY_CURL_FILENAME}/" \
