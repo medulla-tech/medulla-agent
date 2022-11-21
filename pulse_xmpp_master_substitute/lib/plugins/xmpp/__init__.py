@@ -429,43 +429,60 @@ class XmppMasterDatabase(DatabaseHelper):
             logging.getLogger().error(str(e))
 
     @DatabaseHelper._sessionm
-    def search_machines_from_state(self, session, state):
+    def search_machines_from_state(self, session, state,subdep_user=None):
+
         dateend = datetime.now()
-        sql = """SELECT
-                    *
-                 FROM
-                    xmppmaster.deploy
-                 WHERE
-                    state LIKE '%s%%' AND
-                    '%s' BETWEEN startcmd AND
-                    endcmd;""" % (state, dateend)
-        machines = session.execute(sql)
-        session.commit()
-        session.flush()
-        result = [x for x in machines]
         resultlist = []
-        for t in result:
-            listresult = {"id": t[0],
-                          "title": t[1],
-                          "jidmachine": t[2],
-                          "jid_relay": t[3],
-                          "pathpackage": t[4],
-                          "state": t[5],
-                          "sessionid": t[6],
-                          "start": str(t[7]),
-                          "startcmd": str(t[8]),
-                          "endcmd": str(t[9]),
-                          "inventoryuuid": t[10],
-                          "host": t[11],
-                          "user": t[12],
-                          "command": t[13],
-                          "group_uuid": t[14],
-                          "login": t[15],
-                          "macadress": t[16],
-                          "syncthing": t[17],
-                          "result": t[18]}
-            resultlist.append(listresult)
+        try:
+            if subdep_user:
+                sql = """SELECT
+                            *
+                        FROM
+                            xmppmaster.deploy
+                        WHERE
+                            state LIKE '%s%%' AND subdep = '%s' AND
+                            '%s' BETWEEN startcmd AND
+                            endcmd;""" % (state, subdep_user,dateend)
+            else:
+                sql = """SELECT
+                            *
+                        FROM
+                            xmppmaster.deploy
+                        WHERE
+                            state LIKE '%s%%' AND
+                            '%s' BETWEEN startcmd AND
+                            endcmd;""" % (state, dateend)
+            machines = session.execute(sql)
+            session.commit()
+            session.flush()
+            result = [x for x in machines]
+            resultlist = []
+            for t in result:
+                listresult = {"id": t[0],
+                            "title": t[1],
+                            "jidmachine": t[2],
+                            "jid_relay": t[3],
+                            "pathpackage": t[4],
+                            "state": t[5],
+                            "sessionid": t[6],
+                            "start": str(t[7]),
+                            "startcmd": str(t[8]),
+                            "endcmd": str(t[9]),
+                            "inventoryuuid": t[10],
+                            "host": t[11],
+                            "user": t[12],
+                            "command": t[13],
+                            "group_uuid": t[14],
+                            "login": t[15],
+                            "macadress": t[16],
+                            "syncthing": t[17],
+                            "result": t[18]}
+                resultlist.append(listresult)
+        except Exception:
+            logger.error("%s" % (traceback.format_exc()))
         return resultlist
+        
+
     @DatabaseHelper._sessionm
     def Timeouterrordeploy(self, session):
         # test les evenements states qui ne sont plus valides sur intervalle de deployement.
@@ -524,19 +541,16 @@ class XmppMasterDatabase(DatabaseHelper):
             return resultlist
 
     @DatabaseHelper._sessionm
-    def update_state_deploy(self, session, sql_id, state):
-        """
-            Reset the state of the deploiement to `state` for the
-            `sql_id` deploiements
-            Args:
-                session: The SQL Alchemy session
-                sql_id: The id of the deploiement that need to be reset
-                state: The new state of the deploiement
-        """
+    def update_state_deploy(self, session, id, state, subdep_user=None):
         try:
-            sql = """UPDATE `xmppmaster`.`deploy`
-                     SET `state`='%s'
-                     WHERE `id`='%s';""" % (state, sql_id)
+            if subdep_user:
+                sql = """UPDATE `xmppmaster`.`deploy`
+                        SET `state`='%s'
+                        WHERE `id`='%s' and `subdep` = '%s' ;""" % (state, id, subdep_user)
+            else:
+                sql = """UPDATE `xmppmaster`.`deploy`
+                        SET `state`='%s'
+                        WHERE `id`='%s';""" % (state, id)
             session.execute(sql)
             session.commit()
             session.flush()
@@ -614,6 +628,48 @@ class XmppMasterDatabase(DatabaseHelper):
             self.logger.info("Restarting %s deployements" % results)
         return results
 
+
+    @DatabaseHelper._sessionm
+    def replaydeploysessionid(self, session, sessionid, force_redeploy=0,rechedule=0):
+        """ call procedure stockee remise deploy pour"""
+
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        try:
+                self.logger.info("call procedure stockee mmc_restart_deploy_sessionid( %s,%s,%s) "%(sessionid,
+                                                                                                force_redeploy,
+                                                                                                rechedule))
+                cursor = connection.cursor()
+                cursor.callproc("mmc_restart_deploy_sessionid", [sessionid,
+                                                                force_redeploy,
+                                                                rechedule])
+                results = list(cursor.fetchall())
+                cursor.close()
+                connection.commit()
+        finally:
+            connection.close()
+        return
+
+
+    def restart_blocked_deployments(self, nb_reload=50):
+        """
+        Plan with blocked deployments again
+        call procedure mmc_restart_blocked_deployments
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+                cursor = connection.cursor()
+                cursor.callproc("mmc_restart_blocked_deployments", [nb_reload])
+                results = list(cursor.fetchall())
+                cursor.close()
+                connection.commit()
+        finally:
+            connection.close()
+        results = "%s"%results[0]
+        if int(results) != 0:
+            self.logger.info("call procedure stockee mmc_restart_blocked_deployments(%s)" % nb_reload)
+            self.logger.info("restart %s deployements" % results)
+        return results
 
     @DatabaseHelper._sessionm
     def updatedeploytosessionid(self, session, status, sessionid):
@@ -2285,7 +2341,9 @@ class XmppMasterDatabase(DatabaseHelper):
                   endcmd=None,
                   macadress=None,
                   result=None,
-                  syncthing=None):
+                  syncthing=None,
+                  subdep = None
+                  ):
         """
         parameters
         startcmd and endcmd  int(timestamp) either str(datetime)
@@ -2331,6 +2389,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_deploy.result = result
             if syncthing is not None:
                 new_deploy.syncthing = syncthing
+            if subdep is not None:
+                new_deploy.subdep = subdep
             session.add(new_deploy)
             session.commit()
             session.flush()
@@ -6112,6 +6172,8 @@ class XmppMasterDatabase(DatabaseHelper):
                 arsname: The ars where the machine is connected to.
             Returns:
         """
+        excluded_account = 'master@pulse'
+        incrementeiscount = []
         try:
             excluded_account = 'master@pulse'
 
