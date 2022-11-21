@@ -77,6 +77,7 @@ from lib.logcolor import  add_coloring_to_emit_ansi, add_coloring_to_emit_window
 from lib.manageRSAsigned import MsgsignedRSA, installpublickey
 from lib.managepackage import managepackage
 from lib.httpserver import Controller
+from lib.grafcetdeploy import grafcet
 from zipfile import *
 from optparse import OptionParser
 from multiprocessing import Queue, Process, Event
@@ -290,6 +291,13 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.agentupdating = True
             logging.warning("Agent installed is different from agent on master.")
         # END Update agent from Master#############################
+
+        if self.config.agenttype in ['machine']:
+            self.schedule('reinjection_deplot_message_box',
+                          30,
+                          self.reinjection_deplot_message_box,
+                          repeat=True)
+
 
         # initialise charge relay server
         if self.config.agenttype in ['relayserver']:
@@ -677,6 +685,38 @@ class MUCBot(sleekxmpp.ClientXMPP):
                     transfertdeploy['data'],
                     msg,
                     dataerreur)
+
+    def reinjection_deplot_message_box(self):
+        # creation repertoire si probleme
+        dir_reprise_session = os.path.join(
+            os.path.dirname(
+                os.path.realpath(__file__)),
+                "lib",
+                "INFOSTMP",
+                "REPRISE")
+        if not os.path.exists(dir_reprise_session):
+            os.makedirs(dir_reprise_session, mode=0o007)
+
+        # lit repertoire de fichier
+        filelist = [ x for x in os.listdir(dir_reprise_session) \
+                     if os.path.isfile(os.path.join(dir_reprise_session, x)) and x.startswith('medulla_messagebox')]
+
+        for t in filelist:
+            logger.debug("t %s" % filelist)
+            detection=t.split('@_@')
+            if len(detection) == 5 and time.time() > float(detection[1]):
+                # on relance le deployement et on quitte
+                # on recharche le json
+                with open(os.path.join(dir_reprise_session, t), 'r') as f:
+                    data = json.load(f)
+                os.remove(os.path.join(dir_reprise_session, t))
+
+                try:
+                    grafcet(self, data)
+                except:
+                    logger.error("\n%s"%(traceback.format_exc()))
+
+                return
 
     ###############################################################
     # syncthing function
