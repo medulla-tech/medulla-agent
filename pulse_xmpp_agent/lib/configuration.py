@@ -239,12 +239,13 @@ class substitutelist:
             Config.read(namefileconfig + ".local")
         #################substitute####################
 
-        self.sub_inventory = ["master@pulse"]
-        self.sub_subscribe = ["master@pulse"]
-        self.sub_registration = ["master@pulse"]
-        self.sub_assessor = ["master@pulse"]
-        self.sub_logger = ["log@pulse", "master@pulse"]
-        self.sub_monitoring = ["master@pulse"]
+        self.sub_inventory = ["master_inv@pulse"]
+        self.sub_subscribe = ["master_subs@pulse"]
+        self.sub_registration = ["master_reg@pulse"]
+        self.sub_assessor = ["master_asse@pulse"]
+        self.sub_logger = ["log@pulse", "maste_log@pulse"]
+        self.sub_monitoring = ["master_mon@pulse"]
+        self.sub_updates = ["master_upd@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -270,6 +271,10 @@ class substitutelist:
             sub_monitoringlocal = Config.get('substitute', 'monitoring')
             self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
 
+        if Config.has_option('substitute', 'updates'):
+            sub_updateslocal = Config.get('substitute', 'updates')
+            self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
+
     def parameterssubtitute(self):
         conflist = []
         data={ 'subscription': self.sub_subscribe,
@@ -277,7 +282,8 @@ class substitutelist:
                'registration': self.sub_registration,
                'assessor': self.sub_assessor,
                'logger': self.sub_logger,
-               'monitoring': self.sub_monitoring}
+               'monitoring': self.sub_monitoring,
+               'updates': self.sub_updates}
         for t in data:
             #if len(data[t]) == 1 and data[t][0] == "master@pulse": continue
             conflist.append(t)
@@ -305,12 +311,13 @@ class confParameter:
         if Config.has_option('kiosk', 'kiosk_local_port'):
             self.kiosk_local_port = Config.getint('kiosk', 'kiosk_local_port')
 
-        self.sub_inventory = ["master@pulse"]
-        self.sub_subscribe = ["master@pulse"]
-        self.sub_registration = ["master@pulse"]
-        self.sub_assessor = ["master@pulse"]
-        self.sub_monitoring= ["master@pulse"]
-        self.sub_logger = ["log@pulse", "master@pulse"]
+        self.sub_inventory = ["master_inv@pulse"]
+        self.sub_subscribe = ["master_subs@pulse"]
+        self.sub_registration = ["master_reg@pulse"]
+        self.sub_assessor = ["master_asse@pulse"]
+        self.sub_monitoring= ["master_mon@pulse"]
+        self.sub_updates= ["master_upd@pulse"]
+        self.sub_logger = ["log@pulse", "master_log@pulse"]
 
         if Config.has_option('substitute', 'subscription'):
             sub_subscribelocal = Config.get('substitute', 'subscription')
@@ -327,6 +334,10 @@ class confParameter:
         if Config.has_option('substitute', 'monitoring'):
             sub_monitoringlocal = Config.get('substitute', 'monitoring')
             self.sub_monitoring = [x.strip() for x in sub_monitoringlocal.split(",")]
+
+        if Config.has_option('substitute', 'updates'):
+            sub_updateslocal = Config.get('substitute', 'updates')
+            self.sub_updates = [x.strip() for x in sub_updateslocal.split(",")]
 
         if Config.has_option('substitute', 'assessor'):
             sub_assessorlocal = Config.get('substitute', 'assessor')
@@ -563,32 +574,38 @@ class confParameter:
         except:
             ressource = "missingmac"
             logger.warning('list mac missing')
-        #########chatroom############
-        #self.jidchatroommaster = "master@%s" % Config.get('chatroom', 'server')
-        #self.jidchatroomlog = "log@%s" % Config.get('chatroom', 'server')
-        ## Deployment chatroom
-        #self.passwordconnexionmuc = Config.get('chatroom', 'password')
+        # Chatroom
+        # Deployment chatroom
         self.NickName = "%s.%s" % (platform.node().split('.')[0], jidsufixe)
-        ########chat#############
-        # The jidagent must be the smallest value in the list of mac addresses
-        self.chatserver = Config.get('chat', 'domain')
+        # Chat
+        # The jidagent's ressource must be the smallest value in the mac address list.
+        # except for the rspulse@pulse ressource which is the main relay
+        chatserver = Config.get('chat', 'domain')
+
         # Smallest mac address
-        nameuser = self.NickName
+        username = self.NickName
+        domain = Config.get('chat', 'domain')
+
+        self.jidagent = "%s@%s/%s" % (username, Config.get('chat', 'domain'), ressource)
 
         if Config.has_option("jid_01", "jidname"):
             self.jidagent = Config.get('jid_01', 'jidname')
-            nameuser = jid.JID(self.jidagent).user
-        self.jidagent = "%s@%s/%s" % (nameuser,
-                                      Config.get(
-                                          'chat',
-                                          'domain'),
-                                      ressource)
+            username = jid.JID(self.jidagent).user
+
+        if jid.JID(self.jidagent).bare == "rspulse@pulse":
+            self.jidagent = "rspulse@pulse/mainrelay"
+        else:
+            self.jidagent = "%s@%s/%s" % (username,
+                                          domain,
+                                          ressource)
         try:
             self.nbrotfile = Config.getint('global', 'nb_rot_file')
         except BaseException:
             self.nbrotfile = 6
+
         if self.nbrotfile < 1:
             self.nbrotfile = 1
+
         try:
             self.compress = Config.get('global', 'compress')
         except BaseException:
@@ -724,6 +741,7 @@ class confParameter:
         self.sched_scheduled_plugins = True
         self.sched_update_plugin = True
         self.sched_check_network = True
+        self.sched_send_ping_kiosk = True
         # controle si doit installer image
         self.sched_update_agent = True
         self.sched_manage_session = True
@@ -764,6 +782,10 @@ class confParameter:
                              "sched_check_network"):
             self.sched_check_network = Config.getboolean('switch_scheduling',
                                                          'sched_check_network')
+
+        if Config.has_option("switch_scheduling", "sched_send_ping_kiosk"):
+            self.sched_send_ping_kiosk = Config.getboolean('switch_scheduling',
+                                                        'sched_send_ping_kiosk')
 
         if Config.has_option("switch_scheduling", "sched_update_agent"):
             self.sched_update_agent = Config.getboolean('switch_scheduling',
@@ -922,23 +944,13 @@ class confParameter:
         if Config.has_option('fileviewer', 'date_format'):
             self.date_format = Config.get('fileviewer', 'date_format')
 
-
-    def loadparametersplugins(self, namefile):
-        Config = ConfigParser.ConfigParser()
-        Config.read(namefile)
-        if os.path.isfile(namefile+".local"):
-            Config.read(namefile+".local")
-        return Config.items("parameters")
-
+        self.fv_host = "127.0.0.1"
         if Config.has_option('fileviewer', 'host'):
             self.fv_host = Config.get('fileviewer', 'host')
-        else:
-            self.fv_host = "127.0.0.1"
 
+        self.fv_port = 52044
         if Config.has_option('fileviewer', 'port'):
             self.fv_port = Config.getint('fileviewer', 'port')
-        else:
-            self.fv_port = 52044
 
         if Config.has_option('fileviewer', 'maxwidth'):
             self.fv_maxwidth = Config.getint('fileviewer', 'maxwidth')
@@ -952,6 +964,14 @@ class confParameter:
 
         if self.fv_minwidth > self.fv_maxwidth:
             self.fv_minwidth, self.fv_maxwidth = self.fv_maxwidth, self.fv_minwidth
+
+
+    def loadparametersplugins(self, namefile):
+        Config = ConfigParser.ConfigParser()
+        Config.read(namefile)
+        if os.path.isfile(namefile+".local"):
+            Config.read(namefile+".local")
+        return Config.items("parameters")
 
     def _levellogdata(self, levelstring):
         strlevel = levelstring.upper()

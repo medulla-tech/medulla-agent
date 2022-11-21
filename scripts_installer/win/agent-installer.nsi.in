@@ -46,6 +46,7 @@ RequestExecutionLevel admin
 !define PULSE_AGENT_CONFFILE "@@PULSE_AGENT_CONFFILE@@"
 !define PULSE_UPDATEOPENSSH_CONFFILE "@@PULSE_AGENTUPDATEOPENSSH_CONFFILE@@"
 !define PULSE_UPDATETIGHTVNC_CONFFILE "@@PULSE_AGENTUPDATETIGHTVNC_CONFFILE@@"
+!define PULSE_UPDATEBACKUPCLIENT_CONFFILE "@@PULSE_UPDATEBACKUPCLIENT_CONFFILE@@"
 !define PULSE_SCHEDULER_CONFFILE "@@PULSE_SCHEDULER_CONFFILE@@"
 !define PULSE_INVENTORY_CONFFILE "@@PULSE_INVENTORY_CONFFILE@@"
 !define PULSE_STARTUPDATE_CONFFILE "@@PULSE_STARTUPDATE_CONFFILE@@"
@@ -72,6 +73,8 @@ RequestExecutionLevel admin
 !define SYNCTHING_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${SYNCTHING_NAME}"
 !define FILETREE_NAME "@@FILETREE_NAME@@"
 !define FILETREE_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${FILETREE_NAME}"
+!define PAEXEC_NAME "@@PAEXEC_NAME@@"
+!define PAEXEC_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PAEXEC_NAME}"
 SetCompressor lzma
 
 ; Modern UI installer stuff
@@ -96,6 +99,8 @@ SetCompressor lzma
 !addincludedir libs
 !include "WinVer.nsh"
 !include "FileFunc.nsh"
+; Needed on newer nsis but does not seems to work on stretch nsis
+;!include /CHARSET=CP1252 zipdll.nsh
 !include "zipdll.nsh"
 !include "LogicLib.nsh"
 !Include "LogString.nsh"
@@ -335,6 +340,7 @@ Section "!${PRODUCT_NAME}" sec_app
   ; Copy of update plugins conf file
   File "../config/${PULSE_UPDATEOPENSSH_CONFFILE}"
   File "../config/${PULSE_UPDATETIGHTVNC_CONFFILE}"
+  File "../config/${PULSE_UPDATEBACKUPCLIENT_CONFFILE}"
   ${If} ${Errors}
     ${IfNot} ${Silent}
         MessageBox MB_OK|MB_ICONSTOP "Creation of agent config files failed. $\n\
@@ -501,6 +507,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "${RDP_UNINST_KEY}"
   DeleteRegKey HKLM "${SYNCTHING_UNINST_KEY}"
   DeleteRegKey HKLM "${FILETREE_UNINST_KEY}"
+  DeleteRegKey HKLM "${PAEXEC_UNINST_KEY}"
 
   ; Stop all Pulse services
   Call un.StopPulseServices
