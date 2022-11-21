@@ -21,6 +21,7 @@
 # file  plugin_applicationdeploymentjson.py
 
 import base64
+import hashlib
 import json
 import sys, os
 import socket
@@ -28,6 +29,7 @@ import logging
 import pycurl
 import platform
 import urllib
+import shutil
 from urlparse import urlparse
 from lib import utils, \
                 managepackage, \
@@ -43,7 +45,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.24", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.26", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -146,7 +148,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 signalendsessionforARS(data, objectxmpp, sessionid, error=True)
             else:
                 #supprime cet input
-                objectxmpp.xmpplog('<span class="log_err">Package deplayed execution error</span>',
+                objectxmpp.xmpplog('<span class="log_err">Package delayed execution error</span>',
                                    type='deploy',
                                    sessionname=sessionid,
                                    priority=-1,
@@ -713,7 +715,8 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
         namefolder = None
         msgdeploy=[]
 
-        if hasattr(objectxmpp.config, 'cdn_enable') and objectxmpp.config.cdn_enable == "true":
+
+        if hasattr(objectxmpp.config, 'cdn_enable') and bool(objectxmpp.config.cdn_enable):
             data['methodetransfert'] = 'pullcurl'
             data['descriptor']['info']['methodetransfert'] = 'pullcurl'
             url = objectxmpp.config.cdn_baseurl
@@ -721,7 +724,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 url = url + "/"
             localisation_server = data['descriptor']['info']['localisation_server']
             token = objectxmpp.config.cdn_token
-            add_url = {"url": url, 'localisation_server': localisation_server, 'token': token}
+            add_url = {"url": url, "localisation_server": localisation_server, "token": token}
             data['descriptor']['info']['localisation_server'] = add_url
             objectxmpp.xmpplog('Transfer Method is %s' % data['methodetransfert'],
                                        type='deploy',
@@ -2216,7 +2219,7 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate
     # can write response body to it without decoding.
     with open(destfile, 'wb') as f:
         if token is not None:
-            headers = ["X-Auth-Token"+token]
+            headers = ["X-Authorization: " + token]
         c = pycurl.Curl()
         urlfile = urlfile.replace(" ", "%20")
         c.setopt(c.URL, urlfile)
@@ -2420,10 +2423,51 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True
 
+def check_hash(objectxmpp, data):
+    globalHash = data['hash']['global']
+    hash_type = data['hash']['type']
+    dest = os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", data['name'])
+    dest += "\\"
+    concat_hash = ""
+
+    if hasattr(objectxmpp.config, 'keyAES32'):
+        salt = objectxmpp.config.keyAES32
+
+    BLOCK_SIZE = 65535
+
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logger.error("Wrong hash type")
+
+    for file_package in sorted(os.listdir(dest)):
+        with open(os.path.join(dest, file_package), "rb") as _file:
+            try:
+                file_hash = hashlib.new(hash_type)
+            except:
+                logging.error("Wrong hash type")
+            file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
+            while len(file_block) > 0:
+                file_hash.update(file_block)
+                file_block = _file.read(BLOCK_SIZE)
+            
+        concat_hash += file_hash.hexdigest()
+    
+    concat_hash += salt
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logger.error("Wrong hash type")
+    file_hash.update(concat_hash)
+    concat_hash = file_hash.hexdigest()
+    
+    return concat_hash
+
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777, exist_ok=True)
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+    
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = datasend['data']['descriptor']['info']['localisation_server']['url']
     takeresource(datasend, objectxmpp, sessionid)
@@ -2469,7 +2513,8 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                curlgetdownloadfile(dest, urlfile, insecure=True, token=token ,limit_rate_ko=limit_rate_ko)
+                
+                curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
@@ -2495,6 +2540,22 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                 removeresource(datasend, objectxmpp, sessionid)
                 signalendsessionforARS(datasend, objectxmpp, sessionid, error=True)
                 return False
+    _check_hash = check_hash(objectxmpp, datasend['data'])
+    if _check_hash != datasend['data']['hash']['global']:
+        shutil.rmtree(os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", datasend['data']['name']))
+        logger.error("HASH INVALID - ABORT DEPLOYMENT")
+        objectxmpp.xmpplog('<span class="log_err">Package delayed : hash invalid</span>',
+            type='deploy',
+            sessionname=datasend['sessionid'],
+            priority=-1,
+            action="xmpplog",
+            who=strjidagent,
+            module="Deployment | Error | Terminate | Notify",
+            date=None,
+            fromuser=datasend['data']['name'])
+        removeresource(datasend, objectxmpp, sessionid)
+        signalendsessionforARS(datasend, objectxmpp, sessionid, error=True)
+        return False
     removeresource(datasend, objectxmpp, sessionid)
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True

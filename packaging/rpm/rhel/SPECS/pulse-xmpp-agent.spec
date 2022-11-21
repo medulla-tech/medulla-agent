@@ -186,6 +186,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-updates.service
 %_var/lib/pulse2/script_monitoring/
 
 
@@ -236,6 +237,7 @@ if [ $1 == 2 ]; then
         %_var/lib/pulse2/clients/generate-pulse-agent.sh
         %_var/lib/pulse2/clients/generate-pulse-agent.sh --minimal
         %_var/lib/pulse2/clients/generate-agent-package
+        %_var/lib/pulse2/clients/generate-kiosk-package
     fi
 fi
 
@@ -399,6 +401,7 @@ cp pulse_xmpp_agent/config/updateopenssh.ini %buildroot%_var/lib/pulse2/clients/
 cp pulse_xmpp_agent/config/updatetightvnc.ini %buildroot%_var/lib/pulse2/clients/config/
 cp scripts_installer/generate-pulse-agent.sh %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/generate-agent-package %buildroot%_var/lib/pulse2/clients
+cp scripts_installer/generate-kiosk-package %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/HEADER.html %buildroot%_var/lib/pulse2/clients
 cp scripts_installer/style.css %buildroot%_var/lib/pulse2/clients
 mkdir -p %buildroot%_var/lib/pulse2/clients/win
@@ -427,6 +430,7 @@ mkdir -p %buildroot%_var/lib/pulse2/clients/win/artwork
 cp -fr scripts_installer/win/artwork/* %buildroot%_var/lib/pulse2/clients/win/artwork
 chmod +x %buildroot%_var/lib/pulse2/clients/*.sh
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-package
+chmod +x %buildroot%_var/lib/pulse2/clients/generate-kiosk-package
 cp pulse_xmpp_agent/script/create-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp pulse_xmpp_agent/script/remove-profile.ps1 %buildroot%_var/lib/pulse2/clients/win/
 cp scripts_installer/win/pulse-service.py %buildroot%_var/lib/pulse2/clients/win/

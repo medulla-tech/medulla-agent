@@ -47,7 +47,7 @@ from lib.utils import DEBUGPULSE, getIpXmppInterface,\
             isWinUserAdmin, isMacOsUserAdmin, file_put_contents, \
                       getRandomName, AESCipher, refreshfingerprintconf, \
                         geolocalisation_agent, \
-                        serialnumbermachine
+                        serialnumbermachine, offline_search_kb
 
 from optparse import OptionParser
 
@@ -578,7 +578,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
             'adorgbyuser': '',
             'agent_machine_name':self.agent_machine_name,
             'uuid_serial_machine' : serialnumbermachine(),
-            'regcomplet': self.FullRegistration
+            'regcomplet': self.FullRegistration,
+            'system_info' :  offline_search_kb().search_system_info_reg()
         }
         if self.geodata is not None:
             dataobj['geolocalisation'] = self.geodata.localisation
@@ -678,6 +679,9 @@ def doTask( optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile
                                       "pluginsrelay")
 
     while True:
+        if not tg.confserver.strip():
+            tg = confParameter(optstypemachine)
+
         if ipfromdns(tg.confserver) != "" and \
             check_exist_ip_port(ipfromdns(tg.confserver), tg.confport):
             break
