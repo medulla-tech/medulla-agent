@@ -485,7 +485,7 @@ class XmppMasterDatabase(DatabaseHelper):
                             "result": t[18]}
                 resultlist.append(listresult)
         except Exception:
-            logger.error("%s" % (traceback.format_exc()))
+            logging.getLogger().error("%s" % (traceback.format_exc()))
         return resultlist
         
 

@@ -441,3 +441,6 @@ cp scripts_installer/win/networkevents.py %buildroot%_var/lib/pulse2/clients/win
 cp scripts_installer/win/powershell-policy-remotesigned.pol %buildroot%_var/lib/pulse2/clients/win/
 mkdir -p %buildroot%_var/lib/pulse2/script_monitoring
 cp -fv contrib/monitoring/* %buildroot%_var/lib/pulse2/script_monitoring/
+cp bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/win/
+cp bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/lin/
+cp bin/pulse2_update_notification.py %buildroot%_var/lib/pulse2/clients/mac/
