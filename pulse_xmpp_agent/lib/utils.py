@@ -1167,7 +1167,6 @@ def getIpXmppInterface(xmpp_server_ipaddress_or_dns, Port):
     xmpp_server_ipaddress = ipfromdns(xmpp_server_ipaddress_or_dns)
     if sys.platform.startswith('linux'):
         logger.info("Searching for the XMPP Server IP Adress")
-        logger.info("netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" % (Port, ipadress))
         obj = simplecommand(
             "netstat -an |grep %s |grep %s| grep ESTABLISHED | grep -v tcp6" %
             (Port, xmpp_server_ipaddress))
