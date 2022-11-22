@@ -50,14 +50,9 @@ class grafcet:
 
     def __init__(self, objectxmpp, datasend):
         # verify exist directory packagedir
-        logging.getLogger().error("START JFK %s" % type(datasend))
-        # for _ in range(10):
-            # logging.getLogger().error("START JFK")
         if not os.path.isdir(managepackage.packagedir()):
             os.makedirs(managepackage.packagedir())
         self.datasend = datasend
-        # for _ in range(10):
-            # logging.getLogger().error("COUCOU JFK")
         logging.getLogger().error(json.dumps(self.datasend, indent=4))
         self.parameterdynamic = {}
         self.descriptorsection = {'action_section_install': -1}
@@ -66,8 +61,6 @@ class grafcet:
         self.userstatus=None
         self.userconectdate=None
         self.data = self.datasend['data']
-        for _ in range(10):
-            logging.getLogger().error("COUCOU JFK")
         logging.getLogger().error(json.dumps(self.data, indent=4))
         self.sessionid = self.datasend['sessionid']
         self.sequence = self.data['descriptor']['sequence']
@@ -170,7 +163,7 @@ class grafcet:
                     self.userconecter=userdata[0]
                     self.userstatus=userdata[3]
                     self.userconectdate=userdata[5]+" "+userdata[6]
-                    msg_user = "[%s]-[%s]: actuelly User %s connected status"\
+                    msg_user = "[%s]-[%s]: Currently connected user %s status"\
                                 " [%s] from %s"% (self.data['name'],
                                                   self.data['stepcurrent'],
                                                   self.userconecter,
@@ -180,7 +173,7 @@ class grafcet:
                     self.__affiche_message(msg_user,
                                         module="Deployment | Execution")
                 else:
-                    msg_user = "[%s]-[%s]: no user to connect" % (self.data['name'],
+                    msg_user = "[%s]-[%s]: No user connected" % (self.data['name'],
                                                                   self.data['stepcurrent'])
                     logging.getLogger().debug(msg_user)
                     self.__affiche_message(msg_user,
