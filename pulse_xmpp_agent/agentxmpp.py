@@ -61,7 +61,7 @@ from lib.utils import   DEBUGPULSE, getIpXmppInterface, refreshfingerprint,\
                         createfingerprintnetwork, isWinUserAdmin,\
                         isMacOsUserAdmin, check_exist_ip_port, ipfromdns,\
                         shutdown_command, reboot_command, vnc_set_permission,\
-                        save_count_start,unregister_agent, unregister_subcribe, test_kiosk_presence, file_get_contents,\
+                        save_count_start,unregister_agent, unregister_subscribe, test_kiosk_presence, file_get_contents,\
                         isBase64, connection_established, file_put_contents, \
                         simplecommand, testagentconf, \
                         Setdirectorytempinfo, setgetcountcycle, setgetrestart, \
@@ -1662,7 +1662,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             for t in self.client_roster:
                 if t == self.boundjid.bare or t in [self.sub_subscribe]:
                     continue
-                logger.info("unsubcribe agent %s" % t)
+                logger.info("Unsubscribe agent %s" % t)
                 self.send_presence ( pto = t, ptype = 'unsubscribe' )
                 self.update_roster(t, subscription='remove')
         except Exception:
